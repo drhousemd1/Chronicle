@@ -9,6 +9,19 @@ const TIME_DESCRIPTIONS: Record<TimeOfDay, string> = {
   night: "nighttime (after dark, around 9pm-6am)"
 };
 
+export const REGENERATION_DIRECTIVE_TEXT = `[REGENERATION DIRECTIVE]
+The user wants a DIFFERENT VERSION of this response. Guidelines:
+1. Maintain the same general scene context and emotional tone
+2. Vary the specific dialogue, word choices, actions, and pacing
+3. Try a different focus (e.g., more physical description, different dialogue approach, action-led opening, or environmental detail)
+4. Keep ONLY the characters who are present in the current scene — do NOT introduce characters who are elsewhere or not already in the scene
+5. Do NOT reverse the character's emotional state or stance — if they were enthusiastic, they should still be enthusiastic but expressed differently
+6. Do NOT suddenly shift the character's personality (e.g., from willing to reluctant, or from happy to disgusted)
+7. Think of this as a "different take" by a different writer on the same scene, not a plot reversal or tone shift
+8. The scene's momentum and direction should be preserved — only the specific execution changes
+9. CONTROL RULES STILL APPLY: Do NOT generate dialogue or actions for characters marked as CONTROL: User. Only AI-controlled characters speak.
+10. SCENE PRESENCE STILL APPLIES: Only characters at the SAME LOCATION as the current scene may have dialogue or actions. Characters at a different LOCATION are OFF-SCREEN and must not appear.`;
+
 // Dynamic dialog formatting rules based on POV setting
 function getCriticalDialogRules(narrativePov: 'first' | 'third' = 'third'): string {
   const povRules = narrativePov === 'first' 
