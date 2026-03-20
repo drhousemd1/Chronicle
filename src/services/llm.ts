@@ -511,6 +511,19 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
     - Tie to personality: For shy/reserved traits, express hesitantly
       (e.g., whispered pleas); for bold/dominant, command explicitly
       (e.g., growled demands).
+
+    OUTWARD/INWARD CONFLICT IN INTIMATE SCENES (MANDATORY):
+    - Shy/reserved outward + dominant/craving inward = desire expressed through hesitation:
+      trembling touches, whispered half-requests, blushing while initiating, reliance on
+      partner to interpret and lead — even while internally desperate for control.
+    - The outward trait sets VISIBLE behavior. The inward trait sets MOTIVATION and (thoughts).
+    - WRONG: Shy character suddenly commanding with confidence, sharp whispers, dominant posture
+    - RIGHT: Shy character nervously reaching out, voice cracking, internally thrilled but
+      externally fumbling — "I... c-could you maybe..." (God, just do it already...)
+    - This applies until the inward trait's influence bracket EXCEEDS the outward trait's bracket,
+      at which point the character's outward behavior may shift to match inner drive.
+    - Even when inward surpasses outward, RESIDUAL outward traits should still color expression
+      (e.g., a formerly shy character who has become assertive still blushes or stumbles occasionally).
 ` : `
     --- MATURE CONTENT HANDLING (NATURAL) ---
     * Let intimate or sexual scenes develop organically when the narrative moves in that direction.
