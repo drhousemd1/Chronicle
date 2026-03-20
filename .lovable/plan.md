@@ -1,64 +1,47 @@
 
 
-# Fix: Character Builder — Replace Red X with Trash2 + Align Icons
+# Custom Content: Mixed Types per Item + Subheading Labels
 
 ## Summary
-Standardize all delete icons across the Character Builder to use `Trash2` instead of `X`, fix lock icon vertical centering, add lock/trash to Goals and Desires cards, and match the personality dropdown height to its row.
+Three changes to custom content sections in the Character Builder:
+1. **"Add Row" button** (both freeform and structured) now opens the Content Type chooser modal instead of directly adding an item — so users can mix freeform and structured items within one section.
+2. **Rename** the freeform "Add Text Field" button to **"Add Row"** for consistency.
+3. **Add a subheading input** above each item (both types) so users can label individual rows within a section.
 
 ## Changes
 
-### 1. `src/components/chronicle/CharactersTab.tsx`
+### 1. `src/types.ts` — Add per-item fields to `CharacterTraitItem`
+Add two optional fields:
+- `type?: 'structured' | 'freeform'` — per-item type (falls back to `section.type` for legacy data)
+- `subheading?: string` — optional label displayed above the item
 
-**a) BuiltInRow lock icon centering (line 496, 526)**
-- Change row container from `items-start` to `items-center` so the lock icon centers vertically on the description field
-- The lock wrapper already has `w-7 flex-shrink-0 flex items-center justify-center` — just needs the parent `items-center`
+### 2. `src/components/chronicle/CharactersTab.tsx`
 
-**b) ExtraRow: Replace X with Trash2 (lines 573-580)**
-- Replace `<X className="w-4 h-4" />` with `<Trash2 size={16} />`
-- Change class from `text-red-500 hover:text-red-400 p-1.5 rounded-md hover:bg-red-900/30 mt-1` to `text-zinc-500 hover:text-rose-400 transition-colors p-1`
-- Wrap in the standard centering div: `w-7 flex-shrink-0 flex items-center justify-center`
-- Change ExtraRow container from `items-start` to `items-center`
-- This fixes: Physical Appearance, Currently Wearing, Preferred Clothing, Tone, Background, Key Life Events, Relationships, Secrets, Fears (all use ExtraRow)
+**a) New state + modal routing for "Add Row" clicks**
+- Add `pendingAddRowSectionId` state to track which section's "Add Row" was clicked
+- Add a second `CustomContentTypeModal` instance (or reuse with conditional handler) that, on selection, calls `handleAddItem` with the chosen type and clears the pending state
 
-**c) Custom Content sections — structured rows (line 2157-2167)**
-- Replace `<X>` with `<Trash2 size={16} />`
-- Update styling to `text-zinc-500 hover:text-rose-400 transition-colors p-1`
-- Wrap in centering div, change row to `items-center`
+**b) Update `handleAddItem` to accept a `type` parameter**
+- New item gets `type` set to `'structured'` or `'freeform'` based on the modal selection
 
-**d) Custom Content sections — freeform rows (line 2062-2072)**
-- Replace `<X>` with `<Trash2 size={16} />`
-- Update styling to `text-zinc-500 hover:text-rose-400 transition-colors p-1`
-- Wrap in centering div, change row to `items-center`
+**c) Both "Add Row" buttons → open modal**
+- **Freeform section** (line 2080-2089): Change `onClick` to set `pendingAddRowSectionId` and open the modal. Rename "Add Text Field" to "Add Row".
+- **Structured section** (line 2177-2183): Change `onClick` to set `pendingAddRowSectionId` and open the modal.
 
-### 2. `src/components/chronicle/PersonalitySection.tsx`
+**d) Per-item type rendering**
+- Instead of branching on `section.type` to render ALL items one way, iterate `section.items` and render each based on `item.type ?? section.type`:
+  - `'freeform'`: subheading input + AutoResizeTextarea (rows=4) + centered trash icon
+  - `'structured'`: subheading input + label/sparkle/description row + centered trash icon
 
-**a) Replace X with Trash2 (lines 138-145)**
-- Replace `<X className="w-4 h-4" />` with `<Trash2 size={16} />`
-- Update styling to `text-zinc-500 hover:text-rose-400 transition-colors p-1`
-- Change row container from `items-start` to `items-center`
-- Add `Trash2` to imports, can remove `X`
+**e) Subheading input above each item**
+- Render an editable input styled like existing labels: `text-xs font-bold uppercase tracking-widest text-zinc-500 bg-[#1c1c1f] border border-black/35 rounded-lg px-3 py-2`
+- Placeholder: `"SUBHEADING (OPTIONAL)"`
+- Bound to `item.subheading`, updated via `handleUpdateSection`
 
-**b) Dropdown height (line 132)**
-- Remove `mt-1` from the select element
-- Add `self-stretch` or match the input height by adding `h-full` or explicitly sizing to match the label/description fields. Set `py-2` to match the input padding so the dropdown aligns at the same height as adjacent fields.
-
-### 3. `src/components/chronicle/CharacterGoalsSection.tsx`
-
-**a) Steps: Replace X with Trash2 (line 333)**
-- Replace `<X className="h-4 w-4" />` with `<Trash2 size={16} />`
-- Update styling to `text-zinc-500 hover:text-rose-400 transition-colors p-1`
-- Change step row from `items-start` to `items-center`
-- Remove `mt-2.5` from Checkbox, remove `mt-2` from delete button
-- Add `Lock` to imports
-
-**b) Goal cards: Add lock/trash icon (around line 240)**
-- Change the "Goal Name" label line to a flex row with `justify-between`
-- For the first goal (`goalIdx === 0` from `sortedGoals.map`): show `<Lock className="w-3.5 h-3.5 text-zinc-400" />` right-aligned
-- For subsequent goals (`goalIdx >= 1`): show `<Trash2>` button that calls `deleteGoal(goal.id)`, styled `text-zinc-500 hover:text-rose-400`
-- Position sits on the label row, above the input field, no displacement of progress ring
+**f) Backward compatibility**
+- Items without a `type` field inherit from `section.type` at render time — no migration needed.
 
 ## Files Modified
-- `src/components/chronicle/CharactersTab.tsx` — BuiltInRow centering, ExtraRow X→Trash2, Custom content X→Trash2
-- `src/components/chronicle/PersonalitySection.tsx` — X→Trash2, dropdown height
-- `src/components/chronicle/CharacterGoalsSection.tsx` — Steps X→Trash2, goal card lock/trash, step alignment
+- `src/types.ts` — 2 new optional fields on `CharacterTraitItem`
+- `src/components/chronicle/CharactersTab.tsx` — Modal routing, per-item rendering, subheading inputs, button rename
 
