@@ -852,17 +852,19 @@ className="w-2/5 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border border-black/35
                                 <Lock className="w-3.5 h-3.5 text-zinc-400" />
                               </div>
                             ) : (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const locs = [...(world.core.structuredLocations || [])];
-                                  locs.splice(idx, 1);
-                                  updateCore({ structuredLocations: locs.length > 0 ? locs : undefined });
-                                }}
-                                className="mt-2 text-zinc-500 hover:text-rose-400 transition-colors p-1"
-                              >
-                                <Trash2 size={16} />
-                              </button>
+                              <div className="w-7 flex-shrink-0 flex items-center justify-center pt-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const locs = [...(world.core.structuredLocations || [])];
+                                    locs.splice(idx, 1);
+                                    updateCore({ structuredLocations: locs.length > 0 ? locs : undefined });
+                                  }}
+                                  className="text-zinc-500 hover:text-rose-400 transition-colors"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
                             )}
                           </div>
                         ))}
