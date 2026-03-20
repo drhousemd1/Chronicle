@@ -300,7 +300,7 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
                       updateField('customWorldSections', updated);
                     }
                     return items.map((item, iIdx) => (
-                      <div key={item.id} className="space-y-2">
+                      <div key={item.id} className="space-y-3">
                         <div className="flex items-center gap-2">
                           <Input
                             value={item.label}

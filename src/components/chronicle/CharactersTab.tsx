@@ -473,7 +473,7 @@ const HardcodedSection: React.FC<{
       {/* Inner card for visual depth */}
       <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
         {isExpanded ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {children}
           </div>
         ) : (
@@ -1610,7 +1610,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                       </div>
 
                       {/* Below grid: remaining fields */}
-                      <div className="space-y-4 mt-4">
+                      <div className="space-y-3 mt-4">
                         <div>
                           <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Location</label>
                           <AutoResizeTextarea value={selected.location || ''} onChange={(v) => onUpdate(selected.id, { location: v })} placeholder="Current location" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
@@ -2040,7 +2040,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
               <div className="p-5">
                 <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
                   {(expandedCustomSections[section.id] ?? true) ? (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                     {/* Per-item rendering: each item rendered by its own type */}
                     {(() => {
                       // Auto-migrate freeformValue to items if needed
@@ -2054,7 +2054,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                       return items.map(item => {
                         const itemType = item.type ?? section.type ?? 'structured';
                         return (
-                          <div key={item.id} className="space-y-2">
+                          <div key={item.id} className="space-y-3">
                             {/* Subheading input */}
                             <input
                               type="text"
@@ -2097,7 +2097,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                               /* Structured item */
                               <div className="flex items-center gap-2">
                                 <div className="flex-1 flex gap-2">
-                                  <div className="w-1/3 flex items-center gap-1.5">
+                                  <div className="w-2/5 flex items-center gap-1.5">
                                     <AutoResizeTextarea
                                       value={item.label}
                                       onChange={(v) => {
