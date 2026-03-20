@@ -1522,25 +1522,25 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                         {/* Right column: Name, Nickname, Age, Sex */}
                         <div className="flex flex-col gap-4">
                           <div>
-                            <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Name</label>
+                            <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5 block">Name</label>
                             <AutoResizeTextarea value={selected.name === "New Character" ? "" : selected.name} onChange={(v) => onUpdate(selected.id, { name: v })} placeholder="Character name" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                           </div>
                           <div>
-                            <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Nicknames</label>
+                            <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5 block">Nicknames</label>
                             <AutoResizeTextarea value={selected.nicknames || ''} onChange={(v) => onUpdate(selected.id, { nicknames: v })} placeholder="Nicknames" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                           </div>
                 <div className="grid gap-3" style={{ gridTemplateColumns: '120px 1fr' }}>
                             <div>
-                              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Age</label>
+                              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5 block">Age</label>
                               <AutoResizeTextarea value={selected.age || ''} onChange={(v) => onUpdate(selected.id, { age: v })} placeholder="25" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                             </div>
                             <div>
-                              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Sex / Identity</label>
+                              <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5 block">Sex / Identity</label>
                               <AutoResizeTextarea value={selected.sexType} onChange={(v) => onUpdate(selected.id, { sexType: v })} placeholder="Female, Male, Non-binary" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                             </div>
                           </div>
                           <div>
-                            <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Sexual Orientation</label>
+                            <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5 block">Sexual Orientation</label>
                             <AutoResizeTextarea value={selected.sexualOrientation || ''} onChange={(v) => onUpdate(selected.id, { sexualOrientation: v })} placeholder="Heterosexual, Bisexual, etc." className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                           </div>
                           <div className="grid grid-cols-2 gap-3 mt-1">
@@ -1585,16 +1585,16 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                       {/* Below grid: remaining fields */}
                       <div className="space-y-3 mt-4">
                         <div>
-                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Location</label>
+                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5 block">Location</label>
                           <AutoResizeTextarea value={selected.location || ''} onChange={(v) => onUpdate(selected.id, { location: v })} placeholder="Current location" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                         </div>
                         <div>
-                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Current Mood</label>
+                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5 block">Current Mood</label>
                           <AutoResizeTextarea value={selected.currentMood || ''} onChange={(v) => onUpdate(selected.id, { currentMood: v })} placeholder="Happy, Tired" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                         </div>
 
                         <div>
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-1.5">
                             <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Role Description</label>
                             <button
                               type="button"
@@ -2027,7 +2027,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                       return items.map(item => {
                         const itemType = item.type ?? section.type ?? 'structured';
                         return (
-                          <div key={item.id} className="space-y-3">
+                          <div key={item.id} className="space-y-1.5">
                             {/* Subheading input with per-item delete */}
                             <div className="flex items-center gap-3">
                               <input

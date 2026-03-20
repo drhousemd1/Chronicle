@@ -402,7 +402,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   }> = ({ label, fieldName }) => {
     const isLoading = enhancingField === fieldName;
     return (
-      <div className="flex items-center gap-2 mb-1">
+      <div className="flex items-center gap-2 mb-1.5">
         <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
           {label}
         </label>
@@ -818,7 +818,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     
                     {/* Structured Locations */}
                     <div data-publish-error={!!publishErrors.location || undefined}>
-                      <label className={`text-[10px] font-black uppercase tracking-widest mb-1 block ${publishErrors.location ? 'text-red-500' : 'text-zinc-400'}`}>Primary Locations</label>
+                      <label className={`text-[10px] font-black uppercase tracking-widest mb-1.5 block ${publishErrors.location ? 'text-red-500' : 'text-zinc-400'}`}>Primary Locations</label>
                       {publishErrors.location && <p className="text-sm text-red-500 font-medium mb-2">{publishErrors.location}</p>}
                       <div className="space-y-3">
                         {(world.core.structuredLocations && world.core.structuredLocations.length > 0 
@@ -886,7 +886,7 @@ className="w-2/5 px-3 py-2 text-xs leading-5 font-bold bg-[#1c1c1f] border borde
                     
                     {/* Custom World Content Sections */}
                     {(world.core.customWorldSections || []).map((section, sIdx) => (
-                      <div key={section.id} className="space-y-3">
+                      <div key={section.id}>
                         <div className="flex items-center gap-3">
                           <AutoResizeTextarea
                             value={section.title}
@@ -910,6 +910,7 @@ className="w-2/5 px-3 py-2 text-xs leading-5 font-bold bg-[#1c1c1f] border borde
                             <Trash2 size={16} />
                           </button>
                         </div>
+                        <div className="space-y-3 mt-1.5">
                         {(!section.type || section.type === 'structured') ? (
                           <>
                             {section.items.map((item, iIdx) => (
@@ -1075,6 +1076,7 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                           </button>
                           </>
                         )}
+                        </div>
                       </div>
                     ))}
                     
@@ -1129,7 +1131,7 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                 <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
                   <div className="space-y-6">
                     <div data-publish-error={!!publishErrors.openingDialog || undefined}>
-                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
                         Opening Dialog
                         <TooltipProvider>
                           <Tooltip>
@@ -1162,7 +1164,7 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                     <div className="flex items-end gap-4 flex-wrap">
                       {/* Starting Day & Time group */}
                       <div>
-                        <div className="flex items-center gap-1.5 mb-1">
+                        <div className="flex items-center gap-1.5 mb-1.5">
                           <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Starting Day & Time</label>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -1234,7 +1236,7 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
 
                       {/* Mode group */}
                       <div>
-                        <div className="flex items-center gap-1.5 mb-1">
+                        <div className="flex items-center gap-1.5 mb-1.5">
                           <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Mode</label>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -1282,7 +1284,7 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                         "transition-opacity",
                         (openingDialog.timeProgressionMode || 'manual') === 'manual' && "opacity-40 pointer-events-none"
                       )}>
-                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 block">Time Interval</label>
+                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5 block">Time Interval</label>
                         <select
                           value={openingDialog.timeProgressionInterval || 15}
                           onChange={(e) => onUpdateOpening({ timeProgressionInterval: Number(e.target.value) })}
@@ -1313,7 +1315,7 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
               <div className="p-5">
                 <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
                 {/* Header row: label + tooltip on left, buttons on right */}
-                <div className="flex items-end justify-between gap-4 mb-1">
+                <div className="flex items-end justify-between gap-4 mb-1.5">
                   <div className="flex items-center gap-2">
                     <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Scene Gallery Photos</label>
                     <Tooltip>
@@ -1442,7 +1444,7 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                 <h2 className="text-white text-xl font-bold tracking-[-0.015em] relative z-[1]">Art Style Preference</h2>
               </div>
               <div className="p-5 space-y-1">
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-2 mb-1.5">
                   <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Art Style Selection</span>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -1507,7 +1509,7 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                   <div className="space-y-8">
                     
                     <div>
-                      <label className="flex items-center gap-1.5 text-[10px] font-black uppercase text-zinc-400 tracking-widest mb-1">
+                      <label className="flex items-center gap-1.5 text-[10px] font-black uppercase text-zinc-400 tracking-widest mb-1.5">
                         Dialog Formatting
                         <Lock className="w-3 h-3 text-zinc-500" />
                       </label>
@@ -1523,7 +1525,7 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                       
                        {/* User's custom AI rules - editable */}
                       <div className="mt-4">
-                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 block">Custom Rules (Optional)</label>
+                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5 block">Custom Rules (Optional)</label>
                         <AutoResizeTextarea 
                           value={world.core.dialogFormatting} 
                           onChange={(v) => updateCore({ dialogFormatting: v })} 
@@ -1535,8 +1537,8 @@ className="px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white plac
                     </div>
 
                     {world.entries.length > 0 && (
-                      <div className="space-y-6 pt-6 border-t border-white/10">
-                        <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Additional Entries</h3>
+                      <div className="pt-6 border-t border-white/10">
+                        <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">Additional Entries</h3>
                         <div className="grid grid-cols-1 gap-6">
                           {world.entries.map(entry => (
                             <div key={entry.id} className="p-6 space-y-4 group rounded-2xl bg-zinc-800/50 shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
