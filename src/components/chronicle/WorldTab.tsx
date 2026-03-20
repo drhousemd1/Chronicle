@@ -1013,21 +1013,20 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                               updateCore({ customWorldSections: sections });
                             }
                             return items.map((item, iIdx) => (
-                              <div key={item.id} className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                  <AutoResizeTextarea
-                                    value={item.label}
-                                    onChange={(v) => {
-                                      const sections = [...(world.core.customWorldSections || [])];
-                                      const updatedItems = [...sections[sIdx].items];
-                                      updatedItems[iIdx] = { ...updatedItems[iIdx], label: v };
-                                      sections[sIdx] = { ...sections[sIdx], items: updatedItems };
-                                      updateCore({ customWorldSections: sections });
-                                    }}
-                                    placeholder="LABEL"
-                                    className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
-                                  />
-                                </div>
+                              <div key={item.id} className="space-y-1">
+                                <input
+                                  type="text"
+                                  value={item.label}
+                                  onChange={(e) => {
+                                    const sections = [...(world.core.customWorldSections || [])];
+                                    const updatedItems = [...sections[sIdx].items];
+                                    updatedItems[iIdx] = { ...updatedItems[iIdx], label: e.target.value };
+                                    sections[sIdx] = { ...sections[sIdx], items: updatedItems };
+                                    updateCore({ customWorldSections: sections });
+                                  }}
+                                  placeholder="SECTION TITLE..."
+                                  className="w-full text-[10px] font-bold text-zinc-500 uppercase tracking-widest bg-transparent border-none focus:outline-none placeholder:text-zinc-600 px-0 py-0"
+                                />
                                 <AutoResizeTextarea
                                   value={item.value}
                                   onChange={(v) => {

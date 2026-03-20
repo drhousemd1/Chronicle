@@ -2063,8 +2063,8 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                                 const nextItems = items.map(it => it.id === item.id ? { ...it, subheading: e.target.value } : it);
                                 handleUpdateSection(selected.id, section.id, { items: nextItems });
                               }}
-                              placeholder="SUBHEADING (OPTIONAL)"
-                              className="w-full px-3 py-2 text-xs font-bold bg-[#1c1c1f] border border-black/35 text-zinc-500 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                              placeholder="SECTION TITLE..."
+                              className="w-full text-[10px] font-bold text-zinc-500 uppercase tracking-widest bg-transparent border-none focus:outline-none placeholder:text-zinc-600 px-0 py-0"
                             />
                             {itemType === 'freeform' ? (
                               /* Freeform item */
