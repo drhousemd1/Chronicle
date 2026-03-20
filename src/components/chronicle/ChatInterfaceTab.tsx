@@ -585,8 +585,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const previousDayRef = useRef<number>(currentDay);
   // Throttle character extraction to every 5th message
   const extractionCountRef = useRef<number>(0);
-  // Pass 14: Narrative Director — stores the directive for the next turn
-  const narrativeDirectiveRef = useRef<string | null>(null);
+  
   
   // Reset session tracking when conversation changes
   useEffect(() => {
