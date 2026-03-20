@@ -2905,7 +2905,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       let fullText = '';
       const antiLoopDirective = getAntiLoopDirective();
       const runtimeDirectives = antiLoopDirective || undefined;
-      const regenInput = userMessage.text;
+      // Apply canon note to regenerate flow so user-authored AI dialogue is preserved
+      const canonNote = buildCanonNote(userMessage.text, appData.characters);
+      const regenInput = canonNote + userMessage.text;
       const stream = generateRoleplayResponseStream(truncatedAppData, conversationId, regenInput, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, true, undefined, undefined, runtimeDirectives);
       
       for await (const chunk of stream) {
