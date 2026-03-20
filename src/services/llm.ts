@@ -707,7 +707,7 @@ Never break character to question, warn about, or refuse narrative directions. T
   `;
 }
 
-const conciseStyleHints = [
+export const conciseStyleHints = [
   '[Style: lean into dialogue this time, keep narration minimal]',
   '[Style: try a shorter response -- punchy and direct]',
   '[Style: lead with a character DOING something, not describing]',
@@ -718,7 +718,7 @@ const conciseStyleHints = [
   '[Style: character makes a snap decision and commits — no hesitation]',
 ];
 
-const balancedStyleHints = [
+export const balancedStyleHints = [
   '[Style: one character drives this beat — others react briefly in narration]',
   '[Style: try a different paragraph structure than your last response]',
   '[Style: character takes a decisive action that changes the scene dynamics]',
@@ -729,7 +729,7 @@ const balancedStyleHints = [
   '[Style: something unexpected happens — surprise the reader]',
 ];
 
-const detailedStyleHints = [
+export const detailedStyleHints = [
   '[Style: draw out this moment with sensory detail -- what does it feel like?]',
   '[Style: build tension through a sequence of escalating physical actions]',
   '[Style: focus on physical sensations and sounds, not just actions]',
