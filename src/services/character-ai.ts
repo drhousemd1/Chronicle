@@ -244,6 +244,13 @@ const CHARACTER_FIELD_PROMPTS: Record<string, { label: string; instruction: stri
   financialStatus: { label: "Financial Status", instruction: "Describe financial standing — wealthy, comfortable, struggling, etc. Include context.", maxSentences: 2 },
   motivation: { label: "Motivation", instruction: "Describe the character's core driving motivation. What keeps them going?", maxSentences: 2 },
   
+  // Tone / Voice
+  tone: {
+    label: "Tone",
+    instruction: "Describe how this character speaks and expresses themselves. Focus on vocal qualities, speech rhythm, vocabulary level, verbal tics or habits, formality, and emotional register. This must naturally reflect the character's personality, background, and world context — not a random or generic speech style. If a specific tone label is provided (e.g. 'Nurturing', 'Sarcastic'), describe how THAT specific tone manifests in this character's speech, drawing on who they are and their established traits.",
+    maxSentences: 3
+  },
+
   // Custom fields (fallback)
   custom: { label: "Custom", instruction: "Provide relevant details for this character trait. Be concise and story-relevant.", maxSentences: 3 }
 };
@@ -259,7 +266,9 @@ function buildCharacterFieldPrompt(
   customLabel?: string,
   mode: 'precise' | 'detailed' = 'detailed'
 ): string {
-  const fieldConfig = CHARACTER_FIELD_PROMPTS[fieldName] || CHARACTER_FIELD_PROMPTS.custom;
+  // Map prefixed field names to their prompt config (e.g. "extra_tone_abc123" → "tone")
+  const resolvedFieldName = fieldName.startsWith('extra_tone') ? 'tone' : fieldName;
+  const fieldConfig = CHARACTER_FIELD_PROMPTS[resolvedFieldName] || CHARACTER_FIELD_PROMPTS.custom;
   const isGenerateBoth = customLabel?.startsWith(GENERATE_BOTH_PREFIX);
   const sectionHint = isGenerateBoth ? customLabel!.slice(GENERATE_BOTH_PREFIX.length) : '';
   const label = isGenerateBoth ? sectionHint : (customLabel || fieldConfig.label);
@@ -269,7 +278,17 @@ function buildCharacterFieldPrompt(
     : 'CURRENT VALUE: Empty - generate appropriate content based on context.\n\n';
 
   // Generate-both mode: AI must return LABEL + DESCRIPTION
+  // Section-specific hints for generate-both mode
+  const SECTION_HINTS: Record<string, string> = {
+    'character tone/voice detail': 'Generate a tone/voice trait describing HOW this character speaks — e.g. speech rhythm, vocabulary, verbal habits, emotional register, formality level. Good label examples: "Dry Wit", "Formal Register", "Nervous Stammer", "Warm Drawl", "Clipped Authority". The description should explain how this specific character exhibits that tone trait, based on their personality, background, and context. Do NOT generate personality traits — focus strictly on how they SOUND and EXPRESS themselves vocally.',
+  };
+
   if (isGenerateBoth) {
+    const sectionGuidance = SECTION_HINTS[sectionHint] || '';
+    const sectionGuidanceBlock = sectionGuidance
+      ? `\nSECTION-SPECIFIC GUIDANCE:\n${sectionGuidance}\n`
+      : '';
+
     return `You are a character creation assistant for an interactive roleplay scenario.
 
 You need to generate BOTH a short label/name AND a description for a ${sectionHint} field on this character.
@@ -280,7 +299,7 @@ RULES:
 3. Look at all existing character data and world context to determine what trait/detail would be most fitting and NOT duplicate existing ones
 4. Stay consistent with the character's established identity
 5. NO purple prose. Be factual and story-relevant.
-
+${sectionGuidanceBlock}
 WORLD & SCENARIO CONTEXT:
 ${fullContext}
 
