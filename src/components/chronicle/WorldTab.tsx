@@ -1167,7 +1167,7 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                     <div className="flex items-end gap-4 flex-wrap">
                       {/* Starting Day & Time group */}
                       <div>
-                        <div className="flex items-center gap-1.5 mb-1.5">
+                        <FieldHeaderRow className="gap-1.5">
                           <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Starting Day & Time</label>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -1177,7 +1177,7 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                               Set when your story begins. The AI will use this context for time-appropriate responses.
                             </TooltipContent>
                           </Tooltip>
-                        </div>
+                        </FieldHeaderRow>
                         <div className="flex items-center gap-3">
                           {/* Day Counter */}
                           <div className="flex items-center gap-1.5 bg-[#3c3e47] rounded-xl px-3 py-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
