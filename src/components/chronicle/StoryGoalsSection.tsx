@@ -347,8 +347,8 @@ export const StoryGoalsSection: React.FC<StoryGoalsSectionProps> = ({
                               </span>
                             )}
                             {isEditMode && (
-                              <button tabIndex={-1} onClick={() => deleteStep(goal.id, step.id)} className="mt-2 text-red-500 hover:text-red-400 transition-colors p-1">
-                                <X className="h-4 w-4" />
+                              <button tabIndex={-1} onClick={() => deleteStep(goal.id, step.id)} className="mt-2 text-zinc-500 hover:text-rose-400 transition-colors p-1">
+                                <Trash2 size={16} />
                               </button>
                             )}
                           </div>
