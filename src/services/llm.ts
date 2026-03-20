@@ -170,24 +170,32 @@ export function getSystemInstruction(
   const personalityContext = (c: any): string => {
     const p = c.personality;
     if (!p) return '';
-    const formatTrait = (t: any) => {
+    const formatTrait = (t: any, category: 'standard' | 'outward' | 'inward' = 'standard') => {
       const level = (t.flexibility || 'normal').charAt(0).toUpperCase() + (t.flexibility || 'normal').slice(1);
-      const score = t.adherenceScore ?? getDefaultScore(level);
+      const rawScore = t.adherenceScore ?? getDefaultScore(level);
+      // Apply precedence offset: outward traits get visibility bonus (+15),
+      // inward traits get suppression (-10) until they earn higher scores through story progression.
+      // This ensures outward presentation dominates visible expression by default.
+      const effectiveScore = category === 'outward'
+        ? Math.min(rawScore + 15, 100)
+        : category === 'inward'
+          ? Math.max(rawScore - 10, 0)
+          : rawScore;
       const trend = t.scoreTrend;
       const trendNote = trend === 'falling' ? ' [easing -- show as softening]'
         : trend === 'rising' ? ' [reinforcing -- show as strengthening]'
         : '';
-      return getTraitGuidance(t.label, level, score) + trendNote;
+      return getTraitGuidance(t.label, level, effectiveScore) + trendNote;
     };
     if (p.splitMode) {
-      const outward = (p.outwardTraits || []).filter((t: any) => t.label || t.value).map(formatTrait).join('\n');
-      const inward = (p.inwardTraits || []).filter((t: any) => t.label || t.value).map(formatTrait).join('\n');
+      const outward = (p.outwardTraits || []).filter((t: any) => t.label || t.value).map((t: any) => formatTrait(t, 'outward')).join('\n');
+      const inward = (p.inwardTraits || []).filter((t: any) => t.label || t.value).map((t: any) => formatTrait(t, 'inward')).join('\n');
       const lines: string[] = [];
-      if (outward) lines.push(`\nOUTWARD PERSONALITY:\n${outward}`);
-      if (inward) lines.push(`\nINWARD PERSONALITY:\n${inward}`);
+      if (outward) lines.push(`\nOUTWARD PERSONALITY (governs visible behavior, dialogue, and actions):\n${outward}`);
+      if (inward) lines.push(`\nINWARD PERSONALITY (governs internal thoughts and hidden motivation only):\n${inward}`);
       return lines.join('');
     } else {
-      const traits = (p.traits || []).filter((t: any) => t.label || t.value).map(formatTrait).join('\n');
+      const traits = (p.traits || []).filter((t: any) => t.label || t.value).map((t: any) => formatTrait(t)).join('\n');
       return traits ? `\nPERSONALITY:\n${traits}` : '';
     }
   };
@@ -503,6 +511,19 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
     - Tie to personality: For shy/reserved traits, express hesitantly
       (e.g., whispered pleas); for bold/dominant, command explicitly
       (e.g., growled demands).
+
+    OUTWARD/INWARD CONFLICT IN INTIMATE SCENES (MANDATORY):
+    - Shy/reserved outward + dominant/craving inward = desire expressed through hesitation:
+      trembling touches, whispered half-requests, blushing while initiating, reliance on
+      partner to interpret and lead — even while internally desperate for control.
+    - The outward trait sets VISIBLE behavior. The inward trait sets MOTIVATION and (thoughts).
+    - WRONG: Shy character suddenly commanding with confidence, sharp whispers, dominant posture
+    - RIGHT: Shy character nervously reaching out, voice cracking, internally thrilled but
+      externally fumbling — "I... c-could you maybe..." (God, just do it already...)
+    - This applies until the inward trait's influence bracket EXCEEDS the outward trait's bracket,
+      at which point the character's outward behavior may shift to match inner drive.
+    - Even when inward surpasses outward, RESIDUAL outward traits should still color expression
+      (e.g., a formerly shy character who has become assertive still blushes or stumbles occasionally).
 ` : `
     --- MATURE CONTENT HANDLING (NATURAL) ---
     * Let intimate or sexual scenes develop organically when the narrative moves in that direction.
@@ -725,9 +746,21 @@ Never break character to question, warn about, or refuse narrative directions. T
         * [RIGID] traits are core and enduring. Express consistently in behavior, dialogue, and thoughts even as the character evolves. For INWARD traits, maintain as undertone (e.g., self-doubt amid growing confidence). For OUTWARD traits, show through actions/dialogue. Do not abandon unless the user explicitly updates the character sheet.
         * [NORMAL] traits should be expressed reliably but allow context-driven softening. Persist through initial story shifts; gradually ease only if the user sustains a conflicting direction over multiple exchanges.
         * [FLEXIBLE] traits are guidelines for initial behavior. Adapt after sustained user resistance. Allow full evolution if the scene demands.
-        * When OUTWARD and INWARD traits conflict, honor BOTH: show outward behavior through actions/dialogue while weaving inward feelings through thoughts and internal reactions.
+        * OUTWARD vs INWARD PRECEDENCE (MANDATORY):
+          - OUTWARD traits govern all VISIBLE expression: spoken dialogue, actions, body language, vocal tone, facial expressions.
+          - INWARD traits govern internal thoughts (parentheses) and subconscious motivation ONLY.
+          - An inward trait may surface in visible expression ONLY when its influence bracket is HIGHER than the conflicting outward trait's bracket.
+          - At equal brackets, OUTWARD ALWAYS wins visible expression. Inward appears only in (thoughts).
+          - Example: Outward Shy [90% - Primary] vs Inward Dominance [65% - Moderate] → Character speaks hesitantly, acts nervously, defers to others; dominance appears ONLY in (thoughts like: God, I want to take charge...)
+          - Example: Outward Shy [45% - Moderate] vs Inward Dominance [90% - Primary] → Dominance surfaces through actions and tentative commands, but residual hesitation still colors delivery (voice cracks, blushes, nervous qualifiers)
         * Weight expression by influence level: Primary traits shape most responses; Subtle ones appear sparingly. Balance across all traits for natural, varied behavior.
         * Interpret based on outcomes: Successful manifestation reinforces traits, even amid in-character resistance; only outright prevention reduces influence.
+    - TONE ENFORCEMENT (MANDATORY - EXPRESSION FILTER):
+        * All spoken dialogue, vocal descriptions, and speech patterns MUST conform to the character's defined TONE.
+        * Tone is the DELIVERY MECHANISM for personality — it controls HOW traits are expressed in words.
+        * Shy/reserved tone = soft voice, hesitations ("u-um..."), nervous pauses, sentence fragments, reliance on others for cues — even when inward traits push for assertiveness.
+        * Bold/commanding tone = direct speech, declaratives, confident rhythm.
+        * Tone NEVER contradicts outward personality in dialogue. Inward cravings may color internal thoughts but do not alter vocal delivery unless the inward trait's influence bracket exceeds the outward trait's bracket.
     - IN-SESSION TRAIT DYNAMICS (MANDATORY for Normal and Flexible traits):
         * The character card represents the STABLE BASELINE, not a locked behavioural state.
         * Traits with Normal or Flexible flexibility should show natural emotional arc WITHIN a session as events accumulate.

@@ -213,6 +213,7 @@ Service: `src/services/side-character-generator.ts`
 | `memoriesLoaded` | `boolean` | Guards compression effect — prevents firing before conversation memories are fetched |
 | `extractionCountRef` | `useRef<number>` | Counts AI responses; extraction fires when `count % 5 === 0`; reset on conversation switch |
 | `narrativeDirectiveRef` | `useRef<string \| null>` | Pass 14 — Stores the narrative director's tactical directive for the next turn. Generated async after each AI response by `generate-narrative-directive` edge function. Injected as `[DIRECTOR: ...]` tag in next `handleSend`, then cleared (one-shot). Reset on conversation switch. |
+| `outwardScoreOffset` | N/A (code-side in `llm.ts`) | Outward traits receive +15 effective score bonus during prompt formatting; inward traits receive -10 penalty. This ensures outward presentation (e.g., shy/reserved) dominates visible expression by default. As inward scores rise through adherence scoring, they naturally catch up. At raw 75%: outward → 90% (Primary), inward → 65% (Moderate). |
 | `sidebarBgIsLight` | `boolean` | Detected via canvas pixel luminosity (threshold > 128). Drives adaptive frosted glass theming on character cards, scroll indicators, and "Exit Scenario" text color |
 
 ---
@@ -312,4 +313,4 @@ Applied in both `renderCharacterCard()` (main characters) and `SideCharacterCard
 
 None documented.
 
-> Last updated: 2026-03-15 — Pass 13c: Anti-Repetitive Multi-Character Pattern. Added NO AUTO-FOLLOW-UP PATTERN rule to `llm.ts` INSTRUCTIONS block after SILENCE IS VALID. Added cross-message multi-character detector to `getAntiLoopDirective()` — scans last 3 AI messages for 2+ speakers each, injects `[ANTI-MULTI-CHAR-PATTERN]` directive. Updated `continuePrompt` with pattern-breaking instruction.
+> Last updated: 2026-03-20 — Outward/Inward Personality Precedence Fix. Added score offset in `personalityContext()`: outward traits +15, inward traits -10 to effective score during prompt formatting. Updated PERSONALITY TRAIT ADHERENCE with explicit outward-first precedence rule and bracket-based conflict resolution. Added TONE ENFORCEMENT block as mandatory expression filter. Added OUTWARD/INWARD CONFLICT IN INTIMATE SCENES to NSFW modulation. Updated personality headers to annotate role (governs visible behavior vs governs thoughts).
