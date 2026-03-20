@@ -430,6 +430,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   appData,
   conversationId,
   modelId,
+  isAdmin = false,
   onUpdate,
   onBack,
   onSaveScenario,
