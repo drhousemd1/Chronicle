@@ -177,10 +177,12 @@ See Section 5 above for comprehensive bug list.
 
 - **RESOLVED — 2026-03-15**: Pass 13 (continued) — Narrative director deployment fix & continue button rewire. Confirmed zero edge function logs for `generate-narrative-directive` (never fired). Added explicit invocation logging to `generateNarrativeDirective()` and error/warn branches. Wired `handleContinueConversation` to consume `narrativeDirectiveRef.current` as `[DIRECTOR]` tag (was previously ignored). Added `generateNarrativeDirective()` call after continue response completes to prime next click. Continue prompt rewritten from generic "DECISIVE FORWARD ACTION" to goal-aware prompt that injects active character goals, pending arc steps, and demands EXECUTION not preparation. Continue handler now also tracks extraction count and response lengths (was missing both).
 
+- **RESOLVED — 2026-03-20**: Pass 15 — Narrative Director removal. The `generate-narrative-directive` edge function and all client-side `[DIRECTOR]` tag logic have been completely removed. The background "second API call" produced tactical directives based on the previous conversation state, which frequently conflicted with the user's latest input — causing the AI to follow outdated suggestions instead of naturally continuing. Removed: edge function, `narrativeDirectiveRef`, `generateNarrativeDirective()` callback, director tag consumption in handleSend/handleContinue/handleRegenerate, `[DIRECTOR]` from priority hierarchy (#2 → removed, remaining priorities renumbered). Anti-loop runtime directives and goal-aware continue prompts remain fully functional.
+
 ---
 
 ## 13. Planned / Future Changes
 
 None documented.
 
-> Last updated: 2026-03-15 — Pass 13 continued: Narrative director deployment fix, continue button wired to director + goal-aware prompt.
+> Last updated: 2026-03-20 — Pass 15: Narrative Director system removed to fix outdated/disconnected AI responses.
