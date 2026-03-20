@@ -1523,7 +1523,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                         {/* Right column: Name, Nickname, Age, Sex */}
                         <div className="flex flex-col gap-4">
                           <div>
-                            <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5 block">Name</label>
+                            <FieldHeaderRow><label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Name</label></FieldHeaderRow>
                             <AutoResizeTextarea value={selected.name === "New Character" ? "" : selected.name} onChange={(v) => onUpdate(selected.id, { name: v })} placeholder="Character name" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                           </div>
                           <div>
