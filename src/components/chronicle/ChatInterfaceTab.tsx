@@ -593,7 +593,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     sessionMessageCountRef.current = 0;
     previousDayRef.current = currentDay;
     extractionCountRef.current = 0;
-    narrativeDirectiveRef.current = null;
   }, [conversationId]);
   
   // Issue #7: Compute length directive based on recent response pattern
