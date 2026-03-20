@@ -403,7 +403,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   }> = ({ label, fieldName }) => {
     const isLoading = enhancingField === fieldName;
     return (
-      <div className="flex items-center gap-2 mb-1.5">
+      <FieldHeaderRow>
         <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
           {label}
         </label>
