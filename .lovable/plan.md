@@ -1,13 +1,16 @@
 
 
-# Fix: Admin Button Spacing
+# Fix: Location Placeholder Text Consistency
 
 ## Problem
-The two admin buttons (Download Session Log and Download Master Prompt) sit directly next to each other with no gap. The Time Progression section above uses `flex flex-col gap-2` to space its rows — the admin section is missing this wrapper.
+In both `WorldTab.tsx` and `StoryCardView.tsx`, location rows use inconsistent placeholder text — the first row says "e.g. The Lakehouse" / "A secluded cabin by the lake..." while subsequent rows say "Location name..." / "Describe this location...". All rows should use the same placeholders.
 
 ## Fix
-Wrap the two admin buttons in a `<div className="flex flex-col gap-2">` container, matching the exact same pattern used at line 4876 for the Time Progression rows.
+In both files, remove the `idx === 0` ternary and use a single placeholder for all rows:
+- **Label input**: `"LOCATION"` (replaces both "e.g. The Lakehouse" and "Location name...")
+- **Description textarea**: `"Description of location..."` (replaces both "A secluded cabin by the lake..." and "Describe this location...")
 
-## File
-- **`src/components/chronicle/ChatInterfaceTab.tsx`** — Add `flex flex-col gap-2` wrapper around the two buttons (after the subtitle text, around lines 4921–5080)
+## Files changed (4 lines total)
+- **`src/components/chronicle/WorldTab.tsx`** — Line 836: change placeholder to `"LOCATION"`, Line 847: change placeholder to `"Description of location..."`
+- **`src/components/chronicle/StoryCardView.tsx`** — Line 153: change placeholder to `"LOCATION"`, Line 163: change placeholder to `"Description of location..."`
 
