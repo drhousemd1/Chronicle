@@ -4,6 +4,7 @@ import { World, OpeningDialog, CodexEntry, Character, Scene, TimeOfDay, WorldCor
 import { validateForPublish, hasPublishErrors, PublishValidationErrors } from '@/utils/publish-validation';
 import { EnhanceableWorldFields } from '@/services/world-ai';
 import { AutoResizeTextarea } from './AutoResizeTextarea';
+import { FieldHeaderRow } from './FieldHeaderRow';
 import { Button, Card } from './UI';
 import { Icons } from '@/constants';
 import { uid, now, resizeImage, uuid, clamp } from '@/utils';
@@ -402,7 +403,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
   }> = ({ label, fieldName }) => {
     const isLoading = enhancingField === fieldName;
     return (
-      <div className="flex items-center gap-2 mb-1.5">
+      <FieldHeaderRow>
         <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
           {label}
         </label>
@@ -426,7 +427,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
           <span aria-hidden className="absolute rounded-[6px] pointer-events-none" style={{ inset: '1.5px', background: 'linear-gradient(90deg, rgba(34,184,200,0.22), rgba(109,94,247,0.22)), #2B2D33' }} />
           <Sparkles size={13} className="relative z-10" style={{ filter: 'drop-shadow(0 0 6px rgba(34,184,200,0.50))' }} />
         </button>
-      </div>
+      </FieldHeaderRow>
     );
   };
 
@@ -818,7 +819,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     
                     {/* Structured Locations */}
                     <div data-publish-error={!!publishErrors.location || undefined}>
-                      <label className={`text-[10px] font-black uppercase tracking-widest mb-1.5 block ${publishErrors.location ? 'text-red-500' : 'text-zinc-400'}`}>Primary Locations</label>
+                      <FieldHeaderRow><label className={`text-[10px] font-black uppercase tracking-widest ${publishErrors.location ? 'text-red-500' : 'text-zinc-400'}`}>Primary Locations</label></FieldHeaderRow>
                       {publishErrors.location && <p className="text-sm text-red-500 font-medium mb-2">{publishErrors.location}</p>}
                       <div className="space-y-3">
                         {(world.core.structuredLocations && world.core.structuredLocations.length > 0 
@@ -887,7 +888,7 @@ className="w-2/5 px-3 py-2 text-xs leading-5 font-bold bg-[#1c1c1f] border borde
                     {/* Custom World Content Sections */}
                     {(world.core.customWorldSections || []).map((section, sIdx) => (
                       <div key={section.id}>
-                        <div className="flex items-center gap-3">
+                        <FieldHeaderRow className="gap-3">
                           <AutoResizeTextarea
                             value={section.title}
                             onChange={(v) => {
@@ -909,8 +910,8 @@ className="w-2/5 px-3 py-2 text-xs leading-5 font-bold bg-[#1c1c1f] border borde
                           >
                             <Trash2 size={16} />
                           </button>
-                        </div>
-                        <div className="space-y-3 mt-1.5">
+                        </FieldHeaderRow>
+                        <div className="space-y-3">
                         {(!section.type || section.type === 'structured') ? (
                           <>
                             {section.items.map((item, iIdx) => (
@@ -1131,8 +1132,10 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                 <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
                   <div className="space-y-6">
                     <div data-publish-error={!!publishErrors.openingDialog || undefined}>
-                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-                        Opening Dialog
+                      <FieldHeaderRow className="gap-1.5">
+                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                          Opening Dialog
+                        </label>
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -1149,7 +1152,7 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
-                      </label>
+                      </FieldHeaderRow>
                       <AutoResizeTextarea 
                         value={openingDialog.text} 
                         onChange={(v) => onUpdateOpening({ text: v })} 
@@ -1164,7 +1167,7 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                     <div className="flex items-end gap-4 flex-wrap">
                       {/* Starting Day & Time group */}
                       <div>
-                        <div className="flex items-center gap-1.5 mb-1.5">
+                        <FieldHeaderRow className="gap-1.5">
                           <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Starting Day & Time</label>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -1174,7 +1177,7 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                               Set when your story begins. The AI will use this context for time-appropriate responses.
                             </TooltipContent>
                           </Tooltip>
-                        </div>
+                        </FieldHeaderRow>
                         <div className="flex items-center gap-3">
                           {/* Day Counter */}
                           <div className="flex items-center gap-1.5 bg-[#3c3e47] rounded-xl px-3 py-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
@@ -1444,7 +1447,7 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                 <h2 className="text-white text-xl font-bold tracking-[-0.015em] relative z-[1]">Art Style Preference</h2>
               </div>
               <div className="p-5 space-y-1">
-                <div className="flex items-center gap-2 mb-1.5">
+                <FieldHeaderRow>
                   <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Art Style Selection</span>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -1454,7 +1457,7 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                       Select an art style you would like the AI to use when generating character avatars or images during your playthrough.
                     </TooltipContent>
                   </Tooltip>
-                </div>
+                </FieldHeaderRow>
                 <div className="p-3 bg-[#2e2e33] rounded-xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)] overflow-visible">
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                     {AVATAR_STYLES.map((style) => (
@@ -1509,10 +1512,12 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                   <div className="space-y-8">
                     
                     <div>
-                      <label className="flex items-center gap-1.5 text-[10px] font-black uppercase text-zinc-400 tracking-widest mb-1.5">
-                        Dialog Formatting
+                      <FieldHeaderRow className="gap-1.5">
+                        <label className="text-[10px] font-black uppercase text-zinc-400 tracking-widest">
+                          Dialog Formatting
+                        </label>
                         <Lock className="w-3 h-3 text-zinc-500" />
-                      </label>
+                      </FieldHeaderRow>
                       
                       {/* Critical rules - always present, read-only */}
                       <div className="bg-[#1c1c1f] rounded-lg px-3 py-2 text-sm text-zinc-300 shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
@@ -1525,7 +1530,7 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                       
                        {/* User's custom AI rules - editable */}
                       <div className="mt-4">
-                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5 block">Custom Rules (Optional)</label>
+                        <FieldHeaderRow><label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Custom Rules (Optional)</label></FieldHeaderRow>
                         <AutoResizeTextarea 
                           value={world.core.dialogFormatting} 
                           onChange={(v) => updateCore({ dialogFormatting: v })} 
@@ -1538,7 +1543,7 @@ className="px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white plac
 
                     {world.entries.length > 0 && (
                       <div className="pt-6 border-t border-white/10">
-                        <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">Additional Entries</h3>
+                        <FieldHeaderRow><h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Additional Entries</h3></FieldHeaderRow>
                         <div className="grid grid-cols-1 gap-6">
                           {world.entries.map(entry => (
                             <div key={entry.id} className="p-6 space-y-4 group rounded-2xl bg-zinc-800/50 shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
