@@ -1,35 +1,29 @@
 
 
-# Fix: Character Builder Save Button Should Also Save Draft
+# Fix: User-Authored AI Dialogue Rehashing
 
 ## Problem
-When clicking "Save" on the Character Builder page, `handleSaveCharacter()` only deselects the character and navigates back to the world tab. It does NOT persist the draft to the database. The user must separately click "Save Draft" to persist their work, which causes data loss if forgotten.
+When users write dialogue/actions for AI-controlled characters, Grok rephrases and expands it instead of treating it as already-spoken canon and continuing forward.
 
-## Solution
-Extract the draft-save logic (currently inline in the Save Draft button's `onClick`, lines 2117-2185) into a reusable `saveDraftInBackground()` function. Then call it from `handleSaveCharacter()` after the existing character-roster logic completes.
+## Root Cause
+The FORWARD MOMENTUM rule in the system prompt is too brief — it says "do not re-narrate" but lacks enforcement mechanics (violation check, examples) that Grok needs to follow it reliably.
 
-The background save will be silent — no loading spinner on the Save button, no "Saving..." text change. It just persists the draft quietly so data is never lost.
+## Changes
 
-## Changes — Single File: `src/pages/Index.tsx`
+### 1. `src/services/llm.ts` — Expand FORWARD MOMENTUM block (lines 325-329)
+Replace the current 4-line FORWARD MOMENTUM section with the enhanced version that includes:
+- Explicit "USER-AUTHORED AI DIALOGUE ACCEPTANCE" sub-rule at highest priority
+- A VIOLATION CHECK instruction (scan-and-delete enforcement)
+- CORRECT and WRONG examples so the model learns the exact behavior
+- "Immutable canon" reinforcement language
 
-### 1. Extract draft save into a reusable function
-Pull the logic from the Save Draft button's inline `onClick` (lines 2117-2185) into a standalone async function like `saveDraftQuietly()`. This function will:
-- Validate `activeId`, `activeData`, and `user` exist
-- Handle UUID migration if needed
-- Write local safety snapshot
-- Call `saveScenarioWithVerification` with `isDraft: true`
-- Refresh the registry
-- Silently swallow errors (background save should never block the user)
+### 2. `public/api-call-inspector-chronicle.html` — Update matching block (lines 1222-1226)
+Update the API Inspector's FORWARD MOMENTUM section to mirror the new rules, keeping the inspector's condensed format but adding the key enforcement points (violation check, canon acceptance, examples).
 
-### 2. Call it from `handleSaveCharacter()`
-In the non-library branch of `handleSaveCharacter()` (line 1192-1195), after deselecting the character and navigating to the world tab, fire `saveDraftQuietly()` without awaiting it — fire-and-forget so the UI remains instant.
+### 3. Master Prompt Download — No changes needed
+The "Download Master Prompt" button in the chat settings already exports `systemInstruction` verbatim from `buildSystemPrompt()`, so it will automatically include the updated rules.
 
-### 3. Save Draft button reuses the same function
-Replace the inline `onClick` on the Save Draft button with a call to the same extracted function, but with the existing `setIsSaving` / notice UI wrappers preserved.
-
-## What This Preserves
-- Save button UX remains instant (no spinner, no delay)
-- Save Draft button continues to show "Saving..." feedback and error notices
-- The integrity-verified save flow and local snapshot safety net are unchanged
-- No changes to Finalize and Close behavior
+## Files Modified
+- `src/services/llm.ts` — expanded FORWARD MOMENTUM + dialogue acceptance rules
+- `public/api-call-inspector-chronicle.html` — matching inspector documentation update
 
