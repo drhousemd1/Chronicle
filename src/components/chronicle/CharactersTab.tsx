@@ -1594,7 +1594,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                         </div>
 
                         <div>
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-1.5">
                             <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Role Description</label>
                             <button
                               type="button"
