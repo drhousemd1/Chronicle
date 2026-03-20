@@ -418,35 +418,7 @@ const TraitSidebarButton: React.FC<{
   );
 };
 
-// Auto-resizing textarea that wraps text and grows with content
-const AutoResizeTextarea: React.FC<{
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  className?: string;
-  rows?: number;
-}> = ({ value, onChange, placeholder, className = '', rows = 1 }) => {
-  const ref = React.useRef<HTMLTextAreaElement>(null);
 
-  React.useEffect(() => {
-    if (ref.current) {
-      ref.current.style.height = 'auto';
-      ref.current.style.height = `${ref.current.scrollHeight}px`;
-    }
-  }, [value]);
-
-  return (
-    <textarea
-      ref={ref}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      rows={rows}
-      spellCheck={true}
-      className={cn("w-full min-w-0 resize-none overflow-hidden whitespace-pre-wrap break-words", className)}
-    />
-  );
-};
 
 // Hardcoded section component with distinct styling (matching CharacterGoalsSection)
 const HardcodedSection: React.FC<{
