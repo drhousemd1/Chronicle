@@ -1562,7 +1562,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                                 </button>
                               </div>
                             </div>
-                            <div className="space-y-1.5">
+                            <div>
                               <FieldHeaderRow><label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Character Role</label></FieldHeaderRow>
                               <div className="flex p-1.5 bg-[#3c3e47] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
                                 <button
