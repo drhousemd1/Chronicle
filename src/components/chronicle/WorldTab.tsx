@@ -427,7 +427,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
           <span aria-hidden className="absolute rounded-[6px] pointer-events-none" style={{ inset: '1.5px', background: 'linear-gradient(90deg, rgba(34,184,200,0.22), rgba(109,94,247,0.22)), #2B2D33' }} />
           <Sparkles size={13} className="relative z-10" style={{ filter: 'drop-shadow(0 0 6px rgba(34,184,200,0.50))' }} />
         </button>
-      </div>
+      </FieldHeaderRow>
     );
   };
 
