@@ -4918,6 +4918,7 @@ const updatedChar: SideCharacter = {
                   <div>
                     <p className="text-[12px] font-black text-[#a1a1aa] uppercase tracking-[0.12em] mb-1">Admin</p>
                     <p className="text-[12px] text-[#a1a1aa] mb-2.5">Debug tools for conversation analysis</p>
+                    <div className="flex flex-col gap-2">
                     <button
                       onClick={() => {
                         if (!conversation) return;
