@@ -1,53 +1,74 @@
 
-# Sandbox Feature Transfer — Master Tracker
 
-## Source Documents
-- `docs/transfer/Additional_Instructions.md` — 14-prompt execution plan
-- `docs/transfer/chronicle_transfer_pack.md` — Full source blocks
+# Admin Chat Debug Export
 
-## Features Being Transferred
-| ID | Feature | Status |
-|----|---------|--------|
-| F | chatCanvasColor + chatBubbleColor Persistence (types.ts, utils.ts) | ✅ |
-| B | Story Transfer Library (story-transfer.ts) | ✅ |
-| A | UI Audit System (schema, utils, findings, page) | 🔄 |
-| B | Story Export/Import Modals | ✅ |
-| C | Character Builder Left Nav Redesign (CharactersTab.tsx) | ✅ |
-| D+E | Chat Interface Card/Avatar UX + Bubble Color Controls (ChatInterfaceTab.tsx) | ⬜ |
-| - | StyleGuideTool.tsx audit button | ⬜ |
-| - | App.tsx route wiring | ⬜ |
-| - | Index.tsx full wiring | ⬜ |
+## What we're building
 
-## Prompt Execution Status
+A new "Admin" section at the bottom of the Chat Settings modal, visible only to admin users. It contains a single button — "Download Session Log" — that exports the current conversation as a clean Markdown file designed for pasting into external AI tools (like Grok) for prompt diagnosis.
 
-| # | Target File(s) | Status | Notes |
-|---|---------------|--------|-------|
-| 1 | `src/types.ts` + `src/utils.ts` | ✅ DONE | chatCanvasColor + chatBubbleColor added to UiSettings type, defaults, and normalization |
-| 2 | `src/lib/story-transfer.ts` | ✅ DONE | New file created, turndown dependency added |
-| 3 | `src/lib/ui-audit-schema.ts` | ✅ DONE | New file — 16 const arrays, 17 types, 7 interfaces for audit taxonomy |
-| 4 | `src/lib/ui-audit-utils.ts` | ✅ DONE | New file — 8 utility functions: sortFindings, groupFindingsBy, countBySeverity, countByConfidence, getReviewedVsUnreviewed, countReviewStatus, getSystemicFindings, getQuickWins, getRequiresDesignDecision, getBatchableFindings |
-| 5 | `src/data/ui-audit-findings.ts` | ✅ DONE | New file — 38 findings (uia-001 through uia-038), 11 interaction-state matrix rows (ism-001 through ism-011), 6 component-variant drift items (cvm-001 through cvm-006), 18 color consolidation plan items (color-plan-001 through color-plan-018), 19 review units, tokenDriftSnapshot |
-| 6 | `src/components/chronicle/StoryExportFormatModal.tsx` | ✅ DONE | New component — 3 format options (Markdown, JSON, Word), uses Dialog/DialogContent |
-| 7 | `src/components/chronicle/StoryImportModeModal.tsx` | ✅ DONE | New component — 2 mode options (Merge, Rewrite), imports StoryImportMode from story-transfer |
-| 8 | `src/components/chronicle/CharactersTab.tsx` | ✅ DONE | Full file replacement — new left nav sidebar with card-style buttons, progress rings (SidebarProgressRing), character reference tile in blue header, nav image editor dialog, dark charcoal (#1a1b20) background, section-by-section visibility via activeTraitSection state. Changed model fallback from sandbox's grok-4-1 to existing grok-3 to match production codebase. |
-| 9 | `ChatInterfaceTab.tsx` | ✅ DONE | Targeted merge — Avatar UX (expand/collapse/reposition tiles with drag, Done button, pointer handlers), Bubble Color Controls (color modal with hex inputs + color family labels, Palette button in footer), chatCanvasColor/chatBubbleColor derivation via normalizeHexColor, square avatar chips (rounded-md), removed hardcoded bubble borders, style={{ backgroundColor }} for canvas and bubbles, isExpandedTileInMainCharacters overflow handling |
-| 10 | `StyleGuideTool.tsx` | ✅ DONE | Added `useNavigate` import, `openUiAudit` callback, UI Audit button in both narrow (horizontal) and desktop (sidebar) navs |
-| 11 | `src/pages/style-guide/ui-audit.tsx` | ✅ DONE | New page — full 22-section audit dashboard with findings, color consolidation, interaction state matrix, component variant drift |
-| 12 | `src/App.tsx` | ✅ DONE | Added UiAuditPage import and `/style-guide/ui-audit` route |
-| 13 | `src/pages/Index.tsx` | ✅ DONE | Added story-transfer imports, Upload icon, state vars (export/import modals, file ref, notice), 7 handler functions, Import/Export buttons in Story Builder header, modal JSX renders, hidden file input. onUpdateUiSettings already wired. |
-| 14 | Full verification | ✅ DONE | Removed unused DropdownMenuSeparator/DropdownMenuLabel imports, added storyTransferNotice toast render with 4s auto-dismiss, verified all 4 wiring flows (export, import, chat color, UI audit route) |
+The export captures:
+- **Speaker attribution** on every message (who said what)
+- **Timeline markers** (Day X, Time of Day) whenever they change
+- **Action flags** — when you clicked Continue or Regenerate, those actions are annotated inline in the log so you can see exactly where the AI was prompted to keep going vs. respond to input
+- **Scenario context header** — story title, character names, model ID — so an external AI has baseline context
 
-## Transfer Pack Source Block Locations (line numbers in chronicle_transfer_pack.md)
-- `src/types.ts`: line 11507
-- `src/utils.ts`: line 12138
-- `src/lib/story-transfer.ts`: line 9812
-- `src/lib/ui-audit-schema.ts`: line 21329
-- `src/lib/ui-audit-utils.ts`: line 21565
-- `src/data/ui-audit-findings.ts`: line 18967
-- `StoryExportFormatModal.tsx`: line 9642
-- `StoryImportModeModal.tsx`: line 9731
-- `CharactersTab.tsx`: line 2893
-- `ChatInterfaceTab.tsx`: line 5004
-- `src/pages/style-guide/ui-audit.tsx`: line 17867
-- `src/App.tsx`: line 95
-- Index.tsx + CharactersTab + ChatInterfaceTab: large blocks throughout
+## How it works
+
+1. **Admin gating**: `ChatInterfaceTab` receives a new `isAdmin` prop from `Index.tsx` (which already has `isAdminState`). The Admin section only renders when `isAdmin === true`.
+
+2. **Action tracking**: Two lightweight arrays (`continueEventsRef` and `regenerateEventsRef`) track timestamps of Continue and Regenerate button clicks by recording the message ID they acted on. These are `useRef` arrays so they don't trigger re-renders.
+
+3. **Markdown generation**: When you click "Download Session Log," a function builds a Markdown string:
+   - Header block with scenario name, characters, model, current day/time
+   - Each message rendered as `### User` or `### [CharacterName] (AI)` with the full text
+   - Day/time change markers inserted between messages when they differ
+   - `> ⚡ CONTINUE triggered here` or `> 🔄 REGENERATE triggered here` annotations injected at the relevant message positions
+   - Triggers a browser file download (`.md` file)
+
+4. **No database changes needed** — this is purely a client-side export of in-memory conversation data.
+
+## Files changed
+
+- **`src/pages/Index.tsx`** — Pass `isAdmin={isAdminState}` prop to `ChatInterfaceTab`
+- **`src/components/chronicle/ChatInterfaceTab.tsx`**:
+  - Add `isAdmin` to props interface
+  - Add `continueEventsRef` and `regenerateEventsRef` (useRef arrays)
+  - Record events in `handleContinueConversation` and `handleRegenerateMessage`
+  - Add `generateSessionLog()` function that builds the Markdown
+  - Add Admin section at bottom of Chat Settings modal (after Time Progression divider)
+
+## Markdown output format
+
+```text
+# Session Log — [Story Title]
+**Conversation:** [Conversation Title]
+**Characters:** Aria (User), Marcus (AI), Elena (AI)
+**Model:** xai/grok-4
+**Exported:** 2026-03-20 14:30
+
+---
+
+#### Day 1 — Day
+
+### User
+I walk toward the old cathedral, keeping my hand on the hilt of my sword.
+
+### Marcus (AI)
+*Marcus steps out from behind a crumbling pillar, his expression wary.* "You shouldn't be here," *he says quietly.*
+
+> 🔄 REGENERATE triggered on this message
+
+### User
+"I go where I please. What are you hiding?"
+
+> ⚡ CONTINUE triggered after this message
+
+### Marcus (AI)
+*He glances over his shoulder...* 
+
+#### Day 1 — Sunset
+
+### Elena (AI)
+...
+```
+
