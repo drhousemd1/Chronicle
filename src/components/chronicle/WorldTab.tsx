@@ -1132,8 +1132,10 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                 <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
                   <div className="space-y-6">
                     <div data-publish-error={!!publishErrors.openingDialog || undefined}>
-                      <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-                        Opening Dialog
+                      <FieldHeaderRow className="gap-1.5">
+                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                          Opening Dialog
+                        </label>
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -1150,7 +1152,7 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
-                      </label>
+                      </FieldHeaderRow>
                       <AutoResizeTextarea 
                         value={openingDialog.text} 
                         onChange={(v) => onUpdateOpening({ text: v })} 
