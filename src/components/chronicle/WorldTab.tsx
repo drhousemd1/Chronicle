@@ -1447,7 +1447,7 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                 <h2 className="text-white text-xl font-bold tracking-[-0.015em] relative z-[1]">Art Style Preference</h2>
               </div>
               <div className="p-5 space-y-1">
-                <div className="flex items-center gap-2 mb-1.5">
+                <FieldHeaderRow>
                   <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Art Style Selection</span>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -1457,7 +1457,7 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                       Select an art style you would like the AI to use when generating character avatars or images during your playthrough.
                     </TooltipContent>
                   </Tooltip>
-                </div>
+                </FieldHeaderRow>
                 <div className="p-3 bg-[#2e2e33] rounded-xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)] overflow-visible">
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                     {AVATAR_STYLES.map((style) => (
