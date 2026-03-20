@@ -6,6 +6,7 @@ import { CircularProgress } from './CircularProgress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { uid, now } from '@/utils';
 import { cn } from '@/lib/utils';
+import { AutoResizeTextarea } from './AutoResizeTextarea';
 
 // Auto-resizing textarea for goals
 const AutoResizeTextarea: React.FC<{
