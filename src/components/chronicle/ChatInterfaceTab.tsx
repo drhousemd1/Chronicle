@@ -2694,14 +2694,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       let fullText = '';
       const llmAppData = buildLLMAppData();
       // Issue #8: Detect user-authored AI character content and prepend canon note
-      const aiCharNames = appData.characters.filter(c => c.controlledBy === 'AI').map(c => c.name);
-      const hasCanonContent = aiCharNames.some(name => {
-        const regex = new RegExp(`(?:^|\\n)\\s*${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*:`, 'i');
-        return regex.test(input);
-      });
-      const canonNote = hasCanonContent
-        ? '[CANON NOTE: User wrote content for AI character(s) in this message. That content is established fact -- do not re-narrate it. Continue the story from after those events.] '
-        : '';
+      const canonNote = buildCanonNote(input, appData.characters);
       
       // Issue #7: Compute length directive and increment session counter
       const lengthDirective = getLengthDirective();
