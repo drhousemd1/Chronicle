@@ -1,76 +1,55 @@
 
 
-# Fix Trash Can Placement, Field Height Matching, and Button Labels
+# Standardize Subheading-to-Input Spacing Across All Builders
 
-## Problems Identified
+## Problem
+Every subheading label uses a different gap to the input field below it:
+- `mb-1` (4px): Story Name, Brief Description, Story Premise, Primary Locations, Opening Dialog, all CharactersTab basics labels, Custom AI Rules labels
+- `space-y-1.5` (6px): StoryCardView Scenario/Premise, Controlled By / Character Role toggles
+- `space-y-3` (12px): WorldTab custom section titles, CharactersTab custom SECTION TITLE headings
+- `space-y-6` (24px): Additional Entries heading
 
-### 1. Missing per-row trash cans (WorldTab)
-- **Structured custom rows** (line 916): No trash icon per row — only the section-level trash exists. Users cannot delete individual label/description rows.
-- **Freeform custom items** (line 1016): No trash icon next to each textarea. Users cannot remove individual freeform blocks.
+The user confirmed the StoryCardView `space-y-1.5` (6px) spacing is correct. All subheading-to-input gaps must be standardized to **6px** (`mb-1.5` or equivalent).
 
-### 2. Missing section-level trash (CharactersTab)
-- **SECTION TITLE heading** (line 2032): Per-item subheading has no trash icon to delete the entire sub-item (heading + field). The section header (line 1999) has a trash to delete the whole custom section, but within the section, each item's "SECTION TITLE..." row lacks a delete control.
+## Changes
 
-### 3. Trash alignment issues (CharactersTab)
-- Freeform trash (line 2055): Uses `w-7 pt-2` but still looks misaligned because the container wrapping is `items-start` but the trash sits in a separate div that doesn't account for the subheading above.
+### 1. WorldTab.tsx
 
-### 4. Label vs Description height mismatch
-- **Root cause**: Label fields use `text-xs` (12px / line-height 16px) while Description fields use `text-sm` (14px / line-height 20px). With AutoResizeTextarea calculating `scrollHeight`, different line-heights produce different rendered heights — even with identical `py-2` padding.
-- **Fix**: Add `leading-5` (20px line-height) to all label fields so they match the description field's natural line-height. This keeps the smaller uppercase font but ensures identical single-line heights.
-- **Affected**: Primary Locations and all structured custom rows in WorldTab, CharactersTab, and StoryCardView.
+**FieldLabel component (line 405)**: Change `mb-1` to `mb-1.5` on the wrapper div. This fixes Story Name, Brief Description, and Story Premise.
 
-### 5. Button label changes
-- WorldTab structured "Add Row" (line 998) → "Custom Content"
-- WorldTab freeform "Add Row" (line 1043) → "Custom Content"
-- CharactersTab "Add Row" (line 2161) → "Custom Content"
-- StoryCardView "ADD ROW" (line 259) → "Custom Content"
-- StoryCardView "ADD TEXT FIELD" (line 330) → "Custom Content"
+**Primary Locations label (line 821)**: Change `mb-1` to `mb-1.5`.
 
----
+**Custom section title (lines 889-912)**: The title row is a sibling inside `space-y-3`, producing 12px gap. Restructure: remove `space-y-3` from the outer div, give the title row `mb-1.5`, and wrap the items + button in a new `div className="space-y-3"`.
 
-## Changes by File
+**Opening Dialog label (line 1132)**: Change `mb-1` to `mb-1.5`.
 
-### 1. `src/components/chronicle/WorldTab.tsx`
+**Starting Day & Time label (line 1165)**: Change `mb-1` to `mb-1.5`.
 
-**Structured custom rows (lines 915-987)**: Add a `w-7 pt-2` action slot with Trash2 icon after each description field, matching the Primary Locations pattern. Delete handler removes that single item from the section's items array.
+**Dialog Formatting label (line 1510)**: Change `mb-1` to `mb-1.5`.
 
-**Freeform custom items (lines 1015-1031)**: Wrap each textarea in a `flex items-start gap-3` row with a `w-7 pt-2` Trash2 action slot on the right. Delete handler removes that item (or resets to one empty item if last).
+**Custom Rules label (line 1526)**: Change `mb-1` to `mb-1.5`.
 
-**Primary Locations label field (line 837)**: Add `leading-5` class so line-height matches description field.
+**Art Style Selection label (line 1445)**: Change `mb-1` to `mb-1.5`.
 
-**Structured custom label field (line 928)**: Add `leading-5` class.
+**Additional Entries heading (line 1539)**: Currently uses `<h3>` as a sibling in `space-y-6`. Change to have `mb-1.5` and remove from the spacing flow, or wrap the grid below separately.
 
-**Button labels (lines 998, 1043)**: Change "Add Row" to "Custom Content".
+### 2. CharactersTab.tsx
 
-### 2. `src/components/chronicle/CharactersTab.tsx`
+**All basics labels** — Name (line 1525), Nicknames (line 1529), Age (line 1534), Sex/Identity (line 1538), Sexual Orientation (line 1543), Location (line 1588), Current Mood (line 1592): Change `mb-1` to `mb-1.5`.
 
-**Per-item SECTION TITLE row (lines 2031-2040)**: Wrap the subheading `<input>` in a `flex items-center gap-3` row with a Trash2 icon on the right. This trash deletes the entire item (heading + content). This gives parity with WorldTab's section-level trash pattern.
+**Role Description label (line 1597)**: Change `mb-1` to `mb-1.5`.
 
-**Structured label field (line 2081)**: Add `leading-5` class.
+**Custom SECTION TITLE rows (line 2030)**: Currently inside `space-y-3` producing 12px gap between title and content. Change the item wrapper from `space-y-3` to `space-y-1.5` so the gap between subheading and content is 6px. Then wrap the outer items list (line 2016) to maintain `space-y-3` between separate items.
 
-**Freeform item layout**: The trash is already present but verify alignment uses the standard `w-7 pt-2` slot.
+### 3. StoryCardView.tsx
 
-**Button label (line 2161)**: Change "Add Row" to "Custom Content".
+Already uses `space-y-1.5` for Scenario/Premise — no change needed there.
 
-### 3. `src/components/chronicle/StoryCardView.tsx`
-
-**Location label field (line 125)**: Add `leading-5` class.
-
-**Structured custom label field (line 220)**: Add `leading-5` class.
-
-**Button labels (lines 259, 330)**: Change "ADD ROW" and "ADD TEXT FIELD" to "Custom Content".
-
----
+**Verify** all other label-to-input gaps in this file also use 6px.
 
 ## Summary
 
-| Fix | WorldTab | CharactersTab | StoryCardView |
-|-----|----------|---------------|---------------|
-| Per-row trash on structured items | Add | Already present | Already present |
-| Per-item trash on freeform items | Add | Already present | Already present |
-| Section-level trash on SECTION TITLE | Already present | Add per-item | N/A (different layout) |
-| Label `leading-5` for height match | Add to 2 fields | Add to 1 field | Add to 2 fields |
-| Button → "Custom Content" | 2 buttons | 1 button | 2 buttons |
-
-**Files modified**: `WorldTab.tsx`, `CharactersTab.tsx`, `StoryCardView.tsx`
+- **Standard**: 6px (`mb-1.5`) between every subheading label and the input field directly below it
+- **Files**: `WorldTab.tsx`, `CharactersTab.tsx`, `StoryCardView.tsx`
+- **Total label gaps to fix**: ~15 instances of `mb-1` → `mb-1.5`, plus 2 structural fixes where titles are siblings inside `space-y-3` containers
 
