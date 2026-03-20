@@ -818,7 +818,7 @@ export const WorldTab: React.FC<WorldTabProps> = ({
                     
                     {/* Structured Locations */}
                     <div data-publish-error={!!publishErrors.location || undefined}>
-                      <label className={`text-[10px] font-black uppercase tracking-widest mb-1 block ${publishErrors.location ? 'text-red-500' : 'text-zinc-400'}`}>Primary Locations</label>
+                      <label className={`text-[10px] font-black uppercase tracking-widest mb-1.5 block ${publishErrors.location ? 'text-red-500' : 'text-zinc-400'}`}>Primary Locations</label>
                       {publishErrors.location && <p className="text-sm text-red-500 font-medium mb-2">{publishErrors.location}</p>}
                       <div className="space-y-3">
                         {(world.core.structuredLocations && world.core.structuredLocations.length > 0 
