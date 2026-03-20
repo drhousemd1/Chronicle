@@ -266,7 +266,9 @@ function buildCharacterFieldPrompt(
   customLabel?: string,
   mode: 'precise' | 'detailed' = 'detailed'
 ): string {
-  const fieldConfig = CHARACTER_FIELD_PROMPTS[fieldName] || CHARACTER_FIELD_PROMPTS.custom;
+  // Map prefixed field names to their prompt config (e.g. "extra_tone_abc123" → "tone")
+  const resolvedFieldName = fieldName.startsWith('extra_tone') ? 'tone' : fieldName;
+  const fieldConfig = CHARACTER_FIELD_PROMPTS[resolvedFieldName] || CHARACTER_FIELD_PROMPTS.custom;
   const isGenerateBoth = customLabel?.startsWith(GENERATE_BOTH_PREFIX);
   const sectionHint = isGenerateBoth ? customLabel!.slice(GENERATE_BOTH_PREFIX.length) : '';
   const label = isGenerateBoth ? sectionHint : (customLabel || fieldConfig.label);
