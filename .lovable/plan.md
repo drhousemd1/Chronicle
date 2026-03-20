@@ -1,35 +1,24 @@
 
 
-# Fix Subheading Style + Remove Freeform Label Input
+# Fix Duplicate Subheadings + Faint Placeholder Styling
 
-## Summary
-Two fixes across both builders:
-1. **Character Builder**: Replace the large bordered input for subheadings with small gray editable text matching the uploaded reference (plain inline input styled like existing section labels).
-2. **Story Builder (WorldTab)**: Remove the "LABEL" input field from freeform items — freeform blocks should only have the subheading text + textarea, not an additional label input.
+## Issues
+
+1. **WorldTab freeform items**: Two "SECTION TITLE..." placeholders appear — the section-level one (line 898, more visible) and a per-item one (line 1017-1029, fainter). Remove the per-item one for freeform items since the section-level title already serves this purpose.
+
+2. **CharactersTab subheading placeholder too faint**: The per-item subheading (line 2067) uses `placeholder:text-zinc-600` which is too faint. Update to `placeholder:text-zinc-500` to match the WorldTab's section-level title visibility.
 
 ## Changes
 
-### 1. `src/components/chronicle/CharactersTab.tsx` — Subheading style fix
+### 1. `src/components/chronicle/WorldTab.tsx` — Remove freeform per-item subheading
 
-**Current** (line 2059-2068): Full bordered input with `bg-[#1c1c1f] border border-black/35 rounded-lg px-3 py-2`
+**Lines 1017-1029**: Delete the per-item `<input>` with `placeholder="SECTION TITLE..."` from the freeform item rendering block. Freeform items should only show the textarea, not a duplicate subheading. The section-level title (line 898) already provides the section label.
 
-**New**: Replace with a plain inline input styled as small gray uppercase text:
-```
-text-[10px] font-bold text-zinc-500 uppercase tracking-widest
-bg-transparent border-none focus:outline-none
-placeholder:text-zinc-600
-```
-Placeholder text: `"SECTION TITLE..."`
+### 2. `src/components/chronicle/CharactersTab.tsx` — Fix subheading placeholder visibility
 
-This matches the user's uploaded screenshot — just small gray text sitting above the content, not a boxed input field.
-
-### 2. `src/components/chronicle/WorldTab.tsx` — Remove freeform "LABEL" input
-
-**Current** (lines 1017-1030): Freeform items render a "LABEL" AutoResizeTextarea input above the content textarea.
-
-**New**: Replace the "LABEL" input with the same small gray subheading text input (matching the new Character Builder style above). Change the placeholder from "LABEL" to "SECTION TITLE..." and restyle to the plain gray text format. This way freeform items just show a small optional subheading + the textarea, no large label field.
+**Line 2067**: Change `placeholder:text-zinc-600` to `placeholder:text-zinc-500` so the "SECTION TITLE..." placeholder matches the more visible style seen in the WorldTab section headers.
 
 ## Files Modified
-- `src/components/chronicle/CharactersTab.tsx` — Restyle subheading input from bordered box to plain gray text
-- `src/components/chronicle/WorldTab.tsx` — Replace freeform "LABEL" input with plain gray subheading text
+- `src/components/chronicle/WorldTab.tsx` — Remove duplicate subheading input from freeform items
+- `src/components/chronicle/CharactersTab.tsx` — Increase placeholder contrast on subheading inputs
 
