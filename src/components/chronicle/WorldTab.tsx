@@ -1283,7 +1283,7 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                         "transition-opacity",
                         (openingDialog.timeProgressionMode || 'manual') === 'manual' && "opacity-40 pointer-events-none"
                       )}>
-                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 block">Time Interval</label>
+                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5 block">Time Interval</label>
                         <select
                           value={openingDialog.timeProgressionInterval || 15}
                           onChange={(e) => onUpdateOpening({ timeProgressionInterval: Number(e.target.value) })}
