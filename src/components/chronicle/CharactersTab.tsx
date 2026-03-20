@@ -493,7 +493,7 @@ const HardcodedRow: React.FC<{
   onEnhance?: () => void;
   isEnhancing?: boolean;
 }> = ({ label, value, onChange, placeholder, onEnhance, isEnhancing }) => (
-  <div className="flex items-start gap-2">
+  <div className="flex items-center gap-2">
     <div className="w-2/5 flex items-center gap-1.5 min-w-0">
       <div className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border border-black/35 text-zinc-400 rounded-lg uppercase tracking-widest min-w-0 break-words">
         {label}
