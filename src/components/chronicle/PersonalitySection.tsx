@@ -1,6 +1,6 @@
 import React from 'react';
 import { CharacterPersonality, PersonalityTrait, PersonalityTraitFlexibility } from '@/types';
-import { Plus, X, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 
 import { uid } from '@/utils';
 import { cn } from '@/lib/utils';
