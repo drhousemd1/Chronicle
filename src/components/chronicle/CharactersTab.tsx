@@ -2041,7 +2041,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                             />
                             {itemType === 'freeform' ? (
                               /* Freeform item */
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-start gap-3">
                                 <AutoResizeTextarea
                                   value={item.value}
                                   onChange={(v) => {
