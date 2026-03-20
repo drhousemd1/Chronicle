@@ -2644,15 +2644,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       const antiLoopDirective = getAntiLoopDirective();
       sessionMessageCountRef.current += 1;
       
-      // Pass 14: Consume narrative directive (one-shot)
-      const directorTag = narrativeDirectiveRef.current
-        ? `[DIRECTOR: ${narrativeDirectiveRef.current}]`
-        : '';
-      narrativeDirectiveRef.current = null;
-      
-      // Pass 13: Build runtime directives string (injected as dedicated system message)
-      const runtimeDirectiveParts = [directorTag, antiLoopDirective].filter(Boolean);
-      const runtimeDirectives = runtimeDirectiveParts.length > 0 ? runtimeDirectiveParts.join('\n') : undefined;
+      // Build runtime directives string (injected as dedicated system message)
+      const runtimeDirectives = antiLoopDirective || undefined;
       
       const llmInput = canonNote + input;
       const stream = generateRoleplayResponseStream(llmAppData, conversationId, llmInput, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, undefined, lengthDirective || undefined, sessionMessageCountRef.current, runtimeDirectives);
