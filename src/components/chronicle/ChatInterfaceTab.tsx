@@ -511,6 +511,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   } | null>(null);
   const [avatarNaturalSizes, setAvatarNaturalSizes] = useState<Record<string, Size2D>>({});
 
+  // Admin debug: action tracking refs (Continue / Regenerate clicks)
+  const continueEventsRef = useRef<ActionEvent[]>([]);
+  const regenerateEventsRef = useRef<ActionEvent[]>([]);
+
   useEffect(() => {
     const characters = appData.characters;
     if (!characters?.length) return;
