@@ -4998,6 +4998,120 @@ const updatedChar: SideCharacter = {
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                       Download Session Log
                     </button>
+
+                    <button
+                      onClick={() => {
+                        // Build exact same data the LLM would receive
+                        const llmAppData = buildLLMAppData();
+                        const systemInstruction = getSystemInstruction(llmAppData, currentDay, currentTimeOfDay, memories, memoriesEnabled);
+                        
+                        // Verbosity and max_tokens (exact same mapping as llm.ts)
+                        const verbosity = llmAppData.uiSettings?.responseVerbosity || 'balanced';
+                        const maxTokensByVerbosity: Record<string, number> = { concise: 1024, balanced: 2048, detailed: 3072 };
+                        const maxTokens = maxTokensByVerbosity[verbosity] || 2048;
+                        
+                        // Anti-loop directive (current state)
+                        const antiLoopDirective = getAntiLoopDirective();
+                        
+                        // Narrative director tag (current state)
+                        const directorTag = narrativeDirectiveRef.current
+                          ? `[DIRECTOR: ${narrativeDirectiveRef.current}]`
+                          : '';
+                        
+                        // Length directive (current state)
+                        const lengthDirective = getLengthDirective();
+                        
+                        // Style hint pool
+                        const hintMap: Record<string, string[]> = { concise: conciseStyleHints, balanced: balancedStyleHints, detailed: detailedStyleHints };
+                        const activeHints = hintMap[verbosity] || balancedStyleHints;
+                        
+                        const exportDate = new Date().toISOString().slice(0, 16).replace('T', ' ');
+                        const lines: string[] = [];
+                        
+                        lines.push('# Master Prompt Snapshot');
+                        lines.push(`**Model:** ${modelId}`);
+                        lines.push(`**Verbosity:** ${verbosity} → max_tokens: ${maxTokens}`);
+                        lines.push(`**Temperature:** 0.9 (hardcoded in edge function)`);
+                        lines.push(`**Stream:** true`);
+                        lines.push(`**Session Message Count:** ${sessionMessageCountRef.current}`);
+                        lines.push(`**Exported:** ${exportDate}`);
+                        lines.push('');
+                        lines.push('---');
+                        lines.push('');
+                        lines.push('## System Instruction (verbatim)');
+                        lines.push('');
+                        lines.push(systemInstruction);
+                        lines.push('');
+                        lines.push('---');
+                        lines.push('');
+                        lines.push('## Runtime Parameters');
+                        lines.push('');
+                        
+                        // Anti-loop directive
+                        lines.push('### Anti-Loop Directive (current)');
+                        lines.push('');
+                        lines.push(antiLoopDirective || 'None — no patterns detected');
+                        lines.push('');
+                        
+                        // Narrative director tag
+                        lines.push('### Narrative Director Tag (current)');
+                        lines.push('');
+                        lines.push(directorTag || 'None stored');
+                        lines.push('');
+                        
+                        // Length directive
+                        lines.push('### Length Directive (current)');
+                        lines.push('');
+                        lines.push(lengthDirective || 'None — response lengths are varied');
+                        lines.push('');
+                        
+                        // Style hint pool
+                        lines.push(`### Style Hint Pool (${verbosity} mode)`);
+                        lines.push('');
+                        lines.push('One of these is randomly appended to each user message:');
+                        lines.push('');
+                        for (const hint of activeHints) {
+                          lines.push(`- ${hint}`);
+                        }
+                        lines.push('');
+                        
+                        // Regeneration directive
+                        lines.push('### Regeneration Directive (fixed template, appended on regenerate)');
+                        lines.push('');
+                        lines.push(REGENERATION_DIRECTIVE_TEXT);
+                        lines.push('');
+                        
+                        // Session message format
+                        lines.push('### Session Message Format');
+                        lines.push('');
+                        lines.push('Prepended to every user message:');
+                        lines.push('`[SESSION: Message {N} of current session]`');
+                        lines.push('');
+                        
+                        // Runtime directives injection format
+                        lines.push('### Runtime Directives Injection');
+                        lines.push('');
+                        lines.push('When anti-loop or director directives are active, they are injected as a separate system message:');
+                        lines.push('```');
+                        lines.push('{ role: "system", content: "RUNTIME DIRECTIVES (HIGH PRIORITY — follow these for THIS response only):\\n[directives]" }');
+                        lines.push('```');
+                        lines.push('');
+                        
+                        // Download
+                        const blob = new Blob([lines.join('\n')], { type: 'text/markdown' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        const scenarioTitle = appData.world?.core?.scenarioName || 'untitled';
+                        a.download = `master-prompt-${scenarioTitle.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}-${Date.now()}.md`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      }}
+                      className="w-full flex items-center justify-center gap-2 bg-[#3c3e47] hover:bg-[#4a4c55] rounded-[10px] p-[12px_14px] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] text-[13px] font-semibold text-[#eaedf1] transition-colors"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
+                      Download Master Prompt
+                    </button>
                   </div>
                 </>
               )}
