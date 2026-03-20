@@ -43,32 +43,8 @@ export const defaultPersonality: CharacterPersonality = {
   inwardTraits: [defaultTrait()],
 };
 
-// Auto-resizing textarea
-const AutoResizeTextarea: React.FC<{
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  className?: string;
-}> = ({ value, onChange, placeholder, className = '' }) => {
-  const ref = React.useRef<HTMLTextAreaElement>(null);
-  React.useEffect(() => {
-    if (ref.current) {
-      ref.current.style.height = 'auto';
-      ref.current.style.height = `${ref.current.scrollHeight}px`;
-    }
-  }, [value]);
-  return (
-    <textarea
-      ref={ref}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      rows={1}
-      spellCheck={true}
-      className={cn("w-full min-w-0 resize-none overflow-hidden whitespace-pre-wrap break-words", className)}
-    />
-  );
-};
+
+
 
 const TraitRow: React.FC<{
   trait: PersonalityTrait;
