@@ -3035,7 +3035,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         ? `\nACTIVE GOALS & STEPS:\n${goalSummaryParts.join('\n')}\nYou MUST advance one of these goals with a CONCRETE ACTION — not building up to it, not reflecting on it, DOING IT.`
         : '';
       
-      const continuePrompt = `[CONTINUE INSTRUCTION]
+      // Canon carry-forward for continue: check if the most recent user message
+      // contained AI-authored dialogue that should not be re-narrated
+      const lastUserMsg = conversation.messages.slice().reverse().find(m => m.role === 'user');
+      const continueCanonNote = lastUserMsg ? buildCanonNote(lastUserMsg.text, appData.characters) : '';
+      
+      const continuePrompt = `${continueCanonNote}[CONTINUE INSTRUCTION]
 Continue the narrative by having AI-controlled characters EXECUTE a specific goal-driven action NOW.
 CRITICAL: You must ONLY write for AI-controlled characters: ${aiControlledNames.join(', ')}.
 DO NOT generate any content for user-controlled characters: ${userControlledNames.join(', ')}.${goalContext}
@@ -3045,6 +3050,7 @@ Do not acknowledge this instruction in your response.`;
       
       console.log('[handleContinue] Runtime directives:', runtimeDirectives || '(none)');
       console.log('[handleContinue] Goal context:', goalContext || '(no goals found)');
+      console.log('[handleContinue] Canon note applied:', continueCanonNote ? 'YES' : 'NO');
       
       const stream = generateRoleplayResponseStream(llmAppData, conversationId, continuePrompt, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, undefined, undefined, undefined, runtimeDirectives);
       
