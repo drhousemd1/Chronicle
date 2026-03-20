@@ -3,13 +3,12 @@
 
 import React from 'react';
 import { WorldCore, LocationEntry, WorldCustomSection, WorldCustomItem, StoryGoal } from '@/types';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Trash2, Plus, ChevronDown, ChevronUp, Lock } from 'lucide-react';
 import { StoryGoalsSection } from './StoryGoalsSection';
 import { uid } from '@/utils';
 import { cn } from '@/lib/utils';
+import { AutoResizeTextarea } from './AutoResizeTextarea';
 
 // Reuse the same CollapsibleSection style from CharacterEditModal
 const CollapsibleSection: React.FC<{
@@ -47,35 +46,7 @@ const CollapsibleSection: React.FC<{
   </div>
 );
 
-// Auto-resizing textarea
-const AutoResizeTextarea: React.FC<{
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  className?: string;
-  rows?: number;
-}> = ({ value, onChange, placeholder, className = '', rows = 1 }) => {
-  const ref = React.useRef<HTMLTextAreaElement>(null);
-  
-  React.useEffect(() => {
-    if (ref.current) {
-      ref.current.style.height = 'auto';
-      ref.current.style.height = `${ref.current.scrollHeight}px`;
-    }
-  }, [value]);
-  
-  return (
-    <textarea
-      ref={ref}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      rows={rows}
-      spellCheck={true}
-      className={cn("w-full min-w-0 resize-none overflow-hidden whitespace-pre-wrap break-words", className)}
-    />
-  );
-};
+
 
 interface ScenarioCardViewProps {
   scenarioDraft: Partial<WorldCore>;
@@ -113,12 +84,12 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
       >
         <div className="space-y-1.5">
           <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Scenario / Premise</Label>
-          <Textarea
+          <AutoResizeTextarea
             value={scenarioDraft.storyPremise || ''}
-            onChange={(e) => updateField('storyPremise', e.target.value)}
+            onChange={(v) => updateField('storyPremise', v)}
             placeholder="The central situation, conflict, or premise..."
             rows={4}
-            className="text-sm resize-none bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 focus:ring-blue-500/20 focus:border-blue-500"
+            className="px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
           />
         </div>
       </CollapsibleSection>
@@ -143,15 +114,15 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
         <div className="space-y-3">
           {(locations.length > 0 ? locations : [{ id: 'loc_1', label: '', description: '' }, { id: 'loc_2', label: '', description: '' }]).map((loc, idx) => (
             <div key={loc.id} className="flex items-start gap-3">
-              <Input 
+              <AutoResizeTextarea 
                 value={loc.label}
-                onChange={(e) => {
+                onChange={(v) => {
                   const locs = [...(locations.length > 0 ? locations : [{ id: 'loc_1', label: '', description: '' }, { id: 'loc_2', label: '', description: '' }])];
-                  locs[idx] = { ...locs[idx], label: e.target.value };
+                  locs[idx] = { ...locs[idx], label: v };
                   updateField('structuredLocations', locs);
                 }}
                 placeholder="LOCATION"
-                className="w-2/5 bg-[#1c1c1f] border border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 text-sm"
+                className="w-2/5 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
               />
               <AutoResizeTextarea
                 value={loc.description}
@@ -168,17 +139,19 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
                   <Lock className="w-3.5 h-3.5 text-zinc-400" />
                 </div>
               ) : (
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  onClick={() => {
-                    const locs = locations.filter((_, i) => i !== idx);
-                    updateField('structuredLocations', locs.length > 0 ? locs : undefined);
-                  }}
-                  className="mt-2 text-zinc-500 hover:text-rose-400 transition-colors p-1"
-                >
-                  <Trash2 size={16} />
-                </button>
+                <div className="w-7 flex-shrink-0 flex items-center justify-center pt-2">
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onClick={() => {
+                      const locs = locations.filter((_, i) => i !== idx);
+                      updateField('structuredLocations', locs.length > 0 ? locs : undefined);
+                    }}
+                    className="text-zinc-500 hover:text-rose-400 transition-colors p-1"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               )}
             </div>
           ))}
@@ -208,15 +181,15 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
             {customSections.map((section, sIdx) => (
               <div key={section.id} className="p-4 bg-blue-900/40 rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)] space-y-3">
                 <div className="flex items-center justify-between">
-                  <Input
+                  <AutoResizeTextarea
                     value={section.title}
-                    onChange={(e) => {
+                    onChange={(v) => {
                       const updated = [...customSections];
-                      updated[sIdx] = { ...updated[sIdx], title: e.target.value };
+                      updated[sIdx] = { ...updated[sIdx], title: v };
                       updateField('customWorldSections', updated);
                     }}
                     placeholder="Section Title..."
-                    className="bg-transparent border-none text-white font-bold text-lg px-0 focus:ring-0 placeholder:text-zinc-500"
+                    className="flex-1 bg-transparent border-none text-white font-bold text-lg px-0 focus:ring-0 placeholder:text-zinc-500"
                   />
                    <button
                     type="button"
@@ -234,17 +207,17 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
                   <>
                     {section.items.map((item, iIdx) => (
                       <div key={item.id} className="flex items-start gap-3">
-                        <Input
+                        <AutoResizeTextarea
                           value={item.label}
-                          onChange={(e) => {
+                          onChange={(v) => {
                             const updated = [...customSections];
                             const items = [...updated[sIdx].items];
-                            items[iIdx] = { ...items[iIdx], label: e.target.value };
+                            items[iIdx] = { ...items[iIdx], label: v };
                             updated[sIdx] = { ...updated[sIdx], items };
                             updateField('customWorldSections', updated);
                           }}
                           placeholder="LABEL"
-                          className="w-2/5 bg-[#1c1c1f] border border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 text-sm"
+                          className="w-2/5 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                         />
                         <AutoResizeTextarea
                           value={item.value}
@@ -301,18 +274,18 @@ export const ScenarioCardView: React.FC<ScenarioCardViewProps> = ({
                     }
                     return items.map((item, iIdx) => (
                       <div key={item.id} className="space-y-3">
-                        <div className="flex items-center gap-2">
-                          <Input
+                        <div className="flex items-start gap-3">
+                          <AutoResizeTextarea
                             value={item.label}
-                            onChange={(e) => {
+                            onChange={(v) => {
                               const updated = [...customSections];
                               const updatedItems = [...updated[sIdx].items];
-                              updatedItems[iIdx] = { ...updatedItems[iIdx], label: e.target.value };
+                              updatedItems[iIdx] = { ...updatedItems[iIdx], label: v };
                               updated[sIdx] = { ...updated[sIdx], items: updatedItems };
                               updateField('customWorldSections', updated);
                             }}
                             placeholder="LABEL"
-                            className="flex-1 bg-[#1c1c1f] border border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 text-sm"
+                            className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border border-black/35 text-zinc-400 uppercase tracking-widest placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                           />
                           <button
                             type="button"

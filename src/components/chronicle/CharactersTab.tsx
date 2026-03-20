@@ -4,6 +4,7 @@ import { CustomContentTypeModal } from './CustomContentTypeModal';
 import { TabFieldNavigator } from './TabFieldNavigator';
 import { Button, TextArea, Card } from './UI';
 import { Icons } from '@/constants';
+import { AutoResizeTextarea } from './AutoResizeTextarea';
 import { uid, now, clamp, resizeImage } from '@/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { uploadAvatar, dataUrlToBlob, updateNavButtonImages, loadNavButtonImages } from '@/services/supabase-data';
@@ -417,35 +418,7 @@ const TraitSidebarButton: React.FC<{
   );
 };
 
-// Auto-resizing textarea that wraps text and grows with content
-const AutoResizeTextarea: React.FC<{
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  className?: string;
-  rows?: number;
-}> = ({ value, onChange, placeholder, className = '', rows = 1 }) => {
-  const ref = React.useRef<HTMLTextAreaElement>(null);
 
-  React.useEffect(() => {
-    if (ref.current) {
-      ref.current.style.height = 'auto';
-      ref.current.style.height = `${ref.current.scrollHeight}px`;
-    }
-  }, [value]);
-
-  return (
-    <textarea
-      ref={ref}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      rows={rows}
-      spellCheck={true}
-      className={cn("w-full min-w-0 resize-none overflow-hidden whitespace-pre-wrap break-words", className)}
-    />
-  );
-};
 
 // Hardcoded section component with distinct styling (matching CharacterGoalsSection)
 const HardcodedSection: React.FC<{
@@ -493,7 +466,7 @@ const HardcodedRow: React.FC<{
   onEnhance?: () => void;
   isEnhancing?: boolean;
 }> = ({ label, value, onChange, placeholder, onEnhance, isEnhancing }) => (
-  <div className="flex items-center gap-2">
+  <div className="flex items-start gap-3">
     <div className="w-2/5 flex items-center gap-1.5 min-w-0">
       <div className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border border-black/35 text-zinc-400 rounded-lg uppercase tracking-widest min-w-0 break-words">
         {label}
@@ -523,7 +496,7 @@ const HardcodedRow: React.FC<{
       placeholder={placeholder}
       className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
     />
-    <div className="w-7 flex-shrink-0 flex items-center justify-center">
+    <div className="w-7 flex-shrink-0 flex items-center justify-center pt-2">
       <Lock className="w-3.5 h-3.5 text-zinc-400" />
     </div>
   </div>
@@ -537,7 +510,7 @@ const ExtraRow: React.FC<{
   onEnhance?: () => void;
   isEnhancing?: boolean;
 }> = ({ extra, onUpdate, onDelete, onEnhance, isEnhancing }) => (
-  <div className="flex items-center gap-2">
+  <div className="flex items-start gap-3">
     <div className="w-2/5 flex items-center gap-1.5 min-w-0">
       <AutoResizeTextarea
         value={extra.label}
@@ -570,7 +543,7 @@ const ExtraRow: React.FC<{
       placeholder="Description"
       className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
     />
-    <div className="w-7 flex-shrink-0 flex items-center justify-center">
+    <div className="w-7 flex-shrink-0 flex items-center justify-center pt-2">
       <button
         type="button"
         tabIndex={-1}
@@ -2068,7 +2041,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                             />
                             {itemType === 'freeform' ? (
                               /* Freeform item */
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-start gap-3">
                                 <AutoResizeTextarea
                                   value={item.value}
                                   onChange={(v) => {
@@ -2079,7 +2052,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                                   className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                                   rows={4}
                                 />
-                                <div className="w-7 flex-shrink-0 flex items-center justify-center">
+                                <div className="w-7 flex-shrink-0 flex items-center justify-center pt-2">
                                   <button
                                     type="button"
                                     tabIndex={-1}
@@ -2095,8 +2068,8 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                               </div>
                             ) : (
                               /* Structured item */
-                              <div className="flex items-center gap-2">
-                                <div className="flex-1 flex gap-2">
+                              <div className="flex items-start gap-3">
+                                <div className="flex-1 flex gap-3">
                                   <div className="w-2/5 flex items-center gap-1.5">
                                     <AutoResizeTextarea
                                       value={item.label}
@@ -2160,7 +2133,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                                     className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                                   />
                                 </div>
-                                <div className="w-7 flex-shrink-0 flex items-center justify-center">
+                                <div className="w-7 flex-shrink-0 flex items-center justify-center pt-2">
                                   <button
                                     type="button"
                                     tabIndex={-1}

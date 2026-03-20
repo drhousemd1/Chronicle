@@ -6,33 +6,10 @@ import { CircularProgress } from './CircularProgress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { uid, now } from '@/utils';
 import { cn } from '@/lib/utils';
+import { AutoResizeTextarea } from './AutoResizeTextarea';
 
-const AutoResizeTextarea: React.FC<{
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  className?: string;
-  rows?: number;
-}> = ({ value, onChange, placeholder, className = '', rows = 1 }) => {
-  const ref = useRef<HTMLTextAreaElement>(null);
-  useEffect(() => {
-    if (ref.current) {
-      ref.current.style.height = 'auto';
-      ref.current.style.height = `${ref.current.scrollHeight}px`;
-    }
-  }, [value]);
-  return (
-    <textarea
-      ref={ref}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      rows={rows}
-      spellCheck={true}
-      className={cn("w-full min-w-0 resize-none overflow-hidden whitespace-pre-wrap break-words", className)}
-    />
-  );
-};
+
+
 
 interface StoryGoalsSectionProps {
   goals: StoryGoal[];
