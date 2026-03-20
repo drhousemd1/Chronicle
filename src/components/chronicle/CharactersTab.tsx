@@ -2054,7 +2054,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                       return items.map(item => {
                         const itemType = item.type ?? section.type ?? 'structured';
                         return (
-                          <div key={item.id} className="space-y-2">
+                          <div key={item.id} className="space-y-3">
                             {/* Subheading input */}
                             <input
                               type="text"
