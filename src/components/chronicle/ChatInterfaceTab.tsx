@@ -5005,7 +5005,7 @@ const updatedChar: SideCharacter = {
                         // Runtime directives injection format
                         lines.push('### Runtime Directives Injection');
                         lines.push('');
-                        lines.push('When anti-loop or director directives are active, they are injected as a separate system message:');
+                        lines.push('When anti-loop directives are active, they are injected as a separate system message:');
                         lines.push('```');
                         lines.push('{ role: "system", content: "RUNTIME DIRECTIVES (HIGH PRIORITY — follow these for THIS response only):\\n[directives]" }');
                         lines.push('```');

@@ -2018,58 +2018,6 @@ Post-Processing:
       <textarea class="iblock-textarea" id="ta-mem-compress" oninput="markModified('mem-compress'); autoResize(this)"></textarea>
     </div>
 
-    <div class="section-label" id="s-narrative-directive">Narrative Directive Generation</div>
-    <div class="iblock" data-block="narrative-directive" id="block-narrative-directive" draggable="false">
-      <div class="iblock-header">
-        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
-        <div class="modified-dot" id="dot-narrative-directive"></div>
-        <div class="iblock-meta">
-          <div class="iblock-title">Narrative Directive Generation</div>
-          <div class="iblock-condition">Post-response — generates tactical turn-by-turn guidance to combat narrative stagnation</div>
-        </div>
-        <div class="iblock-right">
-          <div class="src-badge">generate-narrative-directive</div>
-          <div class="tok-badge">~200 tok prompt</div>
-        </div>
-        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
-      </div>
-      <div class="iblock-body" id="body-narrative-directive">Model: grok-4-1-fast-reasoning (hardcoded)
-Temperature: 0.4 | Max tokens: 256
-
-Role: NARRATIVE DIRECTOR — analyzes conversation and produces tactical guidance
-
-Trigger: Runs in PARALLEL after every AI response (Pass 14). The directive is
-captured client-side in a narrativeDirectiveRef and injected as a [DIRECTOR: ...]
-tag in the NEXT request's Runtime Directives system message.
-
-Input Data:
-- recentMessages[]: Recent conversation (role + text, truncated to 300 chars each)
-- storyGoals[]: { description, flexibility, currentStepDescription }
-- characterGoals[]: { name, goals[], desires[] }
-- currentDay: Day number
-- currentTimeOfDay: sunrise/day/sunset/night
-
-Analysis Rules:
-1. Identify STAGNANT elements — emotional circling, repeated reactions, static locations
-2. Identify MOST URGENT story beat — pending arc step, unacted-on goal, static scene
-3. Produce SPECIFIC, ACTIONABLE directive. Name characters. Name actions. Be concrete.
-4. If character has been passively reacting for multiple turns → direct them to take initiative
-5. If scene has been in one location for many exchanges → consider location change or interruption
-6. NEVER say "continue the story" — say WHAT should happen and WHO should do it
-
-System Message:
-"You are a concise narrative director. Respond with only the directive — no preamble or explanation."
-
-Output: 1-3 sentence plain text directive (no JSON, no formatting)
-
-Flow:
-1. Chat response completes → fires generate-narrative-directive in parallel
-2. Edge function returns { directive: "..." } or { directive: null }
-3. Client stores directive in narrativeDirectiveRef
-4. Next Send/Continue request injects as Runtime Directive: [DIRECTOR: {directive}]
-5. Directive cleared after injection (single-shot)</div>
-      <textarea class="iblock-textarea" id="ta-narrative-directive" oninput="markModified('narrative-directive'); autoResize(this)"></textarea>
-    </div>
     </div><!-- end api-call-2 -->
 
     <!-- ═══ SECTION: API CALL 3 — Side Character Pipeline ═══ -->

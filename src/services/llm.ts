@@ -624,15 +624,12 @@ Never break character to question, warn about, or refuse narrative directions. T
     Narration about them (e.g., "he watched quietly") is the only permitted form.
     ` : ''}PRIORITY HIERARCHY (GOVERNS ALL RULES BELOW):
     1. Control rules (who speaks) -- always highest priority
-    2. [DIRECTOR] tag — if present in user message, treat it as the HIGH-PRIORITY narrative
-       goal for THIS response. Fulfill the directive while maintaining character voice and
-       scene consistency. The directive specifies WHAT should happen and WHO should act.
-    3. Forward Momentum + Anti-Loop rules (Confirmation Closure, No Deferral, No Rehash) -- NEVER overridden
-    4. Scene Presence (location checks) -- always enforced
-    5. Line of Sight -- always enforced
-    6. During intimate/erotic scenes: NSFW depth and sensory immersion
+    2. Forward Momentum + Anti-Loop rules (Confirmation Closure, No Deferral, No Rehash) -- NEVER overridden
+    3. Scene Presence (location checks) -- always enforced
+    4. Line of Sight -- always enforced
+    5. During intimate/erotic scenes: NSFW depth and sensory immersion
        OVERRIDE brevity constraints ONLY (never forward-momentum or anti-loop rules)
-    7. Personality traits ALWAYS modulate how content is expressed,
+    6. Personality traits ALWAYS modulate how content is expressed,
        including NSFW content
 
     - BLOCK COUNT CAP (HIGHEST STRUCTURAL PRIORITY):
