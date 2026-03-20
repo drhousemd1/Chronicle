@@ -4972,11 +4972,6 @@ const updatedChar: SideCharacter = {
                         lines.push(antiLoopDirective || 'None — no patterns detected');
                         lines.push('');
                         
-                        // Narrative director tag
-                        lines.push('### Narrative Director Tag (current)');
-                        lines.push('');
-                        lines.push(directorTag || 'None stored');
-                        lines.push('');
                         
                         // Length directive
                         lines.push('### Length Directive (current)');
