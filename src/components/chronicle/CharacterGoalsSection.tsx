@@ -314,12 +314,12 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                   {(goal.steps && goal.steps.length > 0) ? (
                     <div className="space-y-2">
                       {goal.steps.map((step, stepIdx) => (
-                        <div key={step.id} className="flex items-start gap-3">
+                        <div key={step.id} className="flex items-center gap-3">
                           <Checkbox
                             checked={step.completed}
                             onCheckedChange={() => isEditMode ? toggleStep(goal.id, step.id) : undefined}
                             disabled={!isEditMode}
-                            className="mt-2.5 border-zinc-600 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
+                            className="border-zinc-600 data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500"
                           />
                           {isEditMode ? (
                             <>
@@ -340,13 +340,13 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
                               />
                             </>
                           ) : (
-                            <span className={cn("text-sm text-zinc-200 pt-2", step.completed && "line-through text-zinc-500")}>
+                            <span className={cn("text-sm text-zinc-200", step.completed && "line-through text-zinc-500")}>
                               {step.description || 'No description'}
                             </span>
                           )}
                           {isEditMode && (
-                            <button tabIndex={-1} onClick={() => deleteStep(goal.id, step.id)} className="mt-2 text-red-500 hover:text-red-400 transition-colors p-1">
-                              <X className="h-4 w-4" />
+                            <button tabIndex={-1} onClick={() => deleteStep(goal.id, step.id)} className="text-zinc-500 hover:text-rose-400 transition-colors p-1">
+                              <Trash2 size={16} />
                             </button>
                           )}
                         </div>
