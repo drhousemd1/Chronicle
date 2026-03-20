@@ -537,7 +537,7 @@ const ExtraRow: React.FC<{
   onEnhance?: () => void;
   isEnhancing?: boolean;
 }> = ({ extra, onUpdate, onDelete, onEnhance, isEnhancing }) => (
-  <div className="flex items-start gap-2">
+  <div className="flex items-center gap-2">
     <div className="w-2/5 flex items-center gap-1.5 min-w-0">
       <AutoResizeTextarea
         value={extra.label}
@@ -570,14 +570,16 @@ const ExtraRow: React.FC<{
       placeholder="Description"
       className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 min-w-0"
     />
-    <button
-      type="button"
-      tabIndex={-1}
-      onClick={onDelete}
-      className="text-red-500 hover:text-red-400 p-1.5 rounded-md hover:bg-red-900/30 mt-1 flex-shrink-0"
-    >
-      <X className="w-4 h-4" />
-    </button>
+    <div className="w-7 flex-shrink-0 flex items-center justify-center">
+      <button
+        type="button"
+        tabIndex={-1}
+        onClick={onDelete}
+        className="text-zinc-500 hover:text-rose-400 transition-colors p-1"
+      >
+        <Trash2 size={16} />
+      </button>
+    </div>
   </div>
 );
 
