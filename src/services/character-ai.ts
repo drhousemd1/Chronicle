@@ -251,6 +251,23 @@ const CHARACTER_FIELD_PROMPTS: Record<string, { label: string; instruction: stri
     maxSentences: 3
   },
 
+  // Personality
+  personality: {
+    label: "Personality Trait",
+    instruction: "Describe this personality trait and how it manifests in the character's behavior, decisions, and interactions. Focus on behavioral patterns, emotional tendencies, and how this trait shapes who they are. Stay grounded in the character's background and world context. Do NOT describe speech patterns or vocal qualities — focus on personality and behavior.",
+    maxSentences: 2
+  },
+  personality_outward: {
+    label: "Outward Personality Trait",
+    instruction: "Describe this OUTWARD personality trait — how the character presents themselves to others. Focus on projected behavior, social demeanor, dialogue style, body language, and the persona they show the world. This is what other characters would observe and experience. Do NOT describe internal feelings or hidden thoughts — focus on external presentation.",
+    maxSentences: 2
+  },
+  personality_inward: {
+    label: "Inward Personality Trait",
+    instruction: "Describe this INWARD personality trait — the character's internal emotional landscape. Focus on private thoughts, hidden impulses, inner contradictions, suppressed feelings, and emotional patterns they don't show others. This is what the character experiences internally but may hide or struggle with. Do NOT describe outward behavior — focus on inner state.",
+    maxSentences: 2
+  },
+
   // Custom fields (fallback)
   custom: { label: "Custom", instruction: "Provide relevant details for this character trait. Be concise and story-relevant.", maxSentences: 3 }
 };
@@ -266,8 +283,12 @@ function buildCharacterFieldPrompt(
   customLabel?: string,
   mode: 'precise' | 'detailed' = 'detailed'
 ): string {
-  // Map prefixed field names to their prompt config (e.g. "extra_tone_abc123" → "tone")
-  const resolvedFieldName = fieldName.startsWith('extra_tone') ? 'tone' : fieldName;
+  // Map prefixed field names to their prompt config (e.g. "extra_tone_abc123" → "tone", "personality_abc123" → "personality")
+  const resolvedFieldName = fieldName.startsWith('extra_tone') ? 'tone'
+    : fieldName.startsWith('personality_outward_') ? 'personality_outward'
+    : fieldName.startsWith('personality_inward_') ? 'personality_inward'
+    : fieldName.startsWith('personality_') ? 'personality'
+    : fieldName;
   const fieldConfig = CHARACTER_FIELD_PROMPTS[resolvedFieldName] || CHARACTER_FIELD_PROMPTS.custom;
   const isGenerateBoth = customLabel?.startsWith(GENERATE_BOTH_PREFIX);
   const sectionHint = isGenerateBoth ? customLabel!.slice(GENERATE_BOTH_PREFIX.length) : '';
@@ -281,6 +302,9 @@ function buildCharacterFieldPrompt(
   // Section-specific hints for generate-both mode
   const SECTION_HINTS: Record<string, string> = {
     'character tone/voice detail': 'Generate a tone/voice trait describing HOW this character speaks — e.g. speech rhythm, vocabulary, verbal habits, emotional register, formality level. Good label examples: "Dry Wit", "Formal Register", "Nervous Stammer", "Warm Drawl", "Clipped Authority". The description should explain how this specific character exhibits that tone trait, based on their personality, background, and context. Do NOT generate personality traits — focus strictly on how they SOUND and EXPRESS themselves vocally.',
+    'personality trait': 'Generate a personality trait describing a core behavioral pattern, emotional tendency, or character quality. Good label examples: "Stubborn", "Empathetic", "Reckless Courage", "Quiet Ambition", "People-Pleaser". The description should explain how this trait manifests in the character\'s behavior and decisions. Do NOT generate tone/voice traits — focus on personality and behavior.',
+    'outward personality trait': 'Generate an OUTWARD personality trait — something other characters would notice and experience. Good label examples: "Charming Deflector", "Stoic Composure", "Infectious Optimism", "Cold Professionalism", "Disarming Humor". Focus on projected behavior, social demeanor, and how they present themselves. Do NOT describe internal feelings or speech patterns.',
+    'inward personality trait': 'Generate an INWARD personality trait — something the character experiences internally but may hide. Good label examples: "Chronic Self-Doubt", "Suppressed Rage", "Secret Tenderness", "Fear of Abandonment", "Hidden Guilt". Focus on private thoughts, inner contradictions, and emotional patterns they don\'t show others. Do NOT describe outward behavior or speech patterns.',
   };
 
   if (isGenerateBoth) {
