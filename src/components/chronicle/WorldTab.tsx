@@ -1235,7 +1235,7 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
 
                       {/* Mode group */}
                       <div>
-                        <div className="flex items-center gap-1.5 mb-1">
+                        <div className="flex items-center gap-1.5 mb-1.5">
                           <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Mode</label>
                           <Tooltip>
                             <TooltipTrigger asChild>
