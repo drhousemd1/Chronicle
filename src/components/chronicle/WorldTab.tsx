@@ -1076,6 +1076,7 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                           </button>
                           </>
                         )}
+                        </div>
                       </div>
                     ))}
                     
