@@ -740,7 +740,7 @@ export const detailedStyleHints = [
   '[Style: character reveals something through action, not words or thoughts]',
 ];
 
-function getRandomStyleHint(verbosity: 'concise' | 'balanced' | 'detailed' = 'balanced'): string {
+export function getRandomStyleHint(verbosity: 'concise' | 'balanced' | 'detailed' = 'balanced'): string {
   const hintMap = { concise: conciseStyleHints, balanced: balancedStyleHints, detailed: detailedStyleHints };
   const hints = hintMap[verbosity] || balancedStyleHints;
   return hints[Math.floor(Math.random() * hints.length)];
