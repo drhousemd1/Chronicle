@@ -4936,10 +4936,6 @@ const updatedChar: SideCharacter = {
                         // Anti-loop directive (current state)
                         const antiLoopDirective = getAntiLoopDirective();
                         
-                        // Narrative director tag (current state)
-                        const directorTag = narrativeDirectiveRef.current
-                          ? `[DIRECTOR: ${narrativeDirectiveRef.current}]`
-                          : '';
                         
                         // Length directive (current state)
                         const lengthDirective = getLengthDirective();
