@@ -4,6 +4,7 @@ import { Plus, Trash2, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 
 import { uid } from '@/utils';
 import { cn } from '@/lib/utils';
+import { AutoResizeTextarea } from './AutoResizeTextarea';
 import { GENERATE_BOTH_PREFIX, parseGenerateBothResponse } from '@/services/character-ai';
 
 interface PersonalitySectionProps {
