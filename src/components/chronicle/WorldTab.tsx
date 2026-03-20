@@ -911,7 +911,7 @@ className="w-2/5 px-3 py-2 text-xs leading-5 font-bold bg-[#1c1c1f] border borde
                             <Trash2 size={16} />
                           </button>
                         </FieldHeaderRow>
-                        <div className="space-y-3 mt-1.5">
+                        <div className="space-y-3">
                         {(!section.type || section.type === 'structured') ? (
                           <>
                             {section.items.map((item, iIdx) => (
