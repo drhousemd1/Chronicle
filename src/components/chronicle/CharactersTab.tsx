@@ -2028,9 +2028,9 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                       return items.map(item => {
                         const itemType = item.type ?? section.type ?? 'structured';
                         return (
-                          <div key={item.id} className="space-y-1.5">
+                          <div key={item.id}>
                             {/* Subheading input with per-item delete */}
-                            <div className="flex items-center gap-3">
+                            <FieldHeaderRow className="gap-3">
                               <input
                                 type="text"
                                 value={item.subheading ?? ''}
@@ -2052,7 +2052,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                               >
                                 <Trash2 size={16} />
                               </button>
-                            </div>
+                            </FieldHeaderRow>
                             {itemType === 'freeform' ? (
                               /* Freeform item */
                               <div className="flex items-start gap-3">
