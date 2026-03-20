@@ -1179,6 +1179,9 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
   // State for content type picker modal
   const [showCategoryTypeModal, setShowCategoryTypeModal] = useState(false);
 
+  // State for "Add Row" content type picker within an existing section
+  const [pendingAddRowSectionId, setPendingAddRowSectionId] = useState<string | null>(null);
+
   // Handle adding a new custom section
   const handleAddSection = (type: CharacterTraitSectionType = 'structured') => {
     if (!selected) return;
