@@ -3033,10 +3033,6 @@ Do not acknowledge this instruction in your response.`;
       
       processResponseForNewCharacters(cleanedText);
       
-      // Pass 14: Generate narrative directive for the NEXT continue click (async, non-blocking)
-      generateNarrativeDirective().catch(err => {
-        console.error('[handleContinue] Narrative directive generation failed:', err);
-      });
     } catch (err) {
       console.error(err);
     } finally {
