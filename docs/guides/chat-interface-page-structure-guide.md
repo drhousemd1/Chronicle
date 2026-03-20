@@ -313,4 +313,4 @@ Applied in both `renderCharacterCard()` (main characters) and `SideCharacterCard
 
 None documented.
 
-> Last updated: 2026-03-15 — Pass 13c: Anti-Repetitive Multi-Character Pattern. Added NO AUTO-FOLLOW-UP PATTERN rule to `llm.ts` INSTRUCTIONS block after SILENCE IS VALID. Added cross-message multi-character detector to `getAntiLoopDirective()` — scans last 3 AI messages for 2+ speakers each, injects `[ANTI-MULTI-CHAR-PATTERN]` directive. Updated `continuePrompt` with pattern-breaking instruction.
+> Last updated: 2026-03-20 — Outward/Inward Personality Precedence Fix. Added score offset in `personalityContext()`: outward traits +15, inward traits -10 to effective score during prompt formatting. Updated PERSONALITY TRAIT ADHERENCE with explicit outward-first precedence rule and bracket-based conflict resolution. Added TONE ENFORCEMENT block as mandatory expression filter. Added OUTWARD/INWARD CONFLICT IN INTIMATE SCENES to NSFW modulation. Updated personality headers to annotate role (governs visible behavior vs governs thoughts).
