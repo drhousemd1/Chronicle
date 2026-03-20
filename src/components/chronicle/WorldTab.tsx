@@ -1443,7 +1443,7 @@ className="flex-1 px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                 <h2 className="text-white text-xl font-bold tracking-[-0.015em] relative z-[1]">Art Style Preference</h2>
               </div>
               <div className="p-5 space-y-1">
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-2 mb-1.5">
                   <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">Art Style Selection</span>
                   <Tooltip>
                     <TooltipTrigger asChild>
