@@ -1677,7 +1677,7 @@ Source: isRegeneration parameter in generateRoleplayResponseStream()</div>
         <div class="modified-dot" id="dot-runtime-directives"></div>
         <div class="iblock-meta">
           <div class="iblock-title">Runtime Directives (System Message)</div>
-          <div class="iblock-condition">Conditional — when <em>runtimeDirectives</em> are provided (e.g., [DIRECTOR] tag)</div>
+          <div class="iblock-condition">Conditional — when anti-loop directives are active</div>
         </div>
         <div class="iblock-right">
           <div class="tok-badge">~30-80 tok</div>
@@ -1690,16 +1690,12 @@ history but BEFORE the user message. NOT embedded in user text.
 Format:
 { role: "system", content: "RUNTIME DIRECTIVES (HIGH PRIORITY — follow these for THIS response only):\n{runtimeDirectives}" }
 
-Primary Use Case: Narrative Director Injection
-The Narrative Director layer (generate-narrative-directive edge function) runs
-in parallel after each AI response. It analyzes conversation + story arcs and
-produces a 1-3 sentence tactical directive. This directive is captured client-side
-in a narrativeDirectiveRef and injected here as a [DIRECTOR: ...] tag.
+Primary Use Case: Anti-Loop Directives
+Runtime detectors analyze the last AI response for structural repetition patterns
+(ping-pong between characters, emotional stagnation, thought-tail patterns) and
+inject corrective micro-directives when patterns are detected.
 
-Priority: Listed as #2 in the PRIORITY HIERARCHY — only Control Rules rank higher.
-The AI must fulfill the directive while maintaining character voice and scene consistency.
-
-Cleared after use (single-shot per response).
+Only active when patterns are detected — most turns have no runtime directives.
 
 Source: runtimeDirectives parameter in generateRoleplayResponseStream()</div>
       <textarea class="iblock-textarea" id="ta-runtime-directives" oninput="markModified('runtime-directives'); autoResize(this)"></textarea>
