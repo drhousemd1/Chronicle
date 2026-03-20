@@ -24,7 +24,7 @@
 | `chat` | `supabase/functions/chat/index.ts` | Main LLM chat endpoint — streams roleplay responses | User-selected model |
 | `extract-character-updates` | `supabase/functions/extract-character-updates/index.ts` | Extracts character state changes from conversation (throttled: fires every 5th message) | `grok-4-1-fast-reasoning` (default), `grok-3-mini` (403 safe-mode retry) |
 | `extract-memory-events` | `supabase/functions/extract-memory-events/index.ts` | Extracts memory-worthy events from messages | `grok-4-1-fast-reasoning` |
-| `evaluate-arc-progress` | `supabase/functions/evaluate-arc-progress/index.ts` | Evaluates story arc progress against goals | `grok-4-1-fast-reasoning` |
+| `evaluate-goal-progress` | `supabase/functions/evaluate-goal-progress/index.ts` | Evaluates story goal progress | `grok-4-1-fast-reasoning` |
 | `generate-cover-image` | `supabase/functions/generate-cover-image/index.ts` | Generates scenario cover images | Image generation model |
 | `generate-scene-image` | `supabase/functions/generate-scene-image/index.ts` | Generates in-chat scene images | Image generation model |
 | `generate-side-character` | `supabase/functions/generate-side-character/index.ts` | AI-generates side character profiles | AI model |
