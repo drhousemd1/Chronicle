@@ -2064,7 +2064,7 @@ export const CharactersTab: React.FC<CharactersTabProps> = ({
                                 handleUpdateSection(selected.id, section.id, { items: nextItems });
                               }}
                               placeholder="SECTION TITLE..."
-                              className="w-full text-[10px] font-bold text-zinc-500 uppercase tracking-widest bg-transparent border-none focus:outline-none placeholder:text-zinc-600 px-0 py-0"
+                              className="w-full text-[10px] font-bold text-zinc-500 uppercase tracking-widest bg-transparent border-none focus:outline-none placeholder:text-zinc-500 px-0 py-0"
                             />
                             {itemType === 'freeform' ? (
                               /* Freeform item */
