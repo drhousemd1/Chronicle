@@ -276,7 +276,17 @@ function buildCharacterFieldPrompt(
     : 'CURRENT VALUE: Empty - generate appropriate content based on context.\n\n';
 
   // Generate-both mode: AI must return LABEL + DESCRIPTION
+  // Section-specific hints for generate-both mode
+  const SECTION_HINTS: Record<string, string> = {
+    'character tone/voice detail': 'Generate a tone/voice trait describing HOW this character speaks — e.g. speech rhythm, vocabulary, verbal habits, emotional register, formality level. Good label examples: "Dry Wit", "Formal Register", "Nervous Stammer", "Warm Drawl", "Clipped Authority". The description should explain how this specific character exhibits that tone trait, based on their personality, background, and context. Do NOT generate personality traits — focus strictly on how they SOUND and EXPRESS themselves vocally.',
+  };
+
   if (isGenerateBoth) {
+    const sectionGuidance = SECTION_HINTS[sectionHint] || '';
+    const sectionGuidanceBlock = sectionGuidance
+      ? `\nSECTION-SPECIFIC GUIDANCE:\n${sectionGuidance}\n`
+      : '';
+
     return `You are a character creation assistant for an interactive roleplay scenario.
 
 You need to generate BOTH a short label/name AND a description for a ${sectionHint} field on this character.
@@ -287,7 +297,7 @@ RULES:
 3. Look at all existing character data and world context to determine what trait/detail would be most fitting and NOT duplicate existing ones
 4. Stay consistent with the character's established identity
 5. NO purple prose. Be factual and story-relevant.
-
+${sectionGuidanceBlock}
 WORLD & SCENARIO CONTEXT:
 ${fullContext}
 
