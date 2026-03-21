@@ -784,7 +784,7 @@
       </div>
       <div class="sb-item" data-nav="api-call-1" onclick="switchSection('api-call-1', this, 's-403')">
         <div class="si-title">403 Retry</div>
-        <div class="si-sub">content filter fallback</div>
+        <div class="si-sub">content filter retry</div>
       </div>
     </div>
     <div class="sb-divider"></div>
@@ -2269,10 +2269,9 @@ Source: supabase/functions/generate-side-character/index.ts</div>
     <div class="content-section" data-section="star-char-overview">
     <div class="page-header">
       <h1>Character Builder — AI Enhance: Overview</h1>
-      <div class="ph-sub">character-ai.ts → callAIWithFallback() → chat edge fn → api.x.ai/v1/chat/completions</div>
+      <div class="ph-sub">character-ai.ts → callAIWithRetry() → chat edge fn → api.x.ai/v1/chat/completions</div>
       <div class="ph-chips">
         <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
-        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
         <div class="chip chip-temp" title="Temperature">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
         <div class="chip">Max Response <strong>4,096 tok</strong></div>
       </div>
@@ -2296,8 +2295,8 @@ Source: supabase/functions/generate-side-character/index.ts</div>
 2. handleEnhanceField() calls aiEnhanceCharacterField() in character-ai.ts
 3. aiEnhanceCharacterField() builds context via buildFullContext() + buildCharacterSelfContext()
 4. Constructs prompt via buildCharacterFieldPrompt() using the field's config from CHARACTER_FIELD_PROMPTS
-5. Calls callAIWithFallback() with models: [selected, 'grok-4-1-fast-reasoning', 'grok-3-mini']
-6. callAIWithFallback() invokes supabase.functions.invoke('chat') → api.x.ai/v1/chat/completions
+5. Calls callAIWithRetry() — retries same model up to 3 times on failure
+6. callAIWithRetry() invokes supabase.functions.invoke('chat') → api.x.ai/v1/chat/completions
 7. Response is trimmed, quotes stripped, and returned to the UI
 
 SYSTEM MESSAGE (sent with every call):
@@ -2403,7 +2402,6 @@ FIELD RESOLUTION (prefix stripping in buildCharacterFieldPrompt):
       <div class="ph-sub">character-ai.ts → aiEnhanceCharacterField() → chat edge fn → api.x.ai/v1/chat/completions</div>
       <div class="ph-chips">
         <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
-        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
         <div class="chip chip-temp">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
         <div class="chip">Streaming <strong>no</strong></div>
       </div>
@@ -2429,8 +2427,7 @@ FIELD RESOLUTION (prefix stripping in buildCharacterFieldPrompt):
   modelId: "grok-4-1-fast-reasoning",  // user's selected model, validated against VALID_GROK_MODELS
   stream: false
 }
-
-Fallback order: [selectedModel, 'grok-4-1-fast-reasoning', 'grok-3-mini'] (tries next on content_filter or empty response)
+Retry: up to 3 attempts with the same model on failure or content_filter.
 
 ═══ FIELD-SPECIFIC CONFIGS (CHARACTER_FIELD_PROMPTS) ═══
 
@@ -2612,7 +2609,6 @@ Assembles all existing data for the target character. Each line included only if
       <div class="ph-sub">character-ai.ts → aiEnhanceCharacterField() → chat edge fn → api.x.ai/v1/chat/completions</div>
       <div class="ph-chips">
         <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
-        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
         <div class="chip chip-temp">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
         <div class="chip">Streaming <strong>no</strong></div>
       </div>
@@ -2638,8 +2634,7 @@ Assembles all existing data for the target character. Each line included only if
   modelId: "grok-4-1-fast-reasoning",
   stream: false
 }
-
-Fallback order: [selectedModel, 'grok-4-1-fast-reasoning', 'grok-3-mini']
+Retry: up to 3 attempts with the same model on failure or content_filter.
 
 ═══ FIELD-SPECIFIC CONFIGS ═══
 
@@ -2752,7 +2747,6 @@ buildFullContext() and buildCharacterSelfContext() — identical to Physical App
       <div class="ph-sub">character-ai.ts → aiEnhanceCharacterField() → chat edge fn → api.x.ai/v1/chat/completions</div>
       <div class="ph-chips">
         <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
-        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
         <div class="chip chip-temp">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
         <div class="chip">Streaming <strong>no</strong></div>
       </div>
@@ -2778,8 +2772,7 @@ buildFullContext() and buildCharacterSelfContext() — identical to Physical App
   modelId: "grok-4-1-fast-reasoning",
   stream: false
 }
-
-Fallback order: [selectedModel, 'grok-4-1-fast-reasoning', 'grok-3-mini']
+Retry: up to 3 attempts with the same model on failure or content_filter.
 
 ═══ FIELD-SPECIFIC CONFIGS ═══
 
@@ -2889,7 +2882,6 @@ buildFullContext() and buildCharacterSelfContext() — identical to Physical App
       <div class="ph-sub">character-ai.ts → aiEnhanceCharacterField() → chat edge fn → api.x.ai/v1/chat/completions</div>
       <div class="ph-chips">
         <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
-        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
         <div class="chip chip-temp">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
         <div class="chip">Streaming <strong>no</strong></div>
       </div>
@@ -2915,8 +2907,7 @@ buildFullContext() and buildCharacterSelfContext() — identical to Physical App
   modelId: "grok-4-1-fast-reasoning",
   stream: false
 }
-
-Fallback order: [selectedModel, 'grok-4-1-fast-reasoning', 'grok-3-mini']
+Retry: up to 3 attempts with the same model on failure or content_filter.
 
 ═══ FIELD-SPECIFIC CONFIGS ═══
 IMPORTANT: The UI sends field names with bg_ prefix (e.g. bg_jobOccupation). The resolver strips this: bg_jobOccupation → jobOccupation.
@@ -3032,7 +3023,6 @@ buildFullContext() and buildCharacterSelfContext() — identical to Physical App
       <div class="ph-sub">character-ai.ts → aiEnhanceCharacterField() → chat edge fn → api.x.ai/v1/chat/completions</div>
       <div class="ph-chips">
         <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
-        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
         <div class="chip chip-temp">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
         <div class="chip">Streaming <strong>no</strong></div>
       </div>
@@ -3058,8 +3048,7 @@ buildFullContext() and buildCharacterSelfContext() — identical to Physical App
   modelId: "grok-4-1-fast-reasoning",
   stream: false
 }
-
-Fallback order: [selectedModel, 'grok-4-1-fast-reasoning', 'grok-3-mini']
+Retry: up to 3 attempts with the same model on failure or content_filter.
 
 ═══ FIELD-SPECIFIC CONFIGS (3 variants) ═══
 
@@ -3155,7 +3144,6 @@ buildFullContext() and buildCharacterSelfContext() — identical to Physical App
       <div class="ph-sub">character-ai.ts → aiEnhanceCharacterField() → chat edge fn → api.x.ai/v1/chat/completions</div>
       <div class="ph-chips">
         <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
-        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
         <div class="chip chip-temp">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
         <div class="chip">Streaming <strong>no</strong></div>
       </div>
@@ -3181,8 +3169,7 @@ buildFullContext() and buildCharacterSelfContext() — identical to Physical App
   modelId: "grok-4-1-fast-reasoning",
   stream: false
 }
-
-Fallback order: [selectedModel, 'grok-4-1-fast-reasoning', 'grok-3-mini']
+Retry: up to 3 attempts with the same model on failure or content_filter.
 
 ═══ FIELD-SPECIFIC CONFIG ═══
 
@@ -3244,7 +3231,6 @@ buildFullContext() and buildCharacterSelfContext() — identical to Physical App
       <div class="ph-sub">character-ai.ts → aiEnhanceCharacterField() → chat edge fn → api.x.ai/v1/chat/completions</div>
       <div class="ph-chips">
         <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
-        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
         <div class="chip chip-temp">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
         <div class="chip">Streaming <strong>no</strong></div>
       </div>
@@ -3270,8 +3256,7 @@ buildFullContext() and buildCharacterSelfContext() — identical to Physical App
   modelId: "grok-4-1-fast-reasoning",
   stream: false
 }
-
-Fallback order: [selectedModel, 'grok-4-1-fast-reasoning', 'grok-3-mini']
+Retry: up to 3 attempts with the same model on failure or content_filter.
 
 ═══ FIELD CONFIG ═══
 roleDescription — Label: "Role Description" | Max Sentences: 3
@@ -3320,7 +3305,6 @@ buildFullContext() and buildCharacterSelfContext() — identical to Physical App
       <div class="ph-sub">character-ai.ts → aiEnhanceCharacterField() → chat edge fn → api.x.ai/v1/chat/completions</div>
       <div class="ph-chips">
         <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
-        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
         <div class="chip chip-temp">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
         <div class="chip">Streaming <strong>no</strong></div>
       </div>
@@ -3346,8 +3330,7 @@ buildFullContext() and buildCharacterSelfContext() — identical to Physical App
   modelId: "grok-4-1-fast-reasoning",
   stream: false
 }
-
-Fallback order: [selectedModel, 'grok-4-1-fast-reasoning', 'grok-3-mini']
+Retry: up to 3 attempts with the same model on failure or content_filter.
 
 ═══ FIELD CONFIG ═══
 keyLifeEvent (extra_kle_* resolution) — Label: "Key Life Event" | Max Sentences: 3
@@ -3380,7 +3363,6 @@ SECTION-SPECIFIC GUIDANCE:
       <div class="ph-sub">character-ai.ts → aiEnhanceCharacterField() → chat edge fn → api.x.ai/v1/chat/completions</div>
       <div class="ph-chips">
         <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
-        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
         <div class="chip chip-temp">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
         <div class="chip">Streaming <strong>no</strong></div>
       </div>
@@ -3406,8 +3388,7 @@ SECTION-SPECIFIC GUIDANCE:
   modelId: "grok-4-1-fast-reasoning",
   stream: false
 }
-
-Fallback order: [selectedModel, 'grok-4-1-fast-reasoning', 'grok-3-mini']
+Retry: up to 3 attempts with the same model on failure or content_filter.
 
 ═══ FIELD CONFIG ═══
 relationship (extra_rel_* resolution) — Label: "Relationship" | Max Sentences: 3
@@ -3440,7 +3421,6 @@ SECTION-SPECIFIC GUIDANCE:
       <div class="ph-sub">character-ai.ts → aiEnhanceCharacterField() → chat edge fn → api.x.ai/v1/chat/completions</div>
       <div class="ph-chips">
         <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
-        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
         <div class="chip chip-temp">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
         <div class="chip">Streaming <strong>no</strong></div>
       </div>
@@ -3466,8 +3446,7 @@ SECTION-SPECIFIC GUIDANCE:
   modelId: "grok-4-1-fast-reasoning",
   stream: false
 }
-
-Fallback order: [selectedModel, 'grok-4-1-fast-reasoning', 'grok-3-mini']
+Retry: up to 3 attempts with the same model on failure or content_filter.
 
 ═══ FIELD CONFIG ═══
 secret (extra_sec_* resolution) — Label: "Secret" | Max Sentences: 3
@@ -3500,7 +3479,6 @@ SECTION-SPECIFIC GUIDANCE:
       <div class="ph-sub">character-ai.ts → aiEnhanceCharacterField() → chat edge fn → api.x.ai/v1/chat/completions</div>
       <div class="ph-chips">
         <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
-        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
         <div class="chip chip-temp">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
         <div class="chip">Streaming <strong>no</strong></div>
       </div>
@@ -3526,8 +3504,7 @@ SECTION-SPECIFIC GUIDANCE:
   modelId: "grok-4-1-fast-reasoning",
   stream: false
 }
-
-Fallback order: [selectedModel, 'grok-4-1-fast-reasoning', 'grok-3-mini']
+Retry: up to 3 attempts with the same model on failure or content_filter.
 
 ═══ FIELD CONFIG ═══
 fear (extra_fear_* resolution) — Label: "Fear" | Max Sentences: 3
@@ -3560,7 +3537,6 @@ SECTION-SPECIFIC GUIDANCE:
       <div class="ph-sub">character-ai.ts → aiEnhanceCharacterField() → chat edge fn → api.x.ai/v1/chat/completions</div>
       <div class="ph-chips">
         <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
-        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
         <div class="chip chip-temp">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
         <div class="chip">Streaming <strong>no</strong></div>
       </div>
@@ -3586,8 +3562,7 @@ SECTION-SPECIFIC GUIDANCE:
   modelId: "grok-4-1-fast-reasoning",
   stream: false
 }
-
-Fallback order: [selectedModel, 'grok-4-1-fast-reasoning', 'grok-3-mini']
+Retry: up to 3 attempts with the same model on failure or content_filter.
 
 ═══ FIELD CONFIG ═══
 characterGoal — Label: "Character Goal" | Max Sentences: 3
@@ -3620,7 +3595,6 @@ SECTION-SPECIFIC GUIDANCE:
       <div class="ph-sub">character-ai.ts → aiEnhanceCharacterField() → chat edge fn → api.x.ai/v1/chat/completions</div>
       <div class="ph-chips">
         <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
-        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
         <div class="chip chip-temp">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
         <div class="chip">Streaming <strong>no</strong></div>
       </div>
@@ -3646,8 +3620,7 @@ SECTION-SPECIFIC GUIDANCE:
   modelId: "grok-4-1-fast-reasoning",
   stream: false
 }
-
-Fallback order: [selectedModel, 'grok-4-1-fast-reasoning', 'grok-3-mini']
+Retry: up to 3 attempts with the same model on failure or content_filter.
 
 ═══ FIELD CONFIG ═══
 custom (fallback for unrecognized field keys) — Label: "Custom" | Max Sentences: 3
@@ -3683,7 +3656,6 @@ NOTE: The custom section hint defaults to whatever sectionHint string the UI sen
       <div class="ph-sub">world-ai.ts → chat edge fn → api.x.ai/v1/chat/completions</div>
       <div class="ph-chips">
         <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
-        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
         <div class="chip chip-temp" title="Temperature">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
       </div>
       <div class="ph-note">System: "You are a concise worldbuilding assistant. Return only the requested content, no explanations."</div>
@@ -3947,7 +3919,6 @@ PRECISE MODE PROMPT (exact):
       <div class="ph-sub">character-ai.ts → chat edge fn → api.x.ai/v1/chat/completions</div>
       <div class="ph-chips">
         <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
-        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
         <div class="chip chip-temp" title="Temperature controls randomness: 0.0–0.3 = focused/deterministic, 0.7–0.9 = creative/varied, 1.0+ = highly random">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
         <div class="chip">Max Response <strong>4,096 tok</strong></div>
       </div>
@@ -3978,7 +3949,7 @@ Flow:
 1. Detects empty fields via getEmptyHardcodedFields()
 2. Builds context: buildFullContext() + buildCharacterSelfContext()
 3. Constructs JSON prompt via buildAiFillPrompt()
-4. Calls callAIWithFallback() with xAI/Grok
+4. Calls callAIWithRetry() with xAI/Grok
 5. Extracts JSON response via extractJsonFromResponse()
 6. Applies ONLY empty field values (preserves all existing content)
 
@@ -4005,7 +3976,6 @@ Modal: AIPromptModal.tsx (mode='fill')</div>
       <div class="ph-sub">character-ai.ts → chat edge fn → api.x.ai/v1/chat/completions</div>
       <div class="ph-chips">
         <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
-        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
         <div class="chip chip-temp" title="Temperature controls randomness: 0.0–0.3 = focused/deterministic, 0.7–0.9 = creative/varied, 1.0+ = highly random">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
         <div class="chip">Max Response <strong>4,096 tok</strong></div>
       </div>
@@ -5151,7 +5121,7 @@ const RESPONSE_POST_PROCESSING = `═══ RESPONSE POST-PROCESSING — Exact L
     7. Joined with \\n---SPLIT---\\n delimiter for the UI to parse`;
 
 const MODEL_FALLBACK = `═══ MODEL & FALLBACK — Exact Logic ═══
-(Source: callAIWithFallback() in character-ai.ts)
+(Source: callAIWithRetry() in character-ai.ts)
 
   FALLBACK_MODELS constant: ['grok-4-1-fast-reasoning', 'grok-3-mini']
 

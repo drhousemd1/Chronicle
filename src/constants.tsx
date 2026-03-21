@@ -16,10 +16,10 @@ export type LLMModel = {
 export const LLM_MODELS: LLMModel[] = [
   { id: 'grok-4-1-fast-reasoning', name: 'Grok 4.1 Fast (Reasoning)', provider: 'xAI', gateway: 'xai', description: 'Latest xAI model with reasoning. Best value at $0.20/M tokens with 2M context window.' },
   { id: 'grok-4-1-fast-non-reasoning', name: 'Grok 4.1 Fast', provider: 'xAI', gateway: 'xai', description: 'Same speed and price without chain-of-thought. Good for simple interactions.' },
-  { id: 'grok-4-fast-non-reasoning', name: 'Grok 4 Fast', provider: 'xAI', gateway: 'xai', description: 'Previous generation flagship. $0.60/M tokens with 2M context.' },
-  { id: 'grok-4-fast-reasoning', name: 'Grok 4 Fast (Reasoning)', provider: 'xAI', gateway: 'xai', description: 'Grok 4 with reasoning. Strong complex narrative performance at $0.60/M tokens.' },
-  { id: 'grok-3-mini', name: 'Grok 3 Mini', provider: 'xAI', gateway: 'xai', description: 'Lightweight and fast. $0.30/M tokens, 131K context. Good for quick interactions.' },
-  { id: 'grok-3', name: 'Grok 3', provider: 'xAI', gateway: 'xai', description: 'Legacy flagship. $3.00/M tokens, 131K context. Admin use only.' },
+  { id: 'grok-4-fast-non-reasoning', name: 'Grok 4 Fast', provider: 'xAI', gateway: 'xai', description: 'Previous generation. $2.00/M input, $10.00/M output with 2M context.' },
+  { id: 'grok-4-fast-reasoning', name: 'Grok 4 Fast (Reasoning)', provider: 'xAI', gateway: 'xai', description: 'Grok 4 with reasoning. $2.00/M input, $10.00/M output.' },
+  { id: 'grok-3-mini', name: 'Grok 3 Mini', provider: 'xAI', gateway: 'xai', description: 'Legacy lightweight model. $0.30/M input, $0.50/M output, 131K context.' },
+  { id: 'grok-3', name: 'Grok 3', provider: 'xAI', gateway: 'xai', description: 'Legacy flagship. $3.00/M input, $15.00/M output, 131K context.' },
 ];
 
 // GROK ONLY -- All image generation uses grok-imagine-image

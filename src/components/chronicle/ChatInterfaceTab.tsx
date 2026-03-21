@@ -1472,14 +1472,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     try {
       console.log(`Generating details for new side character: ${name}`);
       
-      // 1. Generate detailed profile - pass modelId to use user's selected model
+      // 1. Generate detailed profile via Grok
       const { data: profileData, error: profileError } = await supabase.functions.invoke('generate-side-character', {
         body: { 
           name, 
           dialogContext, 
           extractedTraits: {},
           worldContext: appData.world.core.storyPremise,
-          modelId  // Pass user's selected model
+          modelId
         }
       });
       
@@ -1534,7 +1534,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             body: { 
               avatarPrompt: profileData.avatarPrompt,
               characterName: name,
-              modelId,  // Pass user's selected model
+              modelId,
               stylePrompt: styleData?.backendPrompt || ''  // Pass the art style
             }
           });

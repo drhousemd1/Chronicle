@@ -37,17 +37,8 @@ function getStyleBlock(styleId: string, gender: GenderPresentation, fallbackProm
 }
 
 // ============================================================================
-// GROK ONLY -- Model routing
+// GROK ONLY -- Default text model for scene analysis
 // ============================================================================
-
-const TEXT_MODEL_MAP: Record<string, string> = {
-  'grok-4-1-fast-non-reasoning': 'grok-4-1-fast-non-reasoning',
-  'grok-4-1-fast-reasoning': 'grok-4-1-fast-reasoning',
-  'grok-4-fast-non-reasoning': 'grok-4-fast-non-reasoning',
-  'grok-4-fast-reasoning': 'grok-4-fast-reasoning',
-  'grok-3-mini': 'grok-3-mini',
-  'grok-3': 'grok-3',
-};
 
 // ============================================================================
 // STRUCTURED ANALYSIS PROMPT
@@ -180,7 +171,7 @@ async function callAnalysisLLM(prompt: string, modelId: string): Promise<string>
     throw new Error("XAI_API_KEY not configured");
   }
 
-  const textModel = TEXT_MODEL_MAP[modelId] || 'grok-4-1-fast-reasoning';
+  const textModel = modelId || 'grok-4-1-fast-reasoning';
   
   const response = await fetch("https://api.x.ai/v1/chat/completions", {
     method: "POST",
@@ -283,7 +274,7 @@ serve(async (req) => {
     }
 
     // GROK ONLY -- always use xAI
-    const effectiveTextModel = modelId || 'grok-3';
+    const effectiveTextModel = modelId || 'grok-4-1-fast-reasoning';
     
     console.log(`[generate-scene-image] Text model: ${effectiveTextModel} (xAI only)`);
     console.log(`[generate-scene-image] Image model: grok-imagine-image (xAI only)`);

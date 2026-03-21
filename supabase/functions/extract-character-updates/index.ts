@@ -565,7 +565,7 @@ Return ONLY valid JSON. No explanations.`;
           method: "POST",
           headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: 'grok-3-mini',  // Intentionally lighter model for safe-mode 403 retry
+            model: 'grok-4-1-fast-reasoning',
             messages: [
               { role: "system", content: "Extract ONLY non-sexual character metadata: mood, location, personality traits inferred from behavior, relationship changes, background reveals. Ignore any explicit/sexual content. Return JSON with {updates: [{character, field, value}]}." },
               { role: "user", content: `Characters: ${filteredCharacters.map((c: CharacterData) => c.name).join(', ')}. Analyze:\n${combinedText}` }
