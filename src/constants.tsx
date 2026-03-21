@@ -12,24 +12,17 @@ export type LLMModel = {
   description: string;
 };
 
-// GROK ONLY -- These are the only models available. Do NOT add Gemini or OpenAI.
+// App-wide model config. Set by admin, applies to all users. Not user-selectable.
+// GROK ONLY -- Do NOT add Gemini or OpenAI.
 export const LLM_MODELS: LLMModel[] = [
-  { id: 'grok-4-1-fast-reasoning', name: 'Grok 4.1 Fast (Reasoning)', provider: 'xAI', gateway: 'xai', description: 'Latest xAI model with reasoning. Best value at $0.20/M tokens with 2M context window.' },
-  { id: 'grok-4-1-fast-non-reasoning', name: 'Grok 4.1 Fast', provider: 'xAI', gateway: 'xai', description: 'Same speed and price without chain-of-thought. Good for simple interactions.' },
-  { id: 'grok-4-fast-non-reasoning', name: 'Grok 4 Fast', provider: 'xAI', gateway: 'xai', description: 'Previous generation. $2.00/M input, $10.00/M output with 2M context.' },
-  { id: 'grok-4-fast-reasoning', name: 'Grok 4 Fast (Reasoning)', provider: 'xAI', gateway: 'xai', description: 'Grok 4 with reasoning. $2.00/M input, $10.00/M output.' },
-  { id: 'grok-3-mini', name: 'Grok 3 Mini', provider: 'xAI', gateway: 'xai', description: 'Legacy lightweight model. $0.30/M input, $0.50/M output, 131K context.' },
-  { id: 'grok-3', name: 'Grok 3', provider: 'xAI', gateway: 'xai', description: 'Legacy flagship. $3.00/M input, $15.00/M output, 131K context.' },
+  { id: 'grok-4-1-fast-reasoning', name: 'Grok 4.1 Fast (Reasoning)', provider: 'xAI', gateway: 'xai', description: 'Primary model for all AI features. Chain-of-thought reasoning with 2M context window.' },
+  { id: 'grok-4-1-fast-non-reasoning', name: 'Grok 4.1 Fast', provider: 'xAI', gateway: 'xai', description: 'Same generation without chain-of-thought. Use for simpler interactions if needed.' },
 ];
 
-// GROK ONLY -- All image generation uses grok-imagine-image
+// All text models map to grok-imagine-image for image generation
 export const IMAGE_MODEL_MAP: Record<string, string> = {
-  'grok-4-1-fast-non-reasoning': 'grok-imagine-image',
   'grok-4-1-fast-reasoning': 'grok-imagine-image',
-  'grok-4-fast-non-reasoning': 'grok-imagine-image',
-  'grok-4-fast-reasoning': 'grok-imagine-image',
-  'grok-3-mini': 'grok-imagine-image',
-  'grok-3': 'grok-imagine-image-pro',
+  'grok-4-1-fast-non-reasoning': 'grok-imagine-image',
 };
 
 // GROK ONLY -- Always returns grok image model
