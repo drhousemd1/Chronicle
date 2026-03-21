@@ -1045,7 +1045,7 @@ export async function aiFillCharacter(
   const prompt = buildAiFillPrompt(character, emptyFields, emptyCustomItems, worldContext, userPrompt, useExistingDetails);
 
   try {
-    const content = await callAIWithFallback(
+    const content = await callAIWithRetry(
       [
         { role: 'system', content: 'You are a character creation assistant. Return only valid JSON.' },
         { role: 'user', content: prompt }
@@ -1207,7 +1207,7 @@ export async function aiGenerateCharacter(
   const prompt = buildAiGeneratePrompt(character, emptyFields, emptyCustomItems, existingSectionTitles, storyContext, worldContext, userPrompt, useExistingDetails);
 
   try {
-    const content = await callAIWithFallback(
+    const content = await callAIWithRetry(
       [
         { role: 'system', content: 'You are a creative character design assistant. Return only valid JSON.' },
         { role: 'user', content: prompt }
