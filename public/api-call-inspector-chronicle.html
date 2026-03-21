@@ -5152,6 +5152,44 @@ const MODEL_FALLBACK = `═══ MODEL & FALLBACK — Exact Logic ═══
     - If content returned → strip leading/trailing quotes, return result
     - If ALL models fail → throw "Content was blocked by all available models"`;
 
+// Helper: escape HTML entities for safe display inside <pre>
+function escapeHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Helper: build the full HTML for a page with callouts above each section
+function buildPageHtml(rawText) {
+  // Split the raw text into sections at ═══ markers
+  const parts = rawText.split(/(?=═══)/);
+  let html = '';
+  let plainText = '';
+
+  parts.forEach(part => {
+    const trimmed = part.trim();
+    if (!trimmed) return;
+
+    // Determine which callout to show above this section
+    let callout = '';
+    if (trimmed.startsWith('═══ REQUEST BODY')) {
+      callout = CALLOUT_REQUEST_BODY;
+    } else if (trimmed.startsWith('═══ WORLD & SCENARIO CONTEXT')) {
+      callout = CALLOUT_WORLD_CONTEXT;
+    } else if (trimmed.startsWith("═══ THIS CHARACTER'S EXISTING DATA") || trimmed.startsWith('═══ THIS CHARACTER')) {
+      callout = CALLOUT_CHARACTER_DATA;
+    } else if (trimmed.startsWith('═══ CURRENT VALUE')) {
+      callout = CALLOUT_CURRENT_VALUE;
+    } else if (trimmed.includes('FIELD CONFIG') || trimmed.includes('FIELD RESOLUTION') || trimmed.startsWith('═══ DETAILED MODE') || trimmed.startsWith('═══ PRECISE MODE') || trimmed.startsWith('═══ GENERATE-BOTH')) {
+      callout = CALLOUT_FIELD_INSTRUCTION;
+    }
+
+    html += callout;
+    html += '<pre class="api-payload-block">' + escapeHtml(trimmed) + '</pre>';
+    plainText += trimmed + '\n\n';
+  });
+
+  return { html, plainText };
+}
+
 // Injection: replace placeholders in all character builder pages
 function injectSharedContextIntoPages() {
   // All character builder body IDs that need context injection
@@ -5172,7 +5210,7 @@ function injectSharedContextIntoPages() {
       WORLD_CONTEXT_ASSEMBLY + '\n\n' + CHARACTER_SELF_CONTEXT_ASSEMBLY + '\n\n' + CURRENT_VALUE_LOGIC + '\n\n'
     );
 
-    // Also replace inline {buildFullContext()} references in prompt templates
+    // Replace inline {buildFullContext()} references in prompt templates
     text = text.replace(/\{buildFullContext\(\)[^}]*\}/g, '[assembled world context — see WORLD & SCENARIO CONTEXT assembly section below]');
     text = text.replace(/\{buildCharacterSelfContext\(\)[^}]*\}/g, '[assembled character data — see THIS CHARACTER\'S EXISTING DATA assembly section below]');
     text = text.replace(/\{CURRENT VALUE section\}/g, '[see CURRENT VALUE branching logic section below]');
@@ -5201,36 +5239,36 @@ function injectSharedContextIntoPages() {
       text += '\n\n' + RESPONSE_POST_PROCESSING;
     }
 
-    el.textContent = text;
+    // Render with callout boxes as styled HTML + payload in <pre> blocks
+    const { html, plainText } = buildPageHtml(text);
+    el.innerHTML = html;
 
-    // Also set the textarea
+    // Also set the textarea with plain text for copy functionality
     const taId = bodyId.replace('body-', 'ta-');
     const ta = document.getElementById(taId);
-    if (ta) ta.value = text;
+    if (ta) ta.value = plainText;
   });
 
-  // Also fix the Physical Appearance page — it already has context but may be missing model/post-processing
+  // Also fix the Physical Appearance page
   const paBody = document.getElementById('body-star-char-pa');
   if (paBody) {
     let text = paBody.textContent;
     if (!text.includes('MODEL & FALLBACK — Exact Logic')) {
       text += '\n\n' + MODEL_FALLBACK;
     }
-    if (!text.includes('RESPONSE POST-PROCESSING — Exact Logic') && !text.includes('Detailed mode: trim')) {
-      // It already has inline post-processing, leave it
-    }
-    // Replace inline references
     text = text.replace(/\{buildFullContext\(\) output — see CONTEXT ASSEMBLY below\}/g, '[assembled world context — see WORLD & SCENARIO CONTEXT assembly section below]');
     text = text.replace(/\{buildCharacterSelfContext\(\) output — see CONTEXT ASSEMBLY below\}/g, '[assembled character data — see THIS CHARACTER\'S EXISTING DATA assembly section below]');
     text = text.replace(/\{buildFullContext\(\) output\}/g, '[assembled world context — see assembly section below]');
     text = text.replace(/\{buildCharacterSelfContext\(\) output\}/g, '[assembled character data — see assembly section below]');
     text = text.replace(/\{CURRENT VALUE section\}/g, '[see CURRENT VALUE branching logic section below]');
-    paBody.textContent = text;
+
+    const { html, plainText } = buildPageHtml(text);
+    paBody.innerHTML = html;
     const paTa = document.getElementById('ta-star-char-pa');
-    if (paTa) paTa.value = text;
+    if (paTa) paTa.value = plainText;
   }
 
-  // Fix story builder pages — inject full payload structure
+  // Fix story builder pages
   injectStoryBuilderPages();
 }
 
@@ -5289,7 +5327,7 @@ CONTEXT FROM OTHER FIELDS:
   - Description: [worldContext.briefDescription]  (only if this field is NOT briefDescription)
   - Premise: [worldContext.storyPremise]    (only if this field is NOT storyPremise)
 
-CURRENT VALUE:
+═══ CURRENT VALUE ═══
   IF field has text: "CURRENT VALUE (enhance while preserving intent):\\n[existing text]"
   IF field is empty: "CURRENT VALUE: Empty - generate appropriate content based on context."
 
@@ -5336,10 +5374,13 @@ Unlike character-ai.ts which injects full world + character context:
   - It does NOT inject character data, content themes, custom sections, story goals, or other characters
   - This is intentional: story fields are meant to be written independently of character data`;
 
-    el.textContent = fullText;
+    // Render with callout boxes as styled HTML + payload in <pre> blocks
+    const { html, plainText } = buildPageHtml(fullText);
+    el.innerHTML = html;
+
     const taId = bodyId.replace('body-', 'ta-');
     const ta = document.getElementById(taId);
-    if (ta) ta.value = fullText;
+    if (ta) ta.value = plainText;
   });
 }
 
