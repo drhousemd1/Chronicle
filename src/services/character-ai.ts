@@ -268,6 +268,70 @@ const CHARACTER_FIELD_PROMPTS: Record<string, { label: string; instruction: stri
     maxSentences: 2
   },
 
+  // Role Description
+  roleDescription: {
+    label: "Role Description",
+    instruction: "Describe this character's role and function in the story. What is their narrative purpose? Are they a protagonist, antagonist, mentor, love interest, comic relief? How do they drive the plot or support other characters? Be specific to the scenario context.",
+    maxSentences: 3
+  },
+
+  // Key Life Events
+  keyLifeEvent: {
+    label: "Key Life Event",
+    instruction: "Describe a formative event from this character's past and how it shaped who they are today. Focus on what happened, the emotional impact, and lasting consequences on personality or relationships. Ground it in the character's established background and world context.",
+    maxSentences: 3
+  },
+
+  // Relationships
+  relationship: {
+    label: "Relationship",
+    instruction: "Describe this relationship dynamic — who the other person is, the nature of the bond (family, romantic, rival, mentor, etc.), current state of the relationship, and any tension or significance for the story. Reference other characters in the scenario when relevant.",
+    maxSentences: 3
+  },
+
+  // Secrets
+  secret: {
+    label: "Secret",
+    instruction: "Describe a hidden truth, concealed history, or private knowledge this character keeps from others. Explain what the secret is, why they hide it, and what would happen if it were revealed. Ground it in the character's background and relationships.",
+    maxSentences: 3
+  },
+
+  // Fears
+  fear: {
+    label: "Fear",
+    instruction: "Describe this fear — what triggers it, how it manifests in the character's behavior (avoidance, anxiety, overcompensation), and how it connects to their past or current situation. Be specific rather than generic.",
+    maxSentences: 3
+  },
+
+  // Character Goals
+  characterGoal: {
+    label: "Character Goal",
+    instruction: "Describe what this character wants to achieve, their underlying motivation for wanting it, and the obstacles or conflicts standing in their way. Connect the goal to the story premise and the character's personality.",
+    maxSentences: 3
+  },
+
+  // Extra variants for section-specific extras
+  physicalAppearanceExtra: {
+    label: "Physical Detail",
+    instruction: "Describe an additional physical characteristic or detail about this character's appearance. Be specific and visually descriptive. Complement existing physical traits without duplicating them.",
+    maxSentences: 2
+  },
+  currentlyWearingExtra: {
+    label: "Clothing Item",
+    instruction: "Describe an additional clothing item or accessory the character is currently wearing. Include type, color, fit, and style.",
+    maxSentences: 2
+  },
+  preferredClothingExtra: {
+    label: "Preferred Outfit",
+    instruction: "Describe an additional preferred clothing item or outfit for a specific occasion. Include style, aesthetic, and when they'd wear it.",
+    maxSentences: 2
+  },
+  backgroundExtra: {
+    label: "Background Detail",
+    instruction: "Describe an additional background detail about this character — a life experience, cultural element, skill, or contextual fact that enriches their story. Ground it in existing character data.",
+    maxSentences: 2
+  },
+
   // Custom fields (fallback)
   custom: { label: "Custom", instruction: "Provide relevant details for this character trait. Be concise and story-relevant.", maxSentences: 3 }
 };
@@ -283,8 +347,17 @@ function buildCharacterFieldPrompt(
   customLabel?: string,
   mode: 'precise' | 'detailed' = 'detailed'
 ): string {
-  // Map prefixed field names to their prompt config (e.g. "extra_tone_abc123" → "tone", "personality_abc123" → "personality")
+  // Map prefixed field names to their prompt config
   const resolvedFieldName = fieldName.startsWith('extra_tone') ? 'tone'
+    : fieldName.startsWith('extra_kle') ? 'keyLifeEvent'
+    : fieldName.startsWith('extra_rel') ? 'relationship'
+    : fieldName.startsWith('extra_sec') ? 'secret'
+    : fieldName.startsWith('extra_fear') ? 'fear'
+    : fieldName.startsWith('extra_pa') ? 'physicalAppearanceExtra'
+    : fieldName.startsWith('extra_cw') ? 'currentlyWearingExtra'
+    : fieldName.startsWith('extra_pc') ? 'preferredClothingExtra'
+    : fieldName.startsWith('extra_bg') ? 'backgroundExtra'
+    : fieldName.startsWith('bg_') ? fieldName.slice(3)
     : fieldName.startsWith('personality_outward_') ? 'personality_outward'
     : fieldName.startsWith('personality_inward_') ? 'personality_inward'
     : fieldName.startsWith('personality_') ? 'personality'
@@ -305,6 +378,15 @@ function buildCharacterFieldPrompt(
     'personality trait': 'Generate a personality trait describing a core behavioral pattern, emotional tendency, or character quality. Good label examples: "Stubborn", "Empathetic", "Reckless Courage", "Quiet Ambition", "People-Pleaser". The description should explain how this trait manifests in the character\'s behavior and decisions. Do NOT generate tone/voice traits — focus on personality and behavior.',
     'outward personality trait': 'Generate an OUTWARD personality trait — something other characters would notice and experience. Good label examples: "Charming Deflector", "Stoic Composure", "Infectious Optimism", "Cold Professionalism", "Disarming Humor". Focus on projected behavior, social demeanor, and how they present themselves. Do NOT describe internal feelings or speech patterns.',
     'inward personality trait': 'Generate an INWARD personality trait — something the character experiences internally but may hide. Good label examples: "Chronic Self-Doubt", "Suppressed Rage", "Secret Tenderness", "Fear of Abandonment", "Hidden Guilt". Focus on private thoughts, inner contradictions, and emotional patterns they don\'t show others. Do NOT describe outward behavior or speech patterns.',
+    'key life event': 'Generate a formative past event. Good label examples: "Mother\'s Disappearance", "First Kill", "Academy Expulsion", "The Betrayal", "Childhood Fire". The description should explain what happened and how it shaped the character. Ground it in their established background.',
+    'relationship': 'Generate a relationship with another character or figure. Good label examples: "Rival — Marcus Cole", "Mentor — Old Gregor", "Ex-Lover — Diana", "Estranged Father". The description should explain the dynamic, current state, and story significance.',
+    'secret': 'Generate a secret the character keeps hidden. Good label examples: "True Parentage", "The Incident at Millbrook", "Hidden Addiction", "Double Agent". The description should explain what the secret is, why they hide it, and what would happen if revealed.',
+    'fear': 'Generate a specific fear. Good label examples: "Abandonment", "Loss of Control", "Deep Water", "Becoming Like Father", "Public Failure". The description should explain how this fear manifests in behavior and connects to the character\'s past.',
+    'character goal': 'Generate a character goal. Good label examples: "Find the Lost Heir", "Earn Father\'s Approval", "Escape the Guild", "Protect the Family Secret". The description should explain motivation and obstacles.',
+    'physical appearance detail': 'Generate an additional physical detail. Good label examples: "Crooked Nose", "Calloused Hands", "Distinctive Gait", "Faded Scar". The description should be visually specific and complement existing appearance traits.',
+    'currently wearing detail': 'Generate an additional clothing item. Good label examples: "Worn Leather Gloves", "Silver Locket", "Mud-Stained Boots", "Concealed Holster". Include type, appearance, and any significance.',
+    'preferred clothing detail': 'Generate a preferred outfit for a specific occasion. Good label examples: "Date Night", "Formal Events", "Training Gear", "Disguise Kit". Describe the style and aesthetic.',
+    'background detail': 'Generate an additional background detail. Good label examples: "Military Service", "Orphaned at 12", "Speaks Three Languages", "Former Street Performer". The description should enrich the character\'s history.',
   };
 
   if (isGenerateBoth) {
