@@ -1,36 +1,71 @@
 
 
-# Fix Fallback Logic: Retry Same Model, Don't Fall Back to Worse Models
+# Clean Up Model System: Remove Legacy Models, Rework Admin Panel
 
-## Problem With My Previous Plan
-I proposed removing retry logic entirely — "if it fails, throw an error." That's reckless. API calls fail due to network issues, rate limits, and temporary outages all the time. Retry is essential. The actual problem is that the retry falls back to **different, worse models** (`grok-3-mini`). The fix is to retry with the **same model**.
+## What's Wrong Now
 
-## What Changes
+1. **`constants.tsx` has 6 models with fake pricing** — only 2 are actually used (`grok-4-1-fast-reasoning` for text, `grok-imagine-image` for images). The other 4 (`grok-4-fast-*`, `grok-3-mini`, `grok-3`) are legacy dead weight with wrong pricing descriptions.
 
-### `src/services/character-ai.ts`
-- **Delete `FALLBACK_MODELS` constant** (line 467) — no list of alternative models needed
-- **Rewrite `callAIWithFallback`** to retry the **same model** (e.g., 2-3 attempts with the same `grok-4-1-fast-reasoning`) instead of cycling through different models
-- Keep the content_filter check — if content is filtered, retry the same model (the edge function already has the `CONTENT_REDIRECT_DIRECTIVE` logic for 403s, so the retry here catches any remaining edge cases)
-- Update the error message from "blocked by all available models" to something like "AI request failed after 3 attempts"
-- Update the comment on line 463 from "content-filter fallback" to "AI call with retry"
+2. **Admin Model Settings panel shows all 6 models as selectable options** — it looks like a "pick your model" UI, which is misleading. This is an admin-only panel and should just show what the app uses, not present a buffet of choices.
 
-### All other Phase 1 changes from the approved plan remain the same:
-- `CharactersTab.tsx` lines 876, 2243: `'grok-3'` → `'grok-4-1-fast-reasoning'`
-- `generate-scene-image/index.ts`: delete useless `TEXT_MODEL_MAP`, fix `'grok-3'` default
-- `extract-character-updates/index.ts` line 568: `'grok-3-mini'` → `'grok-4-1-fast-reasoning'` for 403 retry
-- `llm.ts` line 842: fix "OpenAI-compatible" comment
-- `ChatInterfaceTab.tsx` lines 1475, 1482, 1537: fix "user's selected model" comments
-- `constants.tsx`: update stale pricing in model descriptions
+3. **`IMAGE_MODEL_MAP` has entries for all 6 models** — only needs 2 entries (the ones we keep), plus a default fallback.
 
-### Phase 2 (API Inspector fixes) also unchanged.
+4. **Edge functions (`chat/index.ts`, `extract-character-updates/index.ts`) have `VALID_GROK_MODELS` whitelists with all 6 models** — should only accept the models we actually use.
 
-## Files Modified
-- `src/services/character-ai.ts` — retry same model instead of falling back to worse models
-- `src/components/chronicle/CharactersTab.tsx` — fix 2 stale defaults
-- `supabase/functions/generate-scene-image/index.ts` — delete dead map, fix default
-- `supabase/functions/extract-character-updates/index.ts` — fix 403 retry model
-- `src/services/llm.ts` — fix misleading comment
-- `src/components/chronicle/ChatInterfaceTab.tsx` — fix misleading comments
-- `src/constants.tsx` — fix stale pricing
-- `public/api-call-inspector-chronicle.html` — Phase 2 inspector accuracy fixes
+5. **DB default for `stories.selected_model` is `'gemini-3-flash-preview'`** — stale from the original multi-provider era. App code overrides it, but it's garbage in the schema.
+
+## What Will Change
+
+### 1. `src/constants.tsx` — Strip to only active models, remove pricing
+
+Remove `grok-4-fast-non-reasoning`, `grok-4-fast-reasoning`, `grok-3-mini`, `grok-3` from `LLM_MODELS`. Keep only:
+- `grok-4-1-fast-reasoning` — primary text model for all AI
+- `grok-4-1-fast-non-reasoning` — kept as non-reasoning alternative (same price)
+
+Remove all pricing from descriptions. Descriptions should say what the model does, not what it costs (since costs change and we keep getting it wrong).
+
+Clean up `IMAGE_MODEL_MAP` to only have entries for the 2 remaining models, both mapping to `grok-imagine-image`.
+
+Update comment to be clear: "App-wide model config. Set by admin. Not user-selectable."
+
+### 2. `src/components/chronicle/ModelSettingsTab.tsx` — Rework completely
+
+Instead of a "pick any of 6 models" selector, redesign to show:
+- **Active Text Model**: `Grok 4.1 Fast (Reasoning)` — displayed as the current app-wide model, not as one option among many
+- **Active Image Model**: `grok-imagine-image` — shown for reference
+- **Connection status** and **API key sharing toggle** (keep existing admin functionality)
+- Clear label: "App-wide AI Configuration — set by admin, applies to all users"
+- Remove the model selection list entirely since there's effectively only one choice (reasoning). If the admin ever needs to switch to non-reasoning, they can still do it, but it shouldn't look like a model marketplace.
+
+Actually — keep the selector but only show the 2 remaining models. Make the UI clearly state this is the app-wide setting, not a per-user preference.
+
+### 3. Edge functions — Trim valid model lists
+
+**`supabase/functions/chat/index.ts` line 87**: Change `VALID_GROK_MODELS` to only `['grok-4-1-fast-reasoning', 'grok-4-1-fast-non-reasoning']`.
+
+**`supabase/functions/extract-character-updates/index.ts` line 507**: Same change.
+
+### 4. DB migration — Fix stale default
+
+Create a migration to change `stories.selected_model` default from `'gemini-3-flash-preview'` to `'grok-4-1-fast-reasoning'`.
+
+### 5. `ModelSettingsContext.tsx` — Add clarifying comment
+
+Add comment: "App-wide model setting controlled by admin. Not a per-user preference."
+
+### Critical: What NOT to break
+
+- `getImageModelForTextModel()` still works — it has `|| 'grok-imagine-image'` default
+- `getGatewayForModel()` still returns `'xai'` — no change
+- All edge function validation still falls back to `'grok-4-1-fast-reasoning'` for invalid model IDs
+- `supabase-data.ts` and `utils.ts` still reference `LLM_MODELS[0].id` which will still be `'grok-4-1-fast-reasoning'`
+- The retry logic in `character-ai.ts` still works — it retries with the same model
+
+### Files Modified
+- `src/constants.tsx` — remove 4 legacy models, remove pricing, clean IMAGE_MODEL_MAP
+- `src/components/chronicle/ModelSettingsTab.tsx` — rework UI to show app-wide config, not model marketplace
+- `supabase/functions/chat/index.ts` — trim VALID_GROK_MODELS
+- `supabase/functions/extract-character-updates/index.ts` — trim VALID_GROK_MODELS
+- `src/contexts/ModelSettingsContext.tsx` — add clarifying comment
+- DB migration — fix `stories.selected_model` default
 
