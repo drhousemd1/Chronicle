@@ -9,7 +9,6 @@ serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
 
   try {
-    // Auth check
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -22,34 +21,43 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    console.log("[check-shared-keys] Checking shared key status...");
+    // Check if XAI_API_KEY exists in environment
+    const xaiKey = Deno.env.get("XAI_API_KEY");
+    const xaiConfigured = !!xaiKey;
 
-    // Get the shared_keys setting
-    const { data, error } = await supabase
+    // Check shared_keys setting from app_settings
+    const { data } = await supabase
       .from('app_settings')
       .select('setting_value')
       .eq('setting_key', 'shared_keys')
       .single();
 
-    if (error) {
-      console.error('[check-shared-keys] Error fetching settings:', error);
-      return new Response(
-        JSON.stringify({ xaiShared: false, xaiConfigured: false }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    const xaiShared = data?.setting_value?.xai === true;
+
+    // Perform a real health check against xAI API if key is configured
+    let providerReachable = false;
+    if (xaiConfigured) {
+      try {
+        const probe = await fetch("https://api.x.ai/v1/models", {
+          method: "GET",
+          headers: { "Authorization": `Bearer ${xaiKey}` },
+          signal: AbortSignal.timeout(5000),
+        });
+        providerReachable = probe.ok;
+        if (!probe.ok) {
+          console.error(`[check-shared-keys] xAI probe returned ${probe.status}`);
+        }
+      } catch (e) {
+        console.error('[check-shared-keys] xAI probe failed:', e);
+        providerReachable = false;
+      }
     }
 
-    const xaiShared = data?.setting_value?.xai === true;
-    
-    // Also check if XAI key is actually configured
-    const xaiConfigured = !!Deno.env.get("XAI_API_KEY");
-
-    console.log(`[check-shared-keys] xaiShared=${xaiShared}, xaiConfigured=${xaiConfigured}`);
-
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
+        xaiConfigured,
         xaiShared: xaiShared && xaiConfigured,
-        xaiConfigured 
+        providerReachable,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
@@ -57,7 +65,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('[check-shared-keys] Error:', error);
     return new Response(
-      JSON.stringify({ xaiShared: false, xaiConfigured: false }),
+      JSON.stringify({ xaiConfigured: false, xaiShared: false, providerReachable: false }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
