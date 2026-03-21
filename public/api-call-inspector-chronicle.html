@@ -771,11 +771,11 @@
     </div>
     <div class="sb-tree standalone">
       <div class="sb-item" data-nav="star-char" onclick="switchSection('star-char', this)">
-        <div class="si-title">Star Icon — Character Fields</div>
+        <div class="si-title">Character Builder — AI Enhance</div>
         <div class="si-sub">aiEnhanceCharacterField()</div>
       </div>
       <div class="sb-item" data-nav="star-world" onclick="switchSection('star-world', this)">
-        <div class="si-title">Star Icon — World Fields</div>
+        <div class="si-title">Story Builder — AI Enhance</div>
         <div class="si-sub">aiEnhanceWorldField()</div>
       </div>
       <div class="sb-item" data-nav="ai-fill" onclick="switchSection('ai-fill', this)">
@@ -2110,11 +2110,11 @@ Source: supabase/functions/generate-side-character/index.ts</div>
     </div>
     </div><!-- end api-call-3 -->
 
-    <!-- ═══ PAGE: Star Icon — Character Fields ═══ -->
+    <!-- ═══ PAGE: Character Builder — AI Enhance ═══ -->
     <div class="content-section" data-section="star-char">
 
     <div class="page-header">
-      <h1>Star Icon — Character Fields <button class="copy-page-btn" onclick="copyPage(this)" title="Copy all blocks on this page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></h1>
+      <h1>Character Builder — AI Enhance <button class="copy-page-btn" onclick="copyPage(this)" title="Copy all blocks on this page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></h1>
       <div class="ph-sub">character-ai.ts → chat edge fn → api.x.ai/v1/chat/completions</div>
       <div class="ph-chips">
         <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
@@ -2130,7 +2130,7 @@ Source: supabase/functions/generate-side-character/index.ts</div>
         <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
         <div class="modified-dot" id="dot-star-char"></div>
         <div class="iblock-meta">
-          <div class="iblock-title">Star Icon — Character Fields</div>
+          <div class="iblock-title">Character Builder — AI Enhance</div>
           <div class="iblock-condition">AI-powered character attribute enhancement with detailed or precise output modes</div>
         </div>
         <div class="iblock-right">
@@ -2146,7 +2146,7 @@ System Message:
 "You are a concise character creation assistant. Return only the requested content, no explanations."
 
 Output Modes:
-- DETAILED: Full narrative descriptions, max sentences vary by field (2 sentences for most, 1 for specific traits)
+- DETAILED: Full narrative descriptions, max sentences vary by field
 - PRECISE: 3-5 semicolon-separated tags, compact format
 
 Context Pulled:
@@ -2154,24 +2154,102 @@ Context Pulled:
 - Complete character data via buildCharacterSelfContext()
 - Story type and thematic requirements
 
-Field-Specific Prompts (CHARACTER_FIELD_PROMPTS constant):
-- hairColor: "Describe hair color, style, and length concisely" (max 2 sentences)
-- eyeColor: "Describe eye color and any notable characteristics" (max 1 sentence)
-- build: "Describe body type/build" (max 2 sentences)
-- skinTone: "Describe skin tone" (max 1 sentence)
-- Plus 20+ additional fields for appearance, clothing, background, personality
+═══ FIELD-SPECIFIC PROMPTS (CHARACTER_FIELD_PROMPTS) ═══
 
-Special Mode:
-- generate-both: Creates LABEL + DESCRIPTION using GENERATE_BOTH_PREFIX</div>
+PHYSICAL APPEARANCE (11 fields):
+  hairColor — "Describe hair color, style, and length" (max 2 sentences)
+  eyeColor — "Describe eye color and notable characteristics" (max 1 sentence)
+  build — "Describe body type and physique" (max 2 sentences)
+  bodyHair — "Describe body hair amount and pattern" (max 1 sentence)
+  height — "Provide height with measurement" (max 1 sentence)
+  breastSize — "Describe size and relevant details" (max 1 sentence)
+  genitalia — "Describe relevant anatomical details" (max 1 sentence)
+  skinTone — "Describe skin tone and texture" (max 1 sentence)
+  makeup — "Describe makeup style, colors, intensity" (max 2 sentences)
+  bodyMarkings — "Describe type, location, significance" (max 2 sentences)
+  temporaryConditions — "Describe temporary physical conditions" (max 2 sentences)
+  physicalAppearanceExtra — "Additional physical characteristic" (max 2 sentences)
+
+CURRENTLY WEARING (4 + extras):
+  top — "Describe top/shirt: garment type, color, fit, style" (max 2 sentences)
+  bottom — "Describe pants/skirt/shorts" (max 2 sentences)
+  undergarments — "Describe undergarments: type, color, style" (max 2 sentences)
+  miscellaneous — "Additional items: outerwear, footwear, accessories" (max 3 sentences)
+  currentlyWearingExtra — "Additional clothing item or accessory" (max 2 sentences)
+
+PREFERRED CLOTHING (3 + extras):
+  casual — "Preferred casual clothing style" (max 2 sentences)
+  work — "Preferred work/professional attire" (max 2 sentences)
+  sleep — "Preferred sleepwear" (max 2 sentences)
+  preferredClothingExtra — "Preferred outfit for specific occasion" (max 2 sentences)
+
+BACKGROUND (6 + extras):
+  jobOccupation — "Current job, career, occupation" (max 2 sentences)
+  educationLevel — "Highest education, institutions, fields" (max 2 sentences)
+  residence — "Where they live: dwelling type, neighborhood" (max 2 sentences)
+  hobbies — "Primary hobbies and leisure activities" (max 2 sentences)
+  financialStatus — "Financial standing with context" (max 2 sentences)
+  motivation — "Core driving motivation" (max 2 sentences)
+  backgroundExtra — "Additional background detail" (max 2 sentences)
+  NOTE: bg_ prefix is stripped during resolution (bg_jobOccupation → jobOccupation)
+
+PERSONALITY (3 configs):
+  personality — "Behavioral patterns, emotional tendencies" (max 2 sentences)
+  personality_outward — "Projected behavior, social demeanor, body language" (max 2 sentences)
+  personality_inward — "Private thoughts, hidden impulses, inner contradictions" (max 2 sentences)
+
+TONE / VOICE (1 config):
+  tone — "Vocal qualities, speech rhythm, vocabulary, verbal tics, formality" (max 3 sentences)
+
+ROLE DESCRIPTION (1 config):
+  roleDescription — "Character's role and function in the story" (max 3 sentences)
+
+KEY LIFE EVENTS (1 config):
+  keyLifeEvent — "Formative past event and how it shaped them" (max 3 sentences)
+
+RELATIONSHIPS (1 config):
+  relationship — "Relationship dynamic, nature of bond, tension" (max 3 sentences)
+
+SECRETS (1 config):
+  secret — "Hidden truth, why they hide it, consequences of reveal" (max 3 sentences)
+
+FEARS (1 config):
+  fear — "What triggers it, behavioral manifestation, connection to past" (max 3 sentences)
+
+CHARACTER GOALS (1 config):
+  characterGoal — "What they want, motivation, obstacles" (max 3 sentences)
+
+CUSTOM SECTIONS (generic fallback):
+  custom — "Provide relevant details for this character trait" (max 3 sentences)
+
+═══ FIELD RESOLUTION (Prefix Stripping) ═══
+  extra_tone_*     → tone
+  extra_kle_*      → keyLifeEvent
+  extra_rel_*      → relationship
+  extra_sec_*      → secret
+  extra_fear_*     → fear
+  extra_pa_*       → physicalAppearanceExtra
+  extra_cw_*       → currentlyWearingExtra
+  extra_pc_*       → preferredClothingExtra
+  extra_bg_*       → backgroundExtra
+  bg_*             → strips bg_ prefix (e.g. bg_jobOccupation → jobOccupation)
+  personality_outward_* → personality_outward
+  personality_inward_*  → personality_inward
+  personality_*    → personality
+
+═══ GENERATE-BOTH MODE ═══
+When label is empty, prefix __GENERATE_BOTH__: triggers dual output.
+AI returns: LABEL: &lt;label&gt;\nDESCRIPTION: &lt;description&gt;
+Section-specific hints guide label style (e.g. tone labels vs personality labels vs fear labels).</div>
       <textarea class="iblock-textarea" id="ta-star-char" oninput="markModified('star-char'); autoResize(this)"></textarea>
     </div>
     </div><!-- end star-char -->
 
-    <!-- ═══ PAGE: Star Icon — World Fields ═══ -->
+    <!-- ═══ PAGE: Story Builder — AI Enhance ═══ -->
     <div class="content-section" data-section="star-world">
 
     <div class="page-header">
-      <h1>Star Icon — World Fields <button class="copy-page-btn" onclick="copyPage(this)" title="Copy all blocks on this page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></h1>
+      <h1>Story Builder — AI Enhance <button class="copy-page-btn" onclick="copyPage(this)" title="Copy all blocks on this page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></h1>
       <div class="ph-sub">world-ai.ts → chat edge fn → api.x.ai/v1/chat/completions</div>
       <div class="ph-chips">
         <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
@@ -2179,7 +2257,7 @@ Special Mode:
         <div class="chip chip-temp" title="Temperature controls randomness: 0.0–0.3 = focused/deterministic, 0.7–0.9 = creative/varied, 1.0+ = highly random">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
         <div class="chip">Max Response <strong>4,096 tok</strong></div>
       </div>
-      <div class="ph-note">Accessed via: World Builder → Star (✦) icon on individual fields</div>
+      <div class="ph-note">Accessed via: Story Builder → Star (✦) icon on individual fields</div>
     </div>
 
     <div class="iblock" data-block="star-world" id="block-star-world" draggable="false">
@@ -2187,7 +2265,7 @@ Special Mode:
         <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
         <div class="modified-dot" id="dot-star-world"></div>
         <div class="iblock-meta">
-          <div class="iblock-title">Star Icon — World Fields</div>
+          <div class="iblock-title">Story Builder — AI Enhance</div>
           <div class="iblock-condition">AI-powered world-building attribute enhancement with detailed or precise output modes</div>
         </div>
         <div class="iblock-right">
@@ -2203,18 +2281,24 @@ System Message:
 "You are a concise worldbuilding assistant. Return only the requested content, no explanations."
 
 Output Modes:
-- DETAILED: Full narrative descriptions (2 sentences for most fields)
+- DETAILED: Full narrative descriptions
 - PRECISE: 3-5 semicolon-separated tags, compact format
 
 Context:
 - World core data only (scenarioName, briefDescription, storyPremise, etc.)
 - No extended character data
 
-Field Prompts (FIELD_PROMPTS constant):
-- scenarioName: "Generate a compelling story name. Be evocative but concise (2-5 words)" (max 1 sentence)
-- briefDescription: "Write a 1-2 sentence summary suitable for a story card" (max 2 sentences)
-- storyPremise, factions, locations, historyTimeline, plotHooks, dialogFormatting, customContent
-- Plus additional world-building fields</div>
+═══ FIELD-SPECIFIC PROMPTS (FIELD_PROMPTS) ═══
+
+  scenarioName — "Generate a compelling story name (2-5 words)" (max 1 sentence)
+  briefDescription — "Write a 1-2 sentence summary suitable for a story card" (max 2 sentences)
+  storyPremise — "Central conflict and stakes: Situation + Tension + Stakes" (max 4 sentences)
+  factions — "List major factions: Name - description and role" (max 6 sentences)
+  locations — "List key locations with narrative significance" (max 6 sentences)
+  historyTimeline — "Summarize key historical events as chronological bullet points" (max 5 sentences)
+  plotHooks — "List potential story hooks: Hook Name - setup and stakes" (max 5 sentences)
+  dialogFormatting — "Specify additional dialog formatting rules" (max 3 sentences)
+  customContent — "Expand and enrich world-building content from context" (max 5 sentences)</div>
       <textarea class="iblock-textarea" id="ta-star-world" oninput="markModified('star-world'); autoResize(this)"></textarea>
     </div>
     </div><!-- end star-world -->
@@ -2917,8 +3001,8 @@ function switchSection(sectionId, clickedItem, scrollToBlockId) {
   const titles = {
     'api-call-1': 'Chat (Main Roleplay)',
     'api-call-2': 'Post-Response Processing',
-    'star-char': 'Star Icon — Character Fields',
-    'star-world': 'Star Icon — World Fields',
+    'star-char': 'Character Builder — AI Enhance',
+    'star-world': 'Story Builder — AI Enhance',
     'ai-fill': 'AI Fill (Bulk)',
     'ai-generate': 'AI Generate Character',
     'img-cover': 'Cover Image',
