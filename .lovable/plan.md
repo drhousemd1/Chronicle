@@ -1,88 +1,131 @@
 
+## Fix the API Inspector so every AI Enhance page shows the full exact request, not just the field-specific fragment
 
-# Break Out AI Enhance Inspector Into Per-Section Blocks With Exact Prompts
+### What’s wrong now
+The inspector is incomplete in exactly the way you described:
 
-## Problem
-The API Inspector currently lumps all character field AI enhance prompts into a single container with paraphrased summaries (e.g., `hairColor — "Describe hair color, style, and length" (max 2 sentences)`). These are not the actual API calls. Each field category is a distinct API call with distinct prompt text, and they need to be broken into their own sections showing the **exact** prompt sent — not summaries.
+- The per-section pages like Preferred Clothing only show the field label/instruction/max-sentence config.
+- The shared overview page shows the generic template, but the individual API-call pages do **not** repeat the rest of what is actually sent.
+- That means each page is omitting a large part of the real request:
+  - exact system message
+  - full `messages` payload shape
+  - full `WORLD & SCENARIO CONTEXT` assembly
+  - full `THIS CHARACTER'S EXISTING DATA` assembly
+  - `CURRENT VALUE` branching
+  - generate-both section guidance
+  - model fallback behavior
+  - response parsing/cleanup
 
-## What Gets Sent (3 Prompt Templates)
-
-Every AI enhance call sends one of these three exact prompt templates to Grok via the `chat` edge function. The only variables are the field-specific instruction text, context data, and max sentence count.
-
-1. **Detailed Mode** — full narrative enhancement
-2. **Precise Mode** — semicolon-separated tags
-3. **Generate-Both Mode** — when label is empty, generates LABEL + DESCRIPTION
+So the inspector is currently not accurate enough for debugging.
 
 ## Plan
 
-### 1. Sidebar: Expand "Character Builder — AI Enhance" into sub-items
+### 1. Make each AI Enhance page self-contained
+For every Character Builder and Story Builder AI Enhance section, replace the current “instruction-only” block with a **full exact payload block** that includes everything that is part of that call.
 
-Replace the single `star-char` sidebar entry with a collapsible group containing individual entries for each section:
+Each section page will show, verbatim:
 
-- Physical Appearance (11 fields)
-- Currently Wearing (4 + extras)
-- Preferred Clothing (3 + extras)
-- Background (6 + extras)
-- Personality (standard / outward / inward)
-- Tone / Voice
-- Role Description
-- Key Life Events
+- exact system message
+- exact request body structure
+- exact user prompt template for:
+  - detailed mode
+  - precise mode
+  - generate-both mode where applicable
+- exact field label / instruction / max sentence values for that section
+- exact resolver mapping for that section’s field keys
+- exact model fallback order
+- exact response post-processing for that mode
+
+No more “uses shared template from Overview page” shortcuts.
+
+### 2. Inline the full shared context builders inside every relevant page
+For every Character Builder AI Enhance page, include the exact content assembly for:
+
+- `buildFullContext(appData, targetCharacterId)`
+- `buildCharacterSelfContext(character)`
+
+That means the page will explicitly show the real ordered/conditional pieces that can be included, such as:
+
+- scenario name / description / premise
+- structured locations / legacy locations
+- factions / tone themes / plot hooks / history / dialog formatting
+- content themes
+- custom world sections
+- story goals
+- other character summaries
+- current character basics
+- physical appearance
+- currently wearing
+- preferred clothing
+- background
+- personality
+- extras-only sections
+- goals
+- custom sections
+
+These should be shown as the exact assembly logic, not summarized prose.
+
+### 3. Inline the full world-field context builders inside every Story Builder page
+For Story Builder AI Enhance pages, include the exact `buildPrompt()` assembly:
+
+- `CONTEXT FROM OTHER FIELDS`
+- `CURRENT VALUE` vs empty-state branch
+- exact field label/instruction/max sentence data
+- exact system message
+- exact request body with `stream: false`
+- exact cleanup logic for precise mode
+
+### 4. Keep the overview page, but downgrade it to summary only
+The overview page can stay as a shared reference, but it should no longer be the only place where the omitted payload pieces live.
+
+Every individual API-call page must be independently accurate.
+
+### 5. Refactor the inspector content so it cannot omit shared payload text again
+Inside `public/api-call-inspector-chronicle.html`, centralize the repeated exact strings used by the inspector pages:
+
+- system messages
+- detailed/precise/generate-both templates
+- shared context-builder blocks
+- fallback/request-body block
+- response parsing block
+
+Then render those into each page instead of hand-writing partial summaries page by page.
+
+This keeps the inspector consistent and prevents drift.
+
+## Exact scope
+### File to update
+- `public/api-call-inspector-chronicle.html`
+
+## What each page should contain after this change
+For example, **Preferred Clothing — AI Enhance** should show all of this on the same page:
+
+1. exact `messages` payload shape  
+2. exact system message  
+3. exact detailed-mode prompt template  
+4. exact precise-mode prompt template  
+5. exact generate-both template for `preferredClothingExtra`  
+6. exact `WORLD & SCENARIO CONTEXT` builder contents  
+7. exact `THIS CHARACTER'S EXISTING DATA` builder contents  
+8. exact current-value branching  
+9. exact field-specific label/instruction/max-sentences for `casual`, `work`, `sleep`, `preferredClothingExtra`  
+10. exact resolver mapping (`extra_pc_* → preferredClothingExtra`)  
+11. exact fallback model order  
+12. exact post-response cleanup/parsing rules
+
+That same completeness standard should be applied to every other AI Enhance page.
+
+## Verification
+After implementation, I would verify page-by-page that the inspector now matches source code exactly and that no block relies on a separate page for missing payload pieces:
+
+- Preferred Clothing
+- Background
+- Personality
+- Tone
 - Relationships
 - Secrets
 - Fears
-- Character Goals
-- Custom Sections (fallback)
+- Key Life Events
+- Story Builder pages
 
-Each gets its own `data-section` and `data-nav` ID (e.g., `star-char-pa`, `star-char-cw`, `star-char-personality`, etc.).
-
-### 2. Content blocks: Each section gets its own page with exact prompts
-
-Each section page will contain:
-
-**System message** (exact): `"You are a concise character creation assistant. Return only the requested content, no explanations."`
-
-**Detailed mode prompt** (exact template with the specific field's instruction and maxSentences filled in — copied verbatim from `CHARACTER_FIELD_PROMPTS`):
-```
-You are enhancing a character field for an interactive roleplay. Use STRUCTURED EXPANSION:
-
-RULES:
-1. Be concise and factual (max {maxSentences} sentences)
-2. Focus on narrative-relevant details - what matters for the story
-...
-
-FIELD: {label}
-INSTRUCTION: {exact instruction text from CHARACTER_FIELD_PROMPTS}
-```
-
-**Precise mode prompt** (exact template).
-
-**Generate-both prompt** (exact template with the section-specific hint from `SECTION_HINTS`).
-
-**Field resolution table** showing which fieldName prefixes map to this config.
-
-All prompt text will be the **exact** strings from `character-ai.ts` — no paraphrasing.
-
-### 3. Story Builder: Same treatment
-
-Break `star-world` into per-field blocks (scenarioName, briefDescription, storyPremise, factions, locations, historyTimeline, plotHooks, dialogFormatting, customContent) each showing the exact prompt templates from `world-ai.ts`.
-
-### 4. Keep shared overview block
-
-Add a small overview block at the top of the Character Builder group explaining:
-- The shared call flow: `character-ai.ts → callAIWithFallback() → chat edge fn → api.x.ai`
-- Model/fallback/temperature/token settings
-- The 3 output modes
-- Context injection (buildFullContext + buildCharacterSelfContext)
-
-This is the "how it works" block. The per-section blocks are the "what exactly is sent" blocks.
-
-### 5. Update section map and navigation
-
-Update the JavaScript `sectionTitles` map and sidebar click handlers for all new section IDs.
-
-## Files Modified
-- `public/api-call-inspector-chronicle.html` — restructure sidebar + content blocks (bulk of changes)
-
-## Scope
-This is entirely documentation/inspector changes. No functional code changes.
-
+The success condition is simple: if you open any single AI Enhance page in the inspector, you can see the complete exact request construction for that API call without needing to cross-reference another page.
