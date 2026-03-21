@@ -1,103 +1,88 @@
 
 
-# Audit & Fix: AI Enhance Prompt Coverage Across All Character Builder Sections
+# Break Out AI Enhance Inspector Into Per-Section Blocks With Exact Prompts
 
-## Current State — What Has Dedicated Prompts vs. What Falls to Generic
+## Problem
+The API Inspector currently lumps all character field AI enhance prompts into a single container with paraphrased summaries (e.g., `hairColor — "Describe hair color, style, and length" (max 2 sentences)`). These are not the actual API calls. Each field category is a distinct API call with distinct prompt text, and they need to be broken into their own sections showing the **exact** prompt sent — not summaries.
 
-### HAS dedicated prompt configs (works correctly):
-| Section | fieldKey pattern | Resolves to | Status |
-|---------|-----------------|-------------|--------|
-| Physical Appearance (hardcoded) | `hairColor`, `eyeColor`, `build`, etc. | Direct match | GOOD |
-| Currently Wearing (hardcoded) | `top`, `bottom`, `undergarments`, `miscellaneous` | Direct match | GOOD |
-| Preferred Clothing (hardcoded) | `casual`, `work`, `sleep` | Direct match | GOOD |
-| Background (hardcoded) | `jobOccupation`, `educationLevel`, etc. | Direct match in PROMPTS dict | GOOD in theory... |
-| Tone (extras) | `extra_tone_<id>` | Resolves → `tone` | GOOD |
-| Personality (standard/split) | `personality_<id>`, `personality_outward_<id>`, `personality_inward_<id>` | Resolves correctly | GOOD |
+## What Gets Sent (3 Prompt Templates)
 
-### BROKEN — Has prompt config but fieldKey doesn't resolve:
-| Section | fieldKey sent | Expected match | Actual result |
-|---------|-------------|----------------|---------------|
-| Background (hardcoded) | `bg_jobOccupation` | `jobOccupation` | Falls to `custom` — **the `bg_` prefix is never stripped** |
-| Background (hardcoded) | `bg_educationLevel` | `educationLevel` | Falls to `custom` |
-| Background (hardcoded) | `bg_residence` | `residence` | Falls to `custom` |
-| Background (hardcoded) | `bg_hobbies` | `hobbies` | Falls to `custom` |
-| Background (hardcoded) | `bg_financialStatus` | `financialStatus` | Falls to `custom` |
-| Background (hardcoded) | `bg_motivation` | `motivation` | Falls to `custom` |
+Every AI enhance call sends one of these three exact prompt templates to Grok via the `chat` edge function. The only variables are the field-specific instruction text, context data, and max sentence count.
 
-### MISSING — No dedicated prompt config at all (all fall to generic `custom`):
-| Section | fieldKey pattern | Section hint in generate-both | What it should generate |
-|---------|-----------------|-------------------------------|------------------------|
-| Role Description | `roleDescription` | N/A (hardcoded field) | Character's role in the story |
-| Key Life Events (extras) | `extra_kle_<id>` | `'key life event'` | A significant past event and its impact |
-| Relationships (extras) | `extra_rel_<id>` | `'relationship'` | A relationship dynamic with another character |
-| Secrets (extras) | `extra_sec_<id>` | `'secret'` | A hidden truth about the character |
-| Fears (extras) | `extra_fear_<id>` | `'fear'` | A specific fear and how it affects behavior |
-| Character Goals | goal fields | `'character goal'` | Goal title + desired outcome |
-| Physical Appearance (extras) | `extra_pa_<id>` | `'physical appearance detail'` | Additional physical detail |
-| Currently Wearing (extras) | `extra_cw_<id>` | `'currently wearing detail'` | Additional clothing item |
-| Preferred Clothing (extras) | `extra_pc_<id>` | `'preferred clothing detail'` | Additional preferred outfit |
-| Background (extras) | `extra_bg_<id>` | `'background detail'` | Additional background info |
-| Custom Sections | `custom_<sectionId>_<itemId>` | `'custom section detail'` | Context-dependent |
+1. **Detailed Mode** — full narrative enhancement
+2. **Precise Mode** — semicolon-separated tags
+3. **Generate-Both Mode** — when label is empty, generates LABEL + DESCRIPTION
 
 ## Plan
 
-### 1. `src/services/character-ai.ts` — Fix `bg_` prefix resolution + add missing prompt configs
+### 1. Sidebar: Expand "Character Builder — AI Enhance" into sub-items
 
-**Fix the resolver** (line ~287): Add `bg_` prefix stripping so `bg_jobOccupation` → `jobOccupation`:
+Replace the single `star-char` sidebar entry with a collapsible group containing individual entries for each section:
+
+- Physical Appearance (11 fields)
+- Currently Wearing (4 + extras)
+- Preferred Clothing (3 + extras)
+- Background (6 + extras)
+- Personality (standard / outward / inward)
+- Tone / Voice
+- Role Description
+- Key Life Events
+- Relationships
+- Secrets
+- Fears
+- Character Goals
+- Custom Sections (fallback)
+
+Each gets its own `data-section` and `data-nav` ID (e.g., `star-char-pa`, `star-char-cw`, `star-char-personality`, etc.).
+
+### 2. Content blocks: Each section gets its own page with exact prompts
+
+Each section page will contain:
+
+**System message** (exact): `"You are a concise character creation assistant. Return only the requested content, no explanations."`
+
+**Detailed mode prompt** (exact template with the specific field's instruction and maxSentences filled in — copied verbatim from `CHARACTER_FIELD_PROMPTS`):
 ```
-: fieldName.startsWith('bg_') ? fieldName.slice(3)
+You are enhancing a character field for an interactive roleplay. Use STRUCTURED EXPANSION:
+
+RULES:
+1. Be concise and factual (max {maxSentences} sentences)
+2. Focus on narrative-relevant details - what matters for the story
+...
+
+FIELD: {label}
+INSTRUCTION: {exact instruction text from CHARACTER_FIELD_PROMPTS}
 ```
 
-**Add dedicated prompt configs** for sections that currently lack them:
+**Precise mode prompt** (exact template).
 
-- `roleDescription` — "Describe this character's role and function in the story"
-- `keyLifeEvent` — "Describe a formative event from this character's past and how it shaped who they are"
-- `relationship` — "Describe this relationship dynamic — who the other person is, the nature of the bond, and any tension or significance"
-- `secret` — "Describe a hidden truth, concealed history, or private knowledge this character keeps from others and why"
-- `fear` — "Describe this fear — what triggers it, how it manifests in behavior, and what the character does to avoid or cope with it"
-- `characterGoal` — "Describe what this character wants to achieve, their motivation, and potential obstacles"
+**Generate-both prompt** (exact template with the section-specific hint from `SECTION_HINTS`).
 
-**Add section hints** for generate-both mode for each of the above.
+**Field resolution table** showing which fieldName prefixes map to this config.
 
-**Add resolver entries** for the extras prefixes:
-```
-: fieldName.startsWith('extra_kle') ? 'keyLifeEvent'
-: fieldName.startsWith('extra_rel') ? 'relationship'
-: fieldName.startsWith('extra_sec') ? 'secret'
-: fieldName.startsWith('extra_fear') ? 'fear'
-: fieldName.startsWith('extra_pa') ? 'physicalAppearanceExtra'
-: fieldName.startsWith('extra_cw') ? 'currentlyWearingExtra'
-: fieldName.startsWith('extra_pc') ? 'preferredClothingExtra'
-: fieldName.startsWith('extra_bg') ? 'backgroundExtra'
-```
+All prompt text will be the **exact** strings from `character-ai.ts` — no paraphrasing.
 
-### 2. `public/api-call-inspector-chronicle.html` — Break down Text Field Generation
+### 3. Story Builder: Same treatment
 
-Replace the single "Star Icon — Character Fields" block with a detailed breakdown:
+Break `star-world` into per-field blocks (scenarioName, briefDescription, storyPremise, factions, locations, historyTimeline, plotHooks, dialogFormatting, customContent) each showing the exact prompt templates from `world-ai.ts`.
 
-**Character Builder — Field-Specific Prompts:**
-- Physical Appearance (11 fields): hairColor, eyeColor, build, bodyHair, height, breastSize, genitalia, skinTone, makeup, bodyMarkings, temporaryConditions
-- Currently Wearing (4 fields): top, bottom, undergarments, miscellaneous
-- Preferred Clothing (3 fields): casual, work, sleep
-- Background (6 fields): jobOccupation, educationLevel, residence, hobbies, financialStatus, motivation
-- Tone (1 config): vocal qualities, speech rhythm, formality
-- Personality (3 configs): standard, outward, inward
-- Relationships (1 config): relationship dynamics
-- Key Life Events (1 config): formative past events
-- Secrets (1 config): hidden truths
-- Fears (1 config): specific fears and behavioral impact
-- Character Goals (1 config): objectives and motivation
-- Role Description (1 config): story function
-- Custom Sections: generic fallback
+### 4. Keep shared overview block
 
-**Story Builder — Field-Specific Prompts:**
-- scenarioName, briefDescription, storyPremise, factions, locations, historyTimeline, plotHooks, dialogFormatting, customContent
+Add a small overview block at the top of the Character Builder group explaining:
+- The shared call flow: `character-ai.ts → callAIWithFallback() → chat edge fn → api.x.ai`
+- Model/fallback/temperature/token settings
+- The 3 output modes
+- Context injection (buildFullContext + buildCharacterSelfContext)
 
-### 3. Rename sidebar labels
-- "Star Icon — Character Fields" → "Character Builder — AI Enhance"
-- "Star Icon — World Fields" → "Story Builder — AI Enhance"
+This is the "how it works" block. The per-section blocks are the "what exactly is sent" blocks.
+
+### 5. Update section map and navigation
+
+Update the JavaScript `sectionTitles` map and sidebar click handlers for all new section IDs.
 
 ## Files Modified
-- `src/services/character-ai.ts` — fix `bg_` resolver, add ~8 new prompt configs + resolver entries + section hints
-- `public/api-call-inspector-chronicle.html` — restructure Text Field Generation into detailed per-section breakdown
+- `public/api-call-inspector-chronicle.html` — restructure sidebar + content blocks (bulk of changes)
+
+## Scope
+This is entirely documentation/inspector changes. No functional code changes.
 
