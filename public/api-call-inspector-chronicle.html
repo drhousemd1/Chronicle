@@ -5001,8 +5001,351 @@ function updateAllTokenBadges() {
   });
 }
 
+// ══════════════════════════════════════════════════════════════
+// SHARED CONTEXT ASSEMBLY CONSTANTS — injected into every page
+// ══════════════════════════════════════════════════════════════
+
+const CALLOUT_REQUEST_BODY = '<div class="callout callout-blue"><div class="callout-title">📦 Request Body</div>This is the JSON object sent to the chat API. It contains two messages (system + user) and the model ID. Each field click is a separate API call.</div>';
+
+const CALLOUT_WORLD_CONTEXT = '<div class="callout callout-green"><div class="callout-title">🌍 World Context</div>This section pulls in all your Story Builder data — story name, premise, locations, factions, other characters, etc. — so the AI knows the world this character lives in. Only fields you\'ve filled in are included.</div>';
+
+const CALLOUT_CHARACTER_DATA = '<div class="callout callout-purple"><div class="callout-title">👤 Character Data</div>This section pulls in everything you\'ve already filled on this character — appearance, clothing, personality, background, etc. — so the AI doesn\'t contradict or duplicate what you\'ve already written.</div>';
+
+const CALLOUT_CURRENT_VALUE = '<div class="callout callout-amber"><div class="callout-title">📝 Current Value</div>If the field already has text, the AI is told to enhance it while keeping the intent. If the field is empty, the AI generates from scratch using the context above.</div>';
+
+const CALLOUT_FIELD_INSTRUCTION = '<div class="callout callout-slate"><div class="callout-title">🎯 Field Instruction</div>This is the specific instruction for this field type. It tells the AI what kind of content to generate (e.g. "Describe preferred casual clothing style").</div>';
+
+const WORLD_CONTEXT_ASSEMBLY = `═══ WORLD & SCENARIO CONTEXT — Exact Assembly Logic ═══
+(Source: buildFullContext() in character-ai.ts — each line is included ONLY if the field has content)
+
+The following data is assembled into a single text block and injected into the prompt as "WORLD & SCENARIO CONTEXT:":
+
+  Scenario: [value of core.scenarioName from Story Builder]
+  Description: [value of core.briefDescription from Story Builder]
+  Premise: [value of core.storyPremise from Story Builder]
+
+  Locations:
+    IF structuredLocations array has entries:
+      - [location.label]: [location.description]     (one line per structured location)
+    ELSE IF core.locations has text:
+      Locations: [core.locations text]                (legacy single-string fallback)
+
+  Factions: [core.factions text]
+  Tone & Themes: [core.toneThemes text]
+  Plot Hooks: [core.plotHooks text]
+  History: [core.historyTimeline text]
+  Dialog Style: [core.dialogFormatting text]
+
+  Content Themes (if contentThemes object exists):
+    Story Type: [storyType]; Genres: [genres joined by comma]; Character Types: [characterTypes joined]; Origin: [origin joined]
+    (only non-empty fields included, all joined with semicolons)
+
+  Custom World Sections (if customWorldSections array has entries):
+    [section.title]:
+      - [item.label]: [item.value]     (for each filled item in each section)
+
+  Story Goals (if storyGoals array has entries):
+    - [goal.title]: [goal.desiredOutcome]    (desiredOutcome omitted if empty)
+
+  OTHER CHARACTERS IN SCENARIO:
+  (all characters EXCEPT the one being enhanced, each on one line)
+    - [name], role: [roleDescription], age [age], [sexType], tags: [tags], at: [location], personality: [top 3 trait values from personality.traits or outward+inward], relationships: [label: value pairs from relationships._extras]
+
+  If NO world data exists at all: "No world context available"`;
+
+const CHARACTER_SELF_CONTEXT_ASSEMBLY = `═══ THIS CHARACTER'S EXISTING DATA — Exact Assembly Logic ═══
+(Source: buildCharacterSelfContext() in character-ai.ts — each line included ONLY if the field is non-empty)
+
+The following data is assembled into a single text block and injected as "THIS CHARACTER'S EXISTING DATA:":
+
+  Name: [character.name]                    (SKIPPED if name is "New Character")
+  Age: [character.age]
+  Sex/Identity: [character.sexType]
+  Sexual Orientation: [character.sexualOrientation]
+  Role: [character.roleDescription]
+  Tags: [character.tags]
+  Location: [character.location]
+  Current Mood: [character.currentMood]
+  Nicknames: [character.nicknames]
+
+  Physical Appearance: [all filled hardcoded fields as key: value, PLUS all _extras as label: value, comma-joined]
+    Hardcoded fields: hairColor, eyeColor, build, bodyHair, height, breastSize, genitalia, skinTone, makeup, bodyMarkings, temporaryConditions
+    Extras: any additional rows the user added via the + button
+
+  Currently Wearing: [all filled hardcoded fields as key: value, PLUS _extras, comma-joined]
+    Hardcoded: top, bottom, undergarments, miscellaneous
+
+  Preferred Clothing: [all filled hardcoded fields as key: value, PLUS _extras, comma-joined]
+    Hardcoded: casual, work, sleep
+
+  Background: [all filled hardcoded fields as key: value, PLUS _extras, comma-joined]
+    Hardcoded: jobOccupation, educationLevel, residence, hobbies, financialStatus, motivation
+
+  Personality:
+    IF splitMode is ON:
+      (outward) [trait.label]: [trait.value]; (outward) [next]...; (inward) [trait.label]: [trait.value]...
+    ELSE (standard mode):
+      [trait.label]: [trait.value]; [next]...
+    (only traits with non-empty values included)
+
+  Tone: [label: value pairs from tone._extras, semicolon-joined]
+  Key Life Events: [label: value pairs from keyLifeEvents._extras, semicolon-joined]
+  Relationships: [label: value pairs from relationships._extras, semicolon-joined]
+  Secrets: [label: value pairs from secrets._extras, semicolon-joined]
+  Fears: [label: value pairs from fears._extras, semicolon-joined]
+
+  Goals: [title → desiredOutcome pairs, semicolon-joined]
+    (desiredOutcome included only if non-empty)
+
+  Custom Sections:
+    [section.title]: [item.label]: [item.value]; [next]...
+    (one line per custom section, only filled items)
+
+  If NOTHING is filled: returns empty string (prompt says "No data filled yet.")`;
+
+const CURRENT_VALUE_LOGIC = `═══ CURRENT VALUE — Exact Branching Logic ═══
+(Source: buildCharacterFieldPrompt() in character-ai.ts)
+
+  IF the field currently has text (currentValue.trim() is truthy):
+    The prompt includes:
+      "CURRENT VALUE (enhance while preserving intent):"
+      [the exact text currently in that field]
+
+  IF the field is empty (currentValue.trim() is falsy):
+    The prompt includes:
+      "CURRENT VALUE: Empty - generate appropriate content based on context."`;
+
+const RESPONSE_POST_PROCESSING = `═══ RESPONSE POST-PROCESSING — Exact Logic ═══
+(Source: aiEnhanceCharacterField() in character-ai.ts)
+
+  ALL MODES:
+    1. Trim whitespace
+    2. Strip leading/trailing quotes (both single and double)
+
+  PRECISE MODE (additional):
+    3. Remove periods before semicolons:  ". ;" → ";"
+    4. Remove trailing period
+    5. Remove trailing semicolon
+    6. Trim again
+
+  GENERATE-BOTH MODE (additional):
+    3. Look for "---SPLIT---" in response
+    4. Split on first "---SPLIT---"
+    5. First part = label (trimmed)
+    6. Rest = value (trimmed)
+    7. Joined with \\n---SPLIT---\\n delimiter for the UI to parse`;
+
+const MODEL_FALLBACK = `═══ MODEL & FALLBACK — Exact Logic ═══
+(Source: callAIWithFallback() in character-ai.ts)
+
+  FALLBACK_MODELS constant: ['grok-4-1-fast-reasoning', 'grok-3-mini']
+
+  Order of attempts:
+    1. User's selected model (from model settings dropdown)
+    2. grok-4-1-fast-reasoning (if not already the selected model)
+    3. grok-3-mini (last resort)
+
+  For each model attempt:
+    - Call supabase.functions.invoke('chat', { body: { messages, modelId, stream: false } })
+    - If error → log and try next model
+    - If finish_reason === 'content_filter' OR content is empty → log warning, try next model
+    - If content returned → strip leading/trailing quotes, return result
+    - If ALL models fail → throw "Content was blocked by all available models"`;
+
+// Injection: replace placeholders in all character builder pages
+function injectSharedContextIntoPages() {
+  // All character builder body IDs that need context injection
+  const charBodyIds = [
+    'body-star-char-cw', 'body-star-char-pc', 'body-star-char-bg',
+    'body-star-char-personality', 'body-star-char-tone', 'body-star-char-role',
+    'body-star-char-kle', 'body-star-char-rel', 'body-star-char-sec',
+    'body-star-char-fear', 'body-star-char-goal', 'body-star-char-custom'
+  ];
+
+  charBodyIds.forEach(bodyId => {
+    const el = document.getElementById(bodyId);
+    if (!el) return;
+    let text = el.textContent;
+
+    // Replace all variants of the "see Physical Appearance page" references
+    text = text.replace(/═══ CONTEXT ASSEMBLY ═══[\s\S]*?(?=═══ FIELD RESOLUTION|═══ RESPONSE POST|$)/,
+      WORLD_CONTEXT_ASSEMBLY + '\n\n' + CHARACTER_SELF_CONTEXT_ASSEMBLY + '\n\n' + CURRENT_VALUE_LOGIC + '\n\n'
+    );
+
+    // Also replace inline {buildFullContext()} references in prompt templates
+    text = text.replace(/\{buildFullContext\(\)[^}]*\}/g, '[assembled world context — see WORLD & SCENARIO CONTEXT assembly section below]');
+    text = text.replace(/\{buildCharacterSelfContext\(\)[^}]*\}/g, '[assembled character data — see THIS CHARACTER\'S EXISTING DATA assembly section below]');
+    text = text.replace(/\{CURRENT VALUE section\}/g, '[see CURRENT VALUE branching logic section below]');
+    text = text.replace(/buildFullContext\(\) output/g, '[assembled world context — see assembly section below]');
+    text = text.replace(/buildCharacterSelfContext\(\) output/g, '[assembled character data — see assembly section below]');
+
+    // Remove "see Physical Appearance page" lines
+    text = text.replace(/buildFullContext\(\) and buildCharacterSelfContext\(\)[^]* Physical Appearance page[^]*?(?=\n═══|\n\n═══|$)/g, '');
+    text = text.replace(/see Physical Appearance page[^]*/g, '');
+    text = text.replace(/— see Physical Appearance page for full assembly logic/g, '');
+    text = text.replace(/See that page for the complete field-by-field assembly logic\./g, '');
+    text = text.replace(/— identical to Physical Appearance page\./g, '');
+    text = text.replace(/Context: buildFullContext\(\) \+ buildCharacterSelfContext\(\) — see Physical Appearance page/g, '');
+    text = text.replace(/\{Same template as other sections[^}]*\}/g, '[same prompt template as detailed mode above, with the field-specific instruction and maxSentences]');
+
+    // Append the full shared blocks if they're not already there
+    if (!text.includes('WORLD & SCENARIO CONTEXT — Exact Assembly Logic')) {
+      text += '\n\n' + WORLD_CONTEXT_ASSEMBLY;
+      text += '\n\n' + CHARACTER_SELF_CONTEXT_ASSEMBLY;
+      text += '\n\n' + CURRENT_VALUE_LOGIC;
+    }
+    if (!text.includes('MODEL & FALLBACK — Exact Logic')) {
+      text += '\n\n' + MODEL_FALLBACK;
+    }
+    if (!text.includes('RESPONSE POST-PROCESSING — Exact Logic')) {
+      text += '\n\n' + RESPONSE_POST_PROCESSING;
+    }
+
+    el.textContent = text;
+
+    // Also set the textarea
+    const taId = bodyId.replace('body-', 'ta-');
+    const ta = document.getElementById(taId);
+    if (ta) ta.value = text;
+  });
+
+  // Also fix the Physical Appearance page — it already has context but may be missing model/post-processing
+  const paBody = document.getElementById('body-star-char-pa');
+  if (paBody) {
+    let text = paBody.textContent;
+    if (!text.includes('MODEL & FALLBACK — Exact Logic')) {
+      text += '\n\n' + MODEL_FALLBACK;
+    }
+    if (!text.includes('RESPONSE POST-PROCESSING — Exact Logic') && !text.includes('Detailed mode: trim')) {
+      // It already has inline post-processing, leave it
+    }
+    // Replace inline references
+    text = text.replace(/\{buildFullContext\(\) output — see CONTEXT ASSEMBLY below\}/g, '[assembled world context — see WORLD & SCENARIO CONTEXT assembly section below]');
+    text = text.replace(/\{buildCharacterSelfContext\(\) output — see CONTEXT ASSEMBLY below\}/g, '[assembled character data — see THIS CHARACTER\'S EXISTING DATA assembly section below]');
+    text = text.replace(/\{buildFullContext\(\) output\}/g, '[assembled world context — see assembly section below]');
+    text = text.replace(/\{buildCharacterSelfContext\(\) output\}/g, '[assembled character data — see assembly section below]');
+    text = text.replace(/\{CURRENT VALUE section\}/g, '[see CURRENT VALUE branching logic section below]');
+    paBody.textContent = text;
+    const paTa = document.getElementById('ta-star-char-pa');
+    if (paTa) paTa.value = text;
+  }
+
+  // Fix story builder pages — inject full payload structure
+  injectStoryBuilderPages();
+}
+
+// Story Builder: inject full payloads
+function injectStoryBuilderPages() {
+  const worldFields = {
+    'body-star-world-name': { key: 'scenarioName', label: 'Story Name', maxSentences: 1, instruction: "Generate a compelling story name. Be evocative but concise (2-5 words). Examples: 'Echoes of Ashenvale', 'The Crimson Inheritance', 'Neon Shadows'." },
+    'body-star-world-desc': { key: 'briefDescription', label: 'Brief Description', maxSentences: 2, instruction: "Write a 1-2 sentence summary suitable for a story card. Focus on the hook that would make someone want to play." },
+    'body-star-world-premise': { key: 'storyPremise', label: 'Story Premise', maxSentences: 4, instruction: "Describe the central conflict and stakes. Format: Situation + Tension + Stakes. What's happening, why it matters, what could go wrong." },
+    'body-star-world-factions': { key: 'factions', label: 'Factions', maxSentences: 6, instruction: "List major factions or groups. Format: 'Faction Name - Brief description and their role in the story/conflict'." },
+    'body-star-world-locations': { key: 'locations', label: 'Primary Locations', maxSentences: 6, instruction: "List key locations with their narrative significance. Format: 'Location Name - Brief description and story relevance'." },
+    'body-star-world-history': { key: 'historyTimeline', label: 'History & Timeline', maxSentences: 5, instruction: "Summarize key historical events that impact the current story. Format: chronological bullet points of important past events." },
+    'body-star-world-plots': { key: 'plotHooks', label: 'Plot Hooks', maxSentences: 5, instruction: "List potential story hooks or quests. Format: 'Hook Name - Brief setup and what\\'s at stake'." },
+    'body-star-world-dialog': { key: 'dialogFormatting', label: 'Dialog Formatting', maxSentences: 3, instruction: "Specify any additional dialog formatting rules beyond the standard (quotes for speech, asterisks for actions, parentheses for thoughts)." },
+    'body-star-world-custom': { key: 'customContent', label: 'Custom Content', maxSentences: 5, instruction: "Expand and enrich this world-building content based on the provided context. Be specific and narrative-relevant. Preserve the existing content's intent while adding depth." }
+  };
+
+  Object.entries(worldFields).forEach(([bodyId, cfg]) => {
+    const el = document.getElementById(bodyId);
+    if (!el) return;
+
+    const fullText = `═══ REQUEST BODY (sent to chat edge function) ═══
+{
+  messages: [
+    { role: "system", content: "You are a concise worldbuilding assistant. Return only the requested content, no explanations." },
+    { role: "user", content: "{prompt constructed below}" }
+  ],
+  modelId: "{user's selected model}",
+  stream: false
+}
+
+Fallback: Uses the user's selected model only (no automatic fallback chain — different from character-ai.ts).
+If error or empty content → throws error to the UI.
+
+═══ FIELD CONFIG: ${cfg.key} ═══
+
+  Label: "${cfg.label}"
+  Max Sentences: ${cfg.maxSentences}
+  INSTRUCTION: "${cfg.instruction}"
+
+═══ DETAILED MODE — EXACT USER PROMPT (role: "user") ═══
+(Source: buildPrompt() in world-ai.ts)
+
+You are enhancing a story field for an interactive roleplay. Use STRUCTURED EXPANSION:
+
+RULES:
+1. Be concise and factual (max ${cfg.maxSentences} sentences)
+2. Focus on narrative-relevant implications - what matters for the story
+3. NO purple prose or flowery language
+4. Format: State the fact, then its implication for gameplay/story
+5. {If field has text: "Preserve the existing content's intent while enhancing it" | If empty: "Generate appropriate content from available context"}
+
+CONTEXT FROM OTHER FIELDS:
+(Source: buildPrompt() in world-ai.ts — each line included only if the OTHER field is non-empty)
+  - Story: [worldContext.scenarioName]     (only if this field is NOT scenarioName)
+  - Description: [worldContext.briefDescription]  (only if this field is NOT briefDescription)
+  - Premise: [worldContext.storyPremise]    (only if this field is NOT storyPremise)
+
+CURRENT VALUE:
+  IF field has text: "CURRENT VALUE (enhance while preserving intent):\\n[existing text]"
+  IF field is empty: "CURRENT VALUE: Empty - generate appropriate content based on context."
+
+FIELD: ${cfg.label}
+INSTRUCTION: ${cfg.instruction}
+
+Return ONLY the enhanced text. No explanations, no prefixes, no markdown formatting.
+
+═══ PRECISE MODE — EXACT USER PROMPT (role: "user") ═══
+
+You are enhancing a story field for an interactive roleplay.
+
+Expand the following into 3-6 short key points separated by semicolons.
+Focus on essential facts only. No sentences, no explanations, no narrative rationale.
+
+CONTEXT FROM OTHER FIELDS:
+  [same context assembly as detailed mode above]
+
+CURRENT VALUE:
+  [same branching as detailed mode above]
+
+FIELD: ${cfg.label}
+
+Output format: Point1; Point2; Point3; Point4
+Return ONLY the semicolon-separated points. Nothing else.
+
+═══ RESPONSE POST-PROCESSING ═══
+(Source: aiEnhanceWorldField() in world-ai.ts)
+
+  ALL MODES:
+    1. Trim whitespace
+    2. Strip leading/trailing quotes (both single and double)
+
+  PRECISE MODE (additional):
+    3. Remove periods before semicolons: ". ;" → ";"
+    4. Remove trailing period
+    5. Remove trailing semicolon
+    6. Trim again
+
+═══ NOTE: Story Builder context is SIMPLER than Character Builder ═══
+
+Unlike character-ai.ts which injects full world + character context:
+  - Story Builder ONLY includes up to 3 other story fields as context (scenarioName, briefDescription, storyPremise)
+  - It does NOT inject character data, content themes, custom sections, story goals, or other characters
+  - This is intentional: story fields are meant to be written independently of character data`;
+
+    el.textContent = fullText;
+    const taId = bodyId.replace('body-', 'ta-');
+    const ta = document.getElementById(taId);
+    if (ta) ta.value = fullText;
+  });
+}
+
 // Setup event listeners
 document.addEventListener('DOMContentLoaded', () => {
+  injectSharedContextIntoPages();
   initializeBlockState();
   updatePositionBubbles();
   updateAllTokenBadges();
