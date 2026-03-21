@@ -1,131 +1,128 @@
 
-## Fix the API Inspector so every AI Enhance page shows the full exact request, not just the field-specific fragment
 
-### What’s wrong now
-The inspector is incomplete in exactly the way you described:
+# Fix API Inspector: Replace Placeholder References With Actual Content + Add Callout Boxes
 
-- The per-section pages like Preferred Clothing only show the field label/instruction/max-sentence config.
-- The shared overview page shows the generic template, but the individual API-call pages do **not** repeat the rest of what is actually sent.
-- That means each page is omitting a large part of the real request:
-  - exact system message
-  - full `messages` payload shape
-  - full `WORLD & SCENARIO CONTEXT` assembly
-  - full `THIS CHARACTER'S EXISTING DATA` assembly
-  - `CURRENT VALUE` branching
-  - generate-both section guidance
-  - model fallback behavior
-  - response parsing/cleanup
+## The Problem
 
-So the inspector is currently not accurate enough for debugging.
+Every AI Enhance page in the inspector has lines like:
+- `{buildFullContext() output}`
+- `{buildCharacterSelfContext() output}`
+- `{CURRENT VALUE section}`
+- "See Physical Appearance page for the complete field-by-field assembly logic"
 
-## Plan
+These are meaningless placeholders. You can't debug anything from them. The Physical Appearance page has the context assembly written out once, but every other page just says "go look at that other page" — which defeats the purpose of per-section documentation.
 
-### 1. Make each AI Enhance page self-contained
-For every Character Builder and Story Builder AI Enhance section, replace the current “instruction-only” block with a **full exact payload block** that includes everything that is part of that call.
+## What Will Change
 
-Each section page will show, verbatim:
+Every single AI Enhance page (Preferred Clothing, Background, Personality, Tone, Relationships, Secrets, Fears, Key Life Events, Role Description, Character Goals, Custom Sections, and all 9 Story Builder pages) will be updated so that:
 
-- exact system message
-- exact request body structure
-- exact user prompt template for:
-  - detailed mode
-  - precise mode
-  - generate-both mode where applicable
-- exact field label / instruction / max sentence values for that section
-- exact resolver mapping for that section’s field keys
-- exact model fallback order
-- exact response post-processing for that mode
+### 1. Replace all `{buildFullContext() output}` placeholders with the actual assembly
 
-No more “uses shared template from Overview page” shortcuts.
+Instead of `{buildFullContext() output}`, each page will show the exact data that gets assembled:
 
-### 2. Inline the full shared context builders inside every relevant page
-For every Character Builder AI Enhance page, include the exact content assembly for:
+```
+WORLD & SCENARIO CONTEXT:
+(Assembled from your Story Builder data. Each line only appears if the field has content.)
 
-- `buildFullContext(appData, targetCharacterId)`
-- `buildCharacterSelfContext(character)`
+  Scenario: [Story Name from Story Builder]
+  Description: [Brief Description from Story Builder]
+  Premise: [Story Premise from Story Builder]
+  Locations:
+    - [Location Name]: [Location Description]    (for each structured location)
+    OR: Locations: [legacy locations text]        (if no structured locations)
+  Factions: [Factions text]
+  Tone & Themes: [Tone Themes text]
+  Plot Hooks: [Plot Hooks text]
+  History: [History Timeline text]
+  Dialog Style: [Dialog Formatting text]
+  [Content Themes: Story Type, Genres, Character Types, Origin — semicolon-joined]
+  [Custom World Sections: each section title + its filled label: value items]
+  Story Goals:
+    - [Goal Title]: [Desired Outcome]
 
-That means the page will explicitly show the real ordered/conditional pieces that can be included, such as:
+  OTHER CHARACTERS IN SCENARIO:
+    - [Name], role: [roleDescription], age [age], [sexType], tags: [tags],
+      at: [location], personality: [top 3 trait values], 
+      relationships: [label: value pairs from relationship extras]
+```
 
-- scenario name / description / premise
-- structured locations / legacy locations
-- factions / tone themes / plot hooks / history / dialog formatting
-- content themes
-- custom world sections
-- story goals
-- other character summaries
-- current character basics
-- physical appearance
-- currently wearing
-- preferred clothing
-- background
-- personality
-- extras-only sections
-- goals
-- custom sections
+### 2. Replace all `{buildCharacterSelfContext() output}` placeholders with the actual assembly
 
-These should be shown as the exact assembly logic, not summarized prose.
+Instead of `{buildCharacterSelfContext() output}`, show:
 
-### 3. Inline the full world-field context builders inside every Story Builder page
-For Story Builder AI Enhance pages, include the exact `buildPrompt()` assembly:
+```
+THIS CHARACTER'S EXISTING DATA:
+(Assembled from everything already filled on this character. Each line only appears if filled.)
 
-- `CONTEXT FROM OTHER FIELDS`
-- `CURRENT VALUE` vs empty-state branch
-- exact field label/instruction/max sentence data
-- exact system message
-- exact request body with `stream: false`
-- exact cleanup logic for precise mode
+  Name: [character name]  (skipped if still "New Character")
+  Age: [age]
+  Sex/Identity: [sexType]
+  Sexual Orientation: [sexualOrientation]
+  Role: [roleDescription]
+  Tags: [tags]
+  Location: [location]
+  Current Mood: [currentMood]
+  Nicknames: [nicknames]
+  Physical Appearance: [all filled fields as key: value, including extras]
+  Currently Wearing: [all filled fields as key: value, including extras]
+  Preferred Clothing: [all filled fields as key: value, including extras]
+  Background: [all filled fields as key: value, including extras]
+  Personality: [trait label: value pairs — prefixed (outward)/(inward) if split mode]
+  Tone: [label: value pairs from tone extras]
+  Key Life Events: [label: value pairs]
+  Relationships: [label: value pairs]
+  Secrets: [label: value pairs]
+  Fears: [label: value pairs]
+  Goals: [title → desiredOutcome pairs]
+  [Custom Sections: title + filled items]
+```
 
-### 4. Keep the overview page, but downgrade it to summary only
-The overview page can stay as a shared reference, but it should no longer be the only place where the omitted payload pieces live.
+### 3. Replace `{CURRENT VALUE section}` with the actual branching logic
 
-Every individual API-call page must be independently accurate.
+Instead of `{CURRENT VALUE section}`, show:
 
-### 5. Refactor the inspector content so it cannot omit shared payload text again
-Inside `public/api-call-inspector-chronicle.html`, centralize the repeated exact strings used by the inspector pages:
+```
+CURRENT VALUE LOGIC:
+  If the field already has text:
+    "CURRENT VALUE (enhance while preserving intent):"
+    [the existing text in that field]
+  
+  If the field is empty:
+    "CURRENT VALUE: Empty - generate appropriate content based on context."
+```
 
-- system messages
-- detailed/precise/generate-both templates
-- shared context-builder blocks
-- fallback/request-body block
-- response parsing block
+### 4. Add styled callout boxes
 
-Then render those into each page instead of hand-writing partial summaries page by page.
+Each major section of the payload will get a colored callout box above it explaining what it is in plain English:
 
-This keeps the inspector consistent and prevents drift.
+- **Request Body callout**: "This is the JSON object sent to the chat API. It contains two messages (system + user) and the model ID."
+- **World Context callout**: "This section pulls in all your Story Builder data — story name, premise, locations, factions, other characters, etc. — so the AI knows the world this character lives in. Only fields you've filled in are included."
+- **Character Data callout**: "This section pulls in everything you've already filled on this character — appearance, clothing, personality, background, etc. — so the AI doesn't contradict or duplicate what you've already written."
+- **Current Value callout**: "If the field already has text, the AI is told to enhance it while keeping the intent. If the field is empty, the AI generates from scratch using the context above."
+- **Field Instruction callout**: "This is the specific instruction for this field type. It tells the AI what kind of content to generate (e.g. 'Describe preferred casual clothing style')."
 
-## Exact scope
-### File to update
+### 5. Remove all "see Physical Appearance page" cross-references
+
+The line `buildFullContext() and buildCharacterSelfContext() — identical to Physical Appearance page. See that page for the complete field-by-field assembly logic.` will be deleted from every page and replaced with the full inline content.
+
+### 6. Use a JS template to prevent drift
+
+To avoid copy-pasting 500 lines of context assembly into 20+ pages, the HTML will define the context assembly strings once in JavaScript constants and inject them into each page's content block on render. This way:
+- Every page shows the full content
+- Updates to the assembly logic only need to happen in one place
+- No page can accidentally have stale or missing context documentation
+
+### 7. Story Builder pages get the same treatment
+
+The Story Builder pages (scenarioName, briefDescription, etc.) use a different but simpler context system (`buildPrompt()` in `world-ai.ts`). Those pages will also get inline context assembly showing exactly which other Story Builder fields are pulled in as context.
+
+## File Modified
 - `public/api-call-inspector-chronicle.html`
 
-## What each page should contain after this change
-For example, **Preferred Clothing — AI Enhance** should show all of this on the same page:
+## Result
+Opening any AI Enhance page will show the complete, readable, self-contained API call with:
+1. The exact payload sent (raw, verbatim)
+2. Colored callout boxes explaining each section in plain English
+3. No cross-references to other pages
+4. No unexplained placeholders or function names
 
-1. exact `messages` payload shape  
-2. exact system message  
-3. exact detailed-mode prompt template  
-4. exact precise-mode prompt template  
-5. exact generate-both template for `preferredClothingExtra`  
-6. exact `WORLD & SCENARIO CONTEXT` builder contents  
-7. exact `THIS CHARACTER'S EXISTING DATA` builder contents  
-8. exact current-value branching  
-9. exact field-specific label/instruction/max-sentences for `casual`, `work`, `sleep`, `preferredClothingExtra`  
-10. exact resolver mapping (`extra_pc_* → preferredClothingExtra`)  
-11. exact fallback model order  
-12. exact post-response cleanup/parsing rules
-
-That same completeness standard should be applied to every other AI Enhance page.
-
-## Verification
-After implementation, I would verify page-by-page that the inspector now matches source code exactly and that no block relies on a separate page for missing payload pieces:
-
-- Preferred Clothing
-- Background
-- Personality
-- Tone
-- Relationships
-- Secrets
-- Fears
-- Key Life Events
-- Story Builder pages
-
-The success condition is simple: if you open any single AI Enhance page in the inspector, you can see the complete exact request construction for that API call without needing to cross-reference another page.
