@@ -2342,87 +2342,208 @@ FIELD RESOLUTION (prefix stripping in buildCharacterFieldPrompt):
     <!-- ═══ PAGE: Physical Appearance ═══ -->
     <div class="content-section" data-section="star-char-pa">
     <div class="page-header">
-      <h1>Physical Appearance — AI Enhance</h1>
-      <div class="ph-sub">character-ai.ts → CHARACTER_FIELD_PROMPTS</div>
-      <div class="ph-note">Fields: hairColor, eyeColor, build, bodyHair, height, breastSize, genitalia, skinTone, makeup, bodyMarkings, temporaryConditions + physicalAppearanceExtra</div>
+      <h1>Physical Appearance — AI Enhance <button class="copy-page-btn" onclick="copyPage(this)" title="Copy all blocks on this page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></h1>
+      <div class="ph-sub">character-ai.ts → aiEnhanceCharacterField() → chat edge fn → api.x.ai/v1/chat/completions</div>
+      <div class="ph-chips">
+        <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
+        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
+        <div class="chip chip-temp">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
+        <div class="chip">Streaming <strong>no</strong></div>
+      </div>
+      <div class="ph-note">Fields: hairColor, eyeColor, build, bodyHair, height, breastSize, genitalia, skinTone, makeup, bodyMarkings, temporaryConditions + physicalAppearanceExtra (extra_pa_*)</div>
     </div>
     <div class="iblock" data-block="star-char-pa" id="block-star-char-pa" draggable="false">
       <div class="iblock-header">
         <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
         <div class="modified-dot" id="dot-star-char-pa"></div>
         <div class="iblock-meta">
-          <div class="iblock-title">Physical Appearance — Exact Prompts</div>
-          <div class="iblock-condition">11 hardcoded fields + extras, each a separate API call</div>
+          <div class="iblock-title">Physical Appearance — Complete API Call Payload</div>
+          <div class="iblock-condition">Each field is a SEPARATE API call. Full payload shown for each mode.</div>
         </div>
         <div class="iblock-right"><div class="src-badge">character-ai.ts</div><div class="tok-badge">~300-500 tok</div></div>
         <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
       </div>
-      <div class="iblock-body" id="body-star-char-pa">Each field below is a SEPARATE API call. The INSTRUCTION line is field-specific; everything else uses the shared Detailed/Precise/Generate-Both templates from the Overview page.
+      <div class="iblock-body" id="body-star-char-pa">═══ REQUEST BODY (sent to chat edge function) ═══
+{
+  messages: [
+    { role: "system", content: "You are a concise character creation assistant. Return only the requested content, no explanations." },
+    { role: "user", content: "{prompt constructed below}" }
+  ],
+  modelId: "grok-4-1-fast-reasoning",  // user's selected model, validated against VALID_GROK_MODELS
+  stream: false
+}
 
-═══ hairColor ═══
-  Label: "Hair Color"
-  Max Sentences: 2
+Fallback order: [selectedModel, 'grok-4-1-fast-reasoning', 'grok-3-mini'] (tries next on content_filter or empty response)
+
+═══ FIELD-SPECIFIC CONFIGS (CHARACTER_FIELD_PROMPTS) ═══
+
+hairColor — Label: "Hair Color" | Max Sentences: 2
   INSTRUCTION: "Describe hair color, style, and length concisely. Format: Color + Style + Notable features."
 
-═══ eyeColor ═══
-  Label: "Eye Color"
-  Max Sentences: 1
+eyeColor — Label: "Eye Color" | Max Sentences: 1
   INSTRUCTION: "Describe eye color and any notable characteristics. Format: Color + Quality/Expression."
 
-═══ build ═══
-  Label: "Build"
-  Max Sentences: 2
+build — Label: "Build" | Max Sentences: 2
   INSTRUCTION: "Describe body type and physique. Format: Type + Defining features."
 
-═══ bodyHair ═══
-  Label: "Body Hair"
-  Max Sentences: 1
+bodyHair — Label: "Body Hair" | Max Sentences: 1
   INSTRUCTION: "Describe body hair amount and pattern. Format: Amount + Location/Pattern."
 
-═══ height ═══
-  Label: "Height"
-  Max Sentences: 1
+height — Label: "Height" | Max Sentences: 1
   INSTRUCTION: "Provide height (with measurement) and how they carry themselves."
 
-═══ breastSize ═══
-  Label: "Breasts"
-  Max Sentences: 1
+breastSize — Label: "Breasts" | Max Sentences: 1
   INSTRUCTION: "Describe size and relevant details if applicable."
 
-═══ genitalia ═══
-  Label: "Genitalia"
-  Max Sentences: 1
+genitalia — Label: "Genitalia" | Max Sentences: 1
   INSTRUCTION: "Describe relevant anatomical details if applicable."
 
-═══ skinTone ═══
-  Label: "Skin Tone"
-  Max Sentences: 1
+skinTone — Label: "Skin Tone" | Max Sentences: 1
   INSTRUCTION: "Describe skin tone and any notable texture or qualities."
 
-═══ makeup ═══
-  Label: "Makeup"
-  Max Sentences: 2
+makeup — Label: "Makeup" | Max Sentences: 2
   INSTRUCTION: "Describe makeup style, colors, and intensity."
 
-═══ bodyMarkings ═══
-  Label: "Body Markings"
-  Max Sentences: 2
+bodyMarkings — Label: "Body Markings" | Max Sentences: 2
   INSTRUCTION: "Describe type, location, and significance of any markings (scars, tattoos, birthmarks)."
 
-═══ temporaryConditions ═══
-  Label: "Temporary Conditions"
-  Max Sentences: 2
+temporaryConditions — Label: "Temporary Conditions" | Max Sentences: 2
   INSTRUCTION: "Describe any temporary physical conditions (injuries, illness, etc.) and their visibility."
 
-═══ physicalAppearanceExtra (for extra_pa_* rows) ═══
-  Label: "Physical Detail"
-  Max Sentences: 2
+physicalAppearanceExtra (extra_pa_* rows) — Label: "Physical Detail" | Max Sentences: 2
   INSTRUCTION: "Describe an additional physical characteristic or detail about this character's appearance. Be specific and visually descriptive. Complement existing physical traits without duplicating them."
 
-  GENERATE-BOTH HINT (when label is empty):
-  "Generate an additional physical detail. Good label examples: 'Crooked Nose', 'Calloused Hands', 'Distinctive Gait', 'Faded Scar'. The description should be visually specific and complement existing appearance traits."
+═══ DETAILED MODE — EXACT USER PROMPT (role: "user") ═══
 
-  Resolution: extra_pa_* → physicalAppearanceExtra</div>
+You are enhancing a character field for an interactive roleplay. Use STRUCTURED EXPANSION:
+
+RULES:
+1. Be concise and factual (max {maxSentences} sentences)
+2. Focus on narrative-relevant details - what matters for the story
+3. NO purple prose or flowery language
+4. Format: State the fact, then its implication if relevant
+5. {Preserve the existing content's intent while enhancing it | Generate appropriate content from available context}
+6. Stay consistent with all existing character data and world context below
+
+WORLD &amp; SCENARIO CONTEXT:
+{buildFullContext() output — see CONTEXT ASSEMBLY below}
+
+THIS CHARACTER'S EXISTING DATA:
+{buildCharacterSelfContext() output — see CONTEXT ASSEMBLY below}
+
+{CURRENT VALUE (enhance while preserving intent):
+{currentValue}  |  CURRENT VALUE: Empty - generate appropriate content based on context.}
+
+FIELD: {label from config above}
+INSTRUCTION: {instruction from config above}
+
+Return ONLY the enhanced text. No explanations, no prefixes, no markdown formatting.
+
+═══ PRECISE MODE — EXACT USER PROMPT (role: "user") ═══
+
+You are enhancing a character field for an interactive roleplay.
+
+Expand the following character detail into 3-5 short tags separated by semicolons.
+Focus on visual or key attributes only. No sentences, no explanations, no narrative rationale.
+
+WORLD &amp; SCENARIO CONTEXT:
+{buildFullContext() output}
+
+THIS CHARACTER'S EXISTING DATA:
+{buildCharacterSelfContext() output}
+
+{CURRENT VALUE section}
+FIELD: {label}
+
+Output format: Tag1; Tag2; Tag3; Tag4
+Return ONLY the semicolon-separated tags. Nothing else.
+
+═══ GENERATE-BOTH MODE — EXACT USER PROMPT (for extra_pa_* when label is empty) ═══
+
+You are a character creation assistant for an interactive roleplay scenario.
+
+You need to generate BOTH a short label/name AND a description for a physical appearance detail field on this character.
+
+RULES:
+1. The LABEL should be 1-4 words — a concise name for this trait/detail (e.g. "Loyal", "Childhood Trauma", "Raspy Voice")
+2. The DESCRIPTION should be 1-2 sentences explaining/expanding on it
+3. Look at all existing character data and world context to determine what trait/detail would be most fitting and NOT duplicate existing ones
+4. Stay consistent with the character's established identity
+5. NO purple prose. Be factual and story-relevant.
+
+SECTION-SPECIFIC GUIDANCE:
+Generate an additional physical detail. Good label examples: 'Crooked Nose', 'Calloused Hands', 'Distinctive Gait', 'Faded Scar'. The description should be visually specific and complement existing appearance traits.
+
+WORLD &amp; SCENARIO CONTEXT:
+{buildFullContext() output}
+
+THIS CHARACTER'S EXISTING DATA:
+{buildCharacterSelfContext() output}
+
+{CURRENT VALUE section}
+SECTION TYPE: physical appearance detail
+
+You MUST respond in EXACTLY this format (two lines, no extra text):
+LABEL: &lt;your label here&gt;
+DESCRIPTION: &lt;your description here&gt;
+
+═══ CONTEXT ASSEMBLY: buildFullContext(appData, targetCharacterId) ═══
+
+Assembles world + other-character context. Each line included only if the field is non-empty:
+
+  Scenario: {core.scenarioName}
+  Description: {core.briefDescription}
+  Premise: {core.storyPremise}
+  Locations:
+    - {structuredLocation.label}: {structuredLocation.description}   [if structuredLocations exist]
+    OR: Locations: {core.locations}                                   [legacy fallback]
+  Factions: {core.factions}
+  Tone &amp; Themes: {core.toneThemes}
+  Plot Hooks: {core.plotHooks}
+  History: {core.historyTimeline}
+  Dialog Style: {core.dialogFormatting}
+  {Content themes: Story Type, Genres, Character Types, Origin — joined by semicolons}
+  {Custom world sections: title + filled items as label: value}
+  Story Goals:
+    - {goal.title}: {goal.desiredOutcome}
+  
+  OTHER CHARACTERS IN SCENARIO:
+    - {name}, role: {roleDescription}, age {age}, {sexType}, tags: {tags}, at: {location}, personality: {top 3 traits}, relationships: {label: value pairs}
+
+═══ CONTEXT ASSEMBLY: buildCharacterSelfContext(character) ═══
+
+Assembles all existing data for the target character. Each line included only if the field is non-empty:
+
+  Name: {character.name}  (skipped if "New Character")
+  Age: {character.age}
+  Sex/Identity: {character.sexType}
+  Sexual Orientation: {character.sexualOrientation}
+  Role: {character.roleDescription}
+  Tags: {character.tags}
+  Location: {character.location}
+  Current Mood: {character.currentMood}
+  Nicknames: {character.nicknames}
+  Physical Appearance: {key: value pairs from physicalAppearance + _extras}
+  Currently Wearing: {key: value pairs from currentlyWearing + _extras}
+  Preferred Clothing: {key: value pairs from preferredClothing + _extras}
+  Background: {key: value pairs from background + _extras}
+  Personality: {label: value pairs — prefixed with (outward)/(inward) if splitMode}
+  Tone: {label: value pairs from tone._extras}
+  Key Life Events: {label: value pairs from keyLifeEvents._extras}
+  Relationships: {label: value pairs from relationships._extras}
+  Secrets: {label: value pairs from secrets._extras}
+  Fears: {label: value pairs from fears._extras}
+  Goals: {title → desiredOutcome pairs}
+  {Custom sections: title + filled items as label: value}
+
+═══ FIELD RESOLUTION ═══
+  extra_pa_* → physicalAppearanceExtra
+  (hardcoded fields use direct key: hairColor, eyeColor, build, etc.)
+
+═══ RESPONSE POST-PROCESSING ═══
+  Detailed mode: trim, strip leading/trailing quotes
+  Precise mode: remove periods before semicolons, remove trailing period, remove trailing semicolon, trim
+  Generate-both: parse LABEL: and DESCRIPTION: lines, join with \n---SPLIT---\n delimiter</div>
       <textarea class="iblock-textarea" id="ta-star-char-pa" oninput="markModified('star-char-pa'); autoResize(this)"></textarea>
     </div>
     </div>
@@ -2430,52 +2551,139 @@ FIELD RESOLUTION (prefix stripping in buildCharacterFieldPrompt):
     <!-- ═══ PAGE: Currently Wearing ═══ -->
     <div class="content-section" data-section="star-char-cw">
     <div class="page-header">
-      <h1>Currently Wearing — AI Enhance</h1>
-      <div class="ph-sub">character-ai.ts → CHARACTER_FIELD_PROMPTS</div>
-      <div class="ph-note">Fields: top, bottom, undergarments, miscellaneous + currentlyWearingExtra</div>
+      <h1>Currently Wearing — AI Enhance <button class="copy-page-btn" onclick="copyPage(this)" title="Copy all blocks on this page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></h1>
+      <div class="ph-sub">character-ai.ts → aiEnhanceCharacterField() → chat edge fn → api.x.ai/v1/chat/completions</div>
+      <div class="ph-chips">
+        <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
+        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
+        <div class="chip chip-temp">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
+        <div class="chip">Streaming <strong>no</strong></div>
+      </div>
+      <div class="ph-note">Fields: top, bottom, undergarments, miscellaneous + currentlyWearingExtra (extra_cw_*)</div>
     </div>
     <div class="iblock" data-block="star-char-cw" id="block-star-char-cw" draggable="false">
       <div class="iblock-header">
         <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
         <div class="modified-dot" id="dot-star-char-cw"></div>
         <div class="iblock-meta">
-          <div class="iblock-title">Currently Wearing — Exact Prompts</div>
-          <div class="iblock-condition">4 hardcoded fields + extras</div>
+          <div class="iblock-title">Currently Wearing — Complete API Call Payload</div>
+          <div class="iblock-condition">Each field is a SEPARATE API call</div>
         </div>
         <div class="iblock-right"><div class="src-badge">character-ai.ts</div><div class="tok-badge">~300-500 tok</div></div>
         <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
       </div>
-      <div class="iblock-body" id="body-star-char-cw">Each field below is a SEPARATE API call.
+      <div class="iblock-body" id="body-star-char-cw">═══ REQUEST BODY (sent to chat edge function) ═══
+{
+  messages: [
+    { role: "system", content: "You are a concise character creation assistant. Return only the requested content, no explanations." },
+    { role: "user", content: "{prompt constructed below}" }
+  ],
+  modelId: "grok-4-1-fast-reasoning",
+  stream: false
+}
 
-═══ top ═══
-  Label: "Shirt/Top"
-  Max Sentences: 2
+Fallback order: [selectedModel, 'grok-4-1-fast-reasoning', 'grok-3-mini']
+
+═══ FIELD-SPECIFIC CONFIGS ═══
+
+top — Label: "Shirt/Top" | Max Sentences: 2
   INSTRUCTION: "Describe the top/shirt being worn. Include garment type, color, fit, and style."
 
-═══ bottom ═══
-  Label: "Pants/Bottoms"
-  Max Sentences: 2
+bottom — Label: "Pants/Bottoms" | Max Sentences: 2
   INSTRUCTION: "Describe pants/skirt/shorts being worn. Include garment type, color, fit, and style."
 
-═══ undergarments ═══
-  Label: "Undergarments"
-  Max Sentences: 2
+undergarments — Label: "Undergarments" | Max Sentences: 2
   INSTRUCTION: "Describe undergarments being worn. Include type, color, and style."
 
-═══ miscellaneous ═══
-  Label: "Miscellaneous"
-  Max Sentences: 3
+miscellaneous — Label: "Miscellaneous" | Max Sentences: 3
   INSTRUCTION: "Describe additional items (outerwear, footwear, accessories). List each item briefly."
 
-═══ currentlyWearingExtra (for extra_cw_* rows) ═══
-  Label: "Clothing Item"
-  Max Sentences: 2
+currentlyWearingExtra (extra_cw_* rows) — Label: "Clothing Item" | Max Sentences: 2
   INSTRUCTION: "Describe an additional clothing item or accessory the character is currently wearing. Include type, color, fit, and style."
 
-  GENERATE-BOTH HINT (when label is empty):
-  "Generate an additional clothing item. Good label examples: 'Worn Leather Gloves', 'Silver Locket', 'Mud-Stained Boots', 'Concealed Holster'. Include type, appearance, and any significance."
+═══ DETAILED MODE — EXACT USER PROMPT ═══
 
-  Resolution: extra_cw_* → currentlyWearingExtra</div>
+You are enhancing a character field for an interactive roleplay. Use STRUCTURED EXPANSION:
+
+RULES:
+1. Be concise and factual (max {maxSentences} sentences)
+2. Focus on narrative-relevant details - what matters for the story
+3. NO purple prose or flowery language
+4. Format: State the fact, then its implication if relevant
+5. {Preserve existing | Generate from context}
+6. Stay consistent with all existing character data and world context below
+
+WORLD &amp; SCENARIO CONTEXT:
+{buildFullContext() — see Physical Appearance page for full assembly logic}
+
+THIS CHARACTER'S EXISTING DATA:
+{buildCharacterSelfContext() — see Physical Appearance page for full assembly logic}
+
+{CURRENT VALUE section}
+FIELD: {label}
+INSTRUCTION: {instruction}
+
+Return ONLY the enhanced text. No explanations, no prefixes, no markdown formatting.
+
+═══ PRECISE MODE — EXACT USER PROMPT ═══
+
+You are enhancing a character field for an interactive roleplay.
+
+Expand the following character detail into 3-5 short tags separated by semicolons.
+Focus on visual or key attributes only. No sentences, no explanations, no narrative rationale.
+
+WORLD &amp; SCENARIO CONTEXT:
+{buildFullContext() output}
+
+THIS CHARACTER'S EXISTING DATA:
+{buildCharacterSelfContext() output}
+
+{CURRENT VALUE section}
+FIELD: {label}
+
+Output format: Tag1; Tag2; Tag3; Tag4
+Return ONLY the semicolon-separated tags. Nothing else.
+
+═══ GENERATE-BOTH MODE (extra_cw_* when label is empty) ═══
+
+You are a character creation assistant for an interactive roleplay scenario.
+
+You need to generate BOTH a short label/name AND a description for a currently wearing detail field on this character.
+
+RULES:
+1. The LABEL should be 1-4 words — a concise name for this trait/detail
+2. The DESCRIPTION should be 1-2 sentences explaining/expanding on it
+3. Look at all existing character data and world context to determine what would be most fitting and NOT duplicate existing ones
+4. Stay consistent with the character's established identity
+5. NO purple prose. Be factual and story-relevant.
+
+SECTION-SPECIFIC GUIDANCE:
+Generate an additional clothing item. Good label examples: 'Worn Leather Gloves', 'Silver Locket', 'Mud-Stained Boots', 'Concealed Holster'. Include type, appearance, and any significance.
+
+WORLD &amp; SCENARIO CONTEXT:
+{buildFullContext() output}
+
+THIS CHARACTER'S EXISTING DATA:
+{buildCharacterSelfContext() output}
+
+{CURRENT VALUE section}
+SECTION TYPE: currently wearing detail
+
+You MUST respond in EXACTLY this format (two lines, no extra text):
+LABEL: &lt;your label here&gt;
+DESCRIPTION: &lt;your description here&gt;
+
+═══ CONTEXT ASSEMBLY ═══
+buildFullContext() and buildCharacterSelfContext() — identical to Physical Appearance page. See that page for the complete field-by-field assembly logic.
+
+═══ FIELD RESOLUTION ═══
+  extra_cw_* → currentlyWearingExtra
+  (hardcoded fields use direct key: top, bottom, undergarments, miscellaneous)
+
+═══ RESPONSE POST-PROCESSING ═══
+  Detailed: trim, strip leading/trailing quotes
+  Precise: remove periods before semicolons, trailing period, trailing semicolon, trim
+  Generate-both: parse LABEL:/DESCRIPTION: lines, join with \n---SPLIT---\n</div>
       <textarea class="iblock-textarea" id="ta-star-char-cw" oninput="markModified('star-char-cw'); autoResize(this)"></textarea>
     </div>
     </div>
@@ -2483,47 +2691,136 @@ FIELD RESOLUTION (prefix stripping in buildCharacterFieldPrompt):
     <!-- ═══ PAGE: Preferred Clothing ═══ -->
     <div class="content-section" data-section="star-char-pc">
     <div class="page-header">
-      <h1>Preferred Clothing — AI Enhance</h1>
-      <div class="ph-sub">character-ai.ts → CHARACTER_FIELD_PROMPTS</div>
-      <div class="ph-note">Fields: casual, work, sleep + preferredClothingExtra</div>
+      <h1>Preferred Clothing — AI Enhance <button class="copy-page-btn" onclick="copyPage(this)" title="Copy all blocks on this page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></h1>
+      <div class="ph-sub">character-ai.ts → aiEnhanceCharacterField() → chat edge fn → api.x.ai/v1/chat/completions</div>
+      <div class="ph-chips">
+        <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
+        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
+        <div class="chip chip-temp">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
+        <div class="chip">Streaming <strong>no</strong></div>
+      </div>
+      <div class="ph-note">Fields: casual, work, sleep + preferredClothingExtra (extra_pc_*)</div>
     </div>
     <div class="iblock" data-block="star-char-pc" id="block-star-char-pc" draggable="false">
       <div class="iblock-header">
         <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
         <div class="modified-dot" id="dot-star-char-pc"></div>
         <div class="iblock-meta">
-          <div class="iblock-title">Preferred Clothing — Exact Prompts</div>
-          <div class="iblock-condition">3 hardcoded fields + extras</div>
+          <div class="iblock-title">Preferred Clothing — Complete API Call Payload</div>
+          <div class="iblock-condition">Each field is a SEPARATE API call</div>
         </div>
         <div class="iblock-right"><div class="src-badge">character-ai.ts</div><div class="tok-badge">~300-500 tok</div></div>
         <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
       </div>
-      <div class="iblock-body" id="body-star-char-pc">Each field below is a SEPARATE API call.
+      <div class="iblock-body" id="body-star-char-pc">═══ REQUEST BODY (sent to chat edge function) ═══
+{
+  messages: [
+    { role: "system", content: "You are a concise character creation assistant. Return only the requested content, no explanations." },
+    { role: "user", content: "{prompt constructed below}" }
+  ],
+  modelId: "grok-4-1-fast-reasoning",
+  stream: false
+}
 
-═══ casual ═══
-  Label: "Casual"
-  Max Sentences: 2
+Fallback order: [selectedModel, 'grok-4-1-fast-reasoning', 'grok-3-mini']
+
+═══ FIELD-SPECIFIC CONFIGS ═══
+
+casual — Label: "Casual" | Max Sentences: 2
   INSTRUCTION: "Describe preferred casual clothing style. Include typical pieces and aesthetic."
 
-═══ work ═══
-  Label: "Work"
-  Max Sentences: 2
+work — Label: "Work" | Max Sentences: 2
   INSTRUCTION: "Describe preferred work/professional attire. Include typical pieces and aesthetic."
 
-═══ sleep ═══
-  Label: "Sleep"
-  Max Sentences: 2
+sleep — Label: "Sleep" | Max Sentences: 2
   INSTRUCTION: "Describe preferred sleepwear. Include style and comfort preferences."
 
-═══ preferredClothingExtra (for extra_pc_* rows) ═══
-  Label: "Preferred Outfit"
-  Max Sentences: 2
+preferredClothingExtra (extra_pc_* rows) — Label: "Preferred Outfit" | Max Sentences: 2
   INSTRUCTION: "Describe an additional preferred clothing item or outfit for a specific occasion. Include style, aesthetic, and when they'd wear it."
 
-  GENERATE-BOTH HINT (when label is empty):
-  "Generate a preferred outfit for a specific occasion. Good label examples: 'Date Night', 'Formal Events', 'Training Gear', 'Disguise Kit'. Describe the style and aesthetic."
+═══ DETAILED MODE — EXACT USER PROMPT ═══
 
-  Resolution: extra_pc_* → preferredClothingExtra</div>
+You are enhancing a character field for an interactive roleplay. Use STRUCTURED EXPANSION:
+
+RULES:
+1. Be concise and factual (max {maxSentences} sentences)
+2. Focus on narrative-relevant details - what matters for the story
+3. NO purple prose or flowery language
+4. Format: State the fact, then its implication if relevant
+5. {Preserve existing | Generate from context}
+6. Stay consistent with all existing character data and world context below
+
+WORLD &amp; SCENARIO CONTEXT:
+{buildFullContext() — see Physical Appearance page for full assembly logic}
+
+THIS CHARACTER'S EXISTING DATA:
+{buildCharacterSelfContext() — see Physical Appearance page for full assembly logic}
+
+{CURRENT VALUE section}
+FIELD: {label}
+INSTRUCTION: {instruction}
+
+Return ONLY the enhanced text. No explanations, no prefixes, no markdown formatting.
+
+═══ PRECISE MODE — EXACT USER PROMPT ═══
+
+You are enhancing a character field for an interactive roleplay.
+
+Expand the following character detail into 3-5 short tags separated by semicolons.
+Focus on visual or key attributes only. No sentences, no explanations, no narrative rationale.
+
+WORLD &amp; SCENARIO CONTEXT:
+{buildFullContext() output}
+
+THIS CHARACTER'S EXISTING DATA:
+{buildCharacterSelfContext() output}
+
+{CURRENT VALUE section}
+FIELD: {label}
+
+Output format: Tag1; Tag2; Tag3; Tag4
+Return ONLY the semicolon-separated tags. Nothing else.
+
+═══ GENERATE-BOTH MODE (extra_pc_* when label is empty) ═══
+
+You are a character creation assistant for an interactive roleplay scenario.
+
+You need to generate BOTH a short label/name AND a description for a preferred clothing detail field on this character.
+
+RULES:
+1. The LABEL should be 1-4 words
+2. The DESCRIPTION should be 1-2 sentences explaining/expanding on it
+3. Look at all existing character data and world context to determine what would be most fitting and NOT duplicate existing ones
+4. Stay consistent with the character's established identity
+5. NO purple prose. Be factual and story-relevant.
+
+SECTION-SPECIFIC GUIDANCE:
+Generate a preferred outfit for a specific occasion. Good label examples: 'Date Night', 'Formal Events', 'Training Gear', 'Disguise Kit'. Describe the style and aesthetic.
+
+WORLD &amp; SCENARIO CONTEXT:
+{buildFullContext() output}
+
+THIS CHARACTER'S EXISTING DATA:
+{buildCharacterSelfContext() output}
+
+{CURRENT VALUE section}
+SECTION TYPE: preferred clothing detail
+
+You MUST respond in EXACTLY this format (two lines, no extra text):
+LABEL: &lt;your label here&gt;
+DESCRIPTION: &lt;your description here&gt;
+
+═══ CONTEXT ASSEMBLY ═══
+buildFullContext() and buildCharacterSelfContext() — identical to Physical Appearance page. See that page for the complete field-by-field assembly logic.
+
+═══ FIELD RESOLUTION ═══
+  extra_pc_* → preferredClothingExtra
+  (hardcoded fields use direct key: casual, work, sleep)
+
+═══ RESPONSE POST-PROCESSING ═══
+  Detailed: trim, strip leading/trailing quotes
+  Precise: remove periods before semicolons, trailing period, trailing semicolon, trim
+  Generate-both: parse LABEL:/DESCRIPTION: lines, join with \n---SPLIT---\n</div>
       <textarea class="iblock-textarea" id="ta-star-char-pc" oninput="markModified('star-char-pc'); autoResize(this)"></textarea>
     </div>
     </div>
@@ -2531,63 +2828,142 @@ FIELD RESOLUTION (prefix stripping in buildCharacterFieldPrompt):
     <!-- ═══ PAGE: Background ═══ -->
     <div class="content-section" data-section="star-char-bg">
     <div class="page-header">
-      <h1>Background — AI Enhance</h1>
-      <div class="ph-sub">character-ai.ts → CHARACTER_FIELD_PROMPTS</div>
-      <div class="ph-note">Fields: jobOccupation, educationLevel, residence, hobbies, financialStatus, motivation + backgroundExtra. NOTE: UI sends bg_ prefix (bg_jobOccupation) which is stripped during resolution.</div>
+      <h1>Background — AI Enhance <button class="copy-page-btn" onclick="copyPage(this)" title="Copy all blocks on this page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></h1>
+      <div class="ph-sub">character-ai.ts → aiEnhanceCharacterField() → chat edge fn → api.x.ai/v1/chat/completions</div>
+      <div class="ph-chips">
+        <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
+        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
+        <div class="chip chip-temp">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
+        <div class="chip">Streaming <strong>no</strong></div>
+      </div>
+      <div class="ph-note">Fields: jobOccupation, educationLevel, residence, hobbies, financialStatus, motivation + backgroundExtra (extra_bg_*). NOTE: UI sends bg_ prefix (bg_jobOccupation) which is stripped during resolution.</div>
     </div>
     <div class="iblock" data-block="star-char-bg" id="block-star-char-bg" draggable="false">
       <div class="iblock-header">
         <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
         <div class="modified-dot" id="dot-star-char-bg"></div>
         <div class="iblock-meta">
-          <div class="iblock-title">Background — Exact Prompts</div>
-          <div class="iblock-condition">6 hardcoded fields + extras | bg_ prefix stripped</div>
+          <div class="iblock-title">Background — Complete API Call Payload</div>
+          <div class="iblock-condition">6 hardcoded fields + extras | bg_ prefix stripped during resolution</div>
         </div>
         <div class="iblock-right"><div class="src-badge">character-ai.ts</div><div class="tok-badge">~300-500 tok</div></div>
         <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
       </div>
-      <div class="iblock-body" id="body-star-char-bg">Each field below is a SEPARATE API call.
+      <div class="iblock-body" id="body-star-char-bg">═══ REQUEST BODY (sent to chat edge function) ═══
+{
+  messages: [
+    { role: "system", content: "You are a concise character creation assistant. Return only the requested content, no explanations." },
+    { role: "user", content: "{prompt constructed below}" }
+  ],
+  modelId: "grok-4-1-fast-reasoning",
+  stream: false
+}
+
+Fallback order: [selectedModel, 'grok-4-1-fast-reasoning', 'grok-3-mini']
+
+═══ FIELD-SPECIFIC CONFIGS ═══
 IMPORTANT: The UI sends field names with bg_ prefix (e.g. bg_jobOccupation). The resolver strips this: bg_jobOccupation → jobOccupation.
 
-═══ jobOccupation (sent as bg_jobOccupation) ═══
-  Label: "Job / Occupation"
-  Max Sentences: 2
+jobOccupation (sent as bg_jobOccupation) — Label: "Job / Occupation" | Max Sentences: 2
   INSTRUCTION: "Describe current job, career, or primary occupation. Include role and workplace if relevant."
 
-═══ educationLevel (sent as bg_educationLevel) ═══
-  Label: "Education Level"
-  Max Sentences: 2
+educationLevel (sent as bg_educationLevel) — Label: "Education Level" | Max Sentences: 2
   INSTRUCTION: "Describe highest education achieved and any notable institutions or fields of study."
 
-═══ residence (sent as bg_residence) ═══
-  Label: "Residence"
-  Max Sentences: 2
+residence (sent as bg_residence) — Label: "Residence" | Max Sentences: 2
   INSTRUCTION: "Describe where the character lives. Include type of dwelling, neighborhood, and living situation."
 
-═══ hobbies (sent as bg_hobbies) ═══
-  Label: "Hobbies"
-  Max Sentences: 2
+hobbies (sent as bg_hobbies) — Label: "Hobbies" | Max Sentences: 2
   INSTRUCTION: "List primary hobbies and leisure activities. Focus on what they enjoy most."
 
-═══ financialStatus (sent as bg_financialStatus) ═══
-  Label: "Financial Status"
-  Max Sentences: 2
+financialStatus (sent as bg_financialStatus) — Label: "Financial Status" | Max Sentences: 2
   INSTRUCTION: "Describe financial standing — wealthy, comfortable, struggling, etc. Include context."
 
-═══ motivation (sent as bg_motivation) ═══
-  Label: "Motivation"
-  Max Sentences: 2
+motivation (sent as bg_motivation) — Label: "Motivation" | Max Sentences: 2
   INSTRUCTION: "Describe the character's core driving motivation. What keeps them going?"
 
-═══ backgroundExtra (for extra_bg_* rows) ═══
-  Label: "Background Detail"
-  Max Sentences: 2
+backgroundExtra (extra_bg_* rows) — Label: "Background Detail" | Max Sentences: 2
   INSTRUCTION: "Describe an additional background detail about this character — a life experience, cultural element, skill, or contextual fact that enriches their story. Ground it in existing character data."
 
-  GENERATE-BOTH HINT (when label is empty):
-  "Generate an additional background detail. Good label examples: 'Military Service', 'Orphaned at 12', 'Speaks Three Languages', 'Former Street Performer'. The description should enrich the character's history."
+═══ DETAILED MODE — EXACT USER PROMPT ═══
 
-  Resolution: extra_bg_* → backgroundExtra</div>
+You are enhancing a character field for an interactive roleplay. Use STRUCTURED EXPANSION:
+
+RULES:
+1. Be concise and factual (max {maxSentences} sentences)
+2. Focus on narrative-relevant details - what matters for the story
+3. NO purple prose or flowery language
+4. Format: State the fact, then its implication if relevant
+5. {Preserve existing | Generate from context}
+6. Stay consistent with all existing character data and world context below
+
+WORLD &amp; SCENARIO CONTEXT:
+{buildFullContext() — see Physical Appearance page for full assembly logic}
+
+THIS CHARACTER'S EXISTING DATA:
+{buildCharacterSelfContext() — see Physical Appearance page for full assembly logic}
+
+{CURRENT VALUE section}
+FIELD: {label}
+INSTRUCTION: {instruction}
+
+Return ONLY the enhanced text. No explanations, no prefixes, no markdown formatting.
+
+═══ PRECISE MODE — EXACT USER PROMPT ═══
+
+You are enhancing a character field for an interactive roleplay.
+
+Expand the following character detail into 3-5 short tags separated by semicolons.
+Focus on visual or key attributes only. No sentences, no explanations, no narrative rationale.
+
+WORLD &amp; SCENARIO CONTEXT:
+{buildFullContext() output}
+
+THIS CHARACTER'S EXISTING DATA:
+{buildCharacterSelfContext() output}
+
+{CURRENT VALUE section}
+FIELD: {label}
+
+Output format: Tag1; Tag2; Tag3; Tag4
+Return ONLY the semicolon-separated tags. Nothing else.
+
+═══ GENERATE-BOTH MODE (extra_bg_* when label is empty) ═══
+
+You are a character creation assistant for an interactive roleplay scenario.
+
+You need to generate BOTH a short label/name AND a description for a background detail field on this character.
+
+RULES:
+1-5. {same as above}
+
+SECTION-SPECIFIC GUIDANCE:
+Generate an additional background detail. Good label examples: 'Military Service', 'Orphaned at 12', 'Speaks Three Languages', 'Former Street Performer'. The description should enrich the character's history.
+
+WORLD &amp; SCENARIO CONTEXT:
+{buildFullContext() output}
+
+THIS CHARACTER'S EXISTING DATA:
+{buildCharacterSelfContext() output}
+
+{CURRENT VALUE section}
+SECTION TYPE: background detail
+
+You MUST respond in EXACTLY this format (two lines, no extra text):
+LABEL: &lt;your label here&gt;
+DESCRIPTION: &lt;your description here&gt;
+
+═══ CONTEXT ASSEMBLY ═══
+buildFullContext() and buildCharacterSelfContext() — identical to Physical Appearance page.
+
+═══ FIELD RESOLUTION ═══
+  bg_* → strips bg_ prefix (bg_jobOccupation → jobOccupation)
+  extra_bg_* → backgroundExtra
+
+═══ RESPONSE POST-PROCESSING ═══
+  Detailed: trim, strip leading/trailing quotes
+  Precise: remove periods before semicolons, trailing period, trailing semicolon, trim
+  Generate-both: parse LABEL:/DESCRIPTION: lines, join with \n---SPLIT---\n</div>
       <textarea class="iblock-textarea" id="ta-star-char-bg" oninput="markModified('star-char-bg'); autoResize(this)"></textarea>
     </div>
     </div>
@@ -2595,44 +2971,122 @@ IMPORTANT: The UI sends field names with bg_ prefix (e.g. bg_jobOccupation). The
     <!-- ═══ PAGE: Personality ═══ -->
     <div class="content-section" data-section="star-char-personality">
     <div class="page-header">
-      <h1>Personality — AI Enhance</h1>
-      <div class="ph-sub">character-ai.ts → CHARACTER_FIELD_PROMPTS</div>
-      <div class="ph-note">3 configs: standard, outward (split mode), inward (split mode). Resolution: personality_outward_* → personality_outward, personality_inward_* → personality_inward, personality_* → personality</div>
+      <h1>Personality — AI Enhance <button class="copy-page-btn" onclick="copyPage(this)" title="Copy all blocks on this page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></h1>
+      <div class="ph-sub">character-ai.ts → aiEnhanceCharacterField() → chat edge fn → api.x.ai/v1/chat/completions</div>
+      <div class="ph-chips">
+        <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
+        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
+        <div class="chip chip-temp">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
+        <div class="chip">Streaming <strong>no</strong></div>
+      </div>
+      <div class="ph-note">3 configs: standard (personality_*), outward (personality_outward_*), inward (personality_inward_*). Each trait row is a separate API call.</div>
     </div>
     <div class="iblock" data-block="star-char-personality" id="block-star-char-personality" draggable="false">
       <div class="iblock-header">
         <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
         <div class="modified-dot" id="dot-star-char-personality"></div>
         <div class="iblock-meta">
-          <div class="iblock-title">Personality — Exact Prompts</div>
+          <div class="iblock-title">Personality — Complete API Call Payload</div>
           <div class="iblock-condition">Standard / Outward / Inward — each a separate API call</div>
         </div>
         <div class="iblock-right"><div class="src-badge">character-ai.ts</div><div class="tok-badge">~300-500 tok</div></div>
         <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
       </div>
-      <div class="iblock-body" id="body-star-char-personality">═══ personality (standard mode — personality_* resolution) ═══
-  Label: "Personality Trait"
-  Max Sentences: 2
+      <div class="iblock-body" id="body-star-char-personality">═══ REQUEST BODY (sent to chat edge function) ═══
+{
+  messages: [
+    { role: "system", content: "You are a concise character creation assistant. Return only the requested content, no explanations." },
+    { role: "user", content: "{prompt constructed below}" }
+  ],
+  modelId: "grok-4-1-fast-reasoning",
+  stream: false
+}
+
+Fallback order: [selectedModel, 'grok-4-1-fast-reasoning', 'grok-3-mini']
+
+═══ FIELD-SPECIFIC CONFIGS (3 variants) ═══
+
+personality (standard mode — personality_* resolution) — Label: "Personality Trait" | Max Sentences: 2
   INSTRUCTION: "Describe this personality trait and how it manifests in the character's behavior, decisions, and interactions. Focus on behavioral patterns, emotional tendencies, and how this trait shapes who they are. Stay grounded in the character's background and world context. Do NOT describe speech patterns or vocal qualities — focus on personality and behavior."
 
-  GENERATE-BOTH HINT (when label is empty):
-  "Generate a personality trait describing a core behavioral pattern, emotional tendency, or character quality. Good label examples: 'Stubborn', 'Empathetic', 'Reckless Courage', 'Quiet Ambition', 'People-Pleaser'. The description should explain how this trait manifests in the character's behavior and decisions. Do NOT generate tone/voice traits — focus on personality and behavior."
-
-═══ personality_outward (split mode — personality_outward_* resolution) ═══
-  Label: "Outward Personality Trait"
-  Max Sentences: 2
+personality_outward (split mode — personality_outward_* resolution) — Label: "Outward Personality Trait" | Max Sentences: 2
   INSTRUCTION: "Describe this OUTWARD personality trait — how the character presents themselves to others. Focus on projected behavior, social demeanor, dialogue style, body language, and the persona they show the world. This is what other characters would observe and experience. Do NOT describe internal feelings or hidden thoughts — focus on external presentation."
 
-  GENERATE-BOTH HINT (when label is empty):
-  "Generate an OUTWARD personality trait — something other characters would notice and experience. Good label examples: 'Charming Deflector', 'Stoic Composure', 'Infectious Optimism', 'Cold Professionalism', 'Disarming Humor'. Focus on projected behavior, social demeanor, and how they present themselves. Do NOT describe internal feelings or speech patterns."
-
-═══ personality_inward (split mode — personality_inward_* resolution) ═══
-  Label: "Inward Personality Trait"
-  Max Sentences: 2
+personality_inward (split mode — personality_inward_* resolution) — Label: "Inward Personality Trait" | Max Sentences: 2
   INSTRUCTION: "Describe this INWARD personality trait — the character's internal emotional landscape. Focus on private thoughts, hidden impulses, inner contradictions, suppressed feelings, and emotional patterns they don't show others. This is what the character experiences internally but may hide or struggle with. Do NOT describe outward behavior — focus on inner state."
 
-  GENERATE-BOTH HINT (when label is empty):
-  "Generate an INWARD personality trait — something the character experiences internally but may hide. Good label examples: 'Chronic Self-Doubt', 'Suppressed Rage', 'Secret Tenderness', 'Fear of Abandonment', 'Hidden Guilt'. Focus on private thoughts, inner contradictions, and emotional patterns they don't show others. Do NOT describe outward behavior or speech patterns."</div>
+═══ DETAILED MODE — EXACT USER PROMPT ═══
+
+You are enhancing a character field for an interactive roleplay. Use STRUCTURED EXPANSION:
+
+RULES:
+1. Be concise and factual (max 2 sentences)
+2. Focus on narrative-relevant details - what matters for the story
+3. NO purple prose or flowery language
+4. Format: State the fact, then its implication if relevant
+5. {Preserve existing | Generate from context}
+6. Stay consistent with all existing character data and world context below
+
+WORLD &amp; SCENARIO CONTEXT:
+{buildFullContext() — see Physical Appearance page for full assembly logic}
+
+THIS CHARACTER'S EXISTING DATA:
+{buildCharacterSelfContext() — see Physical Appearance page for full assembly logic}
+
+{CURRENT VALUE section}
+FIELD: {label — e.g. "Personality Trait", "Outward Personality Trait", or "Inward Personality Trait"}
+INSTRUCTION: {instruction from matching config above}
+
+Return ONLY the enhanced text. No explanations, no prefixes, no markdown formatting.
+
+═══ PRECISE MODE — EXACT USER PROMPT ═══
+{Same template as other sections — see Currently Wearing page}
+
+═══ GENERATE-BOTH MODE (when label is empty) ═══
+
+You are a character creation assistant for an interactive roleplay scenario.
+
+You need to generate BOTH a short label/name AND a description for a {personality trait | outward personality trait | inward personality trait} field on this character.
+
+RULES:
+1-5. {same as other sections}
+
+SECTION-SPECIFIC GUIDANCE (varies by type):
+
+Standard personality:
+  "Generate a personality trait describing a core behavioral pattern, emotional tendency, or character quality. Good label examples: 'Stubborn', 'Empathetic', 'Reckless Courage', 'Quiet Ambition', 'People-Pleaser'. The description should explain how this trait manifests in the character's behavior and decisions. Do NOT generate tone/voice traits — focus on personality and behavior."
+
+Outward personality:
+  "Generate an OUTWARD personality trait — something other characters would notice and experience. Good label examples: 'Charming Deflector', 'Stoic Composure', 'Infectious Optimism', 'Cold Professionalism', 'Disarming Humor'. Focus on projected behavior, social demeanor, and how they present themselves. Do NOT describe internal feelings or speech patterns."
+
+Inward personality:
+  "Generate an INWARD personality trait — something the character experiences internally but may hide. Good label examples: 'Chronic Self-Doubt', 'Suppressed Rage', 'Secret Tenderness', 'Fear of Abandonment', 'Hidden Guilt'. Focus on private thoughts, inner contradictions, and emotional patterns they don't show others. Do NOT describe outward behavior or speech patterns."
+
+WORLD &amp; SCENARIO CONTEXT:
+{buildFullContext() output}
+
+THIS CHARACTER'S EXISTING DATA:
+{buildCharacterSelfContext() output}
+
+{CURRENT VALUE section}
+SECTION TYPE: {personality trait | outward personality trait | inward personality trait}
+
+You MUST respond in EXACTLY this format (two lines, no extra text):
+LABEL: &lt;your label here&gt;
+DESCRIPTION: &lt;your description here&gt;
+
+═══ CONTEXT ASSEMBLY ═══
+buildFullContext() and buildCharacterSelfContext() — identical to Physical Appearance page.
+
+═══ FIELD RESOLUTION ═══
+  personality_outward_* → personality_outward
+  personality_inward_*  → personality_inward
+  personality_*         → personality
+
+═══ RESPONSE POST-PROCESSING ═══
+  Detailed: trim, strip leading/trailing quotes
+  Precise: remove periods before semicolons, trailing period, trailing semicolon, trim
+  Generate-both: parse LABEL:/DESCRIPTION: lines, join with \n---SPLIT---\n</div>
       <textarea class="iblock-textarea" id="ta-star-char-personality" oninput="markModified('star-char-personality'); autoResize(this)"></textarea>
     </div>
     </div>
@@ -2640,28 +3094,88 @@ IMPORTANT: The UI sends field names with bg_ prefix (e.g. bg_jobOccupation). The
     <!-- ═══ PAGE: Tone / Voice ═══ -->
     <div class="content-section" data-section="star-char-tone">
     <div class="page-header">
-      <h1>Tone / Voice — AI Enhance</h1>
-      <div class="ph-sub">character-ai.ts → CHARACTER_FIELD_PROMPTS</div>
-      <div class="ph-note">Resolution: extra_tone_* → tone</div>
+      <h1>Tone / Voice — AI Enhance <button class="copy-page-btn" onclick="copyPage(this)" title="Copy all blocks on this page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></h1>
+      <div class="ph-sub">character-ai.ts → aiEnhanceCharacterField() → chat edge fn → api.x.ai/v1/chat/completions</div>
+      <div class="ph-chips">
+        <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
+        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
+        <div class="chip chip-temp">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
+        <div class="chip">Streaming <strong>no</strong></div>
+      </div>
+      <div class="ph-note">Resolution: extra_tone_* → tone. Single config for all tone rows.</div>
     </div>
     <div class="iblock" data-block="star-char-tone" id="block-star-char-tone" draggable="false">
       <div class="iblock-header">
         <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
         <div class="modified-dot" id="dot-star-char-tone"></div>
         <div class="iblock-meta">
-          <div class="iblock-title">Tone / Voice — Exact Prompt</div>
+          <div class="iblock-title">Tone / Voice — Complete API Call Payload</div>
           <div class="iblock-condition">Single config for all tone rows</div>
         </div>
         <div class="iblock-right"><div class="src-badge">character-ai.ts</div><div class="tok-badge">~300-500 tok</div></div>
         <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
       </div>
-      <div class="iblock-body" id="body-star-char-tone">═══ tone (extra_tone_* resolution) ═══
-  Label: "Tone"
-  Max Sentences: 3
+      <div class="iblock-body" id="body-star-char-tone">═══ REQUEST BODY (sent to chat edge function) ═══
+{
+  messages: [
+    { role: "system", content: "You are a concise character creation assistant. Return only the requested content, no explanations." },
+    { role: "user", content: "{prompt constructed below}" }
+  ],
+  modelId: "grok-4-1-fast-reasoning",
+  stream: false
+}
+
+Fallback order: [selectedModel, 'grok-4-1-fast-reasoning', 'grok-3-mini']
+
+═══ FIELD-SPECIFIC CONFIG ═══
+
+tone (extra_tone_* resolution) — Label: "Tone" | Max Sentences: 3
   INSTRUCTION: "Describe how this character speaks and expresses themselves. Focus on vocal qualities, speech rhythm, vocabulary level, verbal tics or habits, formality, and emotional register. This must naturally reflect the character's personality, background, and world context — not a random or generic speech style. If a specific tone label is provided (e.g. 'Nurturing', 'Sarcastic'), describe how THAT specific tone manifests in this character's speech, drawing on who they are and their established traits."
 
-  GENERATE-BOTH HINT (when label is empty):
-  "Generate a tone/voice trait describing HOW this character speaks — e.g. speech rhythm, vocabulary, verbal habits, emotional register, formality level. Good label examples: 'Dry Wit', 'Formal Register', 'Nervous Stammer', 'Warm Drawl', 'Clipped Authority'. The description should explain how this specific character exhibits that tone trait, based on their personality, background, and context. Do NOT generate personality traits — focus strictly on how they SOUND and EXPRESS themselves vocally."</div>
+═══ DETAILED MODE — EXACT USER PROMPT ═══
+
+You are enhancing a character field for an interactive roleplay. Use STRUCTURED EXPANSION:
+
+RULES:
+1. Be concise and factual (max 3 sentences)
+2. Focus on narrative-relevant details - what matters for the story
+3. NO purple prose or flowery language
+4. Format: State the fact, then its implication if relevant
+5. {Preserve existing | Generate from context}
+6. Stay consistent with all existing character data and world context below
+
+WORLD &amp; SCENARIO CONTEXT:
+{buildFullContext() — see Physical Appearance page for full assembly logic}
+
+THIS CHARACTER'S EXISTING DATA:
+{buildCharacterSelfContext() — see Physical Appearance page for full assembly logic}
+
+{CURRENT VALUE section}
+FIELD: Tone
+INSTRUCTION: Describe how this character speaks and expresses themselves. Focus on vocal qualities, speech rhythm, vocabulary level, verbal tics or habits, formality, and emotional register. This must naturally reflect the character's personality, background, and world context — not a random or generic speech style. If a specific tone label is provided (e.g. 'Nurturing', 'Sarcastic'), describe how THAT specific tone manifests in this character's speech, drawing on who they are and their established traits.
+
+Return ONLY the enhanced text. No explanations, no prefixes, no markdown formatting.
+
+═══ PRECISE MODE — EXACT USER PROMPT ═══
+{Same template as other sections}
+
+═══ GENERATE-BOTH MODE (when label is empty) ═══
+
+SECTION-SPECIFIC GUIDANCE:
+"Generate a tone/voice trait describing HOW this character speaks — e.g. speech rhythm, vocabulary, verbal habits, emotional register, formality level. Good label examples: 'Dry Wit', 'Formal Register', 'Nervous Stammer', 'Warm Drawl', 'Clipped Authority'. The description should explain how this specific character exhibits that tone trait, based on their personality, background, and context. Do NOT generate personality traits — focus strictly on how they SOUND and EXPRESS themselves vocally."
+
+{Full generate-both template same as other sections, with SECTION TYPE: character tone/voice detail}
+
+═══ CONTEXT ASSEMBLY ═══
+buildFullContext() and buildCharacterSelfContext() — identical to Physical Appearance page.
+
+═══ FIELD RESOLUTION ═══
+  extra_tone_* → tone
+
+═══ RESPONSE POST-PROCESSING ═══
+  Detailed: trim, strip leading/trailing quotes
+  Precise: remove periods before semicolons, trailing period, trailing semicolon, trim
+  Generate-both: parse LABEL:/DESCRIPTION: lines, join with \n---SPLIT---\n</div>
       <textarea class="iblock-textarea" id="ta-star-char-tone" oninput="markModified('star-char-tone'); autoResize(this)"></textarea>
     </div>
     </div>
@@ -2669,25 +3183,75 @@ IMPORTANT: The UI sends field names with bg_ prefix (e.g. bg_jobOccupation). The
     <!-- ═══ PAGE: Role Description ═══ -->
     <div class="content-section" data-section="star-char-role">
     <div class="page-header">
-      <h1>Role Description — AI Enhance</h1>
-      <div class="ph-sub">character-ai.ts → CHARACTER_FIELD_PROMPTS</div>
-      <div class="ph-note">Direct field key: roleDescription (no prefix stripping)</div>
+      <h1>Role Description — AI Enhance <button class="copy-page-btn" onclick="copyPage(this)" title="Copy all blocks on this page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></h1>
+      <div class="ph-sub">character-ai.ts → aiEnhanceCharacterField() → chat edge fn → api.x.ai/v1/chat/completions</div>
+      <div class="ph-chips">
+        <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
+        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
+        <div class="chip chip-temp">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
+        <div class="chip">Streaming <strong>no</strong></div>
+      </div>
+      <div class="ph-note">Direct field key: roleDescription (no prefix stripping, no extras)</div>
     </div>
     <div class="iblock" data-block="star-char-role" id="block-star-char-role" draggable="false">
       <div class="iblock-header">
         <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
         <div class="modified-dot" id="dot-star-char-role"></div>
         <div class="iblock-meta">
-          <div class="iblock-title">Role Description — Exact Prompt</div>
-          <div class="iblock-condition">Single hardcoded field</div>
+          <div class="iblock-title">Role Description — Complete API Call Payload</div>
+          <div class="iblock-condition">Single hardcoded field — detailed/precise modes only (no generate-both)</div>
         </div>
         <div class="iblock-right"><div class="src-badge">character-ai.ts</div><div class="tok-badge">~300-500 tok</div></div>
         <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
       </div>
-      <div class="iblock-body" id="body-star-char-role">═══ roleDescription ═══
-  Label: "Role Description"
-  Max Sentences: 3
-  INSTRUCTION: "Describe this character's role and function in the story. What is their narrative purpose? Are they a protagonist, antagonist, mentor, love interest, comic relief? How do they drive the plot or support other characters? Be specific to the scenario context."</div>
+      <div class="iblock-body" id="body-star-char-role">═══ REQUEST BODY ═══
+{
+  messages: [
+    { role: "system", content: "You are a concise character creation assistant. Return only the requested content, no explanations." },
+    { role: "user", content: "{prompt}" }
+  ],
+  modelId: "grok-4-1-fast-reasoning",
+  stream: false
+}
+
+Fallback order: [selectedModel, 'grok-4-1-fast-reasoning', 'grok-3-mini']
+
+═══ FIELD CONFIG ═══
+roleDescription — Label: "Role Description" | Max Sentences: 3
+  INSTRUCTION: "Describe this character's role and function in the story. What is their narrative purpose? Are they a protagonist, antagonist, mentor, love interest, comic relief? How do they drive the plot or support other characters? Be specific to the scenario context."
+
+═══ DETAILED MODE — EXACT USER PROMPT ═══
+
+You are enhancing a character field for an interactive roleplay. Use STRUCTURED EXPANSION:
+
+RULES:
+1. Be concise and factual (max 3 sentences)
+2-6. {same as other sections}
+
+WORLD &amp; SCENARIO CONTEXT:
+{buildFullContext() — see Physical Appearance page for full assembly logic}
+
+THIS CHARACTER'S EXISTING DATA:
+{buildCharacterSelfContext() — see Physical Appearance page for full assembly logic}
+
+{CURRENT VALUE section}
+FIELD: Role Description
+INSTRUCTION: Describe this character's role and function in the story. What is their narrative purpose? Are they a protagonist, antagonist, mentor, love interest, comic relief? How do they drive the plot or support other characters? Be specific to the scenario context.
+
+Return ONLY the enhanced text. No explanations, no prefixes, no markdown formatting.
+
+═══ PRECISE MODE — EXACT USER PROMPT ═══
+{Same template as other sections}
+
+═══ CONTEXT ASSEMBLY ═══
+buildFullContext() and buildCharacterSelfContext() — identical to Physical Appearance page.
+
+═══ FIELD RESOLUTION ═══
+  roleDescription → direct match (no prefix stripping)
+
+═══ RESPONSE POST-PROCESSING ═══
+  Detailed: trim, strip leading/trailing quotes
+  Precise: remove periods before semicolons, trailing period, trailing semicolon, trim</div>
       <textarea class="iblock-textarea" id="ta-star-char-role" oninput="markModified('star-char-role'); autoResize(this)"></textarea>
     </div>
     </div>
@@ -2695,28 +3259,59 @@ IMPORTANT: The UI sends field names with bg_ prefix (e.g. bg_jobOccupation). The
     <!-- ═══ PAGE: Key Life Events ═══ -->
     <div class="content-section" data-section="star-char-kle">
     <div class="page-header">
-      <h1>Key Life Events — AI Enhance</h1>
-      <div class="ph-sub">character-ai.ts → CHARACTER_FIELD_PROMPTS</div>
-      <div class="ph-note">Resolution: extra_kle_* → keyLifeEvent</div>
+      <h1>Key Life Events — AI Enhance <button class="copy-page-btn" onclick="copyPage(this)" title="Copy all blocks on this page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></h1>
+      <div class="ph-sub">character-ai.ts → aiEnhanceCharacterField() → chat edge fn → api.x.ai/v1/chat/completions</div>
+      <div class="ph-chips">
+        <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
+        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
+        <div class="chip chip-temp">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
+        <div class="chip">Streaming <strong>no</strong></div>
+      </div>
+      <div class="ph-note">Resolution: extra_kle_* → keyLifeEvent. Extras-only section.</div>
     </div>
     <div class="iblock" data-block="star-char-kle" id="block-star-char-kle" draggable="false">
       <div class="iblock-header">
         <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
         <div class="modified-dot" id="dot-star-char-kle"></div>
         <div class="iblock-meta">
-          <div class="iblock-title">Key Life Events — Exact Prompt</div>
+          <div class="iblock-title">Key Life Events — Complete API Call Payload</div>
           <div class="iblock-condition">Extras-only section</div>
         </div>
         <div class="iblock-right"><div class="src-badge">character-ai.ts</div><div class="tok-badge">~300-500 tok</div></div>
         <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
       </div>
-      <div class="iblock-body" id="body-star-char-kle">═══ keyLifeEvent (extra_kle_* resolution) ═══
-  Label: "Key Life Event"
-  Max Sentences: 3
+      <div class="iblock-body" id="body-star-char-kle">═══ REQUEST BODY ═══
+{
+  messages: [
+    { role: "system", content: "You are a concise character creation assistant. Return only the requested content, no explanations." },
+    { role: "user", content: "{prompt}" }
+  ],
+  modelId: "grok-4-1-fast-reasoning",
+  stream: false
+}
+
+Fallback order: [selectedModel, 'grok-4-1-fast-reasoning', 'grok-3-mini']
+
+═══ FIELD CONFIG ═══
+keyLifeEvent (extra_kle_* resolution) — Label: "Key Life Event" | Max Sentences: 3
   INSTRUCTION: "Describe a formative event from this character's past and how it shaped who they are today. Focus on what happened, the emotional impact, and lasting consequences on personality or relationships. Ground it in the character's established background and world context."
 
-  GENERATE-BOTH HINT (when label is empty):
-  "Generate a formative past event. Good label examples: 'Mother's Disappearance', 'First Kill', 'Academy Expulsion', 'The Betrayal', 'Childhood Fire'. The description should explain what happened and how it shaped the character. Ground it in their established background."</div>
+═══ DETAILED MODE — EXACT USER PROMPT ═══
+{Same template as other sections, with max 3 sentences and the instruction above}
+
+═══ PRECISE MODE — EXACT USER PROMPT ═══
+{Same template as other sections}
+
+═══ GENERATE-BOTH MODE (when label is empty) ═══
+SECTION-SPECIFIC GUIDANCE:
+"Generate a formative past event. Good label examples: 'Mother's Disappearance', 'First Kill', 'Academy Expulsion', 'The Betrayal', 'Childhood Fire'. The description should explain what happened and how it shaped the character. Ground it in their established background."
+
+{Full generate-both template with SECTION TYPE: key life event}
+
+═══ CONTEXT/RESOLUTION/POST-PROCESSING ═══
+  Context: buildFullContext() + buildCharacterSelfContext() — see Physical Appearance page
+  Resolution: extra_kle_* → keyLifeEvent
+  Post-processing: same as other sections</div>
       <textarea class="iblock-textarea" id="ta-star-char-kle" oninput="markModified('star-char-kle'); autoResize(this)"></textarea>
     </div>
     </div>
@@ -2724,28 +3319,59 @@ IMPORTANT: The UI sends field names with bg_ prefix (e.g. bg_jobOccupation). The
     <!-- ═══ PAGE: Relationships ═══ -->
     <div class="content-section" data-section="star-char-rel">
     <div class="page-header">
-      <h1>Relationships — AI Enhance</h1>
-      <div class="ph-sub">character-ai.ts → CHARACTER_FIELD_PROMPTS</div>
-      <div class="ph-note">Resolution: extra_rel_* → relationship</div>
+      <h1>Relationships — AI Enhance <button class="copy-page-btn" onclick="copyPage(this)" title="Copy all blocks on this page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></h1>
+      <div class="ph-sub">character-ai.ts → aiEnhanceCharacterField() → chat edge fn → api.x.ai/v1/chat/completions</div>
+      <div class="ph-chips">
+        <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
+        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
+        <div class="chip chip-temp">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
+        <div class="chip">Streaming <strong>no</strong></div>
+      </div>
+      <div class="ph-note">Resolution: extra_rel_* → relationship. Extras-only section.</div>
     </div>
     <div class="iblock" data-block="star-char-rel" id="block-star-char-rel" draggable="false">
       <div class="iblock-header">
         <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
         <div class="modified-dot" id="dot-star-char-rel"></div>
         <div class="iblock-meta">
-          <div class="iblock-title">Relationships — Exact Prompt</div>
+          <div class="iblock-title">Relationships — Complete API Call Payload</div>
           <div class="iblock-condition">Extras-only section</div>
         </div>
         <div class="iblock-right"><div class="src-badge">character-ai.ts</div><div class="tok-badge">~300-500 tok</div></div>
         <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
       </div>
-      <div class="iblock-body" id="body-star-char-rel">═══ relationship (extra_rel_* resolution) ═══
-  Label: "Relationship"
-  Max Sentences: 3
+      <div class="iblock-body" id="body-star-char-rel">═══ REQUEST BODY ═══
+{
+  messages: [
+    { role: "system", content: "You are a concise character creation assistant. Return only the requested content, no explanations." },
+    { role: "user", content: "{prompt}" }
+  ],
+  modelId: "grok-4-1-fast-reasoning",
+  stream: false
+}
+
+Fallback order: [selectedModel, 'grok-4-1-fast-reasoning', 'grok-3-mini']
+
+═══ FIELD CONFIG ═══
+relationship (extra_rel_* resolution) — Label: "Relationship" | Max Sentences: 3
   INSTRUCTION: "Describe this relationship dynamic — who the other person is, the nature of the bond (family, romantic, rival, mentor, etc.), current state of the relationship, and any tension or significance for the story. Reference other characters in the scenario when relevant."
 
-  GENERATE-BOTH HINT (when label is empty):
-  "Generate a relationship with another character or figure. Good label examples: 'Rival — Marcus Cole', 'Mentor — Old Gregor', 'Ex-Lover — Diana', 'Estranged Father'. The description should explain the dynamic, current state, and story significance."</div>
+═══ DETAILED MODE — EXACT USER PROMPT ═══
+{Same template as other sections, with max 3 sentences and the instruction above}
+
+═══ PRECISE MODE — EXACT USER PROMPT ═══
+{Same template as other sections}
+
+═══ GENERATE-BOTH MODE (when label is empty) ═══
+SECTION-SPECIFIC GUIDANCE:
+"Generate a relationship with another character or figure. Good label examples: 'Rival — Marcus Cole', 'Mentor — Old Gregor', 'Ex-Lover — Diana', 'Estranged Father'. The description should explain the dynamic, current state, and story significance."
+
+{Full generate-both template with SECTION TYPE: relationship}
+
+═══ CONTEXT/RESOLUTION/POST-PROCESSING ═══
+  Context: buildFullContext() + buildCharacterSelfContext() — see Physical Appearance page
+  Resolution: extra_rel_* → relationship
+  Post-processing: same as other sections</div>
       <textarea class="iblock-textarea" id="ta-star-char-rel" oninput="markModified('star-char-rel'); autoResize(this)"></textarea>
     </div>
     </div>
@@ -2753,28 +3379,59 @@ IMPORTANT: The UI sends field names with bg_ prefix (e.g. bg_jobOccupation). The
     <!-- ═══ PAGE: Secrets ═══ -->
     <div class="content-section" data-section="star-char-sec">
     <div class="page-header">
-      <h1>Secrets — AI Enhance</h1>
-      <div class="ph-sub">character-ai.ts → CHARACTER_FIELD_PROMPTS</div>
-      <div class="ph-note">Resolution: extra_sec_* → secret</div>
+      <h1>Secrets — AI Enhance <button class="copy-page-btn" onclick="copyPage(this)" title="Copy all blocks on this page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></h1>
+      <div class="ph-sub">character-ai.ts → aiEnhanceCharacterField() → chat edge fn → api.x.ai/v1/chat/completions</div>
+      <div class="ph-chips">
+        <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
+        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
+        <div class="chip chip-temp">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
+        <div class="chip">Streaming <strong>no</strong></div>
+      </div>
+      <div class="ph-note">Resolution: extra_sec_* → secret. Extras-only section.</div>
     </div>
     <div class="iblock" data-block="star-char-sec" id="block-star-char-sec" draggable="false">
       <div class="iblock-header">
         <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
         <div class="modified-dot" id="dot-star-char-sec"></div>
         <div class="iblock-meta">
-          <div class="iblock-title">Secrets — Exact Prompt</div>
+          <div class="iblock-title">Secrets — Complete API Call Payload</div>
           <div class="iblock-condition">Extras-only section</div>
         </div>
         <div class="iblock-right"><div class="src-badge">character-ai.ts</div><div class="tok-badge">~300-500 tok</div></div>
         <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
       </div>
-      <div class="iblock-body" id="body-star-char-sec">═══ secret (extra_sec_* resolution) ═══
-  Label: "Secret"
-  Max Sentences: 3
+      <div class="iblock-body" id="body-star-char-sec">═══ REQUEST BODY ═══
+{
+  messages: [
+    { role: "system", content: "You are a concise character creation assistant. Return only the requested content, no explanations." },
+    { role: "user", content: "{prompt}" }
+  ],
+  modelId: "grok-4-1-fast-reasoning",
+  stream: false
+}
+
+Fallback order: [selectedModel, 'grok-4-1-fast-reasoning', 'grok-3-mini']
+
+═══ FIELD CONFIG ═══
+secret (extra_sec_* resolution) — Label: "Secret" | Max Sentences: 3
   INSTRUCTION: "Describe a hidden truth, concealed history, or private knowledge this character keeps from others. Explain what the secret is, why they hide it, and what would happen if it were revealed. Ground it in the character's background and relationships."
 
-  GENERATE-BOTH HINT (when label is empty):
-  "Generate a secret the character keeps hidden. Good label examples: 'True Parentage', 'The Incident at Millbrook', 'Hidden Addiction', 'Double Agent'. The description should explain what the secret is, why they hide it, and what would happen if revealed."</div>
+═══ DETAILED MODE — EXACT USER PROMPT ═══
+{Same template as other sections, with max 3 sentences and the instruction above}
+
+═══ PRECISE MODE — EXACT USER PROMPT ═══
+{Same template as other sections}
+
+═══ GENERATE-BOTH MODE (when label is empty) ═══
+SECTION-SPECIFIC GUIDANCE:
+"Generate a secret the character keeps hidden. Good label examples: 'True Parentage', 'The Incident at Millbrook', 'Hidden Addiction', 'Double Agent'. The description should explain what the secret is, why they hide it, and what would happen if revealed."
+
+{Full generate-both template with SECTION TYPE: secret}
+
+═══ CONTEXT/RESOLUTION/POST-PROCESSING ═══
+  Context: buildFullContext() + buildCharacterSelfContext() — see Physical Appearance page
+  Resolution: extra_sec_* → secret
+  Post-processing: same as other sections</div>
       <textarea class="iblock-textarea" id="ta-star-char-sec" oninput="markModified('star-char-sec'); autoResize(this)"></textarea>
     </div>
     </div>
@@ -2782,28 +3439,59 @@ IMPORTANT: The UI sends field names with bg_ prefix (e.g. bg_jobOccupation). The
     <!-- ═══ PAGE: Fears ═══ -->
     <div class="content-section" data-section="star-char-fear">
     <div class="page-header">
-      <h1>Fears — AI Enhance</h1>
-      <div class="ph-sub">character-ai.ts → CHARACTER_FIELD_PROMPTS</div>
-      <div class="ph-note">Resolution: extra_fear_* → fear</div>
+      <h1>Fears — AI Enhance <button class="copy-page-btn" onclick="copyPage(this)" title="Copy all blocks on this page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></h1>
+      <div class="ph-sub">character-ai.ts → aiEnhanceCharacterField() → chat edge fn → api.x.ai/v1/chat/completions</div>
+      <div class="ph-chips">
+        <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
+        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
+        <div class="chip chip-temp">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
+        <div class="chip">Streaming <strong>no</strong></div>
+      </div>
+      <div class="ph-note">Resolution: extra_fear_* → fear. Extras-only section.</div>
     </div>
     <div class="iblock" data-block="star-char-fear" id="block-star-char-fear" draggable="false">
       <div class="iblock-header">
         <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
         <div class="modified-dot" id="dot-star-char-fear"></div>
         <div class="iblock-meta">
-          <div class="iblock-title">Fears — Exact Prompt</div>
+          <div class="iblock-title">Fears — Complete API Call Payload</div>
           <div class="iblock-condition">Extras-only section</div>
         </div>
         <div class="iblock-right"><div class="src-badge">character-ai.ts</div><div class="tok-badge">~300-500 tok</div></div>
         <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
       </div>
-      <div class="iblock-body" id="body-star-char-fear">═══ fear (extra_fear_* resolution) ═══
-  Label: "Fear"
-  Max Sentences: 3
+      <div class="iblock-body" id="body-star-char-fear">═══ REQUEST BODY ═══
+{
+  messages: [
+    { role: "system", content: "You are a concise character creation assistant. Return only the requested content, no explanations." },
+    { role: "user", content: "{prompt}" }
+  ],
+  modelId: "grok-4-1-fast-reasoning",
+  stream: false
+}
+
+Fallback order: [selectedModel, 'grok-4-1-fast-reasoning', 'grok-3-mini']
+
+═══ FIELD CONFIG ═══
+fear (extra_fear_* resolution) — Label: "Fear" | Max Sentences: 3
   INSTRUCTION: "Describe this fear — what triggers it, how it manifests in the character's behavior (avoidance, anxiety, overcompensation), and how it connects to their past or current situation. Be specific rather than generic."
 
-  GENERATE-BOTH HINT (when label is empty):
-  "Generate a specific fear. Good label examples: 'Abandonment', 'Loss of Control', 'Deep Water', 'Becoming Like Father', 'Public Failure'. The description should explain how this fear manifests in behavior and connects to the character's past."</div>
+═══ DETAILED MODE — EXACT USER PROMPT ═══
+{Same template as other sections, with max 3 sentences and the instruction above}
+
+═══ PRECISE MODE — EXACT USER PROMPT ═══
+{Same template as other sections}
+
+═══ GENERATE-BOTH MODE (when label is empty) ═══
+SECTION-SPECIFIC GUIDANCE:
+"Generate a specific fear. Good label examples: 'Abandonment', 'Loss of Control', 'Deep Water', 'Becoming Like Father', 'Public Failure'. The description should explain how this fear manifests in behavior and connects to the character's past."
+
+{Full generate-both template with SECTION TYPE: fear}
+
+═══ CONTEXT/RESOLUTION/POST-PROCESSING ═══
+  Context: buildFullContext() + buildCharacterSelfContext() — see Physical Appearance page
+  Resolution: extra_fear_* → fear
+  Post-processing: same as other sections</div>
       <textarea class="iblock-textarea" id="ta-star-char-fear" oninput="markModified('star-char-fear'); autoResize(this)"></textarea>
     </div>
     </div>
@@ -2811,8 +3499,14 @@ IMPORTANT: The UI sends field names with bg_ prefix (e.g. bg_jobOccupation). The
     <!-- ═══ PAGE: Character Goals ═══ -->
     <div class="content-section" data-section="star-char-goal">
     <div class="page-header">
-      <h1>Character Goals — AI Enhance</h1>
-      <div class="ph-sub">character-ai.ts → CHARACTER_FIELD_PROMPTS</div>
+      <h1>Character Goals — AI Enhance <button class="copy-page-btn" onclick="copyPage(this)" title="Copy all blocks on this page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></h1>
+      <div class="ph-sub">character-ai.ts → aiEnhanceCharacterField() → chat edge fn → api.x.ai/v1/chat/completions</div>
+      <div class="ph-chips">
+        <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
+        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
+        <div class="chip chip-temp">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
+        <div class="chip">Streaming <strong>no</strong></div>
+      </div>
       <div class="ph-note">Direct field key: characterGoal</div>
     </div>
     <div class="iblock" data-block="star-char-goal" id="block-star-char-goal" draggable="false">
@@ -2820,19 +3514,44 @@ IMPORTANT: The UI sends field names with bg_ prefix (e.g. bg_jobOccupation). The
         <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
         <div class="modified-dot" id="dot-star-char-goal"></div>
         <div class="iblock-meta">
-          <div class="iblock-title">Character Goals — Exact Prompt</div>
+          <div class="iblock-title">Character Goals — Complete API Call Payload</div>
           <div class="iblock-condition">Goal fields</div>
         </div>
         <div class="iblock-right"><div class="src-badge">character-ai.ts</div><div class="tok-badge">~300-500 tok</div></div>
         <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
       </div>
-      <div class="iblock-body" id="body-star-char-goal">═══ characterGoal ═══
-  Label: "Character Goal"
-  Max Sentences: 3
+      <div class="iblock-body" id="body-star-char-goal">═══ REQUEST BODY ═══
+{
+  messages: [
+    { role: "system", content: "You are a concise character creation assistant. Return only the requested content, no explanations." },
+    { role: "user", content: "{prompt}" }
+  ],
+  modelId: "grok-4-1-fast-reasoning",
+  stream: false
+}
+
+Fallback order: [selectedModel, 'grok-4-1-fast-reasoning', 'grok-3-mini']
+
+═══ FIELD CONFIG ═══
+characterGoal — Label: "Character Goal" | Max Sentences: 3
   INSTRUCTION: "Describe what this character wants to achieve, their underlying motivation for wanting it, and the obstacles or conflicts standing in their way. Connect the goal to the story premise and the character's personality."
 
-  GENERATE-BOTH HINT (when label is empty):
-  "Generate a character goal. Good label examples: 'Find the Lost Heir', 'Earn Father's Approval', 'Escape the Guild', 'Protect the Family Secret'. The description should explain motivation and obstacles."</div>
+═══ DETAILED MODE — EXACT USER PROMPT ═══
+{Same template as other sections, with max 3 sentences and the instruction above}
+
+═══ PRECISE MODE — EXACT USER PROMPT ═══
+{Same template as other sections}
+
+═══ GENERATE-BOTH MODE (when label is empty) ═══
+SECTION-SPECIFIC GUIDANCE:
+"Generate a character goal. Good label examples: 'Find the Lost Heir', 'Earn Father's Approval', 'Escape the Guild', 'Protect the Family Secret'. The description should explain motivation and obstacles."
+
+{Full generate-both template with SECTION TYPE: character goal}
+
+═══ CONTEXT/RESOLUTION/POST-PROCESSING ═══
+  Context: buildFullContext() + buildCharacterSelfContext() — see Physical Appearance page
+  Resolution: characterGoal → direct match
+  Post-processing: same as other sections</div>
       <textarea class="iblock-textarea" id="ta-star-char-goal" oninput="markModified('star-char-goal'); autoResize(this)"></textarea>
     </div>
     </div>
@@ -2840,8 +3559,14 @@ IMPORTANT: The UI sends field names with bg_ prefix (e.g. bg_jobOccupation). The
     <!-- ═══ PAGE: Custom Sections (Fallback) ═══ -->
     <div class="content-section" data-section="star-char-custom">
     <div class="page-header">
-      <h1>Custom Sections — AI Enhance (Fallback)</h1>
-      <div class="ph-sub">character-ai.ts → CHARACTER_FIELD_PROMPTS</div>
+      <h1>Custom Sections — AI Enhance (Fallback) <button class="copy-page-btn" onclick="copyPage(this)" title="Copy all blocks on this page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></h1>
+      <div class="ph-sub">character-ai.ts → aiEnhanceCharacterField() → chat edge fn → api.x.ai/v1/chat/completions</div>
+      <div class="ph-chips">
+        <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
+        <div class="chip">Fallback <strong>grok-3-mini</strong></div>
+        <div class="chip chip-temp">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
+        <div class="chip">Streaming <strong>no</strong></div>
+      </div>
       <div class="ph-note">Catches any field key that doesn't match a specific config. Resolution: custom_sectionId_itemId or any unrecognized key → custom</div>
     </div>
     <div class="iblock" data-block="star-char-custom" id="block-star-char-custom" draggable="false">
@@ -2849,22 +3574,45 @@ IMPORTANT: The UI sends field names with bg_ prefix (e.g. bg_jobOccupation). The
         <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
         <div class="modified-dot" id="dot-star-char-custom"></div>
         <div class="iblock-meta">
-          <div class="iblock-title">Custom Sections — Exact Prompt (Generic Fallback)</div>
+          <div class="iblock-title">Custom Sections — Complete API Call Payload (Generic Fallback)</div>
           <div class="iblock-condition">Used when no specific config matches the field key</div>
         </div>
         <div class="iblock-right"><div class="src-badge">character-ai.ts</div><div class="tok-badge">~300-500 tok</div></div>
         <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
       </div>
-      <div class="iblock-body" id="body-star-char-custom">═══ custom (fallback for unrecognized field keys) ═══
-  Label: "Custom"
-  Max Sentences: 3
+      <div class="iblock-body" id="body-star-char-custom">═══ REQUEST BODY ═══
+{
+  messages: [
+    { role: "system", content: "You are a concise character creation assistant. Return only the requested content, no explanations." },
+    { role: "user", content: "{prompt}" }
+  ],
+  modelId: "grok-4-1-fast-reasoning",
+  stream: false
+}
+
+Fallback order: [selectedModel, 'grok-4-1-fast-reasoning', 'grok-3-mini']
+
+═══ FIELD CONFIG ═══
+custom (fallback for unrecognized field keys) — Label: "Custom" | Max Sentences: 3
   INSTRUCTION: "Provide relevant details for this character trait. Be concise and story-relevant."
 
-  NOTE: This is the generic fallback. If a field is hitting this prompt when it shouldn't be, the resolver in buildCharacterFieldPrompt() needs a new prefix mapping for that field's key pattern.
+NOTE: This is the generic fallback. If a field is hitting this prompt when it shouldn't be, the resolver in buildCharacterFieldPrompt() needs a new prefix mapping for that field's key pattern.
 
-  GENERATE-BOTH HINT (when label is empty):
-  "Generate an additional background detail. Good label examples: 'Military Service', 'Orphaned at 12', 'Speaks Three Languages', 'Former Street Performer'. The description should enrich the character's history."
-  (NOTE: The custom section hint defaults to 'background detail' if no specific sectionHint is provided. This may produce background-style content for non-background custom sections.)</div>
+═══ DETAILED MODE — EXACT USER PROMPT ═══
+{Same template as other sections, with max 3 sentences and the instruction above}
+
+═══ PRECISE MODE — EXACT USER PROMPT ═══
+{Same template as other sections}
+
+═══ GENERATE-BOTH MODE (when label is empty) ═══
+NOTE: The custom section hint defaults to whatever sectionHint string the UI sends. If no specific SECTION_HINTS entry matches, no section-specific guidance is included — only the generic generate-both template runs.
+
+{Full generate-both template with SECTION TYPE: {whatever sectionHint was sent}}
+
+═══ CONTEXT/RESOLUTION/POST-PROCESSING ═══
+  Context: buildFullContext() + buildCharacterSelfContext() — see Physical Appearance page
+  Resolution: any unrecognized field key → custom
+  Post-processing: same as other sections</div>
       <textarea class="iblock-textarea" id="ta-star-char-custom" oninput="markModified('star-char-custom'); autoResize(this)"></textarea>
     </div>
     </div>
