@@ -1,14 +1,13 @@
 
 // ============================================================================
-// APP-WIDE AI CONFIGURATION — Admin-only panel.
-// Sets the Grok model used across the entire app for all users.
-// This is NOT a per-user preference selector.
+// APP-WIDE AI CONFIGURATION — Admin-only, read-only status page.
+// Shows which Grok models the app uses. Not interactive — nothing to select.
+// The app is hardcoded to grok-4-1-fast-reasoning (text) and grok-imagine-image (images).
 // ============================================================================
 
 import React, { useState, useEffect } from "react";
-import { Card, SectionTitle, Button, Label } from "./UI";
-import { LLM_MODELS, LLMModel } from "@/constants";
-import { Zap, Share2, Image, Cpu } from "lucide-react";
+import { Card, SectionTitle, Button } from "./UI";
+import { Cpu, Image, Share2, Zap, RefreshCw } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/use-auth";
 import { 
@@ -18,14 +17,8 @@ import {
   SharedKeyStatus 
 } from "@/services/app-settings";
 
-interface ModelSettingsTabProps {
-  selectedModelId: string;
-  onSelectModel: (id: string) => void;
-}
-
-export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettingsTabProps) {
+export function ModelSettingsTab() {
   const { user } = useAuth();
-  const selectedModel = LLM_MODELS.find(m => m.id === selectedModelId) || LLM_MODELS[0];
 
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'checking' | 'connected' | 'error'>('checking');
   const [sharedKeyStatus, setSharedKeyStatus] = useState<SharedKeyStatus>({ 
@@ -62,103 +55,73 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
     setIsUpdatingShare(false);
   };
 
+  const statusBadge = (
+    <div className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${
+      connectionStatus === 'connected' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 
+      connectionStatus === 'checking' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
+      'bg-slate-100 text-slate-500 border border-slate-200'
+    }`}>
+      <div className={`w-2 h-2 rounded-full ${
+        connectionStatus === 'connected' ? 'bg-emerald-500 animate-pulse' : 
+        connectionStatus === 'checking' ? 'bg-amber-500 animate-bounce' :
+        'bg-slate-300'
+      }`} />
+      {connectionStatus === 'connected' ? 'Connected' : 
+       connectionStatus === 'checking' ? 'Checking...' : 
+       'Not Connected'}
+    </div>
+  );
+
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <SectionTitle 
         title="AI Configuration" 
-        subtitle="App-wide settings controlled by admin. Applies to all users." 
+        subtitle="App-wide models set by admin. These apply to all users — nothing here is user-selectable." 
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
           
-          {/* Active Text Model */}
+          {/* Active Models — static display */}
           <Card className="p-8">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-emerald-50">
-                  <Cpu className="w-5 h-5 text-emerald-600" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-[hsl(var(--ui-surface-2))]">Text Model</h3>
-                  <p className="text-xs text-slate-500">Used for all AI chat, character generation, and story features</p>
-                </div>
-              </div>
-              <div className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${
-                connectionStatus === 'connected' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 
-                connectionStatus === 'checking' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-                'bg-slate-100 text-slate-500 border border-slate-200'
-              }`}>
-                <div className={`w-2 h-2 rounded-full ${
-                  connectionStatus === 'connected' ? 'bg-emerald-500 animate-pulse' : 
-                  connectionStatus === 'checking' ? 'bg-amber-500 animate-bounce' :
-                  'bg-slate-300'
-                }`} />
-                {connectionStatus === 'connected' ? 'Connected' : 
-                 connectionStatus === 'checking' ? 'Checking...' : 
-                 'Not Connected'}
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              {LLM_MODELS.map((model) => (
-                <button
-                  key={model.id}
-                  onClick={() => onSelectModel(model.id)}
-                  className={`w-full text-left p-4 rounded-xl border transition-all duration-200 flex items-center justify-between cursor-pointer ${
-                    selectedModelId === model.id 
-                      ? 'bg-slate-900 border-slate-900 shadow-xl scale-[1.02]' 
-                      : 'bg-white border-slate-200 hover:border-blue-500 hover:shadow-lg hover:scale-[1.01]'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${selectedModelId === model.id ? 'bg-ghost-white' : 'bg-emerald-50'}`}>
-                      <Zap className={`w-4 h-4 ${selectedModelId === model.id ? 'text-emerald-400' : 'text-emerald-500'}`} />
-                    </div>
-                    <div>
-                      <div className={`font-bold ${selectedModelId === model.id ? 'text-white' : 'text-[hsl(var(--ui-surface-2))]'}`}>
-                        {model.name}
-                      </div>
-                      <div className={`text-xs mt-0.5 ${selectedModelId === model.id ? 'text-slate-400' : 'text-slate-500'}`}>
-                        {model.description}
-                      </div>
-                    </div>
+            <h3 className="text-xl font-bold text-[hsl(var(--ui-surface-2))] mb-6">Active Models</h3>
+
+            {/* Text Model */}
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 mb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-emerald-50">
+                    <Cpu className="w-4 h-4 text-emerald-600" />
                   </div>
-                  {selectedModelId === model.id && (
-                    <div className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                  )}
-                </button>
-              ))}
-            </div>
-
-            <p className="text-xs text-slate-400 mt-4 italic">
-              This setting applies app-wide. All users will use the selected model.
-            </p>
-          </Card>
-
-          {/* Active Image Model (read-only display) */}
-          <Card className="p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 rounded-lg bg-blue-50">
-                <Image className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-[hsl(var(--ui-surface-2))]">Image Model</h3>
-                <p className="text-xs text-slate-500">Used for avatar, scene, and cover image generation</p>
+                  <div>
+                    <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-0.5">Text Model</div>
+                    <div className="font-bold text-[hsl(var(--ui-surface-2))]">Grok 4.1 Fast (Reasoning)</div>
+                    <div className="text-xs text-slate-500 mt-0.5">Used for chat, character generation, world building, and all AI text features</div>
+                  </div>
+                </div>
+                {statusBadge}
               </div>
             </div>
+
+            {/* Image Model */}
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
               <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-bold text-[hsl(var(--ui-surface-2))]">grok-imagine-image</div>
-                  <div className="text-xs text-slate-500 mt-0.5">All image generation routes to this model automatically</div>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-blue-50">
+                    <Image className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-0.5">Image Model</div>
+                    <div className="font-bold text-[hsl(var(--ui-surface-2))]">grok-imagine-image</div>
+                    <div className="text-xs text-slate-500 mt-0.5">Used for avatar, scene, and cover image generation</div>
+                  </div>
                 </div>
-                <div className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                {statusBadge}
               </div>
             </div>
           </Card>
 
-          {/* Connection & API Key */}
+          {/* API Connection */}
           <Card className="p-8">
             <h3 className="text-lg font-bold text-[hsl(var(--ui-surface-2))] mb-4">API Connection</h3>
             <div className="bg-ghost-white rounded-2xl p-6 border border-slate-200">
@@ -215,6 +178,7 @@ export function ModelSettingsTab({ selectedModelId, onSelectModel }: ModelSettin
                   )}
                 </div>
                 <Button variant="secondary" onClick={handleRefreshConnection} disabled={connectionStatus === 'checking'}>
+                  <RefreshCw className={`w-4 h-4 mr-2 ${connectionStatus === 'checking' ? 'animate-spin' : ''}`} />
                   Verify Connection
                 </Button>
               </div>

@@ -16,13 +16,11 @@ export type LLMModel = {
 // GROK ONLY -- Do NOT add Gemini or OpenAI.
 export const LLM_MODELS: LLMModel[] = [
   { id: 'grok-4-1-fast-reasoning', name: 'Grok 4.1 Fast (Reasoning)', provider: 'xAI', gateway: 'xai', description: 'Primary model for all AI features. Chain-of-thought reasoning with 2M context window.' },
-  { id: 'grok-4-1-fast-non-reasoning', name: 'Grok 4.1 Fast', provider: 'xAI', gateway: 'xai', description: 'Same generation without chain-of-thought. Use for simpler interactions if needed.' },
 ];
 
-// All text models map to grok-imagine-image for image generation
+// Text model → image model mapping. All routes use grok-imagine-image.
 export const IMAGE_MODEL_MAP: Record<string, string> = {
   'grok-4-1-fast-reasoning': 'grok-imagine-image',
-  'grok-4-1-fast-non-reasoning': 'grok-imagine-image',
 };
 
 // GROK ONLY -- Always returns grok image model

@@ -36,8 +36,6 @@ const DEFAULT_TOOLS: ToolMeta[] = [
 interface AdminPageProps {
   activeTool: string;
   onSetActiveTool: (tool: string) => void;
-  selectedModelId: string;
-  onSelectModel: (id: string) => void;
   onRegisterGuideSave?: (saveFn: (() => Promise<void>) | null) => void;
   onRegisterGuideSyncAll?: (syncFn: (() => Promise<void>) | null) => void;
   onRegisterStyleGuideDownload?: (fn: (() => void) | null) => void;
@@ -46,7 +44,7 @@ interface AdminPageProps {
   guideTheme?: 'dark' | 'light';
 }
 
-export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveTool, selectedModelId, onSelectModel, onRegisterGuideSave, onRegisterGuideSyncAll, onRegisterStyleGuideDownload, onRegisterStyleGuideEdits, onStyleGuideEditsCountChange, guideTheme }) => {
+export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveTool, onRegisterGuideSave, onRegisterGuideSyncAll, onRegisterStyleGuideDownload, onRegisterStyleGuideEdits, onStyleGuideEditsCountChange, guideTheme }) => {
   const [tools, setTools] = useState<ToolMeta[]>(DEFAULT_TOOLS);
   const [editingTool, setEditingTool] = useState<ToolMeta | null>(null);
 
@@ -105,7 +103,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
   if (activeTool === 'model_settings') {
     return (
       <div className="p-10 overflow-y-auto h-full">
-        <ModelSettingsTab selectedModelId={selectedModelId} onSelectModel={onSelectModel} />
+        <ModelSettingsTab />
       </div>
     );
   }
