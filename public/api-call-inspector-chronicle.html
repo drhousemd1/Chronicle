@@ -766,18 +766,116 @@
     </div>
     <div class="sb-divider"></div>
     <div class="sb-group-header">
-      <div class="sb-group-number">Text Field Generation</div>
-      <div class="sb-group-desc">AI-powered field completion</div>
+      <div class="sb-group-number">Character Builder — AI Enhance</div>
+      <div class="sb-group-desc">Per-field sparkle (✦) calls</div>
     </div>
     <div class="sb-tree standalone">
-      <div class="sb-item" data-nav="star-char" onclick="switchSection('star-char', this)">
-        <div class="si-title">Character Builder — AI Enhance</div>
-        <div class="si-sub">aiEnhanceCharacterField()</div>
+      <div class="sb-item" data-nav="star-char-overview" onclick="switchSection('star-char-overview', this)">
+        <div class="si-title">Overview &amp; Call Flow</div>
+        <div class="si-sub">shared pipeline</div>
       </div>
-      <div class="sb-item" data-nav="star-world" onclick="switchSection('star-world', this)">
-        <div class="si-title">Story Builder — AI Enhance</div>
-        <div class="si-sub">aiEnhanceWorldField()</div>
+      <div class="sb-item" data-nav="star-char-pa" onclick="switchSection('star-char-pa', this)">
+        <div class="si-title">Physical Appearance</div>
+        <div class="si-sub">11 fields + extras</div>
       </div>
+      <div class="sb-item" data-nav="star-char-cw" onclick="switchSection('star-char-cw', this)">
+        <div class="si-title">Currently Wearing</div>
+        <div class="si-sub">4 fields + extras</div>
+      </div>
+      <div class="sb-item" data-nav="star-char-pc" onclick="switchSection('star-char-pc', this)">
+        <div class="si-title">Preferred Clothing</div>
+        <div class="si-sub">3 fields + extras</div>
+      </div>
+      <div class="sb-item" data-nav="star-char-bg" onclick="switchSection('star-char-bg', this)">
+        <div class="si-title">Background</div>
+        <div class="si-sub">6 fields + extras</div>
+      </div>
+      <div class="sb-item" data-nav="star-char-personality" onclick="switchSection('star-char-personality', this)">
+        <div class="si-title">Personality</div>
+        <div class="si-sub">standard / outward / inward</div>
+      </div>
+      <div class="sb-item" data-nav="star-char-tone" onclick="switchSection('star-char-tone', this)">
+        <div class="si-title">Tone / Voice</div>
+        <div class="si-sub">vocal qualities &amp; speech</div>
+      </div>
+      <div class="sb-item" data-nav="star-char-role" onclick="switchSection('star-char-role', this)">
+        <div class="si-title">Role Description</div>
+        <div class="si-sub">narrative function</div>
+      </div>
+      <div class="sb-item" data-nav="star-char-kle" onclick="switchSection('star-char-kle', this)">
+        <div class="si-title">Key Life Events</div>
+        <div class="si-sub">formative past events</div>
+      </div>
+      <div class="sb-item" data-nav="star-char-rel" onclick="switchSection('star-char-rel', this)">
+        <div class="si-title">Relationships</div>
+        <div class="si-sub">character dynamics</div>
+      </div>
+      <div class="sb-item" data-nav="star-char-sec" onclick="switchSection('star-char-sec', this)">
+        <div class="si-title">Secrets</div>
+        <div class="si-sub">hidden truths</div>
+      </div>
+      <div class="sb-item" data-nav="star-char-fear" onclick="switchSection('star-char-fear', this)">
+        <div class="si-title">Fears</div>
+        <div class="si-sub">behavioral triggers</div>
+      </div>
+      <div class="sb-item" data-nav="star-char-goal" onclick="switchSection('star-char-goal', this)">
+        <div class="si-title">Character Goals</div>
+        <div class="si-sub">objectives &amp; motivation</div>
+      </div>
+      <div class="sb-item" data-nav="star-char-custom" onclick="switchSection('star-char-custom', this)">
+        <div class="si-title">Custom Sections</div>
+        <div class="si-sub">generic fallback</div>
+      </div>
+    </div>
+    <div class="sb-divider"></div>
+    <div class="sb-group-header">
+      <div class="sb-group-number">Story Builder — AI Enhance</div>
+      <div class="sb-group-desc">Per-field sparkle (✦) calls</div>
+    </div>
+    <div class="sb-tree standalone">
+      <div class="sb-item" data-nav="star-world-name" onclick="switchSection('star-world-name', this)">
+        <div class="si-title">Story Name</div>
+        <div class="si-sub">scenarioName</div>
+      </div>
+      <div class="sb-item" data-nav="star-world-desc" onclick="switchSection('star-world-desc', this)">
+        <div class="si-title">Brief Description</div>
+        <div class="si-sub">briefDescription</div>
+      </div>
+      <div class="sb-item" data-nav="star-world-premise" onclick="switchSection('star-world-premise', this)">
+        <div class="si-title">Story Premise</div>
+        <div class="si-sub">storyPremise</div>
+      </div>
+      <div class="sb-item" data-nav="star-world-factions" onclick="switchSection('star-world-factions', this)">
+        <div class="si-title">Factions</div>
+        <div class="si-sub">factions</div>
+      </div>
+      <div class="sb-item" data-nav="star-world-locations" onclick="switchSection('star-world-locations', this)">
+        <div class="si-title">Locations</div>
+        <div class="si-sub">locations</div>
+      </div>
+      <div class="sb-item" data-nav="star-world-history" onclick="switchSection('star-world-history', this)">
+        <div class="si-title">History &amp; Timeline</div>
+        <div class="si-sub">historyTimeline</div>
+      </div>
+      <div class="sb-item" data-nav="star-world-plots" onclick="switchSection('star-world-plots', this)">
+        <div class="si-title">Plot Hooks</div>
+        <div class="si-sub">plotHooks</div>
+      </div>
+      <div class="sb-item" data-nav="star-world-dialog" onclick="switchSection('star-world-dialog', this)">
+        <div class="si-title">Dialog Formatting</div>
+        <div class="si-sub">dialogFormatting</div>
+      </div>
+      <div class="sb-item" data-nav="star-world-custom" onclick="switchSection('star-world-custom', this)">
+        <div class="si-title">Custom Content</div>
+        <div class="si-sub">customContent</div>
+      </div>
+    </div>
+    <div class="sb-divider"></div>
+    <div class="sb-group-header">
+      <div class="sb-group-number">Bulk AI Tools</div>
+      <div class="sb-group-desc">Fill &amp; generate</div>
+    </div>
+    <div class="sb-tree standalone">
       <div class="sb-item" data-nav="ai-fill" onclick="switchSection('ai-fill', this)">
         <div class="si-title">AI Fill (Bulk)</div>
         <div class="si-sub">aiFillCharacter()</div>
@@ -2110,198 +2208,931 @@ Source: supabase/functions/generate-side-character/index.ts</div>
     </div>
     </div><!-- end api-call-3 -->
 
-    <!-- ═══ PAGE: Character Builder — AI Enhance ═══ -->
-    <div class="content-section" data-section="star-char">
-
+    <!-- ═══ PAGE: Character Builder — AI Enhance — Overview ═══ -->
+    <div class="content-section" data-section="star-char-overview">
     <div class="page-header">
-      <h1>Character Builder — AI Enhance <button class="copy-page-btn" onclick="copyPage(this)" title="Copy all blocks on this page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></h1>
-      <div class="ph-sub">character-ai.ts → chat edge fn → api.x.ai/v1/chat/completions</div>
+      <h1>Character Builder — AI Enhance: Overview</h1>
+      <div class="ph-sub">character-ai.ts → callAIWithFallback() → chat edge fn → api.x.ai/v1/chat/completions</div>
       <div class="ph-chips">
         <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
         <div class="chip">Fallback <strong>grok-3-mini</strong></div>
-        <div class="chip chip-temp" title="Temperature controls randomness: 0.0–0.3 = focused/deterministic, 0.7–0.9 = creative/varied, 1.0+ = highly random">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
+        <div class="chip chip-temp" title="Temperature">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
         <div class="chip">Max Response <strong>4,096 tok</strong></div>
       </div>
       <div class="ph-note">Accessed via: Character Builder → Star (✦) icon on individual fields</div>
     </div>
-
-    <div class="iblock" data-block="star-char" id="block-star-char" draggable="false">
+    <div class="iblock" data-block="star-char-overview" id="block-star-char-overview" draggable="false">
       <div class="iblock-header">
         <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
-        <div class="modified-dot" id="dot-star-char"></div>
+        <div class="modified-dot" id="dot-star-char-overview"></div>
         <div class="iblock-meta">
-          <div class="iblock-title">Character Builder — AI Enhance</div>
-          <div class="iblock-condition">AI-powered character attribute enhancement with detailed or precise output modes</div>
+          <div class="iblock-title">Shared Call Flow &amp; Architecture</div>
+          <div class="iblock-condition">How every Character Builder sparkle (✦) call works</div>
         </div>
         <div class="iblock-right">
           <div class="src-badge">character-ai.ts</div>
-          <div class="tok-badge">~300-800 tok</div>
         </div>
         <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
       </div>
-      <div class="iblock-body" id="body-star-char">Model: grok-4-1-fast-reasoning (fallback: grok-3-mini)
-Temperature: 0.9 | Max tokens: 4096
+      <div class="iblock-body" id="body-star-char-overview">PIPELINE:
+1. User clicks ✦ on a field → openEnhanceModeModal() → user picks "Detailed" or "Precise"
+2. handleEnhanceField() calls aiEnhanceCharacterField() in character-ai.ts
+3. aiEnhanceCharacterField() builds context via buildFullContext() + buildCharacterSelfContext()
+4. Constructs prompt via buildCharacterFieldPrompt() using the field's config from CHARACTER_FIELD_PROMPTS
+5. Calls callAIWithFallback() with models: [selected, 'grok-4-1-fast-reasoning', 'grok-3-mini']
+6. callAIWithFallback() invokes supabase.functions.invoke('chat') → api.x.ai/v1/chat/completions
+7. Response is trimmed, quotes stripped, and returned to the UI
 
-System Message:
+SYSTEM MESSAGE (sent with every call):
 "You are a concise character creation assistant. Return only the requested content, no explanations."
 
-Output Modes:
-- DETAILED: Full narrative descriptions, max sentences vary by field
-- PRECISE: 3-5 semicolon-separated tags, compact format
+THREE OUTPUT MODES:
 
-Context Pulled:
-- Full world context via buildFullContext()
-- Complete character data via buildCharacterSelfContext()
-- Story type and thematic requirements
+── DETAILED MODE ──
+Prompt template:
+  You are enhancing a character field for an interactive roleplay. Use STRUCTURED EXPANSION:
 
-═══ FIELD-SPECIFIC PROMPTS (CHARACTER_FIELD_PROMPTS) ═══
+  RULES:
+  1. Be concise and factual (max {maxSentences} sentences)
+  2. Focus on narrative-relevant details - what matters for the story
+  3. NO purple prose or flowery language
+  4. Format: State the fact, then its implication if relevant
+  5. {Preserve existing content's intent while enhancing it | Generate appropriate content from available context}
+  6. Stay consistent with all existing character data and world context below
 
-PHYSICAL APPEARANCE (11 fields):
-  hairColor — "Describe hair color, style, and length" (max 2 sentences)
-  eyeColor — "Describe eye color and notable characteristics" (max 1 sentence)
-  build — "Describe body type and physique" (max 2 sentences)
-  bodyHair — "Describe body hair amount and pattern" (max 1 sentence)
-  height — "Provide height with measurement" (max 1 sentence)
-  breastSize — "Describe size and relevant details" (max 1 sentence)
-  genitalia — "Describe relevant anatomical details" (max 1 sentence)
-  skinTone — "Describe skin tone and texture" (max 1 sentence)
-  makeup — "Describe makeup style, colors, intensity" (max 2 sentences)
-  bodyMarkings — "Describe type, location, significance" (max 2 sentences)
-  temporaryConditions — "Describe temporary physical conditions" (max 2 sentences)
-  physicalAppearanceExtra — "Additional physical characteristic" (max 2 sentences)
+  WORLD &amp; SCENARIO CONTEXT:
+  {buildFullContext() output}
 
-CURRENTLY WEARING (4 + extras):
-  top — "Describe top/shirt: garment type, color, fit, style" (max 2 sentences)
-  bottom — "Describe pants/skirt/shorts" (max 2 sentences)
-  undergarments — "Describe undergarments: type, color, style" (max 2 sentences)
-  miscellaneous — "Additional items: outerwear, footwear, accessories" (max 3 sentences)
-  currentlyWearingExtra — "Additional clothing item or accessory" (max 2 sentences)
+  THIS CHARACTER'S EXISTING DATA:
+  {buildCharacterSelfContext() output}
 
-PREFERRED CLOTHING (3 + extras):
-  casual — "Preferred casual clothing style" (max 2 sentences)
-  work — "Preferred work/professional attire" (max 2 sentences)
-  sleep — "Preferred sleepwear" (max 2 sentences)
-  preferredClothingExtra — "Preferred outfit for specific occasion" (max 2 sentences)
+  {CURRENT VALUE section}
+  FIELD: {label}
+  INSTRUCTION: {field-specific instruction from CHARACTER_FIELD_PROMPTS}
 
-BACKGROUND (6 + extras):
-  jobOccupation — "Current job, career, occupation" (max 2 sentences)
-  educationLevel — "Highest education, institutions, fields" (max 2 sentences)
-  residence — "Where they live: dwelling type, neighborhood" (max 2 sentences)
-  hobbies — "Primary hobbies and leisure activities" (max 2 sentences)
-  financialStatus — "Financial standing with context" (max 2 sentences)
-  motivation — "Core driving motivation" (max 2 sentences)
-  backgroundExtra — "Additional background detail" (max 2 sentences)
-  NOTE: bg_ prefix is stripped during resolution (bg_jobOccupation → jobOccupation)
+  Return ONLY the enhanced text. No explanations, no prefixes, no markdown formatting.
 
-PERSONALITY (3 configs):
-  personality — "Behavioral patterns, emotional tendencies" (max 2 sentences)
-  personality_outward — "Projected behavior, social demeanor, body language" (max 2 sentences)
-  personality_inward — "Private thoughts, hidden impulses, inner contradictions" (max 2 sentences)
+── PRECISE MODE ──
+Prompt template:
+  You are enhancing a character field for an interactive roleplay.
 
-TONE / VOICE (1 config):
-  tone — "Vocal qualities, speech rhythm, vocabulary, verbal tics, formality" (max 3 sentences)
+  Expand the following character detail into 3-5 short tags separated by semicolons.
+  Focus on visual or key attributes only. No sentences, no explanations, no narrative rationale.
 
-ROLE DESCRIPTION (1 config):
-  roleDescription — "Character's role and function in the story" (max 3 sentences)
+  WORLD &amp; SCENARIO CONTEXT:
+  {buildFullContext() output}
 
-KEY LIFE EVENTS (1 config):
-  keyLifeEvent — "Formative past event and how it shaped them" (max 3 sentences)
+  THIS CHARACTER'S EXISTING DATA:
+  {buildCharacterSelfContext() output}
 
-RELATIONSHIPS (1 config):
-  relationship — "Relationship dynamic, nature of bond, tension" (max 3 sentences)
+  {CURRENT VALUE section}
+  FIELD: {label}
 
-SECRETS (1 config):
-  secret — "Hidden truth, why they hide it, consequences of reveal" (max 3 sentences)
+  Output format: Tag1; Tag2; Tag3; Tag4
+  Return ONLY the semicolon-separated tags. Nothing else.
 
-FEARS (1 config):
-  fear — "What triggers it, behavioral manifestation, connection to past" (max 3 sentences)
+── GENERATE-BOTH MODE (when label is empty) ──
+Prompt template:
+  You are a character creation assistant for an interactive roleplay scenario.
 
-CHARACTER GOALS (1 config):
-  characterGoal — "What they want, motivation, obstacles" (max 3 sentences)
+  You need to generate BOTH a short label/name AND a description for a {sectionHint} field on this character.
 
-CUSTOM SECTIONS (generic fallback):
-  custom — "Provide relevant details for this character trait" (max 3 sentences)
+  RULES:
+  1. The LABEL should be 1-4 words — a concise name for this trait/detail (e.g. "Loyal", "Childhood Trauma", "Raspy Voice")
+  2. The DESCRIPTION should be 1-2 sentences explaining/expanding on it
+  3. Look at all existing character data and world context to determine what trait/detail would be most fitting and NOT duplicate existing ones
+  4. Stay consistent with the character's established identity
+  5. NO purple prose. Be factual and story-relevant.
 
-═══ FIELD RESOLUTION (Prefix Stripping) ═══
-  extra_tone_*     → tone
-  extra_kle_*      → keyLifeEvent
-  extra_rel_*      → relationship
-  extra_sec_*      → secret
-  extra_fear_*     → fear
-  extra_pa_*       → physicalAppearanceExtra
-  extra_cw_*       → currentlyWearingExtra
-  extra_pc_*       → preferredClothingExtra
-  extra_bg_*       → backgroundExtra
-  bg_*             → strips bg_ prefix (e.g. bg_jobOccupation → jobOccupation)
-  personality_outward_* → personality_outward
-  personality_inward_*  → personality_inward
-  personality_*    → personality
+  SECTION-SPECIFIC GUIDANCE:
+  {SECTION_HINTS[sectionHint] — see individual section pages for exact hint text}
 
-═══ GENERATE-BOTH MODE ═══
-When label is empty, prefix __GENERATE_BOTH__: triggers dual output.
-AI returns: LABEL: &lt;label&gt;\nDESCRIPTION: &lt;description&gt;
-Section-specific hints guide label style (e.g. tone labels vs personality labels vs fear labels).</div>
-      <textarea class="iblock-textarea" id="ta-star-char" oninput="markModified('star-char'); autoResize(this)"></textarea>
+  WORLD &amp; SCENARIO CONTEXT:
+  {buildFullContext() output}
+
+  THIS CHARACTER'S EXISTING DATA:
+  {buildCharacterSelfContext() output}
+
+  {CURRENT VALUE section}
+  SECTION TYPE: {sectionHint}
+
+  You MUST respond in EXACTLY this format (two lines, no extra text):
+  LABEL: &lt;your label here&gt;
+  DESCRIPTION: &lt;your description here&gt;
+
+FIELD RESOLUTION (prefix stripping in buildCharacterFieldPrompt):
+  extra_tone_*            → tone
+  extra_kle_*             → keyLifeEvent
+  extra_rel_*             → relationship
+  extra_sec_*             → secret
+  extra_fear_*            → fear
+  extra_pa_*              → physicalAppearanceExtra
+  extra_cw_*              → currentlyWearingExtra
+  extra_pc_*              → preferredClothingExtra
+  extra_bg_*              → backgroundExtra
+  bg_*                    → strips bg_ prefix (bg_jobOccupation → jobOccupation)
+  personality_outward_*   → personality_outward
+  personality_inward_*    → personality_inward
+  personality_*           → personality
+  (anything else)         → direct lookup, fallback to "custom"</div>
+      <textarea class="iblock-textarea" id="ta-star-char-overview" oninput="markModified('star-char-overview'); autoResize(this)"></textarea>
     </div>
-    </div><!-- end star-char -->
+    </div><!-- end star-char-overview -->
 
-    <!-- ═══ PAGE: Story Builder — AI Enhance ═══ -->
-    <div class="content-section" data-section="star-world">
-
+    <!-- ═══ PAGE: Physical Appearance ═══ -->
+    <div class="content-section" data-section="star-char-pa">
     <div class="page-header">
-      <h1>Story Builder — AI Enhance <button class="copy-page-btn" onclick="copyPage(this)" title="Copy all blocks on this page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></h1>
+      <h1>Physical Appearance — AI Enhance</h1>
+      <div class="ph-sub">character-ai.ts → CHARACTER_FIELD_PROMPTS</div>
+      <div class="ph-note">Fields: hairColor, eyeColor, build, bodyHair, height, breastSize, genitalia, skinTone, makeup, bodyMarkings, temporaryConditions + physicalAppearanceExtra</div>
+    </div>
+    <div class="iblock" data-block="star-char-pa" id="block-star-char-pa" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-star-char-pa"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">Physical Appearance — Exact Prompts</div>
+          <div class="iblock-condition">11 hardcoded fields + extras, each a separate API call</div>
+        </div>
+        <div class="iblock-right"><div class="src-badge">character-ai.ts</div><div class="tok-badge">~300-500 tok</div></div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-star-char-pa">Each field below is a SEPARATE API call. The INSTRUCTION line is field-specific; everything else uses the shared Detailed/Precise/Generate-Both templates from the Overview page.
+
+═══ hairColor ═══
+  Label: "Hair Color"
+  Max Sentences: 2
+  INSTRUCTION: "Describe hair color, style, and length concisely. Format: Color + Style + Notable features."
+
+═══ eyeColor ═══
+  Label: "Eye Color"
+  Max Sentences: 1
+  INSTRUCTION: "Describe eye color and any notable characteristics. Format: Color + Quality/Expression."
+
+═══ build ═══
+  Label: "Build"
+  Max Sentences: 2
+  INSTRUCTION: "Describe body type and physique. Format: Type + Defining features."
+
+═══ bodyHair ═══
+  Label: "Body Hair"
+  Max Sentences: 1
+  INSTRUCTION: "Describe body hair amount and pattern. Format: Amount + Location/Pattern."
+
+═══ height ═══
+  Label: "Height"
+  Max Sentences: 1
+  INSTRUCTION: "Provide height (with measurement) and how they carry themselves."
+
+═══ breastSize ═══
+  Label: "Breasts"
+  Max Sentences: 1
+  INSTRUCTION: "Describe size and relevant details if applicable."
+
+═══ genitalia ═══
+  Label: "Genitalia"
+  Max Sentences: 1
+  INSTRUCTION: "Describe relevant anatomical details if applicable."
+
+═══ skinTone ═══
+  Label: "Skin Tone"
+  Max Sentences: 1
+  INSTRUCTION: "Describe skin tone and any notable texture or qualities."
+
+═══ makeup ═══
+  Label: "Makeup"
+  Max Sentences: 2
+  INSTRUCTION: "Describe makeup style, colors, and intensity."
+
+═══ bodyMarkings ═══
+  Label: "Body Markings"
+  Max Sentences: 2
+  INSTRUCTION: "Describe type, location, and significance of any markings (scars, tattoos, birthmarks)."
+
+═══ temporaryConditions ═══
+  Label: "Temporary Conditions"
+  Max Sentences: 2
+  INSTRUCTION: "Describe any temporary physical conditions (injuries, illness, etc.) and their visibility."
+
+═══ physicalAppearanceExtra (for extra_pa_* rows) ═══
+  Label: "Physical Detail"
+  Max Sentences: 2
+  INSTRUCTION: "Describe an additional physical characteristic or detail about this character's appearance. Be specific and visually descriptive. Complement existing physical traits without duplicating them."
+
+  GENERATE-BOTH HINT (when label is empty):
+  "Generate an additional physical detail. Good label examples: 'Crooked Nose', 'Calloused Hands', 'Distinctive Gait', 'Faded Scar'. The description should be visually specific and complement existing appearance traits."
+
+  Resolution: extra_pa_* → physicalAppearanceExtra</div>
+      <textarea class="iblock-textarea" id="ta-star-char-pa" oninput="markModified('star-char-pa'); autoResize(this)"></textarea>
+    </div>
+    </div>
+
+    <!-- ═══ PAGE: Currently Wearing ═══ -->
+    <div class="content-section" data-section="star-char-cw">
+    <div class="page-header">
+      <h1>Currently Wearing — AI Enhance</h1>
+      <div class="ph-sub">character-ai.ts → CHARACTER_FIELD_PROMPTS</div>
+      <div class="ph-note">Fields: top, bottom, undergarments, miscellaneous + currentlyWearingExtra</div>
+    </div>
+    <div class="iblock" data-block="star-char-cw" id="block-star-char-cw" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-star-char-cw"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">Currently Wearing — Exact Prompts</div>
+          <div class="iblock-condition">4 hardcoded fields + extras</div>
+        </div>
+        <div class="iblock-right"><div class="src-badge">character-ai.ts</div><div class="tok-badge">~300-500 tok</div></div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-star-char-cw">Each field below is a SEPARATE API call.
+
+═══ top ═══
+  Label: "Shirt/Top"
+  Max Sentences: 2
+  INSTRUCTION: "Describe the top/shirt being worn. Include garment type, color, fit, and style."
+
+═══ bottom ═══
+  Label: "Pants/Bottoms"
+  Max Sentences: 2
+  INSTRUCTION: "Describe pants/skirt/shorts being worn. Include garment type, color, fit, and style."
+
+═══ undergarments ═══
+  Label: "Undergarments"
+  Max Sentences: 2
+  INSTRUCTION: "Describe undergarments being worn. Include type, color, and style."
+
+═══ miscellaneous ═══
+  Label: "Miscellaneous"
+  Max Sentences: 3
+  INSTRUCTION: "Describe additional items (outerwear, footwear, accessories). List each item briefly."
+
+═══ currentlyWearingExtra (for extra_cw_* rows) ═══
+  Label: "Clothing Item"
+  Max Sentences: 2
+  INSTRUCTION: "Describe an additional clothing item or accessory the character is currently wearing. Include type, color, fit, and style."
+
+  GENERATE-BOTH HINT (when label is empty):
+  "Generate an additional clothing item. Good label examples: 'Worn Leather Gloves', 'Silver Locket', 'Mud-Stained Boots', 'Concealed Holster'. Include type, appearance, and any significance."
+
+  Resolution: extra_cw_* → currentlyWearingExtra</div>
+      <textarea class="iblock-textarea" id="ta-star-char-cw" oninput="markModified('star-char-cw'); autoResize(this)"></textarea>
+    </div>
+    </div>
+
+    <!-- ═══ PAGE: Preferred Clothing ═══ -->
+    <div class="content-section" data-section="star-char-pc">
+    <div class="page-header">
+      <h1>Preferred Clothing — AI Enhance</h1>
+      <div class="ph-sub">character-ai.ts → CHARACTER_FIELD_PROMPTS</div>
+      <div class="ph-note">Fields: casual, work, sleep + preferredClothingExtra</div>
+    </div>
+    <div class="iblock" data-block="star-char-pc" id="block-star-char-pc" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-star-char-pc"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">Preferred Clothing — Exact Prompts</div>
+          <div class="iblock-condition">3 hardcoded fields + extras</div>
+        </div>
+        <div class="iblock-right"><div class="src-badge">character-ai.ts</div><div class="tok-badge">~300-500 tok</div></div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-star-char-pc">Each field below is a SEPARATE API call.
+
+═══ casual ═══
+  Label: "Casual"
+  Max Sentences: 2
+  INSTRUCTION: "Describe preferred casual clothing style. Include typical pieces and aesthetic."
+
+═══ work ═══
+  Label: "Work"
+  Max Sentences: 2
+  INSTRUCTION: "Describe preferred work/professional attire. Include typical pieces and aesthetic."
+
+═══ sleep ═══
+  Label: "Sleep"
+  Max Sentences: 2
+  INSTRUCTION: "Describe preferred sleepwear. Include style and comfort preferences."
+
+═══ preferredClothingExtra (for extra_pc_* rows) ═══
+  Label: "Preferred Outfit"
+  Max Sentences: 2
+  INSTRUCTION: "Describe an additional preferred clothing item or outfit for a specific occasion. Include style, aesthetic, and when they'd wear it."
+
+  GENERATE-BOTH HINT (when label is empty):
+  "Generate a preferred outfit for a specific occasion. Good label examples: 'Date Night', 'Formal Events', 'Training Gear', 'Disguise Kit'. Describe the style and aesthetic."
+
+  Resolution: extra_pc_* → preferredClothingExtra</div>
+      <textarea class="iblock-textarea" id="ta-star-char-pc" oninput="markModified('star-char-pc'); autoResize(this)"></textarea>
+    </div>
+    </div>
+
+    <!-- ═══ PAGE: Background ═══ -->
+    <div class="content-section" data-section="star-char-bg">
+    <div class="page-header">
+      <h1>Background — AI Enhance</h1>
+      <div class="ph-sub">character-ai.ts → CHARACTER_FIELD_PROMPTS</div>
+      <div class="ph-note">Fields: jobOccupation, educationLevel, residence, hobbies, financialStatus, motivation + backgroundExtra. NOTE: UI sends bg_ prefix (bg_jobOccupation) which is stripped during resolution.</div>
+    </div>
+    <div class="iblock" data-block="star-char-bg" id="block-star-char-bg" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-star-char-bg"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">Background — Exact Prompts</div>
+          <div class="iblock-condition">6 hardcoded fields + extras | bg_ prefix stripped</div>
+        </div>
+        <div class="iblock-right"><div class="src-badge">character-ai.ts</div><div class="tok-badge">~300-500 tok</div></div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-star-char-bg">Each field below is a SEPARATE API call.
+IMPORTANT: The UI sends field names with bg_ prefix (e.g. bg_jobOccupation). The resolver strips this: bg_jobOccupation → jobOccupation.
+
+═══ jobOccupation (sent as bg_jobOccupation) ═══
+  Label: "Job / Occupation"
+  Max Sentences: 2
+  INSTRUCTION: "Describe current job, career, or primary occupation. Include role and workplace if relevant."
+
+═══ educationLevel (sent as bg_educationLevel) ═══
+  Label: "Education Level"
+  Max Sentences: 2
+  INSTRUCTION: "Describe highest education achieved and any notable institutions or fields of study."
+
+═══ residence (sent as bg_residence) ═══
+  Label: "Residence"
+  Max Sentences: 2
+  INSTRUCTION: "Describe where the character lives. Include type of dwelling, neighborhood, and living situation."
+
+═══ hobbies (sent as bg_hobbies) ═══
+  Label: "Hobbies"
+  Max Sentences: 2
+  INSTRUCTION: "List primary hobbies and leisure activities. Focus on what they enjoy most."
+
+═══ financialStatus (sent as bg_financialStatus) ═══
+  Label: "Financial Status"
+  Max Sentences: 2
+  INSTRUCTION: "Describe financial standing — wealthy, comfortable, struggling, etc. Include context."
+
+═══ motivation (sent as bg_motivation) ═══
+  Label: "Motivation"
+  Max Sentences: 2
+  INSTRUCTION: "Describe the character's core driving motivation. What keeps them going?"
+
+═══ backgroundExtra (for extra_bg_* rows) ═══
+  Label: "Background Detail"
+  Max Sentences: 2
+  INSTRUCTION: "Describe an additional background detail about this character — a life experience, cultural element, skill, or contextual fact that enriches their story. Ground it in existing character data."
+
+  GENERATE-BOTH HINT (when label is empty):
+  "Generate an additional background detail. Good label examples: 'Military Service', 'Orphaned at 12', 'Speaks Three Languages', 'Former Street Performer'. The description should enrich the character's history."
+
+  Resolution: extra_bg_* → backgroundExtra</div>
+      <textarea class="iblock-textarea" id="ta-star-char-bg" oninput="markModified('star-char-bg'); autoResize(this)"></textarea>
+    </div>
+    </div>
+
+    <!-- ═══ PAGE: Personality ═══ -->
+    <div class="content-section" data-section="star-char-personality">
+    <div class="page-header">
+      <h1>Personality — AI Enhance</h1>
+      <div class="ph-sub">character-ai.ts → CHARACTER_FIELD_PROMPTS</div>
+      <div class="ph-note">3 configs: standard, outward (split mode), inward (split mode). Resolution: personality_outward_* → personality_outward, personality_inward_* → personality_inward, personality_* → personality</div>
+    </div>
+    <div class="iblock" data-block="star-char-personality" id="block-star-char-personality" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-star-char-personality"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">Personality — Exact Prompts</div>
+          <div class="iblock-condition">Standard / Outward / Inward — each a separate API call</div>
+        </div>
+        <div class="iblock-right"><div class="src-badge">character-ai.ts</div><div class="tok-badge">~300-500 tok</div></div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-star-char-personality">═══ personality (standard mode — personality_* resolution) ═══
+  Label: "Personality Trait"
+  Max Sentences: 2
+  INSTRUCTION: "Describe this personality trait and how it manifests in the character's behavior, decisions, and interactions. Focus on behavioral patterns, emotional tendencies, and how this trait shapes who they are. Stay grounded in the character's background and world context. Do NOT describe speech patterns or vocal qualities — focus on personality and behavior."
+
+  GENERATE-BOTH HINT (when label is empty):
+  "Generate a personality trait describing a core behavioral pattern, emotional tendency, or character quality. Good label examples: 'Stubborn', 'Empathetic', 'Reckless Courage', 'Quiet Ambition', 'People-Pleaser'. The description should explain how this trait manifests in the character's behavior and decisions. Do NOT generate tone/voice traits — focus on personality and behavior."
+
+═══ personality_outward (split mode — personality_outward_* resolution) ═══
+  Label: "Outward Personality Trait"
+  Max Sentences: 2
+  INSTRUCTION: "Describe this OUTWARD personality trait — how the character presents themselves to others. Focus on projected behavior, social demeanor, dialogue style, body language, and the persona they show the world. This is what other characters would observe and experience. Do NOT describe internal feelings or hidden thoughts — focus on external presentation."
+
+  GENERATE-BOTH HINT (when label is empty):
+  "Generate an OUTWARD personality trait — something other characters would notice and experience. Good label examples: 'Charming Deflector', 'Stoic Composure', 'Infectious Optimism', 'Cold Professionalism', 'Disarming Humor'. Focus on projected behavior, social demeanor, and how they present themselves. Do NOT describe internal feelings or speech patterns."
+
+═══ personality_inward (split mode — personality_inward_* resolution) ═══
+  Label: "Inward Personality Trait"
+  Max Sentences: 2
+  INSTRUCTION: "Describe this INWARD personality trait — the character's internal emotional landscape. Focus on private thoughts, hidden impulses, inner contradictions, suppressed feelings, and emotional patterns they don't show others. This is what the character experiences internally but may hide or struggle with. Do NOT describe outward behavior — focus on inner state."
+
+  GENERATE-BOTH HINT (when label is empty):
+  "Generate an INWARD personality trait — something the character experiences internally but may hide. Good label examples: 'Chronic Self-Doubt', 'Suppressed Rage', 'Secret Tenderness', 'Fear of Abandonment', 'Hidden Guilt'. Focus on private thoughts, inner contradictions, and emotional patterns they don't show others. Do NOT describe outward behavior or speech patterns."</div>
+      <textarea class="iblock-textarea" id="ta-star-char-personality" oninput="markModified('star-char-personality'); autoResize(this)"></textarea>
+    </div>
+    </div>
+
+    <!-- ═══ PAGE: Tone / Voice ═══ -->
+    <div class="content-section" data-section="star-char-tone">
+    <div class="page-header">
+      <h1>Tone / Voice — AI Enhance</h1>
+      <div class="ph-sub">character-ai.ts → CHARACTER_FIELD_PROMPTS</div>
+      <div class="ph-note">Resolution: extra_tone_* → tone</div>
+    </div>
+    <div class="iblock" data-block="star-char-tone" id="block-star-char-tone" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-star-char-tone"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">Tone / Voice — Exact Prompt</div>
+          <div class="iblock-condition">Single config for all tone rows</div>
+        </div>
+        <div class="iblock-right"><div class="src-badge">character-ai.ts</div><div class="tok-badge">~300-500 tok</div></div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-star-char-tone">═══ tone (extra_tone_* resolution) ═══
+  Label: "Tone"
+  Max Sentences: 3
+  INSTRUCTION: "Describe how this character speaks and expresses themselves. Focus on vocal qualities, speech rhythm, vocabulary level, verbal tics or habits, formality, and emotional register. This must naturally reflect the character's personality, background, and world context — not a random or generic speech style. If a specific tone label is provided (e.g. 'Nurturing', 'Sarcastic'), describe how THAT specific tone manifests in this character's speech, drawing on who they are and their established traits."
+
+  GENERATE-BOTH HINT (when label is empty):
+  "Generate a tone/voice trait describing HOW this character speaks — e.g. speech rhythm, vocabulary, verbal habits, emotional register, formality level. Good label examples: 'Dry Wit', 'Formal Register', 'Nervous Stammer', 'Warm Drawl', 'Clipped Authority'. The description should explain how this specific character exhibits that tone trait, based on their personality, background, and context. Do NOT generate personality traits — focus strictly on how they SOUND and EXPRESS themselves vocally."</div>
+      <textarea class="iblock-textarea" id="ta-star-char-tone" oninput="markModified('star-char-tone'); autoResize(this)"></textarea>
+    </div>
+    </div>
+
+    <!-- ═══ PAGE: Role Description ═══ -->
+    <div class="content-section" data-section="star-char-role">
+    <div class="page-header">
+      <h1>Role Description — AI Enhance</h1>
+      <div class="ph-sub">character-ai.ts → CHARACTER_FIELD_PROMPTS</div>
+      <div class="ph-note">Direct field key: roleDescription (no prefix stripping)</div>
+    </div>
+    <div class="iblock" data-block="star-char-role" id="block-star-char-role" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-star-char-role"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">Role Description — Exact Prompt</div>
+          <div class="iblock-condition">Single hardcoded field</div>
+        </div>
+        <div class="iblock-right"><div class="src-badge">character-ai.ts</div><div class="tok-badge">~300-500 tok</div></div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-star-char-role">═══ roleDescription ═══
+  Label: "Role Description"
+  Max Sentences: 3
+  INSTRUCTION: "Describe this character's role and function in the story. What is their narrative purpose? Are they a protagonist, antagonist, mentor, love interest, comic relief? How do they drive the plot or support other characters? Be specific to the scenario context."</div>
+      <textarea class="iblock-textarea" id="ta-star-char-role" oninput="markModified('star-char-role'); autoResize(this)"></textarea>
+    </div>
+    </div>
+
+    <!-- ═══ PAGE: Key Life Events ═══ -->
+    <div class="content-section" data-section="star-char-kle">
+    <div class="page-header">
+      <h1>Key Life Events — AI Enhance</h1>
+      <div class="ph-sub">character-ai.ts → CHARACTER_FIELD_PROMPTS</div>
+      <div class="ph-note">Resolution: extra_kle_* → keyLifeEvent</div>
+    </div>
+    <div class="iblock" data-block="star-char-kle" id="block-star-char-kle" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-star-char-kle"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">Key Life Events — Exact Prompt</div>
+          <div class="iblock-condition">Extras-only section</div>
+        </div>
+        <div class="iblock-right"><div class="src-badge">character-ai.ts</div><div class="tok-badge">~300-500 tok</div></div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-star-char-kle">═══ keyLifeEvent (extra_kle_* resolution) ═══
+  Label: "Key Life Event"
+  Max Sentences: 3
+  INSTRUCTION: "Describe a formative event from this character's past and how it shaped who they are today. Focus on what happened, the emotional impact, and lasting consequences on personality or relationships. Ground it in the character's established background and world context."
+
+  GENERATE-BOTH HINT (when label is empty):
+  "Generate a formative past event. Good label examples: 'Mother's Disappearance', 'First Kill', 'Academy Expulsion', 'The Betrayal', 'Childhood Fire'. The description should explain what happened and how it shaped the character. Ground it in their established background."</div>
+      <textarea class="iblock-textarea" id="ta-star-char-kle" oninput="markModified('star-char-kle'); autoResize(this)"></textarea>
+    </div>
+    </div>
+
+    <!-- ═══ PAGE: Relationships ═══ -->
+    <div class="content-section" data-section="star-char-rel">
+    <div class="page-header">
+      <h1>Relationships — AI Enhance</h1>
+      <div class="ph-sub">character-ai.ts → CHARACTER_FIELD_PROMPTS</div>
+      <div class="ph-note">Resolution: extra_rel_* → relationship</div>
+    </div>
+    <div class="iblock" data-block="star-char-rel" id="block-star-char-rel" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-star-char-rel"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">Relationships — Exact Prompt</div>
+          <div class="iblock-condition">Extras-only section</div>
+        </div>
+        <div class="iblock-right"><div class="src-badge">character-ai.ts</div><div class="tok-badge">~300-500 tok</div></div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-star-char-rel">═══ relationship (extra_rel_* resolution) ═══
+  Label: "Relationship"
+  Max Sentences: 3
+  INSTRUCTION: "Describe this relationship dynamic — who the other person is, the nature of the bond (family, romantic, rival, mentor, etc.), current state of the relationship, and any tension or significance for the story. Reference other characters in the scenario when relevant."
+
+  GENERATE-BOTH HINT (when label is empty):
+  "Generate a relationship with another character or figure. Good label examples: 'Rival — Marcus Cole', 'Mentor — Old Gregor', 'Ex-Lover — Diana', 'Estranged Father'. The description should explain the dynamic, current state, and story significance."</div>
+      <textarea class="iblock-textarea" id="ta-star-char-rel" oninput="markModified('star-char-rel'); autoResize(this)"></textarea>
+    </div>
+    </div>
+
+    <!-- ═══ PAGE: Secrets ═══ -->
+    <div class="content-section" data-section="star-char-sec">
+    <div class="page-header">
+      <h1>Secrets — AI Enhance</h1>
+      <div class="ph-sub">character-ai.ts → CHARACTER_FIELD_PROMPTS</div>
+      <div class="ph-note">Resolution: extra_sec_* → secret</div>
+    </div>
+    <div class="iblock" data-block="star-char-sec" id="block-star-char-sec" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-star-char-sec"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">Secrets — Exact Prompt</div>
+          <div class="iblock-condition">Extras-only section</div>
+        </div>
+        <div class="iblock-right"><div class="src-badge">character-ai.ts</div><div class="tok-badge">~300-500 tok</div></div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-star-char-sec">═══ secret (extra_sec_* resolution) ═══
+  Label: "Secret"
+  Max Sentences: 3
+  INSTRUCTION: "Describe a hidden truth, concealed history, or private knowledge this character keeps from others. Explain what the secret is, why they hide it, and what would happen if it were revealed. Ground it in the character's background and relationships."
+
+  GENERATE-BOTH HINT (when label is empty):
+  "Generate a secret the character keeps hidden. Good label examples: 'True Parentage', 'The Incident at Millbrook', 'Hidden Addiction', 'Double Agent'. The description should explain what the secret is, why they hide it, and what would happen if revealed."</div>
+      <textarea class="iblock-textarea" id="ta-star-char-sec" oninput="markModified('star-char-sec'); autoResize(this)"></textarea>
+    </div>
+    </div>
+
+    <!-- ═══ PAGE: Fears ═══ -->
+    <div class="content-section" data-section="star-char-fear">
+    <div class="page-header">
+      <h1>Fears — AI Enhance</h1>
+      <div class="ph-sub">character-ai.ts → CHARACTER_FIELD_PROMPTS</div>
+      <div class="ph-note">Resolution: extra_fear_* → fear</div>
+    </div>
+    <div class="iblock" data-block="star-char-fear" id="block-star-char-fear" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-star-char-fear"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">Fears — Exact Prompt</div>
+          <div class="iblock-condition">Extras-only section</div>
+        </div>
+        <div class="iblock-right"><div class="src-badge">character-ai.ts</div><div class="tok-badge">~300-500 tok</div></div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-star-char-fear">═══ fear (extra_fear_* resolution) ═══
+  Label: "Fear"
+  Max Sentences: 3
+  INSTRUCTION: "Describe this fear — what triggers it, how it manifests in the character's behavior (avoidance, anxiety, overcompensation), and how it connects to their past or current situation. Be specific rather than generic."
+
+  GENERATE-BOTH HINT (when label is empty):
+  "Generate a specific fear. Good label examples: 'Abandonment', 'Loss of Control', 'Deep Water', 'Becoming Like Father', 'Public Failure'. The description should explain how this fear manifests in behavior and connects to the character's past."</div>
+      <textarea class="iblock-textarea" id="ta-star-char-fear" oninput="markModified('star-char-fear'); autoResize(this)"></textarea>
+    </div>
+    </div>
+
+    <!-- ═══ PAGE: Character Goals ═══ -->
+    <div class="content-section" data-section="star-char-goal">
+    <div class="page-header">
+      <h1>Character Goals — AI Enhance</h1>
+      <div class="ph-sub">character-ai.ts → CHARACTER_FIELD_PROMPTS</div>
+      <div class="ph-note">Direct field key: characterGoal</div>
+    </div>
+    <div class="iblock" data-block="star-char-goal" id="block-star-char-goal" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-star-char-goal"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">Character Goals — Exact Prompt</div>
+          <div class="iblock-condition">Goal fields</div>
+        </div>
+        <div class="iblock-right"><div class="src-badge">character-ai.ts</div><div class="tok-badge">~300-500 tok</div></div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-star-char-goal">═══ characterGoal ═══
+  Label: "Character Goal"
+  Max Sentences: 3
+  INSTRUCTION: "Describe what this character wants to achieve, their underlying motivation for wanting it, and the obstacles or conflicts standing in their way. Connect the goal to the story premise and the character's personality."
+
+  GENERATE-BOTH HINT (when label is empty):
+  "Generate a character goal. Good label examples: 'Find the Lost Heir', 'Earn Father's Approval', 'Escape the Guild', 'Protect the Family Secret'. The description should explain motivation and obstacles."</div>
+      <textarea class="iblock-textarea" id="ta-star-char-goal" oninput="markModified('star-char-goal'); autoResize(this)"></textarea>
+    </div>
+    </div>
+
+    <!-- ═══ PAGE: Custom Sections (Fallback) ═══ -->
+    <div class="content-section" data-section="star-char-custom">
+    <div class="page-header">
+      <h1>Custom Sections — AI Enhance (Fallback)</h1>
+      <div class="ph-sub">character-ai.ts → CHARACTER_FIELD_PROMPTS</div>
+      <div class="ph-note">Catches any field key that doesn't match a specific config. Resolution: custom_sectionId_itemId or any unrecognized key → custom</div>
+    </div>
+    <div class="iblock" data-block="star-char-custom" id="block-star-char-custom" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-star-char-custom"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">Custom Sections — Exact Prompt (Generic Fallback)</div>
+          <div class="iblock-condition">Used when no specific config matches the field key</div>
+        </div>
+        <div class="iblock-right"><div class="src-badge">character-ai.ts</div><div class="tok-badge">~300-500 tok</div></div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-star-char-custom">═══ custom (fallback for unrecognized field keys) ═══
+  Label: "Custom"
+  Max Sentences: 3
+  INSTRUCTION: "Provide relevant details for this character trait. Be concise and story-relevant."
+
+  NOTE: This is the generic fallback. If a field is hitting this prompt when it shouldn't be, the resolver in buildCharacterFieldPrompt() needs a new prefix mapping for that field's key pattern.
+
+  GENERATE-BOTH HINT (when label is empty):
+  "Generate an additional background detail. Good label examples: 'Military Service', 'Orphaned at 12', 'Speaks Three Languages', 'Former Street Performer'. The description should enrich the character's history."
+  (NOTE: The custom section hint defaults to 'background detail' if no specific sectionHint is provided. This may produce background-style content for non-background custom sections.)</div>
+      <textarea class="iblock-textarea" id="ta-star-char-custom" oninput="markModified('star-char-custom'); autoResize(this)"></textarea>
+    </div>
+    </div>
+
+    <!-- ═══ STORY BUILDER — Individual Field Pages ═══ -->
+
+    <!-- ═══ PAGE: Story Name ═══ -->
+    <div class="content-section" data-section="star-world-name">
+    <div class="page-header">
+      <h1>Story Name — AI Enhance</h1>
       <div class="ph-sub">world-ai.ts → chat edge fn → api.x.ai/v1/chat/completions</div>
       <div class="ph-chips">
         <div class="chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
         <div class="chip">Fallback <strong>grok-3-mini</strong></div>
-        <div class="chip chip-temp" title="Temperature controls randomness: 0.0–0.3 = focused/deterministic, 0.7–0.9 = creative/varied, 1.0+ = highly random">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
-        <div class="chip">Max Response <strong>4,096 tok</strong></div>
+        <div class="chip chip-temp" title="Temperature">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
       </div>
-      <div class="ph-note">Accessed via: Story Builder → Star (✦) icon on individual fields</div>
+      <div class="ph-note">System: "You are a concise worldbuilding assistant. Return only the requested content, no explanations."</div>
     </div>
-
-    <div class="iblock" data-block="star-world" id="block-star-world" draggable="false">
+    <div class="iblock" data-block="star-world-name" id="block-star-world-name" draggable="false">
       <div class="iblock-header">
         <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
-        <div class="modified-dot" id="dot-star-world"></div>
+        <div class="modified-dot" id="dot-star-world-name"></div>
         <div class="iblock-meta">
-          <div class="iblock-title">Story Builder — AI Enhance</div>
-          <div class="iblock-condition">AI-powered world-building attribute enhancement with detailed or precise output modes</div>
+          <div class="iblock-title">scenarioName — Exact Prompt</div>
+          <div class="iblock-condition">Field: Story Name</div>
         </div>
-        <div class="iblock-right">
-          <div class="src-badge">world-ai.ts</div>
-          <div class="tok-badge">~200-600 tok</div>
-        </div>
+        <div class="iblock-right"><div class="src-badge">world-ai.ts</div><div class="tok-badge">~200-400 tok</div></div>
         <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
       </div>
-      <div class="iblock-body" id="body-star-world">Model: grok-4-1-fast-reasoning (fallback: grok-3-mini)
-Temperature: 0.9 | Max tokens: 4096
+      <div class="iblock-body" id="body-star-world-name">═══ scenarioName ═══
+  Label: "Story Name"
+  Max Sentences: 1
+  INSTRUCTION: "Generate a compelling story name. Be evocative but concise (2-5 words). Examples: 'Echoes of Ashenvale', 'The Crimson Inheritance', 'Neon Shadows'."
 
-System Message:
-"You are a concise worldbuilding assistant. Return only the requested content, no explanations."
+DETAILED MODE PROMPT (exact):
+  You are enhancing a story field for an interactive roleplay. Use STRUCTURED EXPANSION:
 
-Output Modes:
-- DETAILED: Full narrative descriptions
-- PRECISE: 3-5 semicolon-separated tags, compact format
+  RULES:
+  1. Be concise and factual (max 1 sentences)
+  2. Focus on narrative-relevant implications - what matters for the story
+  3. NO purple prose or flowery language
+  4. Format: State the fact, then its implication for gameplay/story
+  5. {Preserve the existing content's intent while enhancing it | Generate appropriate content from available context}
 
-Context:
-- World core data only (scenarioName, briefDescription, storyPremise, etc.)
-- No extended character data
+  CONTEXT FROM OTHER FIELDS:
+  {briefDescription, storyPremise if non-empty}
 
-═══ FIELD-SPECIFIC PROMPTS (FIELD_PROMPTS) ═══
+  {CURRENT VALUE section}
+  FIELD: Story Name
+  INSTRUCTION: Generate a compelling story name. Be evocative but concise (2-5 words). Examples: 'Echoes of Ashenvale', 'The Crimson Inheritance', 'Neon Shadows'.
 
-  scenarioName — "Generate a compelling story name (2-5 words)" (max 1 sentence)
-  briefDescription — "Write a 1-2 sentence summary suitable for a story card" (max 2 sentences)
-  storyPremise — "Central conflict and stakes: Situation + Tension + Stakes" (max 4 sentences)
-  factions — "List major factions: Name - description and role" (max 6 sentences)
-  locations — "List key locations with narrative significance" (max 6 sentences)
-  historyTimeline — "Summarize key historical events as chronological bullet points" (max 5 sentences)
-  plotHooks — "List potential story hooks: Hook Name - setup and stakes" (max 5 sentences)
-  dialogFormatting — "Specify additional dialog formatting rules" (max 3 sentences)
-  customContent — "Expand and enrich world-building content from context" (max 5 sentences)</div>
-      <textarea class="iblock-textarea" id="ta-star-world" oninput="markModified('star-world'); autoResize(this)"></textarea>
+  Return ONLY the enhanced text. No explanations, no prefixes, no markdown formatting.
+
+PRECISE MODE PROMPT (exact):
+  You are enhancing a story field for an interactive roleplay.
+
+  Expand the following into 3-6 short key points separated by semicolons.
+  Focus on essential facts only. No sentences, no explanations, no narrative rationale.
+
+  {CONTEXT FROM OTHER FIELDS}
+  {CURRENT VALUE section}
+  FIELD: Story Name
+
+  Output format: Point1; Point2; Point3; Point4
+  Return ONLY the semicolon-separated points. Nothing else.</div>
+      <textarea class="iblock-textarea" id="ta-star-world-name" oninput="markModified('star-world-name'); autoResize(this)"></textarea>
     </div>
-    </div><!-- end star-world -->
+    </div>
+
+    <!-- ═══ PAGE: Brief Description ═══ -->
+    <div class="content-section" data-section="star-world-desc">
+    <div class="page-header">
+      <h1>Brief Description — AI Enhance</h1>
+      <div class="ph-sub">world-ai.ts → FIELD_PROMPTS</div>
+    </div>
+    <div class="iblock" data-block="star-world-desc" id="block-star-world-desc" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-star-world-desc"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">briefDescription — Exact Prompt</div>
+          <div class="iblock-condition">Field: Brief Description</div>
+        </div>
+        <div class="iblock-right"><div class="src-badge">world-ai.ts</div><div class="tok-badge">~200-400 tok</div></div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-star-world-desc">═══ briefDescription ═══
+  Label: "Brief Description"
+  Max Sentences: 2
+  INSTRUCTION: "Write a 1-2 sentence summary suitable for a story card. Focus on the hook that would make someone want to play."</div>
+      <textarea class="iblock-textarea" id="ta-star-world-desc" oninput="markModified('star-world-desc'); autoResize(this)"></textarea>
+    </div>
+    </div>
+
+    <!-- ═══ PAGE: Story Premise ═══ -->
+    <div class="content-section" data-section="star-world-premise">
+    <div class="page-header">
+      <h1>Story Premise — AI Enhance</h1>
+      <div class="ph-sub">world-ai.ts → FIELD_PROMPTS</div>
+    </div>
+    <div class="iblock" data-block="star-world-premise" id="block-star-world-premise" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-star-world-premise"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">storyPremise — Exact Prompt</div>
+          <div class="iblock-condition">Field: Story Premise</div>
+        </div>
+        <div class="iblock-right"><div class="src-badge">world-ai.ts</div><div class="tok-badge">~200-600 tok</div></div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-star-world-premise">═══ storyPremise ═══
+  Label: "Story Premise"
+  Max Sentences: 4
+  INSTRUCTION: "Describe the central conflict and stakes. Format: Situation + Tension + Stakes. What's happening, why it matters, what could go wrong."</div>
+      <textarea class="iblock-textarea" id="ta-star-world-premise" oninput="markModified('star-world-premise'); autoResize(this)"></textarea>
+    </div>
+    </div>
+
+    <!-- ═══ PAGE: Factions ═══ -->
+    <div class="content-section" data-section="star-world-factions">
+    <div class="page-header">
+      <h1>Factions — AI Enhance</h1>
+      <div class="ph-sub">world-ai.ts → FIELD_PROMPTS</div>
+    </div>
+    <div class="iblock" data-block="star-world-factions" id="block-star-world-factions" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-star-world-factions"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">factions — Exact Prompt</div>
+          <div class="iblock-condition">Field: Factions</div>
+        </div>
+        <div class="iblock-right"><div class="src-badge">world-ai.ts</div><div class="tok-badge">~200-600 tok</div></div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-star-world-factions">═══ factions ═══
+  Label: "Factions"
+  Max Sentences: 6
+  INSTRUCTION: "List major factions or groups. Format: 'Faction Name - Brief description and their role in the story/conflict'."</div>
+      <textarea class="iblock-textarea" id="ta-star-world-factions" oninput="markModified('star-world-factions'); autoResize(this)"></textarea>
+    </div>
+    </div>
+
+    <!-- ═══ PAGE: Locations ═══ -->
+    <div class="content-section" data-section="star-world-locations">
+    <div class="page-header">
+      <h1>Locations — AI Enhance</h1>
+      <div class="ph-sub">world-ai.ts → FIELD_PROMPTS</div>
+    </div>
+    <div class="iblock" data-block="star-world-locations" id="block-star-world-locations" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-star-world-locations"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">locations — Exact Prompt</div>
+          <div class="iblock-condition">Field: Primary Locations</div>
+        </div>
+        <div class="iblock-right"><div class="src-badge">world-ai.ts</div><div class="tok-badge">~200-600 tok</div></div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-star-world-locations">═══ locations ═══
+  Label: "Primary Locations"
+  Max Sentences: 6
+  INSTRUCTION: "List key locations with their narrative significance. Format: 'Location Name - Brief description and story relevance'."</div>
+      <textarea class="iblock-textarea" id="ta-star-world-locations" oninput="markModified('star-world-locations'); autoResize(this)"></textarea>
+    </div>
+    </div>
+
+    <!-- ═══ PAGE: History & Timeline ═══ -->
+    <div class="content-section" data-section="star-world-history">
+    <div class="page-header">
+      <h1>History &amp; Timeline — AI Enhance</h1>
+      <div class="ph-sub">world-ai.ts → FIELD_PROMPTS</div>
+    </div>
+    <div class="iblock" data-block="star-world-history" id="block-star-world-history" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-star-world-history"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">historyTimeline — Exact Prompt</div>
+          <div class="iblock-condition">Field: History &amp; Timeline</div>
+        </div>
+        <div class="iblock-right"><div class="src-badge">world-ai.ts</div><div class="tok-badge">~200-600 tok</div></div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-star-world-history">═══ historyTimeline ═══
+  Label: "History &amp; Timeline"
+  Max Sentences: 5
+  INSTRUCTION: "Summarize key historical events that impact the current story. Format: chronological bullet points of important past events."</div>
+      <textarea class="iblock-textarea" id="ta-star-world-history" oninput="markModified('star-world-history'); autoResize(this)"></textarea>
+    </div>
+    </div>
+
+    <!-- ═══ PAGE: Plot Hooks ═══ -->
+    <div class="content-section" data-section="star-world-plots">
+    <div class="page-header">
+      <h1>Plot Hooks — AI Enhance</h1>
+      <div class="ph-sub">world-ai.ts → FIELD_PROMPTS</div>
+    </div>
+    <div class="iblock" data-block="star-world-plots" id="block-star-world-plots" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-star-world-plots"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">plotHooks — Exact Prompt</div>
+          <div class="iblock-condition">Field: Plot Hooks</div>
+        </div>
+        <div class="iblock-right"><div class="src-badge">world-ai.ts</div><div class="tok-badge">~200-600 tok</div></div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-star-world-plots">═══ plotHooks ═══
+  Label: "Plot Hooks"
+  Max Sentences: 5
+  INSTRUCTION: "List potential story hooks or quests. Format: 'Hook Name - Brief setup and what's at stake'."</div>
+      <textarea class="iblock-textarea" id="ta-star-world-plots" oninput="markModified('star-world-plots'); autoResize(this)"></textarea>
+    </div>
+    </div>
+
+    <!-- ═══ PAGE: Dialog Formatting ═══ -->
+    <div class="content-section" data-section="star-world-dialog">
+    <div class="page-header">
+      <h1>Dialog Formatting — AI Enhance</h1>
+      <div class="ph-sub">world-ai.ts → FIELD_PROMPTS</div>
+    </div>
+    <div class="iblock" data-block="star-world-dialog" id="block-star-world-dialog" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-star-world-dialog"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">dialogFormatting — Exact Prompt</div>
+          <div class="iblock-condition">Field: Dialog Formatting</div>
+        </div>
+        <div class="iblock-right"><div class="src-badge">world-ai.ts</div><div class="tok-badge">~200-400 tok</div></div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-star-world-dialog">═══ dialogFormatting ═══
+  Label: "Dialog Formatting"
+  Max Sentences: 3
+  INSTRUCTION: "Specify any additional dialog formatting rules beyond the standard (quotes for speech, asterisks for actions, parentheses for thoughts)."</div>
+      <textarea class="iblock-textarea" id="ta-star-world-dialog" oninput="markModified('star-world-dialog'); autoResize(this)"></textarea>
+    </div>
+    </div>
+
+    <!-- ═══ PAGE: Custom Content ═══ -->
+    <div class="content-section" data-section="star-world-custom">
+    <div class="page-header">
+      <h1>Custom Content — AI Enhance</h1>
+      <div class="ph-sub">world-ai.ts → FIELD_PROMPTS</div>
+    </div>
+    <div class="iblock" data-block="star-world-custom" id="block-star-world-custom" draggable="false">
+      <div class="iblock-header">
+        <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
+        <div class="modified-dot" id="dot-star-world-custom"></div>
+        <div class="iblock-meta">
+          <div class="iblock-title">customContent — Exact Prompt</div>
+          <div class="iblock-condition">Field: Custom Content</div>
+        </div>
+        <div class="iblock-right"><div class="src-badge">world-ai.ts</div><div class="tok-badge">~200-600 tok</div></div>
+        <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+      </div>
+      <div class="iblock-body" id="body-star-world-custom">═══ customContent ═══
+  Label: "Custom Content"
+  Max Sentences: 5
+  INSTRUCTION: "Expand and enrich this world-building content based on the provided context. Be specific and narrative-relevant. Preserve the existing content's intent while adding depth."</div>
+      <textarea class="iblock-textarea" id="ta-star-world-custom" oninput="markModified('star-world-custom'); autoResize(this)"></textarea>
+    </div>
+    </div>
 
     <!-- ═══ PAGE: AI Fill (Bulk) ═══ -->
     <div class="content-section" data-section="ai-fill">
@@ -3001,8 +3832,30 @@ function switchSection(sectionId, clickedItem, scrollToBlockId) {
   const titles = {
     'api-call-1': 'Chat (Main Roleplay)',
     'api-call-2': 'Post-Response Processing',
-    'star-char': 'Character Builder — AI Enhance',
-    'star-world': 'Story Builder — AI Enhance',
+    'api-call-3': 'Side Character Pipeline',
+    'star-char-overview': 'Character Builder — Overview',
+    'star-char-pa': 'Physical Appearance — AI Enhance',
+    'star-char-cw': 'Currently Wearing — AI Enhance',
+    'star-char-pc': 'Preferred Clothing — AI Enhance',
+    'star-char-bg': 'Background — AI Enhance',
+    'star-char-personality': 'Personality — AI Enhance',
+    'star-char-tone': 'Tone / Voice — AI Enhance',
+    'star-char-role': 'Role Description — AI Enhance',
+    'star-char-kle': 'Key Life Events — AI Enhance',
+    'star-char-rel': 'Relationships — AI Enhance',
+    'star-char-sec': 'Secrets — AI Enhance',
+    'star-char-fear': 'Fears — AI Enhance',
+    'star-char-goal': 'Character Goals — AI Enhance',
+    'star-char-custom': 'Custom Sections — AI Enhance',
+    'star-world-name': 'Story Name — AI Enhance',
+    'star-world-desc': 'Brief Description — AI Enhance',
+    'star-world-premise': 'Story Premise — AI Enhance',
+    'star-world-factions': 'Factions — AI Enhance',
+    'star-world-locations': 'Locations — AI Enhance',
+    'star-world-history': 'History & Timeline — AI Enhance',
+    'star-world-plots': 'Plot Hooks — AI Enhance',
+    'star-world-dialog': 'Dialog Formatting — AI Enhance',
+    'star-world-custom': 'Custom Content — AI Enhance',
     'ai-fill': 'AI Fill (Bulk)',
     'ai-generate': 'AI Generate Character',
     'img-cover': 'Cover Image',
