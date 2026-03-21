@@ -23,8 +23,8 @@ const DEFAULT_TOOLS: ToolMeta[] = [
   },
   {
     id: 'model_settings',
-    title: 'Model Settings',
-    description: 'Select Grok model and manage API key sharing',
+    title: 'AI Status',
+    description: 'View active models and backend health',
   },
   {
     id: 'style_guide',

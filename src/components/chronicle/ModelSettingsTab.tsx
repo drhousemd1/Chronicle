@@ -1,13 +1,13 @@
 
 // ============================================================================
-// APP-WIDE AI CONFIGURATION — Admin-only, read-only status page.
-// Shows which Grok models the app uses. Not interactive — nothing to select.
-// The app is hardcoded to grok-4-1-fast-reasoning (text) and grok-imagine-image (images).
+// AI CONFIGURATION STATUS — Admin-only, read-only status page.
+// Shows which models the app uses (hardcoded, not selectable) and
+// whether the backend xAI provider is configured, shared, and reachable.
 // ============================================================================
 
 import React, { useState, useEffect } from "react";
 import { Card, SectionTitle, Button } from "./UI";
-import { Cpu, Image, Share2, Zap, RefreshCw } from "lucide-react";
+import { Cpu, Image, Share2, RefreshCw, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/use-auth";
 import { 
@@ -17,14 +17,39 @@ import {
   SharedKeyStatus 
 } from "@/services/app-settings";
 
+function StatusDot({ status }: { status: 'ok' | 'warn' | 'error' | 'loading' }) {
+  const cls = {
+    ok: 'bg-emerald-500',
+    warn: 'bg-amber-500 animate-pulse',
+    error: 'bg-red-400',
+    loading: 'bg-amber-400 animate-bounce',
+  }[status];
+  return <div className={`w-2 h-2 rounded-full ${cls}`} />;
+}
+
+function StatusRow({ label, value, status }: { label: string; value: string; status: 'ok' | 'warn' | 'error' | 'loading' }) {
+  return (
+    <div className="flex items-center justify-between py-2">
+      <span className="text-sm text-slate-600">{label}</span>
+      <div className="flex items-center gap-2">
+        <StatusDot status={status} />
+        <span className={`text-sm font-semibold ${
+          status === 'ok' ? 'text-emerald-600' : status === 'error' ? 'text-red-500' : 'text-amber-600'
+        }`}>{value}</span>
+      </div>
+    </div>
+  );
+}
+
 export function ModelSettingsTab() {
   const { user } = useAuth();
 
-  const [connectionStatus, setConnectionStatus] = useState<'idle' | 'checking' | 'connected' | 'error'>('checking');
-  const [sharedKeyStatus, setSharedKeyStatus] = useState<SharedKeyStatus>({ 
+  const [keyStatus, setKeyStatus] = useState<SharedKeyStatus>({ 
     xaiShared: false, 
-    xaiConfigured: false 
+    xaiConfigured: false,
+    providerReachable: false,
   });
+  const [isChecking, setIsChecking] = useState(true);
   const [isUpdatingShare, setIsUpdatingShare] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -33,200 +58,109 @@ export function ModelSettingsTab() {
   }, [user?.id]);
 
   useEffect(() => {
-    checkSharedKeyStatus().then(status => {
-      setSharedKeyStatus(status);
-      setConnectionStatus(status.xaiConfigured ? 'connected' : 'error');
-    });
+    runHealthCheck();
   }, []);
 
-  const handleRefreshConnection = async () => {
-    setConnectionStatus('checking');
+  const runHealthCheck = async () => {
+    setIsChecking(true);
     const status = await checkSharedKeyStatus();
-    setSharedKeyStatus(status);
-    setTimeout(() => setConnectionStatus(status.xaiConfigured ? 'connected' : 'error'), 500);
+    setKeyStatus(status);
+    setIsChecking(false);
   };
 
   const handleToggleShare = async (checked: boolean) => {
     setIsUpdatingShare(true);
     const success = await updateSharedKeySetting(checked);
     if (success) {
-      setSharedKeyStatus(prev => ({ ...prev, xaiShared: checked }));
+      setKeyStatus(prev => ({ ...prev, xaiShared: checked }));
     }
     setIsUpdatingShare(false);
   };
 
-  const statusBadge = (
-    <div className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${
-      connectionStatus === 'connected' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 
-      connectionStatus === 'checking' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
-      'bg-slate-100 text-slate-500 border border-slate-200'
-    }`}>
-      <div className={`w-2 h-2 rounded-full ${
-        connectionStatus === 'connected' ? 'bg-emerald-500 animate-pulse' : 
-        connectionStatus === 'checking' ? 'bg-amber-500 animate-bounce' :
-        'bg-slate-300'
-      }`} />
-      {connectionStatus === 'connected' ? 'Connected' : 
-       connectionStatus === 'checking' ? 'Checking...' : 
-       'Not Connected'}
-    </div>
-  );
-
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-2xl mx-auto space-y-8">
       <SectionTitle 
         title="AI Configuration" 
-        subtitle="App-wide models set by admin. These apply to all users — nothing here is user-selectable." 
+        subtitle="App-wide models and provider status. Set by admin — applies to all users." 
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
-          
-          {/* Active Models — static display */}
-          <Card className="p-8">
-            <h3 className="text-xl font-bold text-[hsl(var(--ui-surface-2))] mb-6">Active Models</h3>
+      {/* Active Models */}
+      <Card className="p-8">
+        <h3 className="text-lg font-bold text-[hsl(var(--ui-surface-2))] mb-6">Active Models</h3>
 
-            {/* Text Model */}
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 mb-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-emerald-50">
-                    <Cpu className="w-4 h-4 text-emerald-600" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-0.5">Text Model</div>
-                    <div className="font-bold text-[hsl(var(--ui-surface-2))]">Grok 4.1 Fast (Reasoning)</div>
-                    <div className="text-xs text-slate-500 mt-0.5">Used for chat, character generation, world building, and all AI text features</div>
-                  </div>
-                </div>
-                {statusBadge}
-              </div>
+        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-emerald-50">
+              <Cpu className="w-4 h-4 text-emerald-600" />
             </div>
-
-            {/* Image Model */}
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-blue-50">
-                    <Image className="w-4 h-4 text-blue-600" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-0.5">Image Model</div>
-                    <div className="font-bold text-[hsl(var(--ui-surface-2))]">grok-imagine-image</div>
-                    <div className="text-xs text-slate-500 mt-0.5">Used for avatar, scene, and cover image generation</div>
-                  </div>
-                </div>
-                {statusBadge}
-              </div>
+            <div>
+              <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-0.5">Text</div>
+              <div className="font-bold text-[hsl(var(--ui-surface-2))]">Grok 4.1 Fast (Reasoning)</div>
+              <div className="text-xs text-slate-500 mt-0.5">Chat, character generation, world building, all AI text</div>
             </div>
-          </Card>
-
-          {/* API Connection */}
-          <Card className="p-8">
-            <h3 className="text-lg font-bold text-[hsl(var(--ui-surface-2))] mb-4">API Connection</h3>
-            <div className="bg-ghost-white rounded-2xl p-6 border border-slate-200">
-              <div className="space-y-4">
-                {isAdmin && (
-                  <div className="flex items-center justify-between p-4 bg-purple-50 rounded-xl border border-purple-200 mb-4">
-                    <div className="flex items-center gap-3">
-                      <Share2 className="w-5 h-5 text-purple-600" />
-                      <div>
-                        <p className="text-sm text-slate-700 font-medium">
-                          Share API key with all users
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          When enabled, all users can use Grok models
-                        </p>
-                      </div>
-                    </div>
-                    <Switch 
-                      checked={sharedKeyStatus.xaiShared}
-                      onCheckedChange={handleToggleShare}
-                      disabled={isUpdatingShare || !sharedKeyStatus.xaiConfigured}
-                    />
-                  </div>
-                )}
-                
-                <div className="flex items-start gap-3">
-                  {sharedKeyStatus.xaiShared ? (
-                    <>
-                      <Share2 className="w-5 h-5 text-emerald-500 mt-0.5" />
-                      <div>
-                        <p className="text-sm text-slate-700 font-medium">
-                          xAI API key is active and shared with all users.
-                        </p>
-                        <p className="text-xs text-slate-500 mt-1">
-                          All Grok models are available app-wide.
-                        </p>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="w-5 h-5 text-amber-500 mt-0.5" />
-                      <div>
-                        <p className="text-sm text-slate-700 font-medium">
-                          xAI API key not yet shared.
-                        </p>
-                        <p className="text-xs text-slate-500 mt-1">
-                          {isAdmin 
-                            ? "Enable sharing above to let all users access Grok."
-                            : "Contact the app administrator for access."
-                          }
-                        </p>
-                      </div>
-                    </>
-                  )}
-                </div>
-                <Button variant="secondary" onClick={handleRefreshConnection} disabled={connectionStatus === 'checking'}>
-                  <RefreshCw className={`w-4 h-4 mr-2 ${connectionStatus === 'checking' ? 'animate-spin' : ''}`} />
-                  Verify Connection
-                </Button>
-              </div>
-            </div>
-          </Card>
+          </div>
         </div>
 
-        {/* Sidebar info */}
-        <div className="space-y-6">
-          <Card className="p-6 bg-slate-900 text-white overflow-hidden relative">
-            <div className="relative z-10">
-              <h4 className="font-black text-lg tracking-tight mb-2">Narrative Core</h4>
-              <p className="text-xs text-[rgba(248,250,252,0.3)] mb-6">Powered by xAI Grok — all AI features use this provider.</p>
-              
-              <ul className="space-y-3">
-                <li className="flex items-center gap-3 text-xs font-bold">
-                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
-                  Context: 2M Tokens
-                </li>
-                <li className="flex items-center gap-3 text-xs font-bold">
-                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
-                  Retry: Same model, up to 3 attempts
-                </li>
-                <li className="flex items-center gap-3 text-xs font-bold">
-                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
-                  Content Restrictions: Minimal
-                </li>
-              </ul>
+        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-blue-50">
+              <Image className="w-4 h-4 text-blue-600" />
             </div>
-            <div className="absolute -right-4 -bottom-4 text-[120px] font-black text-white/5 italic select-none">AI</div>
-          </Card>
-
-          <Card className="p-8 bg-white border-blue-100 border-2">
-            <h4 className="font-bold text-[hsl(var(--ui-surface-2))] mb-2">About Grok</h4>
-            <p className="text-sm text-slate-500 leading-relaxed mb-4">
-              Grok models have fewer content restrictions, making them ideal for mature roleplay scenarios and creative freedom.
-            </p>
-            <a 
-              href="https://console.x.ai/" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-blue-500 font-bold text-xs uppercase tracking-widest hover:underline"
-            >
-              xAI Console →
-            </a>
-          </Card>
+            <div>
+              <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-0.5">Image</div>
+              <div className="font-bold text-[hsl(var(--ui-surface-2))]">grok-imagine-image</div>
+              <div className="text-xs text-slate-500 mt-0.5">Avatar, scene, and cover image generation</div>
+            </div>
+          </div>
         </div>
-      </div>
+      </Card>
+
+      {/* Backend Status */}
+      <Card className="p-8">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-bold text-[hsl(var(--ui-surface-2))]">Backend Status</h3>
+          <Button variant="secondary" onClick={runHealthCheck} disabled={isChecking}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${isChecking ? 'animate-spin' : ''}`} />
+            {isChecking ? 'Checking…' : 'Run Health Check'}
+          </Button>
+        </div>
+
+        <div className="divide-y divide-slate-100">
+          <StatusRow 
+            label="API Key Configured" 
+            value={isChecking ? 'Checking…' : keyStatus.xaiConfigured ? 'Yes' : 'Not Set'}
+            status={isChecking ? 'loading' : keyStatus.xaiConfigured ? 'ok' : 'error'}
+          />
+          <StatusRow 
+            label="Provider Reachable" 
+            value={isChecking ? 'Checking…' : keyStatus.providerReachable ? 'Online' : 'Unreachable'}
+            status={isChecking ? 'loading' : keyStatus.providerReachable ? 'ok' : 'error'}
+          />
+          <StatusRow 
+            label="Shared with Users" 
+            value={keyStatus.xaiShared ? 'Enabled' : 'Disabled'}
+            status={keyStatus.xaiShared ? 'ok' : 'warn'}
+          />
+        </div>
+
+        {/* Share toggle — admin only */}
+        {isAdmin && (
+          <div className="mt-6 flex items-center justify-between p-4 bg-purple-50 rounded-xl border border-purple-200">
+            <div className="flex items-center gap-3">
+              <Share2 className="w-5 h-5 text-purple-600" />
+              <div>
+                <p className="text-sm text-slate-700 font-medium">Share API key with all users</p>
+                <p className="text-xs text-slate-500">When enabled, all users can use Grok models</p>
+              </div>
+            </div>
+            <Switch 
+              checked={keyStatus.xaiShared}
+              onCheckedChange={handleToggleShare}
+              disabled={isUpdatingShare || !keyStatus.xaiConfigured}
+            />
+          </div>
+        )}
+      </Card>
     </div>
   );
 }
