@@ -5198,7 +5198,7 @@ function buildPageHtml(rawText) {
     }
 
     html += callout;
-    html += '<pre class="api-payload-block">' + escapeHtml(trimmed) + '</pre>';
+    html += '<pre style="white-space:pre-wrap;word-wrap:break-word;margin:0 0 20px;font-size:11.5px;line-height:1.55;">' + escapeHtml(trimmed) + '</pre>';
     plainText += trimmed + '\n\n';
   });
 
