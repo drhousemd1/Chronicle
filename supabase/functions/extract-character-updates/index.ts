@@ -503,8 +503,8 @@ Return ONLY valid JSON. No explanations.`;
       aiResponse ? `LATEST AI RESPONSE:\n${aiResponse}` : ''
     ].filter(Boolean).join('\n\n---\n\n');
 
-    // Only accept active Grok 4.1 models; anything else falls back to reasoning
-    const VALID_GROK_MODELS = ['grok-4-1-fast-reasoning', 'grok-4-1-fast-non-reasoning'];
+    // Only grok-4-1-fast-reasoning is used app-wide; reject anything else
+    const VALID_GROK_MODELS = ['grok-4-1-fast-reasoning'];
     const effectiveModelId = (modelId && VALID_GROK_MODELS.includes(modelId)) ? modelId : 'grok-4-1-fast-reasoning';
     if (modelId && modelId !== effectiveModelId) {
       console.warn(`[extract-character-updates] Rejected non-Grok model "${modelId}", using "${effectiveModelId}"`);

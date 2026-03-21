@@ -83,8 +83,8 @@ serve(async (req) => {
     const body: ChatRequest = await req.json();
     const { messages, stream = true, max_tokens: maxTokens = 4096 } = body;
     
-    // Only accept active Grok 4.1 models; anything else falls back to reasoning
-    const VALID_GROK_MODELS = ['grok-4-1-fast-reasoning', 'grok-4-1-fast-non-reasoning'];
+    // Only grok-4-1-fast-reasoning is used app-wide; reject anything else
+    const VALID_GROK_MODELS = ['grok-4-1-fast-reasoning'];
     const modelId = VALID_GROK_MODELS.includes(body.modelId) ? body.modelId : 'grok-4-1-fast-reasoning';
     
     if (body.modelId !== modelId) {

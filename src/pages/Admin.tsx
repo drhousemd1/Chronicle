@@ -105,7 +105,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
   if (activeTool === 'model_settings') {
     return (
       <div className="p-10 overflow-y-auto h-full">
-        <ModelSettingsTab selectedModelId={selectedModelId} onSelectModel={onSelectModel} />
+        <ModelSettingsTab />
       </div>
     );
   }
