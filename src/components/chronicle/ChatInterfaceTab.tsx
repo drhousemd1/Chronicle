@@ -3797,7 +3797,7 @@ const updatedChar: SideCharacter = {
       style={{ backgroundColor: chatCanvasColor }}
     >
 
-      <aside className={`w-[300px] flex-shrink-0 border-r border-slate-200 flex flex-col h-full shadow-[inset_-4px_0_12px_rgba(0,0,0,0.02)] z-10 transition-colors relative overflow-hidden ${showBackground ? 'bg-white/90 backdrop-blur-md' : 'bg-white'}`}>
+      <aside className={`w-[clamp(250px,28vw,300px)] flex-shrink-0 border-r border-slate-200 flex flex-col h-full shadow-[inset_-4px_0_12px_rgba(0,0,0,0.02)] z-10 transition-colors relative overflow-hidden ${showBackground ? 'bg-white/90 backdrop-blur-md' : 'bg-white'}`}>
         {/* Sidebar background image layer */}
         {selectedSidebarBgUrl && (
           <div className="absolute inset-0 z-0">
@@ -4390,7 +4390,7 @@ const updatedChar: SideCharacter = {
         <div className={`pt-3 pb-3 px-8 border-t border-[hsl(var(--ui-border))] shadow-[0_-4px_12px_rgba(0,0,0,0.15)] transition-colors relative z-20 bg-[hsl(var(--ui-surface))]`}>
           <div className="w-full max-w-7xl mx-auto space-y-3">
             {/* Quick Actions Bar - Above Input */}
-            <div className="flex items-center gap-2 relative">
+            <div className="relative flex flex-wrap items-center gap-2">
               <button
                 onClick={() => setIsSettingsOpen(!isSettingsOpen)}
                 className="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest border transition-all active:scale-95 cursor-pointer bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:border-[hsl(var(--ui-border-hover))]"
@@ -4429,7 +4429,7 @@ const updatedChar: SideCharacter = {
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || isStreaming}
-                className={`ml-auto inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest border transition-all active:scale-95 cursor-pointer shadow-[0_10px_30px_rgba(0,0,0,0.35)] disabled:pointer-events-none ${input.trim() ? 'bg-[#4a5f7f] text-white border-[#4a5f7f] hover:bg-[#5a6f8f]' : 'bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text-muted))] opacity-50'}`}
+                className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest border transition-all active:scale-95 cursor-pointer shadow-[0_10px_30px_rgba(0,0,0,0.35)] disabled:pointer-events-none sm:ml-auto sm:w-auto ${input.trim() ? 'bg-[#4a5f7f] text-white border-[#4a5f7f] hover:bg-[#5a6f8f]' : 'bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text-muted))] opacity-50'}`}
               >
                 {isStreaming ? '...' : 'Send'}
               </button>

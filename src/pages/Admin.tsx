@@ -29,7 +29,7 @@ const DEFAULT_TOOLS: ToolMeta[] = [
   {
     id: 'style_guide',
     title: 'App Dashboard',
-    description: 'Central hub for Style Guide, App Guide, Quality Hub, and API Inspector',
+    description: 'Central hub for Style Guide, App Guide, App Architecture, Quality Hub, and API Inspector',
   },
 ];
 

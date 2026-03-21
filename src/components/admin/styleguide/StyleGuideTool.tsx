@@ -169,6 +169,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
 
   const isNarrow = useMediaQuery('(max-width: 1024px)');
 
+  const openAppArchitecture = useCallback(() => navigate('/style-guide/app-architecture'), [navigate]);
   const openUiAudit = useCallback(() => navigate('/style-guide/ui-audit'), [navigate]);
   const openApiInspector = useCallback(() => navigate('/style-guide/api-inspector'), [navigate]);
   const openAppGuide = useCallback(() => { if (onSwitchToAppGuide) onSwitchToAppGuide(); else navigate('/?tab=admin&adminTool=app_guide'); }, [onSwitchToAppGuide, navigate]);
@@ -240,6 +241,24 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             }}
           >
             App Guide
+          </button>
+
+          <button
+            type="button"
+            onClick={openAppArchitecture}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              textDecoration: 'none', whiteSpace: 'nowrap',
+              fontSize: isNarrow ? 12 : 13, fontWeight: 700,
+              padding: isNarrow ? '10px 12px' : '12px 14px',
+              borderRadius: 10, border: `1px solid ${sg.border}`,
+              cursor: 'pointer',
+              background: '#ffffff', color: '#475569',
+              transition: 'all 0.2s ease',
+              flex: isNarrow ? 1 : undefined,
+            }}
+          >
+            App Architecture
           </button>
 
           <button

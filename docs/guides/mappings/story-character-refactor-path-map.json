@@ -1,0 +1,26 @@
+{
+  "src/components/chronicle/WorldTab.tsx": [
+    "src/features/story-builder/StoryBuilderScreen.tsx",
+    "src/features/story-builder/sidebar/StoryRosterSidebar.tsx",
+    "src/features/story-builder/sidebar/StoryRosterGroup.tsx",
+    "src/features/story-builder/sidebar/StoryRosterCharacterTile.tsx"
+  ],
+  "src/components/chronicle/CharactersTab.tsx": [
+    "src/features/character-builder/CharacterBuilderScreen.tsx",
+    "src/features/character-builder/sidebar/TraitNavButton.tsx",
+    "src/features/character-builder/sidebar/TraitProgressRing.tsx",
+    "src/features/character-builder/sections/HardcodedSection.tsx",
+    "src/features/character-builder/rows/HardcodedRow.tsx",
+    "src/features/character-builder/rows/ExtraRow.tsx",
+    "src/features/character-builder/rows/AutoResizeTextareaField.tsx",
+    "src/features/character-builder/utils/section-keys.ts",
+    "src/features/character-builder/utils/section-progress.ts",
+    "src/features/character-builder/types/character-builder.types.ts"
+  ],
+  "src/components/chronicle/CharacterEditModal.tsx": [
+    "src/features/character-editor-modal/CharacterEditorModalScreen.tsx"
+  ],
+  "src/components/chronicle/StoryCardView.tsx": [
+    "src/features/character-editor-modal/ScenarioCardEditorView.tsx"
+  ]
+}

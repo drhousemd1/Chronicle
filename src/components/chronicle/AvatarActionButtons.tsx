@@ -31,7 +31,7 @@ export function AvatarActionButtons({
 
   return (
     <>
-      <div className="flex gap-2 w-full">
+      <div className="flex w-full flex-col gap-2 sm:flex-row">
         {/* Upload Button - Full width dropdown trigger */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -76,7 +76,7 @@ export function AvatarActionButtons({
           type="button"
           onClick={onGenerateClick}
           disabled={isDisabled || isGenerating}
-           className="group relative flex w-full min-w-0 h-10 px-4 rounded-xl overflow-hidden
+           className="group relative flex h-10 w-full min-w-0 px-4 rounded-xl overflow-hidden
             text-white text-xs font-bold leading-none
             shadow-[0_12px_40px_rgba(0,0,0,0.45)]
             hover:brightness-125 transition-all

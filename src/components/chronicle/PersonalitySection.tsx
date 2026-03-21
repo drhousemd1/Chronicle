@@ -67,9 +67,9 @@ const TraitRow: React.FC<{
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex-1 flex gap-2 min-w-0">
-        <div className="w-1/3 flex items-center gap-1.5 min-w-0">
+    <div className="flex flex-col gap-2 md:flex-row md:items-start">
+      <div className="flex-1 flex flex-col md:flex-row gap-2 min-w-0">
+        <div className="w-full md:w-1/3 flex items-center gap-1.5 min-w-0">
           <AutoResizeTextarea
             value={trait.label}
             onChange={(v) => onUpdate({ label: v })}
@@ -103,21 +103,21 @@ const TraitRow: React.FC<{
         />
       </div>
       {/* Flexibility dropdown */}
-      <select
-        value={trait.flexibility}
-        onChange={(e) => onUpdate({ flexibility: e.target.value as PersonalityTraitFlexibility })}
-        className="text-[10px] font-bold uppercase bg-[#1c1c1f] border border-black/35 text-zinc-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer self-stretch"
-      >
-        {FLEX_OPTIONS.map(opt => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
-        ))}
-      </select>
-      <div className="w-7 flex-shrink-0 flex items-center justify-center">
+      <div className="ml-auto flex items-center gap-2">
+        <select
+          value={trait.flexibility}
+          onChange={(e) => onUpdate({ flexibility: e.target.value as PersonalityTraitFlexibility })}
+          className="mt-1 w-full md:w-auto text-[10px] font-bold uppercase bg-[#1c1c1f] border border-black/35 text-zinc-300 rounded-lg px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+        >
+          {FLEX_OPTIONS.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
         <button
           type="button"
           tabIndex={-1}
           onClick={onDelete}
-          className="text-zinc-500 hover:text-rose-400 transition-colors p-1"
+          className="text-zinc-500 hover:text-rose-400 transition-colors p-1 mt-1 rounded-md hover:bg-red-900/20"
         >
           <Trash2 size={16} />
         </button>

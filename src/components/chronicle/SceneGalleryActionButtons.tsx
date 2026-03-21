@@ -31,13 +31,13 @@ export function SceneGalleryActionButtons({
 
   return (
     <>
-      <div className="flex flex-row gap-2">
+      <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
               disabled={isDisabled}
-              className="flex h-10 items-center justify-center gap-2 px-4
+              className="flex h-10 w-full items-center justify-center gap-2 px-4 sm:w-auto
                 rounded-xl border-0
                 bg-[#3c3e47] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]
                 text-[#eaedf1] text-xs font-bold leading-none
@@ -74,7 +74,7 @@ export function SceneGalleryActionButtons({
           type="button"
           onClick={onGenerateClick}
           disabled={isDisabled || isGenerating}
-           className="group relative flex h-10 px-4 rounded-xl overflow-hidden
+           className="group relative flex h-10 w-full items-center justify-center px-4 rounded-xl overflow-hidden sm:w-auto
             text-white text-xs font-bold leading-none
             shadow-[0_12px_40px_rgba(0,0,0,0.45)]
             hover:brightness-125 transition-all

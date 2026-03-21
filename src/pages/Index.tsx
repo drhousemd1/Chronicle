@@ -5,8 +5,8 @@ import { ScenarioData, TabKey, Character, ScenarioMetadata, Conversation, Messag
 
 import { fetchSavedScenarios, SavedScenario, unsaveScenario, fetchUserPublishedScenarios, PublishedScenario } from "@/services/gallery-data";
 import { createDefaultScenarioData, now, uid, uuid, truncateLine, resizeImage } from "@/utils";
-import { CharactersTab } from "@/components/chronicle/CharactersTab";
-import { WorldTab } from "@/components/chronicle/WorldTab";
+import { CharacterBuilderScreen as CharactersTab } from "@/features/character-builder/CharacterBuilderScreen";
+import { StoryBuilderScreen as WorldTab } from "@/features/story-builder/StoryBuilderScreen";
 import { ConversationsTab } from "@/components/chronicle/ConversationsTab";
 import { useModelSettings, ModelSettingsProvider } from "@/contexts/ModelSettingsContext";
 import { checkIsAdmin } from "@/services/app-settings";
@@ -52,6 +52,7 @@ import {
 } from "@/lib/story-transfer";
 import { StoryExportFormatModal, StoryExportFormat } from "@/components/chronicle/StoryExportFormatModal";
 import { StoryImportModeModal } from "@/components/chronicle/StoryImportModeModal";
+import { normalizeBuilderTab, toLegacyBuilderTab } from "@/features/navigation/builder-tabs";
 const IconsList = {
   Gallery: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>,
   Hub: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>,
@@ -209,8 +210,9 @@ const IndexContent = () => {
     const qTab = searchParams.get('tab');
     const qTool = searchParams.get('adminTool');
     if (qTab) {
-      setTab(qTab as TabKey);
-      if (qTab === 'admin' && qTool) {
+      const normalizedTab = toLegacyBuilderTab(normalizeBuilderTab(qTab));
+      setTab(normalizedTab as TabKey);
+      if (normalizedTab === 'admin' && qTool) {
         setAdminActiveTool(qTool);
       }
       // Clear params after applying so they don't persist on further nav
@@ -1942,8 +1944,8 @@ const IndexContent = () => {
 
       <main className="flex-1 flex flex-col overflow-hidden bg-ghost-white">
         {(tab === "characters" || tab === "world" || tab === "library" || tab === "conversations" || tab === "hub" || tab === "image_library" || tab === "gallery" || tab === "admin" || tab === "account") && (
-          <header className="flex-shrink-0 h-16 border-b border-slate-200 bg-[rgba(248,250,252,0.3)] flex items-center justify-between px-4 lg:px-8 shadow-sm">
-            <div className="flex items-center gap-4">
+          <header className="flex flex-shrink-0 flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-[rgba(248,250,252,0.3)] px-4 py-3 shadow-sm lg:px-8">
+            <div className="flex min-w-0 flex-wrap items-center gap-4">
               {tab === "library" && (
                 <div className="flex items-center gap-3 flex-1">
                   {selectedCharacterId && (
@@ -2124,7 +2126,7 @@ const IndexContent = () => {
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
               {tab === "world" && (
                 <>
                   <button
@@ -2509,7 +2511,7 @@ const IndexContent = () => {
           </div>
 
           {tab === "library" && (
-            <div className="p-10 overflow-y-auto h-full bg-black relative z-10">
+            <div className="h-full overflow-y-auto bg-black p-4 relative z-10 sm:p-6 lg:p-10">
               <CharactersTab
                 appData={{ ...createDefaultScenarioData(), characters: filteredLibrary }}
                 selectedId={selectedCharacterId}
@@ -2577,7 +2579,7 @@ const IndexContent = () => {
           )}
 
           {tab === "conversations" && (
-            <div className="relative p-10 overflow-y-auto h-full bg-black">
+            <div className="relative h-full overflow-y-auto bg-black p-4 sm:p-6 lg:p-10">
               {showResumingOverlay && (
                 <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm">
                   <div className="w-10 h-10 border-4 border-ghost-white border-t-white rounded-full animate-spin mb-4" />
@@ -2682,7 +2684,7 @@ const IndexContent = () => {
           )}
 
           {tab === "account" && (
-            <div className="p-10 overflow-y-auto h-full bg-[#121214]">
+            <div className="h-full overflow-y-auto bg-[#121214] p-4 sm:p-6 lg:p-10">
               <div>
                 {/* Account Tab Pills */}
                 <div className="flex items-center justify-center mb-8">

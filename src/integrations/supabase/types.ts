@@ -1279,35 +1279,20 @@ export type Database = {
           total_views: number
         }[]
       }
-      get_folders_with_details:
-        | {
-            Args: never
-            Returns: {
-              created_at: string
-              description: string
-              id: string
-              image_count: number
-              name: string
-              thumbnail_image_id: string
-              thumbnail_url: string
-              updated_at: string
-              user_id: string
-            }[]
-          }
-        | {
-            Args: { p_user_id: string }
-            Returns: {
-              created_at: string
-              description: string
-              id: string
-              image_count: number
-              name: string
-              thumbnail_image_id: string
-              thumbnail_url: string
-              updated_at: string
-              user_id: string
-            }[]
-          }
+      get_folders_with_details: {
+        Args: never
+        Returns: {
+          created_at: string
+          description: string
+          id: string
+          image_count: number
+          name: string
+          thumbnail_image_id: string
+          thumbnail_url: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
