@@ -839,7 +839,7 @@ export async function* generateRoleplayResponseStream(
   // Regeneration directive - tells AI to provide a different take on the same scene
   const regenerationDirective = isRegeneration ? '\n\n' + REGENERATION_DIRECTIVE_TEXT : '';
 
-  // Build messages array for OpenAI-compatible API
+  // Build messages array for xAI Grok API
   const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
     { role: 'system', content: systemInstruction },
     ...conversation.messages.map(m => ({

@@ -460,44 +460,40 @@ Return ONLY the enhanced text. No explanations, no prefixes, no markdown formatt
 }
 
 // ============================================================
-// Shared AI call with content-filter fallback
+// Shared AI call with retry (same model, no fallback to worse models)
 // ============================================================
 
-// GROK ONLY -- All AI calls use xAI Grok. No Gemini. No OpenAI.
-const FALLBACK_MODELS = ['grok-4-1-fast-reasoning', 'grok-3-mini'];
+const MAX_RETRIES = 3;
 
-async function callAIWithFallback(
+async function callAIWithRetry(
   messages: { role: string; content: string }[],
   modelId: string,
   stream: boolean = false
 ): Promise<string> {
-  const modelsToTry = [modelId, ...FALLBACK_MODELS.filter(m => m !== modelId)];
-
-  for (const model of modelsToTry) {
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     const { data, error } = await supabase.functions.invoke('chat', {
-      body: { messages, modelId: model, stream }
+      body: { messages, modelId, stream }
     });
 
     if (error) {
-      console.error(`[character-ai] Error with model ${model}:`, error);
-      continue;
+      console.error(`[character-ai] Attempt ${attempt}/${MAX_RETRIES} failed:`, error);
+      if (attempt < MAX_RETRIES) continue;
+      throw new Error('AI request failed after 3 attempts. Please try again.');
     }
 
     const finishReason = data?.choices?.[0]?.finish_reason;
     const content = data?.choices?.[0]?.message?.content;
 
     if (finishReason === 'content_filter' || !content) {
-      console.warn(`[character-ai] Model ${model} blocked (${finishReason || 'empty content'}), trying fallback...`);
-      continue;
+      console.warn(`[character-ai] Attempt ${attempt}/${MAX_RETRIES} blocked (${finishReason || 'empty content'})`);
+      if (attempt < MAX_RETRIES) continue;
+      throw new Error('AI request failed after 3 attempts. Try rephrasing the content.');
     }
 
-    if (model !== modelId) {
-      console.log(`[character-ai] Fallback to ${model} succeeded`);
-    }
     return content.trim().replace(/^["']|["']$/g, '');
   }
 
-  throw new Error('Content was blocked by all available models. Try rephrasing the content or using a different model.');
+  throw new Error('AI request failed after 3 attempts.');
 }
 
 /**
@@ -520,7 +516,7 @@ export async function aiEnhanceCharacterField(
 
   const isGenerateBoth = customLabel?.startsWith(GENERATE_BOTH_PREFIX);
 
-  const result = await callAIWithFallback(
+  const result = await callAIWithRetry(
     [
       { role: 'system', content: 'You are a concise character creation assistant. Return only the requested content, no explanations.' },
       { role: 'user', content: prompt }
