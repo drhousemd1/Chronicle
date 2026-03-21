@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 export interface SharedKeyStatus {
   xaiShared: boolean;
   xaiConfigured: boolean;
+  providerReachable: boolean;
 }
 
 export async function checkSharedKeyStatus(): Promise<SharedKeyStatus> {
@@ -10,11 +11,11 @@ export async function checkSharedKeyStatus(): Promise<SharedKeyStatus> {
     const { data, error } = await supabase.functions.invoke('check-shared-keys');
     if (error) {
       console.error('Error checking shared key status:', error);
-      return { xaiShared: false, xaiConfigured: false };
+      return { xaiShared: false, xaiConfigured: false, providerReachable: false };
     }
     return data as SharedKeyStatus;
   } catch {
-    return { xaiShared: false, xaiConfigured: false };
+    return { xaiShared: false, xaiConfigured: false, providerReachable: false };
   }
 }
 
@@ -31,7 +32,6 @@ export async function checkIsAdmin(userId: string | undefined): Promise<boolean>
 
 export async function updateSharedKeySetting(xaiShared: boolean): Promise<boolean> {
   try {
-    // Using type assertion to work around generated types not including app_settings yet
     const { error } = await (supabase as any)
       .from('app_settings')
       .update({ 
