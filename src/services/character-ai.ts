@@ -268,6 +268,70 @@ const CHARACTER_FIELD_PROMPTS: Record<string, { label: string; instruction: stri
     maxSentences: 2
   },
 
+  // Role Description
+  roleDescription: {
+    label: "Role Description",
+    instruction: "Describe this character's role and function in the story. What is their narrative purpose? Are they a protagonist, antagonist, mentor, love interest, comic relief? How do they drive the plot or support other characters? Be specific to the scenario context.",
+    maxSentences: 3
+  },
+
+  // Key Life Events
+  keyLifeEvent: {
+    label: "Key Life Event",
+    instruction: "Describe a formative event from this character's past and how it shaped who they are today. Focus on what happened, the emotional impact, and lasting consequences on personality or relationships. Ground it in the character's established background and world context.",
+    maxSentences: 3
+  },
+
+  // Relationships
+  relationship: {
+    label: "Relationship",
+    instruction: "Describe this relationship dynamic — who the other person is, the nature of the bond (family, romantic, rival, mentor, etc.), current state of the relationship, and any tension or significance for the story. Reference other characters in the scenario when relevant.",
+    maxSentences: 3
+  },
+
+  // Secrets
+  secret: {
+    label: "Secret",
+    instruction: "Describe a hidden truth, concealed history, or private knowledge this character keeps from others. Explain what the secret is, why they hide it, and what would happen if it were revealed. Ground it in the character's background and relationships.",
+    maxSentences: 3
+  },
+
+  // Fears
+  fear: {
+    label: "Fear",
+    instruction: "Describe this fear — what triggers it, how it manifests in the character's behavior (avoidance, anxiety, overcompensation), and how it connects to their past or current situation. Be specific rather than generic.",
+    maxSentences: 3
+  },
+
+  // Character Goals
+  characterGoal: {
+    label: "Character Goal",
+    instruction: "Describe what this character wants to achieve, their underlying motivation for wanting it, and the obstacles or conflicts standing in their way. Connect the goal to the story premise and the character's personality.",
+    maxSentences: 3
+  },
+
+  // Extra variants for section-specific extras
+  physicalAppearanceExtra: {
+    label: "Physical Detail",
+    instruction: "Describe an additional physical characteristic or detail about this character's appearance. Be specific and visually descriptive. Complement existing physical traits without duplicating them.",
+    maxSentences: 2
+  },
+  currentlyWearingExtra: {
+    label: "Clothing Item",
+    instruction: "Describe an additional clothing item or accessory the character is currently wearing. Include type, color, fit, and style.",
+    maxSentences: 2
+  },
+  preferredClothingExtra: {
+    label: "Preferred Outfit",
+    instruction: "Describe an additional preferred clothing item or outfit for a specific occasion. Include style, aesthetic, and when they'd wear it.",
+    maxSentences: 2
+  },
+  backgroundExtra: {
+    label: "Background Detail",
+    instruction: "Describe an additional background detail about this character — a life experience, cultural element, skill, or contextual fact that enriches their story. Ground it in existing character data.",
+    maxSentences: 2
+  },
+
   // Custom fields (fallback)
   custom: { label: "Custom", instruction: "Provide relevant details for this character trait. Be concise and story-relevant.", maxSentences: 3 }
 };
