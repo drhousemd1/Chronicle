@@ -35,7 +35,7 @@ export const StoryRosterSidebar: React.FC<StoryRosterSidebarProps> = ({
   const sideCharacters = characters.filter((character) => character.characterRole === 'Side');
 
   return (
-    <aside className="w-full xl:w-[clamp(250px,28vw,300px)] flex-shrink-0 bg-[#2a2a2f] shadow-[inset_-1px_0_0_rgba(255,255,255,0.06)] flex flex-col h-auto xl:h-full max-h-[52vh] xl:max-h-none">
+    <aside className="w-full lg:w-[clamp(250px,28vw,300px)] flex-shrink-0 bg-[#2a2a2f] shadow-[inset_-1px_0_0_rgba(255,255,255,0.06)] flex flex-col h-auto lg:h-full max-h-[52vh] lg:max-h-none">
       <div className="p-6 bg-[#3c3e47] shadow-[inset_0_-1px_0_rgba(0,0,0,0.25)]">
         <div className="text-[10px] font-black text-white uppercase tracking-widest">Character Roster</div>
       </div>

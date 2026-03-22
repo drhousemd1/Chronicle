@@ -4184,11 +4184,11 @@ const updatedChar: SideCharacter = {
 
   return (
     <div
-      className={`flex flex-1 min-h-0 min-w-0 h-full w-full flex-col xl:flex-row overflow-hidden relative ${darkMode ? 'bg-slate-900' : ''}`}
+      className={`flex flex-1 min-h-0 min-w-0 h-full w-full flex-col lg:flex-row overflow-hidden relative ${darkMode ? 'bg-slate-900' : ''}`}
       style={{ backgroundColor: chatCanvasColor }}
     >
 
-      <aside className={`w-full xl:w-[clamp(250px,28vw,300px)] max-h-[52vh] xl:max-h-none h-auto xl:h-full flex-shrink-0 border-b xl:border-b-0 xl:border-r border-slate-200 flex flex-col shadow-[inset_-4px_0_12px_rgba(0,0,0,0.02)] z-10 transition-colors relative overflow-hidden ${showBackground ? 'bg-white/90 backdrop-blur-md' : 'bg-white'}`}>
+      <aside className={`w-full lg:w-[clamp(250px,28vw,300px)] max-h-[52vh] lg:max-h-none h-auto lg:h-full flex-shrink-0 border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-col shadow-[inset_-4px_0_12px_rgba(0,0,0,0.02)] z-10 transition-colors relative overflow-hidden ${showBackground ? 'bg-white/90 backdrop-blur-md' : 'bg-white'}`}>
         {/* Sidebar background image layer */}
         {selectedSidebarBgUrl && (
           <div className="absolute inset-0 z-0">
