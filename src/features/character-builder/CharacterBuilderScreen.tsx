@@ -870,9 +870,9 @@ export const CharacterBuilderScreen: React.FC<CharacterBuilderScreenProps> = ({
   const avatarPos = selected.avatarPosition || { x: 50, y: 50 };
 
   return (
-    <div className="flex flex-1 min-h-0 min-w-0 flex-col xl:flex-row overflow-hidden">
+    <div className="flex flex-1 min-h-0 min-w-0 flex-col lg:flex-row overflow-hidden">
       <aside
-        className="w-full xl:w-[320px] xl:max-w-[320px] flex-shrink-0 bg-[#2a2a2f] flex flex-col h-auto xl:h-full max-h-[52vh] xl:max-h-none rounded-none shadow-[0_12px_32px_-2px_rgba(0,0,0,0.55),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]"
+        className="w-full lg:w-[320px] lg:max-w-[320px] flex-shrink-0 bg-[#2a2a2f] flex flex-col h-auto lg:h-full max-h-[52vh] lg:max-h-none rounded-none shadow-[0_12px_32px_-2px_rgba(0,0,0,0.55),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]"
       >
         <div className="p-3">
           <div className={cn(
