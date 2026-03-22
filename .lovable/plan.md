@@ -1,27 +1,27 @@
 
 
-# Fix Chat Interface Layout — Restore Correct Breakpoint
+# Fix Story Builder Sidebar Not Extending Full Height
 
 ## Problem
-The Codex changes changed the responsive breakpoint from `lg` (1024px) to `xl` (1280px) across all three main screens. Your preview viewport is 1130px wide, which is above `lg` but below `xl`, so the sidebar now stacks vertically on top of the chat instead of sitting beside it.
+The WorldTab (Story Builder) is rendered directly inside `<main>` without a height-constraining wrapper. Compare:
+- Characters tab: `<div className="h-full overflow-hidden"><CharactersTab ... /></div>` — works correctly
+- World tab: `<WorldTab ... />` — no wrapper, so the sidebar's `lg:h-full` has no parent height to fill
 
-## What Changed
-All `xl:` responsive classes need to revert to `lg:` in three files:
+The `StoryBuilderScreen` root div uses `flex flex-1 min-h-0` which needs a parent with defined height. Without it, the sidebar collapses to content height only.
 
-### 1. `src/components/chronicle/ChatInterfaceTab.tsx`
-- Line 4187: `flex-col xl:flex-row` → `flex-col lg:flex-row`
-- Line 4191: All `xl:` prefixes → `lg:` (width, max-height, height, border)
+## Fix
 
-### 2. `src/features/story-builder/StoryBuilderScreen.tsx`
-- Line 435: `flex-col xl:flex-row` → `flex-col lg:flex-row`
+### `src/pages/Index.tsx` (~line 2547-2580)
+Wrap the WorldTab in the same pattern used by the characters tab:
 
-### 3. `src/features/story-builder/sidebar/StoryRosterSidebar.tsx`
-- Line 42: All `xl:` prefixes → `lg:` (width, height, max-height)
+```
+<div className="h-full overflow-hidden">
+  <WorldTab ... />
+</div>
+```
 
-### 4. `src/features/character-builder/CharacterBuilderScreen.tsx`
-- Line 873: `flex-col xl:flex-row` → `flex-col lg:flex-row`
-- Line 875: All `xl:` prefixes → `lg:`
+This gives the flex container inside `StoryBuilderScreen` a defined height to fill, which lets the sidebar's `lg:h-full` stretch to the bottom of the page.
 
-## Result
-Sidebar returns to left-side vertical layout at 1024px+ (covers your 1130px viewport). Below 1024px it still stacks for true mobile/tablet.
+## Files Modified
+- `src/pages/Index.tsx` — add `h-full overflow-hidden` wrapper around WorldTab
 
