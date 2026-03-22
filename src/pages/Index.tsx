@@ -2545,38 +2545,39 @@ const IndexContent = () => {
           )}
 
           {tab === "world" && activeData && activeId && (
-            <WorldTab
-              scenarioId={activeId}
-              world={activeData.world}
-              characters={activeData.characters}
-              openingDialog={activeData.story.openingDialog}
-              scenes={activeData.scenes}
-              coverImage={activeCoverImage}
-              coverImagePosition={activeCoverPosition}
-              selectedArtStyle={activeData.selectedArtStyle || 'cinematic-2-5d'}
-              onUpdateWorld={(patch) => handleUpdateActive({ world: { ...activeData.world, ...patch } })}
-              onUpdateOpening={(patch) => handleUpdateActive({ story: { openingDialog: { ...activeData.story.openingDialog, ...patch } } })}
-              onUpdateScenes={(scenes) => handleUpdateActive({ scenes })}
-              onUpdateCoverImage={setActiveCoverImage}
-              onUpdateCoverPosition={setActiveCoverPosition}
-              onUpdateArtStyle={(styleId) => handleUpdateActive({ selectedArtStyle: styleId })}
-              contentThemes={activeContentThemes}
-              onUpdateContentThemes={async (themes) => {
-                setActiveContentThemes(themes);
-                // Auto-save content themes if we have a valid scenario ID
-                if (activeId && user) {
-                  try {
-                    await supabaseData.saveContentThemes(activeId, themes);
-                  } catch (e) {
-                    console.error('Failed to save content themes:', e);
+            <div className="h-full overflow-hidden">
+              <WorldTab
+                scenarioId={activeId}
+                world={activeData.world}
+                characters={activeData.characters}
+                openingDialog={activeData.story.openingDialog}
+                scenes={activeData.scenes}
+                coverImage={activeCoverImage}
+                coverImagePosition={activeCoverPosition}
+                selectedArtStyle={activeData.selectedArtStyle || 'cinematic-2-5d'}
+                onUpdateWorld={(patch) => handleUpdateActive({ world: { ...activeData.world, ...patch } })}
+                onUpdateOpening={(patch) => handleUpdateActive({ story: { openingDialog: { ...activeData.story.openingDialog, ...patch } } })}
+                onUpdateScenes={(scenes) => handleUpdateActive({ scenes })}
+                onUpdateCoverImage={setActiveCoverImage}
+                onUpdateCoverPosition={setActiveCoverPosition}
+                onUpdateArtStyle={(styleId) => handleUpdateActive({ selectedArtStyle: styleId })}
+                contentThemes={activeContentThemes}
+                onUpdateContentThemes={async (themes) => {
+                  setActiveContentThemes(themes);
+                  if (activeId && user) {
+                    try {
+                      await supabaseData.saveContentThemes(activeId, themes);
+                    } catch (e) {
+                      console.error('Failed to save content themes:', e);
+                    }
                   }
-                }
-              }}
-              onCreateCharacter={() => { handleCreateCharacter(); setTab("characters"); }}
-              onOpenLibraryPicker={() => { setIsCharacterPickerOpen(true); }}
-              onSelectCharacter={(id) => { setSelectedCharacterId(id); setTab("characters"); }}
-              storyNameError={storyNameError}
-            />
+                }}
+                onCreateCharacter={() => { handleCreateCharacter(); setTab("characters"); }}
+                onOpenLibraryPicker={() => { setIsCharacterPickerOpen(true); }}
+                onSelectCharacter={(id) => { setSelectedCharacterId(id); setTab("characters"); }}
+                storyNameError={storyNameError}
+              />
+            </div>
           )}
 
           {tab === "conversations" && (
