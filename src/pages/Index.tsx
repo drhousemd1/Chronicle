@@ -50,6 +50,7 @@ import {
   importScenarioFromAny,
   StoryImportMode,
 } from "@/lib/story-transfer";
+import { hasPublishErrors, validateForPublish } from "@/utils/publish-validation";
 import { StoryExportFormatModal, StoryExportFormat } from "@/components/chronicle/StoryExportFormatModal";
 import { StoryImportModeModal } from "@/components/chronicle/StoryImportModeModal";
 import { normalizeBuilderTab, toLegacyBuilderTab } from "@/features/navigation/builder-tabs";
@@ -325,19 +326,20 @@ const IndexContent = () => {
   // Load data from Supabase when authenticated
   useEffect(() => {
     if (!isAuthenticated || !user) return;
+    const currentUser = user;
 
     async function loadData() {
       setIsLoading(true);
       try {
         const [scenarios, characters, conversations, backgrounds, imageLibraryBgId, savedScens, publishedData, profile] = await Promise.all([
-          withTimeout(supabaseData.fetchMyScenariosPaginated(user.id, SCENARIO_PAGE_SIZE, 0), 15000, [], 'fetchMyScenariosPaginated'),
+          withTimeout(supabaseData.fetchMyScenariosPaginated(currentUser.id, SCENARIO_PAGE_SIZE, 0), 15000, [], 'fetchMyScenariosPaginated'),
           withTimeout(supabaseData.fetchCharacterLibrary(), 15000, [], 'fetchCharacterLibrary'),
           withTimeout(supabaseData.fetchConversationRegistry(), 15000, [], 'fetchConversationRegistry'),
-          withTimeout(supabaseData.fetchUserBackgrounds(user.id), 15000, [], 'fetchUserBackgrounds'),
-          withTimeout(supabaseData.getImageLibraryBackground(user.id), 15000, null, 'getImageLibraryBackground'),
-          withTimeout(fetchSavedScenarios(user.id), 15000, [], 'fetchSavedScenarios'),
-          withTimeout(fetchUserPublishedScenarios(user.id), 15000, new Map(), 'fetchUserPublishedScenarios'),
-          withTimeout(supabaseData.fetchUserProfile(user.id), 15000, null, 'fetchUserProfile')
+          withTimeout(supabaseData.fetchUserBackgrounds(currentUser.id), 15000, [], 'fetchUserBackgrounds'),
+          withTimeout(supabaseData.getImageLibraryBackground(currentUser.id), 15000, null, 'getImageLibraryBackground'),
+          withTimeout(fetchSavedScenarios(currentUser.id), 15000, [], 'fetchSavedScenarios'),
+          withTimeout(fetchUserPublishedScenarios(currentUser.id), 15000, new Map(), 'fetchUserPublishedScenarios'),
+          withTimeout(supabaseData.fetchUserProfile(currentUser.id), 15000, null, 'fetchUserProfile')
         ]);
         setRegistry(scenarios);
         setHasMoreScenarios(scenarios.length >= SCENARIO_PAGE_SIZE);
@@ -1797,7 +1799,7 @@ const IndexContent = () => {
 
   return (
     <TooltipProvider>
-      <div className="h-screen flex bg-white overflow-hidden relative">
+      <div className="h-screen min-w-0 flex bg-white overflow-hidden relative">
         {/* Session resume now navigates immediately to chat with loading skeleton - no overlay needed */}
         <aside className={`flex-shrink-0 bg-[#1a1a1a] flex flex-col border-r border-black shadow-2xl z-50 transition-all duration-300 ${sidebarCollapsed ? 'w-[72px]' : 'w-[280px]'}`}>
           <div className={`py-8 ${sidebarCollapsed ? 'px-4' : 'px-8'} transition-all duration-300`}>
@@ -1942,7 +1944,7 @@ const IndexContent = () => {
           </nav>
         </aside>
 
-      <main className="flex-1 flex flex-col overflow-hidden bg-ghost-white">
+      <main className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden bg-ghost-white">
         {(tab === "characters" || tab === "world" || tab === "library" || tab === "conversations" || tab === "hub" || tab === "image_library" || tab === "gallery" || tab === "admin" || tab === "account") && (
           <header className="flex flex-shrink-0 flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-[rgba(248,250,252,0.3)] px-4 py-3 shadow-sm lg:px-8">
             <div className="flex min-w-0 flex-wrap items-center gap-4">
@@ -2152,7 +2154,6 @@ const IndexContent = () => {
                     onClick={async () => {
                       if (!activeId || !activeData) return;
                       // Run validation before saving to DB
-                      const { validateForPublish, hasPublishErrors } = await import('@/utils/publish-validation');
                       const errors = validateForPublish({
                         scenarioTitle: activeData.world.core.scenarioName || '',
                         world: activeData.world,
@@ -2664,8 +2665,14 @@ const IndexContent = () => {
                 }
               }}
               onUpdateUiSettings={(patch) => {
-                const currentSettings = activeData?.uiSettings || createDefaultScenarioData().uiSettings;
-                const merged = { ...currentSettings, ...patch };
+                const currentSettings = activeData?.uiSettings ?? createDefaultScenarioData().uiSettings!;
+                const merged: NonNullable<ScenarioData["uiSettings"]> = {
+                  ...currentSettings,
+                  ...patch,
+                  showBackgrounds: patch.showBackgrounds ?? currentSettings.showBackgrounds,
+                  transparentBubbles: patch.transparentBubbles ?? currentSettings.transparentBubbles,
+                  darkMode: patch.darkMode ?? currentSettings.darkMode,
+                };
                 handleUpdateActive({ uiSettings: merged });
                 // Persist to DB (fire-and-forget)
                 if (activeId) {

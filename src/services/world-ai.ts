@@ -2,7 +2,13 @@ import { WorldCore } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 
 // Only include string fields that can be AI-enhanced
-export type EnhanceableWorldFields = Extract<keyof WorldCore, 'scenarioName' | 'briefDescription' | 'storyPremise' | 'factions' | 'locations' | 'historyTimeline' | 'plotHooks' | 'dialogFormatting'> | 'customContent';
+export type EnhanceableWorldFields =
+  | Extract<keyof WorldCore, 'scenarioName' | 'briefDescription' | 'storyPremise' | 'factions' | 'locations' | 'historyTimeline' | 'plotHooks' | 'dialogFormatting'>
+  | 'customContent'
+  | 'worldCustomField'
+  | 'storyGoalOutcome'
+  | 'storyGoalStep'
+  | 'arcPhaseOutcome';
 
 // Field-specific prompts that enforce structured expansion
 const FIELD_PROMPTS: Record<EnhanceableWorldFields, { label: string; instruction: string; maxSentences: number }> = {
@@ -50,6 +56,26 @@ const FIELD_PROMPTS: Record<EnhanceableWorldFields, { label: string; instruction
     label: "Custom Content",
     instruction: "Expand and enrich this world-building content based on the provided context. Be specific and narrative-relevant. Preserve the existing content's intent while adding depth.",
     maxSentences: 5
+  },
+  worldCustomField: {
+    label: "World Custom Field",
+    instruction: "Enhance this custom world field with concrete setting detail. Keep the existing intent, avoid generic filler, and tie the content to the active story premise.",
+    maxSentences: 4
+  },
+  storyGoalOutcome: {
+    label: "Story Goal Outcome",
+    instruction: "Describe the desired end state for this story goal. Explain what changes in the world or narrative if this outcome is achieved.",
+    maxSentences: 3
+  },
+  storyGoalStep: {
+    label: "Story Goal Step",
+    instruction: "Write one specific step that progresses the story goal. Keep it actionable, plot-relevant, and consistent with existing world context.",
+    maxSentences: 2
+  },
+  arcPhaseOutcome: {
+    label: "Arc Phase Outcome",
+    instruction: "Describe the desired outcome for this phase of the arc and how it affects the next phase or branch.",
+    maxSentences: 3
   }
 };
 
@@ -164,5 +190,5 @@ export async function aiEnhanceWorldField(
  * Get the field configuration for UI display
  */
 export function getFieldConfig(fieldName: keyof WorldCore) {
-  return FIELD_PROMPTS[fieldName];
+  return FIELD_PROMPTS[fieldName as EnhanceableWorldFields];
 }

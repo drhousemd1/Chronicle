@@ -27,7 +27,10 @@ import type {
   CharacterKeyLifeEvents,
   CharacterRelationships,
   CharacterSecrets,
-  CharacterFears
+  CharacterFears,
+  CharacterPersonality,
+  CharacterExtraRow,
+  PersonalityTrait
 } from '@/types';
 import { 
   defaultPhysicalAppearance, 
@@ -158,6 +161,89 @@ function appPreferredClothingToDb(app: PreferredClothing) {
   };
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value);
+
+const asString = (value: unknown): string => (typeof value === 'string' ? value : '');
+
+const toTimestamp = (value: string | number | Date | null | undefined): number =>
+  value ? new Date(value).getTime() : Date.now();
+
+const asExtras = (value: unknown): CharacterExtraRow[] | undefined => {
+  if (!Array.isArray(value)) return undefined;
+  const extras = value
+    .map((entry, index) => {
+      if (!isRecord(entry)) return null;
+      const label = asString(entry.label);
+      const rowValue = asString(entry.value);
+      if (!label && !rowValue) return null;
+      return {
+        id: asString(entry.id) || `extra-${index}`,
+        label,
+        value: rowValue,
+      };
+    })
+    .filter((entry): entry is CharacterExtraRow => entry !== null);
+  return extras.length ? extras : undefined;
+};
+
+const asPersonalityTraits = (value: unknown, prefix: string): PersonalityTrait[] => {
+  if (!Array.isArray(value)) return [];
+  return value.reduce<PersonalityTrait[]>((acc, entry, index) => {
+    if (!isRecord(entry)) return acc;
+    const rawFlexibility = entry.flexibility;
+    const flexibility: PersonalityTrait['flexibility'] =
+      rawFlexibility === 'rigid' || rawFlexibility === 'normal' || rawFlexibility === 'flexible'
+        ? rawFlexibility
+        : 'normal';
+    const rawScoreTrend = entry.scoreTrend;
+    const scoreTrend: PersonalityTrait['scoreTrend'] =
+      rawScoreTrend === 'rising' || rawScoreTrend === 'falling' || rawScoreTrend === 'stable'
+        ? rawScoreTrend
+        : undefined;
+    const rawAdherence = entry.adherenceScore;
+    const trait: PersonalityTrait = {
+      id: asString(entry.id) || `${prefix}-${index}`,
+      label: asString(entry.label),
+      value: asString(entry.value),
+      flexibility,
+      adherenceScore: typeof rawAdherence === 'number' ? rawAdherence : undefined,
+      scoreTrend,
+    };
+    acc.push(trait);
+    return acc;
+  }, []);
+};
+
+const asCharacterPersonality = (value: unknown): CharacterPersonality | undefined => {
+  if (!isRecord(value)) return undefined;
+  return {
+    splitMode: typeof value.splitMode === 'boolean' ? value.splitMode : false,
+    traits: asPersonalityTraits(value.traits, 'trait'),
+    outwardTraits: asPersonalityTraits(value.outwardTraits, 'outward'),
+    inwardTraits: asPersonalityTraits(value.inwardTraits, 'inward'),
+  };
+};
+
+const asCharacterBackground = (value: unknown): CharacterBackground | undefined => {
+  if (!isRecord(value)) return undefined;
+  return {
+    ...defaultCharacterBackground,
+    jobOccupation: asString(value.jobOccupation ?? value.job_occupation),
+    educationLevel: asString(value.educationLevel ?? value.education_level),
+    residence: asString(value.residence),
+    hobbies: asString(value.hobbies),
+    financialStatus: asString(value.financialStatus ?? value.financial_status),
+    motivation: asString(value.motivation),
+    _extras: asExtras(value._extras),
+  };
+};
+
+const asExtrasSection = <T extends { _extras?: CharacterExtraRow[] }>(value: unknown): T | undefined => {
+  if (!isRecord(value)) return undefined;
+  return { _extras: asExtras(value._extras) } as T;
+};
+
 function dbToCharacter(row: any): Character {
   return {
     id: row.id,
@@ -177,14 +263,14 @@ function dbToCharacter(row: any): Character {
     physicalAppearance: dbPhysicalAppearanceToApp(row.physical_appearance),
     currentlyWearing: dbCurrentlyWearingToApp(row.currently_wearing),
     preferredClothing: dbPreferredClothingToApp(row.preferred_clothing),
-    personality: row.personality || undefined,
+    personality: asCharacterPersonality(row.personality),
     goals: row.goals || undefined,
-    background: row.background || undefined,
-    tone: row.tone || undefined,
-    keyLifeEvents: row.key_life_events || undefined,
-    relationships: row.relationships || undefined,
-    secrets: row.secrets || undefined,
-    fears: row.fears || undefined,
+    background: asCharacterBackground(row.background),
+    tone: asExtrasSection<CharacterTone>(row.tone),
+    keyLifeEvents: asExtrasSection<CharacterKeyLifeEvents>(row.key_life_events),
+    relationships: asExtrasSection<CharacterRelationships>(row.relationships),
+    secrets: asExtrasSection<CharacterSecrets>(row.secrets),
+    fears: asExtrasSection<CharacterFears>(row.fears),
     sections: row.sections || [],
     createdAt: new Date(row.created_at).getTime(),
     updatedAt: new Date(row.updated_at).getTime()
@@ -1046,8 +1132,8 @@ export async function fetchConversationRegistry(): Promise<ConversationMetadata[
     conversationTitle: conv.title,
     lastMessage: '',
     messageCount: 0,
-    createdAt: new Date(conv.created_at).getTime(),
-    updatedAt: new Date(conv.updated_at).getTime(),
+    createdAt: toTimestamp(conv.created_at),
+    updatedAt: toTimestamp(conv.updated_at),
     creatorName: null
   }));
 }
@@ -1260,13 +1346,13 @@ export async function fetchSessionStates(conversationId: string): Promise<Charac
     controlledBy: row.controlled_by || undefined,
     characterRole: row.character_role || undefined,
     // Change 4: Read 7 missing section fields from DB
-    personality: row.personality || undefined,
-    background: row.background || undefined,
-    tone: row.tone || undefined,
-    keyLifeEvents: row.key_life_events || undefined,
-    relationships: row.relationships || undefined,
-    secrets: row.secrets || undefined,
-    fears: row.fears || undefined,
+    personality: asCharacterPersonality(row.personality),
+    background: asCharacterBackground(row.background),
+    tone: asExtrasSection<CharacterTone>(row.tone),
+    keyLifeEvents: asExtrasSection<CharacterKeyLifeEvents>(row.key_life_events),
+    relationships: asExtrasSection<CharacterRelationships>(row.relationships),
+    secrets: asExtrasSection<CharacterSecrets>(row.secrets),
+    fears: asExtrasSection<CharacterFears>(row.fears),
     createdAt: new Date(row.created_at).getTime(),
     updatedAt: new Date(row.updated_at).getTime()
   }));
@@ -1287,6 +1373,14 @@ export async function createSessionState(
       current_mood: character.currentMood || '',
       physical_appearance: appPhysicalAppearanceToDb(character.physicalAppearance || defaultPhysicalAppearance),
       currently_wearing: appCurrentlyWearingToDb(character.currentlyWearing || defaultCurrentlyWearing),
+      preferred_clothing: appPreferredClothingToDb(character.preferredClothing || defaultPreferredClothing),
+      personality: character.personality || null,
+      background: character.background || {},
+      tone: character.tone || {},
+      key_life_events: character.keyLifeEvents || {},
+      relationships: character.relationships || {},
+      secrets: character.secrets || {},
+      fears: character.fears || {},
       goals: character.goals || []
     })
     .select()
@@ -1303,9 +1397,17 @@ export async function createSessionState(
     currentMood: data.current_mood || '',
     physicalAppearance: dbPhysicalAppearanceToApp(data.physical_appearance),
     currentlyWearing: dbCurrentlyWearingToApp(data.currently_wearing),
+    preferredClothing: data.preferred_clothing ? dbPreferredClothingToApp(data.preferred_clothing) : undefined,
+    personality: asCharacterPersonality(data.personality),
+    background: asCharacterBackground(data.background),
+    tone: asExtrasSection<CharacterTone>(data.tone),
+    keyLifeEvents: asExtrasSection<CharacterKeyLifeEvents>(data.key_life_events),
+    relationships: asExtrasSection<CharacterRelationships>(data.relationships),
+    secrets: asExtrasSection<CharacterSecrets>(data.secrets),
+    fears: asExtrasSection<CharacterFears>(data.fears),
     goals: (data.goals as any[]) || [],
-    createdAt: new Date(data.created_at).getTime(),
-    updatedAt: new Date(data.updated_at).getTime()
+    createdAt: toTimestamp(data.created_at),
+    updatedAt: toTimestamp(data.updated_at)
   };
 }
 
@@ -1470,7 +1572,7 @@ export async function createUserBackground(userId: string, imageUrl: string): Pr
     isSelected: data.is_selected || false,
     overlayColor: (data as any).overlay_color || 'black',
     overlayOpacity: (data as any).overlay_opacity ?? 10,
-    createdAt: new Date(data.created_at).getTime()
+    createdAt: toTimestamp(data.created_at)
   };
 }
 
@@ -1639,7 +1741,7 @@ export async function createSidebarBackground(userId: string, imageUrl: string):
     isSelected: data.is_selected || false,
     overlayColor: (data as any).overlay_color || 'black',
     overlayOpacity: (data as any).overlay_opacity ?? 10,
-    createdAt: new Date(data.created_at).getTime()
+    createdAt: toTimestamp(data.created_at)
   };
 }
 

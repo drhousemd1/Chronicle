@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Eye, Heart, Bookmark, Play, FileText, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { resizeImage } from '@/utils';
+import { compressAndUpload, resizeImage } from '@/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AvatarActionButtons } from '@/components/chronicle/AvatarActionButtons';
 import { AvatarGenerationModal } from '@/components/chronicle/AvatarGenerationModal';
@@ -206,8 +206,6 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({ user }) => {
     if (!user) return;
     setIsUploadingAvatar(true);
     try {
-      // Compress and upload via utility
-      const { compressAndUpload } = await import('@/utils');
       const publicUrl = await compressAndUpload(imageUrl, 'avatars', user.id, 512, 512, 0.85);
       const { error: updateError } = await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
       if (updateError) throw updateError;

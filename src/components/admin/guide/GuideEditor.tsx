@@ -110,7 +110,10 @@ const SearchBar: React.FC<{
       value={searchQuery}
       onChange={(e) => onSearchChange(e.target.value)}
       onKeyDown={(e) => {
-        if (e.key === 'Enter') { e.shiftKey ? onPrev() : onNext(); }
+        if (e.key === 'Enter') {
+          if (e.shiftKey) onPrev();
+          else onNext();
+        }
         if (e.key === 'Escape') onClose();
       }}
       placeholder="Search..."

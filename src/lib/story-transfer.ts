@@ -642,7 +642,7 @@ const getHeadingText = (line: string): string | null => {
     const candidate = bulletMatch[1].trim();
     if (!candidate) return null;
     if (!candidate.includes(':')) return candidate;
-    if (/^character\s*[:\-]/i.test(candidate)) return candidate;
+    if (/^character\s*[:-]/i.test(candidate)) return candidate;
   }
   const colonHeadingMatch = line.match(/^([^:]{2,140})\s*:\s*$/);
   if (colonHeadingMatch) return colonHeadingMatch[1].trim();
@@ -711,7 +711,7 @@ const parseNamedCharacterSectionHeading = (
     const section = mapCharacterSectionHeading(plainMatch[2]);
     return { name: clean(plainMatch[1]), key: section.key, customTitle: section.customTitle };
   }
-  const directMatch = cleanedHeading.match(/^(.*?)\s*[:\-]\s*(basics|background|appearance|physical appearance|personality|tone|currently wearing|preferred clothing|clothing preference|fears|relationships|secrets|key life events|character goals|goals|kinks|fantasies)$/i);
+  const directMatch = cleanedHeading.match(/^(.*?)\s*[:-]\s*(basics|background|appearance|physical appearance|personality|tone|currently wearing|preferred clothing|clothing preference|fears|relationships|secrets|key life events|character goals|goals|kinks|fantasies)$/i);
   if (directMatch) {
     const section = mapCharacterSectionHeading(directMatch[2]);
     return { name: clean(directMatch[1]), key: section.key, customTitle: section.customTitle };
@@ -829,7 +829,7 @@ const parseTextToPayload = (text: string, warnings: string[]): { payload: Transf
         continue;
       }
 
-      const characterHeading = headingValue.match(/^character\s*[:\-]\s*(.+)$/i) || headingValue.match(/^character\s+(.+)$/i);
+      const characterHeading = headingValue.match(/^character\s*[:-]\s*(.+)$/i) || headingValue.match(/^character\s+(.+)$/i);
       if (characterHeading) {
         flushCharacter();
         mode = 'characters';

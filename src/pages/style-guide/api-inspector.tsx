@@ -1,14 +1,16 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useModelSettings } from "@/contexts/ModelSettingsContext";
 
 const ApiInspectorPage: React.FC = () => {
   const navigate = useNavigate();
+  const { modelId } = useModelSettings();
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [editActive, setEditActive] = useState(false);
   const [saveEnabled, setSaveEnabled] = useState(false);
 
-  const postToIframe = useCallback((type: string) => {
-    iframeRef.current?.contentWindow?.postMessage({ type }, "*");
+  const postToIframe = useCallback((type: string, payload: Record<string, unknown> = {}) => {
+    iframeRef.current?.contentWindow?.postMessage({ type, ...payload }, "*");
   }, []);
 
   useEffect(() => {
@@ -21,6 +23,10 @@ const ApiInspectorPage: React.FC = () => {
     window.addEventListener("message", handler);
     return () => window.removeEventListener("message", handler);
   }, []);
+
+  useEffect(() => {
+    postToIframe("setModel", { modelId });
+  }, [modelId, postToIframe]);
 
   const btnBase =
     "inline-flex items-center justify-center rounded-xl px-5 h-9 text-[10px] font-bold uppercase tracking-wide border transition-all cursor-pointer";
@@ -83,6 +89,7 @@ const ApiInspectorPage: React.FC = () => {
         ref={iframeRef}
         title="API Call Inspector"
         src="/api-call-inspector-chronicle.html"
+        onLoad={() => postToIframe("setModel", { modelId })}
         className="flex-1 w-full border-none block"
       />
     </div>

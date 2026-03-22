@@ -309,6 +309,16 @@ const CHARACTER_FIELD_PROMPTS: Record<string, { label: string; instruction: stri
     instruction: "Describe what this character wants to achieve, their underlying motivation for wanting it, and the obstacles or conflicts standing in their way. Connect the goal to the story premise and the character's personality.",
     maxSentences: 3
   },
+  characterGoalOutcome: {
+    label: "Character Goal Outcome",
+    instruction: "Describe what successful completion of this character goal looks like. Include the desired end state, why it matters to the character, and what changes if they achieve it.",
+    maxSentences: 3
+  },
+  characterGoalStep: {
+    label: "Character Goal Step",
+    instruction: "Write one concrete, actionable step that advances this character goal. Keep it specific, grounded in the story context, and realistic for this character.",
+    maxSentences: 2
+  },
 
   // Extra variants for section-specific extras
   physicalAppearanceExtra: {
@@ -336,6 +346,29 @@ const CHARACTER_FIELD_PROMPTS: Record<string, { label: string; instruction: stri
   custom: { label: "Custom", instruction: "Provide relevant details for this character trait. Be concise and story-relevant.", maxSentences: 3 }
 };
 
+function resolveCharacterFieldName(fieldName: string): string {
+  if (fieldName.startsWith('cw_')) return fieldName.slice(3);
+  if (fieldName.startsWith('pc_')) return fieldName.slice(3);
+  if (fieldName.startsWith('goal_outcome_')) return 'characterGoalOutcome';
+  if (fieldName.startsWith('goal_step_')) return 'characterGoalStep';
+
+  if (fieldName.startsWith('extra_tone')) return 'tone';
+  if (fieldName.startsWith('extra_kle')) return 'keyLifeEvent';
+  if (fieldName.startsWith('extra_rel')) return 'relationship';
+  if (fieldName.startsWith('extra_sec')) return 'secret';
+  if (fieldName.startsWith('extra_fear')) return 'fear';
+  if (fieldName.startsWith('extra_pa')) return 'physicalAppearanceExtra';
+  if (fieldName.startsWith('extra_cw')) return 'currentlyWearingExtra';
+  if (fieldName.startsWith('extra_pc')) return 'preferredClothingExtra';
+  if (fieldName.startsWith('extra_bg')) return 'backgroundExtra';
+  if (fieldName.startsWith('bg_')) return fieldName.slice(3);
+  if (fieldName.startsWith('personality_outward_')) return 'personality_outward';
+  if (fieldName.startsWith('personality_inward_')) return 'personality_inward';
+  if (fieldName.startsWith('personality_')) return 'personality';
+
+  return fieldName;
+}
+
 /**
  * Build a structured expansion prompt for character field enhancement
  */
@@ -347,21 +380,7 @@ function buildCharacterFieldPrompt(
   customLabel?: string,
   mode: 'precise' | 'detailed' = 'detailed'
 ): string {
-  // Map prefixed field names to their prompt config
-  const resolvedFieldName = fieldName.startsWith('extra_tone') ? 'tone'
-    : fieldName.startsWith('extra_kle') ? 'keyLifeEvent'
-    : fieldName.startsWith('extra_rel') ? 'relationship'
-    : fieldName.startsWith('extra_sec') ? 'secret'
-    : fieldName.startsWith('extra_fear') ? 'fear'
-    : fieldName.startsWith('extra_pa') ? 'physicalAppearanceExtra'
-    : fieldName.startsWith('extra_cw') ? 'currentlyWearingExtra'
-    : fieldName.startsWith('extra_pc') ? 'preferredClothingExtra'
-    : fieldName.startsWith('extra_bg') ? 'backgroundExtra'
-    : fieldName.startsWith('bg_') ? fieldName.slice(3)
-    : fieldName.startsWith('personality_outward_') ? 'personality_outward'
-    : fieldName.startsWith('personality_inward_') ? 'personality_inward'
-    : fieldName.startsWith('personality_') ? 'personality'
-    : fieldName;
+  const resolvedFieldName = resolveCharacterFieldName(fieldName);
   const fieldConfig = CHARACTER_FIELD_PROMPTS[resolvedFieldName] || CHARACTER_FIELD_PROMPTS.custom;
   const isGenerateBoth = customLabel?.startsWith(GENERATE_BOTH_PREFIX);
   const sectionHint = isGenerateBoth ? customLabel!.slice(GENERATE_BOTH_PREFIX.length) : '';
@@ -966,6 +985,12 @@ function extractJsonFromResponse(raw: string): any | null {
     return null;
   }
 
+  const replaceControlCharacters = (value: string): string =>
+    Array.from(value, (char) => {
+      const code = char.charCodeAt(0);
+      return code <= 31 || code === 127 ? ' ' : char;
+    }).join('');
+
   // 1. Strip markdown code fences
   let cleaned = raw.replace(/```(?:json)?\s*/gi, '').replace(/```\s*/g, '');
 
@@ -976,8 +1001,8 @@ function extractJsonFromResponse(raw: string): any | null {
   const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
   if (jsonMatch) {
     let candidate = jsonMatch[0]
-      .replace(/,\s*([}\]])/g, '$1')           // trailing commas
-      .replace(/[\x00-\x1F\x7F]/g, ' ');       // control chars
+      .replace(/,\s*([}\]])/g, '$1');          // trailing commas
+    candidate = replaceControlCharacters(candidate);
     try { return JSON.parse(candidate); } catch (_) { /* continue */ }
   }
 
@@ -992,8 +1017,8 @@ function extractJsonFromResponse(raw: string): any | null {
     }
     if (end !== -1) {
       let slice = raw.substring(start, end + 1)
-        .replace(/,\s*([}\]])/g, '$1')
-        .replace(/[\x00-\x1F\x7F]/g, ' ');
+        .replace(/,\s*([}\]])/g, '$1');
+      slice = replaceControlCharacters(slice);
       try { return JSON.parse(slice); } catch (_) { /* continue */ }
     }
   }
@@ -1068,6 +1093,7 @@ export async function aiFillCharacter(
       if (isNonEmpty(result.basics.name) && emptyFields.basics.includes("name")) { patch.name = result.basics.name; fieldsApplied++; }
       if (isNonEmpty(result.basics.age) && emptyFields.basics.includes("age")) { patch.age = result.basics.age; fieldsApplied++; }
       if (isNonEmpty(result.basics.sexType) && emptyFields.basics.includes("sexType")) { patch.sexType = result.basics.sexType; fieldsApplied++; }
+      if (isNonEmpty(result.basics.sexualOrientation) && emptyFields.basics.includes("sexualOrientation")) { patch.sexualOrientation = result.basics.sexualOrientation; fieldsApplied++; }
       if (isNonEmpty(result.basics.roleDescription) && emptyFields.basics.includes("roleDescription")) { patch.roleDescription = result.basics.roleDescription; fieldsApplied++; }
       if (isNonEmpty(result.basics.location) && emptyFields.basics.includes("location")) { patch.location = result.basics.location; fieldsApplied++; }
       if (isNonEmpty(result.basics.currentMood) && emptyFields.basics.includes("currentMood")) { patch.currentMood = result.basics.currentMood; fieldsApplied++; }
@@ -1228,6 +1254,7 @@ export async function aiGenerateCharacter(
         if (fill.basics.name && emptyFields.basics.includes("name")) patch.name = fill.basics.name;
         if (fill.basics.age && emptyFields.basics.includes("age")) patch.age = fill.basics.age;
         if (fill.basics.sexType && emptyFields.basics.includes("sexType")) patch.sexType = fill.basics.sexType;
+        if (fill.basics.sexualOrientation && emptyFields.basics.includes("sexualOrientation")) patch.sexualOrientation = fill.basics.sexualOrientation;
         if (fill.basics.roleDescription && emptyFields.basics.includes("roleDescription")) patch.roleDescription = fill.basics.roleDescription;
         if (fill.basics.location && emptyFields.basics.includes("location")) patch.location = fill.basics.location;
         if (fill.basics.currentMood && emptyFields.basics.includes("currentMood")) patch.currentMood = fill.basics.currentMood;

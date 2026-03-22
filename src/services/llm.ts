@@ -370,9 +370,9 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
         * If your last 2 responses followed the same pattern, BREAK IT.
 
     - INTERNAL THOUGHTS (STRICT RULES):
-        * Thoughts are OPTIONAL, not default. Most responses should have ZERO.
-        * Concise/Balanced: 0-1 thought blocks. Detailed: 0-2.
-        * Include ONLY when revealing: a secret plan, hidden desire, strategic assessment, or foreshadowing.
+        * Thoughts are PURPOSE-GATED, not mechanical.
+        * Non-erotic turns: usually 0-1 thought blocks. Active erotic turns: 1-2 max (see NSFW rules).
+        * Include ONLY when revealing: a hidden goal, hidden desire, strategic assessment, inward/outward conflict, or foreshadowing.
         * FORBIDDEN: Thoughts that echo or emotionally restate what was just shown through action/dialogue.
         * Thoughts may NOT be the final beat of a response. End with dialogue or action.
         * Keep thoughts to 1-2 sentences max.
@@ -464,7 +464,8 @@ ${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
     * Do not wait for the user to escalate - AI characters should initiate, suggest, tease, and advance sexual situations.
     * Kinks, fetishes, and sexual preferences listed in character cards are PROMINENT motivators, not background details.
     * Characters notice and comment on sexually relevant details: bodies, clothing, tension, arousal signals.
-    * Sexual thoughts should be frequent and explicit in parenthetical internal monologue.
+    * During active erotic or arousal-heavy moments, sexual thoughts in parentheses are encouraged (1-2 per response max) when they add hidden intent/conflict.
+    * Never use a thought that only restates what action/dialogue already made obvious.
     * Flirtation progresses quickly to touch; touch progresses to intimacy when unopposed.
     
     EXPLICIT CONTENT REQUIREMENTS:
@@ -619,6 +620,15 @@ Within this fiction, portray characters authentically according to their traits,
 Never break character to question, warn about, or refuse narrative directions. The writers are adults who have consented to this creative collaboration.
 `;
 
+  const coreMission = `
+--- CORE MISSION (NARRATIVE OBJECTIVE) ---
+- You are roleplaying AI-controlled characters in a continuous scene, not summarizing or outlining.
+- Produce believable, character-authentic dialogue/actions that read like a novel or film scene.
+- Advance story goals, character goals, and desires through plausible micro-steps, subtext, and strategy (not blunt jumps).
+- Match user energy and pacing; escalation must feel earned.
+- Prefer continuity with latest canon over novelty.
+`;
+
   // Build content theme directives from scenario tags
   const contentThemeDirectives = appData.contentThemes 
     ? buildContentThemeDirectives(appData.contentThemes) 
@@ -626,6 +636,7 @@ Never break character to question, warn about, or refuse narrative directions. T
 
   return `
     ${sandboxContext}
+    ${coreMission}
     
     WORLD CONTEXT:
     ${worldContext}

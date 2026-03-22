@@ -4,7 +4,7 @@ import { CustomContentTypeModal } from '@/components/chronicle/CustomContentType
 import { TabFieldNavigator } from '@/components/chronicle/TabFieldNavigator';
 import { Button } from '@/components/chronicle/UI';
 import { Icons } from '@/constants';
-import { uid, now, clamp, resizeImage } from '@/utils';
+import { uid, now, clamp, compressAndUpload, resizeImage } from '@/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { uploadAvatar, dataUrlToBlob, updateNavButtonImages, loadNavButtonImages } from '@/services/supabase-data';
 import { AvatarGenerationModal } from '@/components/chronicle/AvatarGenerationModal';
@@ -75,6 +75,7 @@ import {
   mapPreviewToTilePosition,
   Size2D,
 } from '@/features/shared-builder/utils/image-position';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface CharacterBuilderScreenProps {
   appData: ScenarioData;
@@ -402,7 +403,6 @@ export const CharacterBuilderScreen: React.FC<CharacterBuilderScreenProps> = ({
     // Upload original quality image to storage (CDN handles fast delivery)
     if (imageToSave && imageToSave.src.startsWith('data:') && user) {
       try {
-        const { supabase } = await import('@/integrations/supabase/client');
         const response = await fetch(imageToSave.src);
         const blob = await response.blob();
         const filename = `${user.id}/nav-btn-${editingNavKey}-${Date.now()}.${blob.type.includes('png') ? 'png' : 'jpg'}`;
@@ -520,7 +520,6 @@ export const CharacterBuilderScreen: React.FC<CharacterBuilderScreenProps> = ({
     if (selected) {
       let finalUrl = imageUrl;
       try {
-        const { compressAndUpload } = await import('@/utils');
         finalUrl = await compressAndUpload(imageUrl, 'avatars', user?.id || 'anon', 512, 512, 0.85);
       } catch { /* use original */ }
       onUpdate(selected.id, {
@@ -871,10 +870,9 @@ export const CharacterBuilderScreen: React.FC<CharacterBuilderScreenProps> = ({
   const avatarPos = selected.avatarPosition || { x: 50, y: 50 };
 
   return (
-    <div className="flex flex-1 h-full overflow-hidden">
+    <div className="flex flex-1 min-h-0 min-w-0 flex-col xl:flex-row overflow-hidden">
       <aside
-        className="flex-shrink-0 bg-[#2a2a2f] flex flex-col h-full rounded-none shadow-[0_12px_32px_-2px_rgba(0,0,0,0.55),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]"
-        style={{ width: CHARACTER_NAV_SIDEBAR_WIDTH }}
+        className="w-full xl:w-[320px] xl:max-w-[320px] flex-shrink-0 bg-[#2a2a2f] flex flex-col h-auto xl:h-full max-h-[52vh] xl:max-h-none rounded-none shadow-[0_12px_32px_-2px_rgba(0,0,0,0.55),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]"
       >
         <div className="p-3">
           <div className={cn(
@@ -972,7 +970,7 @@ export const CharacterBuilderScreen: React.FC<CharacterBuilderScreenProps> = ({
         </div>
       </aside>
 
-      <TabFieldNavigator className="flex-1 overflow-y-auto scrollbar-thin bg-[#1a1b20]">
+      <TabFieldNavigator className="flex-1 min-h-0 min-w-0 overflow-y-auto scrollbar-thin bg-[#1a1b20]">
         <div className="p-4 lg:p-10 max-w-6xl mx-auto space-y-6 pb-20">
           {isTraitVisible('basics') && (
             <div className="w-full bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">

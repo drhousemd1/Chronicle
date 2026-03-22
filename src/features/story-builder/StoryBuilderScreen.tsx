@@ -6,7 +6,7 @@ import { EnhanceableWorldFields } from '@/services/world-ai';
 import { AutoResizeTextarea } from '@/components/chronicle/AutoResizeTextarea';
 import { Button, Card } from '@/components/chronicle/UI';
 import { Icons } from '@/constants';
-import { uid, now, resizeImage, uuid, clamp } from '@/utils';
+import { uid, now, resizeImage, uuid, clamp, compressAndUpload } from '@/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { uploadSceneImage, uploadCoverImage, dataUrlToBlob } from '@/services/supabase-data';
 import { supabase } from '@/integrations/supabase/client';
@@ -102,7 +102,7 @@ export const StoryBuilderScreen: React.FC<StoryBuilderScreenProps> = ({
   const [showSceneGenModal, setShowSceneGenModal] = useState(false);
   const [isGeneratingScene, setIsGeneratingScene] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [enhancingField, setEnhancingField] = useState<EnhanceableWorldFields | null>(null);
+  const [enhancingField, setEnhancingField] = useState<string | null>(null);
   const [enhanceModeTarget, setEnhanceModeTarget] = useState<EnhanceableWorldFields | null>(null);
   const [pendingDeleteCover, setPendingDeleteCover] = useState(false);
   const [pendingDeleteSceneId, setPendingDeleteSceneId] = useState<string | null>(null);
@@ -182,6 +182,14 @@ export const StoryBuilderScreen: React.FC<StoryBuilderScreenProps> = ({
     onUpdateWorld({ core: { ...world.core, ...patch } });
   };
 
+  const resolveWorldEnhanceField = (fieldKey: string): EnhanceableWorldFields => {
+    if (fieldKey.startsWith('story_outcome_')) return 'storyGoalOutcome';
+    if (fieldKey.startsWith('story_step_')) return 'storyGoalStep';
+    if (fieldKey.startsWith('phase_outcome_')) return 'arcPhaseOutcome';
+    if (fieldKey.startsWith('world_custom_')) return 'worldCustomField';
+    return 'customContent';
+  };
+
   // AI enhancement handler for World Core fields
   const handleEnhanceField = async (fieldName: EnhanceableWorldFields, mode: EnhanceMode = 'detailed') => {
     if (!modelId) {
@@ -191,9 +199,13 @@ export const StoryBuilderScreen: React.FC<StoryBuilderScreenProps> = ({
     
     setEnhancingField(fieldName);
     try {
+      const currentValue =
+        fieldName in world.core
+          ? ((world.core[fieldName as keyof WorldCore] as string | undefined) ?? '')
+          : '';
       const enhanced = await aiEnhanceWorldField(
         fieldName,
-        (world.core[fieldName] as string) || '',
+        currentValue,
         world.core,
         modelId,
         mode
@@ -420,7 +432,7 @@ export const StoryBuilderScreen: React.FC<StoryBuilderScreenProps> = ({
   const noUserCharacterError = publishErrors.noUserCharacter;
 
   return (
-    <div className="flex flex-1 h-full overflow-hidden">
+    <div className="flex flex-1 min-h-0 min-w-0 flex-col xl:flex-row overflow-hidden">
       <StoryRosterSidebar
         characters={characters}
         onSelectCharacter={onSelectCharacter}
@@ -436,7 +448,7 @@ export const StoryBuilderScreen: React.FC<StoryBuilderScreenProps> = ({
         noUserCharacterError={noUserCharacterError}
       />
 
-      <TabFieldNavigator className="flex-1 overflow-y-auto scrollbar-thin bg-ghost-white">
+      <TabFieldNavigator className="flex-1 min-h-0 min-w-0 overflow-y-auto scrollbar-thin bg-ghost-white">
         <div className="p-4 lg:p-10 max-w-4xl mx-auto space-y-12 pb-20">
           <div className="mb-2">
             <h1 className="text-2xl lg:text-4xl font-black text-[hsl(var(--ui-surface-2))] tracking-tight">Story Setup</h1>
@@ -700,9 +712,9 @@ className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border border-black/3
                                       onClick={() => {
                                         const fieldKey = `world_custom_${item.id}`;
                                         if (enhancingField) return;
-                                        setEnhancingField(fieldKey as any);
+                                        setEnhancingField(fieldKey);
                                         aiEnhanceWorldField(
-                                          'customContent',
+                                          resolveWorldEnhanceField(fieldKey),
                                           item.value,
                                           { ...world.core, briefDescription: `Context for "${section.title}" section, field "${item.label}": ${world.core.briefDescription || ''}` },
                                           modelId
@@ -874,9 +886,9 @@ className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
             hasError={!!publishErrors.storyGoal}
             onEnhanceField={(fieldKey, getCurrentValue, setValue, customLabel) => {
               if (enhancingField) return;
-              setEnhancingField(fieldKey as any);
+              setEnhancingField(fieldKey);
               aiEnhanceWorldField(
-                'customContent',
+                resolveWorldEnhanceField(fieldKey),
                 getCurrentValue(),
                 { ...world.core, briefDescription: `Context for "${customLabel}": ${world.core.briefDescription || ''}` },
                 modelId
@@ -888,7 +900,7 @@ className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                 setEnhancingField(null);
               });
             }}
-            enhancingField={enhancingField as string | null}
+            enhancingField={enhancingField}
           />
 
           {/* Opening Dialog Section - Dark Theme */}
@@ -1299,7 +1311,7 @@ className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                       
                        {/* User's custom AI rules - editable */}
                       <div className="mt-4">
-                        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1 block">Custom Rules (Optional)</label>
+                        <FieldLabel label="Custom Rules (Optional)" fieldName="dialogFormatting" />
                         <AutoResizeTextarea 
                           value={world.core.dialogFormatting} 
                           onChange={(v) => updateCore({ dialogFormatting: v })} 
@@ -1446,7 +1458,6 @@ className="px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white plac
         onClose={() => setShowCoverGenModal(false)}
         onGenerated={async (imageUrl) => {
           try {
-            const { compressAndUpload } = await import('@/utils');
             const compressedUrl = await compressAndUpload(imageUrl, 'covers', user?.id || 'anon', 1024, 1536, 0.85);
             onUpdateCoverImage(compressedUrl);
           } catch {
@@ -1489,7 +1500,6 @@ className="px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white plac
               // Compress before saving
               let finalUrl = data.imageUrl;
               try {
-                const { compressAndUpload } = await import('@/utils');
                 finalUrl = await compressAndUpload(data.imageUrl, 'scenes', user!.id, 1024, 768, 0.85);
               } catch { /* use original */ }
               // Create new scene with the compressed image

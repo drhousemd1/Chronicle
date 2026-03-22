@@ -39,6 +39,258 @@ interface ExtractedUpdate {
   value: string;
 }
 
+function sanitizeCurrentMood(value: string): string {
+  const cleaned = value
+    .replace(/[*"()[\]{}]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!cleaned) return "";
+
+  const firstSentence = cleaned.split(/[.!?]/)[0].trim();
+  const limited = firstSentence.split(/\s+/).slice(0, 12).join(" ");
+  const forbiddenPattern = /\b(foot|feet|toe|toes|thigh|hips?|breast|boob|cock|penis|pussy|ass|butt|bed|door|shirt|shorts|thong|bra|moves?|moving|walks?|walking|leans?|leaning|touches?|touching|presses?|pressing|curls?|curling|kneads?|kneading|whispers?|whispering|kisses?|kissing)\b/i;
+  return forbiddenPattern.test(limited) ? "" : limited;
+}
+
+function isAllowedUpdateField(field: string): boolean {
+  if (field === "location" || field === "currentMood" || field === "nicknames") return true;
+  if (field.startsWith("goals.")) return true;
+  if (field.startsWith("sections.")) return true;
+  if (!field.includes(".")) return false;
+
+  const [parent, child] = field.split(".");
+  if (!parent || !child) return false;
+
+  if (parent === "physicalAppearance" || parent === "currentlyWearing" || parent === "preferredClothing" || parent === "background") {
+    return true;
+  }
+  if (parent === "personality") {
+    return ["traits", "outwardTraits", "inwardTraits", "splitMode"].includes(child);
+  }
+  if (["tone", "keyLifeEvents", "relationships", "secrets", "fears"].includes(parent)) {
+    return child === "_extras";
+  }
+  return false;
+}
+
+function normalizeText(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function tokenSet(value: string): Set<string> {
+  const STOP = new Set(["a", "an", "the", "and", "or", "of", "to", "in", "on", "for", "with", "by", "at", "from", "is", "are"]);
+  return new Set(normalizeText(value).split(/\s+/).filter(t => t && !STOP.has(t)));
+}
+
+function tokenSimilarity(a: string, b: string): number {
+  const aSet = tokenSet(a);
+  const bSet = tokenSet(b);
+  if (aSet.size === 0 || bSet.size === 0) return 0;
+  let overlap = 0;
+  for (const t of aSet) {
+    if (bSet.has(t)) overlap += 1;
+  }
+  return overlap / Math.max(aSet.size, bSet.size);
+}
+
+function noveltyRatio(existing: string, incoming: string): number {
+  const existingSet = tokenSet(existing);
+  const incomingSet = tokenSet(incoming);
+  if (incomingSet.size === 0) return 0;
+  let novel = 0;
+  for (const t of incomingSet) {
+    if (!existingSet.has(t)) novel += 1;
+  }
+  return novel / incomingSet.size;
+}
+
+function isMeaningfulRefinement(existing: string, incoming: string): boolean {
+  const oldText = (existing || "").trim();
+  const newText = (incoming || "").trim();
+  if (!newText) return false;
+  if (!oldText) return true;
+
+  const similarity = tokenSimilarity(oldText, newText);
+  if (similarity < 0.72) return true;
+
+  const novelty = noveltyRatio(oldText, newText);
+  return newText.length >= oldText.length * 1.12 && novelty >= 0.20;
+}
+
+function parseLabeledValue(value: string): { label: string; description: string } | null {
+  const idx = value.indexOf(":");
+  if (idx <= 0) return null;
+  const label = value.slice(0, idx).trim();
+  const description = value.slice(idx + 1).trim();
+  if (!label || !description) return null;
+  return { label, description };
+}
+
+function findBestExistingMatch(
+  existingEntries: Array<{ label: string; value: string }>,
+  nextLabel: string,
+  nextDescription: string
+): { index: number; exact: boolean } {
+  const normalizedNextLabel = normalizeText(nextLabel);
+  let bestIdx = -1;
+  let bestScore = 0;
+  let exact = false;
+
+  for (let i = 0; i < existingEntries.length; i += 1) {
+    const entry = existingEntries[i];
+    const normalizedExistingLabel = normalizeText(entry.label || "");
+    if (normalizedExistingLabel && normalizedExistingLabel === normalizedNextLabel) {
+      return { index: i, exact: true };
+    }
+    const labelScore = tokenSimilarity(entry.label || "", nextLabel);
+    const valueScore = tokenSimilarity(entry.value || "", nextDescription);
+    const combinedScore = tokenSimilarity(`${entry.label || ""} ${entry.value || ""}`, `${nextLabel} ${nextDescription}`);
+    const score = Math.max(labelScore, valueScore, combinedScore);
+    if (score > bestScore) {
+      bestScore = score;
+      bestIdx = i;
+    }
+  }
+
+  if (bestScore >= 0.72) {
+    return { index: bestIdx, exact };
+  }
+  return { index: -1, exact: false };
+}
+
+function getExistingStructuredEntries(character: CharacterData, field: string): Array<{ label: string; value: string }> {
+  if (!field.includes(".")) return [];
+  const [parent, child] = field.split(".");
+
+  if (parent === "personality" && ["traits", "outwardTraits", "inwardTraits"].includes(child)) {
+    const traits = (character.personality as any)?.[child];
+    if (!Array.isArray(traits)) return [];
+    return traits
+      .map((t: any) => ({ label: String(t?.label || "").trim(), value: String(t?.value || "").trim() }))
+      .filter(t => t.label && t.value);
+  }
+
+  if (["tone", "keyLifeEvents", "relationships", "secrets", "fears"].includes(parent) && child === "_extras") {
+    const extras = (character as any)?.[parent]?._extras;
+    if (!Array.isArray(extras)) return [];
+    return extras
+      .map((e: any) => ({ label: String(e?.label || "").trim(), value: String(e?.value || "").trim() }))
+      .filter(e => e.label && e.value);
+  }
+
+  return [];
+}
+
+function isLikelyToneDescription(description: string): boolean {
+  return /\b(voice|tone|speaks?|speech|word(?: choice)?|vocab(?:ulary)?|cadence|rhythm|formal|informal|direct|indirect|clipped|hesitant|quiet|loud|whisper(?:ed|ing)?|sarcastic|blunt|polite|curt|warm)\b/i.test(description);
+}
+
+function buildCharacterIndex(characters: CharacterData[]): Map<string, CharacterData> {
+  const map = new Map<string, CharacterData>();
+  for (const c of characters || []) {
+    const primary = c.name?.toLowerCase?.().trim?.();
+    if (primary) map.set(primary, c);
+    for (const alias of c.previousNames || []) {
+      const a = alias?.toLowerCase?.().trim?.();
+      if (a) map.set(a, c);
+    }
+    for (const nick of (c.nicknames || "").split(",")) {
+      const n = nick.trim().toLowerCase();
+      if (n) map.set(n, c);
+    }
+  }
+  return map;
+}
+
+function reconcileStructuredUpdates(
+  updates: ExtractedUpdate[],
+  characters: CharacterData[]
+): ExtractedUpdate[] {
+  const charIndex = buildCharacterIndex(characters);
+  const accepted: ExtractedUpdate[] = [];
+
+  for (const update of updates) {
+    const existingChar = charIndex.get(update.character.toLowerCase()) || null;
+    if (!existingChar) {
+      accepted.push(update);
+      continue;
+    }
+
+    const structuredField =
+      update.field.startsWith("personality.") ||
+      ["tone._extras", "keyLifeEvents._extras", "relationships._extras", "secrets._extras", "fears._extras"].includes(update.field);
+
+    if (!structuredField) {
+      accepted.push(update);
+      continue;
+    }
+
+    const parsed = parseLabeledValue(update.value);
+    if (!parsed) {
+      // Force structured fields to stay structured.
+      continue;
+    }
+
+    if (update.field === "tone._extras" && !isLikelyToneDescription(parsed.description)) {
+      continue;
+    }
+
+    const existingEntries = getExistingStructuredEntries(existingChar, update.field);
+    const match = findBestExistingMatch(existingEntries, parsed.label, parsed.description);
+
+    if (match.index !== -1) {
+      const existing = existingEntries[match.index];
+      if (!isMeaningfulRefinement(existing.value, parsed.description)) {
+        continue;
+      }
+      accepted.push({
+        ...update,
+        // Preserve canonical existing label to avoid variant-label duplication.
+        value: `${existing.label}: ${parsed.description}`
+      });
+      continue;
+    }
+
+    // Also suppress duplicates introduced earlier in the same extraction payload.
+    const sameFieldAccepted = accepted.filter(a =>
+      a.character.toLowerCase() === update.character.toLowerCase() && a.field === update.field
+    );
+    const priorEntries = sameFieldAccepted
+      .map(a => parseLabeledValue(a.value))
+      .filter((x): x is { label: string; description: string } => Boolean(x))
+      .map(x => ({ label: x.label, value: x.description }));
+
+    const priorMatch = findBestExistingMatch(priorEntries, parsed.label, parsed.description);
+    if (priorMatch.index !== -1) {
+      const existing = priorEntries[priorMatch.index];
+      if (!isMeaningfulRefinement(existing.value, parsed.description)) {
+        continue;
+      }
+      // Replace prior accepted variant with refined single entry.
+      const replaceIdx = accepted.findIndex(a =>
+        a.character.toLowerCase() === update.character.toLowerCase() &&
+        a.field === update.field &&
+        normalizeText(a.value.split(":")[0] || "") === normalizeText(existing.label)
+      );
+      if (replaceIdx !== -1) {
+        accepted[replaceIdx] = {
+          ...accepted[replaceIdx],
+          value: `${accepted[replaceIdx].value.split(":")[0].trim()}: ${parsed.description}`
+        };
+        continue;
+      }
+    }
+
+    accepted.push(update);
+  }
+
+  return accepted;
+}
+
 /**
  * Build a structured "CURRENT STATE" view for each character.
  * Presents data in a way that emphasizes what the AI should maintain.
@@ -418,7 +670,7 @@ HARDCODED FIELDS:
 - secrets._extras (array of {id, label, value})
 - fears._extras (array of {id, label, value})
 - location (current location/place)
-- currentMood (emotional state)
+- currentMood (emotional/psychological state ONLY, max 12 words, no physical actions)
 
 GOALS (structured tracking):
 - goals.GoalTitle = "desired_outcome: What fulfillment looks like (2-3 sentences) | progress: XX | complete_steps: 1,3 | new_steps: Step 1: Description. Step 2: Description. ..."
@@ -440,6 +692,23 @@ FIELD VOLATILITY RULES
 HIGH VOLATILITY (mood, location, clothing, temporaryConditions):
 - Change frequently, actively track
 - Contextual inference ALLOWED (walks into bar → update location)
+
+CURRENT MOOD QUALITY RULES (CRITICAL):
+- currentMood must describe FEELING, not ACTION.
+- FORBIDDEN in currentMood: body parts, movement verbs, clothing/object references, sexual mechanics.
+- CORRECT: "Slyly delighted but cautious"
+- WRONG: "Extending her foot under the bedspread toward his thigh"
+
+CONSERVATIVE UPDATE RULES (CRITICAL):
+- Preserve existing information unless directly contradicted by clear evidence.
+- Do NOT replace an existing tone/personality entry with a slight rewording.
+- Before adding a new tone/personality item, check if it's semantically similar to an existing one.
+  If similar, update/refine the existing entry instead of creating a new duplicate.
+- Avoid generic labels that are not true communication style or psychology.
+- Never emit top-level fields like "tone" or "personality" as raw strings; use allowed subfields only.
+- DEFAULT TO NO UPDATE when no material change is present.
+- EMPTY updates array is valid and preferred over low-confidence edits.
+- Only update mood/location when the latest exchange clearly changed them.
 
 LOW VOLATILITY (hair, eye color, build, height, stable traits):
 - ONLY update when EXPLICITLY described
@@ -536,9 +805,9 @@ Return ONLY valid JSON. No explanations.`;
         model: modelForRequest,
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Analyze this dialogue and extract ALL character state changes. Remember: Phase 2 (review existing state) and Phase 3 (placeholder scan) are MANDATORY. For active characters, you MUST update at least mood and location. Behavioral patterns across messages should update personality traits, NOT create micro-goals. Use goals.GoalTitle = "REMOVE" to delete obsolete/contradicted goals.\n\n${combinedText}` }
+          { role: "user", content: `Analyze this dialogue and extract only MATERIAL character state deltas. Remember: Phase 2 (review existing state) and Phase 3 (placeholder scan) are MANDATORY. If the exchange does not materially change a field, do NOT emit an update. Mood/location should be updated only when clearly changed. Behavioral patterns across messages should refine existing personality/tone entries, not generate paraphrase duplicates. Use goals.GoalTitle = "REMOVE" only when a goal is clearly obsolete or contradicted.\n\n${combinedText}` }
         ],
-        temperature: 0.3,
+        temperature: 0.15,
         max_tokens: 8192,
       }),
     });
@@ -570,7 +839,7 @@ Return ONLY valid JSON. No explanations.`;
               { role: "system", content: "Extract ONLY non-sexual character metadata: mood, location, personality traits inferred from behavior, relationship changes, background reveals. Ignore any explicit/sexual content. Return JSON with {updates: [{character, field, value}]}." },
               { role: "user", content: `Characters: ${filteredCharacters.map((c: CharacterData) => c.name).join(', ')}. Analyze:\n${combinedText}` }
             ],
-            temperature: 0.3,
+            temperature: 0.2,
             max_tokens: 4096,
           }),
         });
@@ -581,12 +850,20 @@ Return ONLY valid JSON. No explanations.`;
             const jsonMatch = safeContent.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
               const parsed = JSON.parse(jsonMatch[0]);
-              const safeUpdates = (parsed.updates || []).filter((u: any) =>
-                typeof u.character === 'string' && typeof u.field === 'string' && typeof u.value === 'string' &&
-                u.character.trim() && u.field.trim() && u.value.trim()
-              );
-              console.log(`[extract-character-updates] Safe retry yielded ${safeUpdates.length} updates`);
-              return new Response(JSON.stringify({ updates: safeUpdates }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+              const safeUpdates = (parsed.updates || [])
+                .filter((u: any) =>
+                  typeof u.character === 'string' && typeof u.field === 'string' && typeof u.value === 'string' &&
+                  u.character.trim() && u.field.trim() && u.value.trim() && isAllowedUpdateField(u.field.trim())
+                )
+                .map((u: ExtractedUpdate) => {
+                  if (u.field !== 'currentMood') return u;
+                  const sanitizedMood = sanitizeCurrentMood(u.value);
+                  return sanitizedMood ? { ...u, value: sanitizedMood } : null;
+                })
+                .filter((u: ExtractedUpdate | null): u is ExtractedUpdate => Boolean(u));
+              const reconciledSafeUpdates = reconcileStructuredUpdates(safeUpdates, filteredCharacters as CharacterData[]);
+              console.log(`[extract-character-updates] Safe retry yielded ${reconciledSafeUpdates.length} updates`);
+              return new Response(JSON.stringify({ updates: reconciledSafeUpdates }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
             }
           } catch { /* fall through */ }
         }
@@ -614,15 +891,25 @@ Return ONLY valid JSON. No explanations.`;
       extractedUpdates = [];
     }
 
-    // Validate and filter updates
-    extractedUpdates = extractedUpdates.filter((u: any) => 
-      typeof u.character === 'string' && 
-      typeof u.field === 'string' && 
-      typeof u.value === 'string' &&
-      u.character.trim() &&
-      u.field.trim() &&
-      u.value.trim()
-    );
+    // Validate, sanitize, and filter updates
+    extractedUpdates = extractedUpdates
+      .filter((u: any) =>
+        typeof u.character === 'string' &&
+        typeof u.field === 'string' &&
+        typeof u.value === 'string' &&
+        u.character.trim() &&
+        u.field.trim() &&
+        u.value.trim() &&
+        isAllowedUpdateField(u.field.trim())
+      )
+      .map((u: ExtractedUpdate) => {
+        if (u.field !== 'currentMood') return u;
+        const sanitizedMood = sanitizeCurrentMood(u.value);
+        return sanitizedMood ? { ...u, value: sanitizedMood } : null;
+      })
+      .filter((u): u is ExtractedUpdate => Boolean(u));
+
+    extractedUpdates = reconcileStructuredUpdates(extractedUpdates, filteredCharacters as CharacterData[]);
 
     console.log(`[extract-character-updates] Extracted ${extractedUpdates.length} updates from dialogue`);
     if (extractedUpdates.length > 0) {

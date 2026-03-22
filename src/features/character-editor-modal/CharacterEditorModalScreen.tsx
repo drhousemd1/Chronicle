@@ -98,8 +98,6 @@ export interface CharacterEditorModalScreenProps {
 }
 
 // ─── Nav constants ───────────────────────────────────────────────
-const MODAL_NAV_SIDEBAR_WIDTH = 260;
-
 const MODAL_BUILT_IN_SECTIONS: Array<{ key: string; label: string }> = [
   { key: 'basics', label: 'Basics' },
   { key: 'physicalAppearance', label: 'Physical Appearance' },
@@ -683,7 +681,7 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
                   }
                   
                   if (completeStepsMatch) {
-                    const indices = completeStepsMatch[1].trim().split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+                    const indices = completeStepsMatch[1].trim().split(',').map((s: string) => parseInt(s.trim(), 10)).filter((n: number) => !isNaN(n));
                     for (const idx of indices) {
                       if (idx >= 1 && idx <= updatedSteps.length) updatedSteps[idx - 1] = { ...updatedSteps[idx - 1], completed: true, completedAt: now() };
                     }
@@ -691,7 +689,7 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
                 } else {
                   console.log(`[deep-scan] Goal "${existingGoal.title}" - no new_steps found in AI response`);
                   if (completeStepsMatch) {
-                    const indices = completeStepsMatch[1].trim().split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+                    const indices = completeStepsMatch[1].trim().split(',').map((s: string) => parseInt(s.trim(), 10)).filter((n: number) => !isNaN(n));
                     for (const idx of indices) {
                       if (idx >= 1 && idx <= updatedSteps.length) updatedSteps[idx - 1] = { ...updatedSteps[idx - 1], completed: true, completedAt: now() };
                     }
@@ -1342,11 +1340,10 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
 
   // ─── Render: Main character with sidebar nav ───────────────────
   const renderMainCharacterContent = () => (
-    <div className="flex flex-1 min-h-0 overflow-hidden">
+    <div className="flex flex-1 min-h-0 min-w-0 flex-col lg:flex-row overflow-hidden">
       {/* Sidebar nav */}
       <aside
-        className="flex-shrink-0 bg-[#2a2a2f] flex flex-col h-full shadow-[0_12px_32px_-2px_rgba(0,0,0,0.55),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]"
-        style={{ width: MODAL_NAV_SIDEBAR_WIDTH }}
+        className="w-full lg:w-[260px] lg:max-w-[260px] max-h-[52vh] lg:max-h-none h-auto lg:h-full flex-shrink-0 bg-[#2a2a2f] flex flex-col shadow-[0_12px_32px_-2px_rgba(0,0,0,0.55),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]"
       >
         {/* Avatar header tile */}
         <div className="p-3">
@@ -1414,7 +1411,7 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
       </aside>
 
       {/* Content pane */}
-      <TabFieldNavigator className="flex-1 overflow-y-auto scrollbar-thin bg-[#1a1b20]">
+      <TabFieldNavigator className="flex-1 min-h-0 min-w-0 overflow-y-auto scrollbar-thin bg-[#1a1b20]">
         <div className="p-4 lg:p-10 max-w-6xl mx-auto space-y-6 pb-20">
           {isTraitVisible('basics') && renderBasicsSection()}
 

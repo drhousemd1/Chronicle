@@ -74,6 +74,17 @@ export interface ContentThemeFilters {
 // Fetch all published scenarios with optional tag filter
 export type SortOption = 'all' | 'recent' | 'liked' | 'saved' | 'played' | 'following';
 
+const ensureIsoDate = (value: string | null | undefined): string => value ?? new Date(0).toISOString();
+
+const normalizePublishedScenario = (row: any): PublishedScenario => ({
+  ...row,
+  tags: row?.tags || [],
+  created_at: ensureIsoDate(row?.created_at),
+  updated_at: ensureIsoDate(row?.updated_at),
+  publisher: row?.publisher ?? undefined,
+  contentThemes: row?.contentThemes ?? undefined,
+});
+
 export async function fetchPublishedScenarios(
   searchTags?: string[],
   sortBy: SortOption = 'all',
@@ -167,7 +178,7 @@ export async function fetchPublishedScenarios(
     }]));
     
     // Transform the data to match our interface
-    let results = data.map((item: any) => ({
+    const results: PublishedScenario[] = data.map((item: any) => normalizePublishedScenario({
       id: item.id,
       scenario_id: item.scenario_id,
       publisher_id: item.publisher_id,
@@ -183,8 +194,8 @@ export async function fetchPublishedScenarios(
       created_at: item.created_at,
       updated_at: item.updated_at,
       scenario: item.stories,
-      publisher: profileMap.get(item.publisher_id) || null,
-      contentThemes: themesMap.get(item.scenario_id) || null
+      publisher: profileMap.get(item.publisher_id) || undefined,
+      contentThemes: themesMap.get(item.scenario_id) || undefined
     }));
 
     return results;
@@ -203,7 +214,7 @@ export async function getPublishedScenario(scenarioId: string): Promise<Publishe
     .maybeSingle();
     
   if (error) throw error;
-  return data;
+  return data ? normalizePublishedScenario(data) : null;
 }
 
 // Fetch all published scenario IDs for a user (for "Published" tags in hub)
@@ -238,7 +249,7 @@ export async function publishScenario(
     .single();
     
   if (error) throw error;
-  return data;
+  return normalizePublishedScenario(data);
 }
 
 // Unpublish a scenario
@@ -488,17 +499,17 @@ export async function fetchGalleryScenarios(params: FetchGalleryParams): Promise
   };
 
   const { data, error } = await supabase.rpc('fetch_gallery_scenarios', {
-    p_search_text: params.searchText || null,
-    p_search_tags: params.searchTags?.length ? params.searchTags : null,
+    p_search_text: params.searchText || undefined,
+    p_search_tags: params.searchTags?.length ? params.searchTags : undefined,
     p_sort_by: sortMapping[params.sortBy || 'recent'] || 'recent',
     p_limit: params.limit || 20,
     p_offset: params.offset || 0,
-    p_story_types: params.storyTypes?.length ? params.storyTypes : null,
-    p_genres: params.genres?.length ? params.genres : null,
-    p_origins: params.origins?.length ? params.origins : null,
-    p_trigger_warnings: params.triggerWarnings?.length ? params.triggerWarnings : null,
-    p_custom_tags: params.customTags?.length ? params.customTags : null,
-    p_publisher_ids: params.publisherIds?.length ? params.publisherIds : null,
+    p_story_types: params.storyTypes?.length ? params.storyTypes : undefined,
+    p_genres: params.genres?.length ? params.genres : undefined,
+    p_origins: params.origins?.length ? params.origins : undefined,
+    p_trigger_warnings: params.triggerWarnings?.length ? params.triggerWarnings : undefined,
+    p_custom_tags: params.customTags?.length ? params.customTags : undefined,
+    p_publisher_ids: params.publisherIds?.length ? params.publisherIds : undefined,
   });
 
   if (error) {

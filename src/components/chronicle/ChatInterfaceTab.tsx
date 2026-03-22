@@ -40,7 +40,15 @@ import { ScrollableSection } from './ScrollableSection';
 import { SidebarThemeModal } from './SidebarThemeModal';
 import { MemoriesModal } from './MemoriesModal';
 import { MemoryQuickSaveButton } from './MemoryQuickSaveButton';
-import { UserBackground } from '@/types';
+import {
+  UserBackground,
+  defaultCurrentlyWearing,
+  defaultPhysicalAppearance,
+  defaultPreferredClothing,
+  type CurrentlyWearing,
+  type PhysicalAppearance,
+  type PreferredClothing,
+} from '@/types';
 import { useArtStyles } from '@/contexts/ArtStylesContext';
 import { LabeledToggle } from '@/components/ui/labeled-toggle';
 
@@ -583,8 +591,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const sessionMessageCountRef = useRef<number>(0);
   // Issue #6B: Track previous day for compression trigger
   const previousDayRef = useRef<number>(currentDay);
-  // Throttle character extraction to every 5th message
-  const extractionCountRef = useRef<number>(0);
+  // Character extraction cadence: hard-event trigger + periodic backstop
+  const assistantTurnsSinceExtractionRef = useRef<number>(0);
+  const EXTRACTION_BACKSTOP_INTERVAL = 6;
+  const latestConversationsRef = useRef(appData.conversations);
   
   
   // Reset session tracking when conversation changes
@@ -592,8 +602,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     responseLengthsRef.current = [];
     sessionMessageCountRef.current = 0;
     previousDayRef.current = currentDay;
-    extractionCountRef.current = 0;
+    assistantTurnsSinceExtractionRef.current = 0;
   }, [conversationId]);
+
+  useEffect(() => {
+    latestConversationsRef.current = appData.conversations;
+  }, [appData.conversations]);
   
   // Issue #7: Compute length directive based on recent response pattern
   const getLengthDirective = (): string => {
@@ -608,6 +622,39 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     } else {
       return `[LENGTH: Last 3 responses were ~${Math.round(avg)} words each. This response MUST be noticeably different in length -- try LONGER with more sensory detail and internal thought.]`;
     }
+  };
+
+  const getExtractionDecision = (userText: string, aiText: string): { shouldExtract: boolean; reason: string } => {
+    const combined = `${userText}\n${aiText}`;
+    const locationChangePattern = /\b(enters?|entered|entering|leaves?|left|leaving|go(?:es|ing|ne)? to|arrives?|arrived|arriving|moves?|moved|moving to|heads?|headed|heading to|walks? into)\b/i;
+    const clothingChangePattern = /\b(puts? on|takes? off|took off|removes?|removed|removing|unzips?|unzipped|zips? up|pulls? down|pulled down|lifts?|lifted|strips?|stripped|changes? into|undresses?)\b/i;
+    const relationshipShiftPattern = /\b(i love you|we(?:'re| are) (dating|together|exclusive)|be my (boyfriend|girlfriend|partner)|broke up|break up|it'?s over|my ex|your ex|engaged|marry me|confess(?:ed)? feelings?|admit(?:ted)? feelings?)\b/i;
+    const relationshipDynamicPattern = /\b(flirt(?:ed|ing)?|jealous|jealousy|possessive|possessiveness|caught feelings|admit(?:ted)? attraction|confess(?:ed)? attraction)\b/i;
+    const intimacyMilestonePattern = /\b(first kiss|kiss(?:ed|ing)?|made out|slept together|had sex|fucked|went down on|oral|orgasm(?:ed)?|came)\b/i;
+    const persistentConditionPattern = /\b(started|suddenly|now|became)\b[\s\S]{0,40}\b(bleeding|injured|sick|dizzy|faint|bruised|cramp|erect|hard|wet)\b/i;
+
+    if (locationChangePattern.test(combined)) {
+      return { shouldExtract: true, reason: 'hard_event:location' };
+    }
+    if (clothingChangePattern.test(combined)) {
+      return { shouldExtract: true, reason: 'hard_event:clothing' };
+    }
+    if (relationshipShiftPattern.test(combined)) {
+      return { shouldExtract: true, reason: 'hard_event:relationship' };
+    }
+    if (relationshipDynamicPattern.test(combined)) {
+      return { shouldExtract: true, reason: 'hard_event:relationship_dynamic' };
+    }
+    if (intimacyMilestonePattern.test(combined)) {
+      return { shouldExtract: true, reason: 'hard_event:intimacy' };
+    }
+    if (persistentConditionPattern.test(combined)) {
+      return { shouldExtract: true, reason: 'hard_event:condition' };
+    }
+    if (assistantTurnsSinceExtractionRef.current >= EXTRACTION_BACKSTOP_INTERVAL) {
+      return { shouldExtract: true, reason: `periodic_backstop:${EXTRACTION_BACKSTOP_INTERVAL}` };
+    }
+    return { shouldExtract: false, reason: 'skip' };
   };
 
   // Pass 7: Anti-loop micro-directive — detects confirmation loops and injects guards
@@ -1013,7 +1060,44 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const getEffectiveCharacter = useCallback((baseChar: Character): Character & { previousNames?: string[] } => {
     const sessionState = sessionStates.find(s => s.characterId === baseChar.id);
     if (!sessionState) return baseChar;
+
+    const hasObjectContent = (value: unknown): value is Record<string, any> =>
+      !!value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length > 0;
+
+    const mergeExtrasSection = (baseSection: any, sessionSection: any) => {
+      if (!hasObjectContent(sessionSection)) return baseSection;
+      const baseExtras = Array.isArray(baseSection?._extras) ? baseSection._extras : [];
+      const sessionExtras = Array.isArray(sessionSection?._extras) ? sessionSection._extras : [];
+      if (sessionExtras.length === 0) {
+        return { ...(baseSection || {}), ...sessionSection };
+      }
+      const mergedExtras = [...baseExtras];
+      for (const entry of sessionExtras) {
+        const label = (entry?.label || '').toLowerCase().trim();
+        if (!label) continue;
+        const idx = mergedExtras.findIndex((e: any) => (e?.label || '').toLowerCase().trim() === label);
+        if (idx !== -1) mergedExtras[idx] = { ...mergedExtras[idx], ...entry };
+        else mergedExtras.push(entry);
+      }
+      return { ...(baseSection || {}), ...sessionSection, _extras: mergedExtras };
+    };
     
+    const mergedPhysicalAppearance: PhysicalAppearance = {
+      ...defaultPhysicalAppearance,
+      ...(baseChar.physicalAppearance || {}),
+      ...(sessionState.physicalAppearance || {}),
+    };
+    const mergedCurrentlyWearing: CurrentlyWearing = {
+      ...defaultCurrentlyWearing,
+      ...(baseChar.currentlyWearing || {}),
+      ...(sessionState.currentlyWearing || {}),
+    };
+    const mergedPreferredClothing: PreferredClothing = {
+      ...defaultPreferredClothing,
+      ...(baseChar.preferredClothing || {}),
+      ...(sessionState.preferredClothing || {}),
+    };
+
     return {
       ...baseChar,
       name: sessionState.name || baseChar.name,
@@ -1025,11 +1109,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       roleDescription: sessionState.roleDescription || baseChar.roleDescription,
       location: sessionState.location || baseChar.location,
       currentMood: sessionState.currentMood || baseChar.currentMood,
-      physicalAppearance: { ...baseChar.physicalAppearance, ...sessionState.physicalAppearance },
-      currentlyWearing: sessionState.currentlyWearing || baseChar.currentlyWearing,
-      preferredClothing: sessionState.preferredClothing 
-        ? { ...baseChar.preferredClothing, ...sessionState.preferredClothing }
-        : baseChar.preferredClothing,
+      physicalAppearance: mergedPhysicalAppearance,
+      currentlyWearing: mergedCurrentlyWearing,
+      preferredClothing: mergedPreferredClothing,
       sections: sessionState.customSections || baseChar.sections,
       // Session-scoped goals overrides
       goals: sessionState.goals?.length ? sessionState.goals : (baseChar.goals || []),
@@ -1040,13 +1122,23 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       controlledBy: sessionState.controlledBy || baseChar.controlledBy,
       characterRole: sessionState.characterRole || baseChar.characterRole,
       // Change 5: Merge 7 missing section fields
-      personality: (sessionState as any).personality || baseChar.personality,
-      background: (sessionState as any).background || baseChar.background,
-      tone: (sessionState as any).tone || baseChar.tone,
-      keyLifeEvents: (sessionState as any).keyLifeEvents || baseChar.keyLifeEvents,
-      relationships: (sessionState as any).relationships || baseChar.relationships,
-      secrets: (sessionState as any).secrets || baseChar.secrets,
-      fears: (sessionState as any).fears || baseChar.fears,
+      personality: hasObjectContent((sessionState as any).personality)
+        ? {
+            ...(baseChar.personality || {}),
+            ...((sessionState as any).personality || {}),
+            traits: (sessionState as any).personality?.traits ?? baseChar.personality?.traits,
+            outwardTraits: (sessionState as any).personality?.outwardTraits ?? baseChar.personality?.outwardTraits,
+            inwardTraits: (sessionState as any).personality?.inwardTraits ?? baseChar.personality?.inwardTraits,
+          }
+        : baseChar.personality,
+      background: hasObjectContent((sessionState as any).background)
+        ? { ...(baseChar.background || {}), ...((sessionState as any).background || {}) }
+        : baseChar.background,
+      tone: mergeExtrasSection(baseChar.tone, (sessionState as any).tone),
+      keyLifeEvents: mergeExtrasSection(baseChar.keyLifeEvents, (sessionState as any).keyLifeEvents),
+      relationships: mergeExtrasSection(baseChar.relationships, (sessionState as any).relationships),
+      secrets: mergeExtrasSection(baseChar.secrets, (sessionState as any).secrets),
+      fears: mergeExtrasSection(baseChar.fears, (sessionState as any).fears),
     };
   }, [sessionStates]);
 
@@ -1768,7 +1860,23 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   // GOAL PROGRESS EVALUATION (step completion - runs in parallel)
   // ============================================================================
 
-  const evaluateGoalProgress = async (userMessage: string, aiResponse: string) => {
+  const isAssistantMessageStillCurrent = useCallback((assistantMessageId?: string): boolean => {
+    if (!assistantMessageId) return true;
+    const latestConversation = latestConversationsRef.current.find(c => c.id === conversationId);
+    if (!latestConversation) return false;
+
+    const assistantIndex = latestConversation.messages.findIndex(
+      m => m.id === assistantMessageId && m.role === 'assistant'
+    );
+    if (assistantIndex === -1) return false;
+
+    const hasLaterUserMessage = latestConversation.messages
+      .slice(assistantIndex + 1)
+      .some(m => m.role === 'user');
+    return !hasLaterUserMessage;
+  }, [conversationId]);
+
+  const evaluateGoalProgress = async (userMessage: string, aiResponse: string, sourceAssistantMessageId?: string) => {
     const storyGoals = effectiveWorldCore.storyGoals;
     if (!storyGoals?.length) return;
 
@@ -1801,6 +1909,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       });
 
       if (error || !data?.stepUpdates?.length) return;
+
+      if (!isAssistantMessageStillCurrent(sourceAssistantMessageId)) {
+        console.log('[evaluateGoalProgress] Discarded stale result for non-current turn');
+        return;
+      }
 
       const completedIds = new Set(data.stepUpdates.filter((u: any) => u.completed).map((u: any) => u.stepId));
       if (completedIds.size === 0) return;
@@ -1836,9 +1949,122 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     value: string;
   }
 
+  interface ExtractionRequestMeta {
+    sourceAssistantMessageId?: string;
+    reason?: string;
+  }
+
+  const isAllowedExtractionField = (field: string): boolean => {
+    if (field === 'location' || field === 'currentMood' || field === 'nicknames') return true;
+    if (field.startsWith('goals.')) return true;
+    if (field.startsWith('sections.')) return true;
+    if (!field.includes('.')) return false;
+
+    const [parent, child] = field.split('.');
+    if (!parent || !child) return false;
+
+    if (parent === 'physicalAppearance' || parent === 'currentlyWearing' || parent === 'preferredClothing' || parent === 'background') {
+      return true;
+    }
+
+    if (parent === 'personality') {
+      return ['traits', 'outwardTraits', 'inwardTraits', 'splitMode'].includes(child);
+    }
+
+    if (['tone', 'keyLifeEvents', 'relationships', 'secrets', 'fears'].includes(parent)) {
+      return child === '_extras';
+    }
+
+    return false;
+  };
+
+  const normalizeForSimilarity = (text: string): string =>
+    text
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const tokenSet = (text: string): Set<string> => {
+    const STOP_WORDS = new Set(['a', 'an', 'the', 'and', 'or', 'of', 'to', 'in', 'on', 'for', 'with', 'by', 'at', 'from', 'is', 'are']);
+    return new Set(normalizeForSimilarity(text).split(/\s+/).filter(t => t && !STOP_WORDS.has(t)));
+  };
+
+  const tokenSimilarity = (a: string, b: string): number => {
+    const aSet = tokenSet(a);
+    const bSet = tokenSet(b);
+    if (aSet.size === 0 || bSet.size === 0) return 0;
+    let overlap = 0;
+    for (const t of aSet) {
+      if (bSet.has(t)) overlap += 1;
+    }
+    return overlap / Math.max(aSet.size, bSet.size);
+  };
+
+  const findNearDuplicateExtraIndex = (
+    existing: Array<{ label: string; value: string }>,
+    nextLabel: string,
+    nextValue: string
+  ): number => {
+    let bestIdx = -1;
+    let bestScore = 0;
+    for (let i = 0; i < existing.length; i += 1) {
+      const e = existing[i];
+      const labelScore = tokenSimilarity(e.label || '', nextLabel);
+      const valueScore = tokenSimilarity(e.value || '', nextValue);
+      const score = Math.max(labelScore, valueScore);
+      if (score > bestScore) {
+        bestScore = score;
+        bestIdx = i;
+      }
+    }
+    return bestScore >= 0.72 ? bestIdx : -1;
+  };
+
+  const findNearDuplicateTraitIndex = (
+    existing: Array<{ label: string; value: string }>,
+    nextLabel: string,
+    nextValue: string
+  ): number => {
+    let bestIdx = -1;
+    let bestScore = 0;
+    for (let i = 0; i < existing.length; i += 1) {
+      const t = existing[i];
+      const labelScore = tokenSimilarity(t.label || '', nextLabel);
+      const valueScore = tokenSimilarity(t.value || '', nextValue);
+      const combinedScore = tokenSimilarity(`${t.label} ${t.value}`, `${nextLabel} ${nextValue}`);
+      const score = Math.max(labelScore, valueScore, combinedScore);
+      if (score > bestScore) {
+        bestScore = score;
+        bestIdx = i;
+      }
+    }
+    return bestScore >= 0.72 ? bestIdx : -1;
+  };
+
+  const shouldRefineExistingText = (existing: string, incoming: string): boolean => {
+    const oldText = (existing || '').trim();
+    const newText = (incoming || '').trim();
+    if (!newText) return false;
+    if (!oldText) return true;
+
+    const similarity = tokenSimilarity(oldText, newText);
+    if (similarity < 0.72) return true;
+
+    const oldTokens = tokenSet(oldText);
+    const newTokens = tokenSet(newText);
+    if (newTokens.size === 0) return false;
+    let novel = 0;
+    for (const t of newTokens) {
+      if (!oldTokens.has(t)) novel += 1;
+    }
+    const novelty = novel / newTokens.size;
+    return newText.length >= oldText.length * 1.12 && novelty >= 0.20;
+  };
+
   // Concurrency guard + lightweight queue for extraction
   const extractionInProgressRef = useRef(false);
-  const pendingExtractionRef = useRef<{ userMessage: string; aiResponse: string } | null>(null);
+  const pendingExtractionRef = useRef<{ userMessage: string; aiResponse: string; meta?: ExtractionRequestMeta } | null>(null);
 
   // Build eligible character set from latest exchange
   const buildEligibleCharacterNames = useCallback((userMessage: string, aiResponse: string): Set<string> => {
@@ -1850,16 +2076,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     for (const c of effectiveMainChars) {
       const names = [c.name, ...(c.nicknames?.split(',').map(n => n.trim()) || []), ...(c.previousNames || [])].filter(Boolean);
       const mentioned = names.some(n => combinedText.includes(n.toLowerCase()));
-      const hasAvatar = !!(c.avatarDataUrl);
-      if (mentioned || hasAvatar) {
+      if (mentioned) {
         eligible.add(c.name.toLowerCase());
       }
     }
     for (const sc of (appData.sideCharacters || [])) {
       const names = [sc.name, ...(sc.nicknames?.split(',').map(n => n.trim()) || [])].filter(Boolean);
       const mentioned = names.some(n => combinedText.includes(n.toLowerCase()));
-      const hasAvatar = !!(sc.avatarDataUrl);
-      if (mentioned || hasAvatar) {
+      if (mentioned) {
         eligible.add(sc.name.toLowerCase());
       }
     }
@@ -1869,20 +2093,22 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   // Call the dedicated extraction edge function
   const extractCharacterUpdatesFromDialogue = async (
     userMessage: string, 
-    aiResponse: string
+    aiResponse: string,
+    meta?: ExtractionRequestMeta
   ): Promise<ExtractedUpdate[]> => {
     // Concurrency guard: if busy, enqueue latest request
     if (extractionInProgressRef.current) {
       console.log('[extractCharacterUpdates] Queuing — extraction already in progress');
-      pendingExtractionRef.current = { userMessage, aiResponse };
+      pendingExtractionRef.current = { userMessage, aiResponse, meta };
       return [];
     }
     extractionInProgressRef.current = true;
-    console.log('[extractCharacterUpdates] Started');
+    console.log('[extractCharacterUpdates] Started', meta?.reason ? `(${meta.reason})` : '');
     try {
       // Build eligible character set
       const eligibleNames = buildEligibleCharacterNames(userMessage, aiResponse);
       console.log('[extractCharacterUpdates] Eligible characters:', [...eligibleNames]);
+      if (eligibleNames.size === 0) return [];
 
       // Build character data for context — only eligible characters
       const charactersData = appData.characters.map(c => {
@@ -1966,10 +2192,16 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         return [];
       }
       
-      // Defensive: filter out updates for non-eligible characters
-      const updates = (data?.updates || []).filter((u: ExtractedUpdate) =>
-        eligibleNames.has(u.character.toLowerCase())
-      );
+      // Defensive: filter out updates for non-eligible characters and unsupported fields
+      const updates = (data?.updates || [])
+        .filter((u: ExtractedUpdate) => eligibleNames.has(u.character.toLowerCase()))
+        .filter((u: ExtractedUpdate) => isAllowedExtractionField(u.field));
+
+      if (!isAssistantMessageStillCurrent(meta?.sourceAssistantMessageId)) {
+        console.log('[extractCharacterUpdates] Discarded stale result for non-current turn');
+        return [];
+      }
+
       console.log(`[extractCharacterUpdates] Completed — ${updates.length} updates (filtered from ${data?.updates?.length || 0})`);
       return updates;
     } catch (err) {
@@ -1982,7 +2214,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       if (pending) {
         pendingExtractionRef.current = null;
         console.log('[extractCharacterUpdates] Processing queued extraction');
-        extractCharacterUpdatesFromDialogue(pending.userMessage, pending.aiResponse).then(updates => {
+        extractCharacterUpdatesFromDialogue(pending.userMessage, pending.aiResponse, pending.meta).then(updates => {
           if (updates.length > 0) {
             console.log(`[extractCharacterUpdates] Queued extraction yielded ${updates.length} updates`);
             applyExtractedUpdates(updates);
@@ -1992,6 +2224,21 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         });
       }
     }
+  };
+
+  const sanitizeMoodValue = (raw: string): string => {
+    const cleaned = raw
+      .replace(/[*"()[\]{}]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!cleaned) return '';
+
+    const firstSentence = cleaned.split(/[.!?]/)[0].trim();
+    const limited = firstSentence.split(/\s+/).slice(0, 12).join(' ');
+
+    // Guard against stage-direction leakage in mood fields.
+    const forbiddenPattern = /\b(foot|feet|toe|toes|thigh|hips?|breast|boob|cock|penis|pussy|ass|butt|bed|door|shirt|shorts|thong|bra|moves?|moving|walks?|walking|leans?|leaning|touches?|touching|presses?|pressing|curls?|curling|kneads?|kneading|whispers?|whispering|kisses?|kissing)\b/i;
+    return forbiddenPattern.test(limited) ? '' : limited;
   };
 
   // Apply extracted updates to session state (enhanced to handle custom sections)
@@ -2073,6 +2320,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         
         for (const update of charUpdates) {
           const { field, value } = update;
+          if (!isAllowedExtractionField(field)) {
+            console.log(`[applyExtractedUpdates] Skipped unsupported field "${field}"`);
+            continue;
+          }
           
           // Handle goals.GoalTitle = "desired_outcome: X | ..." or "REMOVE" format
           if (field.startsWith('goals.')) {
@@ -2290,11 +2541,19 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
                 if (existIdx !== -1) {
                   extras[existIdx] = { ...extras[existIdx], value: newValue };
                 } else {
-                  extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
+                  const nearDupIdx = findNearDuplicateExtraIndex(extras, parts[0]?.trim() || 'New', newValue);
+                  if (nearDupIdx !== -1) {
+                    extras[nearDupIdx] = {
+                      ...extras[nearDupIdx],
+                      value: extras[nearDupIdx].value.length >= newValue.length ? extras[nearDupIdx].value : newValue
+                    };
+                  } else {
+                    extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
+                  }
                 }
                 patch.physicalAppearance = { ...existing, ...(patch.physicalAppearance || {}), _extras: extras };
               } else {
-                patch.physicalAppearance = { ...(sessionState.physicalAppearance || {}), ...(patch.physicalAppearance || {}), [normalizedChild]: value };
+                patch.physicalAppearance = { ...(mainChar.physicalAppearance || {}), ...(sessionState.physicalAppearance || {}), ...(patch.physicalAppearance || {}), [normalizedChild]: value };
               }
             } else if (parent === 'currentlyWearing') {
               if (normalizedChild === '_extras') {
@@ -2307,11 +2566,19 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
                 if (existIdx !== -1) {
                   extras[existIdx] = { ...extras[existIdx], value: newValue };
                 } else {
-                  extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
+                  const nearDupIdx = findNearDuplicateExtraIndex(extras, parts[0]?.trim() || 'New', newValue);
+                  if (nearDupIdx !== -1) {
+                    extras[nearDupIdx] = {
+                      ...extras[nearDupIdx],
+                      value: extras[nearDupIdx].value.length >= newValue.length ? extras[nearDupIdx].value : newValue
+                    };
+                  } else {
+                    extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
+                  }
                 }
                 patch.currentlyWearing = { ...existing, ...(patch.currentlyWearing || {}), _extras: extras };
               } else {
-                patch.currentlyWearing = { ...(sessionState.currentlyWearing || {}), ...(patch.currentlyWearing || {}), [normalizedChild]: value };
+                patch.currentlyWearing = { ...(mainChar.currentlyWearing || {}), ...(sessionState.currentlyWearing || {}), ...(patch.currentlyWearing || {}), [normalizedChild]: value };
               }
             } else if (parent === 'preferredClothing') {
               if (normalizedChild === '_extras') {
@@ -2324,11 +2591,19 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
                 if (existIdx !== -1) {
                   extras[existIdx] = { ...extras[existIdx], value: newValue };
                 } else {
-                  extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
+                  const nearDupIdx = findNearDuplicateExtraIndex(extras, parts[0]?.trim() || 'New', newValue);
+                  if (nearDupIdx !== -1) {
+                    extras[nearDupIdx] = {
+                      ...extras[nearDupIdx],
+                      value: extras[nearDupIdx].value.length >= newValue.length ? extras[nearDupIdx].value : newValue
+                    };
+                  } else {
+                    extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
+                  }
                 }
                 patch.preferredClothing = { ...existing, ...(patch.preferredClothing || {}), _extras: extras };
               } else {
-                patch.preferredClothing = { ...(sessionState.preferredClothing || {}), ...(patch.preferredClothing || {}), [normalizedChild]: value };
+                patch.preferredClothing = { ...(mainChar.preferredClothing || {}), ...(sessionState.preferredClothing || {}), ...(patch.preferredClothing || {}), [normalizedChild]: value };
               }
             } else if (parent === 'background') {
               // Update background hardcoded fields in session state
@@ -2343,7 +2618,15 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
                 if (existIdx !== -1) {
                   extras[existIdx] = { ...extras[existIdx], value: newValue };
                 } else {
-                  extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
+                  const nearDupIdx = findNearDuplicateExtraIndex(extras, parts[0]?.trim() || 'New', newValue);
+                  if (nearDupIdx !== -1) {
+                    extras[nearDupIdx] = {
+                      ...extras[nearDupIdx],
+                      value: extras[nearDupIdx].value.length >= newValue.length ? extras[nearDupIdx].value : newValue
+                    };
+                  } else {
+                    extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
+                  }
                 }
                 (bg as any)._extras = extras;
               } else {
@@ -2376,9 +2659,22 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
                 for (const nt of newTraits) {
                   const idx = existingTraits.findIndex((t: any) => t.label.toLowerCase() === nt.label.toLowerCase());
                   if (idx !== -1) {
-                    existingTraits[idx] = { ...existingTraits[idx], value: nt.value };
+                    if (shouldRefineExistingText(existingTraits[idx].value || '', nt.value || '')) {
+                      existingTraits[idx] = { ...existingTraits[idx], value: nt.value };
+                    }
                   } else {
-                    existingTraits.push({ id: `trait_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, ...nt });
+                    const nearDupIdx = findNearDuplicateTraitIndex(existingTraits, nt.label, nt.value);
+                    if (nearDupIdx !== -1) {
+                      const existing = existingTraits[nearDupIdx];
+                      if (shouldRefineExistingText(existing.value || '', nt.value || '')) {
+                        existingTraits[nearDupIdx] = {
+                          ...existing,
+                          value: nt.value
+                        };
+                      }
+                    } else {
+                      existingTraits.push({ id: `trait_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, ...nt });
+                    }
                   }
                 }
                 (patch as any).personality = { ...pers, [normalizedChild]: existingTraits };
@@ -2396,15 +2692,41 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
               const newValue = parts.slice(1).join(':')?.trim() || value;
               const existIdx = extras.findIndex((e: any) => e.label.toLowerCase() === newLabel);
               if (existIdx !== -1) {
-                extras[existIdx] = { ...extras[existIdx], value: newValue };
-                console.log(`[applyExtractedUpdates] Updated existing ${parent}._extras entry "${parts[0]?.trim()}"`);
+                if (shouldRefineExistingText(extras[existIdx]?.value || '', newValue || '')) {
+                  extras[existIdx] = { ...extras[existIdx], value: newValue };
+                  console.log(`[applyExtractedUpdates] Updated existing ${parent}._extras entry "${parts[0]?.trim()}"`);
+                } else {
+                  console.log(`[applyExtractedUpdates] Ignored low-value rewrite for ${parent}._extras entry "${parts[0]?.trim()}"`);
+                }
               } else {
-                extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
+                const nearDupIdx = findNearDuplicateExtraIndex(extras, parts[0]?.trim() || 'New', newValue);
+                if (nearDupIdx !== -1) {
+                  if (shouldRefineExistingText(extras[nearDupIdx]?.value || '', newValue || '')) {
+                    extras[nearDupIdx] = {
+                      ...extras[nearDupIdx],
+                      value: newValue
+                    };
+                    console.log(`[applyExtractedUpdates] Refined near-duplicate ${parent}._extras entry "${parts[0]?.trim()}"`);
+                  } else {
+                    console.log(`[applyExtractedUpdates] Ignored near-duplicate ${parent}._extras entry "${parts[0]?.trim()}"`);
+                  }
+                } else {
+                  extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
+                }
               }
               (patch as any)[sectionKey] = { ...existing, _extras: extras };
             }
           } else {
-            patch[field] = value;
+            if (field === 'currentMood') {
+              const sanitizedMood = sanitizeMoodValue(value);
+              if (sanitizedMood) {
+                patch.currentMood = sanitizedMood;
+              } else {
+                console.log(`[applyExtractedUpdates] Skipped invalid currentMood payload: "${value}"`);
+              }
+            } else {
+              patch[field] = value;
+            }
           }
         }
         
@@ -2415,6 +2737,16 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         // Add goals to patch if modified
         if (goalsModified) {
           patch.goals = updatedGoals;
+        }
+
+        // Do not persist no-op writes; they create noisy "updated" signals.
+        for (const key of Object.keys(patch)) {
+          const sessionValue = (sessionState as any)[key];
+          const baseValue = (mainChar as any)[key];
+          const effectiveCurrent = sessionValue !== undefined ? sessionValue : baseValue;
+          if (JSON.stringify(effectiveCurrent) === JSON.stringify((patch as any)[key])) {
+            delete (patch as any)[key];
+          }
         }
         
         if (Object.keys(patch).length > 0) {
@@ -2431,6 +2763,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         const patch: Record<string, any> = {};
         for (const update of charUpdates) {
           const { field, value } = update;
+          if (!isAllowedExtractionField(field)) {
+            console.log(`[applyExtractedUpdates] Skipped unsupported side-character field "${field}"`);
+            continue;
+          }
           if (field.includes('.')) {
             const [parent, child] = field.split('.');
             let normalizedChild = child;
@@ -2445,7 +2781,17 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
                 const newValue = parts.slice(1).join(':')?.trim() || value;
                 const existIdx = extras.findIndex((e: any) => e.label.toLowerCase() === newLabel);
                 if (existIdx !== -1) extras[existIdx] = { ...extras[existIdx], value: newValue };
-                else extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
+                else {
+                  const nearDupIdx = findNearDuplicateExtraIndex(extras, parts[0]?.trim() || 'New', newValue);
+                  if (nearDupIdx !== -1) {
+                    extras[nearDupIdx] = {
+                      ...extras[nearDupIdx],
+                      value: extras[nearDupIdx].value.length >= newValue.length ? extras[nearDupIdx].value : newValue
+                    };
+                  } else {
+                    extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
+                  }
+                }
                 patch.physicalAppearance = { ...existing, ...(patch.physicalAppearance || {}), _extras: extras };
               } else {
                 patch.physicalAppearance = { ...(sideChar.physicalAppearance || {}), ...(patch.physicalAppearance || {}), [normalizedChild]: value };
@@ -2463,7 +2809,17 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
                 const newValue = parts.slice(1).join(':')?.trim() || value;
                 const existIdx = extras.findIndex((e: any) => e.label.toLowerCase() === newLabel);
                 if (existIdx !== -1) extras[existIdx] = { ...extras[existIdx], value: newValue };
-                else extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
+                else {
+                  const nearDupIdx = findNearDuplicateExtraIndex(extras, parts[0]?.trim() || 'New', newValue);
+                  if (nearDupIdx !== -1) {
+                    extras[nearDupIdx] = {
+                      ...extras[nearDupIdx],
+                      value: extras[nearDupIdx].value.length >= newValue.length ? extras[nearDupIdx].value : newValue
+                    };
+                  } else {
+                    extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
+                  }
+                }
                 (bg as any)._extras = extras;
               } else {
                 (bg as any)[normalizedChild] = value;
@@ -2484,8 +2840,24 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
                 const existingTraits = [...((pers as any)[normalizedChild] || [])];
                 for (const nt of newTraits) {
                   const idx = existingTraits.findIndex((t: any) => t.label.toLowerCase() === nt.label.toLowerCase());
-                  if (idx !== -1) existingTraits[idx] = { ...existingTraits[idx], value: nt.value };
-                  else existingTraits.push({ id: `trait_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, ...nt });
+                  if (idx !== -1) {
+                    if (shouldRefineExistingText(existingTraits[idx].value || '', nt.value || '')) {
+                      existingTraits[idx] = { ...existingTraits[idx], value: nt.value };
+                    }
+                  } else {
+                    const nearDupIdx = findNearDuplicateTraitIndex(existingTraits, nt.label, nt.value);
+                    if (nearDupIdx !== -1) {
+                      const existing = existingTraits[nearDupIdx];
+                      if (shouldRefineExistingText(existing.value || '', nt.value || '')) {
+                        existingTraits[nearDupIdx] = {
+                          ...existing,
+                          value: nt.value
+                        };
+                      }
+                    } else {
+                      existingTraits.push({ id: `trait_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, ...nt });
+                    }
+                  }
                 }
                 patch.personality = { ...pers, [normalizedChild]: existingTraits };
               } else {
@@ -2493,7 +2865,23 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
               }
             }
           } else {
-            patch[field] = value;
+            if (field === 'currentMood') {
+              const sanitizedMood = sanitizeMoodValue(value);
+              if (sanitizedMood) {
+                patch.currentMood = sanitizedMood;
+              } else {
+                console.log(`[applyExtractedUpdates] Skipped invalid side-character currentMood payload: "${value}"`);
+              }
+            } else {
+              patch[field] = value;
+            }
+          }
+        }
+
+        for (const key of Object.keys(patch)) {
+          const current = (sideChar as any)[key];
+          if (JSON.stringify(current) === JSON.stringify((patch as any)[key])) {
+            delete (patch as any)[key];
           }
         }
         
@@ -2661,24 +3049,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         setFormattedStreamingContent(normalizedText);
       }
 
-      // Use dedicated extraction service (runs in parallel, non-blocking)
-      // Throttled to every 5th message to reduce API costs
       const userInput = input; // Capture before clearing
-      extractionCountRef.current += 1;
-      if (extractionCountRef.current % 5 === 0) {
-        extractCharacterUpdatesFromDialogue(userInput, fullText).then(updates => {
-          if (updates.length > 0) {
-            console.log(`[handleSend] Extracted ${updates.length} character updates:`, updates);
-            applyExtractedUpdates(updates);
-          }
-        }).catch(err => {
-          console.error('[handleSend] Character extraction failed:', err);
-        });
-      }
-
-      evaluateGoalProgress(userInput, fullText).catch(err => {
-        console.error('[handleSend] Goal progress evaluation failed:', err);
-      });
 
       // Strip any legacy update tags that might still be in response (fallback)
       let cleanedText = stripUpdateTags(fullText);
@@ -2713,8 +3084,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }
 
 
+      const aiMessageId = uuid();
       const aiMsg: Message = { 
-        id: uuid(), 
+        id: aiMessageId, 
         role: 'assistant', 
         text: cleanedText, 
         day: currentDay,
@@ -2726,6 +3098,27 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       );
       onUpdate(nextConvsWithAi);
       onSaveScenario(nextConvsWithAi);
+
+      evaluateGoalProgress(userInput, cleanedText, aiMessageId).catch(err => {
+        console.error('[handleSend] Goal progress evaluation failed:', err);
+      });
+
+      assistantTurnsSinceExtractionRef.current += 1;
+      const extractionDecision = getExtractionDecision(userInput, cleanedText);
+      if (extractionDecision.shouldExtract) {
+        assistantTurnsSinceExtractionRef.current = 0;
+        extractCharacterUpdatesFromDialogue(userInput, cleanedText, {
+          sourceAssistantMessageId: aiMessageId,
+          reason: extractionDecision.reason
+        }).then(updates => {
+          if (updates.length > 0) {
+            console.log(`[handleSend] Extracted ${updates.length} character updates (${extractionDecision.reason})`, updates);
+            applyExtractedUpdates(updates);
+          }
+        }).catch(err => {
+          console.error('[handleSend] Character extraction failed:', err);
+        });
+      }
       
       // Process AI response for new character detection
       processResponseForNewCharacters(cleanedText);
@@ -2803,7 +3196,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     if (msgIndex === undefined || msgIndex < 1) return;
     
     // Search backward from msgIndex for the nearest user message
-    let userMessage: typeof conversation.messages[0] | undefined;
+    let userMessage: Message | undefined;
     for (let i = msgIndex - 1; i >= 0; i--) {
       if (conversation?.messages[i]?.role === 'user') {
         userMessage = conversation.messages[i];
@@ -2853,15 +3246,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         setFormattedStreamingContent(normalizedText);
       }
       
-      // Extract character updates from regenerated response
-      extractCharacterUpdatesFromDialogue(userMessage.text, fullText).then(updates => {
-        if (updates.length > 0) {
-          console.log(`[handleRegenerate] Extracted ${updates.length} character updates:`, updates);
-          applyExtractedUpdates(updates);
-        }
-      }).catch(err => {
-        console.error('[handleRegenerate] Character extraction failed:', err);
-      });
+      // Regeneration is text-variation only: avoid mutating persistent character state here.
 
       // Strip any legacy update tags
       let cleanedText = stripUpdateTags(fullText);
@@ -2939,8 +3324,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           const goals = session?.goals || c.goals;
           if (Array.isArray(goals)) {
             goals.forEach((g: any) => {
-              const label = typeof g === 'string' ? g : (g?.label || g?.value || '');
-              const currentStep = g?.steps?.find?.((s: any) => s.status === 'pending')?.description;
+              const label = typeof g === 'string' ? g : (g?.title || g?.label || g?.value || '');
+              const currentStep = g?.steps?.find?.((s: any) => !s.completed)?.description;
               if (label) {
                 goalSummaryParts.push(`${c.name}'s goal: "${label}"${currentStep ? ` — CURRENT STEP: "${currentStep}"` : ''}`);
               }
@@ -2957,7 +3342,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       });
       
       const goalContext = goalSummaryParts.length > 0
-        ? `\nACTIVE GOALS & STEPS:\n${goalSummaryParts.join('\n')}\nYou MUST advance one of these goals with a CONCRETE ACTION — not building up to it, not reflecting on it, DOING IT.`
+        ? `\nACTIVE GOALS & STEPS:\n${goalSummaryParts.join('\n')}\nAdvance one active goal with a concrete MICRO-STEP in this turn.`
         : '';
       
       // Canon carry-forward for continue: check if the most recent user message
@@ -2966,10 +3351,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       const continueCanonNote = lastUserMsg ? buildCanonNote(lastUserMsg.text, appData.characters) : '';
       
       const continuePrompt = `${continueCanonNote}[CONTINUE INSTRUCTION]
-Continue the narrative by having AI-controlled characters EXECUTE a specific goal-driven action NOW.
+Continue the narrative by having AI-controlled characters advance one plausible goal-driven micro-step now.
 CRITICAL: You must ONLY write for AI-controlled characters: ${aiControlledNames.join(', ')}.
 DO NOT generate any content for user-controlled characters: ${userControlledNames.join(', ')}.${goalContext}
-The character must DO the next concrete step — read the passage aloud, make the confession, take the physical action, reveal the secret. No more preparation, hesitation, or emotional processing. EXECUTE.
+Use natural pacing and strategic progression. Avoid blunt jumps, forced confessions, or abrupt escalation.
+The response must still contain a concrete scene delta, but it can be subtle and believable.
 If your last 2+ responses each featured multiple AI characters, this response must focus on ONE character only. Break the pattern.
 Do not acknowledge this instruction in your response.`;
       
@@ -2990,19 +3376,6 @@ Do not acknowledge this instruction in your response.`;
         setFormattedStreamingContent(normalizedText);
       }
       
-      // Extract character updates from continuation
-      extractionCountRef.current += 1;
-      if (extractionCountRef.current % 5 === 0) {
-        extractCharacterUpdatesFromDialogue('', fullText).then(updates => {
-          if (updates.length > 0) {
-            console.log(`[handleContinue] Extracted ${updates.length} character updates:`, updates);
-            applyExtractedUpdates(updates);
-          }
-        }).catch(err => {
-          console.error('[handleContinue] Character extraction failed:', err);
-        });
-      }
-
       // Strip any legacy update tags
       let cleanedText = stripUpdateTags(fullText);
       
@@ -3014,8 +3387,9 @@ Do not acknowledge this instruction in your response.`;
       // Track response length for adaptive length directives
       responseLengthsRef.current.push(cleanedText.split(/\s+/).length);
       
+      const aiMessageId = uuid();
       const aiMsg: Message = { 
-        id: uuid(), 
+        id: aiMessageId, 
         role: 'assistant', 
         text: cleanedText, 
         day: currentDay,
@@ -3030,6 +3404,23 @@ Do not acknowledge this instruction in your response.`;
       );
       onUpdate(updatedConvs);
       onSaveScenario(updatedConvs);
+
+      assistantTurnsSinceExtractionRef.current += 1;
+      const extractionDecision = getExtractionDecision('', cleanedText);
+      if (extractionDecision.shouldExtract) {
+        assistantTurnsSinceExtractionRef.current = 0;
+        extractCharacterUpdatesFromDialogue('', cleanedText, {
+          sourceAssistantMessageId: aiMessageId,
+          reason: extractionDecision.reason
+        }).then(updates => {
+          if (updates.length > 0) {
+            console.log(`[handleContinue] Extracted ${updates.length} character updates (${extractionDecision.reason})`, updates);
+            applyExtractedUpdates(updates);
+          }
+        }).catch(err => {
+          console.error('[handleContinue] Character extraction failed:', err);
+        });
+      }
       
       processResponseForNewCharacters(cleanedText);
       
@@ -3732,10 +4123,10 @@ const updatedChar: SideCharacter = {
     );
   };
 
-  const bubblesTransparent = appData.uiSettings?.transparentBubbles;
+  const bubblesTransparent = appData.uiSettings?.transparentBubbles ?? false;
   const showBackground = appData.uiSettings?.showBackgrounds && activeScene;
   const darkMode = appData.uiSettings?.darkMode;
-  const offsetBubbles = appData.uiSettings?.offsetBubbles;
+  const offsetBubbles = appData.uiSettings?.offsetBubbles ?? false;
   const dynamicText = appData.uiSettings?.dynamicText !== false;
   const chatCanvasColor = normalizeHexColor(appData.uiSettings?.chatCanvasColor, '#1a1b20');
   const chatBubbleColor = normalizeHexColor(appData.uiSettings?.chatBubbleColor, '#1a1b20');
@@ -3793,11 +4184,11 @@ const updatedChar: SideCharacter = {
 
   return (
     <div
-      className={`flex flex-1 h-full w-full overflow-hidden relative ${darkMode ? 'bg-slate-900' : ''}`}
+      className={`flex flex-1 min-h-0 min-w-0 h-full w-full flex-col xl:flex-row overflow-hidden relative ${darkMode ? 'bg-slate-900' : ''}`}
       style={{ backgroundColor: chatCanvasColor }}
     >
 
-      <aside className={`w-[clamp(250px,28vw,300px)] flex-shrink-0 border-r border-slate-200 flex flex-col h-full shadow-[inset_-4px_0_12px_rgba(0,0,0,0.02)] z-10 transition-colors relative overflow-hidden ${showBackground ? 'bg-white/90 backdrop-blur-md' : 'bg-white'}`}>
+      <aside className={`w-full xl:w-[clamp(250px,28vw,300px)] max-h-[52vh] xl:max-h-none h-auto xl:h-full flex-shrink-0 border-b xl:border-b-0 xl:border-r border-slate-200 flex flex-col shadow-[inset_-4px_0_12px_rgba(0,0,0,0.02)] z-10 transition-colors relative overflow-hidden ${showBackground ? 'bg-white/90 backdrop-blur-md' : 'bg-white'}`}>
         {/* Sidebar background image layer */}
         {selectedSidebarBgUrl && (
           <div className="absolute inset-0 z-0">
@@ -4026,7 +4417,7 @@ const updatedChar: SideCharacter = {
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col overflow-hidden h-full relative z-10">
+      <main className="flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden h-full relative z-10">
         {/* Chat scroll area with background contained inside */}
         <div className="flex-1 relative overflow-hidden">
           {/* Background layer - contained to chat area only, not input bar */}
@@ -4204,7 +4595,7 @@ const updatedChar: SideCharacter = {
                         segmentChar = findCharacterWithSession(segment.speakerName);
                         segmentName = segment.speakerName;
                         segmentAvatar = segmentChar?.avatarDataUrl || null;
-                        isGenerating = segmentChar && 'isAvatarGenerating' in segmentChar ? segmentChar.isAvatarGenerating : false;
+                        isGenerating = Boolean(segmentChar && 'isAvatarGenerating' in segmentChar && segmentChar.isAvatarGenerating);
                       } else if (!isAi) {
                         // User message WITHOUT speaker tag - default to user's effective character
                         const effectiveUserChar = userChar ? getEffectiveCharacter(userChar) : null;

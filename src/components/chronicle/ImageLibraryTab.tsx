@@ -20,6 +20,9 @@ interface ImageLibraryTabProps {
 }
 
 export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFolderChange, searchQuery = '', uploadRef }) => {
+  const toTimestamp = (value: string | number | Date | null | undefined): number =>
+    value ? new Date(value).getTime() : Date.now();
+
   const [folders, setFolders] = useState<ImageFolder[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState<ImageFolder | null>(null);
@@ -174,8 +177,8 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
         thumbnailImageId: null,
         thumbnailUrl: null,
         imageCount: 0,
-        createdAt: new Date(data.created_at).getTime(),
-        updatedAt: new Date(data.updated_at).getTime(),
+        createdAt: toTimestamp(data.created_at),
+        updatedAt: toTimestamp(data.updated_at),
       };
 
       setFolders((prev) => [newFolder, ...prev]);
@@ -326,7 +329,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
                   title: (imgData as any).title || '',
                   isThumbnail: false,
                   tags: imgData.tags || [],
-                  createdAt: new Date(imgData.created_at).getTime(),
+                  createdAt: toTimestamp(imgData.created_at),
                 },
                 ...prev,
               ]);

@@ -841,7 +841,7 @@
       </div>
       <div class="sb-item" data-nav="star-char-pc" onclick="switchSection('star-char-pc', this)">
         <div class="si-title">Preferred Clothing</div>
-        <div class="si-sub">3 fields + extras</div>
+        <div class="si-sub">5 fields + extras</div>
       </div>
       <div class="sb-item" data-nav="star-char-bg" onclick="switchSection('star-char-bg', this)">
         <div class="si-title">Background</div>
@@ -923,8 +923,8 @@
         <div class="si-sub">dialogFormatting</div>
       </div>
       <div class="sb-item" data-nav="star-world-custom" onclick="switchSection('star-world-custom', this)">
-        <div class="si-title">Custom Content</div>
-        <div class="si-sub">customContent</div>
+        <div class="si-title">Dynamic &amp; Custom Content</div>
+        <div class="si-sub">world_custom_*, story_*, phase_*</div>
       </div>
     </div>
     <div class="sb-divider"></div>
@@ -2377,6 +2377,10 @@ Prompt template:
   DESCRIPTION: &lt;your description here&gt;
 
 FIELD RESOLUTION (prefix stripping in buildCharacterFieldPrompt):
+  cw_*                    → strips cw_ prefix (cw_miscellaneous → miscellaneous)
+  pc_*                    → strips pc_ prefix (pc_undergarments → undergarments, pc_miscellaneous → miscellaneous)
+  goal_outcome_*          → characterGoalOutcome
+  goal_step_*             → characterGoalStep
   extra_tone_*            → tone
   extra_kle_*             → keyLifeEvent
   extra_rel_*             → relationship
@@ -2729,8 +2733,9 @@ DESCRIPTION: &lt;your description here&gt;
 buildFullContext() and buildCharacterSelfContext() — identical to Physical Appearance page. See that page for the complete field-by-field assembly logic.
 
 ═══ FIELD RESOLUTION ═══
+  cw_* → strips cw_ prefix (cw_miscellaneous → miscellaneous)
   extra_cw_* → currentlyWearingExtra
-  (hardcoded fields use direct key: top, bottom, undergarments, miscellaneous)
+  (hardcoded fields use direct key: top, bottom, undergarments; plus resolved miscellaneous alias above)
 
 ═══ RESPONSE POST-PROCESSING ═══
   Detailed: trim, strip leading/trailing quotes
@@ -2750,7 +2755,7 @@ buildFullContext() and buildCharacterSelfContext() — identical to Physical App
         <div class="chip chip-temp">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
         <div class="chip">Streaming <strong>no</strong></div>
       </div>
-      <div class="ph-note">Fields: casual, work, sleep + preferredClothingExtra (extra_pc_*)</div>
+      <div class="ph-note">Fields: casual, work, sleep, undergarments, miscellaneous + preferredClothingExtra (extra_pc_*). NOTE: UI sends `pc_` aliases for undergarments/miscellaneous.</div>
     </div>
     <div class="iblock" data-block="star-char-pc" id="block-star-char-pc" draggable="false">
       <div class="iblock-header">
@@ -2784,6 +2789,12 @@ work — Label: "Work" | Max Sentences: 2
 
 sleep — Label: "Sleep" | Max Sentences: 2
   INSTRUCTION: "Describe preferred sleepwear. Include style and comfort preferences."
+
+undergarments (sent as pc_undergarments) — Label: "Undergarments" | Max Sentences: 2
+  INSTRUCTION: "Describe undergarments being worn. Include type, color, and style."
+
+miscellaneous (sent as pc_miscellaneous) — Label: "Miscellaneous" | Max Sentences: 3
+  INSTRUCTION: "Describe additional items (outerwear, footwear, accessories). List each item briefly."
 
 preferredClothingExtra (extra_pc_* rows) — Label: "Preferred Outfit" | Max Sentences: 2
   INSTRUCTION: "Describe an additional preferred clothing item or outfit for a specific occasion. Include style, aesthetic, and when they'd wear it."
@@ -2864,8 +2875,9 @@ DESCRIPTION: &lt;your description here&gt;
 buildFullContext() and buildCharacterSelfContext() — identical to Physical Appearance page. See that page for the complete field-by-field assembly logic.
 
 ═══ FIELD RESOLUTION ═══
+  pc_* → strips pc_ prefix (pc_undergarments → undergarments, pc_miscellaneous → miscellaneous)
   extra_pc_* → preferredClothingExtra
-  (hardcoded fields use direct key: casual, work, sleep)
+  (hardcoded fields use direct key: casual, work, sleep; plus resolved undergarments/miscellaneous aliases above)
 
 ═══ RESPONSE POST-PROCESSING ═══
   Detailed: trim, strip leading/trailing quotes
@@ -3540,7 +3552,7 @@ SECTION-SPECIFIC GUIDANCE:
         <div class="chip chip-temp">Temp <input type="number" class="chip-temp-input" value="0.9" min="0" max="2" step="0.1" disabled></div>
         <div class="chip">Streaming <strong>no</strong></div>
       </div>
-      <div class="ph-note">Direct field key: characterGoal</div>
+      <div class="ph-note">Dynamic field keys: goal_outcome_${goal.id}, goal_step_${step.id}</div>
     </div>
     <div class="iblock" data-block="star-char-goal" id="block-star-char-goal" draggable="false">
       <div class="iblock-header">
@@ -3564,9 +3576,14 @@ SECTION-SPECIFIC GUIDANCE:
 }
 Retry: up to 3 attempts with the same model on failure or content_filter.
 
-═══ FIELD CONFIG ═══
-characterGoal — Label: "Character Goal" | Max Sentences: 3
-  INSTRUCTION: "Describe what this character wants to achieve, their underlying motivation for wanting it, and the obstacles or conflicts standing in their way. Connect the goal to the story premise and the character's personality."
+═══ FIELD CONFIG / KEY ROUTING ═══
+goal_outcome_${goal.id} → characterGoalOutcome
+  Label: "Character Goal Outcome" | Max Sentences: 3
+  INSTRUCTION: "Describe what successful completion of this character goal looks like. Include the desired end state, why it matters to the character, and what changes if they achieve it."
+
+goal_step_${step.id} → characterGoalStep
+  Label: "Character Goal Step" | Max Sentences: 2
+  INSTRUCTION: "Write one concrete, actionable step that advances this character goal. Keep it specific, grounded in the story context, and realistic for this character."
 
 ═══ DETAILED MODE — EXACT USER PROMPT ═══
 {Same template as other sections, with max 3 sentences and the instruction above}
@@ -3582,7 +3599,9 @@ SECTION-SPECIFIC GUIDANCE:
 
 ═══ CONTEXT/RESOLUTION/POST-PROCESSING ═══
   Context: buildFullContext() + buildCharacterSelfContext() — see Physical Appearance page
-  Resolution: characterGoal → direct match
+  Resolution:
+    goal_outcome_* → characterGoalOutcome
+    goal_step_* → characterGoalStep
   Post-processing: same as other sections</div>
       <textarea class="iblock-textarea" id="ta-star-char-goal" oninput="markModified('star-char-goal'); autoResize(this)"></textarea>
     </div>
@@ -3889,7 +3908,7 @@ PRECISE MODE PROMPT (exact):
     <!-- ═══ PAGE: Custom Content ═══ -->
     <div class="content-section" data-section="star-world-custom">
     <div class="page-header">
-      <h1>Custom Content — AI Enhance</h1>
+      <h1>Dynamic &amp; Custom Content — AI Enhance</h1>
       <div class="ph-sub">world-ai.ts → FIELD_PROMPTS</div>
     </div>
     <div class="iblock" data-block="star-world-custom" id="block-star-world-custom" draggable="false">
@@ -3897,8 +3916,8 @@ PRECISE MODE PROMPT (exact):
         <div class="drag-handle" draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)">⠿</div>
         <div class="modified-dot" id="dot-star-world-custom"></div>
         <div class="iblock-meta">
-          <div class="iblock-title">customContent — Exact Prompt</div>
-          <div class="iblock-condition">Field: Custom Content</div>
+          <div class="iblock-title">customContent — Fallback Prompt (+ dynamic routing below)</div>
+          <div class="iblock-condition">Field: Dynamic world keys map to dedicated families; unmatched keys use Custom Content fallback</div>
         </div>
         <div class="iblock-right"><div class="src-badge">world-ai.ts</div><div class="tok-badge">~200-600 tok</div></div>
         <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
@@ -3939,7 +3958,8 @@ PRECISE MODE PROMPT (exact):
         </div>
         <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
       </div>
-      <div class="iblock-body" id="body-ai-fill">Model: grok-4-1-fast-reasoning (fallback: grok-3-mini)
+      <div class="iblock-body" id="body-ai-fill">Model: [user-selected model from app settings]
+Retries: Up to 3 attempts on the same selected model (no model fallback chain)
 Temperature: 0.9 | Max tokens: 4096
 
 System Message:
@@ -3949,7 +3969,7 @@ Flow:
 1. Detects empty fields via getEmptyHardcodedFields()
 2. Builds context: buildFullContext() + buildCharacterSelfContext()
 3. Constructs JSON prompt via buildAiFillPrompt()
-4. Calls callAIWithRetry() with xAI/Grok
+4. Calls callAIWithRetry() with xAI/Grok (same model retried up to 3 times)
 5. Extracts JSON response via extractJsonFromResponse()
 6. Applies ONLY empty field values (preserves all existing content)
 
@@ -3996,7 +4016,8 @@ Modal: AIPromptModal.tsx (mode='fill')</div>
         </div>
         <button class="copy-block-btn" onclick="copyBlock(this)" title="Copy block content"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
       </div>
-      <div class="iblock-body" id="body-ai-generate">Model: grok-4-1-fast-reasoning (fallback: grok-3-mini)
+      <div class="iblock-body" id="body-ai-generate">Model: [user-selected model from app settings]
+Retries: Up to 3 attempts on the same selected model (no model fallback chain)
 Temperature: 0.9 | Max tokens: 4096
 
 System Message:
@@ -4006,13 +4027,10 @@ Enhanced Process:
 1. Analyzes story type via analyzeStoryType()
    - Detects: NSFW, Fantasy, Mystery, Survival, Romance, Sci-Fi, Action
 2. Recommends new sections based on story type:
-   - NSFW → "Kinks & Fantasies"
-   - Fantasy → "Abilities & Skills"
-   - Mystery → "Secrets & Mysteries"
-   - Survival → "Survival Skills"
-   - Romance → "Romantic Preferences"
-   - Sci-Fi → "Tech Knowledge"
-   - Action → "Combat Abilities"
+   - NSFW → "Kinks & Fantasies" (Preferences, Turn-ons, Boundaries)
+   - Fantasy OR Survival OR Action → "Abilities & Skills" (Primary Skill, Secondary Skills, Special Abilities)
+   - Mystery → "Secrets & Connections" (Hidden Agenda, Key Contacts, Dark Past)
+   - Sci-Fi → "Tech & Augments" (Equipment, Cybernetics, Specializations)
 3. Creates new custom sections automatically
 4. Returns comprehensive JSON with:
    - emptyFieldsFill: Values for standard empty fields
@@ -4630,7 +4648,7 @@ function switchSection(sectionId, clickedItem, scrollToBlockId) {
     'star-world-history': 'History & Timeline — AI Enhance',
     'star-world-plots': 'Plot Hooks — AI Enhance',
     'star-world-dialog': 'Dialog Formatting — AI Enhance',
-    'star-world-custom': 'Custom Content — AI Enhance',
+    'star-world-custom': 'Dynamic & Custom Content — AI Enhance',
     'ai-fill': 'AI Fill (Bulk)',
     'ai-generate': 'AI Generate Character',
     'img-cover': 'Cover Image',
@@ -5114,28 +5132,26 @@ const RESPONSE_POST_PROCESSING = `═══ RESPONSE POST-PROCESSING — Exact L
     6. Trim again
 
   GENERATE-BOTH MODE (additional):
-    3. Look for "---SPLIT---" in response
-    4. Split on first "---SPLIT---"
-    5. First part = label (trimmed)
-    6. Rest = value (trimmed)
-    7. Joined with \\n---SPLIT---\\n delimiter for the UI to parse`;
+    3. Parse LABEL: and DESCRIPTION: lines from the model response
+    4. If both lines are present, convert to "label\\n---SPLIT---\\ndescription" for UI parsing
+    5. If parsing fails, return raw model output unchanged`;
 
-const MODEL_FALLBACK = `═══ MODEL & FALLBACK — Exact Logic ═══
+const MODEL_FALLBACK = `═══ MODEL SELECTION & RETRY — Exact Logic ═══
 (Source: callAIWithRetry() in character-ai.ts)
 
-  FALLBACK_MODELS constant: ['grok-4-1-fast-reasoning', 'grok-3-mini']
+  Model selection:
+    1. Uses the modelId selected in app settings (single model path)
 
-  Order of attempts:
-    1. User's selected model (from model settings dropdown)
-    2. grok-4-1-fast-reasoning (if not already the selected model)
-    3. grok-3-mini (last resort)
+  Retry behavior:
+    - MAX_RETRIES = 3
+    - Re-attempts the SAME selected model on each retry (no model fallback chain)
 
-  For each model attempt:
+  For each retry attempt:
     - Call supabase.functions.invoke('chat', { body: { messages, modelId, stream: false } })
-    - If error → log and try next model
-    - If finish_reason === 'content_filter' OR content is empty → log warning, try next model
+    - If error → log and retry same model
+    - If finish_reason === 'content_filter' OR content is empty → log warning and retry same model
     - If content returned → strip leading/trailing quotes, return result
-    - If ALL models fail → throw "Content was blocked by all available models"`;
+    - If all retries fail → throw "AI request failed after 3 attempts..." to UI`;
 
 // Helper: escape HTML entities for safe display inside <pre>
 function escapeHtml(str) {
@@ -5217,7 +5233,7 @@ function injectSharedContextIntoPages() {
       text += '\n\n' + CHARACTER_SELF_CONTEXT_ASSEMBLY;
       text += '\n\n' + CURRENT_VALUE_LOGIC;
     }
-    if (!text.includes('MODEL & FALLBACK — Exact Logic')) {
+    if (!text.includes('MODEL SELECTION & RETRY — Exact Logic')) {
       text += '\n\n' + MODEL_FALLBACK;
     }
     if (!text.includes('RESPONSE POST-PROCESSING — Exact Logic')) {
@@ -5238,7 +5254,7 @@ function injectSharedContextIntoPages() {
   const paBody = document.getElementById('body-star-char-pa');
   if (paBody) {
     let text = paBody.textContent;
-    if (!text.includes('MODEL & FALLBACK — Exact Logic')) {
+    if (!text.includes('MODEL SELECTION & RETRY — Exact Logic')) {
       text += '\n\n' + MODEL_FALLBACK;
     }
     text = text.replace(/\{buildFullContext\(\) output — see CONTEXT ASSEMBLY below\}/g, '[assembled world context — see WORLD & SCENARIO CONTEXT assembly section below]');
@@ -5268,12 +5284,40 @@ function injectStoryBuilderPages() {
     'body-star-world-history': { key: 'historyTimeline', label: 'History & Timeline', maxSentences: 5, instruction: "Summarize key historical events that impact the current story. Format: chronological bullet points of important past events." },
     'body-star-world-plots': { key: 'plotHooks', label: 'Plot Hooks', maxSentences: 5, instruction: "List potential story hooks or quests. Format: 'Hook Name - Brief setup and what\\'s at stake'." },
     'body-star-world-dialog': { key: 'dialogFormatting', label: 'Dialog Formatting', maxSentences: 3, instruction: "Specify any additional dialog formatting rules beyond the standard (quotes for speech, asterisks for actions, parentheses for thoughts)." },
-    'body-star-world-custom': { key: 'customContent', label: 'Custom Content', maxSentences: 5, instruction: "Expand and enrich this world-building content based on the provided context. Be specific and narrative-relevant. Preserve the existing content's intent while adding depth." }
+    'body-star-world-custom': { key: 'customContent', label: 'Custom Content (fallback after dynamic key routing)', maxSentences: 5, instruction: "Expand and enrich this world-building content based on the provided context. Be specific and narrative-relevant. Preserve the existing content's intent while adding depth." }
   };
 
   Object.entries(worldFields).forEach(([bodyId, cfg]) => {
     const el = document.getElementById(bodyId);
     if (!el) return;
+
+    const dynamicKeyRouting = bodyId === 'body-star-world-custom'
+      ? `
+═══ DYNAMIC KEY ROUTING (resolveWorldEnhanceField in StoryBuilderScreen.tsx) ═══
+UI key family -> world-ai prompt family:
+  world_custom_\${item.id}  -> worldCustomField
+    Label: "World Custom Field" | Max Sentences: 4
+    INSTRUCTION: "Enhance this custom world field with concrete setting detail. Keep the existing intent, avoid generic filler, and tie the content to the active story premise."
+
+  story_outcome_\${goal.id} -> storyGoalOutcome
+    Label: "Story Goal Outcome" | Max Sentences: 3
+    INSTRUCTION: "Describe the desired end state for this story goal. Explain what changes in the world or narrative if this outcome is achieved."
+
+  story_step_\${step.id}    -> storyGoalStep
+    Label: "Story Goal Step" | Max Sentences: 2
+    INSTRUCTION: "Write one specific step that progresses the story goal. Keep it actionable, plot-relevant, and consistent with existing world context."
+
+  phase_outcome_\${phase.id} -> arcPhaseOutcome
+    Label: "Arc Phase Outcome" | Max Sentences: 3
+    INSTRUCTION: "Describe the desired outcome for this phase of the arc and how it affects the next phase or branch."
+
+  (unmatched key) -> customContent fallback
+
+Runtime sources of these keys:
+  - StoryBuilderScreen custom world section rows (world_custom_*)
+  - StoryGoalsSection desired outcome + step sparkles (story_outcome_*, story_step_*)
+  - ArcPhaseCard desired outcome sparkle (phase_outcome_*)`
+      : '';
 
     const fullText = `═══ REQUEST BODY (sent to chat edge function) ═══
 {
@@ -5285,7 +5329,7 @@ function injectStoryBuilderPages() {
   stream: false
 }
 
-Fallback: Uses the user's selected model only (no automatic fallback chain — different from character-ai.ts).
+Model behavior: single-call path in world-ai.ts (no retry/fallback loop).
 If error or empty content → throws error to the UI.
 
 ═══ FIELD CONFIG: ${cfg.key} ═══
@@ -5293,6 +5337,7 @@ If error or empty content → throws error to the UI.
   Label: "${cfg.label}"
   Max Sentences: ${cfg.maxSentences}
   INSTRUCTION: "${cfg.instruction}"
+${dynamicKeyRouting}
 
 ═══ DETAILED MODE — EXACT USER PROMPT (role: "user") ═══
 (Source: buildPrompt() in world-ai.ts)
@@ -5428,6 +5473,16 @@ function copyPage(btn) {
   });
 }
 
+function applyModelToInspector(modelId) {
+  if (!modelId || typeof modelId !== 'string') return;
+  document.querySelectorAll('.chip').forEach((chip) => {
+    const label = (chip.textContent || '').trim().toLowerCase();
+    if (!label.startsWith('model')) return;
+    const strong = chip.querySelector('strong');
+    if (strong) strong.textContent = modelId;
+  });
+}
+
 window.addEventListener('message', function(e) {
   if (!e.data || !e.data.type) return;
   switch (e.data.type) {
@@ -5435,6 +5490,7 @@ window.addEventListener('message', function(e) {
     case 'save': openSave(); break;
     case 'editToggle': toggleEditMode(); break;
     case 'view': openView(); break;
+    case 'setModel': applyModelToInspector(e.data.modelId); break;
   }
 });
 
@@ -5452,6 +5508,10 @@ if (origMarkDirty) {
   markDirty = function() { _origMarkDirty(); setTimeout(notifyParentState, 50); };
 }
 setTimeout(notifyParentState, 500);
+const cachedInspectorModel = localStorage.getItem('rpg_studio_global_model');
+if (cachedInspectorModel) {
+  applyModelToInspector(cachedInspectorModel);
+}
 </script>
 
 </body>

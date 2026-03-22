@@ -15,6 +15,7 @@ import {
   defaultPreferredClothing
 } from './types';
 import { LLM_MODELS } from './constants';
+import { supabase } from '@/integrations/supabase/client';
 
 export const REGISTRY_KEY = "rpg_campaign_studio_v3_codex";
 export const STORAGE_KEY = REGISTRY_KEY;
@@ -100,8 +101,6 @@ export async function compressAndUpload(
   maxHeight = 1024,
   quality = 0.85
 ): Promise<string> {
-  const { supabase } = await import('@/integrations/supabase/client');
-
   // Fetch image
   const response = await fetch(imageUrl);
   const blob = await response.blob();
