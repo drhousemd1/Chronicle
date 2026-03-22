@@ -2528,7 +2528,7 @@ const IndexContent = () => {
           )}
 
           {tab === "characters" && activeData && (
-            <div className="h-full overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-hidden">
               <CharactersTab
                 appData={activeData}
                 selectedId={selectedCharacterId}
@@ -2545,7 +2545,7 @@ const IndexContent = () => {
           )}
 
           {tab === "world" && activeData && activeId && (
-            <div className="h-full overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-hidden">
               <WorldTab
                 scenarioId={activeId}
                 world={activeData.world}
