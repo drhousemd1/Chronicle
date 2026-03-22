@@ -4182,12 +4182,18 @@ const updatedChar: SideCharacter = {
     );
   }
 
+  // Layout guardrail:
+  // Keep lg breakpoint (not xl) for split-pane mode so ~1024-1279px widths
+  // still render sidebar + main panel side-by-side instead of stacking.
   return (
     <div
       className={`flex flex-1 min-h-0 min-w-0 h-full w-full flex-col lg:flex-row overflow-hidden relative ${darkMode ? 'bg-slate-900' : ''}`}
       style={{ backgroundColor: chatCanvasColor }}
     >
 
+      {/* Height-chain guardrail:
+          lg:h-full + parent h-full/min-h-0 are required for full-height sidebar
+          and nested scroll containers to stay functional. */}
       <aside className={`w-full lg:w-[clamp(250px,28vw,300px)] max-h-[52vh] lg:max-h-none h-auto lg:h-full flex-shrink-0 border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-col shadow-[inset_-4px_0_12px_rgba(0,0,0,0.02)] z-10 transition-colors relative overflow-hidden ${showBackground ? 'bg-white/90 backdrop-blur-md' : 'bg-white'}`}>
         {/* Sidebar background image layer */}
         {selectedSidebarBgUrl && (

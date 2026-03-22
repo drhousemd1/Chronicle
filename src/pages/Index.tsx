@@ -2450,6 +2450,9 @@ const IndexContent = () => {
           </header>
         )}
 
+        {/* Layout guardrail:
+            This wrapper must stay flex-1 + min-h-0 in a column context so nested
+            builders can establish bounded heights and keep internal pane scrolling. */}
         <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
           {tab === "hub" && (
             <div 
@@ -2528,6 +2531,8 @@ const IndexContent = () => {
           )}
 
           {tab === "characters" && activeData && (
+            // Height-chain guardrail: keep h-full + min-h-0 + overflow-hidden wrapper
+            // so Character Builder side nav and main pane scroll regions resolve correctly.
             <div className="h-full min-h-0 overflow-hidden">
               <CharactersTab
                 appData={activeData}
@@ -2545,6 +2550,8 @@ const IndexContent = () => {
           )}
 
           {tab === "world" && activeData && activeId && (
+            // Height-chain guardrail: keep h-full + min-h-0 + overflow-hidden wrapper
+            // so Story Builder roster + content panes preserve full-height behavior.
             <div className="h-full min-h-0 overflow-hidden">
               <WorldTab
                 scenarioId={activeId}

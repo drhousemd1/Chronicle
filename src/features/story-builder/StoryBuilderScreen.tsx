@@ -431,6 +431,9 @@ export const StoryBuilderScreen: React.FC<StoryBuilderScreenProps> = ({
   const noAICharacterError = publishErrors.noAICharacter;
   const noUserCharacterError = publishErrors.noUserCharacter;
 
+  // Layout guardrail:
+  // Keep lg:flex-row so Story Builder stays split-pane on common laptop widths.
+  // h-full + min-h-0 are required for sidebar height + internal scrolling.
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col lg:flex-row overflow-hidden">
       <StoryRosterSidebar

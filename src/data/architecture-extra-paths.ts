@@ -21,7 +21,6 @@ export const architectureExtraPaths: string[] = [
   '/docs/transfer/Additional_Instructions.md',
   '/docs/transfer/chronicle_transfer_pack-2.md',
   '/docs/transfer/chronicle_transfer_pack.md',
-  '/public/api-call-inspector-chronicle.html',
   '/public/favicon.ico',
   '/public/placeholder.svg',
   '/public/robots.txt',
@@ -36,7 +35,6 @@ export const architectureExtraPaths: string[] = [
   '/supabase/functions/extract-character-updates/index.ts',
   '/supabase/functions/extract-memory-events/index.ts',
   '/supabase/functions/generate-cover-image/index.ts',
-  '/supabase/functions/generate-narrative-directive/index.ts',
   '/supabase/functions/generate-scene-image/index.ts',
   '/supabase/functions/generate-side-character-avatar/index.ts',
   '/supabase/functions/generate-side-character/index.ts',
@@ -98,4 +96,5 @@ export const architectureExtraPaths: string[] = [
   '/supabase/migrations/20260319101104_4acf529e-0767-4378-9a4c-0eedb0272076.sql',
   '/supabase/migrations/20260319102704_328b0fc5-7ae1-4fb5-a4ec-6cbb50f65c28.sql',
   '/supabase/migrations/20260319194000_9b1b2e0d-3a08-47e4-bedd-0f96f3d8a1cb.sql',
+  '/supabase/migrations/20260321053351_a5cb85ae-38a2-4067-be8d-70ea3354f077.sql',
 ];

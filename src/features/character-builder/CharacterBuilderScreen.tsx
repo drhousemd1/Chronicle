@@ -869,8 +869,12 @@ export const CharacterBuilderScreen: React.FC<CharacterBuilderScreenProps> = ({
 
   const avatarPos = selected.avatarPosition || { x: 50, y: 50 };
 
+  // Layout guardrail:
+  // Keep lg:flex-row and explicit h-full/min-h-0 to preserve split-pane behavior
+  // and avoid scroll breakage at intermediate desktop widths.
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col lg:flex-row overflow-hidden">
+      {/* Height-chain guardrail for full-height nav at lg+ */}
       <aside
         className="w-full lg:w-[320px] lg:max-w-[320px] flex-shrink-0 bg-[#2a2a2f] flex flex-col h-auto lg:h-full max-h-[52vh] lg:max-h-none rounded-none shadow-[0_12px_32px_-2px_rgba(0,0,0,0.55),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]"
       >
