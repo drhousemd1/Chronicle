@@ -2450,7 +2450,7 @@ const IndexContent = () => {
           </header>
         )}
 
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
           {tab === "hub" && (
             <div 
               className="relative w-full h-full bg-black"
@@ -2528,7 +2528,7 @@ const IndexContent = () => {
           )}
 
           {tab === "characters" && activeData && (
-            <div className="flex-1 min-h-0 overflow-hidden">
+            <div className="h-full min-h-0 overflow-hidden">
               <CharactersTab
                 appData={activeData}
                 selectedId={selectedCharacterId}
@@ -2545,7 +2545,7 @@ const IndexContent = () => {
           )}
 
           {tab === "world" && activeData && activeId && (
-            <div className="flex-1 min-h-0 overflow-hidden">
+            <div className="h-full min-h-0 overflow-hidden">
               <WorldTab
                 scenarioId={activeId}
                 world={activeData.world}

@@ -432,7 +432,7 @@ export const StoryBuilderScreen: React.FC<StoryBuilderScreenProps> = ({
   const noUserCharacterError = publishErrors.noUserCharacter;
 
   return (
-    <div className="flex flex-1 min-h-0 min-w-0 flex-col lg:flex-row overflow-hidden">
+    <div className="flex h-full min-h-0 min-w-0 flex-col lg:flex-row overflow-hidden">
       <StoryRosterSidebar
         characters={characters}
         onSelectCharacter={onSelectCharacter}
