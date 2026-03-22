@@ -1,27 +1,27 @@
 
 
-# Fix Story Builder Sidebar Not Extending Full Height
+# Fix Story Builder Sidebar Height — Use Flex Instead of h-full
 
 ## Problem
-The WorldTab (Story Builder) is rendered directly inside `<main>` without a height-constraining wrapper. Compare:
-- Characters tab: `<div className="h-full overflow-hidden"><CharactersTab ... /></div>` — works correctly
-- World tab: `<WorldTab ... />` — no wrapper, so the sidebar's `lg:h-full` has no parent height to fill
-
-The `StoryBuilderScreen` root div uses `flex flex-1 min-h-0` which needs a parent with defined height. Without it, the sidebar collapses to content height only.
+The `<div className="h-full overflow-hidden">` wrapper around WorldTab is inside `<main className="flex-1 min-h-0 flex flex-col overflow-hidden">`. After the header takes its space, `h-full` (100% of parent) doesn't correctly fill only the remaining space in a flex-col context — it can overflow or collapse depending on content. The sidebar's `lg:h-full` then has no reliable height to fill.
 
 ## Fix
 
-### `src/pages/Index.tsx` (~line 2547-2580)
-Wrap the WorldTab in the same pattern used by the characters tab:
-
+### `src/pages/Index.tsx` (~line 2548)
+Change the WorldTab wrapper from:
 ```
 <div className="h-full overflow-hidden">
-  <WorldTab ... />
-</div>
+```
+to:
+```
+<div className="flex-1 min-h-0 overflow-hidden">
 ```
 
-This gives the flex container inside `StoryBuilderScreen` a defined height to fill, which lets the sidebar's `lg:h-full` stretch to the bottom of the page.
+This tells the flex-col parent to give this div all remaining space after the header, and `min-h-0` allows it to shrink properly so the sidebar's `h-full` resolves correctly.
+
+### Also fix the Characters tab wrapper (~line 2531) for consistency
+Same change: `h-full overflow-hidden` → `flex-1 min-h-0 overflow-hidden`
 
 ## Files Modified
-- `src/pages/Index.tsx` — add `h-full overflow-hidden` wrapper around WorldTab
+- `src/pages/Index.tsx` — two wrapper divs changed from `h-full` to `flex-1 min-h-0`
 
