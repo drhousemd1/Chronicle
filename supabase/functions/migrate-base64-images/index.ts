@@ -62,8 +62,8 @@ serve(async (req) => {
         const { data: urlData } = supabase.storage.from('covers').getPublicUrl(filename);
         await supabase.from('stories').update({ cover_image_url: urlData.publicUrl }).eq('id', row.id);
         results.covers++;
-      } catch (e) {
-        results.errors.push(`cover ${row.id}: ${e.message}`);
+      } catch (e: any) {
+        results.errors.push(`cover ${row.id}: ${(e as Error).message}`);
       }
     }
 
@@ -84,8 +84,8 @@ serve(async (req) => {
         const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filename);
         await supabase.from('characters').update({ avatar_url: urlData.publicUrl }).eq('id', row.id);
         results.avatars++;
-      } catch (e) {
-        results.errors.push(`char ${row.id}: ${e.message}`);
+      } catch (e: any) {
+        results.errors.push(`char ${row.id}: ${(e as Error).message}`);
       }
     }
 
@@ -106,8 +106,8 @@ serve(async (req) => {
         const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filename);
         await supabase.from('side_characters').update({ avatar_url: urlData.publicUrl }).eq('id', row.id);
         results.sideCharAvatars++;
-      } catch (e) {
-        results.errors.push(`side ${row.id}: ${e.message}`);
+      } catch (e: any) {
+        results.errors.push(`side ${row.id}: ${(e as Error).message}`);
       }
     }
 
@@ -116,9 +116,9 @@ serve(async (req) => {
     return new Response(JSON.stringify(results), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (e) {
+  } catch (e: any) {
     console.error("migrate-base64-images error:", e);
-    return new Response(JSON.stringify({ error: e.message }), {
+    return new Response(JSON.stringify({ error: (e as Error).message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

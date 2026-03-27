@@ -63,13 +63,6 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'folder' | 'image'; id: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch folders on mount (once per userId)
-  useEffect(() => {
-    if (!userId) return;
-    if (hasLoadedRef.current) return;
-    loadFolders();
-  }, [userId, loadFolders]);
-
   // Expose upload trigger via ref
   useEffect(() => {
     if (uploadRef) {

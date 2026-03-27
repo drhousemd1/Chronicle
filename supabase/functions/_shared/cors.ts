@@ -17,7 +17,7 @@ function parseOrigins(raw: string | null): string[] {
 }
 
 const configuredEntries = parseOrigins(
-  Deno.env.get("ALLOWED_ORIGINS") ?? Deno.env.get("CORS_ALLOWED_ORIGINS"),
+  Deno.env.get("ALLOWED_ORIGINS") ?? Deno.env.get("CORS_ALLOWED_ORIGINS") ?? null,
 );
 
 const configuredOrigins = configuredEntries.filter(
