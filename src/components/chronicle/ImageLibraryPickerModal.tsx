@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -38,9 +38,9 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
       setFolderImages([]);
       setSelectedImageUrl(null);
     }
-  }, [isOpen, user]);
+  }, [isOpen, user, loadFolders]);
 
-  const loadFolders = async () => {
+  const loadFolders = useCallback(async () => {
     if (!user) return;
     setIsLoadingFolders(true);
     try {
@@ -66,7 +66,7 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
     } finally {
       setIsLoadingFolders(false);
     }
-  };
+  }, [user]);
 
   const loadFolderImages = async (folderId: string) => {
     setIsLoadingImages(true);

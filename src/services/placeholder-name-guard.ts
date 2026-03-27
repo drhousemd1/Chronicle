@@ -133,7 +133,7 @@ export function normalizePlaceholderNames(
   existingNames: Set<string>,
   placeholderMap: PlaceholderNameMap
 ): { normalizedText: string; newNames: string[] } {
-  let result = text;
+  const result = text;
   const newNames: string[] = [];
   const usedInThisSession = new Set<string>(Object.values(placeholderMap).map(n => n.toLowerCase()));
   

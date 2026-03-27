@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Heart, Bookmark, Play, Pencil, Edit, Loader2, Eye, X, Globe } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogOverlay, DialogPortal } from '@/components/ui/dialog';
@@ -141,7 +141,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
   }, [open, scenarioId]);
 
   // Fetch reviews when modal opens
-  const loadReviews = () => {
+  const loadReviews = useCallback(() => {
     if (!publishedScenarioId) return;
     fetchScenarioReviews(publishedScenarioId, REVIEWS_PAGE_SIZE, 0).then(batch => {
       setReviews(batch);
@@ -150,7 +150,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
     if (user?.id) {
       fetchUserReview(publishedScenarioId, user.id).then(setUserReview).catch(console.error);
     }
-  };
+  }, [publishedScenarioId, user?.id]);
 
   const loadMoreReviews = async () => {
     if (!publishedScenarioId || loadingMoreReviews) return;
@@ -170,7 +170,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
     if (open && publishedScenarioId) {
       loadReviews();
     }
-  }, [open, publishedScenarioId, user?.id]);
+  }, [open, publishedScenarioId, loadReviews]);
 
 
   const handleLike = async () => {

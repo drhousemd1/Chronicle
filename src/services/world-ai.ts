@@ -89,6 +89,28 @@ function buildPrompt(
   mode: 'precise' | 'detailed' = 'detailed'
 ): string {
   const fieldConfig = FIELD_PROMPTS[fieldName];
+  const normalizeSectionItems = (section: any): Array<{ label: string; value: string }> => {
+    const sectionTitle = (section?.title || '').trim();
+    const rawItems = Array.isArray(section?.items) ? section.items : [];
+    const normalized = rawItems
+      .map((item: any) => ({
+        label: (item?.label || '').trim(),
+        value: (item?.value || '').trim()
+      }))
+      .filter((item: any) => item.label || item.value)
+      .map((item: any) => ({
+        label: item.label || (sectionTitle ? `${sectionTitle} Details` : 'Details'),
+        value: item.value || item.label
+      }));
+
+    if (normalized.length > 0) return normalized;
+
+    const freeform = (section?.freeformValue || '').trim();
+    if (freeform) {
+      return [{ label: sectionTitle ? `${sectionTitle} Notes` : 'Details', value: freeform }];
+    }
+    return [];
+  };
   
   // Build context from other non-empty fields
   const contextParts: string[] = [];
@@ -100,6 +122,20 @@ function buildPrompt(
   }
   if (worldContext.storyPremise && fieldName !== 'storyPremise') {
     contextParts.push(`- Premise: ${worldContext.storyPremise}`);
+  }
+  if (worldContext.customWorldSections?.length) {
+    const customSections = worldContext.customWorldSections
+      .map((section) => {
+        const title = (section?.title || '').trim() || 'Untitled';
+        const items = normalizeSectionItems(section);
+        if (!items.length) return '';
+        return `  [${title}]\n${items.map((item) => `    - ${item.label}: ${item.value}`).join('\n')}`;
+      })
+      .filter(Boolean)
+      .join('\n');
+    if (customSections) {
+      contextParts.push(`- Custom World Content:\n${customSections}`);
+    }
   }
 
   const contextSection = contextParts.length > 0 

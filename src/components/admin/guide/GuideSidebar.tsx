@@ -1,10 +1,14 @@
 import React from 'react';
 import { Plus, Trash2 } from 'lucide-react';
+import type { GuideFreshnessState } from './guide-freshness';
 
 export interface GuideDocument {
   id: string;
   title: string;
   sort_order: number;
+  updated_at: string;
+  content: unknown;
+  freshness: GuideFreshnessState;
 }
 
 export interface TocEntry {
@@ -48,6 +52,19 @@ export const GuideSidebar: React.FC<GuideSidebarProps> = ({
   const tocEmptyText = isDark ? '#4B5563' : '#9CA3AF';
   const newDocText = isDark ? '#6B7280' : '#9CA3AF';
 
+  const getFreshnessStyles = (kind: GuideFreshnessState['kind']) => {
+    switch (kind) {
+      case 'fresh':
+        return { bg: '#16a34a', text: '#dcfce7' };
+      case 'aging':
+        return { bg: '#f59e0b', text: '#fef3c7' };
+      case 'stale':
+        return { bg: '#ef4444', text: '#fee2e2' };
+      default:
+        return { bg: '#64748b', text: '#e2e8f0' };
+    }
+  };
+
   return (
     <div className="w-60 shrink-0 flex flex-col h-full transition-colors" style={{ background: bg }}>
       {/* Header */}
@@ -85,6 +102,16 @@ export const GuideSidebar: React.FC<GuideSidebarProps> = ({
               >
                 {doc.title}
               </button>
+              <span
+                className="text-[10px] font-semibold uppercase tracking-[0.08em] px-1.5 py-0.5 rounded shrink-0"
+                style={{
+                  background: getFreshnessStyles(doc.freshness.kind).bg,
+                  color: getFreshnessStyles(doc.freshness.kind).text,
+                }}
+                title={`${doc.freshness.label}: ${doc.freshness.detail}`}
+              >
+                {doc.freshness.label}
+              </span>
               <button
                 onClick={(e) => { e.stopPropagation(); onDeleteDoc(doc.id); }}
                 className="p-1 mr-1 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all shrink-0"

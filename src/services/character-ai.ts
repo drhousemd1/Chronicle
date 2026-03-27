@@ -14,6 +14,28 @@ import { uid, now } from "@/utils";
 function buildFullContext(appData: ScenarioData, targetCharacterId: string): string {
   const parts: string[] = [];
   const core = appData.world.core;
+  const normalizeSectionItems = (section: any): Array<{ label: string; value: string }> => {
+    const sectionTitle = (section?.title || '').trim();
+    const rawItems = Array.isArray(section?.items) ? section.items : [];
+    const normalized = rawItems
+      .map((item: any) => ({
+        label: (item?.label || '').trim(),
+        value: (item?.value || '').trim()
+      }))
+      .filter((item: any) => item.label || item.value)
+      .map((item: any) => ({
+        label: item.label || (sectionTitle ? `${sectionTitle} Details` : 'Details'),
+        value: item.value || item.label
+      }));
+
+    if (normalized.length > 0) return normalized;
+
+    const freeform = (section?.freeformValue || '').trim();
+    if (freeform) {
+      return [{ label: sectionTitle ? `${sectionTitle} Notes` : 'Details', value: freeform }];
+    }
+    return [];
+  };
 
   // World info
   if (core.scenarioName) parts.push(`Scenario: ${core.scenarioName}`);
@@ -48,7 +70,7 @@ function buildFullContext(appData: ScenarioData, targetCharacterId: string): str
   // Custom world sections
   if (core.customWorldSections?.length) {
     for (const sec of core.customWorldSections) {
-      const filled = sec.items.filter(i => i.label && i.value);
+      const filled = normalizeSectionItems(sec);
       if (filled.length) {
         parts.push(`${sec.title}:\n${filled.map(i => `  - ${i.label}: ${i.value}`).join('\n')}`);
       }
@@ -100,6 +122,28 @@ function buildFullContext(appData: ScenarioData, targetCharacterId: string): str
  */
 function buildCharacterSelfContext(character: Character): string {
   const parts: string[] = [];
+  const normalizeSectionItems = (section: any): Array<{ label: string; value: string }> => {
+    const sectionTitle = (section?.title || '').trim();
+    const rawItems = Array.isArray(section?.items) ? section.items : [];
+    const normalized = rawItems
+      .map((item: any) => ({
+        label: (item?.label || '').trim(),
+        value: (item?.value || '').trim()
+      }))
+      .filter((item: any) => item.label || item.value)
+      .map((item: any) => ({
+        label: item.label || (sectionTitle ? `${sectionTitle} Details` : 'Details'),
+        value: item.value || item.label
+      }));
+
+    if (normalized.length > 0) return normalized;
+
+    const freeform = (section?.freeformValue || '').trim();
+    if (freeform) {
+      return [{ label: sectionTitle ? `${sectionTitle} Notes` : 'Details', value: freeform }];
+    }
+    return [];
+  };
 
   // Basic info
   if (character.name && character.name !== "New Character") parts.push(`Name: ${character.name}`);
@@ -187,7 +231,7 @@ function buildCharacterSelfContext(character: Character): string {
 
   // Custom sections
   for (const sec of character.sections) {
-    const filled = sec.items.filter(i => i.label && i.value);
+    const filled = normalizeSectionItems(sec);
     if (filled.length) {
       parts.push(`${sec.title}: ${filled.map(i => `${i.label}: ${i.value}`).join('; ')}`);
     }
@@ -992,7 +1036,7 @@ function extractJsonFromResponse(raw: string): any | null {
     }).join('');
 
   // 1. Strip markdown code fences
-  let cleaned = raw.replace(/```(?:json)?\s*/gi, '').replace(/```\s*/g, '');
+  const cleaned = raw.replace(/```(?:json)?\s*/gi, '').replace(/```\s*/g, '');
 
   // 2. Try direct parse
   try { return JSON.parse(cleaned); } catch (_) { /* continue */ }
@@ -1344,7 +1388,7 @@ export async function aiGenerateCharacter(
     }
 
     // Start with existing sections
-    let updatedSections = [...character.sections];
+    const updatedSections = [...character.sections];
 
     // Add new items to existing sections
     if (result.existingSectionAdditions) {

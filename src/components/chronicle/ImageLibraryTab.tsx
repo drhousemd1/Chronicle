@@ -68,7 +68,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
     if (!userId) return;
     if (hasLoadedRef.current) return;
     loadFolders();
-  }, [userId]);
+  }, [userId, loadFolders]);
 
   // Expose upload trigger via ref
   useEffect(() => {

@@ -467,7 +467,7 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
       setActiveTraitSection(`custom:${newest.id}`);
     }
     prevSectionCountRef.current = currentCount;
-  }, [draft.sections?.length]);
+  }, [draft.sections, draft.sections?.length]);
 
   // Initialize draft from character when modal opens
   useEffect(() => {
@@ -627,8 +627,8 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
       
       setDraft(prev => {
         const next = { ...prev };
-        let updatedSections = [...(prev.sections || [])];
-        let updatedGoals = [...(prev.goals || [])];
+        const updatedSections = [...(prev.sections || [])];
+        const updatedGoals = [...(prev.goals || [])];
         let sectionsModified = false;
         let goalsModified = false;
         

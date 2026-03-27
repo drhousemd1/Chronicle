@@ -269,16 +269,16 @@ export const CharacterBuilderScreen: React.FC<CharacterBuilderScreenProps> = ({
       { width: CHARACTER_HEADER_TILE_WIDTH, height: CHARACTER_HEADER_TILE_HEIGHT }
     );
   }, [selected?.avatarPosition?.x, selected?.avatarPosition?.y, headerTileImageSize]);
-  const customTraitNavItems = (selected?.sections || []).map((section) => ({
+  const customTraitNavItems = useMemo(() => (selected?.sections || []).map((section) => ({
     key: `custom:${section.id}`,
     label: section.title?.trim() || 'Custom Section',
-  }));
-  const sidebarTraitNavItems = [
+  })), [selected?.sections]);
+  const sidebarTraitNavItems = useMemo(() => ([
     { key: 'basics', label: 'Basics' },
     ...NON_BASICS_BUILT_IN_TRAIT_SECTIONS,
     ...customTraitNavItems,
-  ];
-  const traitNavItems = [...BUILT_IN_TRAIT_SECTIONS, ...customTraitNavItems];
+  ]), [customTraitNavItems]);
+  const traitNavItems = useMemo(() => [...BUILT_IN_TRAIT_SECTIONS, ...customTraitNavItems], [customTraitNavItems]);
   const sectionProgressByKey = selected
     ? traitNavItems.reduce<Record<string, SectionProgress>>((acc, item) => {
         acc[item.key] = calculateSectionProgress(selected, item.key);
@@ -306,7 +306,7 @@ export const CharacterBuilderScreen: React.FC<CharacterBuilderScreenProps> = ({
       setActiveTraitSection(`custom:${newest.id}`);
     }
     prevSectionCountRef.current = currentCount;
-  }, [selected?.sections?.length]);
+  }, [selected, selected?.sections?.length]);
 
   const loadNavImageDraft = useCallback((navKey: string) => {
     setEditingNavKey(navKey);

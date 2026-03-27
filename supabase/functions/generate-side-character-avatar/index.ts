@@ -112,7 +112,7 @@ serve(async (req) => {
 
     // Enforce strict byte limit for xAI
     const encoder = new TextEncoder();
-    let bytes = encoder.encode(optimizedPrompt);
+    const bytes = encoder.encode(optimizedPrompt);
     if (bytes.length > 950) {
       let truncated = optimizedPrompt;
       while (encoder.encode(truncated).length > 950 && truncated.length > 0) {

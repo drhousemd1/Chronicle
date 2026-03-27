@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from './UI';
 import { Switch } from '@/components/ui/switch';
@@ -30,9 +30,9 @@ export const ShareScenarioModal: React.FC<ShareScenarioModalProps> = ({
     if (isOpen) {
       loadExistingPublication();
     }
-  }, [isOpen, scenarioId]);
+  }, [isOpen, loadExistingPublication]);
 
-  const loadExistingPublication = async () => {
+  const loadExistingPublication = useCallback(async () => {
     setIsLoading(true);
     try {
       const existing = await getPublishedScenario(scenarioId);
@@ -48,7 +48,7 @@ export const ShareScenarioModal: React.FC<ShareScenarioModalProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [scenarioId]);
 
   const handlePublish = async () => {
     setIsPublishing(true);

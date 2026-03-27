@@ -6,14 +6,19 @@ import 'highlight.js/styles/github-dark.css';
 import 'highlight.js/styles/github.css';
 import { Pencil, Eye, Save, Search, X, ChevronUp, ChevronDown } from 'lucide-react';
 import type { TocEntry } from './GuideSidebar';
+import type { GuideFreshnessState, GuideTruthLevel } from './guide-freshness';
+import { formatFreshnessTimestamp, getTruthLevelLabel } from './guide-freshness';
 
 interface GuideEditorProps {
   docId: string | null;
   docTitle: string;
   docMarkdown: string;
+  freshness: GuideFreshnessState | null;
   onTitleChange: (id: string, newTitle: string) => void;
   onTocUpdate: (entries: TocEntry[]) => void;
   onMarkdownChange?: (markdown: string) => void;
+  onMarkReviewed?: () => void;
+  onTruthLevelChange?: (next: GuideTruthLevel) => void;
   theme?: 'dark' | 'light';
 }
 
@@ -157,9 +162,12 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
   docId,
   docTitle,
   docMarkdown,
+  freshness,
   onTitleChange,
   onTocUpdate,
   onMarkdownChange,
+  onMarkReviewed,
+  onTruthLevelChange,
   theme = 'dark',
 }) => {
   const isDark = theme === 'dark';
@@ -282,6 +290,24 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
   const emptyText = isDark ? '#6B7280' : '#9CA3AF';
   const textareaBg = isDark ? '#0d0d0d' : '#ffffff';
   const textareaColor = isDark ? '#e2e2e2' : '#111827';
+  const metaBg = isDark ? '#0b0b0b' : '#f8fafc';
+  const metaText = isDark ? '#9CA3AF' : '#475569';
+  const metaBorder = isDark ? '#1f2937' : '#e2e8f0';
+  const selectBg = isDark ? '#121212' : '#ffffff';
+
+  const freshnessKind = freshness?.kind ?? 'unknown';
+  const freshnessLabel = freshness?.label ?? 'Unknown';
+  const freshnessDetail = freshness?.detail ?? 'No freshness metadata is available.';
+  const freshnessRef = freshness?.referenceAt ?? null;
+  const truthLevel = freshness?.truthLevel ?? 'inferred';
+  const truthLevelLabel = getTruthLevelLabel(truthLevel);
+
+  const freshnessBadgeStyle = (() => {
+    if (freshnessKind === 'fresh') return { background: '#14532d', color: '#dcfce7' };
+    if (freshnessKind === 'aging') return { background: '#78350f', color: '#fef3c7' };
+    if (freshnessKind === 'stale') return { background: '#7f1d1d', color: '#fee2e2' };
+    return { background: '#334155', color: '#e2e8f0' };
+  })();
 
   if (!docId) {
     return (
@@ -353,6 +379,47 @@ export const GuideEditor: React.FC<GuideEditorProps> = ({
             )}
           </div>
         )}
+      </div>
+
+      {/* Freshness metadata */}
+      <div
+        className="flex items-center justify-between gap-3 px-4 py-2 border-b transition-colors"
+        style={{ background: metaBg, borderBottomColor: metaBorder }}
+      >
+        <div className="min-w-0 flex flex-wrap items-center gap-2 text-[11px]" style={{ color: metaText }}>
+          <span
+            className="inline-flex items-center px-2 py-0.5 rounded font-semibold uppercase tracking-[0.08em]"
+            style={freshnessBadgeStyle}
+            title={freshnessDetail}
+          >
+            {freshnessLabel}
+          </span>
+          <span className="truncate" title={freshnessDetail}>Freshness: {freshnessDetail}</span>
+          <span className="truncate">Last review: {formatFreshnessTimestamp(freshnessRef)}</span>
+          <span className="truncate">Source: {truthLevelLabel}</span>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <select
+            value={truthLevel}
+            onChange={(e) => onTruthLevelChange?.(e.target.value as GuideTruthLevel)}
+            className="text-[11px] rounded px-2 py-1 border outline-none transition-colors"
+            style={{ background: selectBg, color: metaText, borderColor: metaBorder }}
+            title="Source trust mode for this document"
+          >
+            <option value="code-verified">Code-verified</option>
+            <option value="mixed">Mixed</option>
+            <option value="inferred">Inferred</option>
+          </select>
+          <button
+            onClick={onMarkReviewed}
+            className="text-[11px] font-semibold rounded px-2 py-1 border transition-colors"
+            style={{ background: btnBg, borderColor: btnBorder, color: btnText }}
+            title="Mark this document as reviewed now"
+            disabled={!onMarkReviewed}
+          >
+            Mark Reviewed
+          </button>
+        </div>
       </div>
 
       {/* Search bar */}

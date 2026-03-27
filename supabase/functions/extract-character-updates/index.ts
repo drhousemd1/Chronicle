@@ -138,7 +138,7 @@ function findBestExistingMatch(
   const normalizedNextLabel = normalizeText(nextLabel);
   let bestIdx = -1;
   let bestScore = 0;
-  let exact = false;
+  const exact = false;
 
   for (let i = 0; i < existingEntries.length; i += 1) {
     const entry = existingEntries[i];

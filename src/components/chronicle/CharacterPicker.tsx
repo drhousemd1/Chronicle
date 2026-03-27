@@ -180,7 +180,7 @@ export function CharacterPickerWithRefresh({ library: initialLibrary, refreshLib
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [refreshLibrary]);
 
   if (loading && summaries.length === 0) {
     return (

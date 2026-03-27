@@ -68,7 +68,7 @@ export const ArcFlowConnector: React.FC<ArcFlowConnectorProps> = ({
       mo.disconnect();
       window.removeEventListener('resize', recalc);
     };
-  }, [recalc]);
+  }, [containerRef, recalc]);
 
   if (!path || size.w === 0) return null;
 

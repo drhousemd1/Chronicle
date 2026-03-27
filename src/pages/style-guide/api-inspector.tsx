@@ -5,6 +5,11 @@ import {
   apiInspectorGuideCombinedHtml,
   apiInspectorGuideStyles,
 } from "@/data/api-inspector-guide-template";
+import {
+  phaseOneAuditGroups,
+  PhaseOneAuditContainer,
+  PhaseOneAuditField,
+} from "@/data/api-inspector-phase1-audit";
 
 const STORAGE_KEY = "chronicle-api-inspector-guide-html-v2";
 const STORAGE_KEY_V3 = "chronicle-api-inspector-guide-html-v3";
@@ -75,6 +80,30 @@ const SIDEBAR_BLUEPRINT: SidebarLookupGroup[] = [
         type: "item",
         match: "403 content filter retry",
       },
+    ],
+  },
+  {
+    id: "phase1-audit",
+    label: "Phase 1 Gap Map",
+    subtitle: "Field-by-field serialization coverage",
+    entries: [
+      { id: "audit-story-card", label: "Story Card", type: "item", match: "audit: story card container" },
+      { id: "audit-story-details", label: "Story Details", type: "item", match: "audit: story details (world core) container" },
+      { id: "audit-story-goals", label: "Story Goals", type: "item", match: "audit: story goals container" },
+      { id: "audit-opening-dialog", label: "Opening Dialog", type: "item", match: "audit: opening dialog container" },
+      { id: "audit-scene-gallery", label: "Scene Gallery", type: "item", match: "audit: scene gallery container" },
+      { id: "audit-content-themes", label: "Content Themes", type: "item", match: "audit: content themes container" },
+      { id: "audit-basics", label: "Character Basics", type: "item", match: "audit: character builder — basics container" },
+      { id: "audit-physical", label: "Physical Appearance", type: "item", match: "audit: character builder — physical appearance container" },
+      { id: "audit-wearing", label: "Currently Wearing", type: "item", match: "audit: character builder — currently wearing container" },
+      { id: "audit-clothing", label: "Preferred Clothing", type: "item", match: "audit: character builder — preferred clothing container" },
+      { id: "audit-personality", label: "Personality", type: "item", match: "audit: character builder — personality container" },
+      { id: "audit-tone", label: "Tone", type: "item", match: "audit: character builder — tone container" },
+      { id: "audit-background", label: "Background", type: "item", match: "audit: character builder — background container" },
+      { id: "audit-krsf", label: "KLE/Relationships/Secrets/Fears", type: "item", match: "audit: character builder — kle / relationships / secrets / fears" },
+      { id: "audit-character-goals", label: "Character Goals", type: "item", match: "audit: character builder — goals & desires container" },
+      { id: "audit-custom", label: "Custom Content", type: "item", match: "audit: character builder — custom content container" },
+      { id: "audit-side-cast", label: "CAST Coverage", type: "item", match: "audit: cast composition — main/side/user control coverage" },
     ],
   },
   {
@@ -211,6 +240,136 @@ const normalizeText = (value: string): string =>
     .replace(/&amp;/g, "&")
     .replace(/\s+/g, " ")
     .trim();
+
+const escapeHtml = (value: string): string =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+const hasAuditErrorStatus = (status: PhaseOneAuditField["status"]): boolean =>
+  status === "missing" || status === "partial";
+
+const getAuditStatusLabel = (status: PhaseOneAuditField["status"]): string => {
+  switch (status) {
+    case "connected":
+      return "Connected";
+    case "missing":
+      return "Missing";
+    case "partial":
+      return "Partial";
+    case "once-only":
+      return "Once Only";
+    case "code-handled":
+      return "Code Handled";
+    case "not-in-prompt":
+      return "Not In Prompt";
+    default:
+      return "Unknown";
+  }
+};
+
+const getAuditTagClass = (status: PhaseOneAuditField["status"]): string => {
+  if (status === "code-handled") return "code-logic";
+  if (status === "once-only" || status === "not-in-prompt") return "check";
+  return "context-injection";
+};
+
+const getAuditSubNameClass = (status: PhaseOneAuditField["status"]): "code" | "check" | "injection" => {
+  if (status === "code-handled") return "code";
+  if (status === "once-only" || status === "not-in-prompt") return "check";
+  return "injection";
+};
+
+const renderFieldAuditSubItem = (field: PhaseOneAuditField): string => {
+  const hasError = hasAuditErrorStatus(field.status);
+  const tagClass = getAuditTagClass(field.status);
+  const subNameClass = getAuditSubNameClass(field.status);
+  const statusLabel = getAuditStatusLabel(field.status);
+  const issueNote =
+    hasError && (field.issueType || field.recommendation)
+      ? `<div class="error-note"><span class="issue-label">${escapeHtml(
+          field.issueType || "FLOW BROKEN",
+        )}</span>${escapeHtml(
+          field.recommendation ||
+            "Review serializer/injection path and wire this field into API Call 1.",
+        )}</div>`
+      : "";
+
+  return `
+    <div class="item-sub">
+      <span class="tag ${tagClass}${hasError ? " has-error" : ""}">
+        <span class="tag-icon">${hasError ? "⚠" : "✓"}</span>${tagClass === "check" ? "validation check" : tagClass.replace("-", " ")}
+      </span>
+      <span class="sub-name ${subNameClass}">${escapeHtml(field.label)}</span>:
+      <span class="sub-desc"><strong>[${statusLabel}]</strong> ${escapeHtml(field.detail)}</span>
+      ${issueNote}
+    </div>
+  `;
+};
+
+const renderContainerAuditItem = (container: PhaseOneAuditContainer): string => {
+  const hasContainerError = container.fields.some((field) => hasAuditErrorStatus(field.status));
+  const fileRefText = container.fileRefs
+    .map((ref) => {
+      const parts = [ref.path];
+      if (ref.lines) parts.push(`(lines ${ref.lines})`);
+      if (ref.note) parts.push(`— ${ref.note}`);
+      return parts.join(" ");
+    })
+    .join("\n");
+
+  return `
+    <div class="item-row" id="${escapeHtml(container.id)}">
+      <div class="item-name-row">
+        <span class="tag data-block${hasContainerError ? " has-error" : ""}">
+          <span class="tag-icon">${hasContainerError ? "⚠" : "✓"}</span>data block
+        </span>
+        <span class="item-name core">${escapeHtml(container.title)}</span>
+        <span class="tag source">phase-1-audit</span>
+      </div>
+      <div class="item-desc">${escapeHtml(container.description)}</div>
+      <div class="file-ref">${escapeHtml(fileRefText)}</div>
+      ${container.codeSource ? `<div class="code-source">${escapeHtml(container.codeSource)}</div>` : ""}
+      <div class="item-subs">
+        ${container.fields.map((field) => renderFieldAuditSubItem(field)).join("")}
+      </div>
+    </div>
+  `;
+};
+
+const buildPhaseOneAuditMarkup = (): string => {
+  const groupMarkup = phaseOneAuditGroups
+    .map(
+      (group) => `
+      <div class="tree-node open">
+        <div class="section-row" onclick="this.parentElement.classList.toggle('open')">
+          <div class="chevron">▶</div>
+          <span class="section-label">${escapeHtml(group.title)}</span>
+          <span class="section-desc">— ${escapeHtml(group.description)}</span>
+        </div>
+        <div class="children">
+          ${group.containers.map((container) => renderContainerAuditItem(container)).join("")}
+        </div>
+      </div>
+    `,
+    )
+    .join("");
+
+  return `
+    <div class="tree-node open" data-generated="phase1-serialization-audit">
+      <div class="section-row" onclick="this.parentElement.classList.toggle('open')">
+        <div class="chevron">▶</div>
+        <span class="section-label">Phase 1 Serialization Gap Map (Code Truth)</span>
+        <span class="section-desc">— full Story Builder + Character Builder field coverage with status/error tagging</span>
+      </div>
+      <div class="children">
+        ${groupMarkup}
+      </div>
+    </div>
+  `;
+};
 
 const apiInspectorExtraStyles = `
 .pending-pipelines {
@@ -489,6 +648,17 @@ src/services/llm.ts (SSE parse loop, lines ~911-971)</div>
         `,
       );
     }
+  }
+
+  const phase2Node = phaseNodes.find((node) =>
+    normalizeText(node.querySelector(".phase-row .phase-label")?.textContent || "").startsWith("phase 2: system prompt assembly"),
+  );
+  const phase2Children = phase2Node?.querySelector(":scope > .children");
+  if (phase2Children) {
+    phase2Children
+      .querySelectorAll('[data-generated="phase1-serialization-audit"]')
+      .forEach((node) => node.remove());
+    phase2Children.insertAdjacentHTML("beforeend", buildPhaseOneAuditMarkup());
   }
 
   const primaryTree = doc.querySelector(".tree");

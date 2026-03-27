@@ -2113,6 +2113,29 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       // Build character data for context — only eligible characters
       const charactersData = appData.characters.map(c => {
         const effective = getEffectiveCharacter(c);
+        const normalizeSectionItems = (section: any): Array<{ label: string; value: string }> => {
+          const sectionTitle = (section?.title || '').trim();
+          const rawItems = Array.isArray(section?.items) ? section.items : [];
+          const normalized = rawItems
+            .map((item: any) => ({
+              label: (item?.label || '').trim(),
+              value: (item?.value || '').trim()
+            }))
+            .filter((item: any) => item.label || item.value)
+            .map((item: any) => ({
+              label: item.label || (sectionTitle ? `${sectionTitle} Details` : 'Details'),
+              value: item.value || item.label
+            }));
+
+          if (normalized.length > 0) return normalized;
+
+          const freeform = (section?.freeformValue || '').trim();
+          if (freeform) {
+            return [{ label: sectionTitle ? `${sectionTitle} Notes` : 'Details', value: freeform }];
+          }
+          return [];
+        };
+
         return {
           name: effective.name,
           previousNames: effective.previousNames || [],
@@ -2131,8 +2154,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           })),
           customSections: (effective.sections || []).map(s => ({
             title: s.title,
-            items: s.items.map(i => ({ label: i.label, value: i.value }))
-          })),
+            items: normalizeSectionItems(s)
+          }))
+          .filter((s) => (s.title || '').trim() || s.items.length > 0),
           background: effective.background,
           personality: effective.personality ? {
             splitMode: effective.personality.splitMode,
@@ -2315,8 +2339,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         const patch: Record<string, any> = {};
         let sectionsModified = false;
         let goalsModified = false;
-        let updatedSections = [...(sessionState.customSections || mainChar.sections || [])];
-        let updatedGoals = [...(sessionState.goals || mainChar.goals || [])];
+        const updatedSections = [...(sessionState.customSections || mainChar.sections || [])];
+        const updatedGoals = [...(sessionState.goals || mainChar.goals || [])];
         
         for (const update of charUpdates) {
           const { field, value } = update;
@@ -3044,7 +3068,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         
         // Format streaming content on-the-fly to prevent flickering
         const existingNamesForStream = getKnownCharacterNames(appData);
-        let formatted = stripUpdateTags(fullText);
+        const formatted = stripUpdateTags(fullText);
         const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, placeholderMapRef.current);
         setFormattedStreamingContent(normalizedText);
       }
@@ -3241,7 +3265,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         
         // Format streaming content on-the-fly
         const existingNamesForStream = getKnownCharacterNames(appData);
-        let formatted = stripUpdateTags(fullText);
+        const formatted = stripUpdateTags(fullText);
         const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, placeholderMapRef.current);
         setFormattedStreamingContent(normalizedText);
       }
@@ -3371,7 +3395,7 @@ Do not acknowledge this instruction in your response.`;
         
         // Format streaming content on-the-fly
         const existingNamesForStream = getKnownCharacterNames(appData);
-        let formatted = stripUpdateTags(fullText);
+        const formatted = stripUpdateTags(fullText);
         const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, placeholderMapRef.current);
         setFormattedStreamingContent(normalizedText);
       }

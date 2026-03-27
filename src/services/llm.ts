@@ -68,6 +68,171 @@ export function getSystemInstruction(
   memories?: Memory[],
   memoriesEnabled?: boolean
 ): string {
+  const text = (value: unknown): string => {
+    if (typeof value === 'string') return value.trim();
+    if (Array.isArray(value)) {
+      return value
+        .map((entry) => (typeof entry === 'string' ? entry.trim() : ''))
+        .filter(Boolean)
+        .join(', ');
+    }
+    return '';
+  };
+  const titleCase = (key: string): string =>
+    key
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/\b\w/g, c => c.toUpperCase());
+
+  const toLabeledPairs = (
+    source: Record<string, unknown> | undefined,
+    opts?: { extrasKey?: string; fallbackLabel?: string }
+  ): Array<{ label: string; value: string }> => {
+    if (!source || typeof source !== 'object') return [];
+    const extrasKey = opts?.extrasKey ?? '_extras';
+    const fallbackLabel = opts?.fallbackLabel ?? 'Details';
+    const pairs: Array<{ label: string; value: string }> = [];
+
+    for (const [key, raw] of Object.entries(source)) {
+      if (key === extrasKey) continue;
+      const value = text(raw);
+      if (!value) continue;
+      pairs.push({ label: titleCase(key), value });
+    }
+
+    const extrasRaw = (source as any)[extrasKey];
+    if (Array.isArray(extrasRaw)) {
+      for (const entry of extrasRaw) {
+        const label = text(entry?.label) || fallbackLabel;
+        const value = text(entry?.value);
+        if (!value) continue;
+        pairs.push({ label, value });
+      }
+    }
+
+    return pairs;
+  };
+
+  const normalizeCustomSectionItems = (section: any): Array<{ label: string; value: string }> => {
+    const sectionTitle = text(section?.title);
+    const rawItems = Array.isArray(section?.items) ? section.items : [];
+    const items = rawItems
+      .map((item: any) => ({ label: text(item?.label), value: text(item?.value) }))
+      .filter((item: any) => item.label || item.value)
+      .map((item: any) => ({
+        label: item.label || (sectionTitle ? `${sectionTitle} Details` : 'Details'),
+        value: item.value || item.label
+      }));
+
+    if (items.length > 0) return items;
+
+    const freeform = text(section?.freeformValue);
+    if (freeform) {
+      return [{
+        label: sectionTitle ? `${sectionTitle} Notes` : 'Details',
+        value: freeform
+      }];
+    }
+
+    return [];
+  };
+
+  const formatSectionBlock = (heading: string, rows: Array<{ label: string; value: string }>): string => {
+    if (!rows.length) return '';
+    return `\n${heading}:\n${rows.map((row) => `      - ${row.label}: ${row.value}`).join('\n')}`;
+  };
+
+  const formatCustomSectionBlock = (heading: string, sections: any[] | undefined): string => {
+    if (!Array.isArray(sections) || sections.length === 0) return '';
+    const rendered = sections
+      .map((section) => {
+        const title = text(section?.title) || 'Untitled';
+        const items = normalizeCustomSectionItems(section);
+        if (items.length === 0) return '';
+        return `    [${title}]:\n${items.map((item) => `      - ${item.label}: ${item.value}`).join('\n')}`;
+      })
+      .filter(Boolean)
+      .join('\n');
+    return rendered ? `\n${heading}:\n${rendered}` : '';
+  };
+
+  const formatPersonalityContext = (character: any): string => {
+    const p = character?.personality;
+    if (!p) return '';
+
+    const formatTrait = (t: any, category: 'standard' | 'outward' | 'inward' = 'standard') => {
+      const level = (t.flexibility || 'normal').charAt(0).toUpperCase() + (t.flexibility || 'normal').slice(1);
+      const rawScore = t.adherenceScore ?? getDefaultScore(level);
+      const effectiveScore = category === 'outward'
+        ? Math.min(rawScore + 15, 100)
+        : category === 'inward'
+          ? Math.max(rawScore - 10, 0)
+          : rawScore;
+      const trend = t.scoreTrend;
+      const trendNote = trend === 'falling' ? ' [easing -- show as softening]'
+        : trend === 'rising' ? ' [reinforcing -- show as strengthening]'
+        : '';
+      return getTraitGuidance(t.label, level, effectiveScore) + trendNote;
+    };
+
+    if (p.splitMode) {
+      const outward = (p.outwardTraits || [])
+        .filter((t: any) => text(t?.label) || text(t?.value))
+        .map((t: any) => formatTrait(t, 'outward'))
+        .join('\n');
+      const inward = (p.inwardTraits || [])
+        .filter((t: any) => text(t?.label) || text(t?.value))
+        .map((t: any) => formatTrait(t, 'inward'))
+        .join('\n');
+      const lines: string[] = [];
+      if (outward) lines.push(`\nOUTWARD PERSONALITY (governs visible behavior, dialogue, and actions):\n${outward}`);
+      if (inward) lines.push(`\nINWARD PERSONALITY (governs internal thoughts and hidden motivation only):\n${inward}`);
+      return lines.join('');
+    }
+
+    const traits = (p.traits || [])
+      .filter((t: any) => text(t?.label) || text(t?.value))
+      .map((t: any) => formatTrait(t))
+      .join('\n');
+    return traits ? `\nPERSONALITY:\n${traits}` : '';
+  };
+
+  const buildCharacterProfile = (c: any): string => {
+    const nicknameInfo = text(c?.nicknames) ? `\nNICKNAMES: ${text(c.nicknames)}` : '';
+    const orientationInfo = text(c?.sexualOrientation) ? `\nSEXUAL ORIENTATION: ${text(c.sexualOrientation)}` : '';
+    const locationInfo = text(c?.location) ? `\nLOCATION: ${text(c.location)}` : '';
+    const moodInfo = text(c?.currentMood) ? `\nMOOD: ${text(c.currentMood)}` : '';
+    const goalsInfo = characterGoalsContext(c);
+    const personalityInfo = formatPersonalityContext(c);
+    const personalityFallbackRows = !personalityInfo && c?.personality && typeof c.personality === 'object'
+      ? Object.entries(c.personality)
+        .map(([key, raw]) => ({ label: titleCase(key), value: text(raw) }))
+        .filter((row) => row.value)
+      : [];
+    const personalityFallbackInfo = personalityFallbackRows.length
+      ? formatSectionBlock('PERSONALITY', personalityFallbackRows)
+      : '';
+
+    const physicalRows = toLabeledPairs(c?.physicalAppearance);
+    const wearingRows = toLabeledPairs(c?.currentlyWearing);
+    const preferredRows = toLabeledPairs(c?.preferredClothing);
+    const backgroundRows = toLabeledPairs(c?.background);
+    const toneRows = toLabeledPairs(c?.tone);
+    const keyLifeRows = toLabeledPairs(c?.keyLifeEvents);
+    const relationshipRows = toLabeledPairs(c?.relationships);
+    const secretRows = toLabeledPairs(c?.secrets);
+    const fearRows = toLabeledPairs(c?.fears);
+
+    const customTraits = formatCustomSectionBlock('CUSTOM TRAITS / CUSTOM CONTENT', c?.sections);
+
+    return `CHARACTER: ${text(c?.name) || 'Unnamed'} (${text(c?.sexType) || 'Unknown'})${nicknameInfo}${orientationInfo}
+ROLE: ${text(c?.characterRole) || 'Unknown'}
+CONTROL: ${text(c?.controlledBy) || 'Unknown'}${locationInfo}${moodInfo}${personalityInfo}${personalityFallbackInfo}${goalsInfo}
+TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', physicalRows)}${formatSectionBlock('CURRENTLY WEARING', wearingRows)}${formatSectionBlock('PREFERRED CLOTHING', preferredRows)}${formatSectionBlock('BACKGROUND', backgroundRows)}${formatSectionBlock('TONE', toneRows)}${formatSectionBlock('KEY LIFE EVENTS', keyLifeRows)}${formatSectionBlock('RELATIONSHIPS', relationshipRows)}${formatSectionBlock('SECRETS', secretRows)}${formatSectionBlock('FEARS', fearRows)}${customTraits}`;
+  };
+
   // Get POV setting (defaults to third-person)
   const narrativePov = appData.uiSettings?.narrativePov || 'third';
   
@@ -88,10 +253,16 @@ export function getSystemInstruction(
   // Build custom world sections context
   const customWorldContext = (() => {
     if (!appData.world.core.customWorldSections?.length) return '';
-    return '\n    CUSTOM WORLD CONTENT:\n' + appData.world.core.customWorldSections
-      .filter(s => s.title || s.items.some(i => i.label || i.value))
-      .map(s => `    [${s.title || 'Untitled'}]:\n${s.items.filter(i => i.label || i.value).map(i => `      - ${i.label}: ${i.value}`).join('\n')}`)
+    const rendered = appData.world.core.customWorldSections
+      .map((section) => {
+        const title = text(section?.title) || 'Untitled';
+        const items = normalizeCustomSectionItems(section);
+        if (!items.length) return '';
+        return `    [${title}]:\n${items.map((item) => `      - ${item.label}: ${item.value}`).join('\n')}`;
+      })
+      .filter(Boolean)
       .join('\n');
+    return rendered ? `\n    CUSTOM WORLD CONTENT:\n${rendered}` : '';
   })();
 
   // Build story goals context
@@ -167,39 +338,6 @@ export function getSystemInstruction(
     return 75; // Normal and Flexible both start at 75
   }
 
-  const personalityContext = (c: any): string => {
-    const p = c.personality;
-    if (!p) return '';
-    const formatTrait = (t: any, category: 'standard' | 'outward' | 'inward' = 'standard') => {
-      const level = (t.flexibility || 'normal').charAt(0).toUpperCase() + (t.flexibility || 'normal').slice(1);
-      const rawScore = t.adherenceScore ?? getDefaultScore(level);
-      // Apply precedence offset: outward traits get visibility bonus (+15),
-      // inward traits get suppression (-10) until they earn higher scores through story progression.
-      // This ensures outward presentation dominates visible expression by default.
-      const effectiveScore = category === 'outward'
-        ? Math.min(rawScore + 15, 100)
-        : category === 'inward'
-          ? Math.max(rawScore - 10, 0)
-          : rawScore;
-      const trend = t.scoreTrend;
-      const trendNote = trend === 'falling' ? ' [easing -- show as softening]'
-        : trend === 'rising' ? ' [reinforcing -- show as strengthening]'
-        : '';
-      return getTraitGuidance(t.label, level, effectiveScore) + trendNote;
-    };
-    if (p.splitMode) {
-      const outward = (p.outwardTraits || []).filter((t: any) => t.label || t.value).map((t: any) => formatTrait(t, 'outward')).join('\n');
-      const inward = (p.inwardTraits || []).filter((t: any) => t.label || t.value).map((t: any) => formatTrait(t, 'inward')).join('\n');
-      const lines: string[] = [];
-      if (outward) lines.push(`\nOUTWARD PERSONALITY (governs visible behavior, dialogue, and actions):\n${outward}`);
-      if (inward) lines.push(`\nINWARD PERSONALITY (governs internal thoughts and hidden motivation only):\n${inward}`);
-      return lines.join('');
-    } else {
-      const traits = (p.traits || []).filter((t: any) => t.label || t.value).map((t: any) => formatTrait(t)).join('\n');
-      return traits ? `\nPERSONALITY:\n${traits}` : '';
-    }
-  };
-
   const worldContext = `
     SCENARIO: ${appData.world.core.storyPremise || 'Not specified'}
     FACTIONS: ${appData.world.core.factions}
@@ -210,65 +348,22 @@ export function getSystemInstruction(
     ${storyGoalsContext}
   `;
 
-  // Issue #9: Filter CAST to AI-controlled characters only; build compact user-character reference
+  // CAST remains AI-controlled for generation permissions; user + side character context
+  // is still included below as read-only reference so all authored data is available.
   const aiCharacters = appData.characters.filter(c => c.controlledBy === 'AI');
   const userCharacterNames = appData.characters
     .filter(c => c.controlledBy === 'User')
     .map(c => c.name);
+  const userCharacters = appData.characters.filter(c => c.controlledBy === 'User');
+  const sideCharacters = appData.sideCharacters || [];
 
-  const characterContext = aiCharacters.map(c => {
-    const traits = c.sections.map(s => `${s.title}: ${s.items.map(it => `${it.label}=${it.value}`).join(', ')}`).join('\n');
-    const nicknameInfo = c.nicknames ? `\nNICKNAMES: ${c.nicknames}` : '';
-    const locationInfo = c.location ? `\nLOCATION: ${c.location}` : '';
-    const moodInfo = c.currentMood ? `\nMOOD: ${c.currentMood}` : '';
-    const goalsInfo = characterGoalsContext(c);
-    const personalityInfo = personalityContext(c);
-    // Build extras context for hardcoded sections
-    const extrasContext = (section: any, sectionName: string) => {
-      const extras = section?._extras?.filter((e: any) => e.label && e.value);
-      if (!extras?.length) return '';
-      return extras.map((e: any) => `${e.label}=${e.value}`).join(', ');
-    };
-    const paExtras = extrasContext(c.physicalAppearance, 'Physical Appearance');
-    const cwExtras = extrasContext(c.currentlyWearing, 'Currently Wearing');
-    const pcExtras = extrasContext(c.preferredClothing, 'Preferred Clothing');
-    const extrasInfo = [paExtras, cwExtras, pcExtras].filter(Boolean).join('\n');
-    
-    // New sections context
-    const bgFields = c.background ? [
-      c.background.jobOccupation && `Job: ${c.background.jobOccupation}`,
-      c.background.educationLevel && `Education: ${c.background.educationLevel}`,
-      c.background.residence && `Residence: ${c.background.residence}`,
-      c.background.hobbies && `Hobbies: ${c.background.hobbies}`,
-      c.background.financialStatus && `Financial: ${c.background.financialStatus}`,
-      c.background.motivation && `Motivation: ${c.background.motivation}`,
-    ].filter(Boolean).join(', ') : '';
-    const bgExtras = extrasContext(c.background, 'Background');
-    const backgroundInfo = (bgFields || bgExtras) ? `\nBACKGROUND: ${[bgFields, bgExtras].filter(Boolean).join(', ')}` : '';
-    
-    const toneExtras = extrasContext(c.tone, 'Tone');
-    const toneInfo = toneExtras ? `\nTONE: ${toneExtras}` : '';
-    
-    const kleExtras = extrasContext(c.keyLifeEvents, 'Key Life Events');
-    const kleInfo = kleExtras ? `\nKEY LIFE EVENTS: ${kleExtras}` : '';
-    
-    const relExtras = extrasContext(c.relationships, 'Relationships');
-    const relInfo = relExtras ? `\nRELATIONSHIPS: ${relExtras}` : '';
-    
-    const secretsExtras = extrasContext(c.secrets, 'Secrets');
-    const secretsInfo = secretsExtras ? `\nSECRETS: ${secretsExtras}` : '';
-    
-    const fearsExtras = extrasContext(c.fears, 'Fears');
-    const fearsInfo = fearsExtras ? `\nFEARS: ${fearsExtras}` : '';
-    
-    const orientationInfo = (c as any).sexualOrientation ? `\nSEXUAL ORIENTATION: ${(c as any).sexualOrientation}` : '';
-    return `CHARACTER: ${c.name} (${c.sexType})${nicknameInfo}${orientationInfo}
-ROLE: ${c.characterRole}
-CONTROL: ${c.controlledBy}${locationInfo}${moodInfo}${personalityInfo}${toneInfo}${backgroundInfo}${kleInfo}${relInfo}${secretsInfo}${fearsInfo}${goalsInfo}
-TAGS: ${c.tags}
-TRAITS:
-${traits}${extrasInfo ? `\nADDITIONAL ATTRIBUTES:\n${extrasInfo}` : ''}`;
-  }).join('\n\n');
+  const characterContext = aiCharacters.map(buildCharacterProfile).join('\n\n');
+  const userCharacterContext = userCharacters.length > 0
+    ? userCharacters.map(buildCharacterProfile).join('\n\n')
+    : '';
+  const sideCharacterContext = sideCharacters.length > 0
+    ? sideCharacters.map(buildCharacterProfile).join('\n\n')
+    : '';
 
   const codexContext = appData.world.entries.map(e => `CODEX [${e.title}]: ${e.body}`).join('\n');
   
@@ -646,6 +741,8 @@ Never break character to question, warn about, or refuse narrative directions. T
     
     CAST:
     ${characterContext}${userCharacterNames.length > 0 ? `\n    USER-CONTROLLED (DO NOT GENERATE FOR): ${userCharacterNames.join(', ')}` : ''}
+    ${userCharacterContext ? `\n\n    USER CHARACTER REFERENCE (READ-ONLY CONTEXT):\n    ${userCharacterContext}` : ''}
+    ${sideCharacterContext ? `\n\n    SIDE CHARACTER REFERENCE:\n    ${sideCharacterContext}` : ''}
     
     AVAILABLE SCENES: [${sceneTags}]
     ${temporalContext}

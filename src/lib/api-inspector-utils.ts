@@ -127,7 +127,7 @@ export function validateApiArchitectureRegistry(
         id: `phase-sections-empty:${phase.id}`,
         severity: "warning",
         scope: "phase",
-        message: `Phase \"${phase.title}\" has no sections.`,
+      message: `Phase "${phase.title}" has no sections.`,
       });
     }
 
@@ -146,7 +146,7 @@ export function validateApiArchitectureRegistry(
           id: `section-items-empty:${section.id}`,
           severity: "warning",
           scope: "section",
-          message: `Section \"${section.title}\" has no mapped items.`,
+          message: `Section "${section.title}" has no mapped items.`,
         });
       }
 
@@ -157,7 +157,7 @@ export function validateApiArchitectureRegistry(
             severity: "error",
             scope: "item",
             itemId: item.id,
-            message: `Duplicate item id \"${item.id}\" detected.`,
+            message: `Duplicate item id "${item.id}" detected.`,
           });
         }
         seenItemIds.add(item.id);
@@ -168,7 +168,7 @@ export function validateApiArchitectureRegistry(
             severity: "error",
             scope: "item",
             itemId: item.id,
-            message: `Item \"${item.title}\" has an invalid tag type.`,
+            message: `Item "${item.title}" has an invalid tag type.`,
           });
         }
 
@@ -178,7 +178,7 @@ export function validateApiArchitectureRegistry(
             severity: "error",
             scope: "item",
             itemId: item.id,
-            message: `Item \"${item.title}\" is missing icon metadata.`,
+            message: `Item "${item.title}" is missing icon metadata.`,
           });
         }
 
@@ -188,7 +188,7 @@ export function validateApiArchitectureRegistry(
             severity: "error",
             scope: "item",
             itemId: item.id,
-            message: `Item \"${item.title}\" is missing a plain-English purpose.`,
+            message: `Item "${item.title}" is missing a plain-English purpose.`,
           });
         }
 
@@ -198,7 +198,7 @@ export function validateApiArchitectureRegistry(
             severity: "error",
             scope: "item",
             itemId: item.id,
-            message: `Item \"${item.title}\" is missing file-ref metadata.`,
+            message: `Item "${item.title}" is missing file-ref metadata.`,
           });
         } else {
           item.fileRefs.forEach((ref, idx) => {
@@ -208,7 +208,7 @@ export function validateApiArchitectureRegistry(
                 severity: "error",
                 scope: "item",
                 itemId: item.id,
-                message: `Item \"${item.title}\" has a file-ref with an empty path.`,
+                message: `Item "${item.title}" has a file-ref with an empty path.`,
               });
             }
           });
@@ -220,7 +220,7 @@ export function validateApiArchitectureRegistry(
             severity: "warning",
             scope: "item",
             itemId: item.id,
-            message: `Item \"${item.title}\" should include a code-source snippet.`,
+            message: `Item "${item.title}" should include a code-source snippet.`,
           });
         }
       });
@@ -235,7 +235,7 @@ export function validateApiArchitectureRegistry(
           severity: "error",
           scope: "cross-ref",
           itemId: item.id,
-          message: `Cross-ref badge ${ref.badge} on \"${item.title}\" points to missing target \"${ref.targetItemId}\".`,
+          message: `Cross-ref badge ${ref.badge} on "${item.title}" points to missing target "${ref.targetItemId}".`,
         });
       }
     });
@@ -254,7 +254,7 @@ export function validateApiArchitectureRegistry(
         id: `changelog-incomplete:${entry.id}`,
         severity: "error",
         scope: "changelog",
-        message: `Changelog entry \"${entry.title}\" is missing one or more required fields.`,
+        message: `Changelog entry "${entry.title}" is missing one or more required fields.`,
       });
     }
   });

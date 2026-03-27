@@ -5,21 +5,8 @@ import { ScenarioData, TabKey, Character, ScenarioMetadata, Conversation, Messag
 
 import { fetchSavedScenarios, SavedScenario, unsaveScenario, fetchUserPublishedScenarios, PublishedScenario } from "@/services/gallery-data";
 import { createDefaultScenarioData, now, uid, uuid, truncateLine, resizeImage } from "@/utils";
-import { CharacterBuilderScreen as CharactersTab } from "@/features/character-builder/CharacterBuilderScreen";
-import { StoryBuilderScreen as WorldTab } from "@/features/story-builder/StoryBuilderScreen";
-import { ConversationsTab } from "@/components/chronicle/ConversationsTab";
 import { useModelSettings, ModelSettingsProvider } from "@/contexts/ModelSettingsContext";
 import { checkIsAdmin } from "@/services/app-settings";
-import { AdminPage } from "@/pages/Admin";
-import { AccountSettingsTab } from "@/components/account/AccountSettingsTab";
-import { SubscriptionTab } from "@/components/account/SubscriptionTab";
-import { PublicProfileTab } from "@/components/account/PublicProfileTab";
-
-import { ScenarioHub } from "@/components/chronicle/StoryHub";
-import { ModelSettingsTab } from "@/components/chronicle/ModelSettingsTab";
-import { ChatInterfaceTab } from "@/components/chronicle/ChatInterfaceTab";
-import { ImageLibraryTab } from "@/components/chronicle/ImageLibraryTab";
-import { GalleryHub } from "@/components/chronicle/GalleryHub";
 import { Button } from "@/components/chronicle/UI";
 import { aiFillCharacter, aiGenerateCharacter } from "@/services/character-ai";
 import { CharacterPicker, CharacterPickerWithRefresh } from "@/components/chronicle/CharacterPicker";
@@ -54,6 +41,52 @@ import { hasPublishErrors, validateForPublish } from "@/utils/publish-validation
 import { StoryExportFormatModal, StoryExportFormat } from "@/components/chronicle/StoryExportFormatModal";
 import { StoryImportModeModal } from "@/components/chronicle/StoryImportModeModal";
 import { normalizeBuilderTab, toLegacyBuilderTab } from "@/features/navigation/builder-tabs";
+
+const loadCharactersTabModule = () => import("@/features/character-builder/CharacterBuilderScreen");
+const loadWorldTabModule = () => import("@/features/story-builder/StoryBuilderScreen");
+const loadConversationsTabModule = () => import("@/components/chronicle/ConversationsTab");
+const loadAdminPageModule = () => import("@/pages/Admin");
+const loadAccountSettingsTabModule = () => import("@/components/account/AccountSettingsTab");
+const loadSubscriptionTabModule = () => import("@/components/account/SubscriptionTab");
+const loadPublicProfileTabModule = () => import("@/components/account/PublicProfileTab");
+const loadScenarioHubModule = () => import("@/components/chronicle/StoryHub");
+const loadChatInterfaceTabModule = () => import("@/components/chronicle/ChatInterfaceTab");
+const loadImageLibraryTabModule = () => import("@/components/chronicle/ImageLibraryTab");
+const loadGalleryHubModule = () => import("@/components/chronicle/GalleryHub");
+
+const CharactersTab = React.lazy(() =>
+  loadCharactersTabModule().then((m) => ({ default: m.CharacterBuilderScreen }))
+);
+const WorldTab = React.lazy(() =>
+  loadWorldTabModule().then((m) => ({ default: m.StoryBuilderScreen }))
+);
+const ConversationsTab = React.lazy(() =>
+  loadConversationsTabModule().then((m) => ({ default: m.ConversationsTab }))
+);
+const AdminPage = React.lazy(() =>
+  loadAdminPageModule().then((m) => ({ default: m.AdminPage }))
+);
+const AccountSettingsTab = React.lazy(() =>
+  loadAccountSettingsTabModule().then((m) => ({ default: m.AccountSettingsTab }))
+);
+const SubscriptionTab = React.lazy(() =>
+  loadSubscriptionTabModule().then((m) => ({ default: m.SubscriptionTab }))
+);
+const PublicProfileTab = React.lazy(() =>
+  loadPublicProfileTabModule().then((m) => ({ default: m.PublicProfileTab }))
+);
+const ScenarioHub = React.lazy(() =>
+  loadScenarioHubModule().then((m) => ({ default: m.ScenarioHub }))
+);
+const ChatInterfaceTab = React.lazy(() =>
+  loadChatInterfaceTabModule().then((m) => ({ default: m.ChatInterfaceTab }))
+);
+const ImageLibraryTab = React.lazy(() =>
+  loadImageLibraryTabModule().then((m) => ({ default: m.ImageLibraryTab }))
+);
+const GalleryHub = React.lazy(() =>
+  loadGalleryHubModule().then((m) => ({ default: m.GalleryHub }))
+);
 const IconsList = {
   Gallery: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>,
   Hub: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>,
@@ -68,6 +101,15 @@ const IconsList = {
   ChatInterface: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2v5Z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></svg>,
   Logout: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
 };
+
+const LazyTabFallback = ({ className = "" }: { className?: string }) => (
+  <div className={`h-full w-full flex items-center justify-center text-slate-300 ${className}`}>
+    <div className="flex items-center gap-3 text-sm font-semibold">
+      <span className="inline-block w-4 h-4 border-2 border-slate-500 border-t-slate-200 rounded-full animate-spin" />
+      Loading...
+    </div>
+  </div>
+);
 
 function SidebarItem({ 
   active, 
@@ -303,6 +345,57 @@ const IndexContent = () => {
     supabaseData.loadNavButtonImages().then((images) => {
       setNavButtonImages((images || {}) as Record<string, any>);
     }).catch(() => {});
+  }, []);
+
+  // Warm heavy route chunks in the background after first paint.
+  // Priority order mirrors likely user flow to improve perceived speed:
+  // My Stories → Chat History → Story Builder → Character Builder → Admin.
+  useEffect(() => {
+    let cancelled = false;
+    const warmupLoaders = [
+      loadScenarioHubModule,
+      loadConversationsTabModule,
+      loadWorldTabModule,
+      loadCharactersTabModule,
+      loadAdminPageModule,
+      loadChatInterfaceTabModule,
+      loadImageLibraryTabModule,
+      loadAccountSettingsTabModule,
+      loadSubscriptionTabModule,
+      loadPublicProfileTabModule,
+    ];
+
+    const warmup = async () => {
+      for (const load of warmupLoaders) {
+        if (cancelled) return;
+        try {
+          await load();
+        } catch (error) {
+          console.warn("[chunk-warmup] failed to preload module", error);
+        }
+      }
+    };
+
+    const startWarmup = () => {
+      void warmup();
+    };
+
+    let timeoutId: number | undefined;
+    let idleId: number | undefined;
+
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      idleId = (window as any).requestIdleCallback(startWarmup, { timeout: 2000 });
+    } else {
+      timeoutId = window.setTimeout(startWarmup, 300);
+    }
+
+    return () => {
+      cancelled = true;
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+      if (idleId !== undefined && "cancelIdleCallback" in window) {
+        (window as any).cancelIdleCallback(idleId);
+      }
+    };
   }, []);
 
   // (Draft count refresh removed - drafts are now DB-backed and shown in the hub)
@@ -644,11 +737,11 @@ const IndexContent = () => {
   }, [user, isLoadingMoreScenarios, hasMoreScenarios, registry.length]);
 
   // Handler for playing a scenario from the gallery
-  const handleGalleryPlay = useCallback((scenarioId: string, publishedScenarioId: string) => {
+  const handleGalleryPlay = (scenarioId: string, publishedScenarioId: string) => {
     // For now, just play the scenario normally
     // In the future, this could handle special gallery-specific logic
     handlePlayScenario(scenarioId);
-  }, []);
+  };
 
   // Handler to refresh saved scenarios when bookmark changes in gallery
   const handleGallerySaveChange = useCallback(async () => {
@@ -813,14 +906,14 @@ const IndexContent = () => {
                   tags: ['Custom'],
                 }, user.id, { isDraft: true }).then(ok => {
                   if (ok) {
-                    try { localStorage.removeItem(`draft_${id}`); } catch (_) {}
+                    try { localStorage.removeItem(`draft_${id}`); } catch (_) { /* ignore local draft cleanup failures */ }
                     console.log('[handleEditScenario] Auto-repair succeeded');
                   }
                 }).catch(e => console.warn('[handleEditScenario] Auto-repair failed:', e));
               }
             } else if (backendHasChars) {
               // Backend has data — prefer it, discard local snapshot
-              try { localStorage.removeItem(`draft_${id}`); } catch (_) {}
+                  try { localStorage.removeItem(`draft_${id}`); } catch (_) { /* ignore local draft cleanup failures */ }
             }
           } else {
             // Legacy format: draft is the ScenarioData directly
@@ -828,7 +921,7 @@ const IndexContent = () => {
             if (data.characters.length === 0 && legacyHasChars) {
               finalData = draft;
             }
-            try { localStorage.removeItem(`draft_${id}`); } catch (_) {}
+            try { localStorage.removeItem(`draft_${id}`); } catch (_) { /* ignore legacy draft cleanup failures */ }
           }
         }
       } catch (e) {
@@ -1013,15 +1106,14 @@ const IndexContent = () => {
         setTab("hub");
       }
       // Clear any leftover localStorage drafts on successful DB save
-      try { localStorage.removeItem(`draft_${scenarioIdToSave}`); } catch (_) { /* ignore */ }
+      try { localStorage.removeItem(`draft_${scenarioIdToSave}`); } catch (_) { /* ignore local draft cleanup failures */ }
 
       return true;
     } catch (e: any) {
       console.error("Save failed:", e);
       return false;
-    } finally {
     }
-  }, [activeId, activeData, activeCoverImage, activeCoverPosition, user, isValidUuid, migrateScenarioDataIds, library]);
+  }, [activeId, activeData, activeCoverImage, activeCoverPosition, user, isValidUuid, migrateScenarioDataIds]);
 
   // Wrapper for backward compatibility - uses current activeData
   const handleSave = useCallback(async (navigateToHub: boolean = false): Promise<boolean> => {
@@ -1229,7 +1321,7 @@ const IndexContent = () => {
       const verified = await supabaseData.saveScenarioWithVerification(scenarioIdToSave, dataToSave, metadata, user.id, { isDraft: true });
 
       if (verified) {
-        try { localStorage.removeItem(`draft_${scenarioIdToSave}`); } catch (_) {}
+        try { localStorage.removeItem(`draft_${scenarioIdToSave}`); } catch (_) { /* ignore local draft cleanup failures */ }
       } else {
         console.warn('Draft saved but child-data verification failed; local snapshot kept as backup.');
       }
@@ -1597,7 +1689,7 @@ const IndexContent = () => {
   }
 
   async function handleAiFill(userPrompt?: string, useExistingDetails: boolean = true) {
-    let character = tab === "library" ? library.find(c => c.id === selectedCharacterId) : activeData?.characters.find(c => c.id === selectedCharacterId);
+    const character = tab === "library" ? library.find(c => c.id === selectedCharacterId) : activeData?.characters.find(c => c.id === selectedCharacterId);
     if (!character) return;
     setIsAiFilling(true);
     setAiPromptModal(null);
@@ -1605,7 +1697,6 @@ const IndexContent = () => {
       const patch = await aiFillCharacter(character, activeData || createDefaultScenarioData(), globalModelId, userPrompt, useExistingDetails);
       if (Object.keys(patch).length > 0) {
         handleUpdateCharacter(character.id, { ...patch, updatedAt: now() });
-      } else {
       }
     } catch (e) {
       console.error(e);
@@ -1616,7 +1707,7 @@ const IndexContent = () => {
   }
 
   async function handleAiGenerate(userPrompt?: string, useExistingDetails: boolean = true) {
-    let character = tab === "library" ? library.find(c => c.id === selectedCharacterId) : activeData?.characters.find(c => c.id === selectedCharacterId);
+    const character = tab === "library" ? library.find(c => c.id === selectedCharacterId) : activeData?.characters.find(c => c.id === selectedCharacterId);
     if (!character) return;
     setIsAiGenerating(true);
     setAiPromptModal(null);
@@ -1624,7 +1715,6 @@ const IndexContent = () => {
       const patch = await aiGenerateCharacter(character, activeData || createDefaultScenarioData(), globalModelId, userPrompt, useExistingDetails);
       if (Object.keys(patch).length > 0) {
         handleUpdateCharacter(character.id, { ...patch, updatedAt: now() });
-      } else {
       }
     } catch (e) {
       console.error(e);
@@ -2469,26 +2559,30 @@ const IndexContent = () => {
                 const oOpacity = (selBg?.overlayOpacity ?? 10) / 100;
                 return <div className="absolute inset-0 pointer-events-none" style={{ backgroundColor: oColor === 'white' ? `rgba(255,255,255,${oOpacity})` : `rgba(0,0,0,${oOpacity})` }} />;
               })()}
-              <ScenarioHub
-                registry={filteredRegistry}
-                onPlay={handlePlayScenario}
-                onEdit={handleEditScenario}
-                onDelete={handleDeleteScenario}
-                onCreate={handleCreateNewScenario}
-                publishedScenarioIds={publishedScenarioIds}
-                contentThemesMap={contentThemesMap}
-                publishedScenariosData={publishedScenariosData}
-                ownerUsername={userProfile?.display_name || userProfile?.username || undefined}
-                bookmarkedCreatorNames={bookmarkedCreatorNames}
-                onLoadMore={handleLoadMoreScenarios}
-                hasMore={hasMoreScenarios}
-                isLoadingMore={isLoadingMoreScenarios}
-              />
+              <React.Suspense fallback={<LazyTabFallback className="bg-black/70" />}>
+                <ScenarioHub
+                  registry={filteredRegistry}
+                  onPlay={handlePlayScenario}
+                  onEdit={handleEditScenario}
+                  onDelete={handleDeleteScenario}
+                  onCreate={handleCreateNewScenario}
+                  publishedScenarioIds={publishedScenarioIds}
+                  contentThemesMap={contentThemesMap}
+                  publishedScenariosData={publishedScenariosData}
+                  ownerUsername={userProfile?.display_name || userProfile?.username || undefined}
+                  bookmarkedCreatorNames={bookmarkedCreatorNames}
+                  onLoadMore={handleLoadMoreScenarios}
+                  hasMore={hasMoreScenarios}
+                  isLoadingMore={isLoadingMoreScenarios}
+                />
+              </React.Suspense>
             </div>
           )}
 
           {tab === "gallery" && (
-            <GalleryHub onPlay={handleGalleryPlay} onSaveChange={handleGallerySaveChange} sortBy={gallerySortBy} onSortChange={setGallerySortBy} onAuthRequired={() => setAuthModalOpen(true)} />
+            <React.Suspense fallback={<LazyTabFallback className="bg-black" />}>
+              <GalleryHub onPlay={handleGalleryPlay} onSaveChange={handleGallerySaveChange} sortBy={gallerySortBy} onSortChange={setGallerySortBy} onAuthRequired={() => setAuthModalOpen(true)} />
+            </React.Suspense>
           )}
 
           <div 
@@ -2502,31 +2596,35 @@ const IndexContent = () => {
             {selectedImageLibraryBackgroundUrl && (
               <div className="absolute inset-0 bg-black/10 pointer-events-none" />
             )}
-            <ImageLibraryTab 
-              userId={user?.id ?? null}
-              onFolderChange={(inFolder, exitFn) => {
-                setIsInImageFolder(inFolder);
-                imageLibraryExitFolderRef.current = exitFn || null;
-                if (!inFolder) setImageLibrarySearchQuery('');
-              }}
-              searchQuery={imageLibrarySearchQuery}
-              uploadRef={imageLibraryUploadRef}
-            />
+            <React.Suspense fallback={<LazyTabFallback className="bg-black/80" />}>
+              <ImageLibraryTab 
+                userId={user?.id ?? null}
+                onFolderChange={(inFolder, exitFn) => {
+                  setIsInImageFolder(inFolder);
+                  imageLibraryExitFolderRef.current = exitFn || null;
+                  if (!inFolder) setImageLibrarySearchQuery('');
+                }}
+                searchQuery={imageLibrarySearchQuery}
+                uploadRef={imageLibraryUploadRef}
+              />
+            </React.Suspense>
           </div>
 
           {tab === "library" && (
             <div className="h-full overflow-y-auto bg-black p-4 relative z-10 sm:p-6 lg:p-10">
-              <CharactersTab
-                appData={{ ...createDefaultScenarioData(), characters: filteredLibrary }}
-                selectedId={selectedCharacterId}
-                onSelect={setSelectedCharacterId}
-                onUpdate={handleUpdateCharacter}
-                onDelete={handleDeleteCharacterFromList}
-                onAddSection={handleAddSection}
-                onAddNew={handleCreateCharacter}
-                navButtonImages={navButtonImages}
-                onNavButtonImagesChange={setNavButtonImages}
-              />
+              <React.Suspense fallback={<LazyTabFallback className="bg-black" />}>
+                <CharactersTab
+                  appData={{ ...createDefaultScenarioData(), characters: filteredLibrary }}
+                  selectedId={selectedCharacterId}
+                  onSelect={setSelectedCharacterId}
+                  onUpdate={handleUpdateCharacter}
+                  onDelete={handleDeleteCharacterFromList}
+                  onAddSection={handleAddSection}
+                  onAddNew={handleCreateCharacter}
+                  navButtonImages={navButtonImages}
+                  onNavButtonImagesChange={setNavButtonImages}
+                />
+              </React.Suspense>
             </div>
           )}
 
@@ -2534,18 +2632,20 @@ const IndexContent = () => {
             // Height-chain guardrail: keep h-full + min-h-0 + overflow-hidden wrapper
             // so Character Builder side nav and main pane scroll regions resolve correctly.
             <div className="h-full min-h-0 overflow-hidden">
-              <CharactersTab
-                appData={activeData}
-                selectedId={selectedCharacterId}
-                onSelect={setSelectedCharacterId}
-                onUpdate={handleUpdateCharacter}
-                onDelete={handleDeleteCharacterFromList}
-                onAddSection={handleAddSection}
-                scenarioId={activeId}
-                isAdmin={isAdminState}
-                navButtonImages={navButtonImages}
-                onNavButtonImagesChange={setNavButtonImages}
-              />
+              <React.Suspense fallback={<LazyTabFallback className="bg-black" />}>
+                <CharactersTab
+                  appData={activeData}
+                  selectedId={selectedCharacterId}
+                  onSelect={setSelectedCharacterId}
+                  onUpdate={handleUpdateCharacter}
+                  onDelete={handleDeleteCharacterFromList}
+                  onAddSection={handleAddSection}
+                  scenarioId={activeId}
+                  isAdmin={isAdminState}
+                  navButtonImages={navButtonImages}
+                  onNavButtonImagesChange={setNavButtonImages}
+                />
+              </React.Suspense>
             </div>
           )}
 
@@ -2553,37 +2653,39 @@ const IndexContent = () => {
             // Height-chain guardrail: keep h-full + min-h-0 + overflow-hidden wrapper
             // so Story Builder roster + content panes preserve full-height behavior.
             <div className="h-full min-h-0 overflow-hidden">
-              <WorldTab
-                scenarioId={activeId}
-                world={activeData.world}
-                characters={activeData.characters}
-                openingDialog={activeData.story.openingDialog}
-                scenes={activeData.scenes}
-                coverImage={activeCoverImage}
-                coverImagePosition={activeCoverPosition}
-                selectedArtStyle={activeData.selectedArtStyle || 'cinematic-2-5d'}
-                onUpdateWorld={(patch) => handleUpdateActive({ world: { ...activeData.world, ...patch } })}
-                onUpdateOpening={(patch) => handleUpdateActive({ story: { openingDialog: { ...activeData.story.openingDialog, ...patch } } })}
-                onUpdateScenes={(scenes) => handleUpdateActive({ scenes })}
-                onUpdateCoverImage={setActiveCoverImage}
-                onUpdateCoverPosition={setActiveCoverPosition}
-                onUpdateArtStyle={(styleId) => handleUpdateActive({ selectedArtStyle: styleId })}
-                contentThemes={activeContentThemes}
-                onUpdateContentThemes={async (themes) => {
-                  setActiveContentThemes(themes);
-                  if (activeId && user) {
-                    try {
-                      await supabaseData.saveContentThemes(activeId, themes);
-                    } catch (e) {
-                      console.error('Failed to save content themes:', e);
+              <React.Suspense fallback={<LazyTabFallback className="bg-black" />}>
+                <WorldTab
+                  scenarioId={activeId}
+                  world={activeData.world}
+                  characters={activeData.characters}
+                  openingDialog={activeData.story.openingDialog}
+                  scenes={activeData.scenes}
+                  coverImage={activeCoverImage}
+                  coverImagePosition={activeCoverPosition}
+                  selectedArtStyle={activeData.selectedArtStyle || 'cinematic-2-5d'}
+                  onUpdateWorld={(patch) => handleUpdateActive({ world: { ...activeData.world, ...patch } })}
+                  onUpdateOpening={(patch) => handleUpdateActive({ story: { openingDialog: { ...activeData.story.openingDialog, ...patch } } })}
+                  onUpdateScenes={(scenes) => handleUpdateActive({ scenes })}
+                  onUpdateCoverImage={setActiveCoverImage}
+                  onUpdateCoverPosition={setActiveCoverPosition}
+                  onUpdateArtStyle={(styleId) => handleUpdateActive({ selectedArtStyle: styleId })}
+                  contentThemes={activeContentThemes}
+                  onUpdateContentThemes={async (themes) => {
+                    setActiveContentThemes(themes);
+                    if (activeId && user) {
+                      try {
+                        await supabaseData.saveContentThemes(activeId, themes);
+                      } catch (e) {
+                        console.error('Failed to save content themes:', e);
+                      }
                     }
-                  }
-                }}
-                onCreateCharacter={() => { handleCreateCharacter(); setTab("characters"); }}
-                onOpenLibraryPicker={() => { setIsCharacterPickerOpen(true); }}
-                onSelectCharacter={(id) => { setSelectedCharacterId(id); setTab("characters"); }}
-                storyNameError={storyNameError}
-              />
+                  }}
+                  onCreateCharacter={() => { handleCreateCharacter(); setTab("characters"); }}
+                  onOpenLibraryPicker={() => { setIsCharacterPickerOpen(true); }}
+                  onSelectCharacter={(id) => { setSelectedCharacterId(id); setTab("characters"); }}
+                  storyNameError={storyNameError}
+                />
+              </React.Suspense>
             </div>
           )}
 
@@ -2595,13 +2697,15 @@ const IndexContent = () => {
                   <p className="text-white font-medium text-lg">Loading session...</p>
                 </div>
               )}
-              <ConversationsTab
-                globalRegistry={conversationRegistry}
-                onResume={handleResumeFromHistory}
-                onDelete={(scenarioId, conversationId) => {
-                  setConvDeleteTarget({ scenarioId, conversationId });
-                }}
-              />
+              <React.Suspense fallback={<LazyTabFallback className="bg-black" />}>
+                <ConversationsTab
+                  globalRegistry={conversationRegistry}
+                  onResume={handleResumeFromHistory}
+                  onDelete={(scenarioId, conversationId) => {
+                    setConvDeleteTarget({ scenarioId, conversationId });
+                  }}
+                />
+              </React.Suspense>
 
               {/* Single delete confirm */}
               <DeleteConfirmDialog
@@ -2632,70 +2736,74 @@ const IndexContent = () => {
           )}
 
           {tab === "chat_interface" && activeId && playingConversationId && (
-            <ChatInterfaceTab
-              scenarioId={activeId}
-              appData={activeData || defaultScenarioData}
-              conversationId={playingConversationId}
-              modelId={globalModelId}
-              isAdmin={isAdminState}
-              onUpdate={(convs) => handleUpdateActive({ conversations: convs })}
-              onBack={() => { setPlayingConversationId(null); setTab("hub"); }}
-              onSaveScenario={(conversations?: Conversation[]) => {
-                if (conversations && user && activeId) {
-                  // Find the specific conversation that was modified
-                  const modifiedConv = conversations.find(c => c.id === playingConversationId);
-                  
-                  if (modifiedConv) {
-                    // OPTIMIZATION: Use incremental save for normal chat (upsert new messages only)
-                    // instead of delete-all + re-insert which is destructive and slow
-                    // Only save the last 2 messages (user msg + AI response), not the entire history
-                    const newMessages = modifiedConv.messages.slice(-2);
-                    supabaseData.saveNewMessages(modifiedConv.id, newMessages)
-                      .then(() => {
-                        // Update conversation metadata (day, time) separately
-                        return supabaseData.updateConversationMeta(modifiedConv.id, {
-                          currentDay: modifiedConv.currentDay,
-                          currentTimeOfDay: modifiedConv.currentTimeOfDay,
-                          title: modifiedConv.title
+            <React.Suspense fallback={<LazyTabFallback className="bg-black" />}>
+              <ChatInterfaceTab
+                scenarioId={activeId}
+                appData={activeData || defaultScenarioData}
+                conversationId={playingConversationId}
+                modelId={globalModelId}
+                isAdmin={isAdminState}
+                onUpdate={(convs) => handleUpdateActive({ conversations: convs })}
+                onBack={() => { setPlayingConversationId(null); setTab("hub"); }}
+                onSaveScenario={(conversations?: Conversation[]) => {
+                  if (conversations && user && activeId) {
+                    // Find the specific conversation that was modified
+                    const modifiedConv = conversations.find(c => c.id === playingConversationId);
+                    
+                    if (modifiedConv) {
+                      // OPTIMIZATION: Use incremental save for normal chat (upsert new messages only)
+                      // instead of delete-all + re-insert which is destructive and slow
+                      // Only save the last 2 messages (user msg + AI response), not the entire history
+                      const newMessages = modifiedConv.messages.slice(-2);
+                      supabaseData.saveNewMessages(modifiedConv.id, newMessages)
+                        .then(() => {
+                          // Update conversation metadata (day, time) separately
+                          return supabaseData.updateConversationMeta(modifiedConv.id, {
+                            currentDay: modifiedConv.currentDay,
+                            currentTimeOfDay: modifiedConv.currentTimeOfDay,
+                            title: modifiedConv.title
+                          });
+                        })
+                        .catch(err => {
+                          console.error('Failed to save conversation:', err);
                         });
-                      })
-                      .catch(err => {
-                        console.error('Failed to save conversation:', err);
-                      });
+                    }
+                    
+                    // Update local state only (no full scenario save during chat)
+                    if (activeData) {
+                      setActiveData({ ...activeData, conversations });
+                    }
+                  } else if (activeData) {
+                    handleSave();
                   }
-                  
-                  // Update local state only (no full scenario save during chat)
-                  if (activeData) {
-                    setActiveData({ ...activeData, conversations });
+                }}
+                onUpdateUiSettings={(patch) => {
+                  const currentSettings = activeData?.uiSettings ?? createDefaultScenarioData().uiSettings!;
+                  const merged: NonNullable<ScenarioData["uiSettings"]> = {
+                    ...currentSettings,
+                    ...patch,
+                    showBackgrounds: patch.showBackgrounds ?? currentSettings.showBackgrounds,
+                    transparentBubbles: patch.transparentBubbles ?? currentSettings.transparentBubbles,
+                    darkMode: patch.darkMode ?? currentSettings.darkMode,
+                  };
+                  handleUpdateActive({ uiSettings: merged });
+                  // Persist to DB (fire-and-forget)
+                  if (activeId) {
+                    supabaseData.updateStoryUiSettings(activeId, merged);
                   }
-                } else if (activeData) {
-                  handleSave();
-                }
-              }}
-              onUpdateUiSettings={(patch) => {
-                const currentSettings = activeData?.uiSettings ?? createDefaultScenarioData().uiSettings!;
-                const merged: NonNullable<ScenarioData["uiSettings"]> = {
-                  ...currentSettings,
-                  ...patch,
-                  showBackgrounds: patch.showBackgrounds ?? currentSettings.showBackgrounds,
-                  transparentBubbles: patch.transparentBubbles ?? currentSettings.transparentBubbles,
-                  darkMode: patch.darkMode ?? currentSettings.darkMode,
-                };
-                handleUpdateActive({ uiSettings: merged });
-                // Persist to DB (fire-and-forget)
-                if (activeId) {
-                  supabaseData.updateStoryUiSettings(activeId, merged);
-                }
-              }}
-              onUpdateSideCharacters={(sideCharacters) => handleUpdateActive({ sideCharacters })}
-              onLoadOlderMessages={handleLoadOlderMessages}
-              hasMoreMessages={!!(playingConversationId && hasMoreMessagesMap[playingConversationId])}
-            />
+                }}
+                onUpdateSideCharacters={(sideCharacters) => handleUpdateActive({ sideCharacters })}
+                onLoadOlderMessages={handleLoadOlderMessages}
+                hasMoreMessages={!!(playingConversationId && hasMoreMessagesMap[playingConversationId])}
+              />
+            </React.Suspense>
           )}
 
 
           {tab === "admin" && (
+            <React.Suspense fallback={<LazyTabFallback className="bg-black" />}>
               <AdminPage activeTool={adminActiveTool} onSetActiveTool={setAdminActiveTool} onRegisterGuideSave={(fn) => { guideSaveRef.current = fn; }} onRegisterGuideSyncAll={(fn) => { guideSyncAllRef.current = fn; }} onRegisterStyleGuideDownload={(fn) => { styleGuideDownloadRef.current = fn; }} onRegisterStyleGuideEdits={(fn) => { styleGuideEditsRef.current = fn; getEditsCount().then(c => setStyleGuideEditsCount(c)); }} onStyleGuideEditsCountChange={(count) => setStyleGuideEditsCount(count)} guideTheme={guideTheme} />
+            </React.Suspense>
           )}
 
           {tab === "account" && (
@@ -2725,13 +2833,19 @@ const IndexContent = () => {
                   </div>
                 </div>
                 {accountActiveTab === 'settings' && (
-                  <AccountSettingsTab user={user} />
+                  <React.Suspense fallback={<LazyTabFallback className="bg-[#121214]" />}>
+                    <AccountSettingsTab user={user} />
+                  </React.Suspense>
                 )}
                 {accountActiveTab === 'subscription' && (
-                  <SubscriptionTab />
+                  <React.Suspense fallback={<LazyTabFallback className="bg-[#121214]" />}>
+                    <SubscriptionTab />
+                  </React.Suspense>
                 )}
                 {accountActiveTab === 'profile' && (
-                  <PublicProfileTab user={user} />
+                  <React.Suspense fallback={<LazyTabFallback className="bg-[#121214]" />}>
+                    <PublicProfileTab user={user} />
+                  </React.Suspense>
                 )}
               </div>
             </div>
