@@ -219,6 +219,15 @@ export function mergeRegistries(
   });
 
   const nowIso = new Date().toISOString();
+
+  // Merge change log entries by id
+  const changeLogMap = new Map<string, QualityHubRegistry["changeLog"][number]>();
+  (current.changeLog || []).forEach((e) => changeLogMap.set(e.id, e));
+  (incoming.changeLog || []).forEach((e) => {
+    const existing = changeLogMap.get(e.id);
+    changeLogMap.set(e.id, existing ? { ...existing, ...e, comments: mergeComments(existing.comments, e.comments) } : e);
+  });
+
   return {
     meta: {
       ...current.meta,
@@ -232,6 +241,9 @@ export function mergeRegistries(
     ),
     findings: sortFindings(Array.from(findingMap.values())),
     reviewUnits: Array.from(reviewMap.values()),
+    changeLog: Array.from(changeLogMap.values()).sort(
+      (a, b) => toMillis(b.updatedAt) - toMillis(a.updatedAt),
+    ),
     handoffNotes: [current.handoffNotes, incoming.handoffNotes].filter(Boolean).join("\n\n---\n\n"),
   };
 }

@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  CHANGE_LOG_SEVERITY,
+  CHANGE_LOG_STATUS,
   QUALITY_CONFIDENCE,
   QUALITY_DOMAINS,
   QUALITY_FINDING_STATUS,
@@ -9,6 +11,9 @@ import {
   QualityAgent,
   QualityFinding,
   QualityHubRegistry,
+  ChangeLogEntry,
+  ChangeLogSeverity,
+  ChangeLogStatus,
   isQualityHubRegistry,
   makeAgentId,
 } from "@/lib/ui-audit-schema";
@@ -56,7 +61,7 @@ function domainLabel(key: string): string {
   return DOMAIN_LABELS[key] ?? titleCase(key);
 }
 type GroupBy = "severity" | "domain" | "status" | "page" | "component" | "agent";
-type HubViewId = "overview" | "findings" | "runs" | "handoff";
+type HubViewId = "overview" | "findings" | "runs" | "changelog";
 
 const panelOuterClass = "rounded-[24px] overflow-hidden border-none bg-[#2a2a2f] shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]";
 const panelHeaderClass = "relative overflow-hidden border-t border-[rgba(255,255,255,0.20)] bg-[linear-gradient(180deg,#5a7292_0%,#4a5f7f_100%)] px-5 py-3 shadow-[0_10px_15px_-3px_rgba(0,0,0,0.30)]";
@@ -74,7 +79,7 @@ const HUB_VIEWS: Array<{ id: HubViewId; label: string; description: string }> = 
   { id: "overview", label: "Overview", description: "Scan and coverage progress" },
   { id: "findings", label: "Findings", description: "Detailed issue ledger" },
   { id: "runs", label: "Runs", description: "Run history and agent setup" },
-  { id: "handoff", label: "Handoff", description: "Cross-agent transfer notes" },
+  { id: "changelog", label: "Change Log", description: "Development change history and fix log" },
 ];
 
 const severityBadgeClass: Record<string, string> = {
@@ -153,6 +158,201 @@ function Section({ title, children, badge }: { title: string; children: React.Re
 function MetricCard({ label, value, tone = "default" }: { label: string; value: React.ReactNode; tone?: "default" | "danger" | "success" }) {
   const valueClass = tone === "danger" ? "text-[#ef4444]" : tone === "success" ? "text-[#a5f3fc]" : "text-white";
   return (<div className={cn(recessedBlockClass, "p-3")}><div className="text-[11px] font-black uppercase tracking-[0.1em] text-[#a1a1aa]">{label}</div><div className={cn("mt-1 text-2xl font-black", valueClass)}>{value}</div></div>);
+}
+
+const changeLogSeverityBadge: Record<string, string> = {
+  patch: "bg-[#2f3137] text-[#eaedf1] border border-[#3b82f6]",
+  fix: "bg-[#2f3137] text-[#eaedf1] border border-[#f59e0b]",
+  refactor: "bg-[#2f3137] text-[#a5f3fc] border border-[#22B8C9]",
+  feature: "bg-[#2f3137] text-[#eaedf1] border border-[#8b5cf6]",
+  breaking: "bg-[#2f3137] text-[#eaedf1] border border-[#dc2626]",
+};
+const changeLogStatusBadge: Record<string, string> = {
+  planned: "bg-[#4a5f7f] text-[#eaedf1]",
+  "in-progress": "bg-[#2f3137] text-[#a5f3fc] border border-[#3b82f6]",
+  completed: "bg-[#166534] text-white",
+};
+
+function ChangeLogView({ registry, updateRegistry }: { registry: QualityHubRegistry; updateRegistry: (fn: (p: QualityHubRegistry) => QualityHubRegistry) => void }) {
+  const [clSearch, setClSearch] = useState("");
+  const [clSeverity, setClSeverity] = useState<"all" | ChangeLogSeverity>("all");
+  const [clStatus, setClStatus] = useState<"all" | ChangeLogStatus>("all");
+  const [clAgent, setClAgent] = useState<string>("all");
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [draft, setDraft] = useState<Partial<ChangeLogEntry>>({ severity: "fix", status: "completed", agent: "Lovable" });
+
+  const entries = useMemo(() => {
+    const list = registry.changeLog || [];
+    const term = clSearch.trim().toLowerCase();
+    return list.filter((e) => {
+      if (clSeverity !== "all" && e.severity !== clSeverity) return false;
+      if (clStatus !== "all" && e.status !== clStatus) return false;
+      if (clAgent !== "all" && e.agent !== clAgent) return false;
+      if (!term) return true;
+      return [e.title, e.summary, e.problem, e.plan, e.changes, e.agent, ...e.filesAffected, ...e.tags].filter(Boolean).join(" ").toLowerCase().includes(term);
+    });
+  }, [registry.changeLog, clSearch, clSeverity, clStatus, clAgent]);
+
+  const agents = useMemo(() => {
+    const set = new Set<string>();
+    (registry.changeLog || []).forEach((e) => set.add(e.agent));
+    return Array.from(set).sort();
+  }, [registry.changeLog]);
+
+  const handleAdd = () => {
+    if (!draft.title?.trim()) return;
+    const now = new Date().toISOString();
+    const entry: ChangeLogEntry = {
+      id: `cl-${Math.random().toString(36).slice(2, 10)}`,
+      title: draft.title?.trim() || "",
+      summary: draft.summary?.trim() || "",
+      severity: draft.severity as ChangeLogSeverity || "fix",
+      status: draft.status as ChangeLogStatus || "completed",
+      problem: draft.problem?.trim() || "",
+      plan: draft.plan?.trim() || "",
+      changes: draft.changes?.trim() || "",
+      filesAffected: (draft.filesAffected || []).filter(Boolean),
+      agent: draft.agent?.trim() || "Lovable",
+      relatedFindingIds: [],
+      tags: (draft.tags || []).filter(Boolean),
+      comments: [],
+      createdAt: now,
+      updatedAt: now,
+    };
+    updateRegistry((p) => ({ ...p, changeLog: [entry, ...(p.changeLog || [])] }));
+    setDraft({ severity: "fix", status: "completed", agent: "Lovable" });
+    setShowAddForm(false);
+  };
+
+  const addComment = (id: string) => {
+    const text = window.prompt("Add note/comment:"); if (!text?.trim()) return;
+    const now = new Date().toISOString();
+    updateRegistry((p) => ({
+      ...p,
+      changeLog: (p.changeLog || []).map((e) => e.id !== id ? e : {
+        ...e, updatedAt: now,
+        comments: [...e.comments, { id: `clc-${Math.random().toString(36).slice(2, 8)}`, author: "Manual", timestamp: now, text: text.trim() }],
+      }),
+    }));
+  };
+
+  const updateEntryStatus = (id: string, status: ChangeLogStatus) => {
+    const now = new Date().toISOString();
+    updateRegistry((p) => ({ ...p, changeLog: (p.changeLog || []).map((e) => e.id !== id ? e : { ...e, status, updatedAt: now }) }));
+  };
+
+  return (
+    <div className="space-y-6">
+      <Section title="Change Log" badge={
+        <button type="button" onClick={() => setShowAddForm(!showAddForm)} className={subtleButtonClass}>{showAddForm ? "Cancel" : "+ Add Entry"}</button>
+      }>
+        <div className="space-y-4">
+          {/* Add form */}
+          {showAddForm && (
+            <div className={cn(recessedBlockClass, "p-4 space-y-3")}>
+              <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">New Change Log Entry</div>
+              <input value={draft.title || ""} onChange={(e) => setDraft((p) => ({ ...p, title: e.target.value }))} placeholder="Title (e.g. Fix chat layout breakpoint)" className={inputClass} />
+              <input value={draft.summary || ""} onChange={(e) => setDraft((p) => ({ ...p, summary: e.target.value }))} placeholder="Summary (e.g. Chat Interface · Layout fix)" className={inputClass} />
+              <div className="grid gap-2 md:grid-cols-3">
+                <select value={draft.severity || "fix"} onChange={(e) => setDraft((p) => ({ ...p, severity: e.target.value as ChangeLogSeverity }))} className={selectClass}>
+                  {CHANGE_LOG_SEVERITY.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+                <select value={draft.status || "completed"} onChange={(e) => setDraft((p) => ({ ...p, status: e.target.value as ChangeLogStatus }))} className={selectClass}>
+                  {CHANGE_LOG_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+                <input value={draft.agent || ""} onChange={(e) => setDraft((p) => ({ ...p, agent: e.target.value }))} placeholder="Agent (Lovable, Codex, Manual...)" className={inputClass} />
+              </div>
+              <textarea value={draft.problem || ""} onChange={(e) => setDraft((p) => ({ ...p, problem: e.target.value }))} placeholder="Problem — what was wrong?" className={cn(inputClass, "min-h-[60px]")} />
+              <textarea value={draft.plan || ""} onChange={(e) => setDraft((p) => ({ ...p, plan: e.target.value }))} placeholder="Plan — proposed fix" className={cn(inputClass, "min-h-[60px]")} />
+              <textarea value={draft.changes || ""} onChange={(e) => setDraft((p) => ({ ...p, changes: e.target.value }))} placeholder="Changes — what was actually done" className={cn(inputClass, "min-h-[60px]")} />
+              <input value={(draft.filesAffected || []).join(", ")} onChange={(e) => setDraft((p) => ({ ...p, filesAffected: e.target.value.split(",").map((s) => s.trim()) }))} placeholder="Files affected (comma-separated)" className={inputClass} />
+              <input value={(draft.tags || []).join(", ")} onChange={(e) => setDraft((p) => ({ ...p, tags: e.target.value.split(",").map((s) => s.trim()) }))} placeholder="Tags (comma-separated)" className={inputClass} />
+              <button type="button" onClick={handleAdd} className={subtleButtonClass}>Save Entry</button>
+            </div>
+          )}
+          {/* Filters */}
+          <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+            <input value={clSearch} onChange={(e) => setClSearch(e.target.value)} placeholder="Search change log..." className={cn("xl:col-span-1", inputClass)} />
+            <select value={clSeverity} onChange={(e) => setClSeverity(e.target.value as typeof clSeverity)} className={selectClass}>
+              <option value="all">All types</option>{CHANGE_LOG_SEVERITY.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <select value={clStatus} onChange={(e) => setClStatus(e.target.value as typeof clStatus)} className={selectClass}>
+              <option value="all">All statuses</option>{CHANGE_LOG_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <select value={clAgent} onChange={(e) => setClAgent(e.target.value)} className={selectClass}>
+              <option value="all">All agents</option>{agents.map((a) => <option key={a} value={a}>{a}</option>)}
+            </select>
+          </div>
+          <div className={cn(recessedStripClass, "p-2 text-xs text-[#eaedf1]")}><span className="font-bold text-white">{entries.length}</span> entries</div>
+        </div>
+      </Section>
+
+      {entries.length === 0 ? (
+        <div className="rounded-xl border-2 border-dashed border-[#71717a] bg-[linear-gradient(to_bottom_right,#27272a,#18181b)] px-4 py-10 text-center text-sm text-[#a1a1aa]">No change log entries yet. Click "+ Add Entry" to start logging changes.</div>
+      ) : (
+        <Section title="Entries">
+          <div className="space-y-2">
+            {entries.map((e) => (
+              <details key={e.id} className={cn(recessedBlockClass, "group open:ring-1 open:ring-[#4a5f7f]/60")}>
+                <summary className="cursor-pointer list-none px-4 py-3 relative">
+                  <div className="flex flex-wrap items-start gap-2 pr-8">
+                    <span className={cn("rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em]", changeLogSeverityBadge[e.severity] || changeLogSeverityBadge.fix)}>{e.severity}</span>
+                    <span className={cn("rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em]", changeLogStatusBadge[e.status] || changeLogStatusBadge.completed)}>{e.status}</span>
+                    <span className="rounded-full bg-[#4a5f7f] px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">{e.agent}</span>
+                  </div>
+                  <div className="mt-2 text-sm font-bold text-white">{e.title}</div>
+                  {e.summary && <div className="mt-1 text-xs text-[#a1a1aa]">{e.summary}</div>}
+                  <ChevronDown size={16} className="absolute bottom-3 right-4 text-[#71717a] transition-transform group-open:rotate-180" />
+                </summary>
+                <div className="border-t border-[rgba(255,255,255,0.05)] px-4 py-4 space-y-5">
+                  {/* Problem */}
+                  {e.problem && <div>
+                    <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Problem</div>
+                    <div className="text-xs text-[#a1a1aa] whitespace-pre-wrap">{e.problem}</div>
+                  </div>}
+                  {/* Plan */}
+                  {e.plan && <div>
+                    <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Plan</div>
+                    <div className="text-xs text-[#a1a1aa] whitespace-pre-wrap">{e.plan}</div>
+                  </div>}
+                  {/* Changes */}
+                  {e.changes && <div>
+                    <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Changes Made</div>
+                    <div className="text-xs text-[#a1a1aa] whitespace-pre-wrap">{e.changes}</div>
+                  </div>}
+                  {/* Files */}
+                  {e.filesAffected.length > 0 && <div>
+                    <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Files Affected</div>
+                    <div className="space-y-0.5">{e.filesAffected.map((f) => <div key={f} className="font-mono text-[11px] text-[#a1a1aa]">{f}</div>)}</div>
+                  </div>}
+                  {/* Tags */}
+                  {e.tags.length > 0 && <div className="flex flex-wrap gap-1">{e.tags.map((t) => <span key={t} className="rounded-full bg-[#4a5f7f]/30 px-2 py-0.5 text-[10px] font-bold text-[#eaedf1]">{t}</span>)}</div>}
+                  {/* Metadata */}
+                  <div>
+                    <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Metadata</div>
+                    <div className="grid gap-x-6 gap-y-1 sm:grid-cols-2 text-xs text-[#a1a1aa]">
+                      <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Created</span> {formatDate(e.createdAt)}</div>
+                      <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Updated</span> {formatDate(e.updatedAt)}</div>
+                      <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Agent</span> {e.agent}</div>
+                      {e.relatedFindingIds.length > 0 && <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Related Findings</span> {e.relatedFindingIds.join(", ")}</div>}
+                    </div>
+                  </div>
+                  {/* Actions */}
+                  <div className="grid gap-2 md:grid-cols-2">
+                    <select value={e.status} onChange={(ev) => updateEntryStatus(e.id, ev.target.value as ChangeLogStatus)} className={selectClass}>
+                      {CHANGE_LOG_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                    <button type="button" onClick={() => addComment(e.id)} className={neutralButtonClass}>Add Comment</button>
+                  </div>
+                  {e.comments.length > 0 && <div className="mt-3 space-y-2 rounded-lg border border-[rgba(255,255,255,0.05)] bg-[#1c1c1f] p-3">{e.comments.map((c) => <div key={c.id} className={cn(recessedStripClass, "px-2 py-2 text-xs text-[#a1a1aa]")}><div className="font-bold text-[#eaedf1]">{c.author}</div><div className="text-[10px] text-[#71717a]">{formatDate(c.timestamp)}</div><div className="mt-1">{c.text}</div></div>)}</div>}
+                </div>
+              </details>
+            ))}
+          </div>
+        </Section>
+      )}
+    </div>
+  );
 }
 
 export default function UiAuditPage() {
@@ -570,16 +770,8 @@ export default function UiAuditPage() {
           </div>
         )}
 
-        {/* Handoff */}
-        {activeView === "handoff" && (
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-            <Section title="Cross-Agent Handoff Notes"><div className={cn(recessedBlockClass, "min-h-[260px] p-4")}>{registry.handoffNotes?.trim() ? <pre className="whitespace-pre-wrap text-sm leading-relaxed text-[#eaedf1]">{registry.handoffNotes}</pre> : <p className="text-sm text-[#a1a1aa]">No handoff notes yet.</p>}</div></Section>
-            <Section title="Transfer Workflow">
-              <ol className="list-decimal space-y-2 pl-5 text-sm text-[#a1a1aa]"><li>Click <span className="font-bold text-[#eaedf1]">Export</span>.</li><li>Give the file to another agent.</li><li>Import the returned JSON here.</li><li>Review merged findings.</li></ol>
-              <div className={cn(recessedBlockClass, "mt-4 p-3 text-xs text-[#a1a1aa]")}><div className="font-bold text-[#eaedf1]">Registry Metadata</div><div className="mt-2 space-y-1"><div>Project: {registry.meta.project}</div><div>Version: {registry.meta.version}</div><div>Last Updated: {formatDate(registry.meta.lastUpdatedAt)}</div><div>Last Run: {registry.meta.lastRunId || "none"}</div></div></div>
-            </Section>
-          </div>
-        )}
+        {/* Change Log */}
+        {activeView === "changelog" && <ChangeLogView registry={registry} updateRegistry={updateRegistry} />}
       </div>
     </div>
   );
