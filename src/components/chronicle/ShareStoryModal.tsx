@@ -26,12 +26,6 @@ export const ShareScenarioModal: React.FC<ShareScenarioModalProps> = ({
   const [existingPublication, setExistingPublication] = useState<PublishedScenario | null>(null);
   const [allowRemix, setAllowRemix] = useState(false);
 
-  useEffect(() => {
-    if (isOpen) {
-      loadExistingPublication();
-    }
-  }, [isOpen, loadExistingPublication]);
-
   const loadExistingPublication = useCallback(async () => {
     setIsLoading(true);
     try {

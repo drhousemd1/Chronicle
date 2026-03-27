@@ -31,15 +31,6 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
   const [isLoadingFolders, setIsLoadingFolders] = useState(false);
   const [isLoadingImages, setIsLoadingImages] = useState(false);
 
-  useEffect(() => {
-    if (isOpen && user) {
-      loadFolders();
-      setSelectedFolder(null);
-      setFolderImages([]);
-      setSelectedImageUrl(null);
-    }
-  }, [isOpen, user, loadFolders]);
-
   const loadFolders = useCallback(async () => {
     if (!user) return;
     setIsLoadingFolders(true);
