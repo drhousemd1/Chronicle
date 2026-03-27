@@ -68,6 +68,20 @@ export const QUALITY_RUN_PROFILE = ["quick", "standard", "deep"] as const;
 
 export const QUALITY_RUN_STATUS = ["completed", "failed", "partial"] as const;
 
+export const CHANGE_LOG_SEVERITY = [
+  "patch",
+  "fix",
+  "refactor",
+  "feature",
+  "breaking",
+] as const;
+
+export const CHANGE_LOG_STATUS = [
+  "planned",
+  "in-progress",
+  "completed",
+] as const;
+
 export const QUALITY_REVIEW_STATUS = ["pending", "in-progress", "reviewed"] as const;
 
 export const QUALITY_MODULE_STATUS = [
@@ -90,6 +104,8 @@ export type QualityRunProfile = (typeof QUALITY_RUN_PROFILE)[number];
 export type QualityRunStatus = (typeof QUALITY_RUN_STATUS)[number];
 export type QualityReviewStatus = (typeof QUALITY_REVIEW_STATUS)[number];
 export type QualityModuleStatus = (typeof QUALITY_MODULE_STATUS)[number];
+export type ChangeLogSeverity = (typeof CHANGE_LOG_SEVERITY)[number];
+export type ChangeLogStatus = (typeof CHANGE_LOG_STATUS)[number];
 
 export interface QualityAgent {
   id: string;
@@ -200,12 +216,31 @@ export interface QualityHubMeta {
   lastRunId?: string;
 }
 
+export interface ChangeLogEntry {
+  id: string;
+  title: string;
+  summary: string;
+  severity: ChangeLogSeverity;
+  status: ChangeLogStatus;
+  problem: string;
+  plan: string;
+  changes: string;
+  filesAffected: string[];
+  agent: string;
+  relatedFindingIds: string[];
+  tags: string[];
+  comments: QualityFindingComment[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface QualityHubRegistry {
   meta: QualityHubMeta;
   scanModules: QualityScanModule[];
   runs: QualityScanRun[];
   findings: QualityFinding[];
   reviewUnits: QualityReviewUnit[];
+  changeLog: ChangeLogEntry[];
   handoffNotes: string;
 }
 
@@ -216,14 +251,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export function isQualityHubRegistry(input: unknown): input is QualityHubRegistry {
   if (!isRecord(input)) return false;
   if (!isRecord(input.meta)) return false;
-  return (
-    typeof input.meta.version === "string" &&
-    typeof input.meta.project === "string" &&
-    Array.isArray(input.scanModules) &&
-    Array.isArray(input.runs) &&
-    Array.isArray(input.findings) &&
-    Array.isArray(input.reviewUnits)
-  );
+  if (!Array.isArray(input.scanModules) || !Array.isArray(input.runs) || !Array.isArray(input.findings) || !Array.isArray(input.reviewUnits)) return false;
+  if (typeof input.meta.version !== "string" || typeof input.meta.project !== "string") return false;
+  // changeLog may be absent in older exports — that's OK
+  if (input.changeLog !== undefined && !Array.isArray(input.changeLog)) return false;
+  return true;
 }
 
 export function makeAgentId(agentName: string, modelName: string): string {
