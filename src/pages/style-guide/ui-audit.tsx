@@ -61,7 +61,7 @@ function domainLabel(key: string): string {
   return DOMAIN_LABELS[key] ?? titleCase(key);
 }
 type GroupBy = "severity" | "domain" | "status" | "page" | "component" | "agent";
-type HubViewId = "overview" | "findings" | "runs" | "handoff";
+type HubViewId = "overview" | "findings" | "runs" | "changelog";
 
 const panelOuterClass = "rounded-[24px] overflow-hidden border-none bg-[#2a2a2f] shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]";
 const panelHeaderClass = "relative overflow-hidden border-t border-[rgba(255,255,255,0.20)] bg-[linear-gradient(180deg,#5a7292_0%,#4a5f7f_100%)] px-5 py-3 shadow-[0_10px_15px_-3px_rgba(0,0,0,0.30)]";
@@ -79,7 +79,7 @@ const HUB_VIEWS: Array<{ id: HubViewId; label: string; description: string }> = 
   { id: "overview", label: "Overview", description: "Scan and coverage progress" },
   { id: "findings", label: "Findings", description: "Detailed issue ledger" },
   { id: "runs", label: "Runs", description: "Run history and agent setup" },
-  { id: "handoff", label: "Handoff", description: "Cross-agent transfer notes" },
+  { id: "changelog", label: "Change Log", description: "Development change history and fix log" },
 ];
 
 const severityBadgeClass: Record<string, string> = {
