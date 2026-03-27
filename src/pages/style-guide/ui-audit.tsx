@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  CHANGE_LOG_SEVERITY,
+  CHANGE_LOG_STATUS,
   QUALITY_CONFIDENCE,
   QUALITY_DOMAINS,
   QUALITY_FINDING_STATUS,
@@ -9,6 +11,9 @@ import {
   QualityAgent,
   QualityFinding,
   QualityHubRegistry,
+  ChangeLogEntry,
+  ChangeLogSeverity,
+  ChangeLogStatus,
   isQualityHubRegistry,
   makeAgentId,
 } from "@/lib/ui-audit-schema";
