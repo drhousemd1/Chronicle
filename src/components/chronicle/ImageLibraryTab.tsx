@@ -116,6 +116,13 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
     }
   }, [userId]);
 
+  // Fetch folders on mount (once per userId)
+  useEffect(() => {
+    if (!userId) return;
+    if (hasLoadedRef.current) return;
+    loadFolders();
+  }, [userId, loadFolders]);
+
   const loadFolderImages = async (folderId: string) => {
     setIsLoadingImages(true);
     try {

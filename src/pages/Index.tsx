@@ -380,13 +380,13 @@ const IndexContent = () => {
       void warmup();
     };
 
-    let timeoutId: number | undefined;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     let idleId: number | undefined;
 
     if (typeof window !== "undefined" && "requestIdleCallback" in window) {
       idleId = (window as any).requestIdleCallback(startWarmup, { timeout: 2000 });
     } else {
-      timeoutId = window.setTimeout(startWarmup, 300);
+      timeoutId = setTimeout(startWarmup, 300);
     }
 
     return () => {
