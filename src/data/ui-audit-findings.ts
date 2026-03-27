@@ -2650,7 +2650,7 @@ const runs: QualityScanRun[] = [
 export const qualityHubInitialRegistry: QualityHubRegistry = {
   meta: {
     version: QUALITY_HUB_VERSION,
-    registryVersion: 10,
+    registryVersion: 11,
     project: "Chronicle",
     createdAt,
     lastUpdatedAt: scanTimestamp,
@@ -2878,6 +2878,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
       lastRunId: runIds.aiMapping,
     },
   ],
+  changeLog: [],
   handoffNotes:
     "Codex baseline + rescan history remains intact (2026-03-18 and 2026-03-19), and a new targeted AI mapping pass was completed on 2026-03-21 for Character/Story AI-enhance routing plus API Inspector consistency. Findings inventory now logs 66 total issues (critical 3, high 19, medium 32, low 12). This update is documentation/state only; no product-code fixes were applied in this pass. New highest-signal additions are dynamic key-resolution drift in AI-enhance pathways and static inspector contract mismatch against runtime behavior.",
 };
