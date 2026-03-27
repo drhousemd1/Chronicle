@@ -2650,7 +2650,7 @@ const runs: QualityScanRun[] = [
 export const qualityHubInitialRegistry: QualityHubRegistry = {
   meta: {
     version: QUALITY_HUB_VERSION,
-    registryVersion: 11,
+    registryVersion: 12,
     project: "Chronicle",
     createdAt,
     lastUpdatedAt: scanTimestamp,
