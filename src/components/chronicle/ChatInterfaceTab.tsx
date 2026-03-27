@@ -4198,9 +4198,8 @@ const updatedChar: SideCharacter = {
   if (conversationId === "loading" || !conversation) {
     return (
       <div className="flex-1 flex items-center justify-center bg-zinc-800">
-        <div className="text-center space-y-4">
-          <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto" />
-          <p className="text-slate-400 text-sm">Loading your story...</p>
+        <div className="text-center">
+          <p className="text-slate-400 text-sm">Preparing your story...</p>
         </div>
       </div>
     );

@@ -159,6 +159,8 @@ export interface QualityFinding {
   verifiedBy?: QualityAgentStamp;
   contributors: QualityAgent[];
   relatedFindingIds: string[];
+  relatedRunIds?: string[];
+  relatedChangeLogIds?: string[];
   comments: QualityFindingComment[];
   createdAt: string;
   updatedAt: string;
@@ -179,9 +181,18 @@ export interface QualityScanModule {
   name: string;
   description: string;
   status: QualityModuleStatus;
-  priority: "high" | "medium" | "low";
+  priority?: "high" | "medium" | "low";
   lastRunId?: string;
   notes?: string;
+  checklist: QualityModuleChecklist;
+}
+
+export interface QualityModuleChecklist {
+  scope: string[];
+  checks: string[];
+  evidenceRequired: string[];
+  loggingTargets: Array<"issue-registry" | "scan-runs" | "change-log">;
+  doneCriteria: string[];
 }
 
 export interface QualityRunSummary {
@@ -205,6 +216,9 @@ export interface QualityScanRun {
   summary: QualityRunSummary;
   notes: string;
   importedFrom?: string;
+  issueIdsCreated?: string[];
+  issueIdsUpdated?: string[];
+  changeLogIds?: string[];
 }
 
 export interface QualityHubMeta {
@@ -228,6 +242,7 @@ export interface ChangeLogEntry {
   filesAffected: string[];
   agent: string;
   relatedFindingIds: string[];
+  relatedRunIds?: string[];
   tags: string[];
   comments: QualityFindingComment[];
   createdAt: string;

@@ -77,10 +77,16 @@ const neutralButtonClass = "rounded-xl border-none bg-[#2f3137] px-4 py-2 text-x
 
 const HUB_VIEWS: Array<{ id: HubViewId; label: string; description: string }> = [
   { id: "overview", label: "Overview", description: "Scan and coverage progress" },
-  { id: "findings", label: "Findings", description: "Detailed issue ledger" },
-  { id: "runs", label: "Runs", description: "Run history and agent setup" },
+  { id: "findings", label: "Issue Registry", description: "Detailed issue ledger" },
+  { id: "runs", label: "Scan Runs", description: "Run history and agent setup" },
   { id: "changelog", label: "Change Log", description: "Development change history and fix log" },
 ];
+
+const TOOL_INTEGRITY_MODULE_IDS = new Set([
+  "module-app-guide-integrity",
+  "module-app-architecture-integrity",
+  "module-api-inspector-integrity",
+]);
 
 const severityBadgeClass: Record<string, string> = {
   critical: "bg-[#2f3137] text-[#eaedf1] border border-[#dc2626]",
@@ -108,9 +114,20 @@ function upgradeRegistry(persisted: QualityHubRegistry): QualityHubRegistry {
 
   if (persistedVersion >= currentVersion) return persisted;
 
-  // Baseline scan data is versioned in code. When seed version increases,
-  // replace stale persisted snapshots so module/status + finding set stays authoritative.
-  return seed;
+  // Preserve user-managed findings/runs/changelog while upgrading code-owned structure.
+  const merged = mergeRegistries(seed, persisted);
+  return {
+    ...merged,
+    meta: {
+      ...merged.meta,
+      version: seed.meta.version,
+      registryVersion: currentVersion,
+      project: persisted.meta?.project || seed.meta.project,
+      createdAt: persisted.meta?.createdAt || seed.meta.createdAt,
+      lastUpdatedAt: new Date().toISOString(),
+      lastRunId: persisted.meta?.lastRunId || merged.meta.lastRunId || seed.meta.lastRunId,
+    },
+  };
 }
 function formatDate(value: string): string {
   const date = new Date(value);
@@ -121,6 +138,17 @@ function formatShortDate(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+function formatShortDateTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 function downloadJson(filename: string, payload: unknown) {
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
@@ -160,6 +188,149 @@ function MetricCard({ label, value, tone = "default" }: { label: string; value: 
   return (<div className={cn(recessedBlockClass, "p-3")}><div className="text-[11px] font-black uppercase tracking-[0.1em] text-[#a1a1aa]">{label}</div><div className={cn("mt-1 text-2xl font-black", valueClass)}>{value}</div></div>);
 }
 
+function ChevronToggleButton({
+  expanded,
+  onToggle,
+  label,
+}: {
+  expanded: boolean;
+  onToggle: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-label={label}
+      title={label}
+      className="inline-flex items-center justify-center p-0 m-0 h-auto w-auto bg-transparent border-0 rounded-none shadow-none text-white hover:text-white/85 transition-colors appearance-none"
+    >
+      <ChevronDown size={20} strokeWidth={2.6} className={cn("transition-transform duration-200", expanded && "rotate-180")} />
+    </button>
+  );
+}
+
+function ExpandableChecklist({
+  title,
+  items,
+  expanded,
+  onToggle,
+  limit = 5,
+}: {
+  title: string;
+  items: string[];
+  expanded: boolean;
+  onToggle: () => void;
+  limit?: number;
+}) {
+  const visibleItems = expanded ? items : items.slice(0, limit);
+  const hiddenCount = Math.max(items.length - limit, 0);
+
+  return (
+    <div className={cn(recessedStripClass, "p-3")}>
+      <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">{title}</div>
+      {visibleItems.length === 0 ? (
+        <div className="text-xs text-[#71717a]">No checklist items defined.</div>
+      ) : (
+        <ul className="space-y-1 list-disc pl-5 text-xs text-[#a1a1aa]">
+          {visibleItems.map((item, index) => (
+            <li key={`${title}-${index}`}>{item}</li>
+          ))}
+        </ul>
+      )}
+      {hiddenCount > 0 && (
+        <div className="mt-3 flex items-center justify-end">
+          <ChevronToggleButton
+            expanded={expanded}
+            onToggle={onToggle}
+            label={expanded ? `Collapse ${title}` : `Expand ${title} (${hiddenCount} more items)`}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ScanModuleCard({
+  module,
+  completedDate,
+  expandedChecklistKeys,
+  onToggleChecklist,
+}: {
+  module: QualityHubRegistry["scanModules"][number];
+  completedDate: string | null;
+  expandedChecklistKeys: Record<string, boolean>;
+  onToggleChecklist: (key: string) => void;
+}) {
+  const checklist = module.checklist ?? {
+    scope: [],
+    checks: [],
+    evidenceRequired: [],
+    loggingTargets: [],
+    doneCriteria: [],
+  };
+
+  return (
+    <details className={cn(recessedBlockClass, "group open:ring-1 open:ring-[#4a5f7f]/60 p-3")}>
+      <summary className="cursor-pointer list-none relative pr-8">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <div className="text-sm font-bold text-[#eaedf1]">{module.name}</div>
+            <div className="mt-1 text-xs text-[#a1a1aa]">{module.description}</div>
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <span className={cn("rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-wider", moduleStatusClass[module.status])}>
+              {module.status}
+            </span>
+            {completedDate && (
+              <span className="text-[10px] text-[#71717a]">{formatShortDate(completedDate)}</span>
+            )}
+          </div>
+        </div>
+        <ChevronDown size={16} className="absolute bottom-1 right-0 text-[#71717a] transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="mt-3 space-y-3">
+        <ExpandableChecklist
+          title="Scope"
+          items={checklist.scope}
+          expanded={!!expandedChecklistKeys[`${module.id}:scope`]}
+          onToggle={() => onToggleChecklist(`${module.id}:scope`)}
+        />
+        <ExpandableChecklist
+          title="Checks"
+          items={checklist.checks}
+          expanded={!!expandedChecklistKeys[`${module.id}:checks`]}
+          onToggle={() => onToggleChecklist(`${module.id}:checks`)}
+        />
+        <ExpandableChecklist
+          title="Evidence Required"
+          items={checklist.evidenceRequired}
+          expanded={!!expandedChecklistKeys[`${module.id}:evidence`]}
+          onToggle={() => onToggleChecklist(`${module.id}:evidence`)}
+        />
+        <ExpandableChecklist
+          title="Where to Log"
+          items={checklist.loggingTargets.map((target) => target.replace(/-/g, " "))}
+          expanded={!!expandedChecklistKeys[`${module.id}:logging`]}
+          onToggle={() => onToggleChecklist(`${module.id}:logging`)}
+        />
+        <ExpandableChecklist
+          title="Done Criteria"
+          items={checklist.doneCriteria}
+          expanded={!!expandedChecklistKeys[`${module.id}:done`]}
+          onToggle={() => onToggleChecklist(`${module.id}:done`)}
+        />
+        {module.notes && (
+          <div className={cn(recessedStripClass, "p-3 text-xs text-[#a1a1aa]")}>
+            <span className="text-[10px] font-black uppercase tracking-[0.16em] text-[#eaedf1]">Module Notes</span>
+            <div className="mt-1">{module.notes}</div>
+          </div>
+        )}
+      </div>
+    </details>
+  );
+}
+
 const changeLogSeverityBadge: Record<string, string> = {
   patch: "bg-[#2f3137] text-[#eaedf1] border border-[#3b82f6]",
   fix: "bg-[#2f3137] text-[#eaedf1] border border-[#f59e0b]",
@@ -173,7 +344,172 @@ const changeLogStatusBadge: Record<string, string> = {
   completed: "bg-[#166534] text-white",
 };
 
-function ChangeLogView({ registry, updateRegistry }: { registry: QualityHubRegistry; updateRegistry: (fn: (p: QualityHubRegistry) => QualityHubRegistry) => void }) {
+function ChangeLogEntryCard({
+  entry,
+  onUpdateStatus,
+  onAddComment,
+}: {
+  entry: ChangeLogEntry;
+  onUpdateStatus?: (id: string, status: ChangeLogStatus) => void;
+  onAddComment?: (id: string) => void;
+}) {
+  return (
+    <details className={cn(recessedBlockClass, "group open:ring-1 open:ring-[#4a5f7f]/60")}>
+      <summary className="cursor-pointer list-none px-4 py-3 relative">
+        <div className="absolute top-3 right-10 text-[10px] font-semibold text-[#71717a] tracking-wide">
+          {formatShortDateTime(entry.updatedAt)}
+        </div>
+        <div className="flex flex-wrap items-start gap-2 pr-8">
+          <span className={cn("rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em]", changeLogSeverityBadge[entry.severity] || changeLogSeverityBadge.fix)}>{entry.severity}</span>
+          <span className={cn("rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em]", changeLogStatusBadge[entry.status] || changeLogStatusBadge.completed)}>{entry.status}</span>
+          <span className="rounded-full bg-[#4a5f7f] px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">{entry.agent}</span>
+        </div>
+        <div className="mt-2 text-sm font-bold text-white">{entry.title}</div>
+        {entry.summary && <div className="mt-1 text-xs text-[#a1a1aa]">{entry.summary}</div>}
+        <ChevronDown size={16} className="absolute bottom-3 right-4 text-[#71717a] transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="border-t border-[rgba(255,255,255,0.05)] px-4 py-4 space-y-5">
+        {entry.problem && (
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Problem</div>
+            <div className="text-xs text-[#a1a1aa] whitespace-pre-wrap">{entry.problem}</div>
+          </div>
+        )}
+        {entry.plan && (
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Plan</div>
+            <div className="text-xs text-[#a1a1aa] whitespace-pre-wrap">{entry.plan}</div>
+          </div>
+        )}
+        {entry.changes && (
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Changes Made</div>
+            <div className="text-xs text-[#a1a1aa] whitespace-pre-wrap">{entry.changes}</div>
+          </div>
+        )}
+        {entry.filesAffected.length > 0 && (
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Files Affected</div>
+            <div className="space-y-0.5">
+              {entry.filesAffected.map((filePath) => (
+                <div key={filePath} className="font-mono text-[11px] text-[#a1a1aa]">
+                  {filePath}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {entry.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {entry.tags.map((tag) => (
+              <span key={tag} className="rounded-full bg-[#4a5f7f]/30 px-2 py-0.5 text-[10px] font-bold text-[#eaedf1]">
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+        <div>
+          <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Metadata</div>
+          <div className="grid gap-x-6 gap-y-1 sm:grid-cols-2 text-xs text-[#a1a1aa]">
+            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Created</span> {formatDate(entry.createdAt)}</div>
+            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Updated</span> {formatDate(entry.updatedAt)}</div>
+            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Agent</span> {entry.agent}</div>
+            {entry.relatedFindingIds.length > 0 && <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Related Issues</span> {entry.relatedFindingIds.join(", ")}</div>}
+            {(entry.relatedRunIds ?? []).length > 0 && <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Related Runs</span> {(entry.relatedRunIds ?? []).join(", ")}</div>}
+          </div>
+        </div>
+        {onUpdateStatus && onAddComment && (
+          <div className="grid gap-2 md:grid-cols-2">
+            <select value={entry.status} onChange={(event) => onUpdateStatus(entry.id, event.target.value as ChangeLogStatus)} className={selectClass}>
+              {CHANGE_LOG_STATUS.map((statusOption) => <option key={statusOption} value={statusOption}>{statusOption}</option>)}
+            </select>
+            <button type="button" onClick={() => onAddComment(entry.id)} className={neutralButtonClass}>Add Comment</button>
+          </div>
+        )}
+        {entry.comments.length > 0 && (
+          <div className="mt-3 space-y-2 rounded-lg border border-[rgba(255,255,255,0.05)] bg-[#1c1c1f] p-3">
+            {entry.comments.map((comment) => (
+              <div key={comment.id} className={cn(recessedStripClass, "px-2 py-2 text-xs text-[#a1a1aa]")}>
+                <div className="font-bold text-[#eaedf1]">{comment.author}</div>
+                <div className="text-[10px] text-[#71717a]">{formatDate(comment.timestamp)}</div>
+                <div className="mt-1">{comment.text}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </details>
+  );
+}
+
+function QualityHubHowToModal({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-[2px] flex items-center justify-center p-4" role="dialog" aria-modal="true">
+      <div className={cn(panelOuterClass, "w-full max-w-4xl max-h-[85vh] overflow-hidden")}>
+        <div className={panelHeaderClass}>
+          <div className={panelHeaderOverlayClass} />
+          <div className="relative z-10 flex items-center justify-between gap-4">
+            <h2 className="text-[20px] font-semibold tracking-tight text-white">Quality Hub: How to Use</h2>
+            <button type="button" onClick={onClose} className={neutralButtonClass}>
+              Close
+            </button>
+          </div>
+        </div>
+        <div className={cn(panelBodyClass, "overflow-y-auto max-h-[calc(85vh-70px)]")}>
+          <div className="space-y-4 text-sm text-[#c7c9cf]">
+            <div className={cn(recessedBlockClass, "p-4")}>
+              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Workflow</div>
+              <ol className="list-decimal pl-5 space-y-1">
+                <li>Run or log a scan in <strong className="text-white">Scan Runs</strong>.</li>
+                <li>Create/update issue records in <strong className="text-white">Issue Registry</strong>.</li>
+                <li>Document implementation in <strong className="text-white">Change Log</strong>.</li>
+                <li>Cross-link IDs across all three areas for traceability.</li>
+              </ol>
+            </div>
+            <div className={cn(recessedBlockClass, "p-4")}>
+              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Canonical Logging Rules</div>
+              <ul className="list-disc pl-5 space-y-1">
+                <li><strong className="text-white">Issue Registry</strong>: diagnosis, severity, evidence, and lifecycle status.</li>
+                <li><strong className="text-white">Scan Runs</strong>: who scanned, when, scope used, and output summary.</li>
+                <li><strong className="text-white">Change Log</strong>: what was changed in code/config/content and why.</li>
+                <li>Never mark an issue solved without a linked change entry and verification note.</li>
+              </ul>
+            </div>
+            <div className={cn(recessedBlockClass, "p-4")}>
+              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Agent Instructions</div>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Follow each module checklist in Overview exactly; do not free-form scope.</li>
+                <li>For every finding, include route/component/file evidence before proposing fixes.</li>
+                <li>If uncertain, log as likely and document uncertainty in evidence.</li>
+                <li>When implementing, add a Change Log entry with files touched and expected outcome.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ChangeLogView({
+  registry,
+  updateRegistry,
+  onAddComment,
+  onUpdateStatus,
+}: {
+  registry: QualityHubRegistry;
+  updateRegistry: (fn: (p: QualityHubRegistry) => QualityHubRegistry) => void;
+  onAddComment: (id: string) => void;
+  onUpdateStatus: (id: string, status: ChangeLogStatus) => void;
+}) {
   const [clSearch, setClSearch] = useState("");
   const [clSeverity, setClSeverity] = useState<"all" | ChangeLogSeverity>("all");
   const [clStatus, setClStatus] = useState<"all" | ChangeLogStatus>("all");
@@ -222,23 +558,6 @@ function ChangeLogView({ registry, updateRegistry }: { registry: QualityHubRegis
     updateRegistry((p) => ({ ...p, changeLog: [entry, ...(p.changeLog || [])] }));
     setDraft({ severity: "fix", status: "completed", agent: "Lovable" });
     setShowAddForm(false);
-  };
-
-  const addComment = (id: string) => {
-    const text = window.prompt("Add note/comment:"); if (!text?.trim()) return;
-    const now = new Date().toISOString();
-    updateRegistry((p) => ({
-      ...p,
-      changeLog: (p.changeLog || []).map((e) => e.id !== id ? e : {
-        ...e, updatedAt: now,
-        comments: [...e.comments, { id: `clc-${Math.random().toString(36).slice(2, 8)}`, author: "Manual", timestamp: now, text: text.trim() }],
-      }),
-    }));
-  };
-
-  const updateEntryStatus = (id: string, status: ChangeLogStatus) => {
-    const now = new Date().toISOString();
-    updateRegistry((p) => ({ ...p, changeLog: (p.changeLog || []).map((e) => e.id !== id ? e : { ...e, status, updatedAt: now }) }));
   };
 
   return (
@@ -292,61 +611,13 @@ function ChangeLogView({ registry, updateRegistry }: { registry: QualityHubRegis
       ) : (
         <Section title="Entries">
           <div className="space-y-2">
-            {entries.map((e) => (
-              <details key={e.id} className={cn(recessedBlockClass, "group open:ring-1 open:ring-[#4a5f7f]/60")}>
-                <summary className="cursor-pointer list-none px-4 py-3 relative">
-                  <div className="flex flex-wrap items-start gap-2 pr-8">
-                    <span className={cn("rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em]", changeLogSeverityBadge[e.severity] || changeLogSeverityBadge.fix)}>{e.severity}</span>
-                    <span className={cn("rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em]", changeLogStatusBadge[e.status] || changeLogStatusBadge.completed)}>{e.status}</span>
-                    <span className="rounded-full bg-[#4a5f7f] px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">{e.agent}</span>
-                  </div>
-                  <div className="mt-2 text-sm font-bold text-white">{e.title}</div>
-                  {e.summary && <div className="mt-1 text-xs text-[#a1a1aa]">{e.summary}</div>}
-                  <ChevronDown size={16} className="absolute bottom-3 right-4 text-[#71717a] transition-transform group-open:rotate-180" />
-                </summary>
-                <div className="border-t border-[rgba(255,255,255,0.05)] px-4 py-4 space-y-5">
-                  {/* Problem */}
-                  {e.problem && <div>
-                    <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Problem</div>
-                    <div className="text-xs text-[#a1a1aa] whitespace-pre-wrap">{e.problem}</div>
-                  </div>}
-                  {/* Plan */}
-                  {e.plan && <div>
-                    <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Plan</div>
-                    <div className="text-xs text-[#a1a1aa] whitespace-pre-wrap">{e.plan}</div>
-                  </div>}
-                  {/* Changes */}
-                  {e.changes && <div>
-                    <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Changes Made</div>
-                    <div className="text-xs text-[#a1a1aa] whitespace-pre-wrap">{e.changes}</div>
-                  </div>}
-                  {/* Files */}
-                  {e.filesAffected.length > 0 && <div>
-                    <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Files Affected</div>
-                    <div className="space-y-0.5">{e.filesAffected.map((f) => <div key={f} className="font-mono text-[11px] text-[#a1a1aa]">{f}</div>)}</div>
-                  </div>}
-                  {/* Tags */}
-                  {e.tags.length > 0 && <div className="flex flex-wrap gap-1">{e.tags.map((t) => <span key={t} className="rounded-full bg-[#4a5f7f]/30 px-2 py-0.5 text-[10px] font-bold text-[#eaedf1]">{t}</span>)}</div>}
-                  {/* Metadata */}
-                  <div>
-                    <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Metadata</div>
-                    <div className="grid gap-x-6 gap-y-1 sm:grid-cols-2 text-xs text-[#a1a1aa]">
-                      <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Created</span> {formatDate(e.createdAt)}</div>
-                      <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Updated</span> {formatDate(e.updatedAt)}</div>
-                      <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Agent</span> {e.agent}</div>
-                      {e.relatedFindingIds.length > 0 && <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Related Findings</span> {e.relatedFindingIds.join(", ")}</div>}
-                    </div>
-                  </div>
-                  {/* Actions */}
-                  <div className="grid gap-2 md:grid-cols-2">
-                    <select value={e.status} onChange={(ev) => updateEntryStatus(e.id, ev.target.value as ChangeLogStatus)} className={selectClass}>
-                      {CHANGE_LOG_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                    <button type="button" onClick={() => addComment(e.id)} className={neutralButtonClass}>Add Comment</button>
-                  </div>
-                  {e.comments.length > 0 && <div className="mt-3 space-y-2 rounded-lg border border-[rgba(255,255,255,0.05)] bg-[#1c1c1f] p-3">{e.comments.map((c) => <div key={c.id} className={cn(recessedStripClass, "px-2 py-2 text-xs text-[#a1a1aa]")}><div className="font-bold text-[#eaedf1]">{c.author}</div><div className="text-[10px] text-[#71717a]">{formatDate(c.timestamp)}</div><div className="mt-1">{c.text}</div></div>)}</div>}
-                </div>
-              </details>
+            {entries.map((entry) => (
+              <ChangeLogEntryCard
+                key={entry.id}
+                entry={entry}
+                onUpdateStatus={onUpdateStatus}
+                onAddComment={onAddComment}
+              />
             ))}
           </div>
         </Section>
@@ -381,6 +652,11 @@ export default function UiAuditPage() {
   const [agentFilter, setAgentFilter] = useState<string>("all");
   const [importFeedback, setImportFeedback] = useState<string>("");
   const [agentDraft, setAgentDraft] = useState<QualityAgent>(qualityHubDefaultAgent);
+  const [showHowToUse, setShowHowToUse] = useState(false);
+  const [showAllModules, setShowAllModules] = useState(false);
+  const [showAllToolModules, setShowAllToolModules] = useState(false);
+  const [showAllReviewUnits, setShowAllReviewUnits] = useState(false);
+  const [expandedChecklistKeys, setExpandedChecklistKeys] = useState<Record<string, boolean>>({});
 
   // Load from database on mount (if authenticated)
   useEffect(() => {
@@ -467,6 +743,20 @@ export default function UiAuditPage() {
   const moduleCompleted = registry.scanModules.filter((m) => m.status === "completed").length;
   const openFindings = statusCounts.open + statusCounts["in-progress"];
   const dominantDomain = Object.entries(domainCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "n/a";
+  const recentChanges = useMemo(
+    () => [...(registry.changeLog || [])]
+      .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
+      .slice(0, 5),
+    [registry.changeLog],
+  );
+  const coreScanModules = useMemo(
+    () => registry.scanModules.filter((module) => !TOOL_INTEGRITY_MODULE_IDS.has(module.id)),
+    [registry.scanModules],
+  );
+  const toolIntegrityModules = useMemo(
+    () => registry.scanModules.filter((module) => TOOL_INTEGRITY_MODULE_IDS.has(module.id)),
+    [registry.scanModules],
+  );
 
   // Helper: get the finished timestamp for a completed scan module
   const getModuleCompletedDate = (lastRunId?: string): string | null => {
@@ -475,16 +765,6 @@ export default function UiAuditPage() {
     return run?.finishedAt || null;
   };
 
-  const handleReset = async () => {
-    if (!window.confirm("Reset Quality Hub and remove all current runs/findings?")) return;
-    const fresh = cloneInitialRegistry();
-    setRegistry(fresh);
-    setImportFeedback("Quality Hub reset to clean baseline.");
-    // Also reset DB
-    if (isAuthenticated && user?.id) {
-      await (supabase as any).from("quality_hub_registries").delete().eq("user_id", user.id);
-    }
-  };
   const handleExport = () => { const snapshot = nextRegistryWithTimestamp(registry); setRegistry(snapshot); downloadJson(`chronicle-quality-hub-${toCompactIso()}.json`, buildQualityHubTransferPackage(snapshot)); setImportFeedback("Exported Quality Hub JSON package."); };
   const handleImportClick = () => { fileInputRef.current?.click(); };
   const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -516,8 +796,45 @@ export default function UiAuditPage() {
     const now = new Date().toISOString();
     updateRegistry((p) => ({ ...p, findings: p.findings.map((f) => f.id === id ? { ...f, comments: [...f.comments, { id: newId("comment"), author: `${agentDraft.agentName} (${agentDraft.modelName})`, timestamp: now, text: comment.trim() }], updatedAt: now } : f) }));
   };
+  const addCommentToChangeLog = useCallback((id: string) => {
+    const text = window.prompt("Add note/comment:");
+    if (!text?.trim()) return;
+    const now = new Date().toISOString();
+    updateRegistry((p) => ({
+      ...p,
+      changeLog: (p.changeLog || []).map((entry) => (
+        entry.id !== id
+          ? entry
+          : {
+              ...entry,
+              updatedAt: now,
+              comments: [
+                ...entry.comments,
+                {
+                  id: `clc-${Math.random().toString(36).slice(2, 8)}`,
+                  author: "Manual",
+                  timestamp: now,
+                  text: text.trim(),
+                },
+              ],
+            }
+      )),
+    }));
+  }, [updateRegistry]);
+  const updateChangeLogStatus = useCallback((id: string, status: ChangeLogStatus) => {
+    const now = new Date().toISOString();
+    updateRegistry((p) => ({
+      ...p,
+      changeLog: (p.changeLog || []).map((entry) => (
+        entry.id !== id ? entry : { ...entry, status, updatedAt: now }
+      )),
+    }));
+  }, [updateRegistry]);
 
   const activeViewMeta = HUB_VIEWS.find((v) => v.id === activeView) || HUB_VIEWS[0];
+  const toggleChecklistList = (key: string) => {
+    setExpandedChecklistKeys((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   return (
     <div className="min-h-screen bg-[#111113] text-[#eaedf1]">
@@ -530,10 +847,10 @@ export default function UiAuditPage() {
           <h1 className="text-lg font-black text-[hsl(var(--ui-surface-2))] uppercase tracking-tight">Quality Hub</h1>
         </div>
         <div className="flex items-center gap-3">
+          <button type="button" onClick={() => setShowHowToUse(true)} className="inline-flex items-center gap-2 justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider">How to Use</button>
           <button type="button" onClick={handleImportClick} className="inline-flex items-center gap-2 justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider">Import</button>
           <button type="button" onClick={handleExport} className="inline-flex items-center gap-2 justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider">Export</button>
           <button type="button" onClick={logRunSnapshot} className="inline-flex items-center gap-2 justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider">Log Snapshot</button>
-          <button type="button" onClick={handleReset} className="inline-flex items-center gap-2 justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider">Reset Hub</button>
         </div>
       </header>
 
@@ -541,7 +858,7 @@ export default function UiAuditPage() {
         {/* Metrics */}
         <section className={panelOuterClass}><div className={panelBodyClass}>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <MetricCard label="Open Findings" value={openFindings} />
+            <MetricCard label="Open Issues" value={openFindings} />
             <MetricCard label="Critical" value={severityCounts.critical} tone="danger" />
             <MetricCard label="Verified" value={statusCounts.verified} tone="success" />
             <MetricCard label="Runs Logged" value={registry.runs.length} />
@@ -568,58 +885,133 @@ export default function UiAuditPage() {
 
         {/* Overview */}
         {activeView === "overview" && (
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Section title="Scan Modules"><div className="space-y-2">
-              {registry.scanModules.map((m) => {
-                const completedDate = m.status === "completed" ? getModuleCompletedDate(m.lastRunId) : null;
-                return (
-                  <div key={m.id} className={cn(recessedBlockClass, "p-3")}>
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="text-sm font-bold text-[#eaedf1]">{m.name}</div>
-                        <div className="mt-1 text-xs text-[#a1a1aa]">{m.description}</div>
+          <div className="space-y-6">
+            <Section
+              title="Scan Modules"
+              badge={
+                coreScanModules.length > 5 ? (
+                  <ChevronToggleButton
+                    expanded={showAllModules}
+                    onToggle={() => setShowAllModules((p) => !p)}
+                    label={showAllModules ? "Collapse scan modules" : `Expand scan modules (${coreScanModules.length - 5} hidden)`}
+                  />
+                ) : undefined
+              }
+            >
+              <div className="space-y-3">
+                {(showAllModules ? coreScanModules : coreScanModules.slice(0, 5)).map((module) => (
+                  <ScanModuleCard
+                    key={module.id}
+                    module={module}
+                    completedDate={module.status === "completed" ? getModuleCompletedDate(module.lastRunId) : null}
+                    expandedChecklistKeys={expandedChecklistKeys}
+                    onToggleChecklist={toggleChecklistList}
+                  />
+                ))}
+              </div>
+            </Section>
+
+            <Section
+              title="Tool Integrity Scans"
+              badge={
+                toolIntegrityModules.length > 5 ? (
+                  <ChevronToggleButton
+                    expanded={showAllToolModules}
+                    onToggle={() => setShowAllToolModules((p) => !p)}
+                    label={showAllToolModules ? "Collapse tool scans" : `Expand tool scans (${toolIntegrityModules.length - 5} hidden)`}
+                  />
+                ) : undefined
+              }
+            >
+              <div className="space-y-3">
+                {(showAllToolModules ? toolIntegrityModules : toolIntegrityModules.slice(0, 5)).map((module) => (
+                  <ScanModuleCard
+                    key={module.id}
+                    module={module}
+                    completedDate={module.status === "completed" ? getModuleCompletedDate(module.lastRunId) : null}
+                    expandedChecklistKeys={expandedChecklistKeys}
+                    onToggleChecklist={toggleChecklistList}
+                  />
+                ))}
+              </div>
+            </Section>
+
+            <Section
+              title="App Pages"
+              badge={
+                registry.reviewUnits.length > 5 ? (
+                  <ChevronToggleButton
+                    expanded={showAllReviewUnits}
+                    onToggle={() => setShowAllReviewUnits((p) => !p)}
+                    label={showAllReviewUnits ? "Collapse app pages" : `Expand app pages (${registry.reviewUnits.length - 5} hidden)`}
+                  />
+                ) : undefined
+              }
+            >
+              <div className="space-y-2">
+                {(showAllReviewUnits ? registry.reviewUnits : registry.reviewUnits.slice(0, 5)).map((u) => {
+                  const completedDate = u.status === "reviewed" && u.lastRunId ? getModuleCompletedDate(u.lastRunId) : null;
+                  return (
+                    <div key={u.id} className={cn(recessedBlockClass, "p-3")}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="text-sm font-bold text-[#eaedf1]">{u.name}</div>
+                          <div className="text-xs text-[#a1a1aa]">{u.route || "No route set"}</div>
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className={cn("rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em]", u.status === "in-progress" ? "bg-[#2f3137] text-[#a5f3fc] border border-[#3b82f6]" : u.status === "reviewed" ? "bg-[#2f3137] text-[#a5f3fc] border border-[#22B8C9]" : "bg-[#4a5f7f] text-[#eaedf1]")}>{u.status}</span>
+                          {completedDate && <span className="text-[10px] text-[#71717a]">{formatShortDate(completedDate)}</span>}
+                        </div>
                       </div>
-                      <div className="flex flex-col items-end gap-1">
-                        <span className={cn("rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-wider", moduleStatusClass[m.status])}>{m.status}</span>
-                        {completedDate && (
-                          <span className="text-[10px] text-[#71717a]">{formatShortDate(completedDate)}</span>
-                        )}
-                      </div>
+                      <div className="mt-2 text-xs text-[#a1a1aa]">{u.notes}</div>
                     </div>
-                  </div>
-                );
-              })}
-            </div></Section>
-            <Section title="App Pages"><div className="space-y-2">
-              {registry.reviewUnits.map((u) => {
-                const completedDate = u.status === "reviewed" && u.lastRunId ? getModuleCompletedDate(u.lastRunId) : null;
-                return (
-                  <div key={u.id} className={cn(recessedBlockClass, "p-3")}>
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="text-sm font-bold text-[#eaedf1]">{u.name}</div>
-                        <div className="text-xs text-[#a1a1aa]">{u.route || "No route set"}</div>
-                      </div>
-                      <div className="flex flex-col items-end gap-1">
-                        <span className={cn("rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em]", u.status === "in-progress" ? "bg-[#2f3137] text-[#a5f3fc] border border-[#3b82f6]" : u.status === "reviewed" ? "bg-[#2f3137] text-[#a5f3fc] border border-[#22B8C9]" : "bg-[#4a5f7f] text-[#eaedf1]")}>{u.status}</span>
-                        {completedDate && <span className="text-[10px] text-[#71717a]">{formatShortDate(completedDate)}</span>}
-                      </div>
-                    </div>
-                    <div className="mt-2 text-xs text-[#a1a1aa]">{u.notes}</div>
-                  </div>
-                );
-              })}
-            </div></Section>
+                  );
+                })}
+              </div>
+            </Section>
+
+            <Section
+              title="Recent Change Log (Mirror)"
+              badge={
+                <button
+                  type="button"
+                  onClick={() => setActiveView("changelog")}
+                  className={neutralButtonClass}
+                >
+                  Open Change Log
+                </button>
+              }
+            >
+              <div className={cn(recessedStripClass, "mb-3 p-3 text-xs text-[#a1a1aa]")}>
+                Live mirror of the latest Change Log entries. Cards below use the same renderer and field ordering as the Change Log tab.
+              </div>
+              {recentChanges.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-[#4a5f7f]/60 px-4 py-8 text-sm text-center text-[#a1a1aa]">
+                  No change log entries yet.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {recentChanges.map((entry) => (
+                    <ChangeLogEntryCard
+                      key={entry.id}
+                      entry={entry}
+                      onUpdateStatus={updateChangeLogStatus}
+                      onAddComment={addCommentToChangeLog}
+                    />
+                  ))}
+                </div>
+              )}
+            </Section>
           </div>
         )}
 
-        {/* Findings */}
+        {/* Issue Registry */}
         {activeView === "findings" && (
           <div className="space-y-6">
-            <Section title="Findings Workspace">
+            <Section title="Issue Registry Workspace">
               <div className="space-y-4">
                 <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-5">
-                  <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search findings..." className={cn("xl:col-span-2", inputClass)} />
+                  <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search issues..." className={cn("xl:col-span-2", inputClass)} />
                   <select value={severityFilter} onChange={(e) => setSeverityFilter(e.target.value as typeof severityFilter)} className={selectClass}><option value="all">All severities</option>{QUALITY_SEVERITIES.map((s) => <option key={s} value={s}>{s}</option>)}</select>
                   <select value={domainFilter} onChange={(e) => setDomainFilter(e.target.value as typeof domainFilter)} className={selectClass}><option value="all">All domains</option>{QUALITY_DOMAINS.map((d) => <option key={d} value={d}>{d}</option>)}</select>
                   <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)} className={selectClass}><option value="all">All statuses</option>{QUALITY_FINDING_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}</select>
@@ -629,7 +1021,7 @@ export default function UiAuditPage() {
                   <select value={groupBy} onChange={(e) => setGroupBy(e.target.value as GroupBy)} className={selectClass}><option value="severity">Group by severity</option><option value="domain">Group by domain</option><option value="status">Group by status</option><option value="page">Group by page</option><option value="component">Group by component</option><option value="agent">Group by agent</option></select>
                 </div>
                 <div className="grid gap-2 sm:grid-cols-3">
-                  <div className={cn(recessedStripClass, "p-2 text-xs text-[#eaedf1]")}><span className="font-bold text-white">{filteredFindings.length}</span> filtered findings</div>
+                  <div className={cn(recessedStripClass, "p-2 text-xs text-[#eaedf1]")}><span className="font-bold text-white">{filteredFindings.length}</span> filtered issues</div>
                   <div className={cn(recessedStripClass, "p-2 text-xs text-[#eaedf1]")}>Dominant domain: <span className="font-bold text-white">{dominantDomain}</span></div>
                   <div className={cn(recessedStripClass, "p-2 text-xs text-[#eaedf1]")}>Confidence levels: {QUALITY_CONFIDENCE.length}</div>
                 </div>
@@ -730,7 +1122,9 @@ export default function UiAuditPage() {
                             <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Updated</span> {formatDate(f.updatedAt)}</div>
                             {f.verifiedBy && <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Verified By</span> {f.verifiedBy.agent.agentName}</div>}
                             {f.contributors.length > 0 && <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Contributors</span> {f.contributors.map((c) => c.agentName).join(", ")}</div>}
-                            {f.relatedFindingIds.length > 0 && <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Related</span> {f.relatedFindingIds.join(", ")}</div>}
+                            {f.relatedFindingIds.length > 0 && <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Related Issues</span> {f.relatedFindingIds.join(", ")}</div>}
+                            {(f.relatedRunIds ?? []).length > 0 && <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Related Runs</span> {(f.relatedRunIds ?? []).join(", ")}</div>}
+                            {(f.relatedChangeLogIds ?? []).length > 0 && <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Related Changes</span> {(f.relatedChangeLogIds ?? []).join(", ")}</div>}
                           </div>
                         </div>
                         {/* ── Actions ── */}
@@ -749,7 +1143,7 @@ export default function UiAuditPage() {
           </div>
         )}
 
-        {/* Runs */}
+        {/* Scan Runs */}
         {activeView === "runs" && (
           <div className="grid gap-6 lg:grid-cols-[430px_minmax(0,1fr)]">
             <Section title="Agent Attribution"><div className="space-y-3">
@@ -763,7 +1157,7 @@ export default function UiAuditPage() {
             </div>
             <div className={cn(recessedBlockClass, "mt-4 p-3")}><div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa]">Known Agents</div><div className="mt-2 space-y-1">{allAgents.map((a) => <div key={a.id} className="text-xs text-[#a1a1aa]">{a.agentName} <span className="text-[#71717a]">({a.modelName})</span></div>)}</div></div>
             </Section>
-            <Section title="Run History"><div className="overflow-x-auto rounded-xl border border-[#4a5f7f]/45">
+            <Section title="Scan Run History"><div className="overflow-x-auto rounded-xl border border-[#4a5f7f]/45">
               <table className="w-full min-w-[720px] border-collapse"><thead className="bg-[#1a2030]"><tr><th className="px-3 py-2 text-left text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa]">Run</th><th className="px-3 py-2 text-left text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa]">Agent</th><th className="px-3 py-2 text-left text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa]">Profile</th><th className="px-3 py-2 text-left text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa]">Summary</th><th className="px-3 py-2 text-left text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa]">Finished</th></tr></thead>
               <tbody>{registry.runs.length === 0 ? <tr><td className="px-3 py-4 text-xs text-[#71717a]" colSpan={5}>No run history yet.</td></tr> : registry.runs.map((r) => <tr key={r.id} className="border-t border-[#4a5f7f]/25 bg-[#1a2030]"><td className="px-3 py-3 text-xs text-[#e4e4e7]"><div className="font-bold text-[#eaedf1]">{r.name}</div><div className="font-mono text-[11px] text-[#71717a]">{r.id}</div></td><td className="px-3 py-3 text-xs text-[#a1a1aa]">{r.agent.agentName}</td><td className="px-3 py-3 text-xs uppercase text-[#a1a1aa]">{r.profile}</td><td className="px-3 py-3 text-xs text-[#a1a1aa]">total {r.summary.findingsTotal} • open {r.summary.open}</td><td className="px-3 py-3 text-xs text-[#a1a1aa]">{formatDate(r.finishedAt)}</td></tr>)}</tbody></table>
             </div></Section>
@@ -771,8 +1165,16 @@ export default function UiAuditPage() {
         )}
 
         {/* Change Log */}
-        {activeView === "changelog" && <ChangeLogView registry={registry} updateRegistry={updateRegistry} />}
+        {activeView === "changelog" && (
+          <ChangeLogView
+            registry={registry}
+            updateRegistry={updateRegistry}
+            onAddComment={addCommentToChangeLog}
+            onUpdateStatus={updateChangeLogStatus}
+          />
+        )}
       </div>
+      <QualityHubHowToModal open={showHowToUse} onClose={() => setShowHowToUse(false)} />
     </div>
   );
 }

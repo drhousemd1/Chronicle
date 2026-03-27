@@ -177,6 +177,8 @@ function mergeFinding(existing: QualityFinding, incoming: QualityFinding): Quali
     evidence: uniqueStrings([...existing.evidence, ...incoming.evidence]),
     reproSteps: uniqueStrings([...existing.reproSteps, ...incoming.reproSteps]),
     relatedFindingIds: uniqueStrings([...existing.relatedFindingIds, ...incoming.relatedFindingIds]),
+    relatedRunIds: uniqueStrings([...(existing.relatedRunIds ?? []), ...(incoming.relatedRunIds ?? [])]),
+    relatedChangeLogIds: uniqueStrings([...(existing.relatedChangeLogIds ?? []), ...(incoming.relatedChangeLogIds ?? [])]),
     comments: mergeComments(existing.comments, incoming.comments),
     contributors: uniqueAgents([...existing.contributors, ...incoming.contributors]),
   };
@@ -225,7 +227,17 @@ export function mergeRegistries(
   (current.changeLog || []).forEach((e) => changeLogMap.set(e.id, e));
   (incoming.changeLog || []).forEach((e) => {
     const existing = changeLogMap.get(e.id);
-    changeLogMap.set(e.id, existing ? { ...existing, ...e, comments: mergeComments(existing.comments, e.comments) } : e);
+    if (!existing) {
+      changeLogMap.set(e.id, e);
+      return;
+    }
+    changeLogMap.set(e.id, {
+      ...existing,
+      ...e,
+      comments: mergeComments(existing.comments, e.comments),
+      relatedFindingIds: uniqueStrings([...(existing.relatedFindingIds ?? []), ...(e.relatedFindingIds ?? [])]),
+      relatedRunIds: uniqueStrings([...(existing.relatedRunIds ?? []), ...(e.relatedRunIds ?? [])]),
+    });
   });
 
   return {

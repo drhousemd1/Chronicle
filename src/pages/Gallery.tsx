@@ -30,9 +30,7 @@ const Gallery: React.FC = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-ghost-white flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-300 border-t-slate-900 rounded-full animate-spin" />
-      </div>
+      <div className="min-h-screen bg-ghost-white" />
     );
   }
 

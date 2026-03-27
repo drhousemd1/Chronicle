@@ -14,6 +14,8 @@ const LazyStyleGuide = React.lazy(() =>
   import('@/components/admin/styleguide/StyleGuideTool').then(m => ({ default: m.StyleGuideTool }))
 );
 
+const lazyToolFallback = <div className="h-full w-full" />;
+
 const DEFAULT_TOOLS: ToolMeta[] = [
   {
     id: 'image_generation',
@@ -94,7 +96,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
 
   if (activeTool === 'image_generation') {
     return (
-      <React.Suspense fallback={<div className="flex items-center justify-center h-full text-slate-400">Loading…</div>}>
+      <React.Suspense fallback={lazyToolFallback}>
         <LazyImageGen />
       </React.Suspense>
     );
@@ -110,7 +112,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
 
   if (activeTool === 'app_guide') {
     return (
-      <React.Suspense fallback={<div className="flex items-center justify-center h-full text-slate-400">Loading…</div>}>
+      <React.Suspense fallback={lazyToolFallback}>
         <LazyAppGuide onRegisterSave={onRegisterGuideSave} onRegisterSyncAll={onRegisterGuideSyncAll} theme={guideTheme} />
       </React.Suspense>
     );
@@ -118,7 +120,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
 
   if (activeTool === 'style_guide') {
     return (
-      <React.Suspense fallback={<div className="flex items-center justify-center h-full text-slate-400">Loading…</div>}>
+      <React.Suspense fallback={lazyToolFallback}>
         <LazyStyleGuide onRegisterDownload={onRegisterStyleGuideDownload} onRegisterEdits={onRegisterStyleGuideEdits} onEditsCountChange={onStyleGuideEditsCountChange} onSwitchToAppGuide={() => onSetActiveTool('app_guide')} />
       </React.Suspense>
     );

@@ -103,12 +103,7 @@ const IconsList = {
 };
 
 const LazyTabFallback = ({ className = "" }: { className?: string }) => (
-  <div className={`h-full w-full flex items-center justify-center text-slate-300 ${className}`}>
-    <div className="flex items-center gap-3 text-sm font-semibold">
-      <span className="inline-block w-4 h-4 border-2 border-slate-500 border-t-slate-200 rounded-full animate-spin" />
-      Loading...
-    </div>
-  </div>
+  <div className={`h-full w-full ${className}`} aria-hidden="true" />
 );
 
 function SidebarItem({ 
@@ -316,9 +311,11 @@ const IndexContent = () => {
     return () => mql.removeEventListener('change', onChange as (e: MediaQueryListEvent) => void);
   }, []);
 
-  // Guest users: redirect to gallery if they try to access protected tabs
+  // Guest users: redirect to gallery only for protected tabs.
+  // Story Builder (world/characters) remains accessible in guest mode.
   useEffect(() => {
-    if (!authLoading && !isAuthenticated && tab !== "gallery") {
+    const guestAllowedTabs: TabKey[] = ["gallery", "world", "characters"];
+    if (!authLoading && !isAuthenticated && !guestAllowedTabs.includes(tab as TabKey)) {
       setTab("gallery");
     }
   }, [authLoading, isAuthenticated, tab]);
@@ -1850,20 +1847,8 @@ const IndexContent = () => {
      });
   }
 
-  // Show loading state
-  if (authLoading) {
-    return (
-      <div className="h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-white text-center">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 flex items-center justify-center text-white font-black text-2xl italic shadow-xl shadow-[#4a5f7f]/30 mx-auto mb-4 relative overflow-hidden">
-                    <div className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/[0.07] via-transparent to-transparent pointer-events-none" />
-                    <span className="relative z-[1]">C</span>
-                  </div>
-          <p>Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  // Intentionally do not block initial shell render behind an auth spinner.
+  // We allow the app chrome to render immediately while auth state resolves.
 
   if (fatal) return (
     <div className="h-screen bg-slate-900 flex items-center justify-center p-6 text-white text-center">
@@ -1886,6 +1871,18 @@ const IndexContent = () => {
 
   const isDraft = activeId ? !registry.some(r => r.id === activeId) : false;
   const activeMeta = registry.find(m => m.id === activeId);
+
+  const openStoryBuilderFromSidebar = useCallback(() => {
+    setSelectedCharacterId(null);
+    setPlayingConversationId(null);
+
+    if (activeData) {
+      setTab("world");
+      return;
+    }
+
+    handleCreateNewScenario();
+  }, [activeData, handleCreateNewScenario]);
 
   return (
     <TooltipProvider>
@@ -1931,11 +1928,7 @@ const IndexContent = () => {
               label="Story Builder"
               subtitle={activeId ? (activeMeta?.title || "Unsaved Draft") : undefined}
               icon={<IconsList.Builder />} 
-              onClick={() => requireAuth(() => {
-                if (playingConversationId) handleCreateNewScenario();
-                else if (activeId) setTab("world");
-                else handleCreateNewScenario();
-              })}
+              onClick={openStoryBuilderFromSidebar}
               className={!activeId ? "opacity-80" : ""}
               collapsed={sidebarCollapsed}
             />
@@ -2693,8 +2686,7 @@ const IndexContent = () => {
             <div className="relative h-full overflow-y-auto bg-black p-4 sm:p-6 lg:p-10">
               {showResumingOverlay && (
                 <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm">
-                  <div className="w-10 h-10 border-4 border-ghost-white border-t-white rounded-full animate-spin mb-4" />
-                  <p className="text-white font-medium text-lg">Loading session...</p>
+                  <p className="text-white font-medium text-lg">Resuming session...</p>
                 </div>
               )}
               <React.Suspense fallback={<LazyTabFallback className="bg-black" />}>

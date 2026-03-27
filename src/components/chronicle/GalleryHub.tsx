@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Loader2, Globe, LayoutGrid, X } from 'lucide-react';
+import { Search, Globe, LayoutGrid, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GalleryScenarioCard } from './GalleryStoryCard';
 import { ScenarioDetailModal } from './StoryDetailModal';
@@ -491,8 +491,13 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
           {/* Gallery Grid */}
           <div className="px-8 pb-10">
             {isLoading ? (
-              <div className="flex items-center justify-center h-64">
-                <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 lg:gap-8">
+                {[0, 1, 2, 3].map((i) => (
+                  <div
+                    key={`gallery-skeleton-${i}`}
+                    className="h-[430px] rounded-[28px] border border-[rgba(86,118,164,0.85)] bg-[linear-gradient(180deg,rgba(255,255,255,0.04)_0%,rgba(24,25,33,0.95)_100%)]"
+                  />
+                ))}
               </div>
             ) : scenarios.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-64 text-center">
@@ -530,7 +535,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
                 {/* Infinite scroll sentinel */}
                 <div ref={sentinelRef} className="flex items-center justify-center py-8">
                   {isFetchingNextPage && (
-                    <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+                    <p className="text-white/50 text-sm">Loading more stories…</p>
                   )}
                   {!hasNextPage && scenarios.length > 0 && (
                     <p className="text-white/30 text-sm">You've reached the end</p>

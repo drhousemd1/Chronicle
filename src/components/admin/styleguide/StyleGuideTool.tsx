@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback, createContext, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Pencil } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { StyleGuideDownloadModal } from './StyleGuideDownloadModal';
 import {
   KeepOrEditModal, EditDetailModal, EditsListModal,
@@ -93,9 +94,19 @@ interface StyleGuideToolProps {
   onSwitchToAppGuide?: () => void;
 }
 
+type GuideDocSummary = {
+  id: string;
+  title: string;
+  updatedAt: string | null;
+};
+
 export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownload, onRegisterEdits, onEditsCountChange, onSwitchToAppGuide }) => {
   const navigate = useNavigate();
   const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [showHowToUse, setShowHowToUse] = useState(false);
+  const [guideDocs, setGuideDocs] = useState<GuideDocSummary[]>([]);
+  const [guideDocsLoading, setGuideDocsLoading] = useState(false);
+  const [guideDocsError, setGuideDocsError] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Edits system state
@@ -174,6 +185,74 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
   const openApiInspector = useCallback(() => navigate('/style-guide/api-inspector'), [navigate]);
   const openAppGuide = useCallback(() => { if (onSwitchToAppGuide) onSwitchToAppGuide(); else navigate('/?tab=admin&adminTool=app_guide'); }, [onSwitchToAppGuide, navigate]);
 
+  const formatDateTime = useCallback((value: string | null) => {
+    if (!value) return 'Unknown';
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return 'Unknown';
+    return parsed.toLocaleString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }, []);
+
+  const describeGuideDocPurpose = useCallback((title: string) => {
+    const normalized = title.toLowerCase();
+    if (normalized.includes('app overview')) return 'Global architecture baseline: stack, routing, app shell, and shared systems.';
+    if (normalized.includes('community gallery')) return 'Gallery UX + data flow reference: discovery surfaces, sorting/filtering, and card behavior.';
+    if (normalized.includes('my stories')) return 'Story management structure: ownership, drafts/bookmarks/published state, and transitions.';
+    if (normalized.includes('character library')) return 'Character library architecture: sourcing, search/filter behavior, and tile/list interactions.';
+    if (normalized.includes('image library')) return 'Image pipeline guide: asset ingestion, folders, metadata, and downstream usage.';
+    if (normalized.includes('chat history')) return 'Conversation registry behavior: session retrieval, resume flow, and retention/deletion rules.';
+    if (normalized.includes('chat interface')) return 'Live chat runtime reference: message rendering, state sync, controls, and prompts.';
+    if (normalized.includes('scenario builder') || normalized.includes('story builder')) return 'Story Builder/World Builder behavior, sections, and save/compose flows.';
+    if (normalized.includes('character builder')) return 'Character Builder structure: containers, custom fields, AI-enhance mapping, and save behavior.';
+    if (normalized.includes('admin panel')) return 'Admin tool taxonomy, navigation patterns, and governance controls.';
+    if (normalized.includes('account')) return 'Account/profile/subscription behavior and user-setting boundaries.';
+    if (normalized.includes('shared elements') || normalized.includes('architecture')) return 'Cross-cutting components, primitives, and shared interaction contracts.';
+    return 'Page/system-specific implementation guide and maintenance reference.';
+  }, []);
+
+  useEffect(() => {
+    if (!showHowToUse) return;
+    let mounted = true;
+    const loadGuideDocs = async () => {
+      setGuideDocsLoading(true);
+      setGuideDocsError(null);
+      try {
+        const { data, error } = await (supabase as any)
+          .from('guide_documents')
+          .select('id,title,updated_at,sort_order')
+          .order('sort_order', { ascending: true });
+        if (!mounted) return;
+        if (error) {
+          setGuideDocsError(error.message || 'Failed to load guide documents.');
+          setGuideDocs([]);
+          return;
+        }
+        const nextDocs: GuideDocSummary[] = (data || []).map((row: any) => ({
+          id: String(row?.id ?? ''),
+          title: String(row?.title ?? 'Untitled Document'),
+          updatedAt: typeof row?.updated_at === 'string' ? row.updated_at : null,
+        }));
+        setGuideDocs(nextDocs);
+      } catch (error: any) {
+        if (!mounted) return;
+        setGuideDocsError(error?.message || 'Failed to load guide documents.');
+        setGuideDocs([]);
+      } finally {
+        if (mounted) setGuideDocsLoading(false);
+      }
+    };
+
+    void loadGuideDocs();
+    return () => {
+      mounted = false;
+    };
+  }, [showHowToUse]);
+
   return (
     <EditsContext.Provider value={editsContextValue}>
       <div
@@ -207,6 +286,24 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             zIndex: 70,
           }}
         >
+          <button
+            type="button"
+            onClick={() => setShowHowToUse(true)}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              textDecoration: 'none', whiteSpace: 'nowrap',
+              fontSize: isNarrow ? 12 : 13, fontWeight: 800,
+              padding: isNarrow ? '10px 12px' : '12px 14px',
+              borderRadius: 10, border: `1px solid ${sg.border}`,
+              cursor: 'pointer',
+              background: '#ffffff', color: '#1f2937',
+              transition: 'all 0.2s ease',
+              flex: isNarrow ? 1 : undefined,
+            }}
+          >
+            How to Use
+          </button>
+
           <button
             type="button"
             style={{
@@ -364,6 +461,168 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
         onOpenChange={(open) => { if (!open) setShowEditsListModal(false); }}
         onCountChange={refreshEditsState}
       />
+      {showHowToUse && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1200,
+            background: 'rgba(0,0,0,0.6)',
+            backdropFilter: 'blur(2px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+          }}
+        >
+          <div
+            style={{
+              width: 'min(920px, 100%)',
+              maxHeight: '85vh',
+              overflow: 'auto',
+              borderRadius: 20,
+              border: `1px solid ${sg.borderStrong}`,
+              background: '#2a2a2f',
+              boxShadow: '0 30px 60px rgba(0,0,0,0.45)',
+            }}
+          >
+            <div
+              style={{
+                position: 'sticky',
+                top: 0,
+                zIndex: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                padding: '14px 18px',
+                color: '#fff',
+                borderBottom: '1px solid rgba(255,255,255,0.14)',
+                background: 'linear-gradient(180deg,#5a7292 0%,#4a5f7f 100%)',
+              }}
+            >
+              <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.01em' }}>App Dashboard: How to Use</div>
+              <button
+                type="button"
+                onClick={() => setShowHowToUse(false)}
+                style={{
+                  border: 'none',
+                  borderRadius: 10,
+                  background: '#2f3137',
+                  color: '#eaedf1',
+                  fontWeight: 800,
+                  fontSize: 12,
+                  padding: '8px 14px',
+                  cursor: 'pointer',
+                }}
+              >
+                Close
+              </button>
+            </div>
+            <div style={{ padding: 18, display: 'grid', gap: 12, color: '#d4d4d8', fontSize: 14, lineHeight: 1.55 }}>
+              <div style={{ borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)', background: '#1c1c1f', padding: 12 }}>
+                <div style={{ color: '#fff', fontWeight: 700, marginBottom: 6 }}>Purpose of this modal</div>
+                <p style={{ margin: 0 }}>
+                  This is the operating manual for humans and LLM agents. Use it as strict instructions for where to inspect, where to log findings,
+                  and where to record implementation changes. Do not skip sections or freestyle workflows.
+                </p>
+              </div>
+              <div style={{ borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)', background: '#1c1c1f', padding: 12 }}>
+                <div style={{ color: '#fff', fontWeight: 700, marginBottom: 6 }}>Tool directory (exact scope + expected use)</div>
+                <ol style={{ margin: 0, paddingLeft: 18, display: 'grid', gap: 8 }}>
+                  <li>
+                    <strong>App Style Guide</strong>:
+                    <div>Use for visual implementation standards only (tokens, spacing, component appearance). Not for runtime/debug logic.</div>
+                  </li>
+                  <li>
+                    <strong>App Guide</strong>:
+                    <div>Use for long-form page/system explanations and operational documentation by page. This is narrative context and process guidance.</div>
+                  </li>
+                  <li>
+                    <strong>App Architecture</strong>:
+                    <div>Use for filesystem/component mapping (what folder/file owns what behavior). Use this first when locating code ownership.</div>
+                  </li>
+                  <li>
+                    <strong>Quality Hub</strong>:
+                    <div>Use as execution + governance center for scans, issue tracking, run history, and implemented-change history.</div>
+                    <ul style={{ margin: '6px 0 0', paddingLeft: 18, display: 'grid', gap: 4 }}>
+                      <li><strong>Overview</strong>: scan entry point and module checklist selection.</li>
+                      <li><strong>Issue Registry</strong>: diagnosed issues only (severity/confidence/evidence/files/status).</li>
+                      <li><strong>Scan Runs</strong>: each scan execution (scope, summary, agent/model, timestamp).</li>
+                      <li><strong>Change Log</strong>: actual implemented changes (what changed, where, why, expected impact).</li>
+                    </ul>
+                  </li>
+                  <li>
+                    <strong>API Inspector</strong>:
+                    <div>Use for end-to-end AI/runtime flow verification: prompt assembly, context injections, API payload flow, and post-call handling.</div>
+                  </li>
+                </ol>
+              </div>
+
+              <div style={{ borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)', background: '#1c1c1f', padding: 12 }}>
+                <div style={{ color: '#fff', fontWeight: 700, marginBottom: 6 }}>App Guide live document inventory (what exists + what each doc is for)</div>
+                {guideDocsLoading && <p style={{ margin: 0 }}>Loading App Guide document list...</p>}
+                {!guideDocsLoading && guideDocsError && (
+                  <p style={{ margin: 0, color: '#fda4af' }}>
+                    Unable to load App Guide docs from database: {guideDocsError}
+                  </p>
+                )}
+                {!guideDocsLoading && !guideDocsError && guideDocs.length === 0 && (
+                  <p style={{ margin: 0 }}>No App Guide documents found.</p>
+                )}
+                {!guideDocsLoading && !guideDocsError && guideDocs.length > 0 && (
+                  <ol style={{ margin: 0, paddingLeft: 18, display: 'grid', gap: 8 }}>
+                    {guideDocs.map((doc) => (
+                      <li key={doc.id}>
+                        <strong>{doc.title}</strong>
+                        <div>{describeGuideDocPurpose(doc.title)}</div>
+                        <div style={{ fontSize: 12, opacity: 0.9 }}>Last updated: {formatDateTime(doc.updatedAt)}</div>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+
+              <div style={{ borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)', background: '#1c1c1f', padding: 12 }}>
+                <div style={{ color: '#fff', fontWeight: 700, marginBottom: 6 }}>LLM runbook (strict execution order)</div>
+                <ol style={{ margin: 0, paddingLeft: 18, display: 'grid', gap: 6 }}>
+                  <li>Start in <strong>App Architecture</strong> to identify ownership (folder/file/component).</li>
+                  <li>Move to <strong>API Inspector</strong> if issue touches AI prompt flow, API payloads, enrich/fill behavior, or context injection.</li>
+                  <li>Open <strong>Quality Hub → Overview</strong> and select the matching scan module checklist.</li>
+                  <li>Run scan and write a run summary in <strong>Scan Runs</strong> (scope + what was checked + what was skipped).</li>
+                  <li>For each confirmed issue, create/update entry in <strong>Issue Registry</strong> with exact files and evidence.</li>
+                  <li>After implementing code changes, add a matching entry in <strong>Change Log</strong> with files touched and expected outcome.</li>
+                  <li>Re-test and update related <strong>Issue Registry</strong> status (open/reviewed/deferred/fixed).</li>
+                </ol>
+              </div>
+
+              <div style={{ borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)', background: '#1c1c1f', padding: 12 }}>
+                <div style={{ color: '#fff', fontWeight: 700, marginBottom: 6 }}>Logging rules (non-optional)</div>
+                <ul style={{ margin: 0, paddingLeft: 18, display: 'grid', gap: 6 }}>
+                  <li><strong>Issue Registry</strong> stores problems and evidence, not implementation details.</li>
+                  <li><strong>Scan Runs</strong> stores each scan attempt and summary, even if no findings were discovered.</li>
+                  <li><strong>Change Log</strong> stores every code/config/docs change that was actually applied.</li>
+                  <li>Do not put implementation-only notes in Issue Registry without a corresponding Change Log record.</li>
+                  <li>Every fix should link back to a known issue or explicitly state it was proactive hardening/cleanup.</li>
+                </ul>
+              </div>
+
+              <div style={{ borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)', background: '#1c1c1f', padding: 12 }}>
+                <div style={{ color: '#fff', fontWeight: 700, marginBottom: 6 }}>When to use each tool first (quick decision matrix)</div>
+                <ul style={{ margin: 0, paddingLeft: 18, display: 'grid', gap: 6 }}>
+                  <li>UI mismatch / spacing / visual consistency issue → <strong>App Style Guide</strong> then <strong>Quality Hub</strong>.</li>
+                  <li>“Where does this behavior live?” confusion → <strong>App Architecture</strong> first.</li>
+                  <li>Prompt quality / missing AI context / wrong generation behavior → <strong>API Inspector</strong> first.</li>
+                  <li>Need narrative page-level context or operator guidance → <strong>App Guide</strong>.</li>
+                  <li>Need formal issue management and progress tracking → <strong>Quality Hub</strong>.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </EditsContext.Provider>
   );
 };
