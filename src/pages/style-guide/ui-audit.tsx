@@ -575,16 +575,8 @@ export default function UiAuditPage() {
           </div>
         )}
 
-        {/* Handoff */}
-        {activeView === "handoff" && (
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-            <Section title="Cross-Agent Handoff Notes"><div className={cn(recessedBlockClass, "min-h-[260px] p-4")}>{registry.handoffNotes?.trim() ? <pre className="whitespace-pre-wrap text-sm leading-relaxed text-[#eaedf1]">{registry.handoffNotes}</pre> : <p className="text-sm text-[#a1a1aa]">No handoff notes yet.</p>}</div></Section>
-            <Section title="Transfer Workflow">
-              <ol className="list-decimal space-y-2 pl-5 text-sm text-[#a1a1aa]"><li>Click <span className="font-bold text-[#eaedf1]">Export</span>.</li><li>Give the file to another agent.</li><li>Import the returned JSON here.</li><li>Review merged findings.</li></ol>
-              <div className={cn(recessedBlockClass, "mt-4 p-3 text-xs text-[#a1a1aa]")}><div className="font-bold text-[#eaedf1]">Registry Metadata</div><div className="mt-2 space-y-1"><div>Project: {registry.meta.project}</div><div>Version: {registry.meta.version}</div><div>Last Updated: {formatDate(registry.meta.lastUpdatedAt)}</div><div>Last Run: {registry.meta.lastRunId || "none"}</div></div></div>
-            </Section>
-          </div>
-        )}
+        {/* Change Log */}
+        {activeView === "changelog" && <ChangeLogView registry={registry} updateRegistry={updateRegistry} />}
       </div>
     </div>
   );
