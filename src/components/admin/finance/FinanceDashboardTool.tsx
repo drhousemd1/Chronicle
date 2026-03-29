@@ -460,11 +460,11 @@ function SubscriberSnapshot({ rows }: { rows?: { name: string; price: number; ap
                   <div style={{ fontSize:11, color:D.muted }}>${t.price}/mo</div>
                 </div>
                 <div style={{ fontSize:13, fontWeight:700, color:D.text, textAlign:"center" }}>{t.users}</div>
-                <div style={{ fontSize:13, fontWeight:600, color:D.green, textAlign:"right" }}>${Math.round(revenue)}</div>
+                <div style={{ fontSize:13, fontWeight:600, color: revenue > 0 ? D.green : D.muted, textAlign:"right" }}>${revenue.toFixed(2)}</div>
                 <div style={{ fontSize:13, fontWeight:600, color:D.red, textAlign:"right" }}>-${apiSpend.toFixed(2)}</div>
                 <div style={{ fontSize:13, fontWeight:600, color:D.red, textAlign:"right" }}>-${stripeFee.toFixed(2)}</div>
                 <div style={{ fontSize:13, fontWeight:700, textAlign:"right", color: net >= 0 ? D.green : D.red }}>
-                  {net >= 0 ? "" : "-"}${Math.abs(Math.round(net))}
+                  {net >= 0 ? "" : "-"}${Math.abs(net).toFixed(2)}
                 </div>
               </div>
               {i < tierRows.length - 1 && <div style={{ borderTop:`1px solid ${D.divider}` }} />}
