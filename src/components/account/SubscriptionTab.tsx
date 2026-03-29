@@ -12,7 +12,7 @@ import {
   type TierFeatureKey,
 } from "@/services/subscription-tier-config";
 
-const iconByTierId: Record<string, React.ComponentType<{ className?: string }>> = {
+const iconByTierId: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
   free: Zap,
   starter: Sparkles,
   premium: Crown,
