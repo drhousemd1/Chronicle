@@ -422,7 +422,7 @@ function SubscriberSnapshot({ rows }: { rows?: { name: string; price: number; ap
         {tierRows.map((t: { name: string; price: number; apiCost: number; users: number; color: string; soft?: string }, i: number) => {
           const revenue   = t.users * t.price;
           const apiSpend  = t.users * t.apiCost;
-          const stripeFee = t.users * ((t.price * 0.029) + 0.30);
+          const stripeFee = t.price > 0 ? t.users * ((t.price * 0.029) + 0.30) : 0;
           const net       = revenue - apiSpend - stripeFee;
           return (
             <div key={t.name}>
@@ -588,81 +588,74 @@ function AppGrowth({ users }: { users?: any[] }) {
 }
 
 // ─── net income mini card ─────────────────────────────────────
-const NET_INCOME_DATA = {
-  total: {
-    day:   [
-      { label:"12am", net:0.12 }, { label:"3am",  net:0.03 }, { label:"6am",  net:0.18 },
-      { label:"9am",  net:0.54 }, { label:"12pm", net:0.93 }, { label:"3pm",  net:0.81 },
-      { label:"6pm",  net:0.66 }, { label:"9pm",  net:0.42 },
-    ],
-    week:  [
-      { label:"Mon", net:1.68 }, { label:"Tue", net:2.49 }, { label:"Wed", net:2.94 },
-      { label:"Thu", net:1.92 }, { label:"Fri", net:3.63 }, { label:"Sat", net:4.20 },
-      { label:"Sun", net:3.36 },
-    ],
-    month: [
-      { label:"Wk1", net:9.6 }, { label:"Wk2", net:14.4 }, { label:"Wk3", net:18.3 }, { label:"Wk4", net:17.1 },
-    ],
-    year:  [
-      { label:"Jan", net:36 }, { label:"Feb", net:54 }, { label:"Mar", net:72 },
-      { label:"Apr", net:63 }, { label:"May", net:87 }, { label:"Jun", net:99 },
-      { label:"Jul", net:114}, { label:"Aug", net:105}, { label:"Sep", net:123},
-      { label:"Oct", net:132}, { label:"Nov", net:144}, { label:"Dec", net:156},
-    ],
-  },
-  tier: {
-    week: [
-      { label:"Mon", starter:0.80, premium:0.60, elite:0.28 },
-      { label:"Tue", starter:1.20, premium:0.90, elite:0.39 },
-      { label:"Wed", starter:1.44, premium:1.08, elite:0.42 },
-      { label:"Thu", starter:0.96, premium:0.72, elite:0.24 },
-      { label:"Fri", starter:1.80, premium:1.26, elite:0.57 },
-      { label:"Sat", starter:2.10, premium:1.50, elite:0.60 },
-      { label:"Sun", starter:1.68, premium:1.20, elite:0.48 },
-    ],
-  },
-};
 
-function NetIncomeMini() {
-  const [period, setPeriod] = useState("week");
+function NetIncomeMini({ users = [] }: { users?: any[] }) {
+  const [period, setPeriod] = useState<AdminUsagePeriod>("week");
   const [view,   setView]   = useState("total");
-  const data = view === "tier"
-    ? ((NET_INCOME_DATA.tier as Record<string, any[]>)[period] || NET_INCOME_DATA.tier.week)
-    : (NET_INCOME_DATA.total as Record<string, any[]>)[period];
-  const total = view === "total"
-    ? data.reduce((a: number, d: any) => a + d.net, 0).toFixed(2)
-    : data.reduce((a: number, d: any) => a + (d.starter||0) + (d.premium||0) + (d.elite||0), 0).toFixed(2);
+  const [costData, setCostData] = useState<{ label: string; textCost: number; imageCost: number }[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchAdminUsageTimeseries(period).then((ts) => {
+      if (cancelled) return;
+      setCostData(ts.points.map((p) => ({
+        label: p.label,
+        textCost: p.textCostUsd,
+        imageCost: p.imageCostUsd,
+      })));
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [period]);
+
+  // Revenue = sum of (users × tier price) — currently $0 since no paying subscribers
+  const paidTiers = PAID_TIER_SNAPSHOT_META.filter(t => t.slug !== "admin");
+  const tierPrices = DEFAULT_TIER_PRICES;
+  const activeUsers = users.filter((u: any) => u.status === "active");
+
+  // Build per-point net income data
+  const data = costData.map((pt) => {
+    // For now revenue is 0 per time-bucket (no paying subscribers)
+    // Total API cost for this time bucket
+    const totalCost = pt.textCost + pt.imageCost;
+    // Net = revenue - costs (will be negative until there are paying users)
+    return { label: pt.label, net: -totalCost, cost: totalCost };
+  });
+
+  const totalNet = data.reduce((a, d) => a + d.net, 0);
+  const isPositive = totalNet >= 0;
+  const displayTotal = Math.abs(totalNet).toFixed(2);
+
   return (
     <ShellCard style={{ flex:1 }}>
       <SlateHeader title="Net Income" />
       <div style={{ padding:"16px 20px 20px" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
-          <div style={{ fontSize:24, fontWeight:800, color:D.green, lineHeight:1 }}>+${total}</div>
+          <div style={{ fontSize:24, fontWeight:800, color: isPositive ? D.green : D.red, lineHeight:1 }}>
+            {isPositive ? "+" : "-"}${displayTotal}
+          </div>
           <DarkToggle options={[{l:"Total",v:"total"},{l:"By tier",v:"tier"}]} value={view} onChange={setView} />
         </div>
         <ResponsiveContainer width="100%" height={90}>
           <AreaChart data={data} margin={{ top:4, right:4, left:0, bottom:0 }}>
             <defs>
               <linearGradient id="netGreen2" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%"  stopColor="#22c55e" stopOpacity={0.25} />
-                <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                <stop offset="5%"  stopColor={isPositive ? "#22c55e" : "#ef4444"} stopOpacity={0.25} />
+                <stop offset="95%" stopColor={isPositive ? "#22c55e" : "#ef4444"} stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
             <XAxis dataKey="label" tick={{ fill:D.muted, fontSize:10 }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fill:D.muted, fontSize:10 }} axisLine={false} tickLine={false} width={28} tickFormatter={v => `$${v}`} />
             <Tooltip contentStyle={{ background:D.shell, border:"none", boxShadow:D.shellShadow, borderRadius:10, fontSize:12, color:D.text }}
-              formatter={(v, name) => [`$${v}`, String(name).charAt(0).toUpperCase() + String(name).slice(1)]} />
-            {view === "total" && <Area dataKey="net" name="Net" stroke="#22c55e" strokeWidth={2} fill="url(#netGreen2)" dot={false} type="monotone" />}
-            {view === "tier" && <>
-              <Area dataKey="starter" name="Starter" stroke="#60a5fa" strokeWidth={2} fill="none" dot={false} type="monotone" />
-              <Area dataKey="premium" name="Premium" stroke="#a78bfa" strokeWidth={2} fill="none" dot={false} type="monotone" />
-              <Area dataKey="elite"   name="Elite"   stroke="#fbbf24" strokeWidth={2} fill="none" dot={false} type="monotone" />
-            </>}
+              formatter={(v: any) => [`$${Math.abs(Number(v)).toFixed(2)}`, "Net"]} />
+            <Area dataKey="net" name="Net" stroke={isPositive ? "#22c55e" : "#ef4444"} strokeWidth={2} fill="url(#netGreen2)" dot={false} type="monotone" />
           </AreaChart>
         </ResponsiveContainer>
         <div style={{ display:"flex", justifyContent:"center", marginTop:12 }}>
           <DarkToggle options={[{l:"Day",v:"day"},{l:"Week",v:"week"},{l:"Month",v:"month"},{l:"Year",v:"year"}]} value={period} onChange={setPeriod} />
+        </div>
+        <div style={{ fontSize:11, color:D.muted, marginTop:10, textAlign:"right" }}>
+          Revenue: $0.00 · API costs: ${data.reduce((a, d) => a + d.cost, 0).toFixed(2)}
         </div>
       </div>
     </ShellCard>
@@ -1279,7 +1272,7 @@ function OverviewPage({ onNavigate, snapshotRows, users }) {
         </div>
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
           <ApiUsageMini users={users} />
-          <NetIncomeMini />
+          <NetIncomeMini users={users} />
         </div>
       </div>
 
@@ -1302,6 +1295,7 @@ function FinancePage({ users = [], tierPrices = DEFAULT_TIER_PRICES }) {
     elite: typeof tierPrices?.elite === "number" ? tierPrices.elite : DEFAULT_TIER_PRICES.elite,
   }));
   const [chartMonths, setChartMonths] = useState(12);
+  const [financeAdminApiCost, setFinanceAdminApiCost] = useState(0);
 
   const setG = (tier, val) => setGrowth(g => ({ ...g, [tier]: val }));
   const setP = (tier, val) => setPrices(p => ({ ...p, [tier]: Math.max(0, parseFloat(val.toFixed(2))) }));
@@ -1313,6 +1307,15 @@ function FinancePage({ users = [], tierPrices = DEFAULT_TIER_PRICES }) {
       elite: typeof tierPrices?.elite === "number" ? tierPrices.elite : DEFAULT_TIER_PRICES.elite,
     });
   }, [tierPrices?.starter, tierPrices?.premium, tierPrices?.elite]);
+
+  // Fetch real admin API cost for finance snapshot
+  useEffect(() => {
+    fetchAdminUsageTimeseries("month").then((ts) => {
+      const latestPoint = ts.points[ts.points.length - 1];
+      const monthlyCost = latestPoint ? (latestPoint.textCostUsd + latestPoint.imageCostUsd) : 0;
+      setFinanceAdminApiCost(monthlyCost);
+    }).catch(() => {});
+  }, []);
 
   const tierCounts = useMemo(() => ({
     starter: users.filter((u) => u.status === "active" && (u.tierSlug === "starter" || u.tier === "Starter")).length,
@@ -1328,8 +1331,11 @@ function FinancePage({ users = [], tierPrices = DEFAULT_TIER_PRICES }) {
       ...tier,
       price: typeof prices[tier.slug] === "number" ? prices[tier.slug] : DEFAULT_TIER_PRICES[tier.slug],
       users: tierCounts[tier.slug] ?? 0,
+      apiCost: tier.slug === "admin" && tierCounts.admin > 0
+        ? financeAdminApiCost / tierCounts.admin
+        : tier.apiCost,
     }))
-  ), [prices, tierCounts]);
+  ), [prices, tierCounts, financeAdminApiCost]);
 
   const ECON = {
     starter: { price:prices.starter, api:0.827, stripe:prices.starter*0.029+0.30  },
@@ -1389,7 +1395,7 @@ function FinancePage({ users = [], tierPrices = DEFAULT_TIER_PRICES }) {
       {/* ── Current status widgets ────────────────────────── */}
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
         <SubscriberSnapshot rows={financeSnapshotRows} />
-        <NetIncomeMini />
+        <NetIncomeMini users={users} />
         <AppGrowth users={users} />
         <ApiUsageMini users={users} />
       </div>
@@ -5507,6 +5513,18 @@ export default function ChronicleAdmin() {
   const [usersLoading, setUsersLoading] = useState(false);
   const [tierPrices, setTierPrices] = useState(DEFAULT_TIER_PRICES);
   const [userTierOverrides, setUserTierOverrides] = useState({});
+  const [adminApiCostPerUser, setAdminApiCostPerUser] = useState(0);
+
+  // Fetch real admin API cost (monthly) to inject into snapshot rows
+  useEffect(() => {
+    fetchAdminUsageTimeseries("month").then((ts) => {
+      const totalCost = ts.points.reduce((s, p) => s + p.textCostUsd + p.imageCostUsd, 0);
+      // We'll use the latest month's cost as the per-period cost
+      const latestPoint = ts.points[ts.points.length - 1];
+      const monthlyCost = latestPoint ? (latestPoint.textCostUsd + latestPoint.imageCostUsd) : totalCost;
+      setAdminApiCostPerUser(monthlyCost > 0 ? monthlyCost : totalCost);
+    }).catch(() => {});
+  }, []);
 
   const loadDashboardUsers = async () => {
     setUsersLoading(true);
@@ -5666,13 +5684,19 @@ export default function ChronicleAdmin() {
     ];
   }, [dashboardUsers]);
 
-  const snapshotRows = useMemo(() => (
-    PAID_TIER_SNAPSHOT_META.map((tier) => ({
+  const snapshotRows = useMemo(() => {
+    const adminUserCount = dashboardUsers.filter((user) => user.status === "active" && (user.tierSlug === "admin" || user.tierSlug === "admin_cfo")).length;
+    return PAID_TIER_SNAPSHOT_META.map((tier) => ({
       ...tier,
       price: typeof tierPrices[tier.slug] === "number" ? tierPrices[tier.slug] : DEFAULT_TIER_PRICES[tier.slug],
-      users: dashboardUsers.filter((user) => user.status === "active" && (tier.slug === "admin" ? (user.tierSlug === "admin" || user.tierSlug === "admin_cfo") : user.tierSlug === tier.slug)).length,
-    }))
-  ), [dashboardUsers, tierPrices]);
+      users: tier.slug === "admin"
+        ? adminUserCount
+        : dashboardUsers.filter((user) => user.status === "active" && user.tierSlug === tier.slug).length,
+      apiCost: tier.slug === "admin" && adminUserCount > 0
+        ? adminApiCostPerUser / adminUserCount
+        : tier.apiCost,
+    }));
+  }, [dashboardUsers, tierPrices, adminApiCostPerUser]);
 
   const navItems = useMemo(() => NAV, []);
   const ActivePage = PAGE_COMPONENTS[page];
