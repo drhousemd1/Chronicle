@@ -5500,6 +5500,18 @@ export default function ChronicleAdmin() {
   const [usersLoading, setUsersLoading] = useState(false);
   const [tierPrices, setTierPrices] = useState(DEFAULT_TIER_PRICES);
   const [userTierOverrides, setUserTierOverrides] = useState({});
+  const [adminApiCostPerUser, setAdminApiCostPerUser] = useState(0);
+
+  // Fetch real admin API cost (monthly) to inject into snapshot rows
+  useEffect(() => {
+    fetchAdminUsageTimeseries("month").then((ts) => {
+      const totalCost = ts.points.reduce((s, p) => s + p.textCostUsd + p.imageCostUsd, 0);
+      // We'll use the latest month's cost as the per-period cost
+      const latestPoint = ts.points[ts.points.length - 1];
+      const monthlyCost = latestPoint ? (latestPoint.textCostUsd + latestPoint.imageCostUsd) : totalCost;
+      setAdminApiCostPerUser(monthlyCost > 0 ? monthlyCost : totalCost);
+    }).catch(() => {});
+  }, []);
 
   const loadDashboardUsers = async () => {
     setUsersLoading(true);
