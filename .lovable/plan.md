@@ -1,65 +1,48 @@
 
 
-# Replace Handoff Tab with Change Log
+# Reskin SidebarThemeModal to Match App Design System
 
-## Concept
+## What's Changing
 
-Replace the unused "Handoff" tab with a **Change Log** — a persistent, searchable record of every fix, refactor, or design change made during development. Each entry captures:
-- **What the issue was** (title + short description)
-- **The plan/proposed fix** (what was going to be done)
-- **What was actually changed** (files modified, what changed and why)
-- **Who made it** (Lovable, Codex, manual, etc.)
-- **When** (timestamp)
+Replace the current flat dark modal with the standardized "Dark Premium" modal spec used across the app (same as Chat Settings, AI generation modals, etc.), and port over the new features from the Claude-designed JSX file.
 
-This gives you a durable reference that survives context window limits. Any agent can read this page to understand *why* code is the way it is.
+## New Features from the Uploaded File
+1. **Slate-blue gradient header** with gloss sheen (matching all other modals)
+2. **Inner tray** (`#2e2e33`) containing the grid and controls
+3. **Close button** inside the tray alongside Upload Image
+4. **Categorized rows** — tiles grouped under renamable category labels (click-to-rename)
+5. **Drag-and-drop reordering** — tiles can be dragged between categories, with auto-scroll and blue drop indicators
+6. **"Drop here to create new category"** zone that appears while dragging
+7. **Info tooltip** for recommended dimensions (replaces plain text)
+8. **Grip handle icon** on each tile indicating draggability
+9. **Row structure persistence** via existing background storage
 
-## Data Structure
+## Implementation
 
-A new `ChangeLogEntry` type, simpler than `QualityFinding` but with the same expandable card UI pattern:
+### File: `src/components/chronicle/SidebarThemeModal.tsx`
+Full rewrite incorporating:
 
-| Field | Purpose |
-|-------|---------|
-| `id` | Unique ID |
-| `title` | Short issue/change title (shown collapsed) |
-| `summary` | One-line subtitle (shown collapsed, like "Chat Interface · Layout fix") |
-| `severity` | `patch` / `fix` / `refactor` / `feature` / `breaking` — badge color coding |
-| `status` | `planned` / `in-progress` / `completed` |
-| `problem` | What was wrong / what triggered the change |
-| `plan` | The proposed fix (the plan text before implementation) |
-| `changes` | What was actually done — free-text description of the implementation |
-| `filesAffected` | Array of file paths that were modified |
-| `agent` | Who did it (Lovable, ChatGPT Codex, manual, etc.) |
-| `relatedFindingIds` | Optional links to Quality Hub findings |
-| `tags` | Freeform tags for filtering |
-| `createdAt` / `updatedAt` | Timestamps |
-| `comments` | Same comment array pattern as findings — for follow-up notes |
+- **Outer shell**: `bg-[#2a2a2f]`, `rounded-[24px]`, standard inset bevel shadow stack
+- **Header**: `bg-gradient-to-b from-[#5a7292] to-[#4a5f7f]` with gloss sheen overlay, white uppercase title
+- **Inner tray**: `bg-[#2e2e33]`, `rounded-2xl`, inset shadow
+- **Buttons** (Close, Upload): `bg-[#3c3e47]`, `rounded-xl`, standard row shadow stack
+- **Tile cards**: `bg-[#1c1c1f]`, `aspect-[1/3]`, `rounded-xl`, blue-500 selection ring
+- **Grid**: 7-column layout with categorized rows
+- **Drag-and-drop**: HTML5 drag API with auto-scroll near edges, blue drop indicator lines, "new category" drop zone
+- **Renamable row labels**: Click to edit inline, blur/enter to save
+- **Info tooltip**: Using existing Tooltip components from the app
+- **Close button**: Calls `onClose` prop
+- **Keep existing props interface** unchanged — the parent (`ChatInterfaceTab.tsx`) passes `backgrounds`, `onSelectBackground`, `onUpload`, `onDelete`, `isUploading` and those all still work
+- Categories/row structure stored as local state initially; the `backgrounds` prop from the parent populates the first "Uncategorized" row
+- The "From Library" dropdown option still opens `ImageLibraryPickerModal`
 
-## UI Design
+### File: `src/components/chronicle/ChatInterfaceTab.tsx`
+No changes needed — the props interface stays the same.
 
-Reuses the exact same visual patterns as the Findings tab:
-- **Collapsed view**: Severity badge + type badge + status badge → Title → Subtitle (page/component) → Chevron
-- **Expanded view** (click chevron): Problem → Plan → Changes Made → Files Affected → Metadata → Comments
-- **Filters**: Search, filter by severity type, filter by agent, filter by status
-- **Add Entry button** in the header — opens a form to manually log a change (useful when you want to record a Codex change or a manual edit)
-
-## Persistence
-
-Same pattern as the rest of the Quality Hub:
-- Stored in the `QualityHubRegistry` object (new `changeLog: ChangeLogEntry[]` field)
-- Persisted to `quality_hub_registries` table + localStorage cache
-- Included in Import/Export JSON
-- `registryVersion` bump to migrate existing data
-
-## Files to modify
-
-1. **`src/lib/ui-audit-schema.ts`** — Add `ChangeLogEntry` interface, `CHANGE_LOG_SEVERITY` const, add `changeLog` field to `QualityHubRegistry`, update `isQualityHubRegistry` validator
-2. **`src/lib/ui-audit-utils.ts`** — Update `mergeRegistries` to handle `changeLog` array
-3. **`src/data/ui-audit-findings.ts`** — Add empty `changeLog: []` to seed data, bump `registryVersion`
-4. **`src/pages/style-guide/ui-audit.tsx`** — Replace `handoff` view ID with `changelog`, build the Change Log tab UI (card list with expand/collapse, filters, add-entry form), reuse existing style constants
-
-## What stays the same
-- Overview, Findings, and Runs tabs — untouched
-- All existing Findings data and functionality — untouched
-- Import/Export — enhanced to include change log entries
-- Visual styling — identical card patterns, badges, recessed blocks
+## What Stays the Same
+- All existing props and callbacks
+- Selection behavior (blue check badge)
+- Delete on hover (rose-500 trash button)
+- Upload dropdown (From Device / From Library)
+- Default tile as first option
 
