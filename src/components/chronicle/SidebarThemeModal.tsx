@@ -3,7 +3,7 @@ import { UserBackground } from "@/types";
 import { updateSidebarBackgroundCategories } from "@/services/supabase-data";
 import {
   Dialog,
-  DialogContent,
+  DialogContentBare,
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -41,26 +41,24 @@ interface SidebarThemeModalProps {
   onDelete: (id: string, imageUrl: string) => void;
   isUploading: boolean;
   onReorder?: (updated: UserBackground[]) => void;
+  onAddFromLibrary?: (imageUrl: string) => Promise<void>;
 }
 
-const getCategoryLabel = (background: UserBackground) => background.category || "Uncategorized";
+const getCategoryLabel = (bg: UserBackground) => bg.category || "Uncategorized";
 
-const deriveCategoryOrder = (backgrounds: UserBackground[]) => {
+const deriveCategoryOrder = (backgrounds: UserBackground[]): string[] => {
   const seen = new Set<string>();
   const ordered: string[] = [];
-
-  for (const background of backgrounds) {
-    const label = getCategoryLabel(background);
+  for (const bg of backgrounds) {
+    const label = getCategoryLabel(bg);
     if (!seen.has(label)) {
       seen.add(label);
       ordered.push(label);
     }
   }
-
   if (seen.has("Uncategorized")) {
-    return ["Uncategorized", ...ordered.filter((label) => label !== "Uncategorized")];
+    return ["Uncategorized", ...ordered.filter((l) => l !== "Uncategorized")];
   }
-
   return ordered;
 };
 
@@ -114,6 +112,7 @@ export function SidebarThemeModal({
   onDelete,
   isUploading,
   onReorder,
+  onAddFromLibrary,
 }: SidebarThemeModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
@@ -128,15 +127,12 @@ export function SidebarThemeModal({
     setCategoryOrder((prev) => {
       const incoming = deriveCategoryOrder(backgrounds);
       const merged = prev.filter((label) => incoming.includes(label));
-
       for (const label of incoming) {
         if (!merged.includes(label)) merged.push(label);
       }
-
       if (merged.includes("Uncategorized")) {
-        return ["Uncategorized", ...merged.filter((label) => label !== "Uncategorized")];
+        return ["Uncategorized", ...merged.filter((l) => l !== "Uncategorized")];
       }
-
       return merged;
     });
   }, [backgrounds]);
@@ -144,7 +140,6 @@ export function SidebarThemeModal({
   /* ── Derive category rows from local state ──────────────────── */
   const effectiveRows = useMemo(() => {
     const catMap = new Map<string, UserBackground[]>();
-
     for (const bg of localBackgrounds) {
       const cat = getCategoryLabel(bg);
       if (!catMap.has(cat)) catMap.set(cat, []);
@@ -157,26 +152,20 @@ export function SidebarThemeModal({
     ];
 
     const normalizedLabels = orderedLabels.includes("Uncategorized")
-      ? ["Uncategorized", ...orderedLabels.filter((label) => label !== "Uncategorized")]
+      ? ["Uncategorized", ...orderedLabels.filter((l) => l !== "Uncategorized")]
       : orderedLabels;
 
     const rows: CategoryRow[] = normalizedLabels.map((label) => {
       const ids = (catMap.get(label) || [])
         .slice()
         .sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt - b.createdAt)
-        .map((background) => background.id);
-
-      return {
-        id: `row-${label}`,
-        label,
-        bgIds: ids,
-      };
+        .map((bg) => bg.id);
+      return { id: `row-${label}`, label, bgIds: ids };
     });
 
     if (rows.length === 0) {
       rows.push({ id: "row-Uncategorized", label: "Uncategorized", bgIds: [] });
     }
-
     return rows;
   }, [categoryOrder, localBackgrounds]);
 
@@ -198,34 +187,74 @@ export function SidebarThemeModal({
     }
   };
 
-  /* ── Helper: apply row structure to localBackgrounds and persist ── */
-  const applyRowChanges = useCallback((rows: CategoryRow[]) => {
-    setCategoryOrder(rows.map((row) => row.label));
-    setLocalBackgrounds((prev) => {
-      const updated = prev.map((bg) => {
-        for (const row of rows) {
-          const idx = row.bgIds.indexOf(bg.id);
-          if (idx !== -1) {
-            return { ...bg, category: row.label, sortOrder: idx };
-          }
-        }
-        return bg;
-      });
-      // Sync parent
-      onReorder?.(updated);
-      return updated;
-    });
+  /* ── Persist: update only the affected items in localBackgrounds + DB ── */
+  const persistMoveChanges = useCallback((updatedBgs: UserBackground[]) => {
+    setLocalBackgrounds(updatedBgs);
+    onReorder?.(updatedBgs);
 
-    // Persist to DB
+    // Build DB updates only for items whose category/sortOrder changed vs prop
     const dbUpdates: Array<{ id: string; category: string; sort_order: number }> = [];
-    for (const row of rows) {
-      for (let i = 0; i < row.bgIds.length; i++) {
-        dbUpdates.push({ id: row.bgIds[i], category: row.label, sort_order: i });
+    for (const bg of updatedBgs) {
+      const orig = backgrounds.find((b) => b.id === bg.id);
+      if (!orig || orig.category !== bg.category || orig.sortOrder !== bg.sortOrder) {
+        dbUpdates.push({ id: bg.id, category: bg.category, sort_order: bg.sortOrder });
       }
     }
     if (dbUpdates.length > 0) {
       updateSidebarBackgroundCategories(dbUpdates).catch(console.error);
     }
+  }, [backgrounds, onReorder]);
+
+  /* ── Core move operation: move one bg from source to destination ── */
+  const moveItem = useCallback((bgId: string, destCategory: string, destIndex: number | null) => {
+    setLocalBackgrounds((prev) => {
+      const updated = prev.map((bg) => ({ ...bg }));
+      const item = updated.find((bg) => bg.id === bgId);
+      if (!item) return prev;
+
+      const oldCategory = item.category;
+
+      // Set new category
+      item.category = destCategory;
+
+      // Get items in destination category (excluding the moved item to avoid duplication)
+      const destItems = updated
+        .filter((bg) => bg.category === destCategory && bg.id !== bgId)
+        .sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt - b.createdAt);
+
+      // Insert at position
+      if (destIndex === null || destIndex >= destItems.length) {
+        destItems.push(item);
+      } else {
+        destItems.splice(Math.max(0, destIndex), 0, item);
+      }
+
+      // Renumber destination
+      destItems.forEach((bg, i) => { bg.sortOrder = i; });
+
+      // If source category changed, renumber source too
+      if (oldCategory !== destCategory) {
+        const sourceItems = updated
+          .filter((bg) => bg.category === oldCategory && bg.id !== bgId)
+          .sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt - b.createdAt);
+        sourceItems.forEach((bg, i) => { bg.sortOrder = i; });
+      }
+
+      // Persist
+      onReorder?.(updated);
+      const dbUpdates: Array<{ id: string; category: string; sort_order: number }> = [];
+      for (const bg of updated) {
+        const orig = prev.find((b) => b.id === bg.id);
+        if (!orig || orig.category !== bg.category || orig.sortOrder !== bg.sortOrder) {
+          dbUpdates.push({ id: bg.id, category: bg.category, sort_order: bg.sortOrder });
+        }
+      }
+      if (dbUpdates.length > 0) {
+        updateSidebarBackgroundCategories(dbUpdates).catch(console.error);
+      }
+
+      return updated;
+    });
   }, [onReorder]);
 
   const handleRenameRow = (rowId: string, newLabel: string) => {
@@ -234,19 +263,14 @@ export function SidebarThemeModal({
 
     setCategoryOrder((prev) => prev.map((label) => (label === oldRow.label ? newLabel : label)));
 
-    // Update local state: change category for all bgs in this row
     setLocalBackgrounds((prev) => {
-      const updated = prev.map((bg) => {
-        if (oldRow.bgIds.includes(bg.id)) {
-          return { ...bg, category: newLabel };
-        }
-        return bg;
-      });
+      const updated = prev.map((bg) =>
+        oldRow.bgIds.includes(bg.id) ? { ...bg, category: newLabel } : bg
+      );
       onReorder?.(updated);
       return updated;
     });
 
-    // Persist
     const updates = oldRow.bgIds.map((id, i) => ({ id, category: newLabel, sort_order: i }));
     if (updates.length > 0) {
       updateSidebarBackgroundCategories(updates).catch(console.error);
@@ -295,39 +319,40 @@ export function SidebarThemeModal({
     const drop = dropInfo.current;
     if (!drag || !drop) return;
 
-    let working = effectiveRows.map((r) => ({ ...r, bgIds: [...r.bgIds] }));
-
-    // Remove from source row
-    working = working.map((r) =>
-      r.id === drag.fromRowId ? { ...r, bgIds: r.bgIds.filter((id) => id !== drag.bgId) } : r
-    );
-
     if (drop.isNewRow) {
-      const newLabel = "New Category";
-      let uniqueLabel = newLabel;
+      // Create a new category with a unique label
+      let newLabel = "New Category";
       let counter = 1;
-      while (working.some((r) => r.label === uniqueLabel)) {
-        uniqueLabel = `${newLabel} ${counter++}`;
+      while (categoryOrder.includes(newLabel) || effectiveRows.some((r) => r.label === newLabel)) {
+        newLabel = `New Category ${counter++}`;
       }
-      working.push({ id: `row-${Date.now()}`, label: uniqueLabel, bgIds: [drag.bgId] });
+      // Add to category order
+      setCategoryOrder((prev) => [...prev, newLabel]);
+      // Move the item to the new category at index 0
+      moveItem(drag.bgId, newLabel, 0);
     } else if (drop.toRowId) {
-      working = working.map((r) => {
-        if (r.id !== drop.toRowId) return r;
-        const ids = [...r.bgIds];
-        if (drop.beforeBgId === null) ids.push(drag.bgId);
-        else {
-          const idx = ids.indexOf(drop.beforeBgId!);
-          ids.splice(idx === -1 ? ids.length : idx, 0, drag.bgId);
+      // Find the destination row
+      const destRow = effectiveRows.find((r) => r.id === drop.toRowId);
+      if (!destRow) return;
+
+      // Calculate destination index
+      let destIndex: number | null = null;
+      if (drop.beforeBgId !== null && drop.beforeBgId !== undefined) {
+        const idx = destRow.bgIds.indexOf(drop.beforeBgId);
+        destIndex = idx === -1 ? null : idx;
+      }
+
+      // No-op check: same category and same position
+      const sourceRow = effectiveRows.find((r) => r.id === drag.fromRowId);
+      if (sourceRow && sourceRow.label === destRow.label) {
+        const currentIdx = sourceRow.bgIds.indexOf(drag.bgId);
+        if (destIndex === currentIdx || (destIndex === null && currentIdx === sourceRow.bgIds.length - 1)) {
+          return; // same position, no-op
         }
-        return { ...r, bgIds: ids };
-      });
+      }
+
+      moveItem(drag.bgId, destRow.label, destIndex);
     }
-
-    // Remove empty rows (except Uncategorized)
-    working = working.filter((r) => r.label === "Uncategorized" || r.bgIds.length > 0);
-
-    // Apply to local state and persist
-    applyRowChanges(working);
   };
 
   const handleScrollAreaDragOver = (e: React.DragEvent) => {
@@ -346,9 +371,17 @@ export function SidebarThemeModal({
     }
   };
 
+  /* ── Library pick handler ─────────────────────────────────────────── */
+  const handleLibraryPick = async (imageUrl: string) => {
+    setIsPickerOpen(false);
+    if (onAddFromLibrary) {
+      await onAddFromLibrary(imageUrl);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="w-[min(96vw,1280px)] max-w-none p-0 border-0 bg-transparent shadow-none [&>button]:hidden">
+      <DialogContentBare className="w-[min(96vw,1280px)] max-w-none">
         <DialogTitle className="sr-only">Sidebar Theme</DialogTitle>
         <DialogDescription className="sr-only">
           Customize and organize sidebar background images.
@@ -448,12 +481,14 @@ export function SidebarThemeModal({
                       <span className="text-[10px] text-zinc-700">· click to rename</span>
                     </div>
 
-                    {/* Tile grid */}
-                    <div className={`grid grid-cols-5 md:grid-cols-7 gap-2.5 rounded-xl p-1.5 -m-1.5 transition-all duration-200 ${
-                      isDragging && dropTarget?.toRowId === row.id && !dropTarget?.isNewRow
-                        ? "bg-blue-500/[0.06] ring-1 ring-blue-500/30"
-                        : ""
-                    }`}>
+                    {/* Tile grid — highlight whole row when it's an active drop target */}
+                    <div
+                      className={`grid grid-cols-5 md:grid-cols-7 gap-2.5 rounded-xl p-1.5 -m-1.5 transition-all duration-150 ${
+                        isDragging && dropTarget?.toRowId === row.id && !dropTarget?.isNewRow
+                          ? "bg-white/[0.03] ring-1 ring-white/[0.08]"
+                          : ""
+                      }`}
+                    >
                       {/* Default tile — only in first row */}
                       {row.id === effectiveRows[0].id && (
                         <div
@@ -487,6 +522,10 @@ export function SidebarThemeModal({
                       {row.bgIds.map((bgId) => {
                         const bg = bgMap.get(bgId);
                         if (!bg) return null;
+
+                        // Show a subtle left-edge indicator when dragging over this specific tile
+                        const isDropBeforeThis = isDragging && dropTarget?.toRowId === row.id && dropTarget?.beforeBgId === bgId;
+
                         return (
                           <div
                             key={bg.id}
@@ -494,6 +533,10 @@ export function SidebarThemeModal({
                             onDragOver={(e) => onDropZoneDragOver(e, row.id, bg.id)}
                             onDrop={onDrop}
                           >
+                            {/* Drop position indicator — subtle left edge line */}
+                            {isDropBeforeThis && (
+                              <div className="absolute -left-[5px] top-0 bottom-0 w-[3px] bg-blue-500 rounded-full z-10" />
+                            )}
                             <div
                               draggable
                               onDragStart={(e) => onTileDragStart(e, bg.id, row.id)}
@@ -538,30 +581,30 @@ export function SidebarThemeModal({
                         );
                       })}
 
-                      {/* End-of-row drop zone — only visible while dragging */}
-                      {isDragging && (
-                        <div
-                          className={`rounded-xl min-h-[60px] transition-all duration-200 ${
-                            dropTarget?.toRowId === row.id && dropTarget?.beforeBgId === null
+                      {/* End-of-row drop zone — always in DOM, visible highlight only while dragging */}
+                      <div
+                        className={`aspect-[1/3] rounded-xl transition-all duration-150 ${
+                          isDragging
+                            ? dropTarget?.toRowId === row.id && dropTarget?.beforeBgId === null
                               ? "border-2 border-dashed border-blue-500/40 bg-blue-500/[0.06]"
-                              : "border-2 border-dashed border-transparent"
-                          }`}
-                          onDragOver={(e) => onDropZoneDragOver(e, row.id, null)}
-                          onDrop={onDrop}
-                        />
-                      )}
+                              : "border-2 border-dashed border-white/[0.06] bg-transparent"
+                            : "border-2 border-transparent bg-transparent"
+                        }`}
+                        onDragOver={(e) => onDropZoneDragOver(e, row.id, null)}
+                        onDrop={onDrop}
+                      />
                     </div>
                   </div>
                 ))}
 
-                {/* New category drop zone */}
+                {/* New category drop zone — only visible while dragging */}
                 {isDragging && (
                   <div
                     onDragOver={onNewRowDragOver}
                     onDrop={onDrop}
-                    className={`mt-1 p-4 rounded-xl flex items-center justify-center gap-2 transition-all ${
+                    className={`mt-1 p-4 rounded-xl flex items-center justify-center gap-2 transition-all duration-150 ${
                       dropTarget?.isNewRow
-                        ? "border-2 border-dashed border-blue-500 bg-blue-500/[0.08]"
+                        ? "border-2 border-dashed border-blue-500/40 bg-blue-500/[0.06]"
                         : "border-2 border-dashed border-white/[0.12] bg-white/[0.01]"
                     }`}
                   >
@@ -587,12 +630,9 @@ export function SidebarThemeModal({
         <ImageLibraryPickerModal
           isOpen={isPickerOpen}
           onClose={() => setIsPickerOpen(false)}
-          onSelect={(url) => {
-            onSelectBackground(url as any);
-            setIsPickerOpen(false);
-          }}
+          onSelect={handleLibraryPick}
         />
-      </DialogContent>
+      </DialogContentBare>
     </Dialog>
   );
 }
