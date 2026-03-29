@@ -606,19 +606,9 @@ export function SidebarThemeModal({
                         );
                       })}
 
-                      {/* End-of-row ghost placeholder — only visible when dragging over this row's end */}
                       {isDragging && dropTarget?.toRowId === row.id && dropTarget?.beforeBgId === null && (
                         <div
                           className="aspect-[1/3] rounded-xl border-2 border-dashed border-white/20 bg-white/[0.04]"
-                          onDragOver={(e) => onDropZoneDragOver(e, row.id, null)}
-                          onDrop={onDrop}
-                        />
-                      )}
-
-                      {/* Invisible end-of-row drop target (always in DOM so you can drag to row end) */}
-                      {isDragging && !(dropTarget?.toRowId === row.id && dropTarget?.beforeBgId === null) && (
-                        <div
-                          className="aspect-[1/3]"
                           onDragOver={(e) => onDropZoneDragOver(e, row.id, null)}
                           onDrop={onDrop}
                         />
