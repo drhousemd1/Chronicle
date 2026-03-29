@@ -204,6 +204,8 @@ export function SidebarThemeModal({
   const onTileDragStart = (e: React.DragEvent, bgId: string, fromRowId: string) => {
     dragInfo.current = { bgId, fromRowId };
     setIsDragging(true);
+    e.dataTransfer.clearData();
+    e.dataTransfer.setData("text/plain", bgId);
     e.dataTransfer.effectAllowed = "move";
     setTimeout(() => { if (e.target instanceof HTMLElement) e.target.style.opacity = "0.35"; }, 0);
   };
@@ -235,6 +237,7 @@ export function SidebarThemeModal({
 
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     const drag = dragInfo.current;
     const drop = dropInfo.current;
     if (!drag || !drop) return;
