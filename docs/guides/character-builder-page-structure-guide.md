@@ -299,10 +299,12 @@ Every character field is injected into the LLM system prompt (built in `llm.ts`)
 | Field | Injection Format |
 |-------|-----------------|
 | `name`, `sexType` | `CHARACTER: {name} ({sexType})` |
+| `age` | `AGE: {value}` |
 | `nicknames` | `NICKNAMES: {value}` |
 | `sexualOrientation` | `SEXUAL ORIENTATION: {value}` |
 | `controlledBy` | `CONTROL: {value}` (AI or User) |
 | `characterRole` | `ROLE: {value}` (Main or Side) |
+| `roleDescription` | `ROLE DESCRIPTION: {value}` |
 | `location` | `LOCATION: {value}` |
 | `currentMood` | `MOOD: {value}` |
 | `personality` | `PERSONALITY:` block -- standard mode: `{label}: {value}` per trait; split mode: `(outward) ...` / `(inward) ...` with `[{flexibility}]` tags |
@@ -312,11 +314,11 @@ Every character field is injected into the LLM system prompt (built in `llm.ts`)
 | `relationships._extras` | `RELATIONSHIPS: {label}={value}, ...` |
 | `secrets._extras` | `SECRETS: {label}={value}, ...` |
 | `fears._extras` | `FEARS: {label}={value}, ...` |
-| `goals` | `GOALS:\n- {title} [{mode}]: {outcome}` with active step details |
+| `goals` | `GOALS:\n- {title} [{mode}]: {outcome}` with active step details and optional `currentStatus` |
 | `physicalAppearance` | Hardcoded fields injected as structured block; `_extras` appended as `ADDITIONAL ATTRIBUTES` |
 | `currentlyWearing` | Same structured pattern as Physical Appearance |
 | `preferredClothing` | Same structured pattern as Physical Appearance |
-| `sections` (custom) | `TRAITS:\n{title}: {label}={value}, ...` per section |
+| `sections` (custom) | `TRAITS:\n{title}: {label}={value}, ...` per section; includes `freeformValue` via normalized Notes rows |
 | `tags` | `TAGS: {value}` |
 
 ### AI Enhancement (Sparkle Buttons)
@@ -381,7 +383,7 @@ The `character-ai.ts` service provides per-field AI enhancement:
 
 - **RESOLVED — Bug #1 — 2026-03-01**: `buildCharacterStateBlock()` now outputs scaffolding placeholders for all section types when empty, including `currentlyWearing`, `physicalAppearance`, `preferredClothing`, `background`, `personality`, and all extras-only sections (tone, keyLifeEvents, relationships, secrets, fears). AI can now see and populate all 16 section types.
 - **RESOLVED — Bug #2 — 2026-03-01**: `personality.traits` added to TRACKABLE FIELDS for unified personality mode. Characters not using split mode will now have traits extracted correctly.
-- **RESOLVED — Bug #3 — 2026-03-01**: Extraction prompt now uses correct field name `undergarments`. Frontend normalization retained as legacy safety net.
+- **RESOLVED — Bug #3 — 2026-03-01**: Extraction prompt now uses correct field name `undergarments`.
 - **RESOLVED — Bug #4 — 2026-03-01**: Default extraction model changed from `grok-3-mini` to `grok-3`. Deep Scan also uses `grok-3`. The 403 safe-mode retry path intentionally remains on `grok-3-mini`.
 - **RESOLVED — Bug #5 — 2026-03-01**: Extraction prompt augmented with 7-block analytical depth framework covering psychological inference, progressive trait refinement, conflict resolution, split personality mode detection, tone inference from dialogue, cross-field coherence enforcement, and complete trait lifecycle management.
 - **ACTIVE — Bug #6**: Memory system architecture incomplete — no long-term accumulation. Memories are extracted per-message but never summarized or consolidated.

@@ -52,29 +52,26 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
         id: "story-card",
         title: "Audit: Story Card Container",
         description:
-          "Scenario identity fields on the Story Builder page. Brief description should be available in prompt context; scenario title is currently used for app identity and some auxiliary prompts but not the main world context block.",
+          "Scenario identity fields on the Story Builder page. Both fields are serialized directly into API Call 1 WORLD CONTEXT.",
         fileRefs: [
           { path: "src/features/story-builder/StoryBuilderScreen.tsx" },
           { path: "src/types.ts", lines: "113-124" },
-          { path: "src/services/llm.ts", lines: "203-211, 642-646" },
+          { path: "src/services/llm.ts", lines: "348-350, 752-759" },
         ],
         codeSource:
-          "WORLD CONTEXT currently starts with storyPremise/factions/locations/dialogFormatting/customWorld/storyGoals. scenarioName and briefDescription are not injected into this block.",
+          "WORLD CONTEXT includes STORY NAME + BRIEF DESCRIPTION + STORY PREMISE in the primary system message.",
         fields: [
           {
             label: "Story Name (scenarioName)",
-            status: "not-in-prompt",
+            status: "connected",
             detail:
-              "Not currently included in main API Call 1 world context block. Used in auxiliary prompts (e.g., brainstorm path), not primary narrative system instruction.",
+              "Serialized into WORLD CONTEXT as STORY NAME.",
           },
           {
             label: "Brief Description",
-            status: "missing",
+            status: "connected",
             detail:
-              "Exists in data model/UI but is not serialized into WORLD CONTEXT for API Call 1.",
-            issueType: "MISSING FILE",
-            recommendation:
-              "Inject briefDescription into WORLD CONTEXT near scenario premise so scene framing uses the authored summary.",
+              "Serialized into WORLD CONTEXT as BRIEF DESCRIPTION.",
           },
         ],
       },
@@ -89,7 +86,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
           { path: "src/services/llm.ts", lines: "84-123, 203-211" },
         ],
         codeSource:
-          "SCENARIO: storyPremise\nFACTIONS\nLOCATIONS (structuredLocations fallback to locations)\nDIALOG FORMATTING\nCUSTOM WORLD CONTENT (items only)\nSTORY GOALS",
+          "STORY PREMISE\nLOCATIONS (structuredLocations)\nDIALOG FORMATTING (critical + custom)\nCUSTOM WORLD CONTENT (structured + freeform)\nSTORY GOALS (title/outcome/currentStatus/steps)",
         fields: [
           {
             label: "Story Premise",
@@ -97,36 +94,10 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
             detail: "Serialized as SCENARIO in worldContext.",
           },
           {
-            label: "Factions",
-            status: "connected",
-            detail: "Serialized in worldContext.",
-          },
-          {
-            label: "Primary Locations (structured + legacy)",
+            label: "Primary Locations (structured)",
             status: "connected",
             detail:
-              "Structured locations are mapped; legacy plain-text locations are used as fallback.",
-          },
-          {
-            label: "History Timeline",
-            status: "missing",
-            detail: "Field exists in WorldCore but is not included in worldContext assembly.",
-            issueType: "MISSING FILE",
-            recommendation: "Serialize historyTimeline into WORLD CONTEXT so chronology is model-visible.",
-          },
-          {
-            label: "Tone Themes",
-            status: "missing",
-            detail: "Field exists in WorldCore but is not injected into API Call 1 prompt.",
-            issueType: "MISSING FILE",
-            recommendation: "Inject toneThemes into WORLD CONTEXT to stabilize tonal direction.",
-          },
-          {
-            label: "Plot Hooks",
-            status: "missing",
-            detail: "Field exists in WorldCore but is currently omitted from worldContext.",
-            issueType: "MISSING FILE",
-            recommendation: "Serialize plotHooks so the model can reuse authored narrative hooks.",
+              "Structured locations are serialized as label/description pairs in WORLD CONTEXT.",
           },
           {
             label: "Dialog Formatting",
@@ -141,12 +112,9 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
           },
           {
             label: "Custom World Content (freeformValue)",
-            status: "missing",
+            status: "connected",
             detail:
-              "freeformValue exists in type model but is not serialized in customWorldContext assembly.",
-            issueType: "FORMAT MISMATCH",
-            recommendation:
-              "Include freeformValue for sections typed as freeform so authored notes are not dropped.",
+              "freeformValue is normalized into section rows and serialized in CUSTOM WORLD CONTENT.",
           },
         ],
       },
@@ -185,11 +153,9 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
           },
           {
             label: "currentStatus",
-            status: "missing",
+            status: "connected",
             detail:
-              "StoryGoal.currentStatus exists in type but is not passed in current story goals serializer.",
-            issueType: "MISSING FILE",
-            recommendation: "Add currentStatus to serialized goal payload for explicit in-progress state.",
+              "StoryGoal.currentStatus is serialized when present.",
           },
         ],
       },
@@ -258,12 +224,9 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
           },
           {
             label: "Active Scene Tag",
-            status: "missing",
+            status: "connected",
             detail:
-              "Prompt has full available tag list but does not include explicit current active scene tag state.",
-            issueType: "MISSING CONTEXT",
-            recommendation:
-              "Inject currently active scene tag as explicit context so model can align with current visual state.",
+              "Prompt injects ACTIVE SCENE CONTEXT including active scene tag + scene title + all tags.",
           },
         ],
       },
@@ -376,10 +339,8 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
           { label: "Nicknames", status: "connected", detail: "Serialized when non-empty." },
           {
             label: "Age",
-            status: "missing",
-            detail: "Character.age exists but is not included in CAST serialization.",
-            issueType: "MISSING FILE",
-            recommendation: "Add age to CAST block so age-sensitive narration is grounded.",
+            status: "connected",
+            detail: "Serialized in CAST profile as AGE.",
           },
           { label: "Sex / Identity (sexType)", status: "connected", detail: "Serialized in CHARACTER header." },
           {
@@ -393,10 +354,8 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
           { label: "Current Mood", status: "connected", detail: "Serialized when non-empty." },
           {
             label: "Role Description",
-            status: "missing",
-            detail: "Field exists in Character model but not serialized in CAST block.",
-            issueType: "MISSING FILE",
-            recommendation: "Inject roleDescription for clearer narrative purpose anchoring.",
+            status: "connected",
+            detail: "Serialized in CAST profile as ROLE DESCRIPTION when present.",
           },
           { label: "Tags", status: "connected", detail: "Serialized in TAGS line." },
         ],
@@ -405,7 +364,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
         id: "character-physical",
         title: "Audit: Character Builder — Physical Appearance Container",
         description:
-          "Physical base fields are currently omitted; only _extras rows are serialized.",
+          "Physical appearance base fields and custom rows are serialized in CAST profile.",
         fileRefs: [
           { path: "src/types.ts", lines: "159-172" },
           { path: "src/features/character-builder/utils/section-progress.ts", lines: "63-78" },
@@ -414,21 +373,19 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
         fields: [
           {
             label: "Hair Color",
-            status: "partial",
-            detail: "Base field not serialized; only _extras in ADDITIONAL ATTRIBUTES are sent.",
-            issueType: "FORMAT MISMATCH",
-            recommendation: "Serialize base physicalAppearance.hairColor in CAST payload.",
+            status: "connected",
+            detail: "Base field serialized via labeled pair formatter.",
           },
-          { label: "Eye Color", status: "partial", detail: "Base field omitted; _extras only.", issueType: "FORMAT MISMATCH", recommendation: "Serialize base eyeColor." },
-          { label: "Build", status: "partial", detail: "Base field omitted; _extras only.", issueType: "FORMAT MISMATCH", recommendation: "Serialize base build." },
-          { label: "Body Hair", status: "partial", detail: "Base field omitted; _extras only.", issueType: "FORMAT MISMATCH", recommendation: "Serialize base bodyHair." },
-          { label: "Height", status: "partial", detail: "Base field omitted; _extras only.", issueType: "FORMAT MISMATCH", recommendation: "Serialize base height." },
-          { label: "Breasts", status: "partial", detail: "Base field omitted (breastSize); _extras only.", issueType: "FORMAT MISMATCH", recommendation: "Serialize base breastSize." },
-          { label: "Genitalia", status: "partial", detail: "Base field omitted; _extras only.", issueType: "FORMAT MISMATCH", recommendation: "Serialize base genitalia." },
-          { label: "Skin Tone", status: "partial", detail: "Base field omitted; _extras only.", issueType: "FORMAT MISMATCH", recommendation: "Serialize base skinTone." },
-          { label: "Makeup", status: "partial", detail: "Base field omitted; _extras only.", issueType: "FORMAT MISMATCH", recommendation: "Serialize base makeup." },
-          { label: "Body Markings", status: "partial", detail: "Base field omitted; _extras only.", issueType: "FORMAT MISMATCH", recommendation: "Serialize base bodyMarkings." },
-          { label: "Temporary Conditions", status: "partial", detail: "Base field omitted; _extras only.", issueType: "FORMAT MISMATCH", recommendation: "Serialize base temporaryConditions." },
+          { label: "Eye Color", status: "connected", detail: "Base field serialized via labeled pair formatter." },
+          { label: "Build", status: "connected", detail: "Base field serialized via labeled pair formatter." },
+          { label: "Body Hair", status: "connected", detail: "Base field serialized via labeled pair formatter." },
+          { label: "Height", status: "connected", detail: "Base field serialized via labeled pair formatter." },
+          { label: "Breasts", status: "connected", detail: "Base field (`breastSize`) serialized via labeled pair formatter." },
+          { label: "Genitalia", status: "connected", detail: "Base field serialized via labeled pair formatter." },
+          { label: "Skin Tone", status: "connected", detail: "Base field serialized via labeled pair formatter." },
+          { label: "Makeup", status: "connected", detail: "Base field serialized via labeled pair formatter." },
+          { label: "Body Markings", status: "connected", detail: "Base field serialized via labeled pair formatter." },
+          { label: "Temporary Conditions", status: "connected", detail: "Base field serialized via labeled pair formatter." },
           { label: "Custom rows (_extras)", status: "connected", detail: "Serialized into ADDITIONAL ATTRIBUTES." },
         ],
       },
@@ -436,17 +393,17 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
         id: "character-currently-wearing",
         title: "Audit: Character Builder — Currently Wearing Container",
         description:
-          "Live clothing state fields are currently omitted except _extras rows.",
+          "Live clothing state base fields and custom rows are serialized in CAST profile.",
         fileRefs: [
           { path: "src/types.ts", lines: "174-180" },
           { path: "src/features/character-builder/utils/section-progress.ts", lines: "80-88" },
           { path: "src/services/llm.ts", lines: "232-236" },
         ],
         fields: [
-          { label: "Top", status: "partial", detail: "Base field omitted; _extras only.", issueType: "FORMAT MISMATCH", recommendation: "Serialize currentlyWearing.top." },
-          { label: "Bottom", status: "partial", detail: "Base field omitted; _extras only.", issueType: "FORMAT MISMATCH", recommendation: "Serialize currentlyWearing.bottom." },
-          { label: "Undergarments", status: "partial", detail: "Base field omitted; _extras only.", issueType: "FORMAT MISMATCH", recommendation: "Serialize currentlyWearing.undergarments for line-of-sight reliability." },
-          { label: "Miscellaneous", status: "partial", detail: "Base field omitted; _extras only.", issueType: "FORMAT MISMATCH", recommendation: "Serialize currentlyWearing.miscellaneous." },
+          { label: "Top", status: "connected", detail: "Base field serialized via labeled pair formatter." },
+          { label: "Bottom", status: "connected", detail: "Base field serialized via labeled pair formatter." },
+          { label: "Undergarments", status: "connected", detail: "Base field serialized via labeled pair formatter." },
+          { label: "Miscellaneous", status: "connected", detail: "Base field serialized via labeled pair formatter." },
           { label: "Custom rows (_extras)", status: "connected", detail: "Serialized into ADDITIONAL ATTRIBUTES." },
         ],
       },
@@ -454,18 +411,18 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
         id: "character-preferred-clothing",
         title: "Audit: Character Builder — Preferred Clothing Container",
         description:
-          "Baseline clothing preference fields are currently omitted except _extras rows.",
+          "Preferred clothing base fields and custom rows are serialized in CAST profile.",
         fileRefs: [
           { path: "src/types.ts", lines: "182-189" },
           { path: "src/features/character-builder/utils/section-progress.ts", lines: "90-99" },
           { path: "src/services/llm.ts", lines: "233-236" },
         ],
         fields: [
-          { label: "Casual", status: "partial", detail: "Base field omitted; _extras only.", issueType: "FORMAT MISMATCH", recommendation: "Serialize preferredClothing.casual." },
-          { label: "Work", status: "partial", detail: "Base field omitted; _extras only.", issueType: "FORMAT MISMATCH", recommendation: "Serialize preferredClothing.work." },
-          { label: "Sleep", status: "partial", detail: "Base field omitted; _extras only.", issueType: "FORMAT MISMATCH", recommendation: "Serialize preferredClothing.sleep." },
-          { label: "Undergarments", status: "partial", detail: "Base field omitted; _extras only.", issueType: "FORMAT MISMATCH", recommendation: "Serialize preferredClothing.undergarments." },
-          { label: "Miscellaneous", status: "partial", detail: "Base field omitted; _extras only.", issueType: "FORMAT MISMATCH", recommendation: "Serialize preferredClothing.miscellaneous." },
+          { label: "Casual", status: "connected", detail: "Base field serialized via labeled pair formatter." },
+          { label: "Work", status: "connected", detail: "Base field serialized via labeled pair formatter." },
+          { label: "Sleep", status: "connected", detail: "Base field serialized via labeled pair formatter." },
+          { label: "Undergarments", status: "connected", detail: "Base field serialized via labeled pair formatter." },
+          { label: "Miscellaneous", status: "connected", detail: "Base field serialized via labeled pair formatter." },
           { label: "Custom rows (_extras)", status: "connected", detail: "Serialized into ADDITIONAL ATTRIBUTES." },
         ],
       },
@@ -500,7 +457,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
         id: "character-tone",
         title: "Audit: Character Builder — Tone Container",
         description:
-          "Tone section currently serialized from extras rows. No dedicated example-dialogue field exists yet.",
+          "Tone section is serialized from authored rows; there is no separate dedicated example-dialogue field in current schema.",
         fileRefs: [
           { path: "src/features/character-builder/utils/section-progress.ts", lines: "112-115" },
           { path: "src/services/llm.ts", lines: "249-250, 769-774" },
@@ -513,11 +470,9 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
           },
           {
             label: "Example Dialogue field",
-            status: "missing",
-            detail: "Proposed field does not exist in current Character model or UI.",
-            issueType: "MISSING FILE",
-            recommendation:
-              "Add optional exampleDialogue field and serialize into CAST for voice anchoring.",
+            status: "code-handled",
+            detail:
+              "Not a canonical field in current Character Builder schema. API Inspector tracks only live UI/runtime fields.",
           },
         ],
       },
@@ -576,10 +531,8 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
           { label: "Steps + completion state", status: "connected", detail: "Serialized with completion-derived progress." },
           {
             label: "currentStatus",
-            status: "missing",
-            detail: "CharacterGoal.currentStatus is not included in serialized goal lines.",
-            issueType: "MISSING FILE",
-            recommendation: "Serialize currentStatus to preserve explicit manual status context.",
+            status: "connected",
+            detail: "CharacterGoal.currentStatus is serialized when present.",
           },
         ],
       },
@@ -587,7 +540,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
         id: "character-custom-content",
         title: "Audit: Character Builder — Custom Content Container",
         description:
-          "Custom sections are serialized through legacy TRAITS mapping, but freeform section values are not currently emitted.",
+          "Custom sections (structured + freeform) are serialized through the custom traits/context mapping.",
         fileRefs: [
           { path: "src/types.ts", lines: "138-156" },
           { path: "src/services/llm.ts", lines: "220-221, 268" },
@@ -600,11 +553,8 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
           },
           {
             label: "Custom section freeformValue",
-            status: "missing",
-            detail: "freeformValue exists on CharacterTraitSection but is not serialized in TRAITS assembly.",
-            issueType: "MISSING FILE",
-            recommendation:
-              "Include freeformValue in custom section serialization so authored text blocks are preserved.",
+            status: "connected",
+            detail: "freeformValue is normalized into rows and serialized in custom traits/context blocks.",
           },
         ],
       },
@@ -630,12 +580,9 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
           },
           {
             label: "Side characters (context presence when not AI-controlled)",
-            status: "missing",
+            status: "connected",
             detail:
-              "If side characters are user-controlled or otherwise excluded by AI filter, their card data is not represented in CAST context payload.",
-            issueType: "MISSING CONTEXT",
-            recommendation:
-              "Inject lightweight side-character context block (name/role/location/summary) even when not AI-controlled, while preserving no-dialogue guardrails.",
+              "Side character profiles are serialized in dedicated SIDE CHARACTER CONTEXT while preserving control guardrails.",
           },
         ],
       },

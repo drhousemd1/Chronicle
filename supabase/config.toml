@@ -24,6 +24,18 @@ verify_jwt = false
 [functions.check-shared-keys]
 verify_jwt = false
 
+[functions.xai-billing-balance]
+verify_jwt = false
+
+[functions.track-ai-usage]
+verify_jwt = false
+
+[functions.admin-ai-usage-summary]
+verify_jwt = false
+
+[functions.admin-ai-usage-timeseries]
+verify_jwt = false
+
 [functions.compress-day-memories]
 verify_jwt = false
 
@@ -37,4 +49,13 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.sync-guide-to-github]
+verify_jwt = false
+
+[functions.api-usage-test-session]
+verify_jwt = false
+
+[functions.track-api-usage-test]
+verify_jwt = false
+
+[functions.admin-api-usage-test-report]
 verify_jwt = false

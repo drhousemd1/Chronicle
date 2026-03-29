@@ -42,6 +42,10 @@ import {
   defaultCharacterBackground
 } from '@/types';
 import { LLM_MODELS } from '@/constants';
+import {
+  migrateWorldCoreToCanonical,
+  needsWorldCoreBackfill,
+} from '@/lib/canonical-field-registry';
 
 // =============================================
 // BASE64 → STORAGE SAFETY NET
@@ -379,6 +383,40 @@ function dbToConversation(row: any, messages: any[]): Conversation {
 // SCENARIOS
 // =============================================
 
+async function backfillScenarioWorldCoreById(scenarioId: string, canonicalWorldCore: WorldCore): Promise<void> {
+  const { error } = await supabase
+    .from('stories')
+    .update({ world_core: canonicalWorldCore })
+    .eq('id', scenarioId);
+  if (error) {
+    console.warn(`[supabase-data] Failed to backfill canonical world_core for scenario ${scenarioId}:`, error);
+  }
+}
+
+export async function backfillCanonicalWorldCoreForUser(userId: string): Promise<{ total: number; updated: number }> {
+  const { data, error } = await supabase
+    .from('stories')
+    .select('id, world_core')
+    .eq('user_id', userId);
+
+  if (error) throw error;
+
+  const rows = data || [];
+  let updated = 0;
+
+  for (const row of rows) {
+    const { canonical, shouldBackfill } = needsWorldCoreBackfill((row as any).world_core || {});
+    if (!shouldBackfill) continue;
+    const { error: updateError } = await supabase
+      .from('stories')
+      .update({ world_core: canonical })
+      .eq('id', (row as any).id);
+    if (!updateError) updated += 1;
+  }
+
+  return { total: rows.length, updated };
+}
+
 export async function fetchMyScenarios(userId: string): Promise<ScenarioMetadata[]> {
   const { data, error } = await supabase
     .from('stories')
@@ -442,17 +480,11 @@ export async function fetchScenarioById(id: string): Promise<{
     );
   }
 
-  const worldCore: WorldCore = (scenario.world_core as WorldCore) || {
-    scenarioName: '',
-    briefDescription: '',
-    storyPremise: '',
-    factions: '',
-    locations: '',
-    historyTimeline: '',
-    toneThemes: '',
-    plotHooks: '',
-    dialogFormatting: ''
-  };
+  const worldCoreBackfill = needsWorldCoreBackfill((scenario.world_core as any) || {});
+  const worldCore: WorldCore = worldCoreBackfill.canonical;
+  if (worldCoreBackfill.shouldBackfill) {
+    void backfillScenarioWorldCoreById(scenario.id, worldCore);
+  }
 
   const rawOpeningDialog = scenario.opening_dialog as Partial<OpeningDialog> | undefined;
   const openingDialog: OpeningDialog = { 
@@ -518,17 +550,11 @@ export async function fetchScenarioForPlay(id: string): Promise<{
 
   const scenario = scenarioResult.data as any;
 
-  const worldCore: WorldCore = (scenario.world_core as WorldCore) || {
-    scenarioName: '',
-    briefDescription: '',
-    storyPremise: '',
-    factions: '',
-    locations: '',
-    historyTimeline: '',
-    toneThemes: '',
-    plotHooks: '',
-    dialogFormatting: ''
-  };
+  const worldCoreBackfill = needsWorldCoreBackfill((scenario.world_core as any) || {});
+  const worldCore: WorldCore = worldCoreBackfill.canonical;
+  if (worldCoreBackfill.shouldBackfill) {
+    void backfillScenarioWorldCoreById(scenario.id, worldCore);
+  }
 
   const rawOpeningDialog = scenario.opening_dialog as Partial<OpeningDialog> | undefined;
   const openingDialog: OpeningDialog = { 
@@ -594,7 +620,7 @@ export async function saveScenario(
     cover_image_url: safeCoverImage,
     cover_image_position: metadata.coverImagePosition || { x: 50, y: 50 },
     tags: metadata.tags,
-    world_core: data.world.core,
+    world_core: migrateWorldCoreToCanonical(data.world.core as any),
     ui_settings: data.uiSettings,
     opening_dialog: data.story.openingDialog,
     selected_model: data.selectedModel,

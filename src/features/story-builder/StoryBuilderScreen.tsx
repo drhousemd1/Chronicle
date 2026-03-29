@@ -32,6 +32,8 @@ import { getClosestRatio, AspectRatioIcon } from '@/components/chronicle/AspectR
 import { CustomContentTypeModal } from '@/components/chronicle/CustomContentTypeModal';
 import { TabFieldNavigator } from '@/components/chronicle/TabFieldNavigator';
 import { StoryRosterSidebar } from '@/features/story-builder/sidebar/StoryRosterSidebar';
+import { trackAiUsageEvent } from '@/services/usage-tracking';
+import { buildRequiredPresence, trackApiValidationSnapshot } from '@/services/api-usage-validation';
 
 export interface StoryBuilderScreenProps {
   scenarioId: string;
@@ -1488,6 +1490,20 @@ className="px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white plac
           try {
             const style = getStyleById(styleId);
             const artStylePrompt = style?.backendPrompt || '';
+
+            void trackApiValidationSnapshot({
+              eventKey: 'validation.single.scene_image',
+              eventSource: 'story-builder.scene-modal',
+              apiCallGroup: 'single_call',
+              parentRowId: 'summary.single.scene_image',
+              detailPresence: buildRequiredPresence([
+                ['single.scene_image.prompt_or_messages', prompt],
+                ['single.scene_image.characters_or_context', artStylePrompt || world.core.storyPremise || world.core.scenarioName],
+              ]),
+              diagnostics: {
+                scenarioId,
+              },
+            });
             
             const { data, error } = await supabase.functions.invoke('generate-cover-image', {
               body: {
@@ -1500,6 +1516,14 @@ className="px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white plac
             if (error) throw error;
             
             if (data?.imageUrl) {
+              void trackAiUsageEvent({
+                eventType: 'scene_image_generated',
+                eventSource: 'story-builder-scene-modal',
+                metadata: {
+                  scenarioId,
+                },
+              });
+
               // Compress before saving
               let finalUrl = data.imageUrl;
               try {

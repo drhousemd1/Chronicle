@@ -152,7 +152,7 @@ When the user clicks "Publish to Gallery", `validateForPublish()` runs and highl
 - `selectedArtStyle`
 
 ### WorldCore Fields
-`scenarioName`, `briefDescription`, `storyPremise`, `structuredLocations: LocationEntry[]`, `customWorldSections: WorldCustomSection[]`, `factions`, `locations` (legacy plain text), `historyTimeline`, `toneThemes`, `plotHooks`, `dialogFormatting`, `storyGoals: StoryGoal[]`. Note: `settingOverview`, `rulesOfMagicTech`, and `narrativeStyle` were removed (no longer needed).
+`scenarioName`, `briefDescription`, `storyPremise`, `structuredLocations: LocationEntry[]`, `customWorldSections: WorldCustomSection[]`, `dialogFormatting`, `storyGoals: StoryGoal[]`.
 
 ### Database Tables
 - **`scenarios`**: `world_core` (jsonb), `ui_settings` (jsonb), `opening_dialog` (jsonb), `cover_image_url`, `cover_image_position`, `selected_model`, `selected_art_style`, `title`, `description`, `tags`
@@ -296,12 +296,13 @@ This is a **critical section** — every field in the Scenario Builder ultimatel
 
 | Field | Injection Point (in `llm.ts`) | Format |
 |-------|-------------------------------|--------|
-| `storyPremise` | `SCENARIO: {value}` | Direct text injection |
-| `factions` | `FACTIONS: {value}` | Direct text injection |
-| `structuredLocations` | `LOCATIONS:\n- Label: Description` per entry | Structured list; falls back to legacy `locations` plain text field |
+| `scenarioName` | `STORY NAME: {value}` | Direct text injection |
+| `briefDescription` | `BRIEF DESCRIPTION: {value}` | Direct text injection |
+| `storyPremise` | `STORY PREMISE: {value}` | Direct text injection |
+| `structuredLocations` | `LOCATIONS:\n- Label: Description` per entry | Structured list |
 | `dialogFormatting` | `DIALOG FORMATTING:` section | Hard-coded critical rules (quotes for speech, asterisks for actions, parentheses for thoughts, POV rules) are **prepended and immutable**; user's additional rules are **appended** |
-| `customWorldSections` | `CUSTOM WORLD CONTENT:\n[Section Title]:\n- Label: Value` per item | Nested structured injection |
-| `storyGoals` | `STORY DIRECTION:\n[Arc Name] (RIGID/NORMAL/FLEXIBLE)` | Complex structured injection with serialized branches, step statuses, and resistance history |
+| `customWorldSections` | `CUSTOM WORLD CONTENT:\n[Section Title]:\n- Label: Value` per item | Nested structured injection; supports both structured rows and freeform section notes |
+| `storyGoals` | `STORY GOALS:\n[Goal Name] (RIGID/NORMAL/FLEXIBLE)` | Complex structured injection with desired outcome, current status, steps, and directive behavior |
 | Content Themes tags | Injected via `buildContentThemeDirectives()` from `tag-injection-registry.ts` | Three tiers: **Strong** (Mandatory Content Directives), **Moderate** (Emphasized Themes), **Subtle** (Narrative Flavor) |
 | `selectedArtStyle` | Used by `generate-cover-image` and `generate-scene-image` edge functions | The style's `backendPrompt` is sent alongside the user's image prompt. **Not injected into the chat LLM** — only affects image generation. |
 | Opening Dialog | Inserted as the **first assistant message** in a new conversation | Direct text insertion, not part of the system prompt |
@@ -316,11 +317,12 @@ The `world-ai.ts` service powers the sparkle/enhance buttons on World Core field
   - `scenarioName`: 2–5 word evocative name (max 1 sentence)
   - `briefDescription`: 1–2 sentence hook for story card (max 2 sentences)
   - `storyPremise`: Situation + Tension + Stakes format (max 4 sentences)
-  - `factions`: "Faction Name - Description and role" format (max 6 sentences)
-  - `locations`: "Location Name - Description and relevance" format (max 6 sentences)
-  - `historyTimeline`: Chronological bullet points (max 5 sentences)
-  - `plotHooks`: "Hook Name - Setup and stakes" format (max 5 sentences)
   - `dialogFormatting`: Additional formatting rules (max 3 sentences)
+  - `customContent`: generic enhancer for custom world rows and freeform sections
+  - `worldCustomField`: targeted enhancer for a specific custom world field
+  - `storyGoalOutcome`: targeted enhancer for story-goal desired outcome
+  - `storyGoalStep`: targeted enhancer for individual goal steps
+  - `arcPhaseOutcome`: targeted enhancer for arc/phase outcomes
 - **API call**: Invokes the `chat` edge function with `stream: false` for a synchronous response.
 
 ### Guidance Strength Slider — Injected Descriptions
@@ -371,7 +373,7 @@ Tags selected in the Content Themes section are processed through `tag-injection
 
 - ~~**Browser dialogs**~~: ✅ **RESOLVED** — Scene deletion and cover removal now use the styled `DeleteConfirmDialog` component instead of native `confirm()` dialogs.
 - ~~**Duplicated auto-resize textarea**~~: ✅ **RESOLVED** — Extracted to a shared `AutoResizeTextarea.tsx` component, imported by both `WorldTab.tsx` and `StoryGoalsSection.tsx`.
-- ~~**Legacy fields**~~: ✅ **RESOLVED** — `settingOverview`, `rulesOfMagicTech`, and `narrativeStyle` have been removed from `WorldCore` type and all references. Only `locations` (plain text) remains as a legacy fallback for `structuredLocations`.
+- ~~**Legacy fields**~~: ✅ **RESOLVED** — `settingOverview`, `rulesOfMagicTech`, `narrativeStyle`, and legacy world-core aliases have been removed from runtime contracts. Story Builder now uses canonical fields only.
 - ~~**Custom World Content AI hack**~~: ✅ **RESOLVED** — A dedicated `customContent` field configuration was added to `world-ai.ts` with its own prompt. Custom content and Story Arc enhancement now uses `customContent` instead of hijacking `briefDescription`.
 - **Scene image generation reuse**: Scene image generation in the **Scenario Builder** calls `generate-cover-image` (with a landscape prompt prefix) because `generate-scene-image` is designed for chat context (requires `recentMessages`, `characters` data). This is intentional — the builder has no dialogue context to analyze. The chat interface correctly uses `generate-scene-image`.
 - **UUID migration**: `handleSaveWithData` includes UUID migration logic for legacy non-UUID character/entry IDs.

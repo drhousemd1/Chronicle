@@ -13,6 +13,9 @@ const LazyAppGuide = React.lazy(() =>
 const LazyStyleGuide = React.lazy(() =>
   import('@/components/admin/styleguide/StyleGuideTool').then(m => ({ default: m.StyleGuideTool }))
 );
+const LazyFinanceDashboard = React.lazy(() =>
+  import('@/components/admin/finance/FinanceDashboardTool')
+);
 
 const lazyToolFallback = <div className="h-full w-full" />;
 
@@ -32,6 +35,11 @@ const DEFAULT_TOOLS: ToolMeta[] = [
     id: 'style_guide',
     title: 'App Dashboard',
     description: 'Central hub for Style Guide, App Guide, App Architecture, Quality Hub, and API Inspector',
+  },
+  {
+    id: 'finance_dashboard',
+    title: 'Finance Dashboard',
+    description: 'Business finance operations, projections, users, reporting, and API cost insights',
   },
 ];
 
@@ -122,6 +130,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
     return (
       <React.Suspense fallback={lazyToolFallback}>
         <LazyStyleGuide onRegisterDownload={onRegisterStyleGuideDownload} onRegisterEdits={onRegisterStyleGuideEdits} onEditsCountChange={onStyleGuideEditsCountChange} onSwitchToAppGuide={() => onSetActiveTool('app_guide')} />
+      </React.Suspense>
+    );
+  }
+
+  if (activeTool === 'finance_dashboard') {
+    return (
+      <React.Suspense fallback={lazyToolFallback}>
+        <LazyFinanceDashboard />
       </React.Suspense>
     );
   }

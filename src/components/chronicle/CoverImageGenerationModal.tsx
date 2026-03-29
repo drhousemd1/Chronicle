@@ -15,6 +15,8 @@ import { ChevronDown, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useArtStyles } from "@/contexts/ArtStylesContext";
+import { trackAiUsageEvent } from "@/services/usage-tracking";
+import { buildRequiredPresence, trackApiValidationSnapshot } from "@/services/api-usage-validation";
 
 interface CoverImageGenerationModalProps {
   isOpen: boolean;
@@ -53,6 +55,21 @@ export const CoverImageGenerationModal: React.FC<CoverImageGenerationModalProps>
     setError(null);
 
     try {
+      void trackApiValidationSnapshot({
+        eventKey: "validation.single.cover_image",
+        eventSource: "cover-image-modal",
+        apiCallGroup: "single_call",
+        parentRowId: "summary.single.cover_image",
+        detailPresence: buildRequiredPresence([
+          ["single.cover_image.prompt", prompt.trim()],
+          ["single.cover_image.style_prompt", selectedStyle.backendPrompt],
+        ]),
+        diagnostics: {
+          hasNegativePrompt: Boolean(negativePrompt.trim()),
+          scenarioTitle: scenarioTitle || null,
+        },
+      });
+
       const { data, error: fnError } = await supabase.functions.invoke(
         "generate-cover-image",
         {
@@ -74,6 +91,14 @@ export const CoverImageGenerationModal: React.FC<CoverImageGenerationModalProps>
       }
 
       if (data?.imageUrl) {
+        void trackAiUsageEvent({
+          eventType: "cover_image_generated",
+          eventSource: "cover-image-modal",
+          metadata: {
+            scenarioTitle: scenarioTitle || null,
+          },
+        });
+
         onGenerated(data.imageUrl);
         setPrompt("");
         setNegativePrompt("");

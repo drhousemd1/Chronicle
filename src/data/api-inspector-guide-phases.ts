@@ -193,7 +193,7 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
                 "lines": "serialized in character block"
               },
               {
-                "path": "src/components/chronicle/CharacterEditForm.tsx",
+                "path": "src/features/character-builder/CharacterBuilderScreen.tsx",
                 "lines": "UI fields"
               }
             ],
@@ -262,7 +262,7 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
                 "lines": "serialized in character block"
               },
               {
-                "path": "src/components/chronicle/CharacterEditForm.tsx",
+                "path": "src/features/character-builder/CharacterBuilderScreen.tsx",
                 "lines": "UI fields"
               }
             ],
@@ -341,7 +341,7 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
                 "lines": "serialized in character block"
               },
               {
-                "path": "src/components/chronicle/CharacterEditForm.tsx",
+                "path": "src/features/character-builder/CharacterBuilderScreen.tsx",
                 "lines": "UI fields"
               }
             ],
@@ -365,7 +365,7 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
                 "lines": "serialized in character block"
               },
               {
-                "path": "src/components/chronicle/CharacterEditForm.tsx",
+                "path": "src/features/character-builder/CharacterBuilderScreen.tsx",
                 "lines": "UI fields"
               }
             ]
@@ -416,7 +416,7 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
                 "lines": "serialized in character block"
               },
               {
-                "path": "src/components/chronicle/CharacterEditForm.tsx",
+                "path": "src/features/character-builder/CharacterBuilderScreen.tsx",
                 "lines": "UI fields"
               }
             ]
@@ -433,7 +433,7 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
                 "lines": "serialized in character block"
               },
               {
-                "path": "src/components/chronicle/CharacterEditForm.tsx",
+                "path": "src/features/character-builder/CharacterBuilderScreen.tsx",
                 "lines": "UI fields"
               }
             ],
@@ -467,7 +467,7 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
                 "lines": "serialized in character block"
               },
               {
-                "path": "src/components/chronicle/CharacterEditForm.tsx",
+                "path": "src/features/character-builder/CharacterBuilderScreen.tsx",
                 "lines": "UI fields"
               }
             ]
@@ -484,7 +484,7 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
                 "lines": "serialized in character block"
               },
               {
-                "path": "src/components/chronicle/CharacterEditForm.tsx",
+                "path": "src/features/character-builder/CharacterBuilderScreen.tsx",
                 "lines": "UI fields"
               }
             ]
@@ -501,7 +501,7 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
                 "lines": "serialized in character block"
               },
               {
-                "path": "src/components/chronicle/CharacterEditForm.tsx",
+                "path": "src/features/character-builder/CharacterBuilderScreen.tsx",
                 "lines": "UI fields"
               }
             ]
@@ -518,7 +518,7 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
                 "lines": "serialized in character block"
               },
               {
-                "path": "src/components/chronicle/CharacterEditForm.tsx",
+                "path": "src/features/character-builder/CharacterBuilderScreen.tsx",
                 "lines": "UI fields"
               }
             ]
@@ -559,7 +559,7 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
                 "lines": "serialized in character block"
               },
               {
-                "path": "src/components/chronicle/CharacterEditForm.tsx",
+                "path": "src/features/character-builder/CharacterBuilderScreen.tsx",
                 "lines": "UI fields"
               }
             ]
@@ -709,19 +709,24 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
             ],
             "subItems": [
               {
+                "id": "sub-phase-system-prompt-assembly-section-phase-system-prompt-assembly-context-data-story-name",
+                "title": "Story Name",
+                "description": "The title of the story (serialized into WORLD CONTEXT)"
+              },
+              {
+                "id": "sub-phase-system-prompt-assembly-section-phase-system-prompt-assembly-context-data-brief-description",
+                "title": "Brief Description",
+                "description": "Short summary of what the story is about (serialized into WORLD CONTEXT)"
+              },
+              {
                 "id": "sub-phase-system-prompt-assembly-section-phase-system-prompt-assembly-context-data-story-premise",
                 "title": "Story Premise",
                 "description": "The main setup/scenario for the story"
               },
               {
-                "id": "sub-phase-system-prompt-assembly-section-phase-system-prompt-assembly-context-data-factions",
-                "title": "Factions",
-                "description": "Groups, organizations, or sides in the world"
-              },
-              {
                 "id": "sub-phase-system-prompt-assembly-section-phase-system-prompt-assembly-context-data-primary-locations",
                 "title": "Primary Locations",
-                "description": "Named places in the world with descriptions"
+                "description": "Named places in the world with descriptions (structured locations)"
               },
               {
                 "id": "sub-phase-system-prompt-assembly-section-phase-system-prompt-assembly-context-data-dialog-formatting",
@@ -736,27 +741,12 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
               {
                 "id": "sub-phase-system-prompt-assembly-section-phase-system-prompt-assembly-context-data-story-arcs-goals",
                 "title": "Story Arcs / Goals",
-                "description": "The story's goals, branching paths, and phases: with labels for how strictly the AI should follow them"
-              },
-              {
-                "id": "sub-phase-system-prompt-assembly-section-phase-system-prompt-assembly-context-data-story-name",
-                "title": "Story Name",
-                "description": "The title of the story"
-              },
-              {
-                "id": "sub-phase-system-prompt-assembly-section-phase-system-prompt-assembly-context-data-brief-description",
-                "title": "Brief Description",
-                "description": "Short summary of what the story is about"
-              },
-              {
-                "id": "sub-phase-system-prompt-assembly-section-phase-system-prompt-assembly-context-data-opening-dialog",
-                "title": "Opening Dialog",
-                "description": "The first message or scene-setter for the story"
+                "description": "Story goals with guidance strength, steps, and current status"
               },
               {
                 "id": "sub-phase-system-prompt-assembly-section-phase-system-prompt-assembly-context-data-custom-ai-instructions",
                 "title": "Custom AI Instructions",
-                "description": "Free-form rules the user wrote for the AI to follow"
+                "description": "Canonical custom instructions are represented through dialog formatting + custom world sections"
               }
             ]
           },
@@ -1055,7 +1045,7 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
             "purpose": "If xAI's content filter blocks the request (returns a 403 error), the app automatically adds a redirect instruction and tries again. If the retry also fails, the user sees a \"too spicy\" error message.",
             "fileRefs": [
               {
-                "path": "supabase/functions/v1/chat/index.ts",
+                "path": "supabase/functions/chat/index.ts",
                 "lines": "retry logic"
               }
             ]
@@ -1078,13 +1068,14 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
         "items": [
           {
             "id": "item-phase-response-streaming-display-main-flow-to-be-mapped",
-            "title": "(To be mapped)",
+            "title": "Stream Chunk Assembly and Message Rendering",
             "tagType": "code-logic",
             "icon": "🔧",
-            "purpose": "No description provided.",
+            "purpose": "Streams assistant output chunks, assembles final response text, and commits rendered message cards in the chat timeline.",
             "fileRefs": [
               {
-                "path": "source-unresolved"
+                "path": "src/components/chronicle/ChatInterfaceTab.tsx",
+                "lines": "stream response handlers and message commit flow"
               }
             ]
           }
@@ -1106,13 +1097,18 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
         "items": [
           {
             "id": "item-phase-post-response-processing-api-call-2-main-flow-to-be-mapped",
-            "title": "(To be mapped)",
+            "title": "Extraction + Persistence Follow-Up Pipeline",
             "tagType": "code-logic",
             "icon": "🔧",
-            "purpose": "No description provided.",
+            "purpose": "Runs post-response extraction and persistence updates (goal progress, memory updates, and structured state sync) after API Call 1 completes.",
             "fileRefs": [
               {
-                "path": "source-unresolved"
+                "path": "src/components/chronicle/ChatInterfaceTab.tsx",
+                "lines": "post-response processing + extraction trigger chain"
+              },
+              {
+                "path": "supabase/functions/extract-character-updates/index.ts",
+                "lines": "edge extraction and structured update reconciliation"
               }
             ]
           }
@@ -1134,13 +1130,27 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
         "items": [
           {
             "id": "item-phase-image-generation-calls-main-flow-to-be-mapped",
-            "title": "(To be mapped)",
+            "title": "Cover/Scene/Avatar Image Generation Pipelines",
             "tagType": "code-logic",
             "icon": "🔧",
-            "purpose": "No description provided.",
+            "purpose": "Handles AI image generation requests for cover images, scene gallery images, and avatar images via dedicated edge functions and storage updates.",
             "fileRefs": [
               {
-                "path": "source-unresolved"
+                "path": "src/features/story-builder/StoryBuilderScreen.tsx",
+                "lines": "cover + scene generation triggers"
+              },
+              {
+                "path": "src/features/character-builder/CharacterBuilderScreen.tsx",
+                "lines": "avatar generation triggers"
+              },
+              {
+                "path": "supabase/functions/generate-cover-image/index.ts"
+              },
+              {
+                "path": "supabase/functions/generate-scene-image/index.ts"
+              },
+              {
+                "path": "supabase/functions/generate-side-character-avatar/index.ts"
               }
             ]
           }
@@ -1162,13 +1172,18 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
         "items": [
           {
             "id": "item-phase-ai-character-generation-calls-main-flow-to-be-mapped",
-            "title": "(To be mapped)",
+            "title": "Character AI Fill / Generate / Enhance Runtime",
             "tagType": "code-logic",
             "icon": "🔧",
-            "purpose": "No description provided.",
+            "purpose": "Runs per-field enhance prompts, empty-field fill, and full character generation using canonical section mappings and structured patch application.",
             "fileRefs": [
               {
-                "path": "source-unresolved"
+                "path": "src/services/character-ai.ts",
+                "lines": "field prompts + fill/generate orchestration"
+              },
+              {
+                "path": "src/features/character-builder/CharacterBuilderScreen.tsx",
+                "lines": "AI enhance/fill/generate wiring"
               }
             ]
           }

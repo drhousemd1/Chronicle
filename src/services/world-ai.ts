@@ -1,9 +1,11 @@
 import { WorldCore } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
+import { trackAiUsageEvent } from "@/services/usage-tracking";
+import { buildRequiredPresence, trackApiValidationSnapshot } from "@/services/api-usage-validation";
 
 // Only include string fields that can be AI-enhanced
 export type EnhanceableWorldFields =
-  | Extract<keyof WorldCore, 'scenarioName' | 'briefDescription' | 'storyPremise' | 'factions' | 'locations' | 'historyTimeline' | 'plotHooks' | 'dialogFormatting'>
+  | Extract<keyof WorldCore, 'scenarioName' | 'briefDescription' | 'storyPremise' | 'dialogFormatting'>
   | 'customContent'
   | 'worldCustomField'
   | 'storyGoalOutcome'
@@ -26,26 +28,6 @@ const FIELD_PROMPTS: Record<EnhanceableWorldFields, { label: string; instruction
     label: "Story Premise",
     instruction: "Describe the central conflict and stakes. Format: Situation + Tension + Stakes. What's happening, why it matters, what could go wrong.",
     maxSentences: 4
-  },
-  factions: {
-    label: "Factions",
-    instruction: "List major factions or groups. Format: 'Faction Name - Brief description and their role in the story/conflict'.",
-    maxSentences: 6
-  },
-  locations: {
-    label: "Primary Locations",
-    instruction: "List key locations with their narrative significance. Format: 'Location Name - Brief description and story relevance'.",
-    maxSentences: 6
-  },
-  historyTimeline: {
-    label: "History & Timeline",
-    instruction: "Summarize key historical events that impact the current story. Format: chronological bullet points of important past events.",
-    maxSentences: 5
-  },
-  plotHooks: {
-    label: "Plot Hooks",
-    instruction: "List potential story hooks or quests. Format: 'Hook Name - Brief setup and what's at stake'.",
-    maxSentences: 5
   },
   dialogFormatting: {
     label: "Dialog Formatting",
@@ -186,6 +168,25 @@ export async function aiEnhanceWorldField(
   const prompt = buildPrompt(fieldName, currentValue, worldContext, mode);
 
   console.log(`[world-ai] Enhancing field: ${fieldName} with model: ${modelId} (mode: ${mode})`);
+  void trackAiUsageEvent({
+    eventType: mode === "precise" ? "world_ai_enhance_precise" : "world_ai_enhance_detailed",
+    eventSource: "world-ai",
+    metadata: {
+      fieldName,
+    },
+  });
+
+  void trackApiValidationSnapshot({
+    eventKey: "validation.single.world_ai_enhance",
+    eventSource: "world-ai.enhance",
+    apiCallGroup: "single_call",
+    parentRowId: "summary.single.world_ai_enhance",
+    detailPresence: buildRequiredPresence([
+      ["single.world_ai_enhance.field_name", fieldName],
+      ["single.world_ai_enhance.prompt", prompt],
+      ["single.world_ai_enhance.model_id", modelId],
+    ]),
+  });
 
   const { data, error } = await supabase.functions.invoke('chat', {
     body: {

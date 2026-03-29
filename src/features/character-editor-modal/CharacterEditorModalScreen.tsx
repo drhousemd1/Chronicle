@@ -36,6 +36,8 @@ import { TabFieldNavigator } from '@/components/chronicle/TabFieldNavigator';
 import { uid, now } from '@/utils';
 import { Input } from '@/components/ui/input';
 import { isCharacterSectionKeyMatch } from '@/features/character-builder/utils/section-keys';
+import { trackAiUsageEvent } from '@/services/usage-tracking';
+import { buildRequiredPresence, trackApiValidationSnapshot } from '@/services/api-usage-validation';
 
 // Unified draft type for both Character and SideCharacter
 export interface CharacterEditDraft {
@@ -533,6 +535,16 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
     
     setIsDeepScanning(true);
     try {
+      void trackAiUsageEvent({
+        eventType: 'character_card_ai_update',
+        eventSource: 'character-editor-modal',
+        metadata: {
+          conversationId,
+          characterId: character.id,
+          characterName: character.name,
+        },
+      });
+
       const { data: messages, error: msgError } = await supabase
         .from('messages')
         .select('role, content')
@@ -606,6 +618,20 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
       const charactersData = allCharacters 
         ? allCharacters.map(buildCharData) 
         : [buildCharData(character)];
+
+      void trackApiValidationSnapshot({
+        eventKey: 'validation.single.character_card_ai_update',
+        eventSource: 'character-editor-modal.deep-scan',
+        apiCallGroup: 'single_call',
+        parentRowId: 'summary.single.character_card_ai_update',
+        detailPresence: buildRequiredPresence([
+          ['single.character_card_ai_update.conversation_id', conversationId],
+          ['single.character_card_ai_update.character_id', character.id],
+          ['single.character_card_ai_update.user_message', concatenatedUser],
+          ['single.character_card_ai_update.ai_response', concatenatedAi],
+          ['single.character_card_ai_update.characters_payload', charactersData],
+        ]),
+      });
       
       const { data, error } = await supabase.functions.invoke('extract-character-updates', {
         body: {
@@ -858,11 +884,30 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
     setIsRegeneratingAvatar(true);
     try {
       const avatarPrompt = buildAvatarPrompt();
+      void trackApiValidationSnapshot({
+        eventKey: 'validation.single.character_avatar',
+        eventSource: 'character-editor-modal.avatar-regenerate',
+        apiCallGroup: 'single_call',
+        parentRowId: 'summary.single.character_avatar',
+        detailPresence: buildRequiredPresence([
+          ['single.character_avatar.avatar_prompt', avatarPrompt],
+          ['single.character_avatar.character_name', draft.name || character.name],
+          ['single.character_avatar.model_id', modelId || 'grok-4-1-fast-reasoning'],
+        ]),
+      });
       const { data, error } = await supabase.functions.invoke('generate-side-character-avatar', {
         body: { avatarPrompt, characterName: draft.name || character.name, modelId: modelId || 'grok-4-1-fast-reasoning' }
       });
       if (error) throw error;
       if (data?.imageUrl) {
+        void trackAiUsageEvent({
+          eventType: 'character_avatar_generated',
+          eventSource: 'character-editor-modal',
+          metadata: {
+            characterId: character.id,
+            characterName: draft.name || character.name,
+          },
+        });
         setDraft(prev => ({ ...prev, avatarDataUrl: data.imageUrl, avatarPosition: { x: 50, y: 50 } }));
       }
     } catch (err) {

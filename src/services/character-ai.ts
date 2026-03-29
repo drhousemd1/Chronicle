@@ -2,6 +2,8 @@
 import { ScenarioData, Character, CharacterTraitSection, PhysicalAppearance, CurrentlyWearing, PreferredClothing, WorldCore, CharacterExtraRow } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { uid, now } from "@/utils";
+import { trackAiUsageEvent } from "@/services/usage-tracking";
+import { buildRequiredPresence, trackApiValidationSnapshot } from "@/services/api-usage-validation";
 
 // ============================================================
 // Shared Context Builders
@@ -41,20 +43,13 @@ function buildFullContext(appData: ScenarioData, targetCharacterId: string): str
   if (core.scenarioName) parts.push(`Scenario: ${core.scenarioName}`);
   if (core.briefDescription) parts.push(`Description: ${core.briefDescription}`);
   if (core.storyPremise) parts.push(`Premise: ${core.storyPremise}`);
+  if (core.dialogFormatting) parts.push(`Dialog Style: ${core.dialogFormatting}`);
 
-  // Locations — structured first, fallback to legacy
+  // Locations — canonical structured locations
   if (core.structuredLocations?.length) {
     const locs = core.structuredLocations.map(l => `  - ${l.label}: ${l.description}`).join('\n');
     parts.push(`Locations:\n${locs}`);
-  } else if (core.locations) {
-    parts.push(`Locations: ${core.locations}`);
   }
-
-  if (core.factions) parts.push(`Factions: ${core.factions}`);
-  if (core.toneThemes) parts.push(`Tone & Themes: ${core.toneThemes}`);
-  if (core.plotHooks) parts.push(`Plot Hooks: ${core.plotHooks}`);
-  if (core.historyTimeline) parts.push(`History: ${core.historyTimeline}`);
-  if (core.dialogFormatting) parts.push(`Dialog Style: ${core.dialogFormatting}`);
 
   // Content themes
   const ct = appData.contentThemes;
@@ -576,6 +571,26 @@ export async function aiEnhanceCharacterField(
   const prompt = buildCharacterFieldPrompt(fieldName, currentValue, fullContext, selfContext, customLabel, mode);
 
   console.log(`[character-ai] Enhancing field: ${fieldName} with model: ${modelId} (mode: ${mode})`);
+  void trackAiUsageEvent({
+    eventType: mode === "precise" ? "character_ai_enhance_precise" : "character_ai_enhance_detailed",
+    eventSource: "character-ai",
+    metadata: {
+      fieldName,
+      customLabel: customLabel || null,
+    },
+  });
+
+  void trackApiValidationSnapshot({
+    eventKey: "validation.single.character_ai_enhance",
+    eventSource: "character-ai.enhance",
+    apiCallGroup: "single_call",
+    parentRowId: "summary.single.character_ai_enhance",
+    detailPresence: buildRequiredPresence([
+      ["single.character_ai_enhance.field_name", fieldName],
+      ["single.character_ai_enhance.prompt", prompt],
+      ["single.character_ai_enhance.model_id", modelId],
+    ]),
+  });
 
   const isGenerateBoth = customLabel?.startsWith(GENERATE_BOTH_PREFIX);
 
@@ -616,7 +631,18 @@ export async function aiEnhanceCharacterField(
 
 // Analyze story type from world context
 function analyzeStoryType(worldCore: WorldCore) {
-  const text = `${worldCore.briefDescription || ''} ${worldCore.storyPremise || ''} ${worldCore.toneThemes || ''} ${worldCore.plotHooks || ''}`.toLowerCase();
+  const customWorldText = (worldCore.customWorldSections || [])
+    .map((section) => {
+      const title = section.title || '';
+      const itemText = (section.items || []).map((item) => `${item.label || ''} ${item.value || ''}`).join(' ');
+      const freeform = section.freeformValue || '';
+      return `${title} ${itemText} ${freeform}`;
+    })
+    .join(' ');
+  const storyGoalText = (worldCore.storyGoals || [])
+    .map((goal) => `${goal.title || ''} ${goal.desiredOutcome || ''} ${(goal.steps || []).map((step) => step.description || '').join(' ')}`)
+    .join(' ');
+  const text = `${worldCore.briefDescription || ''} ${worldCore.storyPremise || ''} ${customWorldText} ${storyGoalText}`.toLowerCase();
   
   return {
     isNSFW: /nsfw|adult|mature|erotic|sensual|intimate|sexual/.test(text),
@@ -1084,6 +1110,14 @@ export async function aiFillCharacter(
   userPrompt?: string,
   useExistingDetails: boolean = true
 ): Promise<Partial<Character>> {
+  void trackAiUsageEvent({
+    eventType: "character_ai_fill",
+    eventSource: "character-ai",
+    metadata: {
+      characterId: character.id,
+    },
+  });
+
   const emptyFields = getEmptyHardcodedFields(character);
   const emptyCustomItems = getEmptyCustomSectionItems(character);
   
@@ -1112,6 +1146,24 @@ export async function aiFillCharacter(
   const selfContext = buildCharacterSelfContext(character);
 
   const prompt = buildAiFillPrompt(character, emptyFields, emptyCustomItems, worldContext, userPrompt, useExistingDetails);
+
+  void trackApiValidationSnapshot({
+    eventKey: "validation.single.character_ai_fill",
+    eventSource: "character-ai.fill",
+    apiCallGroup: "single_call",
+    parentRowId: "summary.single.character_ai_fill",
+    detailPresence: buildRequiredPresence([
+      ["single.character_ai_fill.character_id", character.id],
+      ["single.character_ai_fill.world_context", worldContext],
+      ["single.character_ai_fill.self_context", selfContext],
+      ["single.character_ai_fill.prompt", prompt],
+      ["single.character_ai_fill.model_id", modelId],
+    ]),
+    diagnostics: {
+      emptyFieldCount: totalEmpty,
+      emptyCustomItemCount: emptyCustomItems.length,
+    },
+  });
 
   try {
     const content = await callAIWithRetry(
@@ -1267,6 +1319,14 @@ export async function aiGenerateCharacter(
   userPrompt?: string,
   useExistingDetails: boolean = true
 ): Promise<Partial<Character>> {
+  void trackAiUsageEvent({
+    eventType: "character_ai_generate",
+    eventSource: "character-ai",
+    metadata: {
+      characterId: character.id,
+    },
+  });
+
   const emptyFields = getEmptyHardcodedFields(character);
   const emptyCustomItems = getEmptyCustomSectionItems(character);
   const existingSectionTitles = character.sections.map(s => s.title);
@@ -1275,6 +1335,23 @@ export async function aiGenerateCharacter(
   const worldContext = buildFullContext(appData, character.id);
 
   const prompt = buildAiGeneratePrompt(character, emptyFields, emptyCustomItems, existingSectionTitles, storyContext, worldContext, userPrompt, useExistingDetails);
+
+  void trackApiValidationSnapshot({
+    eventKey: "validation.single.character_ai_generate",
+    eventSource: "character-ai.generate",
+    apiCallGroup: "single_call",
+    parentRowId: "summary.single.character_ai_generate",
+    detailPresence: buildRequiredPresence([
+      ["single.character_ai_generate.character_id", character.id],
+      ["single.character_ai_generate.world_context", worldContext],
+      ["single.character_ai_generate.prompt", prompt],
+      ["single.character_ai_generate.model_id", modelId],
+    ]),
+    diagnostics: {
+      emptyCustomItemCount: emptyCustomItems.length,
+      existingSectionCount: existingSectionTitles.length,
+    },
+  });
 
   try {
     const content = await callAIWithRetry(

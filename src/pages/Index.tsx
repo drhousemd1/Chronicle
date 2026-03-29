@@ -23,6 +23,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { LabeledToggle } from "@/components/ui/labeled-toggle";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import * as supabaseData from "@/services/supabase-data";
 import { DeleteConfirmDialog } from "@/components/chronicle/DeleteConfirmDialog";
@@ -41,6 +42,12 @@ import { hasPublishErrors, validateForPublish } from "@/utils/publish-validation
 import { StoryExportFormatModal, StoryExportFormat } from "@/components/chronicle/StoryExportFormatModal";
 import { StoryImportModeModal } from "@/components/chronicle/StoryImportModeModal";
 import { normalizeBuilderTab, toLegacyBuilderTab } from "@/features/navigation/builder-tabs";
+import {
+  fetchActiveApiUsageTestSession,
+  startApiUsageTestSession,
+  stopApiUsageTestSession,
+  type ApiUsageTestSession,
+} from "@/services/api-usage-test-session";
 
 const loadCharactersTabModule = () => import("@/features/character-builder/CharacterBuilderScreen");
 const loadWorldTabModule = () => import("@/features/story-builder/StoryBuilderScreen");
@@ -225,6 +232,8 @@ const IndexContent = () => {
   const [imageLibrarySearchQuery, setImageLibrarySearchQuery] = useState('');
   const [adminActiveTool, setAdminActiveTool] = useState<string>('hub');
   const [isAdminState, setIsAdminState] = useState(false);
+  const [activeApiUsageTestSession, setActiveApiUsageTestSession] = useState<ApiUsageTestSession | null>(null);
+  const [isApiUsageToggleBusy, setIsApiUsageToggleBusy] = useState(false);
   const [navButtonImages, setNavButtonImages] = useState<Record<string, any>>({});
   const [guideTheme, setGuideTheme] = useState<'dark' | 'light'>('dark');
   const guideSaveRef = React.useRef<(() => Promise<void>) | null>(null);
@@ -337,6 +346,73 @@ const IndexContent = () => {
     if (user?.id) checkIsAdmin(user.id).then(setIsAdminState);
   }, [user?.id]);
 
+  useEffect(() => {
+    if (!isAdminState || !user?.id) {
+      setActiveApiUsageTestSession(null);
+      return;
+    }
+
+    let cancelled = false;
+    void fetchActiveApiUsageTestSession()
+      .then((session) => {
+        if (cancelled) return;
+        setActiveApiUsageTestSession(session);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        console.error("[api-usage-test] Failed to fetch active session:", error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdminState, user?.id, tab, activeId, playingConversationId]);
+
+  const handleApiUsageTestToggle = useCallback(async (enabled: boolean) => {
+    if (!isAdminState || !user?.id) return;
+
+    setIsApiUsageToggleBusy(true);
+    try {
+      if (enabled) {
+        const scenarioName =
+          activeData?.world?.core?.scenarioName ||
+          registry.find((entry) => entry.id === activeId)?.title ||
+          "Untitled Scenario";
+        const activeConversation =
+          activeData?.conversations?.find((conv) => conv.id === playingConversationId) || null;
+
+        const session = await startApiUsageTestSession({
+          scenarioId: activeId || null,
+          scenarioName,
+          conversationId: activeConversation?.id || null,
+          conversationName: activeConversation?.title || "",
+          metadata: {
+            startedFrom: "story_builder_header",
+            tab,
+          },
+        });
+        setActiveApiUsageTestSession(session);
+      } else {
+        await stopApiUsageTestSession(activeApiUsageTestSession?.id || null);
+        setActiveApiUsageTestSession(null);
+      }
+    } catch (error) {
+      console.error("[api-usage-test] Failed to toggle tracking:", error);
+    } finally {
+      setIsApiUsageToggleBusy(false);
+    }
+  }, [
+    activeApiUsageTestSession?.id,
+    activeData?.conversations,
+    activeData?.world?.core?.scenarioName,
+    activeId,
+    isAdminState,
+    playingConversationId,
+    registry,
+    tab,
+    user?.id,
+  ]);
+
   // Preload nav button images at app startup so they're ready before tab renders
   useEffect(() => {
     supabaseData.loadNavButtonImages().then((images) => {
@@ -421,6 +497,18 @@ const IndexContent = () => {
     async function loadData() {
       setIsLoading(true);
       try {
+        const backfillResult = await withTimeout(
+          supabaseData.backfillCanonicalWorldCoreForUser(currentUser.id),
+          20000,
+          { total: 0, updated: 0 },
+          'backfillCanonicalWorldCoreForUser'
+        );
+        if (backfillResult.updated > 0) {
+          console.info(
+            `[Index] Canonical world_core backfill updated ${backfillResult.updated}/${backfillResult.total} scenario(s).`
+          );
+        }
+
         const [scenarios, characters, conversations, backgrounds, imageLibraryBgId, savedScens, publishedData, profile] = await Promise.all([
           withTimeout(supabaseData.fetchMyScenariosPaginated(currentUser.id, SCENARIO_PAGE_SIZE, 0), 15000, [], 'fetchMyScenariosPaginated'),
           withTimeout(supabaseData.fetchCharacterLibrary(), 15000, [], 'fetchCharacterLibrary'),
@@ -1871,8 +1959,20 @@ const IndexContent = () => {
 
   const isDraft = activeId ? !registry.some(r => r.id === activeId) : false;
   const activeMeta = registry.find(m => m.id === activeId);
+  const isApiUsageTrackingAnyStory = activeApiUsageTestSession?.status === "active";
+  const isApiUsageTrackingCurrentStory =
+    activeApiUsageTestSession?.status === "active" &&
+    !!activeId &&
+    activeApiUsageTestSession?.scenarioId === activeId;
+  const apiUsageTrackingStatusText = isApiUsageToggleBusy
+    ? "Updating..."
+    : isApiUsageTrackingCurrentStory
+      ? `Tracking this story • ${activeApiUsageTestSession?.id.slice(0, 8)}`
+      : isApiUsageTrackingAnyStory
+        ? `Tracking another story • ${activeApiUsageTestSession?.id.slice(0, 8)}`
+        : "Off";
 
-  const openStoryBuilderFromSidebar = useCallback(() => {
+  const openStoryBuilderFromSidebar = () => {
     setSelectedCharacterId(null);
     setPlayingConversationId(null);
 
@@ -1882,7 +1982,7 @@ const IndexContent = () => {
     }
 
     handleCreateNewScenario();
-  }, [activeData, handleCreateNewScenario]);
+  };
 
   return (
     <TooltipProvider>
@@ -2157,7 +2257,7 @@ const IndexContent = () => {
                     </button>
                   )}
                   <h1 className="text-lg font-black text-[hsl(var(--ui-surface-2))] uppercase tracking-tight">
-                    Admin Panel
+                    {adminActiveTool === "finance_dashboard" ? "Finance Dashboard" : "Admin Panel"}
                   </h1>
                 </div>
               )}
@@ -2286,6 +2386,38 @@ const IndexContent = () => {
                   >
                  {isSaving ? 'Saving...' : 'Save Draft'}
                   </button>
+                  {isAdminState && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className="inline-flex items-center justify-center h-10 w-10 rounded-xl border-0 bg-[#303035] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:bg-[#343439] active:bg-[#343439] transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40"
+                          title="Story Builder settings"
+                        >
+                          <Settings className="w-5 h-5" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-72 p-2">
+                        <div className="rounded-lg bg-[#3c3e47] p-3 shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="text-[13px] font-semibold text-[#eaedf1]">Track API Usage</div>
+                              <div className="text-[11px] text-[#a1a1aa] mt-0.5 truncate">{apiUsageTrackingStatusText}</div>
+                            </div>
+                            <LabeledToggle
+                              checked={isApiUsageTrackingCurrentStory}
+                              disabled={isApiUsageToggleBusy}
+                              onCheckedChange={(checked) => {
+                                void handleApiUsageTestToggle(checked);
+                              }}
+                              offLabel="Off"
+                              onLabel="On"
+                            />
+                          </div>
+                        </div>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                   {storyTransferNotice && (
                     <span className={cn("text-xs truncate max-w-[200px] animate-in fade-in duration-300",
                       storyTransferNotice.tone === "success" && "text-emerald-400",

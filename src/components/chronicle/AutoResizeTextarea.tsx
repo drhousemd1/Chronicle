@@ -19,17 +19,40 @@ export const AutoResizeTextarea: React.FC<AutoResizeTextareaProps> = ({
   style,
 }) => {
   const ref = React.useRef<HTMLTextAreaElement>(null);
+  const resize = React.useCallback(() => {
+    if (!ref.current) return;
+    ref.current.style.height = 'auto';
+    ref.current.style.height = `${ref.current.scrollHeight}px`;
+  }, []);
+
+  React.useLayoutEffect(() => {
+    resize();
+  }, [value, resize]);
+
   React.useEffect(() => {
-    if (ref.current) {
-      ref.current.style.height = 'auto';
-      ref.current.style.height = `${ref.current.scrollHeight}px`;
-    }
-  }, [value]);
+    if (!ref.current) return;
+    const textarea = ref.current;
+    const parent = textarea.parentElement;
+    const observerTarget = parent ?? textarea;
+    const resizeObserver = new ResizeObserver(() => resize());
+    resizeObserver.observe(observerTarget);
+    window.addEventListener('resize', resize);
+
+    const raf = window.requestAnimationFrame(() => resize());
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', resize);
+      window.cancelAnimationFrame(raf);
+    };
+  }, [resize]);
+
   return (
     <textarea
       ref={ref}
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      onInput={resize}
       placeholder={placeholder}
       rows={rows}
       spellCheck={true}

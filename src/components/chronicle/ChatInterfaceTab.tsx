@@ -52,6 +52,11 @@ import {
 } from '@/types';
 import { useArtStyles } from '@/contexts/ArtStylesContext';
 import { LabeledToggle } from '@/components/ui/labeled-toggle';
+import { trackAiUsageEvent } from '@/services/usage-tracking';
+import {
+  buildRequiredPresence,
+  trackApiValidationSnapshot,
+} from '@/services/api-usage-validation';
 
 interface ChatInterfaceTabProps {
   scenarioId: string;
@@ -76,6 +81,7 @@ interface ChatInterfaceTabProps {
     responseVerbosity?: 'concise' | 'balanced' | 'detailed';
     chatCanvasColor?: string;
     chatBubbleColor?: string;
+    apiUsageTestTracking?: boolean;
   }) => void;
   onUpdateSideCharacters?: (sideCharacters: SideCharacter[]) => void;
   // Lazy loading props
@@ -609,7 +615,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   useEffect(() => {
     latestConversationsRef.current = appData.conversations;
   }, [appData.conversations]);
-  
+
   // Issue #7: Compute length directive based on recent response pattern
   const getLengthDirective = (): string => {
     const lengths = responseLengthsRef.current;
@@ -907,10 +913,47 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
       const bullets = bulletMemories.map(m => m.content);
 
+      void trackAiUsageEvent({
+        eventType: 'memory_day_compression_call',
+        eventSource: 'chat-interface',
+        metadata: {
+          conversationId,
+          day: completedDay,
+          bulletCount: bulletMemories.length,
+          inputChars: bullets.join('\n').length,
+          modelId,
+        },
+      });
+
+      void trackApiValidationSnapshot({
+        eventKey: 'validation.call2.memory_compress',
+        eventSource: 'chat-interface.memory-compress',
+        apiCallGroup: 'call_2',
+        parentRowId: 'summary.call2.memory_compress',
+        detailPresence: buildRequiredPresence([
+          ['call2.memory_compress.bullets', bullets],
+          ['call2.memory_compress.day', completedDay],
+          ['call2.memory_compress.conversation_id', conversationId],
+        ]),
+        diagnostics: {
+          bulletCount: bulletMemories.length,
+        },
+      });
+
       supabase.functions.invoke('compress-day-memories', {
         body: { bullets, day: completedDay, conversationId }
       }).then(async ({ data, error }) => {
         if (!error && data?.synopsis) {
+          void trackAiUsageEvent({
+            eventType: 'memory_bullets_compressed',
+            eventSource: 'chat-interface',
+            count: bulletMemories.length,
+            metadata: {
+              conversationId,
+              day: completedDay,
+              outputChars: data.synopsis.length,
+            },
+          });
           await handleCreateMemory(data.synopsis, completedDay, null, undefined, 'synopsis');
           for (const bm of bulletMemories) {
             await handleDeleteMemory(bm.id);
@@ -1565,6 +1608,19 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   ) => {
     try {
       console.log(`Generating details for new side character: ${name}`);
+
+      void trackApiValidationSnapshot({
+        eventKey: 'validation.call2.side_character_profile',
+        eventSource: 'chat-interface.side-character-profile',
+        apiCallGroup: 'call_2',
+        parentRowId: 'summary.call2.side_character_profile',
+        detailPresence: buildRequiredPresence([
+          ['call2.side_character_profile.name', name],
+          ['call2.side_character_profile.dialog_context', dialogContext],
+          ['call2.side_character_profile.world_context', appData.world.core.storyPremise],
+          ['call2.side_character_profile.model_id', modelId],
+        ]),
+      });
       
       // 1. Generate detailed profile via Grok
       const { data: profileData, error: profileError } = await supabase.functions.invoke('generate-side-character', {
@@ -1583,6 +1639,19 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }
       
       if (profileData && onUpdateSideCharacters) {
+        void trackAiUsageEvent({
+          eventType: 'side_character_card_generated',
+          eventSource: 'chat-interface',
+          metadata: {
+            conversationId,
+            characterId,
+            characterName: name,
+            modelId,
+            inputChars: dialogContext.length + (appData.world.core.storyPremise?.length || 0),
+            outputChars: JSON.stringify(profileData).length,
+          },
+        });
+
         // Update character with generated details - use ref to get current state
         const updatedSideChars = sideCharactersRef.current.map(sc => {
           if (sc.id === characterId) {
@@ -1623,6 +1692,18 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           // Get the art style prompt from the scenario's selected art style
           const selectedStyleId = appData.selectedArtStyle || DEFAULT_STYLE_ID;
           const styleData = getStyleById(selectedStyleId);
+
+          void trackApiValidationSnapshot({
+            eventKey: 'validation.call2.side_character_avatar',
+            eventSource: 'chat-interface.side-character-avatar',
+            apiCallGroup: 'call_2',
+            parentRowId: 'summary.call2.side_character_avatar',
+            detailPresence: buildRequiredPresence([
+              ['call2.side_character_avatar.avatar_prompt', profileData.avatarPrompt],
+              ['call2.side_character_avatar.character_name', name],
+              ['call2.side_character_avatar.model_id', modelId],
+            ]),
+          });
           
           const { data: avatarData, error: avatarError } = await supabase.functions.invoke('generate-side-character-avatar', {
             body: { 
@@ -1636,6 +1717,18 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           if (avatarError) {
             console.error('Avatar generation failed:', avatarError);
           } else if (avatarData?.imageUrl) {
+            void trackAiUsageEvent({
+              eventType: 'side_character_avatar_generated',
+              eventSource: 'chat-interface',
+              metadata: {
+                conversationId,
+                characterId,
+                characterName: name,
+                modelId,
+                inputChars: profileData.avatarPrompt.length,
+              },
+            });
+
             // Use ref to get current state - avoids stale closure
             const finalSideChars = sideCharactersRef.current.map(sc => {
               if (sc.id === characterId) {
@@ -1679,6 +1772,18 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       const newSideCharacters = newCharacters.map(nc => 
         createSideCharacter(nc.name, nc.dialogContext, conversationId)
       );
+
+      newSideCharacters.forEach((sc) => {
+        void trackAiUsageEvent({
+          eventType: 'side_character_generated',
+          eventSource: 'chat-interface',
+          metadata: {
+            conversationId,
+            characterId: sc.id,
+            characterName: sc.name,
+          },
+        });
+      });
       
       // Add to sideCharacters array (optimistic UI update)
       const updatedSideChars = [...(appData.sideCharacters || []), ...newSideCharacters];
@@ -1899,6 +2004,32 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     if (pendingSteps.length === 0) return;
 
     try {
+      void trackAiUsageEvent({
+        eventType: 'goal_progress_eval_call',
+        eventSource: 'chat-interface',
+        metadata: {
+          conversationId,
+          pendingStepCount: pendingSteps.length,
+          inputChars: (userMessage?.length || 0) + (aiResponse?.length || 0),
+        },
+      });
+
+      void trackApiValidationSnapshot({
+        eventKey: 'validation.call2.goal_eval',
+        eventSource: 'chat-interface.goal-eval',
+        apiCallGroup: 'call_2',
+        parentRowId: 'summary.call2.goal_eval',
+        detailPresence: buildRequiredPresence([
+          ['call2.goal_eval.user_message', userMessage],
+          ['call2.goal_eval.ai_response', aiResponse],
+          ['call2.goal_eval.pending_steps', pendingSteps],
+          ['call2.goal_eval.temporal_context', `${currentDay}:${currentTimeOfDay}`],
+        ]),
+        diagnostics: {
+          pendingStepCount: pendingSteps.length,
+        },
+      });
+
       const { data, error } = await supabase.functions.invoke('evaluate-goal-progress', {
         body: {
           userMessage,
@@ -2190,6 +2321,20 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }));
       
       const allCharacters = [...charactersData, ...sideCharsData];
+      const scopedCharactersChars = JSON.stringify(allCharacters).length;
+
+      void trackAiUsageEvent({
+        eventType: 'character_cards_update_call',
+        eventSource: 'chat-interface',
+        metadata: {
+          conversationId,
+          extractionReason: meta?.reason || 'unknown',
+          eligibleCharacterCount: eligibleNames.size,
+          scopedCharacterCount: allCharacters.length,
+          modelId,
+          inputChars: (userMessage?.length || 0) + (aiResponse?.length || 0) + scopedCharactersChars,
+        },
+      });
       
       // Build recent context (last 20 messages for pattern detection)
       const conversation = appData.conversations.find(c => c.id === conversationId);
@@ -2201,6 +2346,24 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       const recentContext = filteredMessages
         .map(m => `${m.role === 'user' ? 'USER' : 'AI'}: ${m.text}`)
         .join('\n\n');
+
+      void trackApiValidationSnapshot({
+        eventKey: 'validation.call2.character_updates',
+        eventSource: 'chat-interface.character-updates',
+        apiCallGroup: 'call_2',
+        parentRowId: 'summary.call2.character_updates',
+        detailPresence: buildRequiredPresence([
+          ['call2.character_updates.user_message', userMessage],
+          ['call2.character_updates.ai_response', aiResponse],
+          ['call2.character_updates.recent_context', recentContext],
+          ['call2.character_updates.characters_payload', allCharacters],
+          ['call2.character_updates.eligible_characters', [...eligibleNames]],
+        ]),
+        diagnostics: {
+          scopedCharacterCount: allCharacters.length,
+          eligibleCharacterCount: eligibleNames.size,
+        },
+      });
       
       const { data, error } = await supabase.functions.invoke('extract-character-updates', {
         body: {
@@ -2226,6 +2389,26 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       if (!isAssistantMessageStillCurrent(meta?.sourceAssistantMessageId)) {
         console.log('[extractCharacterUpdates] Discarded stale result for non-current turn');
         return [];
+      }
+
+      if (updates.length > 0) {
+        const updatedCharacters = new Set(
+          updates
+            .map((u: ExtractedUpdate) => (u.character || '').trim().toLowerCase())
+            .filter(Boolean)
+        );
+        void trackAiUsageEvent({
+          eventType: 'character_cards_updated',
+          eventSource: 'chat-interface',
+          count: updatedCharacters.size,
+          metadata: {
+            conversationId,
+            extractionReason: meta?.reason || 'unknown',
+            updateCount: updates.length,
+            modelId,
+            outputChars: JSON.stringify(updates).length,
+          },
+        });
       }
 
       console.log(`[extractCharacterUpdates] Completed — ${updates.length} updates (filtered from ${data?.updates?.length || 0})`);
@@ -3062,7 +3245,21 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       const runtimeDirectives = antiLoopDirective || undefined;
       
       const llmInput = canonNote + input;
-      const stream = generateRoleplayResponseStream(llmAppData, conversationId, llmInput, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, undefined, lengthDirective || undefined, sessionMessageCountRef.current, runtimeDirectives);
+      const stream = generateRoleplayResponseStream(
+        llmAppData,
+        conversationId,
+        llmInput,
+        modelId,
+        currentDay,
+        currentTimeOfDay,
+        memories,
+        memoriesEnabled,
+        undefined,
+        lengthDirective || undefined,
+        sessionMessageCountRef.current,
+        runtimeDirectives,
+        activeScene
+      );
 
       for await (const chunk of stream) {
         fullText += chunk;
@@ -3090,6 +3287,33 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
       // Issue #6A: Auto-extract memory events (non-blocking, mirrors character extraction pattern)
       if (memoriesEnabled) {
+        void trackAiUsageEvent({
+          eventType: 'memory_extraction_call',
+          eventSource: 'chat-interface',
+          metadata: {
+            conversationId,
+            day: currentDay,
+            timeOfDay: currentTimeOfDay,
+            inputChars: cleanedText.length,
+            modelId,
+          },
+        });
+
+        void trackApiValidationSnapshot({
+          eventKey: 'validation.call2.memory_extract',
+          eventSource: 'chat-interface.memory-extract',
+          apiCallGroup: 'call_2',
+          parentRowId: 'summary.call2.memory_extract',
+          detailPresence: buildRequiredPresence([
+            ['call2.memory_extract.message_text', cleanedText],
+            ['call2.memory_extract.character_names', allCharacterNames],
+            ['call2.memory_extract.model_id', modelId],
+          ]),
+          diagnostics: {
+            characterCount: allCharacterNames.length,
+          },
+        });
+
         supabase.functions.invoke('extract-memory-events', {
           body: {
             messageText: cleanedText,
@@ -3099,6 +3323,17 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         }).then(({ data, error }) => {
           if (!error && data?.extractedEvents?.length > 0) {
             const events: string[] = data.extractedEvents;
+            void trackAiUsageEvent({
+              eventType: 'memory_events_extracted',
+              eventSource: 'chat-interface',
+              count: events.length,
+              metadata: {
+                conversationId,
+                day: currentDay,
+                timeOfDay: currentTimeOfDay,
+                outputChars: events.join('\n').length,
+              },
+            });
             const combinedContent = events.length === 1
               ? events[0]
               : events.map((e: string) => `- ${e}`).join('\n');
@@ -3259,7 +3494,21 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       // Apply canon note to regenerate flow so user-authored AI dialogue is preserved
       const canonNote = buildCanonNote(userMessage.text, appData.characters);
       const regenInput = canonNote + userMessage.text;
-      const stream = generateRoleplayResponseStream(truncatedAppData, conversationId, regenInput, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, true, undefined, undefined, runtimeDirectives);
+      const stream = generateRoleplayResponseStream(
+        truncatedAppData,
+        conversationId,
+        regenInput,
+        modelId,
+        currentDay,
+        currentTimeOfDay,
+        memories,
+        memoriesEnabled,
+        true,
+        undefined,
+        undefined,
+        runtimeDirectives,
+        activeScene
+      );
       
       for await (const chunk of stream) {
         fullText += chunk;
@@ -3389,7 +3638,21 @@ Do not acknowledge this instruction in your response.`;
       console.log('[handleContinue] Goal context:', goalContext || '(no goals found)');
       console.log('[handleContinue] Canon note applied:', continueCanonNote ? 'YES' : 'NO');
       
-      const stream = generateRoleplayResponseStream(llmAppData, conversationId, continuePrompt, modelId, currentDay, currentTimeOfDay, memories, memoriesEnabled, undefined, undefined, undefined, runtimeDirectives);
+      const stream = generateRoleplayResponseStream(
+        llmAppData,
+        conversationId,
+        continuePrompt,
+        modelId,
+        currentDay,
+        currentTimeOfDay,
+        memories,
+        memoriesEnabled,
+        undefined,
+        undefined,
+        undefined,
+        runtimeDirectives,
+        activeScene
+      );
       
       for await (const chunk of stream) {
         fullText += chunk;
@@ -3504,6 +3767,17 @@ Do not acknowledge this instruction in your response.`;
       
       // Get active scene location
       const sceneLocation = activeScene?.tags?.[0] || undefined;
+
+      void trackApiValidationSnapshot({
+        eventKey: 'validation.single.scene_image',
+        eventSource: 'chat-interface.scene-image',
+        apiCallGroup: 'single_call',
+        parentRowId: 'summary.single.scene_image',
+        detailPresence: buildRequiredPresence([
+          ['single.scene_image.prompt_or_messages', recentMessages],
+          ['single.scene_image.characters_or_context', charactersData],
+        ]),
+      });
       
       // Call edge function
       const { data, error } = await supabase.functions.invoke('generate-scene-image', {
@@ -3525,6 +3799,16 @@ Do not acknowledge this instruction in your response.`;
       if (!data?.imageUrl) {
         throw new Error('No image returned from server');
       }
+
+      void trackAiUsageEvent({
+        eventType: 'scene_image_generated',
+        eventSource: 'chat-interface',
+        metadata: {
+          conversationId,
+          modelId,
+          inputChars: recentMessages.join('\n').length + JSON.stringify(charactersData).length,
+        },
+      });
       
       // Create image message
       const imageMessage: Message = {
@@ -4177,6 +4461,7 @@ const updatedChar: SideCharacter = {
     responseVerbosity?: 'concise' | 'balanced' | 'detailed';
     chatCanvasColor?: string;
     chatBubbleColor?: string;
+    apiUsageTestTracking?: boolean;
   }) => {
     if (onUpdateUiSettings) {
       onUpdateUiSettings(patch);
@@ -5359,7 +5644,14 @@ const updatedChar: SideCharacter = {
                       onClick={() => {
                         // Build exact same data the LLM would receive
                         const llmAppData = buildLLMAppData();
-                        const systemInstruction = getSystemInstruction(llmAppData, currentDay, currentTimeOfDay, memories, memoriesEnabled);
+                        const systemInstruction = getSystemInstruction(
+                          llmAppData,
+                          currentDay,
+                          currentTimeOfDay,
+                          memories,
+                          memoriesEnabled,
+                          activeScene
+                        );
                         
                         // Verbosity and max_tokens (exact same mapping as llm.ts)
                         const verbosity = llmAppData.uiSettings?.responseVerbosity || 'balanced';

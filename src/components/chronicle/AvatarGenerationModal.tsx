@@ -16,6 +16,8 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useArtStyles } from "@/contexts/ArtStylesContext";
 import type { PhysicalAppearance, CurrentlyWearing } from "@/types";
+import { trackAiUsageEvent } from "@/services/usage-tracking";
+import { buildRequiredPresence, trackApiValidationSnapshot } from "@/services/api-usage-validation";
 
 interface AvatarGenerationModalProps {
   isOpen: boolean;
@@ -87,6 +89,22 @@ export const AvatarGenerationModal: React.FC<AvatarGenerationModalProps> = ({
     setIsGenerating(true);
     setError(null);
     try {
+      void trackApiValidationSnapshot({
+        eventKey: "validation.single.character_avatar",
+        eventSource: "avatar-generation-modal",
+        apiCallGroup: "single_call",
+        parentRowId: "summary.single.character_avatar",
+        detailPresence: buildRequiredPresence([
+          ["single.character_avatar.avatar_prompt", prompt.trim()],
+          ["single.character_avatar.character_name", characterName],
+          ["single.character_avatar.model_id", modelId],
+        ]),
+        diagnostics: {
+          hasStylePrompt: Boolean(selectedStyle.backendPrompt),
+          hasNegativePrompt: Boolean(negativePrompt.trim()),
+        },
+      });
+
       const { data, error: fnError } = await supabase.functions.invoke(
         "generate-side-character-avatar",
         {
@@ -102,6 +120,14 @@ export const AvatarGenerationModal: React.FC<AvatarGenerationModalProps> = ({
       if (fnError) throw new Error(fnError.message || "Failed to generate avatar");
       if (data?.error) throw new Error(data.error);
       if (data?.imageUrl) {
+        void trackAiUsageEvent({
+          eventType: "character_avatar_generated",
+          eventSource: "avatar-generation-modal",
+          metadata: {
+            characterName,
+          },
+        });
+
         onGenerated(data.imageUrl);
         setPrompt("");
         setNegativePrompt("");

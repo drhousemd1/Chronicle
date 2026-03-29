@@ -266,13 +266,13 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
               tagType: "data-block",
               icon: "📦",
               purpose:
-                "Builds WORLD CONTEXT from story premise, locations, factions, formatting, custom world sections, and story goals.",
+                "Builds WORLD CONTEXT from canonical story fields: story name, brief description, story premise, structured locations, dialog formatting, custom world sections, and story goals.",
               fileRefs: [
                 { path: "src/services/llm.ts", lines: "100-188, 254-653" },
               ],
               codeSourceLabel: "`worldContext` assembly",
               promptViewEnabled: true,
-              codeSource: `WORLD CONTEXT:\nSCENARIO, FACTIONS, LOCATIONS, DIALOG FORMATTING, CUSTOM WORLD CONTENT, STORY GOALS\n(assembled from appData.world.core + structured/custom sections).`,
+              codeSource: `WORLD CONTEXT:\nSTORY NAME, BRIEF DESCRIPTION, STORY PREMISE, LOCATIONS, DIALOG FORMATTING, CUSTOM WORLD CONTENT, STORY GOALS\n(assembled directly from canonical appData.world.core fields).`,
               crossRefs: [
                 {
                   badge: "4",

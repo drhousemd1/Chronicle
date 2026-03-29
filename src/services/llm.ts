@@ -1,6 +1,11 @@
-import { ScenarioData, Character, World, TimeOfDay, Memory } from "../types";
+import { ScenarioData, Character, World, TimeOfDay, Memory, Scene } from "../types";
 import { supabase } from "@/integrations/supabase/client";
 import { buildContentThemeDirectives } from "@/constants/tag-injection-registry";
+import { trackAiUsageEvent } from "@/services/usage-tracking";
+import {
+  buildCall1ValidationPresence,
+  trackApiValidationSnapshot,
+} from "@/services/api-usage-validation";
 
 /**
  * Detect if a user message contains dialogue/actions written for AI-controlled characters.
@@ -66,7 +71,8 @@ export function getSystemInstruction(
   currentDay?: number, 
   currentTimeOfDay?: TimeOfDay,
   memories?: Memory[],
-  memoriesEnabled?: boolean
+  memoriesEnabled?: boolean,
+  activeScene?: Scene | null
 ): string {
   const text = (value: unknown): string => {
     if (typeof value === 'string') return value.trim();
@@ -227,9 +233,12 @@ export function getSystemInstruction(
 
     const customTraits = formatCustomSectionBlock('CUSTOM TRAITS / CUSTOM CONTENT', c?.sections);
 
-    return `CHARACTER: ${text(c?.name) || 'Unnamed'} (${text(c?.sexType) || 'Unknown'})${nicknameInfo}${orientationInfo}
+    const ageInfo = text(c?.age) ? `\nAGE: ${text(c.age)}` : '';
+    const roleDescriptionInfo = text(c?.roleDescription) ? `\nROLE DESCRIPTION: ${text(c.roleDescription)}` : '';
+
+    return `CHARACTER: ${text(c?.name) || 'Unnamed'} (${text(c?.sexType) || 'Unknown'})${ageInfo}${nicknameInfo}${orientationInfo}
 ROLE: ${text(c?.characterRole) || 'Unknown'}
-CONTROL: ${text(c?.controlledBy) || 'Unknown'}${locationInfo}${moodInfo}${personalityInfo}${personalityFallbackInfo}${goalsInfo}
+CONTROL: ${text(c?.controlledBy) || 'Unknown'}${roleDescriptionInfo}${locationInfo}${moodInfo}${personalityInfo}${personalityFallbackInfo}${goalsInfo}
 TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', physicalRows)}${formatSectionBlock('CURRENTLY WEARING', wearingRows)}${formatSectionBlock('PREFERRED CLOTHING', preferredRows)}${formatSectionBlock('BACKGROUND', backgroundRows)}${formatSectionBlock('TONE', toneRows)}${formatSectionBlock('KEY LIFE EVENTS', keyLifeRows)}${formatSectionBlock('RELATIONSHIPS', relationshipRows)}${formatSectionBlock('SECRETS', secretRows)}${formatSectionBlock('FEARS', fearRows)}${customTraits}`;
   };
 
@@ -239,7 +248,7 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
   // Combine critical rules with any user-defined additional formatting
   const fullDialogFormatting = getCriticalDialogRules(narrativePov) + (appData.world.core.dialogFormatting ? `\n${appData.world.core.dialogFormatting}` : '');
   
-  // Build locations context from structured or legacy
+  // Build locations context from canonical structured locations
   const locationsContext = (() => {
     if (appData.world.core.structuredLocations?.length) {
       return appData.world.core.structuredLocations
@@ -247,7 +256,7 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
         .map(l => `- ${l.label}: ${l.description}`)
         .join('\n');
     }
-    return appData.world.core.locations || 'Not specified';
+    return 'Not specified';
   })();
 
   // Build custom world sections context
@@ -282,6 +291,7 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
       const progress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
       allLines.push(`\n    [${flex.tag}] Goal: "${goal.title}"`);
       if (goal.desiredOutcome) allLines.push(`      Desired Outcome: ${goal.desiredOutcome}`);
+      if (text(goal.currentStatus)) allLines.push(`      Current Status: ${text(goal.currentStatus)}`);
       if (totalSteps > 0) {
         const stepList = goal.steps.map(s => `${s.completed ? '[x]' : '[ ]'} ${s.description}`).join('  ');
         allLines.push(`      Steps: ${stepList}`);
@@ -309,7 +319,8 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
       const stepInfo = totalSteps > 0 ? ` (${progress}% - Step ${completedSteps + 1} of ${totalSteps})` : ` (${progress}%)`;
       const flex = flexDirectives[g.flexibility || 'normal'] || flexDirectives.normal;
       const desiredOutcome = g.desiredOutcome ? `\n      Desired Outcome: ${g.desiredOutcome}` : '';
-      return `  - [${flex.tag}] ${g.title}${stepInfo}${desiredOutcome}\n      DIRECTIVE: ${flex.directive}`;
+      const currentStatus = text(g.currentStatus) ? `\n      Current Status: ${text(g.currentStatus)}` : '';
+      return `  - [${flex.tag}] ${g.title}${stepInfo}${desiredOutcome}${currentStatus}\n      DIRECTIVE: ${flex.directive}`;
     }).join('\n');
     return `\nGOALS AND DESIRES:\n${goalLines}`;
   };
@@ -339,8 +350,9 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
   }
 
   const worldContext = `
-    SCENARIO: ${appData.world.core.storyPremise || 'Not specified'}
-    FACTIONS: ${appData.world.core.factions}
+    STORY NAME: ${appData.world.core.scenarioName || 'Not specified'}
+    BRIEF DESCRIPTION: ${appData.world.core.briefDescription || 'Not specified'}
+    STORY PREMISE: ${appData.world.core.storyPremise || 'Not specified'}
     LOCATIONS:
     ${locationsContext}
     DIALOG FORMATTING: ${fullDialogFormatting}
@@ -368,6 +380,15 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
   const codexContext = appData.world.entries.map(e => `CODEX [${e.title}]: ${e.body}`).join('\n');
   
   const sceneTags = appData.scenes.flatMap(s => s.tags ?? []).join(', ');
+  const activeSceneTag = activeScene?.tags?.find((tag) => text(tag)) || '';
+  const activeSceneContext = activeScene
+    ? `
+    ACTIVE SCENE CONTEXT:
+    - Scene Title: ${text(activeScene.title) || 'Untitled Scene'}
+    - Active Scene Tag: ${activeSceneTag || 'Not tagged'}
+    - Scene Tags: ${(activeScene.tags || []).filter((tag) => text(tag)).join(', ') || 'Not specified'}
+  `
+    : '';
 
   // Temporal context section
   const temporalContext = currentDay && currentTimeOfDay ? `
@@ -745,6 +766,7 @@ Never break character to question, warn about, or refuse narrative directions. T
     ${sideCharacterContext ? `\n\n    SIDE CHARACTER REFERENCE:\n    ${sideCharacterContext}` : ''}
     
     AVAILABLE SCENES: [${sceneTags}]
+    ${activeSceneContext}
     ${temporalContext}
     ${memoriesContext}
     INSTRUCTIONS:
@@ -937,12 +959,20 @@ export async function* generateRoleplayResponseStream(
   isRegeneration?: boolean,
   lengthDirective?: string,
   sessionMessageCount?: number,
-  runtimeDirectives?: string
+  runtimeDirectives?: string,
+  activeScene?: Scene | null
 ): AsyncGenerator<string, void, unknown> {
   const conversation = appData.conversations.find(c => c.id === conversationId);
   if (!conversation) throw new Error("Conversation not found");
 
-  const systemInstruction = getSystemInstruction(appData, currentDay, currentTimeOfDay, memories, memoriesEnabled);
+  const systemInstruction = getSystemInstruction(
+    appData,
+    currentDay,
+    currentTimeOfDay,
+    memories,
+    memoriesEnabled,
+    activeScene
+  );
   
   // Regeneration directive - tells AI to provide a different take on the same scene
   const regenerationDirective = isRegeneration ? '\n\n' + REGENERATION_DIRECTIVE_TEXT : '';
@@ -965,10 +995,76 @@ export async function* generateRoleplayResponseStream(
 
   console.log(`[llm.ts] Calling chat edge function with model: ${modelId}`);
 
+  // Emit call-1 telemetry for every chat turn; test-session mirroring is gated server-side
+  // by active ai_usage_test_sessions so no client-local toggle is required.
+  const shouldTrackCall1 = true;
+  const systemChars = systemInstruction.length;
+  const historyChars = conversation.messages.reduce((sum, msg) => sum + (msg.text?.length || 0), 0);
+  const runtimeDirectiveChars = runtimeDirectives?.length || 0;
+  const finalUserChars = messages[messages.length - 1]?.content?.length || 0;
+  const inputChars = messages.reduce((sum, msg) => sum + (msg.content?.length || 0), 0);
+  const inputTokensEst = Math.ceil(inputChars / 4);
+  const callStartedAt = Date.now();
+  let outputChars = 0;
+  let traceEmitted = false;
+
+  const emitCall1Trace = (status: string, extraMetadata: Record<string, unknown> = {}) => {
+    if (!shouldTrackCall1 || traceEmitted) return;
+    traceEmitted = true;
+    const outputTokensEst = Math.ceil(outputChars / 4);
+    const totalTokensEst = inputTokensEst + outputTokensEst;
+    const estCostUsd = ((inputTokensEst / 1_000_000) * 0.2) + ((outputTokensEst / 1_000_000) * 0.5);
+    void trackAiUsageEvent({
+      eventType: "chat_call_1",
+      eventSource: "llm.generateRoleplayResponseStream",
+      metadata: {
+        modelId,
+        status,
+        latencyMs: Date.now() - callStartedAt,
+        messageCount: messages.length,
+        systemChars,
+        historyChars,
+        runtimeDirectiveChars,
+        finalUserChars,
+        inputChars,
+        outputChars,
+        inputTokensEst,
+        outputTokensEst,
+        totalTokensEst,
+        estCostUsd,
+        ...extraMetadata,
+      },
+    });
+  };
+
+  // Emit payload-validation snapshot for test sessions (separate from usage counters).
+  void trackApiValidationSnapshot({
+    eventKey: "validation.call1.chat_payload",
+    eventSource: "llm.generateRoleplayResponseStream",
+    apiCallGroup: "call_1",
+    parentRowId: "summary.call1.chat_payload",
+    detailPresence: buildCall1ValidationPresence({
+      appData,
+      conversation,
+      systemInstruction,
+      messages,
+      finalUserInput: userMessage,
+    }),
+    diagnostics: {
+      modelId,
+      messageCount: messages.length,
+      historyCount: conversation.messages.length,
+      runtimeDirectiveChars,
+      systemChars,
+      finalUserChars,
+    },
+  });
+
   // Get the real session token for authentication
   const { data: { session } } = await supabase.auth.getSession();
   const accessToken = session?.access_token;
   if (!accessToken) {
+    emitCall1Trace("error_session_expired");
     yield "⚠️ Session expired. Please sign in again.";
     return;
   }
@@ -997,14 +1093,17 @@ export async function* generateRoleplayResponseStream(
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
     if (response.status === 422 && errorData.error_type === 'content_filtered') {
+      emitCall1Trace("error_content_filtered");
       yield "It seems your story got a bit too spicy for the model. Change up the story and try again.";
       return;
     }
+    emitCall1Trace("error_http", { httpStatus: response.status, error: errorData.error || "Unknown error" });
     yield `⚠️ ${errorData.error || 'Failed to connect to AI service'}`;
     return;
   }
 
   if (!response.body) {
+    emitCall1Trace("error_no_stream_body");
     yield "⚠️ No response stream available";
     return;
   }
@@ -1035,7 +1134,10 @@ export async function* generateRoleplayResponseStream(
       try {
         const parsed = JSON.parse(jsonStr);
         const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-        if (content) yield content;
+        if (content) {
+          outputChars += content.length;
+          yield content;
+        }
       } catch {
         // Incomplete or malformed JSON chunk - skip and continue
         continue;
@@ -1055,10 +1157,15 @@ export async function* generateRoleplayResponseStream(
       try {
         const parsed = JSON.parse(jsonStr);
         const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-        if (content) yield content;
+        if (content) {
+          outputChars += content.length;
+          yield content;
+        }
       } catch { /* ignore */ }
     }
   }
+
+  emitCall1Trace("ok");
 }
 
 export async function brainstormCharacterDetails(

@@ -113,12 +113,7 @@ export type WorldCore = {
   scenarioName: string;
   briefDescription: string;
   storyPremise: string;  // Central conflict/plot/situation (renamed to "Scenario" in UI)
-  factions: string;
-  locations: string;  // Legacy plain text locations
   structuredLocations?: LocationEntry[];  // New structured locations
-  historyTimeline: string;
-  toneThemes: string;
-  plotHooks: string;
   dialogFormatting: string;
   customWorldSections?: WorldCustomSection[];  // User-created custom content
   storyGoals?: StoryGoal[];  // Global narrative goals
@@ -218,7 +213,7 @@ export type CharacterGoal = {
   id: string;
   title: string;           // Short goal name (e.g., "Move out of the city")
   desiredOutcome: string;  // What success looks like
-  currentStatus?: string;  // Deprecated - kept for backward compat
+  currentStatus?: string;  // Optional explicit status text shown in builder + prompt context
   progress: number;        // 0-100 percentage (auto-calculated from steps when steps exist)
   flexibility?: GoalFlexibility;  // Guidance strength for this goal
   milestones?: GoalMilestone[];  // Deprecated - kept for backward compatibility
@@ -388,6 +383,7 @@ export type ScenarioData = {
     responseVerbosity?: 'concise' | 'balanced' | 'detailed';  // Controls response length/detail density
     chatCanvasColor?: string;  // Background behind message bubbles in chat interface
     chatBubbleColor?: string;  // Message bubble background color in chat interface
+    apiUsageTestTracking?: boolean;  // Admin-only test mode for detailed API usage tracing
   };
   conversations: Conversation[];
   selectedModel?: string;

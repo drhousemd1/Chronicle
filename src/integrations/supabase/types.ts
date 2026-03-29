@@ -1327,6 +1327,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      set_admin_access: {
+        Args: { _enabled: boolean; _target_user_id: string }
+        Returns: undefined
+      }
       increment_like_count: {
         Args: { published_id: string }
         Returns: undefined

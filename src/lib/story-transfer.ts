@@ -97,11 +97,8 @@ type TransferPayloadV1 = {
     };
     worldCore: {
       storyPremise?: string;
-      factions?: string;
-      locations?: string;
-      historyTimeline?: string;
-      toneThemes?: string;
-      plotHooks?: string;
+      structuredLocations?: TransferRow[];
+      storyGoals?: TransferGoal[];
       dialogFormatting?: string;
       customSections?: TransferCustomSection[];
     };
@@ -267,11 +264,19 @@ const toTransferPayload = (data: ScenarioData): TransferPayloadV1 => ({
     },
     worldCore: {
       storyPremise: data.world.core.storyPremise || '',
-      factions: data.world.core.factions || '',
-      locations: data.world.core.locations || '',
-      historyTimeline: data.world.core.historyTimeline || '',
-      toneThemes: data.world.core.toneThemes || '',
-      plotHooks: data.world.core.plotHooks || '',
+      structuredLocations: (data.world.core.structuredLocations || []).map((entry) => ({
+        label: entry.label || '',
+        value: entry.description || '',
+      })),
+      storyGoals: (data.world.core.storyGoals || []).map((goal) => ({
+        title: goal.title || '',
+        desiredOutcome: goal.desiredOutcome || '',
+        flexibility: goal.flexibility || 'normal',
+        steps: (goal.steps || []).map((step) => ({
+          description: step.description || '',
+          completed: !!step.completed,
+        })),
+      })),
       dialogFormatting: data.world.core.dialogFormatting || '',
       customSections: (data.world.core.customWorldSections || []).map((section) => ({
         title: section.title || 'Custom Content',
@@ -345,11 +350,6 @@ const buildHumanReadable = (payload: TransferPayloadV1): string => {
   lines.push('');
   pushHeading(lines, 'World Core', 0);
   pushField(lines, 'Story Premise', payload.storyBuilder.worldCore.storyPremise, 1);
-  pushField(lines, 'Factions', payload.storyBuilder.worldCore.factions, 1);
-  pushField(lines, 'Locations', payload.storyBuilder.worldCore.locations, 1);
-  pushField(lines, 'History Timeline', payload.storyBuilder.worldCore.historyTimeline, 1);
-  pushField(lines, 'Tone Themes', payload.storyBuilder.worldCore.toneThemes, 1);
-  pushField(lines, 'Plot Hooks', payload.storyBuilder.worldCore.plotHooks, 1);
   pushField(lines, 'Dialog Formatting', payload.storyBuilder.worldCore.dialogFormatting, 1);
   (payload.storyBuilder.worldCore.customSections || []).forEach((section) => {
     pushHeading(lines, safeTitle(section.title, 'Custom Content'), 1);
@@ -509,11 +509,6 @@ const buildWordRtf = (payload: TransferPayloadV1): string => {
 
   lines.push(rtfHeading('World Core', 2));
   pushRtfField(lines, 'Story Premise', payload.storyBuilder.worldCore.storyPremise);
-  pushRtfField(lines, 'Factions', payload.storyBuilder.worldCore.factions);
-  pushRtfField(lines, 'Locations', payload.storyBuilder.worldCore.locations);
-  pushRtfField(lines, 'History Timeline', payload.storyBuilder.worldCore.historyTimeline);
-  pushRtfField(lines, 'Tone Themes', payload.storyBuilder.worldCore.toneThemes);
-  pushRtfField(lines, 'Plot Hooks', payload.storyBuilder.worldCore.plotHooks);
   pushRtfField(lines, 'Dialog Formatting', payload.storyBuilder.worldCore.dialogFormatting);
   (payload.storyBuilder.worldCore.customSections || []).forEach((section) => {
     lines.push(rtfHeading(safeTitle(section.title, 'Custom Content'), 2));
@@ -739,7 +734,7 @@ const parseTextToPayload = (text: string, warnings: string[]): { payload: Transf
     version: 1,
     storyBuilder: {
       storyCard: {},
-      worldCore: { customSections: [] },
+      worldCore: { customSections: [], structuredLocations: [], storyGoals: [] },
       openingDialog: {},
     },
     characters: [],
@@ -963,11 +958,22 @@ const parseTextToPayload = (text: string, warnings: string[]): { payload: Transf
 
       if (storySection === 'worldCore') {
         if (normalizedKey === 'storypremise' || normalizedKey === 'scenario') payload.storyBuilder.worldCore.storyPremise = value;
-        else if (normalizedKey === 'factions') payload.storyBuilder.worldCore.factions = value;
-        else if (normalizedKey === 'locations') payload.storyBuilder.worldCore.locations = value;
-        else if (normalizedKey === 'historytimeline') payload.storyBuilder.worldCore.historyTimeline = value;
-        else if (normalizedKey === 'tonethemes' || normalizedKey === 'tone') payload.storyBuilder.worldCore.toneThemes = value;
-        else if (normalizedKey === 'plothooks') payload.storyBuilder.worldCore.plotHooks = value;
+        else if (normalizedKey === 'locations' || normalizedKey === 'primarylocations' || normalizedKey === 'location') {
+          const parsed = value
+            .split(/\r?\n|;/)
+            .map((row) => row.trim())
+            .filter(Boolean)
+            .map((row, idx) => {
+              const pairMatch = row.match(/^([^:|-]+?)\s*[:|-]\s*(.+)$/);
+              if (pairMatch) return { label: clean(pairMatch[1]), value: clean(pairMatch[2]) };
+              return { label: `Location ${idx + 1}`, value: row };
+            });
+          payload.storyBuilder.worldCore.structuredLocations = mergeRows(
+            payload.storyBuilder.worldCore.structuredLocations || [],
+            parsed,
+            mode === 'story' ? 'merge' : 'merge'
+          );
+        }
         else if (normalizedKey === 'dialogformatting') payload.storyBuilder.worldCore.dialogFormatting = value;
         else {
           currentWorldCustom = getWorldCustom('Imported World Core');
@@ -1416,6 +1422,84 @@ const applyGoals = (
   return base;
 };
 
+const applyStoryGoals = (
+  existingGoals: ScenarioData['world']['core']['storyGoals'],
+  incomingGoals: TransferGoal[] | undefined,
+  mode: StoryImportMode
+): ScenarioData['world']['core']['storyGoals'] => {
+  if (!incomingGoals || incomingGoals.length === 0) return existingGoals;
+  const base = [...(existingGoals || [])];
+  incomingGoals.forEach((goal) => {
+    if (!hasText(goal.title) && !hasText(goal.desiredOutcome) && (goal.steps || []).length === 0) return;
+    const title = clean(goal.title) || 'Imported Story Goal';
+    const idx = base.findIndex((item) => normalize(item.title) === normalize(title));
+    if (idx === -1) {
+      base.push({
+        id: uid('sgoal'),
+        title,
+        desiredOutcome: clean(goal.desiredOutcome || ''),
+        currentStatus: '',
+        flexibility: goal.flexibility || 'normal',
+        steps: (goal.steps || []).map((step) => ({
+          id: uid('sgoal_step'),
+          description: clean(step.description),
+          completed: !!step.completed,
+        })),
+        createdAt: now(),
+        updatedAt: now(),
+      });
+      return;
+    }
+    const current = base[idx];
+    const stepRows = mergeRows(
+      (current.steps || []).map((step) => ({ label: step.description, value: step.completed ? 'x' : '' })),
+      (goal.steps || []).map((step) => ({ label: step.description, value: step.completed ? 'x' : '' })),
+      mode
+    );
+    base[idx] = {
+      ...current,
+      desiredOutcome: mergeText(current.desiredOutcome, goal.desiredOutcome, mode),
+      flexibility: goal.flexibility || current.flexibility,
+      steps: stepRows.map((step, stepIdx) => ({
+        id: current.steps?.[stepIdx]?.id || uid('sgoal_step'),
+        description: clean(step.label),
+        completed: normalize(step.value) === 'x',
+      })),
+      updatedAt: now(),
+    };
+  });
+  return base.length > 0 ? base : undefined;
+};
+
+const mergeStructuredLocations = (
+  existing: ScenarioData['world']['core']['structuredLocations'],
+  incoming: TransferRow[] | undefined,
+  mode: StoryImportMode
+): ScenarioData['world']['core']['structuredLocations'] => {
+  if (!incoming || incoming.length === 0) return existing;
+  const base = [...(existing || [])];
+  incoming
+    .filter((row) => hasText(row.label) || hasText(row.value))
+    .forEach((row) => {
+      const label = clean(row.label) || 'Location';
+      const description = clean(row.value);
+      const idx = base.findIndex((entry) => normalize(entry.label) === normalize(label));
+      if (idx === -1) {
+        base.push({
+          id: uid('loc'),
+          label,
+          description,
+        });
+        return;
+      }
+      base[idx] = {
+        ...base[idx],
+        description: mergeText(base[idx].description || '', description, mode),
+      };
+    });
+  return base.length > 0 ? base : undefined;
+};
+
 const mergePayloadIntoScenario = (
   base: ScenarioData,
   payload: TransferPayloadV1,
@@ -1445,19 +1529,30 @@ const mergePayloadIntoScenario = (
   next.world.core.scenarioName = updateStoryField(next.world.core.scenarioName, payload.storyBuilder.storyCard.scenarioName, 'scalar');
   next.world.core.briefDescription = updateStoryField(next.world.core.briefDescription, payload.storyBuilder.storyCard.briefDescription, 'narrative');
   next.world.core.storyPremise = updateStoryField(next.world.core.storyPremise, payload.storyBuilder.worldCore.storyPremise, 'narrative');
-  next.world.core.factions = updateStoryField(next.world.core.factions, payload.storyBuilder.worldCore.factions, 'narrative');
-  next.world.core.locations = updateStoryField(next.world.core.locations, payload.storyBuilder.worldCore.locations, 'narrative');
-  next.world.core.historyTimeline = updateStoryField(next.world.core.historyTimeline, payload.storyBuilder.worldCore.historyTimeline, 'narrative');
-  next.world.core.toneThemes = updateStoryField(next.world.core.toneThemes, payload.storyBuilder.worldCore.toneThemes, 'narrative');
-  next.world.core.plotHooks = updateStoryField(next.world.core.plotHooks, payload.storyBuilder.worldCore.plotHooks, 'narrative');
   next.world.core.dialogFormatting = updateStoryField(next.world.core.dialogFormatting, payload.storyBuilder.worldCore.dialogFormatting, 'narrative');
+
+  const beforeLocations = JSON.stringify(next.world.core.structuredLocations || []);
+  next.world.core.structuredLocations = mergeStructuredLocations(
+    next.world.core.structuredLocations,
+    payload.storyBuilder.worldCore.structuredLocations,
+    mode
+  );
+  if (JSON.stringify(next.world.core.structuredLocations || []) !== beforeLocations) {
+    summary.updatedStoryFields += 1;
+  }
 
   next.world.core.customWorldSections = mergeWorldCustomSections(
     next.world.core.customWorldSections,
-    payload.storyBuilder.worldCore.customSections,
+    payload.storyBuilder.worldCore.customSections || [],
     summary,
     mode
   );
+
+  const beforeStoryGoals = JSON.stringify(next.world.core.storyGoals || []);
+  next.world.core.storyGoals = applyStoryGoals(next.world.core.storyGoals, payload.storyBuilder.worldCore.storyGoals, mode);
+  if (JSON.stringify(next.world.core.storyGoals || []) !== beforeStoryGoals) {
+    summary.updatedStoryFields += 1;
+  }
 
   const opening: OpeningDialog = next.story.openingDialog;
   if (typeof payload.storyBuilder.openingDialog.enabled === 'boolean') opening.enabled = payload.storyBuilder.openingDialog.enabled;

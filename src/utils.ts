@@ -16,6 +16,7 @@ import {
 } from './types';
 import { LLM_MODELS } from './constants';
 import { supabase } from '@/integrations/supabase/client';
+import { migrateWorldCoreToCanonical } from '@/lib/canonical-field-registry';
 
 export const REGISTRY_KEY = "rpg_campaign_studio_v3_codex";
 export const STORAGE_KEY = REGISTRY_KEY;
@@ -245,17 +246,12 @@ export function createDefaultScenarioData(): ScenarioData {
     characters: [],  // Start with no characters - user will add their own
     sideCharacters: [],  // AI-generated side characters start empty
     world: {
-      core: {
+      core: migrateWorldCoreToCanonical({
         scenarioName: "",
         briefDescription: "",
         storyPremise: "",
-        factions: "",
-        locations: "",
-        historyTimeline: "",
-        toneThemes: "",
-        plotHooks: "",
         dialogFormatting: "",  // Critical rules are now handled in llm.ts
-      },
+      }),
       entries: [],
     },
     scenes: [],
@@ -366,17 +362,15 @@ export function normalizeScenarioData(raw: any): ScenarioData {
     : [];
 
   const world: World = {
-    core: {
+    core: migrateWorldCoreToCanonical({
       scenarioName: normStr(raw?.world?.core?.scenarioName),
       briefDescription: normStr(raw?.world?.core?.briefDescription),
       storyPremise: normStr(raw?.world?.core?.storyPremise),
-      factions: normStr(raw?.world?.core?.factions),
-      locations: normStr(raw?.world?.core?.locations),
-      historyTimeline: normStr(raw?.world?.core?.historyTimeline),
-      toneThemes: normStr(raw?.world?.core?.toneThemes),
-      plotHooks: normStr(raw?.world?.core?.plotHooks),
+      structuredLocations: raw?.world?.core?.structuredLocations,
+      customWorldSections: raw?.world?.core?.customWorldSections,
+      storyGoals: raw?.world?.core?.storyGoals,
       dialogFormatting: normStr(raw?.world?.core?.dialogFormatting) || "Enclose all outspoken dialogue in \" \"\nEnclose all physical actions or descriptions in * *\nEnclose all internal thoughts in ( )",
-    },
+    }),
     entries: Array.isArray(raw?.world?.entries)
       ? raw.world.entries.map((e: any) => ({
           id: ensureUuid(e?.id), // Codex entries need UUID for Supabase
