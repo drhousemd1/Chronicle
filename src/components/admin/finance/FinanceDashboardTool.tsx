@@ -5671,13 +5671,19 @@ export default function ChronicleAdmin() {
     ];
   }, [dashboardUsers]);
 
-  const snapshotRows = useMemo(() => (
-    PAID_TIER_SNAPSHOT_META.map((tier) => ({
+  const snapshotRows = useMemo(() => {
+    const adminUserCount = dashboardUsers.filter((user) => user.status === "active" && (user.tierSlug === "admin" || user.tierSlug === "admin_cfo")).length;
+    return PAID_TIER_SNAPSHOT_META.map((tier) => ({
       ...tier,
       price: typeof tierPrices[tier.slug] === "number" ? tierPrices[tier.slug] : DEFAULT_TIER_PRICES[tier.slug],
-      users: dashboardUsers.filter((user) => user.status === "active" && (tier.slug === "admin" ? (user.tierSlug === "admin" || user.tierSlug === "admin_cfo") : user.tierSlug === tier.slug)).length,
-    }))
-  ), [dashboardUsers, tierPrices]);
+      users: tier.slug === "admin"
+        ? adminUserCount
+        : dashboardUsers.filter((user) => user.status === "active" && user.tierSlug === tier.slug).length,
+      apiCost: tier.slug === "admin" && adminUserCount > 0
+        ? adminApiCostPerUser / adminUserCount
+        : tier.apiCost,
+    }));
+  }, [dashboardUsers, tierPrices, adminApiCostPerUser]);
 
   const navItems = useMemo(() => NAV, []);
   const ActivePage = PAGE_COMPONENTS[page];
