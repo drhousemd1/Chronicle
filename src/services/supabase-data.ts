@@ -1689,6 +1689,7 @@ export async function fetchSidebarBackgrounds(userId: string): Promise<UserBackg
     .from('sidebar_backgrounds')
     .select('*')
     .eq('user_id', userId)
+    .order('sort_order', { ascending: true })
     .order('created_at', { ascending: false });
 
   if (error) throw error;
@@ -1700,6 +1701,8 @@ export async function fetchSidebarBackgrounds(userId: string): Promise<UserBackg
     isSelected: row.is_selected || false,
     overlayColor: row.overlay_color || 'black',
     overlayOpacity: row.overlay_opacity ?? 10,
+    category: row.category || 'Uncategorized',
+    sortOrder: row.sort_order ?? 0,
     createdAt: new Date(row.created_at).getTime()
   }));
 }
@@ -1741,6 +1744,8 @@ export async function createSidebarBackground(userId: string, imageUrl: string):
     isSelected: data.is_selected || false,
     overlayColor: (data as any).overlay_color || 'black',
     overlayOpacity: (data as any).overlay_opacity ?? 10,
+    category: (data as any).category || 'Uncategorized',
+    sortOrder: (data as any).sort_order ?? 0,
     createdAt: toTimestamp(data.created_at)
   };
 }
