@@ -1795,6 +1795,21 @@ export async function deleteSidebarBackground(userId: string, backgroundId: stri
   if (error) throw error;
 }
 
+export async function updateSidebarBackgroundCategories(
+  updates: Array<{ id: string; category: string; sort_order: number }>
+): Promise<void> {
+  // Batch update category and sort_order for multiple backgrounds
+  const promises = updates.map((u) =>
+    supabase
+      .from('sidebar_backgrounds')
+      .update({ category: u.category, sort_order: u.sort_order })
+      .eq('id', u.id)
+  );
+  const results = await Promise.all(promises);
+  const firstError = results.find((r) => r.error);
+  if (firstError?.error) throw firstError.error;
+}
+
 // =============================================
 // SIDE CHARACTERS (AI-Generated per conversation)
 // =============================================
