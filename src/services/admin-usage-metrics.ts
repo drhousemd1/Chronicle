@@ -55,6 +55,8 @@ export interface AdminUsageTimeseriesPoint {
   characterAvatarsGenerated: number;
   sceneImagesGenerated: number;
   coverImagesGenerated: number;
+  textCostUsd: number;
+  imageCostUsd: number;
 }
 
 export interface AdminUsageTimeseries {
@@ -250,6 +252,8 @@ export function getEmptyUsageTimeseries(period: AdminUsagePeriod): AdminUsageTim
     characterAvatarsGenerated: 0,
     sceneImagesGenerated: 0,
     coverImagesGenerated: 0,
+    textCostUsd: 0,
+    imageCostUsd: 0,
   }));
 
   return {
@@ -292,6 +296,8 @@ export async function fetchAdminUsageTimeseries(period: AdminUsagePeriod): Promi
       characterAvatarsGenerated: toFiniteNumber(point?.characterAvatarsGenerated),
       sceneImagesGenerated: toFiniteNumber(point?.sceneImagesGenerated),
       coverImagesGenerated: toFiniteNumber(point?.coverImagesGenerated),
+      textCostUsd: toFiniteNumber(point?.textCostUsd),
+      imageCostUsd: toFiniteNumber(point?.imageCostUsd),
     })),
   };
 }

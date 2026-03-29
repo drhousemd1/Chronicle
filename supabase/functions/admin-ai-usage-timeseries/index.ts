@@ -30,7 +30,13 @@ interface UsagePoint {
   characterAvatarsGenerated: number;
   sceneImagesGenerated: number;
   coverImagesGenerated: number;
+  textCostUsd: number;
+  imageCostUsd: number;
 }
+
+// Cost estimates per call (USD)
+const TEXT_COST_PER_CALL = 0.001;   // ~avg token usage at grok-3-fast rates
+const IMAGE_COST_PER_CALL = 0.02;   // grok-2-image rate
 
 function createEmptyPoint(label: string): UsagePoint {
   return {
@@ -53,6 +59,8 @@ function createEmptyPoint(label: string): UsagePoint {
     characterAvatarsGenerated: 0,
     sceneImagesGenerated: 0,
     coverImagesGenerated: 0,
+    textCostUsd: 0,
+    imageCostUsd: 0,
   };
 }
 
@@ -295,6 +303,19 @@ serve(async (req) => {
         point.characterAvatarsGenerated +
         point.sceneImagesGenerated +
         point.coverImagesGenerated;
+
+      // Calculate cost estimates
+      const textCalls =
+        point.messagesGenerated +
+        point.aiFillClicks +
+        point.aiUpdateClicks +
+        point.aiEnhanceClicks +
+        point.characterUpdateCalls +
+        point.aiCharacterCardsGenerated +
+        point.memoryExtractionCalls +
+        point.memoryCompressionCalls;
+      point.textCostUsd = Math.round(textCalls * TEXT_COST_PER_CALL * 1000) / 1000;
+      point.imageCostUsd = Math.round(point.imagesGenerated * IMAGE_COST_PER_CALL * 1000) / 1000;
     }
 
     return new Response(JSON.stringify({
