@@ -471,21 +471,6 @@ function SubscriberSnapshot({ rows }: { rows?: { name: string; price: number; ap
             </div>
           );
         })}
-        {/* Totals row */}
-        <div style={{ borderTop:`2px solid ${D.divider}`, marginTop:4 }}>
-          <div style={{ display:"grid", gridTemplateColumns:"12px 1fr 44px 76px 76px 76px 72px",
-            gap:8, alignItems:"center", padding:"10px 0" }}>
-            <div />
-            <div style={{ fontSize:13, fontWeight:700, color:D.text }}>Total</div>
-            <div style={{ fontSize:13, fontWeight:700, color:D.text, textAlign:"center" }}>{totals.users}</div>
-            <div style={{ fontSize:13, fontWeight:700, color:D.green, textAlign:"right" }}>${Math.round(totals.income)}</div>
-            <div style={{ fontSize:13, fontWeight:700, color:D.red, textAlign:"right" }}>-${totals.api.toFixed(2)}</div>
-            <div style={{ fontSize:13, fontWeight:700, color:D.red, textAlign:"right" }}>-${totals.stripe.toFixed(2)}</div>
-            <div style={{ fontSize:13, fontWeight:700, textAlign:"right", color: totals.net >= 0 ? D.green : D.red }}>
-              {totals.net >= 0 ? "" : "-"}${Math.abs(Math.round(totals.net))}
-            </div>
-          </div>
-        </div>
       </div>
     </ShellCard>
   );
