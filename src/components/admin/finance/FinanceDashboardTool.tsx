@@ -668,58 +668,16 @@ function NetIncomeMini() {
 }
 
 // ─── API usage mini card ──────────────────────────────────────
-const API_MINI_DATA = {
-  text: {
-    day:   [
-      { label:"12am", cost:0.03 }, { label:"3am",  cost:0.01 }, { label:"6am",  cost:0.04 },
-      { label:"9am",  cost:0.14 }, { label:"12pm", cost:0.24 }, { label:"3pm",  cost:0.21 },
-      { label:"6pm",  cost:0.17 }, { label:"9pm",  cost:0.11 },
-    ],
-    week:  [
-      { label:"Mon", cost:0.44 }, { label:"Tue", cost:0.66 }, { label:"Wed", cost:0.78 },
-      { label:"Thu", cost:0.51 }, { label:"Fri", cost:0.97 }, { label:"Sat", cost:1.12 },
-      { label:"Sun", cost:0.89 },
-    ],
-    month: [
-      { label:"Wk1", cost:2.6 }, { label:"Wk2", cost:3.8 }, { label:"Wk3", cost:4.9 }, { label:"Wk4", cost:4.5 },
-    ],
-    year:  [
-      { label:"Jan", cost:9 },  { label:"Feb", cost:14 }, { label:"Mar", cost:19 },
-      { label:"Apr", cost:17 }, { label:"May", cost:23 }, { label:"Jun", cost:26 },
-      { label:"Jul", cost:30 }, { label:"Aug", cost:28 }, { label:"Sep", cost:33 },
-      { label:"Oct", cost:35 }, { label:"Nov", cost:38 }, { label:"Dec", cost:42 },
-    ],
-  },
-  image: {
-    day:   [
-      { label:"12am", cost:0.01 }, { label:"3am",  cost:0.00 }, { label:"6am",  cost:0.02 },
-      { label:"9am",  cost:0.04 }, { label:"12pm", cost:0.07 }, { label:"3pm",  cost:0.06 },
-      { label:"6pm",  cost:0.05 }, { label:"9pm",  cost:0.03 },
-    ],
-    week:  [
-      { label:"Mon", cost:0.12 }, { label:"Tue", cost:0.17 }, { label:"Wed", cost:0.20 },
-      { label:"Thu", cost:0.13 }, { label:"Fri", cost:0.24 }, { label:"Sat", cost:0.28 },
-      { label:"Sun", cost:0.23 },
-    ],
-    month: [
-      { label:"Wk1", cost:0.6 }, { label:"Wk2", cost:1.0 }, { label:"Wk3", cost:1.2 }, { label:"Wk4", cost:1.2 },
-    ],
-    year:  [
-      { label:"Jan", cost:3 },  { label:"Feb", cost:4 },  { label:"Mar", cost:5 },
-      { label:"Apr", cost:4 },  { label:"May", cost:6 },  { label:"Jun", cost:7 },
-      { label:"Jul", cost:8 },  { label:"Aug", cost:7 },  { label:"Sep", cost:8 },
-      { label:"Oct", cost:9 },  { label:"Nov", cost:10 }, { label:"Dec", cost:10 },
-    ],
-  },
-};
 
 function ApiUsageMini({ expanded = false }) {
-  const [period,  setPeriod]  = useState("week");
+  const [period,  setPeriod]  = useState<AdminUsagePeriod>("week");
   const [apiType, setApiType] = useState("text");
   const [byTier,  setByTier]  = useState("total");
   const [billing, setBilling] = useState<XaiBillingSummary | null>(null);
   const [billingLoading, setBillingLoading] = useState(false);
   const [billingError, setBillingError] = useState<string | null>(null);
+  const [usageData, setUsageData] = useState<{ label: string; cost: number }[]>([]);
+  const [usageLoading, setUsageLoading] = useState(false);
 
   const loadBilling = async () => {
     setBillingLoading(true);
@@ -743,8 +701,26 @@ function ApiUsageMini({ expanded = false }) {
     return () => clearInterval(interval);
   }, []);
 
-  const data  = (API_MINI_DATA as Record<string, Record<string, any[]>>)[apiType][period];
-  const total = data.reduce((a: number, d: any) => a + d.cost, 0).toFixed(2);
+  useEffect(() => {
+    let cancelled = false;
+    setUsageLoading(true);
+    fetchAdminUsageTimeseries(period).then((ts) => {
+      if (cancelled) return;
+      setUsageData(
+        ts.points.map((p) => ({
+          label: p.label,
+          cost: apiType === "text" ? p.textCostUsd : p.imageCostUsd,
+        }))
+      );
+      setUsageLoading(false);
+    }).catch(() => {
+      if (!cancelled) setUsageLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [period, apiType]);
+
+  const data  = usageData;
+  const total = data.reduce((a, d) => a + d.cost, 0).toFixed(2);
   const color = apiType === "text" ? D.red : D.purple;
   const gradId = apiType === "text" ? "apiTextD" : "apiImageD";
   const remainingText = billing ? `$${billing.prepaidCredits.remainingUsd.toFixed(2)} remaining` : "—";
