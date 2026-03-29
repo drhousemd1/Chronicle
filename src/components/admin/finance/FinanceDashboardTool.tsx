@@ -5670,7 +5670,7 @@ export default function ChronicleAdmin() {
     PAID_TIER_SNAPSHOT_META.map((tier) => ({
       ...tier,
       price: typeof tierPrices[tier.slug] === "number" ? tierPrices[tier.slug] : DEFAULT_TIER_PRICES[tier.slug],
-      users: dashboardUsers.filter((user) => user.status === "active" && user.tierSlug === tier.slug).length,
+      users: dashboardUsers.filter((user) => user.status === "active" && (tier.slug === "admin" ? (user.tierSlug === "admin" || user.tierSlug === "admin_cfo") : user.tierSlug === tier.slug)).length,
     }))
   ), [dashboardUsers, tierPrices]);
 
