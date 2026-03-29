@@ -116,11 +116,11 @@ const D = {
   amber:       "#f59e0b",
   amberDim:    "rgba(245,158,11,0.15)",
   purple:      "#a78bfa",
-  glow:        (color) => `0 0 18px ${color}22`,
+  glow:        (color: string) => `0 0 18px ${color}22`,
 };
 
 // ─── outer shell card — 24px radius, overflow hidden so header clips ──
-const ShellCard = ({ children, style={} }) => (
+const ShellCard = ({ children, style={} }: { children: React.ReactNode; style?: React.CSSProperties }) => (
   <div style={{
     background: D.shell,
     boxShadow: D.shellShadow,
@@ -133,7 +133,7 @@ const ShellCard = ({ children, style={} }) => (
 );
 
 // ─── inner tray — 16px radius, sits inside shell ─────────────
-const Tray = ({ children, style={} }) => (
+const Tray = ({ children, style={} }: { children: React.ReactNode; style?: React.CSSProperties }) => (
   <div style={{
     background: D.tray,
     boxShadow: D.trayShadow,
@@ -194,9 +194,9 @@ const MODEL_RATES = [
 ];
 
 // ─── helpers ──────────────────────────────────────────────────
-const fmt$ = (n) => Math.abs(n) >= 1000 ? `$${(n/1000).toFixed(1)}k` : `$${Math.round(n)}`;
+const fmt$ = (n: number) => Math.abs(n) >= 1000 ? `$${(n/1000).toFixed(1)}k` : `$${Math.round(n)}`;
 
-const Badge = ({ label, bg, color }) => (
+const Badge = ({ label, bg, color }: { label: string; bg: string; color: string }) => (
   <span style={{ fontSize:11, fontWeight:600, padding:"2px 9px", borderRadius:20,
     background:bg, color, whiteSpace:"nowrap", display:"inline-block" }}>{label}</span>
 );
@@ -211,8 +211,8 @@ const tierMeta   = {
 };
 const statusMeta = { active:{bg:"#d1fae5",color:"#065f46"}, cancelled:{bg:"#f1f5f9",color:"#475569"}, suspended:{bg:"#fee2e2",color:"#991b1b"} };
 
-const tierBadge  = (t) => <Badge label={t}  {...(tierMeta[t]   || tierMeta.Free)} />;
-const statusBadge= (s) => <Badge label={s}  {...(statusMeta[s] || statusMeta.cancelled)} />;
+const tierBadge  = (t: string) => <Badge label={t}  {...((tierMeta as Record<string, {bg:string;color:string}>)[t]   || tierMeta.Free)} />;
+const statusBadge= (s: string) => <Badge label={s}  {...((statusMeta as Record<string, {bg:string;color:string}>)[s] || statusMeta.cancelled)} />;
 
 const USER_TIER_OVERRIDES_KEY = "admin_user_tier_overrides_v1";
 const DEFAULT_TIER_PRICES = { free: 0, starter: 9.99, premium: 19.99, elite: 39.99 };
@@ -234,9 +234,9 @@ const tierLabelBySlug = {
   admin_cfo: "Admin (CFO)",
 };
 
-const isObject = (value) => typeof value === "object" && value !== null;
+const isObject = (value: unknown) => typeof value === "object" && value !== null;
 
-const normalizeUserTierSlug = (value) => {
+const normalizeUserTierSlug = (value: unknown): string => {
   if (typeof value !== "string") return "free";
   const normalized = value.trim().toLowerCase();
   if (normalized === "staff") return "admin_cfo";
@@ -244,21 +244,21 @@ const normalizeUserTierSlug = (value) => {
   return "free";
 };
 
-const isAdminTierSlug = (tierSlug) => tierSlug === "admin" || tierSlug === "admin_cfo";
+const isAdminTierSlug = (tierSlug: string) => tierSlug === "admin" || tierSlug === "admin_cfo";
 
-const tierSlugFromRole = (role) => {
+const tierSlugFromRole = (role: string) => {
   if (role === "admin") return "admin";
   return "free";
 };
 
-const tierCostLabel = (tierSlug, tierPrices) => {
+const tierCostLabel = (tierSlug: string, tierPrices: Record<string, number>) => {
   if (tierSlug === "free") return "Free";
   if (isAdminTierSlug(tierSlug)) return "Internal (No Billing)";
   const price = tierPrices[tierSlug];
   return typeof price === "number" ? `$${price.toFixed(2)}/mo` : "—";
 };
 
-const formatMembershipAge = (joinedIso) => {
+const formatMembershipAge = (joinedIso: string | null | undefined) => {
   const joinedDate = joinedIso ? new Date(joinedIso) : new Date();
   if (Number.isNaN(joinedDate.getTime())) return { label: "—", since: "unknown" };
 
@@ -279,12 +279,12 @@ const formatMembershipAge = (joinedIso) => {
 };
 
 // ─── shared UI ───────────────────────────────────────────────
-const Card = ({ children, style={} }) => (
+const Card = ({ children, style={} }: { children: React.ReactNode; style?: React.CSSProperties }) => (
   <div style={{ background:C.card, border:`1px solid ${C.cardBorder}`,
     borderRadius:12, padding:"20px 22px", ...style }}>{children}</div>
 );
 
-const Stat = ({ label, value, sub, color, soft }) => (
+const Stat = ({ label, value, sub, color, soft }: { label: string; value: string | number; sub?: string; color?: string; soft?: string }) => (
   <div style={{ background:soft||C.surface, border:`1px solid ${C.cardBorder}`,
     borderRadius:10, padding:"16px 20px", flex:1, minWidth:130 }}>
     <div style={{ fontSize:11, color:C.muted, marginBottom:6, fontWeight:600,
@@ -294,15 +294,15 @@ const Stat = ({ label, value, sub, color, soft }) => (
   </div>
 );
 
-const SectionLabel = ({ children }) => (
+const SectionLabel = ({ children }: { children: React.ReactNode }) => (
   <div style={{ fontSize:11, fontWeight:700, letterSpacing:"0.08em",
     textTransform:"uppercase", color:C.dim, marginBottom:14 }}>{children}</div>
 );
 
-const Toggle = ({ options, value, onChange }) => (
+const Toggle = ({ options, value, onChange }: { options: { value: string; label: string }[]; value: string; onChange: (v: string) => void }) => (
   <div style={{ display:"flex", background:"#f1f5f9", borderRadius:8, padding:3,
     gap:2, border:`1px solid ${C.divider}`, flexShrink:0 }}>
-    {options.map(o => (
+    {options.map((o: { value: string; label: string }) => (
       <button key={o.value} onClick={() => onChange(o.value)} style={{
         padding:"5px 12px", borderRadius:6, border:"none", cursor:"pointer",
         fontSize:12, fontWeight:600, transition:"all .15s",
@@ -314,7 +314,7 @@ const Toggle = ({ options, value, onChange }) => (
   </div>
 );
 
-const ActionBtn = ({ label, color, onClick }) => (
+const ActionBtn = ({ label, color, onClick }: { label: string; color: string; onClick?: () => void }) => (
   <button onClick={onClick} style={{
     padding:"4px 10px", borderRadius:6, border:`1px solid ${color}44`,
     background:`${color}10`, color, fontSize:11, cursor:"pointer",
@@ -322,14 +322,14 @@ const ActionBtn = ({ label, color, onClick }) => (
   }}>{label}</button>
 );
 
-const ChartTip = ({ active, payload, label, prefix="$" }) => {
+const ChartTip = ({ active, payload, label, prefix="$" }: { active?: boolean; payload?: any[]; label?: string; prefix?: string }) => {
   if (!active || !payload?.length) return null;
   return (
     <div style={{ background:"#fff", border:`1px solid ${C.cardBorder}`,
       borderRadius:8, padding:"10px 14px", fontSize:12,
       boxShadow:"0 4px 12px rgba(0,0,0,0.08)" }}>
       <div style={{ color:C.muted, marginBottom:6, fontWeight:500 }}>{label}</div>
-      {payload.map((p,i) => (
+      {payload.map((p: any, i: number) => (
         <div key={i} style={{ color:p.color||C.text, marginBottom:2 }}>
           {p.name}: {prefix}{typeof p.value==="number" ? p.value.toLocaleString() : p.value}
         </div>
@@ -351,7 +351,7 @@ const PAID_TIER_SNAPSHOT_META = [
 ];
 
 // ─── slate header — flush top of ShellCard, no margin needed ──
-const SlateHeader = ({ title, right }) => (
+const SlateHeader = ({ title, right }: { title: string; right?: React.ReactNode }) => (
   <div style={{
     background:"linear-gradient(180deg, #5a7292 0%, #4a5f7f 100%)",
     borderTop:"1px solid rgba(255,255,255,0.20)",
@@ -369,10 +369,10 @@ const SlateHeader = ({ title, right }) => (
 );
 
 // ─── toggle group for inside SlateHeader ─────────────────────
-const HdrToggle = ({ options, value, onChange }) => (
+const HdrToggle = ({ options, value, onChange }: { options: { v: string; l: string }[]; value: string; onChange?: (v: string) => void }) => (
   <div style={{ display:"flex", background:"rgba(0,0,0,0.25)", borderRadius:8,
     padding:3, gap:2, boxShadow:"inset 0 1px 3px rgba(0,0,0,0.4)" }}>
-    {options.map(o => (
+    {options.map((o: { v: string; l: string }) => (
       <button key={o.v} onClick={() => onChange && onChange(o.v)} style={{
         padding:"4px 10px", borderRadius:6, border:"none", cursor:"pointer",
         fontSize:11, fontWeight:700,
@@ -386,10 +386,10 @@ const HdrToggle = ({ options, value, onChange }) => (
 );
 
 // ─── dark toggle — content area buttons below headers ─────────
-const DarkToggle = ({ options, value, onChange }) => (
+const DarkToggle = ({ options, value, onChange }: { options: { v: string; l: string }[]; value: string; onChange?: (v: string) => void }) => (
   <div style={{ display:"flex", background:D.recessed, borderRadius:8, padding:3, gap:2,
     boxShadow:"inset 0 1px 3px rgba(0,0,0,0.5)", border:"1px solid rgba(0,0,0,0.35)" }}>
-    {options.map(o => (
+    {options.map((o: { v: string; l: string }) => (
       <button key={o.v} onClick={() => onChange && onChange(o.v)} style={{
         padding:"5px 12px", borderRadius:6, border:"none", cursor:"pointer",
         fontSize:12, fontWeight:700,
@@ -402,7 +402,7 @@ const DarkToggle = ({ options, value, onChange }) => (
   </div>
 );
 
-function SubscriberSnapshot({ rows }) {
+function SubscriberSnapshot({ rows }: { rows?: { name: string; price: number; apiCost: number; users: number; color: string; soft?: string }[] }) {
   const tierRows = rows?.length ? rows : TIER_BREAKDOWN;
   return (
     <ShellCard style={{ flex:1 }}>
@@ -416,7 +416,7 @@ function SubscriberSnapshot({ rows }) {
               color:D.muted, fontWeight:700, textAlign: i > 0 ? "right" : "left" }}>{h}</div>
           ))}
         </div>
-        {tierRows.map((t, i) => {
+        {tierRows.map((t: { name: string; price: number; apiCost: number; users: number; color: string; soft?: string }, i: number) => {
           const revenue   = t.users * t.price;
           const apiSpend  = t.users * t.apiCost;
           const stripeFee = t.users * ((t.price * 0.029) + 0.30);
@@ -447,7 +447,7 @@ function SubscriberSnapshot({ rows }) {
   );
 }
 
-function buildGrowthBuckets(period) {
+function buildGrowthBuckets(period: string) {
   const now = new Date();
   if (period === "day") {
     return Array.from({ length: 8 }, (_, i) => {
@@ -496,24 +496,24 @@ function buildGrowthBuckets(period) {
   });
 }
 
-function AppGrowth({ users }) {
+function AppGrowth({ users }: { users?: any[] }) {
   const [period, setPeriod] = useState("week");
   const [view,   setView]   = useState("total");
 
   const growthData = useMemo(() => {
     const buckets = buildGrowthBuckets(period);
-    const activeUsers = (users || []).filter((user) => (
+    const activeUsers = (users || []).filter((user: any) => (
       user.status === "active" &&
       !user.canViewAdminUi &&
       !isAdminTierSlug(user.tierSlug)
     ));
 
-    const withJoined = activeUsers.map((user) => ({
+    const withJoined = activeUsers.map((user: any) => ({
       ...user,
       joinedAt: new Date(user.joined || Date.now()),
     }));
 
-    const countFor = (untilDate, tierSlug = null) => withJoined.filter((user) => {
+    const countFor = (untilDate: Date, tierSlug: string | null = null) => withJoined.filter((user: any) => {
       if (Number.isNaN(user.joinedAt.getTime())) return false;
       if (user.joinedAt > untilDate) return false;
       if (!tierSlug) return true;
