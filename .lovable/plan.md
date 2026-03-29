@@ -1,24 +1,39 @@
 
 
-# Fix xAI Billing Parser — Get Correct Numbers
+# Add Admin Tier to Subscriber Snapshot + Wire Up API Usage Tier Filter
 
-## Problem
-The edge function's `summarizePrepaid` uses heuristic regex-based field matching (`findFirstByKeyPattern`) that grabs wrong fields from the xAI API response. Real values: $66.63 total, $55.68 remaining, $10.95 used. Parser returns: $247.21 total, -$100 remaining, $347.21 used.
+## What's already working
+The **Modify button** on the User Accounts table is already fully wired to the database. When you change a user to Admin or Admin (CFO), it:
+- Saves the tier override to `app_settings`
+- Calls the `set_admin_access` database function which inserts/deletes from the `user_roles` table
+- This grants real admin access (the admin panel visibility, etc.)
 
-## Steps
+So the Modify flow is **not just visual** — it's already persisting to the database correctly.
 
-### 1. Add raw response logging to the edge function
-Add `console.log(JSON.stringify(prepaidRes.data))` and `console.log(JSON.stringify(invoiceRes.data))` in `tryManagementApi()` so we can see the exact JSON shape xAI returns.
+## What needs to change
 
-### 2. Deploy and invoke to capture logs
-Redeploy the function, trigger a call, then read the edge function logs.
+### 1. Add Admin row to Subscriber Snapshot
+Currently `PAID_TIER_SNAPSHOT_META` and `TIER_BREAKDOWN` only include Starter/Premium/Elite. I'll add an Admin entry (price: $0, color: red to match the existing Admin badge) so the Subscriber Snapshot shows admin users with $0 income but tracked API costs.
 
-### 3. Replace heuristic parser with exact field mapping
-Once we see the real response shape, replace `summarizePrepaid` and `findFirstByKeyPattern` with direct field access that reads the correct values. No more guessing cents vs dollars — we'll map exactly what the API provides.
+Both the Overview and Finance page snapshot builders (`snapshotRows` and `financeSnapshotRows`) filter `dashboardUsers` by `tierSlug` — adding the admin slug will automatically count admin users.
 
-### 4. Verify output matches screenshot
-Confirm the function returns values matching your xAI dashboard: ~$66.63 total, ~$55.68 remaining, ~$10.95 used.
+### 2. Wire the "Tier" toggle in API Usage to show per-tier breakdown
+Currently the Tier toggle in `ApiUsageMini` sets `byTier` state but doesn't change the data. I'll:
+- Update the `admin-ai-usage-timeseries` edge function to accept an optional `userIds` filter parameter
+- Pass admin user IDs when "Tier" is selected (from the `dashboardUsers` prop)
+- Or, simpler approach: add a `tier` parameter to the edge function that filters `ai_usage_events` by joining against `user_roles` for admin users, and against the tier override settings for other tiers
 
-## Technical detail
-The root cause is in `supabase/functions/xai-billing-balance/index.ts` — the `summarizePrepaid` function and `toUsdCents` helper assume values might be in cents and apply `* 100` or `/ 100` transformations based on heuristics. The xAI API likely returns dollar amounts directly, and the parser is mangling them.
+**Simpler approach chosen**: Since we only have admin users right now, I'll make the Tier toggle show a breakdown chart with an "Admin" line. The edge function will accept an optional `userIds` array to filter events to specific users.
+
+### 3. Pass users data to ApiUsageMini
+Currently `ApiUsageMini` doesn't receive the users list. I'll pass `dashboardUsers` so it can determine which user IDs are admin-tier and request filtered data when "Tier" is selected.
+
+## Files changed
+- `src/components/admin/finance/FinanceDashboardTool.tsx` — add Admin to `PAID_TIER_SNAPSHOT_META`, pass users to `ApiUsageMini`, implement tier-filtered chart
+- `supabase/functions/admin-ai-usage-timeseries/index.ts` — accept optional `userIds` filter to scope usage events to specific users
+
+## What stays untouched
+- The Modify button logic (already works correctly)
+- `set_admin_access` database function (already deployed)
+- All other dashboard widgets
 
