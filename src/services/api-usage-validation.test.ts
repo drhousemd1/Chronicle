@@ -28,7 +28,7 @@ describe("api-usage-validation call1 coverage", () => {
       ...aiCharacter.preferredClothing,
       casual: "Athleisure",
     };
-    aiCharacter.background = {
+    (aiCharacter as any).background = {
       ...aiCharacter.background,
       residence: "Boise",
       _extras: [{ id: uid("extra"), label: "History", value: "Transferred schools twice" }],

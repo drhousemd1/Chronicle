@@ -201,7 +201,7 @@ export async function saveSubscriptionTiersConfig(
   const { data: updatedRows, error: updateError } = await supabase
     .from("app_settings")
     .update({
-      setting_value: normalized,
+      setting_value: normalized as unknown as import("@/integrations/supabase/types").Json,
       updated_at: updatedAt,
       updated_by: updatedBy ?? null,
     })
@@ -217,7 +217,7 @@ export async function saveSubscriptionTiersConfig(
       .from("app_settings")
       .insert({
         setting_key: SUBSCRIPTION_TIERS_SETTING_KEY,
-        setting_value: normalized,
+        setting_value: normalized as unknown as import("@/integrations/supabase/types").Json,
         updated_at: updatedAt,
         updated_by: updatedBy ?? null,
       });
