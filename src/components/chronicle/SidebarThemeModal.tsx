@@ -1,5 +1,6 @@
-import React, { useRef, useState, useCallback } from "react";
+import React, { useRef, useState, useCallback, useMemo } from "react";
 import { UserBackground } from "@/types";
+import { updateSidebarBackgroundCategories } from "@/services/supabase-data";
 import {
   Dialog,
   DialogContent,
