@@ -449,7 +449,11 @@ export function SidebarThemeModal({
                     </div>
 
                     {/* Tile grid */}
-                    <div className="grid grid-cols-5 md:grid-cols-7 gap-2.5">
+                    <div className={`grid grid-cols-5 md:grid-cols-7 gap-2.5 rounded-xl p-1.5 -m-1.5 transition-all duration-200 ${
+                      isDragging && dropTarget?.toRowId === row.id && !dropTarget?.isNewRow
+                        ? "bg-blue-500/[0.06] ring-1 ring-blue-500/30"
+                        : ""
+                    }`}>
                       {/* Default tile — only in first row */}
                       {row.id === effectiveRows[0].id && (
                         <div
@@ -537,7 +541,11 @@ export function SidebarThemeModal({
                       {/* End-of-row drop zone — only visible while dragging */}
                       {isDragging && (
                         <div
-                          className="rounded-xl bg-transparent min-h-[60px]"
+                          className={`rounded-xl min-h-[60px] transition-all duration-200 ${
+                            dropTarget?.toRowId === row.id && dropTarget?.beforeBgId === null
+                              ? "border-2 border-dashed border-blue-500/40 bg-blue-500/[0.06]"
+                              : "border-2 border-dashed border-transparent"
+                          }`}
                           onDragOver={(e) => onDropZoneDragOver(e, row.id, null)}
                           onDrop={onDrop}
                         />
