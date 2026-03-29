@@ -432,7 +432,7 @@ function SubscriberSnapshot({ rows }: { rows?: { name: string; price: number; ap
       <div style={{ padding:"18px 20px 20px" }}>
         <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:14 }}>
           <DarkToggle
-            options={[{ v:"mo", l:"Mo" }, { v:"yr", l:"Yr" }]}
+            options={[{ v:"mo", l:"Month" }, { v:"yr", l:"Year" }]}
             value={period}
             onChange={(v) => setPeriod(v as "mo"|"yr")}
           />
