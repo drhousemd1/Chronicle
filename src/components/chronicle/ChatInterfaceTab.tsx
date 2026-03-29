@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { ScenarioData, Character, Conversation, Message, CharacterTraitSection, Scene, TimeOfDay, SideCharacter, CharacterSessionState, Memory, WorldCore, StoryGoal, GoalFlexibility } from '../../types';
 import { Button, TextArea } from './UI';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 import { uid, now, uuid } from '@/utils';
 import { generateRoleplayResponseStream, getSystemInstruction, conciseStyleHints, balancedStyleHints, detailedStyleHints, REGENERATION_DIRECTIVE_TEXT, buildCanonNote } from '../../services/llm';
@@ -447,6 +448,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   onLoadOlderMessages,
   hasMoreMessages = false
 }) => {
+  const { user } = useAuth();
   const { defaultStyleId: DEFAULT_STYLE_ID, getStyleById } = useArtStyles();
   const [input, setInput] = useState('');
   const [expandedCharId, setExpandedCharId] = useState<string | null>(null);
@@ -465,7 +467,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [regeneratingMessageId, setRegeneratingMessageId] = useState<string | null>(null);
   const [currentDay, setCurrentDay] = useState(1);
   const [currentTimeOfDay, setCurrentTimeOfDay] = useState<TimeOfDay>('day');
-  
   // Time progression state
   const [timeProgressionMode, setTimeProgressionMode] = useState<'manual' | 'automatic'>('manual');
   const [timeProgressionInterval, setTimeProgressionInterval] = useState<number>(15);
@@ -850,28 +851,29 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     return () => cancelAnimationFrame(frameId);
   }, [conversationId]);
   
-  // Load sidebar backgrounds on mount - DEFERRED to not block first render
+  // Load sidebar backgrounds when auth is ready - DEFERRED to not block first render
   useEffect(() => {
-    // Skip loading if we're in the "loading" state
-    if (conversationId === "loading") return;
-    
-    // Defer sidebar background loading to next frame
+    if (conversationId === "loading" || !user?.id) return;
+
+    let isCancelled = false;
     const frameId = requestAnimationFrame(() => {
-      supabase.auth.getUser().then(({ data: { user } }) => {
-        if (user) {
-          supabaseData.fetchSidebarBackgrounds(user.id).then(bgs => {
-            setSidebarBackgrounds(bgs);
-            const selected = bgs.find(bg => bg.isSelected);
-            if (selected) setSelectedSidebarBgId(selected.id);
-          }).catch(err => {
-            console.error('Failed to load sidebar backgrounds:', err);
-          });
+      supabaseData.fetchSidebarBackgrounds(user.id).then(bgs => {
+        if (isCancelled) return;
+        setSidebarBackgrounds(bgs);
+        const selected = bgs.find(bg => bg.isSelected);
+        setSelectedSidebarBgId(selected?.id ?? null);
+      }).catch(err => {
+        if (!isCancelled) {
+          console.error('Failed to load sidebar backgrounds:', err);
         }
       });
     });
-    
-    return () => cancelAnimationFrame(frameId);
-  }, [conversationId]);
+
+    return () => {
+      isCancelled = true;
+      cancelAnimationFrame(frameId);
+    };
+  }, [conversationId, user?.id]);
   
   // Load memories on mount - DEFERRED to not block first render
   useEffect(() => {
