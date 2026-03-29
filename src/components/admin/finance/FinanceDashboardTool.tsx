@@ -428,15 +428,16 @@ function SubscriberSnapshot({ rows }: { rows?: { name: string; price: number; ap
 
   return (
     <ShellCard style={{ flex:1 }}>
-      <SlateHeader title="Subscriber Snapshot" right={
-        <HdrToggle
-          options={[{ v:"mo", l:"Mo" }, { v:"yr", l:"Yr" }]}
-          value={period}
-          onChange={(v) => setPeriod(v as "mo"|"yr")}
-        />
-      } />
+      <SlateHeader title="Subscriber Snapshot" />
       <div style={{ padding:"18px 20px 20px" }}>
-        <div style={{ display:"grid", gridTemplateColumns:"12px 1fr 44px 64px 68px 68px 64px",
+        <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:14 }}>
+          <DarkToggle
+            options={[{ v:"mo", l:"Mo" }, { v:"yr", l:"Yr" }]}
+            value={period}
+            onChange={(v) => setPeriod(v as "mo"|"yr")}
+          />
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"12px 1fr 44px 76px 76px 76px 72px",
           gap:8, paddingBottom:8, borderBottom:`1px solid ${D.divider}` }}>
           <div />
           {[
@@ -458,7 +459,7 @@ function SubscriberSnapshot({ rows }: { rows?: { name: string; price: number; ap
           const net       = revenue - apiSpend - stripeFee;
           return (
             <div key={t.name}>
-              <div style={{ display:"grid", gridTemplateColumns:"12px 1fr 44px 64px 68px 68px 64px",
+              <div style={{ display:"grid", gridTemplateColumns:"12px 1fr 44px 76px 76px 76px 72px",
                 gap:8, alignItems:"center", padding:"10px 0" }}>
                 <div style={{ width:8, height:8, borderRadius:"50%", background:t.color }} />
                 <div>
@@ -479,7 +480,7 @@ function SubscriberSnapshot({ rows }: { rows?: { name: string; price: number; ap
         })}
         {/* Totals row */}
         <div style={{ borderTop:`2px solid ${D.divider}`, marginTop:4 }}>
-          <div style={{ display:"grid", gridTemplateColumns:"12px 1fr 44px 64px 68px 68px 64px",
+          <div style={{ display:"grid", gridTemplateColumns:"12px 1fr 44px 76px 76px 76px 72px",
             gap:8, alignItems:"center", padding:"10px 0" }}>
             <div />
             <div style={{ fontSize:13, fontWeight:700, color:D.text }}>Total</div>
