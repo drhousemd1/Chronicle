@@ -4,6 +4,8 @@ import { updateSidebarBackgroundCategories } from "@/services/supabase-data";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Icons } from "@/constants";
 import { Check, Image, ChevronDown, Upload, GripVertical, Plus, Info } from "lucide-react";
@@ -291,6 +293,10 @@ export function SidebarThemeModal({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="w-[min(96vw,1280px)] max-w-none p-0 border-0 bg-transparent shadow-none [&>button]:hidden">
+        <DialogTitle className="sr-only">Sidebar Theme</DialogTitle>
+        <DialogDescription className="sr-only">
+          Customize and organize sidebar background images.
+        </DialogDescription>
         <div className="bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.55),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
 
           {/* ── Header ── */}
