@@ -147,8 +147,33 @@ export function SidebarThemeModal({
     }
   };
 
+  /* ── Helper: persist category assignments to DB ─────────────────── */
+  const persistCategories = useCallback((rows: CategoryRow[]) => {
+    const updates: Array<{ id: string; category: string; sort_order: number }> = [];
+    for (const row of rows) {
+      for (let i = 0; i < row.bgIds.length; i++) {
+        updates.push({ id: row.bgIds[i], category: row.label, sort_order: i });
+      }
+    }
+    if (updates.length > 0) {
+      updateSidebarBackgroundCategories(updates).catch(console.error);
+    }
+  }, []);
+
   const handleRenameRow = (rowId: string, newLabel: string) => {
-    setRows((prev) => prev.map((r) => (r.id === rowId ? { ...r, label: newLabel } : r)));
+    // Find the old label for this row
+    const oldRow = effectiveRows.find((r) => r.id === rowId);
+    if (!oldRow) return;
+    const oldLabel = oldRow.label;
+
+    setLabelOverrides((prev) => ({ ...prev, [oldLabel]: newLabel }));
+    setExtraRows((prev) => prev.map((r) => (r.id === rowId ? { ...r, label: newLabel } : r)));
+
+    // Persist: update all backgrounds in this row to the new category name
+    const updates = oldRow.bgIds.map((id, i) => ({ id, category: newLabel, sort_order: i }));
+    if (updates.length > 0) {
+      updateSidebarBackgroundCategories(updates).catch(console.error);
+    }
   };
 
   /* ── Drag handlers ─────────────────────────────────────────────────── */
@@ -190,32 +215,33 @@ export function SidebarThemeModal({
     const drop = dropInfo.current;
     if (!drag || !drop) return;
 
-    setRows((prev) => {
-      // Use effectiveRows to get the current state including unassigned
-      let working = effectiveRows.map((r) => ({ ...r }));
+    let working = effectiveRows.map((r) => ({ ...r }));
 
-      // Remove from source
-      working = working.map((r) =>
-        r.id === drag.fromRowId ? { ...r, bgIds: r.bgIds.filter((id) => id !== drag.bgId) } : r
-      );
+    // Remove from source
+    working = working.map((r) =>
+      r.id === drag.fromRowId ? { ...r, bgIds: r.bgIds.filter((id) => id !== drag.bgId) } : r
+    );
 
-      if (drop.isNewRow) {
-        working.push({ id: `row-${Date.now()}`, label: "New Category", bgIds: [drag.bgId] });
-      } else if (drop.toRowId) {
-        working = working.map((r) => {
-          if (r.id !== drop.toRowId) return r;
-          const ids = [...r.bgIds];
-          if (drop.beforeBgId === null) ids.push(drag.bgId);
-          else {
-            const idx = ids.indexOf(drop.beforeBgId!);
-            ids.splice(idx === -1 ? ids.length : idx, 0, drag.bgId);
-          }
-          return { ...r, bgIds: ids };
-        });
-      }
+    if (drop.isNewRow) {
+      const newLabel = "New Category";
+      const newRow: CategoryRow = { id: `row-${Date.now()}`, label: newLabel, bgIds: [drag.bgId] };
+      working.push(newRow);
+      setExtraRows((prev) => [...prev, newRow]);
+    } else if (drop.toRowId) {
+      working = working.map((r) => {
+        if (r.id !== drop.toRowId) return r;
+        const ids = [...r.bgIds];
+        if (drop.beforeBgId === null) ids.push(drag.bgId);
+        else {
+          const idx = ids.indexOf(drop.beforeBgId!);
+          ids.splice(idx === -1 ? ids.length : idx, 0, drag.bgId);
+        }
+        return { ...r, bgIds: ids };
+      });
+    }
 
-      return working;
-    });
+    // Persist to DB
+    persistCategories(working);
   };
 
   const handleScrollAreaDragOver = (e: React.DragEvent) => {
