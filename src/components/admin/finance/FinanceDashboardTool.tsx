@@ -407,22 +407,60 @@ const DarkToggle = ({ options, value, onChange }: { options: { v: string; l: str
 
 function SubscriberSnapshot({ rows }: { rows?: { name: string; price: number; apiCost: number; users: number; color: string; soft?: string }[] }) {
   const tierRows = rows?.length ? rows : TIER_BREAKDOWN;
+  const [period, setPeriod] = React.useState<"mo"|"yr">("mo");
+  const mult = period === "yr" ? 12 : 1;
+  const label = period === "mo" ? "mo" : "yr";
+
+  // Totals
+  const totals = tierRows.reduce((acc, t) => {
+    const revenue   = t.users * t.price * mult;
+    const apiSpend  = t.users * t.apiCost * mult;
+    const stripeFee = t.price > 0 ? t.users * ((t.price * 0.029) + 0.30) * mult : 0;
+    const net       = revenue - apiSpend - stripeFee;
+    return {
+      users: acc.users + t.users,
+      income: acc.income + revenue,
+      api: acc.api + apiSpend,
+      stripe: acc.stripe + stripeFee,
+      net: acc.net + net,
+    };
+  }, { users: 0, income: 0, api: 0, stripe: 0, net: 0 });
+
   return (
     <ShellCard style={{ flex:1 }}>
-      <SlateHeader title="Subscriber Snapshot" />
-      <div style={{ padding:"18px 20px 20px" }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 20px 0" }}>
+        <SlateHeader title="Subscriber Snapshot" style={{ padding:0, margin:0 }} />
+        <div style={{ display:"flex", gap:2, background:D.shell, borderRadius:6, padding:2 }}>
+          {(["mo","yr"] as const).map(p => (
+            <button key={p} onClick={() => setPeriod(p)} style={{
+              fontSize:11, fontWeight:600, padding:"3px 10px", borderRadius:4, border:"none", cursor:"pointer",
+              color: period === p ? D.text : D.muted,
+              background: period === p ? D.elevated : "transparent",
+              transition: "all .12s",
+            }}>{p === "mo" ? "Mo" : "Yr"}</button>
+          ))}
+        </div>
+      </div>
+      <div style={{ padding:"12px 20px 20px" }}>
         <div style={{ display:"grid", gridTemplateColumns:"12px 1fr 44px 64px 68px 68px 64px",
           gap:8, paddingBottom:8, borderBottom:`1px solid ${D.divider}` }}>
           <div />
-          {["Tier","Users","Income","API Cost","Stripe","Net"].map((h,i) => (
-            <div key={h} style={{ fontSize:10, textTransform:"uppercase", letterSpacing:"0.06em",
-              color:D.muted, fontWeight:700, textAlign: i > 0 ? "right" : "left" }}>{h}</div>
+          {[
+            { l:"Tier", align:"left" },
+            { l:"Users", align:"right" },
+            { l:`Income (${label})`, align:"right" },
+            { l:`API (${label})`, align:"right" },
+            { l:`Stripe (${label})`, align:"right" },
+            { l:`Net (${label})`, align:"right" },
+          ].map(h => (
+            <div key={h.l} style={{ fontSize:10, textTransform:"uppercase", letterSpacing:"0.06em",
+              color:D.muted, fontWeight:700, textAlign: h.align as any }}>{h.l}</div>
           ))}
         </div>
         {tierRows.map((t: { name: string; price: number; apiCost: number; users: number; color: string; soft?: string }, i: number) => {
-          const revenue   = t.users * t.price;
-          const apiSpend  = t.users * t.apiCost;
-          const stripeFee = t.price > 0 ? t.users * ((t.price * 0.029) + 0.30) : 0;
+          const revenue   = t.users * t.price * mult;
+          const apiSpend  = t.users * t.apiCost * mult;
+          const stripeFee = t.price > 0 ? t.users * ((t.price * 0.029) + 0.30) * mult : 0;
           const net       = revenue - apiSpend - stripeFee;
           return (
             <div key={t.name}>
@@ -445,6 +483,21 @@ function SubscriberSnapshot({ rows }: { rows?: { name: string; price: number; ap
             </div>
           );
         })}
+        {/* Totals row */}
+        <div style={{ borderTop:`2px solid ${D.divider}`, marginTop:4 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"12px 1fr 44px 64px 68px 68px 64px",
+            gap:8, alignItems:"center", padding:"10px 0" }}>
+            <div />
+            <div style={{ fontSize:13, fontWeight:700, color:D.text }}>Total</div>
+            <div style={{ fontSize:13, fontWeight:700, color:D.text, textAlign:"center" }}>{totals.users}</div>
+            <div style={{ fontSize:13, fontWeight:700, color:D.green, textAlign:"right" }}>${Math.round(totals.income)}</div>
+            <div style={{ fontSize:13, fontWeight:700, color:D.red, textAlign:"right" }}>-${totals.api.toFixed(2)}</div>
+            <div style={{ fontSize:13, fontWeight:700, color:D.red, textAlign:"right" }}>-${totals.stripe.toFixed(2)}</div>
+            <div style={{ fontSize:13, fontWeight:700, textAlign:"right", color: totals.net >= 0 ? D.green : D.red }}>
+              {totals.net >= 0 ? "" : "-"}${Math.abs(Math.round(totals.net))}
+            </div>
+          </div>
+        </div>
       </div>
     </ShellCard>
   );
