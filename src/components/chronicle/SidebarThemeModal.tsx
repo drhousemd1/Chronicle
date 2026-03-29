@@ -481,14 +481,9 @@ export function SidebarThemeModal({
                       <span className="text-[10px] text-zinc-700">· click to rename</span>
                     </div>
 
-                    {/* Tile grid — highlight whole row when it's an active drop target */}
-                    <div
-                      className={`grid grid-cols-5 md:grid-cols-7 gap-2.5 rounded-xl p-1.5 -m-1.5 transition-all duration-150 ${
-                        isDragging && dropTarget?.toRowId === row.id && !dropTarget?.isNewRow
-                          ? "bg-white/[0.03] ring-1 ring-white/[0.08]"
-                          : ""
-                      }`}
-                    >
+                    {/* Tile grid */}
+                    <div className="grid grid-cols-5 md:grid-cols-7 gap-2.5">
+
                       {/* Default tile — only in first row */}
                       {row.id === effectiveRows[0].id && (
                         <div
@@ -523,20 +518,23 @@ export function SidebarThemeModal({
                         const bg = bgMap.get(bgId);
                         if (!bg) return null;
 
-                        // Show a subtle left-edge indicator when dragging over this specific tile
                         const isDropBeforeThis = isDragging && dropTarget?.toRowId === row.id && dropTarget?.beforeBgId === bgId;
 
                         return (
-                          <div
-                            key={bg.id}
-                            className="relative"
-                            onDragOver={(e) => onDropZoneDragOver(e, row.id, bg.id)}
-                            onDrop={onDrop}
-                          >
-                            {/* Drop position indicator — subtle left edge line */}
+                          <React.Fragment key={bg.id}>
+                            {/* Ghost placeholder — appears before the tile when this is the drop target */}
                             {isDropBeforeThis && (
-                              <div className="absolute -left-[5px] top-0 bottom-0 w-[3px] bg-blue-500 rounded-full z-10" />
+                              <div
+                                className="aspect-[1/3] rounded-xl border-2 border-dashed border-white/20 bg-white/[0.04]"
+                                onDragOver={(e) => onDropZoneDragOver(e, row.id, bg.id)}
+                                onDrop={onDrop}
+                              />
                             )}
+                            <div
+                              className="relative"
+                              onDragOver={(e) => onDropZoneDragOver(e, row.id, bg.id)}
+                              onDrop={onDrop}
+                            >
                             <div
                               draggable
                               onDragStart={(e) => onTileDragStart(e, bg.id, row.id)}
@@ -578,21 +576,27 @@ export function SidebarThemeModal({
                               )}
                             </div>
                           </div>
+                          </React.Fragment>
                         );
                       })}
 
-                      {/* End-of-row drop zone — always in DOM, visible highlight only while dragging */}
-                      <div
-                        className={`aspect-[1/3] rounded-xl transition-all duration-150 ${
-                          isDragging
-                            ? dropTarget?.toRowId === row.id && dropTarget?.beforeBgId === null
-                              ? "border-2 border-dashed border-blue-500/40 bg-blue-500/[0.06]"
-                              : "border-2 border-dashed border-white/[0.06] bg-transparent"
-                            : "border-2 border-transparent bg-transparent"
-                        }`}
-                        onDragOver={(e) => onDropZoneDragOver(e, row.id, null)}
-                        onDrop={onDrop}
-                      />
+                      {/* End-of-row ghost placeholder — only visible when dragging over this row's end */}
+                      {isDragging && dropTarget?.toRowId === row.id && dropTarget?.beforeBgId === null && (
+                        <div
+                          className="aspect-[1/3] rounded-xl border-2 border-dashed border-white/20 bg-white/[0.04]"
+                          onDragOver={(e) => onDropZoneDragOver(e, row.id, null)}
+                          onDrop={onDrop}
+                        />
+                      )}
+
+                      {/* Invisible end-of-row drop target (always in DOM so you can drag to row end) */}
+                      {isDragging && !(dropTarget?.toRowId === row.id && dropTarget?.beforeBgId === null) && (
+                        <div
+                          className="aspect-[1/3]"
+                          onDragOver={(e) => onDropZoneDragOver(e, row.id, null)}
+                          onDrop={onDrop}
+                        />
+                      )}
                     </div>
                   </div>
                 ))}
@@ -604,12 +608,12 @@ export function SidebarThemeModal({
                     onDrop={onDrop}
                     className={`mt-1 p-4 rounded-xl flex items-center justify-center gap-2 transition-all duration-150 ${
                       dropTarget?.isNewRow
-                        ? "border-2 border-dashed border-blue-500/40 bg-blue-500/[0.06]"
-                        : "border-2 border-dashed border-white/[0.12] bg-white/[0.01]"
+                        ? "border-2 border-dashed border-white/20 bg-white/[0.04]"
+                        : "border-2 border-dashed border-white/[0.08] bg-transparent"
                     }`}
                   >
-                    <Plus className={`w-3.5 h-3.5 ${dropTarget?.isNewRow ? "text-blue-500" : "text-zinc-600"}`} />
-                    <span className={`text-[11px] font-bold uppercase tracking-widest ${dropTarget?.isNewRow ? "text-blue-500" : "text-zinc-600"}`}>
+                    <Plus className={`w-3.5 h-3.5 ${dropTarget?.isNewRow ? "text-zinc-300" : "text-zinc-600"}`} />
+                    <span className={`text-[11px] font-bold uppercase tracking-widest ${dropTarget?.isNewRow ? "text-zinc-300" : "text-zinc-600"}`}>
                       Drop here to create new category
                     </span>
                   </div>
