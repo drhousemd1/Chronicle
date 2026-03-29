@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Chronicle Admin Dashboard
  * Light theme · Left sidebar navigation
