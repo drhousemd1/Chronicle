@@ -355,7 +355,7 @@ export function SidebarThemeModal({
                 onDrop={stopAutoScroll}
               >
                 {effectiveRows.map((row) => (
-                  <div key={row.id} className="mb-7">
+                  <div key={row.id} className="mb-4">
                     {/* Row label */}
                     <div className="flex items-center gap-1.5 mb-2.5">
                       <RowLabel label={row.label} onRename={(val) => handleRenameRow(row.id, val)} />
