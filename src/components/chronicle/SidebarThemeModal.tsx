@@ -406,12 +406,14 @@ export function SidebarThemeModal({
                         );
                       })}
 
-                      {/* End-of-row drop zone */}
-                      <div
-                        className="aspect-[1/3] rounded-xl bg-transparent"
-                        onDragOver={(e) => onDropZoneDragOver(e, row.id, null)}
-                        onDrop={onDrop}
-                      />
+                      {/* End-of-row drop zone — only visible while dragging */}
+                      {isDragging && (
+                        <div
+                          className="rounded-xl bg-transparent min-h-[60px]"
+                          onDragOver={(e) => onDropZoneDragOver(e, row.id, null)}
+                          onDrop={onDrop}
+                        />
+                      )}
                     </div>
                   </div>
                 ))}
