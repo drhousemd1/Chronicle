@@ -51,7 +51,7 @@ describe('llm canonical prompt coverage', () => {
         updatedAt: now(),
       },
     ];
-    aiCharacter.goals = [
+    (aiCharacter as any).goals = [
       {
         id: uid('goal'),
         title: 'Protect Feyre',
@@ -63,6 +63,7 @@ describe('llm canonical prompt coverage', () => {
         ],
         createdAt: now(),
         updatedAt: now(),
+        progress: 50,
       },
     ];
 
