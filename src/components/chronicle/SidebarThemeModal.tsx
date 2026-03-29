@@ -43,6 +43,27 @@ interface SidebarThemeModalProps {
   onReorder?: (updated: UserBackground[]) => void;
 }
 
+const getCategoryLabel = (background: UserBackground) => background.category || "Uncategorized";
+
+const deriveCategoryOrder = (backgrounds: UserBackground[]) => {
+  const seen = new Set<string>();
+  const ordered: string[] = [];
+
+  for (const background of backgrounds) {
+    const label = getCategoryLabel(background);
+    if (!seen.has(label)) {
+      seen.add(label);
+      ordered.push(label);
+    }
+  }
+
+  if (seen.has("Uncategorized")) {
+    return ["Uncategorized", ...ordered.filter((label) => label !== "Uncategorized")];
+  }
+
+  return ordered;
+};
+
 /* ── Inline sub-components ────────────────────────────────────────────────── */
 
 function RowLabel({ label, onRename }: { label: string; onRename: (v: string) => void }) {
@@ -96,6 +117,7 @@ export function SidebarThemeModal({
 }: SidebarThemeModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [categoryOrder, setCategoryOrder] = useState<string[]>(() => deriveCategoryOrder(backgrounds));
 
   /* ── Local state mirror — source of truth while modal is open ─── */
   const [localBackgrounds, setLocalBackgrounds] = useState<UserBackground[]>(backgrounds);
@@ -103,32 +125,60 @@ export function SidebarThemeModal({
   // Sync from prop when backgrounds change (new upload, delete, etc.)
   useEffect(() => {
     setLocalBackgrounds(backgrounds);
+    setCategoryOrder((prev) => {
+      const incoming = deriveCategoryOrder(backgrounds);
+      const merged = prev.filter((label) => incoming.includes(label));
+
+      for (const label of incoming) {
+        if (!merged.includes(label)) merged.push(label);
+      }
+
+      if (merged.includes("Uncategorized")) {
+        return ["Uncategorized", ...merged.filter((label) => label !== "Uncategorized")];
+      }
+
+      return merged;
+    });
   }, [backgrounds]);
 
   /* ── Derive category rows from local state ──────────────────── */
   const effectiveRows = useMemo(() => {
-    const catMap = new Map<string, string[]>();
-    const sorted = [...localBackgrounds].sort((a, b) => a.sortOrder - b.sortOrder);
-    for (const bg of sorted) {
-      const cat = bg.category || "Uncategorized";
+    const catMap = new Map<string, UserBackground[]>();
+
+    for (const bg of localBackgrounds) {
+      const cat = getCategoryLabel(bg);
       if (!catMap.has(cat)) catMap.set(cat, []);
-      catMap.get(cat)!.push(bg.id);
+      catMap.get(cat)!.push(bg);
     }
 
-    const rows: CategoryRow[] = [];
-    const uncatIds = catMap.get("Uncategorized") || [];
-    catMap.delete("Uncategorized");
+    const orderedLabels = [
+      ...categoryOrder.filter((label) => catMap.has(label)),
+      ...Array.from(catMap.keys()).filter((label) => !categoryOrder.includes(label)),
+    ];
 
-    if (uncatIds.length > 0 || catMap.size === 0) {
-      rows.push({ id: "row-Uncategorized", label: "Uncategorized", bgIds: uncatIds });
-    }
+    const normalizedLabels = orderedLabels.includes("Uncategorized")
+      ? ["Uncategorized", ...orderedLabels.filter((label) => label !== "Uncategorized")]
+      : orderedLabels;
 
-    for (const [cat, ids] of catMap) {
-      rows.push({ id: `row-${cat}`, label: cat, bgIds: ids });
+    const rows: CategoryRow[] = normalizedLabels.map((label) => {
+      const ids = (catMap.get(label) || [])
+        .slice()
+        .sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt - b.createdAt)
+        .map((background) => background.id);
+
+      return {
+        id: `row-${label}`,
+        label,
+        bgIds: ids,
+      };
+    });
+
+    if (rows.length === 0) {
+      rows.push({ id: "row-Uncategorized", label: "Uncategorized", bgIds: [] });
     }
 
     return rows;
-  }, [localBackgrounds]);
+  }, [categoryOrder, localBackgrounds]);
 
   const bgMap = new Map(localBackgrounds.map((b) => [b.id, b]));
 
@@ -150,6 +200,7 @@ export function SidebarThemeModal({
 
   /* ── Helper: apply row structure to localBackgrounds and persist ── */
   const applyRowChanges = useCallback((rows: CategoryRow[]) => {
+    setCategoryOrder(rows.map((row) => row.label));
     setLocalBackgrounds((prev) => {
       const updated = prev.map((bg) => {
         for (const row of rows) {
@@ -180,6 +231,8 @@ export function SidebarThemeModal({
   const handleRenameRow = (rowId: string, newLabel: string) => {
     const oldRow = effectiveRows.find((r) => r.id === rowId);
     if (!oldRow) return;
+
+    setCategoryOrder((prev) => prev.map((label) => (label === oldRow.label ? newLabel : label)));
 
     // Update local state: change category for all bgs in this row
     setLocalBackgrounds((prev) => {
@@ -437,10 +490,6 @@ export function SidebarThemeModal({
                             onDragOver={(e) => onDropZoneDragOver(e, row.id, bg.id)}
                             onDrop={onDrop}
                           >
-                            {/* Blue drop indicator */}
-                            {dropTarget?.toRowId === row.id && dropTarget?.beforeBgId === bg.id && (
-                              <div className="absolute left-[-6px] top-0 bottom-0 w-[3px] bg-blue-500 rounded-sm z-10" />
-                            )}
                             <div
                               draggable
                               onDragStart={(e) => onTileDragStart(e, bg.id, row.id)}
