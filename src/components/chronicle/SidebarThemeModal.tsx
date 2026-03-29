@@ -608,12 +608,12 @@ export function SidebarThemeModal({
                     onDrop={onDrop}
                     className={`mt-1 p-4 rounded-xl flex items-center justify-center gap-2 transition-all duration-150 ${
                       dropTarget?.isNewRow
-                        ? "border-2 border-dashed border-blue-500/40 bg-blue-500/[0.06]"
-                        : "border-2 border-dashed border-white/[0.12] bg-white/[0.01]"
+                        ? "border-2 border-dashed border-white/20 bg-white/[0.04]"
+                        : "border-2 border-dashed border-white/[0.08] bg-transparent"
                     }`}
                   >
-                    <Plus className={`w-3.5 h-3.5 ${dropTarget?.isNewRow ? "text-blue-500" : "text-zinc-600"}`} />
-                    <span className={`text-[11px] font-bold uppercase tracking-widest ${dropTarget?.isNewRow ? "text-blue-500" : "text-zinc-600"}`}>
+                    <Plus className={`w-3.5 h-3.5 ${dropTarget?.isNewRow ? "text-zinc-300" : "text-zinc-600"}`} />
+                    <span className={`text-[11px] font-bold uppercase tracking-widest ${dropTarget?.isNewRow ? "text-zinc-300" : "text-zinc-600"}`}>
                       Drop here to create new category
                     </span>
                   </div>
