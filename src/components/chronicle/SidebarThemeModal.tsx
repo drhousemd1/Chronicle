@@ -481,14 +481,9 @@ export function SidebarThemeModal({
                       <span className="text-[10px] text-zinc-700">· click to rename</span>
                     </div>
 
-                    {/* Tile grid — highlight whole row when it's an active drop target */}
-                    <div
-                      className={`grid grid-cols-5 md:grid-cols-7 gap-2.5 rounded-xl p-1.5 -m-1.5 transition-all duration-150 ${
-                        isDragging && dropTarget?.toRowId === row.id && !dropTarget?.isNewRow
-                          ? "bg-white/[0.03] ring-1 ring-white/[0.08]"
-                          : ""
-                      }`}
-                    >
+                    {/* Tile grid */}
+                    <div className="grid grid-cols-5 md:grid-cols-7 gap-2.5">
+
                       {/* Default tile — only in first row */}
                       {row.id === effectiveRows[0].id && (
                         <div
