@@ -576,21 +576,27 @@ export function SidebarThemeModal({
                               )}
                             </div>
                           </div>
+                          </React.Fragment>
                         );
                       })}
 
-                      {/* End-of-row drop zone — always in DOM, visible highlight only while dragging */}
-                      <div
-                        className={`aspect-[1/3] rounded-xl transition-all duration-150 ${
-                          isDragging
-                            ? dropTarget?.toRowId === row.id && dropTarget?.beforeBgId === null
-                              ? "border-2 border-dashed border-blue-500/40 bg-blue-500/[0.06]"
-                              : "border-2 border-dashed border-white/[0.06] bg-transparent"
-                            : "border-2 border-transparent bg-transparent"
-                        }`}
-                        onDragOver={(e) => onDropZoneDragOver(e, row.id, null)}
-                        onDrop={onDrop}
-                      />
+                      {/* End-of-row ghost placeholder — only visible when dragging over this row's end */}
+                      {isDragging && dropTarget?.toRowId === row.id && dropTarget?.beforeBgId === null && (
+                        <div
+                          className="aspect-[1/3] rounded-xl border-2 border-dashed border-white/20 bg-white/[0.04]"
+                          onDragOver={(e) => onDropZoneDragOver(e, row.id, null)}
+                          onDrop={onDrop}
+                        />
+                      )}
+
+                      {/* Invisible end-of-row drop target (always in DOM so you can drag to row end) */}
+                      {isDragging && !(dropTarget?.toRowId === row.id && dropTarget?.beforeBgId === null) && (
+                        <div
+                          className="aspect-[1/3]"
+                          onDragOver={(e) => onDropZoneDragOver(e, row.id, null)}
+                          onDrop={onDrop}
+                        />
+                      )}
                     </div>
                   </div>
                 ))}
