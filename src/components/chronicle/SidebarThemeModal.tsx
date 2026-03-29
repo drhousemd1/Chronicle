@@ -289,27 +289,43 @@ export function SidebarThemeModal({
 
   const stopAutoScroll = useCallback(() => cancelAnimationFrame(autoScrollRaf.current), []);
 
-  const onTileDragEnd = (e: React.DragEvent) => {
-    if (e.target instanceof HTMLElement) e.target.style.opacity = "1";
+  const resetDragState = useCallback(() => {
     setIsDragging(false);
     setDropTarget(null);
     dragInfo.current = null;
     dropInfo.current = null;
     stopAutoScroll();
+  }, [stopAutoScroll]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      resetDragState();
+    }
+  }, [isOpen, resetDragState]);
+
+  const onTileDragEnd = (e: React.DragEvent) => {
+    if (e.target instanceof HTMLElement) e.target.style.opacity = "1";
+    resetDragState();
   };
 
   const onDropZoneDragOver = (e: React.DragEvent, toRowId: string, beforeBgId: string | null = null) => {
+    if (!dragInfo.current) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
     dropInfo.current = { toRowId, beforeBgId, isNewRow: false };
-    setDropTarget({ toRowId, beforeBgId });
+    setDropTarget((prev) =>
+      prev?.toRowId === toRowId && prev?.beforeBgId === beforeBgId && !prev?.isNewRow
+        ? prev
+        : { toRowId, beforeBgId }
+    );
   };
 
   const onNewRowDragOver = (e: React.DragEvent) => {
+    if (!dragInfo.current) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
     dropInfo.current = { isNewRow: true };
-    setDropTarget({ isNewRow: true });
+    setDropTarget((prev) => (prev?.isNewRow ? prev : { isNewRow: true }));
   };
 
   const onDrop = (e: React.DragEvent) => {
@@ -317,42 +333,52 @@ export function SidebarThemeModal({
     e.stopPropagation();
     const drag = dragInfo.current;
     const drop = dropInfo.current;
-    if (!drag || !drop) return;
+
+    if (!drag || !drop) {
+      resetDragState();
+      return;
+    }
 
     if (drop.isNewRow) {
-      // Create a new category with a unique label
       let newLabel = "New Category";
       let counter = 1;
       while (categoryOrder.includes(newLabel) || effectiveRows.some((r) => r.label === newLabel)) {
         newLabel = `New Category ${counter++}`;
       }
-      // Add to category order
       setCategoryOrder((prev) => [...prev, newLabel]);
-      // Move the item to the new category at index 0
       moveItem(drag.bgId, newLabel, 0);
-    } else if (drop.toRowId) {
-      // Find the destination row
-      const destRow = effectiveRows.find((r) => r.id === drop.toRowId);
-      if (!destRow) return;
-
-      // Calculate destination index
-      let destIndex: number | null = null;
-      if (drop.beforeBgId !== null && drop.beforeBgId !== undefined) {
-        const idx = destRow.bgIds.indexOf(drop.beforeBgId);
-        destIndex = idx === -1 ? null : idx;
-      }
-
-      // No-op check: same category and same position
-      const sourceRow = effectiveRows.find((r) => r.id === drag.fromRowId);
-      if (sourceRow && sourceRow.label === destRow.label) {
-        const currentIdx = sourceRow.bgIds.indexOf(drag.bgId);
-        if (destIndex === currentIdx || (destIndex === null && currentIdx === sourceRow.bgIds.length - 1)) {
-          return; // same position, no-op
-        }
-      }
-
-      moveItem(drag.bgId, destRow.label, destIndex);
+      resetDragState();
+      return;
     }
+
+    if (!drop.toRowId) {
+      resetDragState();
+      return;
+    }
+
+    const destRow = effectiveRows.find((r) => r.id === drop.toRowId);
+    if (!destRow) {
+      resetDragState();
+      return;
+    }
+
+    let destIndex: number | null = null;
+    if (drop.beforeBgId !== null && drop.beforeBgId !== undefined) {
+      const idx = destRow.bgIds.indexOf(drop.beforeBgId);
+      destIndex = idx === -1 ? null : idx;
+    }
+
+    const sourceRow = effectiveRows.find((r) => r.id === drag.fromRowId);
+    if (sourceRow && sourceRow.label === destRow.label) {
+      const currentIdx = sourceRow.bgIds.indexOf(drag.bgId);
+      if (destIndex === currentIdx || (destIndex === null && currentIdx === sourceRow.bgIds.length - 1)) {
+        resetDragState();
+        return;
+      }
+    }
+
+    moveItem(drag.bgId, destRow.label, destIndex);
+    resetDragState();
   };
 
   const handleScrollAreaDragOver = (e: React.DragEvent) => {
@@ -580,19 +606,9 @@ export function SidebarThemeModal({
                         );
                       })}
 
-                      {/* End-of-row ghost placeholder — only visible when dragging over this row's end */}
                       {isDragging && dropTarget?.toRowId === row.id && dropTarget?.beforeBgId === null && (
                         <div
                           className="aspect-[1/3] rounded-xl border-2 border-dashed border-white/20 bg-white/[0.04]"
-                          onDragOver={(e) => onDropZoneDragOver(e, row.id, null)}
-                          onDrop={onDrop}
-                        />
-                      )}
-
-                      {/* Invisible end-of-row drop target (always in DOM so you can drag to row end) */}
-                      {isDragging && !(dropTarget?.toRowId === row.id && dropTarget?.beforeBgId === null) && (
-                        <div
-                          className="aspect-[1/3]"
                           onDragOver={(e) => onDropZoneDragOver(e, row.id, null)}
                           onDrop={onDrop}
                         />
