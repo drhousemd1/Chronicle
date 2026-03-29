@@ -1,5 +1,6 @@
-import React, { useRef, useState, useCallback } from "react";
+import React, { useRef, useState, useCallback, useMemo } from "react";
 import { UserBackground } from "@/types";
+import { updateSidebarBackgroundCategories } from "@/services/supabase-data";
 import {
   Dialog,
   DialogContent,
@@ -92,22 +93,41 @@ export function SidebarThemeModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
-  /* ── Category rows (local state — populated from backgrounds prop) ──── */
-  const [rows, setRows] = useState<CategoryRow[]>([
-    { id: "row-default", label: "Uncategorized", bgIds: [] },
-  ]);
+  /* ── Derive category rows from backgrounds prop ──────────────────── */
+  // Extra rows created by drag (not yet in DB categories)
+  const [extraRows, setExtraRows] = useState<CategoryRow[]>([]);
+  // Renamed labels override (rowLabel -> newLabel)
+  const [labelOverrides, setLabelOverrides] = useState<Record<string, string>>({});
 
-  // Build a set of all bg ids currently assigned to a row
-  const assignedIds = new Set(rows.flatMap((r) => r.bgIds));
-  // Any backgrounds not yet assigned go into the first row conceptually
-  const unassignedBgs = backgrounds.filter((bg) => !assignedIds.has(bg.id));
+  const effectiveRows = useMemo(() => {
+    // Group backgrounds by their category
+    const catMap = new Map<string, string[]>();
+    const sortedBgs = [...backgrounds].sort((a, b) => a.sortOrder - b.sortOrder);
+    for (const bg of sortedBgs) {
+      const cat = bg.category || "Uncategorized";
+      if (!catMap.has(cat)) catMap.set(cat, []);
+      catMap.get(cat)!.push(bg.id);
+    }
 
-  // Effective rows: first row gets unassigned prepended
-  const effectiveRows = rows.map((row, i) =>
-    i === 0
-      ? { ...row, bgIds: [...unassignedBgs.map((b) => b.id), ...row.bgIds.filter((id) => backgrounds.some((b) => b.id === id))] }
-      : { ...row, bgIds: row.bgIds.filter((id) => backgrounds.some((b) => b.id === id)) }
-  );
+    // Ensure "Uncategorized" is always first
+    const rows: CategoryRow[] = [];
+    const uncatIds = catMap.get("Uncategorized") || [];
+    rows.push({ id: "row-Uncategorized", label: labelOverrides["Uncategorized"] || "Uncategorized", bgIds: uncatIds });
+    catMap.delete("Uncategorized");
+
+    for (const [cat, ids] of catMap) {
+      rows.push({ id: `row-${cat}`, label: labelOverrides[cat] || cat, bgIds: ids });
+    }
+
+    // Add any extra rows created by drag that don't have backgrounds yet
+    for (const extra of extraRows) {
+      if (!rows.some((r) => r.label === extra.label)) {
+        rows.push(extra);
+      }
+    }
+
+    return rows;
+  }, [backgrounds, extraRows, labelOverrides]);
 
   const bgMap = new Map(backgrounds.map((b) => [b.id, b]));
 
@@ -127,8 +147,33 @@ export function SidebarThemeModal({
     }
   };
 
+  /* ── Helper: persist category assignments to DB ─────────────────── */
+  const persistCategories = useCallback((rows: CategoryRow[]) => {
+    const updates: Array<{ id: string; category: string; sort_order: number }> = [];
+    for (const row of rows) {
+      for (let i = 0; i < row.bgIds.length; i++) {
+        updates.push({ id: row.bgIds[i], category: row.label, sort_order: i });
+      }
+    }
+    if (updates.length > 0) {
+      updateSidebarBackgroundCategories(updates).catch(console.error);
+    }
+  }, []);
+
   const handleRenameRow = (rowId: string, newLabel: string) => {
-    setRows((prev) => prev.map((r) => (r.id === rowId ? { ...r, label: newLabel } : r)));
+    // Find the old label for this row
+    const oldRow = effectiveRows.find((r) => r.id === rowId);
+    if (!oldRow) return;
+    const oldLabel = oldRow.label;
+
+    setLabelOverrides((prev) => ({ ...prev, [oldLabel]: newLabel }));
+    setExtraRows((prev) => prev.map((r) => (r.id === rowId ? { ...r, label: newLabel } : r)));
+
+    // Persist: update all backgrounds in this row to the new category name
+    const updates = oldRow.bgIds.map((id, i) => ({ id, category: newLabel, sort_order: i }));
+    if (updates.length > 0) {
+      updateSidebarBackgroundCategories(updates).catch(console.error);
+    }
   };
 
   /* ── Drag handlers ─────────────────────────────────────────────────── */
@@ -170,32 +215,33 @@ export function SidebarThemeModal({
     const drop = dropInfo.current;
     if (!drag || !drop) return;
 
-    setRows((prev) => {
-      // Use effectiveRows to get the current state including unassigned
-      let working = effectiveRows.map((r) => ({ ...r }));
+    let working = effectiveRows.map((r) => ({ ...r }));
 
-      // Remove from source
-      working = working.map((r) =>
-        r.id === drag.fromRowId ? { ...r, bgIds: r.bgIds.filter((id) => id !== drag.bgId) } : r
-      );
+    // Remove from source
+    working = working.map((r) =>
+      r.id === drag.fromRowId ? { ...r, bgIds: r.bgIds.filter((id) => id !== drag.bgId) } : r
+    );
 
-      if (drop.isNewRow) {
-        working.push({ id: `row-${Date.now()}`, label: "New Category", bgIds: [drag.bgId] });
-      } else if (drop.toRowId) {
-        working = working.map((r) => {
-          if (r.id !== drop.toRowId) return r;
-          const ids = [...r.bgIds];
-          if (drop.beforeBgId === null) ids.push(drag.bgId);
-          else {
-            const idx = ids.indexOf(drop.beforeBgId!);
-            ids.splice(idx === -1 ? ids.length : idx, 0, drag.bgId);
-          }
-          return { ...r, bgIds: ids };
-        });
-      }
+    if (drop.isNewRow) {
+      const newLabel = "New Category";
+      const newRow: CategoryRow = { id: `row-${Date.now()}`, label: newLabel, bgIds: [drag.bgId] };
+      working.push(newRow);
+      setExtraRows((prev) => [...prev, newRow]);
+    } else if (drop.toRowId) {
+      working = working.map((r) => {
+        if (r.id !== drop.toRowId) return r;
+        const ids = [...r.bgIds];
+        if (drop.beforeBgId === null) ids.push(drag.bgId);
+        else {
+          const idx = ids.indexOf(drop.beforeBgId!);
+          ids.splice(idx === -1 ? ids.length : idx, 0, drag.bgId);
+        }
+        return { ...r, bgIds: ids };
+      });
+    }
 
-      return working;
-    });
+    // Persist to DB
+    persistCategories(working);
   };
 
   const handleScrollAreaDragOver = (e: React.DragEvent) => {
@@ -309,7 +355,7 @@ export function SidebarThemeModal({
                 onDrop={stopAutoScroll}
               >
                 {effectiveRows.map((row) => (
-                  <div key={row.id} className="mb-7">
+                  <div key={row.id} className="mb-4">
                     {/* Row label */}
                     <div className="flex items-center gap-1.5 mb-2.5">
                       <RowLabel label={row.label} onRename={(val) => handleRenameRow(row.id, val)} />

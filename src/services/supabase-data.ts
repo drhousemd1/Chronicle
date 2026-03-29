@@ -1532,6 +1532,8 @@ export async function fetchUserBackgrounds(userId: string): Promise<UserBackgrou
     isSelected: row.is_selected || false,
     overlayColor: row.overlay_color || 'black',
     overlayOpacity: row.overlay_opacity ?? 10,
+    category: row.category || 'Uncategorized',
+    sortOrder: row.sort_order ?? 0,
     createdAt: new Date(row.created_at).getTime()
   }));
 }
@@ -1572,6 +1574,8 @@ export async function createUserBackground(userId: string, imageUrl: string): Pr
     isSelected: data.is_selected || false,
     overlayColor: (data as any).overlay_color || 'black',
     overlayOpacity: (data as any).overlay_opacity ?? 10,
+    category: (data as any).category || 'Uncategorized',
+    sortOrder: (data as any).sort_order ?? 0,
     createdAt: toTimestamp(data.created_at)
   };
 }
@@ -1689,6 +1693,7 @@ export async function fetchSidebarBackgrounds(userId: string): Promise<UserBackg
     .from('sidebar_backgrounds')
     .select('*')
     .eq('user_id', userId)
+    .order('sort_order', { ascending: true })
     .order('created_at', { ascending: false });
 
   if (error) throw error;
@@ -1700,6 +1705,8 @@ export async function fetchSidebarBackgrounds(userId: string): Promise<UserBackg
     isSelected: row.is_selected || false,
     overlayColor: row.overlay_color || 'black',
     overlayOpacity: row.overlay_opacity ?? 10,
+    category: row.category || 'Uncategorized',
+    sortOrder: row.sort_order ?? 0,
     createdAt: new Date(row.created_at).getTime()
   }));
 }
@@ -1741,6 +1748,8 @@ export async function createSidebarBackground(userId: string, imageUrl: string):
     isSelected: data.is_selected || false,
     overlayColor: (data as any).overlay_color || 'black',
     overlayOpacity: (data as any).overlay_opacity ?? 10,
+    category: (data as any).category || 'Uncategorized',
+    sortOrder: (data as any).sort_order ?? 0,
     createdAt: toTimestamp(data.created_at)
   };
 }
@@ -1784,6 +1793,21 @@ export async function deleteSidebarBackground(userId: string, backgroundId: stri
     .eq('user_id', userId);
 
   if (error) throw error;
+}
+
+export async function updateSidebarBackgroundCategories(
+  updates: Array<{ id: string; category: string; sort_order: number }>
+): Promise<void> {
+  // Batch update category and sort_order for multiple backgrounds
+  const promises = updates.map((u) =>
+    supabase
+      .from('sidebar_backgrounds')
+      .update({ category: u.category, sort_order: u.sort_order })
+      .eq('id', u.id)
+  );
+  const results = await Promise.all(promises);
+  const firstError = results.find((r) => r.error);
+  if (firstError?.error) throw firstError.error;
 }
 
 // =============================================

@@ -433,6 +433,8 @@ export type UserBackground = {
   isSelected: boolean;
   overlayColor: string;
   overlayOpacity: number;
+  category: string;
+  sortOrder: number;
   createdAt: number;
 };
 
