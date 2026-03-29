@@ -115,8 +115,11 @@ export function SidebarThemeModal({
 
     const rows: CategoryRow[] = [];
     const uncatIds = catMap.get("Uncategorized") || [];
-    rows.push({ id: "row-Uncategorized", label: "Uncategorized", bgIds: uncatIds });
     catMap.delete("Uncategorized");
+
+    if (uncatIds.length > 0 || catMap.size === 0) {
+      rows.push({ id: "row-Uncategorized", label: "Uncategorized", bgIds: uncatIds });
+    }
 
     for (const [cat, ids] of catMap) {
       rows.push({ id: `row-${cat}`, label: cat, bgIds: ids });
