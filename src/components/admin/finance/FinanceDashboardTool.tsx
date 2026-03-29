@@ -440,16 +440,9 @@ function SubscriberSnapshot({ rows }: { rows?: { name: string; price: number; ap
         <div style={{ display:"grid", gridTemplateColumns:"12px 1fr 44px 76px 76px 76px 72px",
           gap:8, paddingBottom:8, borderBottom:`1px solid ${D.divider}` }}>
           <div />
-          {[
-            { l:"Tier", align:"left" },
-            { l:"Users", align:"right" },
-            { l:`Income (${label})`, align:"right" },
-            { l:`API (${label})`, align:"right" },
-            { l:`Stripe (${label})`, align:"right" },
-            { l:`Net (${label})`, align:"right" },
-          ].map(h => (
-            <div key={h.l} style={{ fontSize:10, textTransform:"uppercase", letterSpacing:"0.06em",
-              color:D.muted, fontWeight:700, textAlign: h.align as any }}>{h.l}</div>
+          {["Tier","Users","Income","API Cost","Stripe","Net"].map((h,i) => (
+            <div key={h} style={{ fontSize:10, textTransform:"uppercase", letterSpacing:"0.06em",
+              color:D.muted, fontWeight:700, textAlign: i > 0 ? "right" : "left" }}>{h}</div>
           ))}
         </div>
         {tierRows.map((t: { name: string; price: number; apiCost: number; users: number; color: string; soft?: string }, i: number) => {
