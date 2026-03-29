@@ -518,20 +518,23 @@ export function SidebarThemeModal({
                         const bg = bgMap.get(bgId);
                         if (!bg) return null;
 
-                        // Show a subtle left-edge indicator when dragging over this specific tile
                         const isDropBeforeThis = isDragging && dropTarget?.toRowId === row.id && dropTarget?.beforeBgId === bgId;
 
                         return (
-                          <div
-                            key={bg.id}
-                            className="relative"
-                            onDragOver={(e) => onDropZoneDragOver(e, row.id, bg.id)}
-                            onDrop={onDrop}
-                          >
-                            {/* Drop position indicator — subtle left edge line */}
+                          <React.Fragment key={bg.id}>
+                            {/* Ghost placeholder — appears before the tile when this is the drop target */}
                             {isDropBeforeThis && (
-                              <div className="absolute -left-[5px] top-0 bottom-0 w-[3px] bg-blue-500 rounded-full z-10" />
+                              <div
+                                className="aspect-[1/3] rounded-xl border-2 border-dashed border-white/20 bg-white/[0.04]"
+                                onDragOver={(e) => onDropZoneDragOver(e, row.id, bg.id)}
+                                onDrop={onDrop}
+                              />
                             )}
+                            <div
+                              className="relative"
+                              onDragOver={(e) => onDropZoneDragOver(e, row.id, bg.id)}
+                              onDrop={onDrop}
+                            >
                             <div
                               draggable
                               onDragStart={(e) => onTileDragStart(e, bg.id, row.id)}
