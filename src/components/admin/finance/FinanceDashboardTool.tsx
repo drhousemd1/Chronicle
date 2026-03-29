@@ -624,11 +624,11 @@ function NetIncomeMini() {
   const [period, setPeriod] = useState("week");
   const [view,   setView]   = useState("total");
   const data = view === "tier"
-    ? (NET_INCOME_DATA.tier[period] || NET_INCOME_DATA.tier.week)
-    : NET_INCOME_DATA.total[period];
+    ? ((NET_INCOME_DATA.tier as Record<string, any[]>)[period] || NET_INCOME_DATA.tier.week)
+    : (NET_INCOME_DATA.total as Record<string, any[]>)[period];
   const total = view === "total"
-    ? data.reduce((a, d) => a + d.net, 0).toFixed(2)
-    : data.reduce((a, d) => a + (d.starter||0) + (d.premium||0) + (d.elite||0), 0).toFixed(2);
+    ? data.reduce((a: number, d: any) => a + d.net, 0).toFixed(2)
+    : data.reduce((a: number, d: any) => a + (d.starter||0) + (d.premium||0) + (d.elite||0), 0).toFixed(2);
   return (
     <ShellCard style={{ flex:1 }}>
       <SlateHeader title="Net Income" />
@@ -649,7 +649,7 @@ function NetIncomeMini() {
             <XAxis dataKey="label" tick={{ fill:D.muted, fontSize:10 }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fill:D.muted, fontSize:10 }} axisLine={false} tickLine={false} width={28} tickFormatter={v => `$${v}`} />
             <Tooltip contentStyle={{ background:D.shell, border:"none", boxShadow:D.shellShadow, borderRadius:10, fontSize:12, color:D.text }}
-              formatter={(v, name) => [`$${v}`, name.charAt(0).toUpperCase() + name.slice(1)]} />
+              formatter={(v, name) => [`$${v}`, String(name).charAt(0).toUpperCase() + String(name).slice(1)]} />
             {view === "total" && <Area dataKey="net" name="Net" stroke="#22c55e" strokeWidth={2} fill="url(#netGreen2)" dot={false} type="monotone" />}
             {view === "tier" && <>
               <Area dataKey="starter" name="Starter" stroke="#60a5fa" strokeWidth={2} fill="none" dot={false} type="monotone" />
@@ -742,8 +742,8 @@ function ApiUsageMini({ expanded = false }) {
     return () => clearInterval(interval);
   }, []);
 
-  const data  = API_MINI_DATA[apiType][period];
-  const total = data.reduce((a, d) => a + d.cost, 0).toFixed(2);
+  const data  = (API_MINI_DATA as Record<string, Record<string, any[]>>)[apiType][period];
+  const total = data.reduce((a: number, d: any) => a + d.cost, 0).toFixed(2);
   const color = apiType === "text" ? D.red : D.purple;
   const gradId = apiType === "text" ? "apiTextD" : "apiImageD";
   const remainingText = billing ? `$${billing.prepaidCredits.remainingUsd.toFixed(2)} remaining` : "—";
@@ -771,7 +771,7 @@ function ApiUsageMini({ expanded = false }) {
             <XAxis dataKey="label" tick={{ fill:D.muted, fontSize:10 }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fill:D.muted, fontSize:10 }} axisLine={false} tickLine={false} width={28} tickFormatter={v => `$${v}`} />
             <Tooltip contentStyle={{ background:D.shell, border:"none", boxShadow:D.shellShadow, borderRadius:10, fontSize:12, color:D.text }}
-              formatter={v => [`$${v.toFixed(2)}`, apiType === "text" ? "Text API" : "Image API"]} />
+              formatter={(v: any) => [`$${Number(v).toFixed(2)}`, apiType === "text" ? "Text API" : "Image API"]} />
             <Area dataKey="cost" stroke={color} strokeWidth={2} fill={`url(#${gradId})`} dot={false} type="monotone" />
           </AreaChart>
         </ResponsiveContainer>
@@ -899,11 +899,11 @@ function AdSpendTracker() {
     filter === "cancelled" ? c.status === "cancelled" : true
   );
 
-  function autoSpent(c) {
+  function autoSpent(c: any) {
     if (!c.startDate || !c.cost) return parseFloat(c.spent) || 0;
     const start = new Date(c.startDate);
     const now = new Date();
-    if (isNaN(start)) return parseFloat(c.spent) || 0;
+    if (isNaN(start.getTime())) return parseFloat(c.spent) || 0;
     if (c.costCadence === "mo") {
       const months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
       return Math.max(0, months) * c.cost;
@@ -919,7 +919,7 @@ function AdSpendTracker() {
     setShowAdd(true);
   };
 
-  const openEdit = (c) => {
+  const openEdit = (c: any) => {
     setForm({ name:c.name, desc:c.desc||"", url:c.url||"", status:c.status,
               spent:c.spent||"", cost:c.cost||"", costCadence:c.costCadence||"mo", startDate:c.startDate||"" });
     setEditTarget(c.id);
@@ -957,14 +957,14 @@ function AdSpendTracker() {
     cancelled: { bg:"#450a0a", text:"#fca5a5", label:"Cancelled" },
   };
 
-  const inputStyle = {
-    width:"100%", boxSizing:"border-box",
+  const inputStyle: React.CSSProperties = {
+    width:"100%", boxSizing:"border-box" as const,
     background:D.recessed, border:`1px solid rgba(255,255,255,0.08)`,
     borderRadius:8, padding:"8px 12px", fontSize:13,
     color:D.text, outline:"none",
   };
-  const labelStyle = { fontSize:11, fontWeight:700, color:D.muted,
-    textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:5, display:"block" };
+  const labelStyle: React.CSSProperties = { fontSize:11, fontWeight:700, color:D.muted,
+    textTransform:"uppercase" as const, letterSpacing:"0.06em", marginBottom:5, display:"block" };
 
   return (
     <ShellCard>
@@ -1000,7 +1000,7 @@ function AdSpendTracker() {
             ))}
           </div>
           {displayed.map((c, i) => {
-            const sb = STATUS_BADGES[c.status] || STATUS_BADGES.active;
+            const sb = (STATUS_BADGES as Record<string, {bg:string;text:string;label:string}>)[c.status] || STATUS_BADGES.active;
             const spent = autoSpent(c);
             return (
               <div key={c.id} style={{ background: i%2===0 ? "transparent" : "rgba(255,255,255,0.02)" }}>
