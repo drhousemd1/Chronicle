@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
 
-type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
+/* ── Types ── */
 
 interface BillingPayload {
   source: "management_api" | "legacy_api";
@@ -16,211 +16,125 @@ interface BillingPayload {
   nextInvoiceUsd: number;
 }
 
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
+interface FetchResult {
+  ok: boolean;
+  status: number;
+  data: unknown;
+  errorText: string | null;
 }
 
-function parseNumeric(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string") {
-    const cleaned = value.replace(/,/g, "").trim();
-    if (!cleaned) return null;
-    const parsed = Number(cleaned);
-    if (Number.isFinite(parsed)) return parsed;
-  }
-  return null;
+/* ── xAI Management API response shapes ── */
+
+interface ValField {
+  val: string; // string of integer cents, e.g. "-6663"
 }
 
-function toUsdCents(value: unknown): number | null {
-  if (value == null) return null;
-
-  if (typeof value === "number") {
-    if (!Number.isFinite(value)) return null;
-    if (Math.abs(value) >= 1000 && Number.isInteger(value)) return Math.round(value);
-    return Math.round(value * 100);
-  }
-
-  if (typeof value === "string") {
-    const parsed = parseNumeric(value);
-    if (parsed == null) return null;
-    if (Math.abs(parsed) >= 1000 && Number.isInteger(parsed)) return Math.round(parsed);
-    return Math.round(parsed * 100);
-  }
-
-  if (isObject(value)) {
-    if ("usdCents" in value) {
-      const parsed = parseNumeric(value.usdCents);
-      if (parsed != null) return Math.round(parsed);
-    }
-    if ("cents" in value) {
-      const parsed = parseNumeric(value.cents);
-      if (parsed != null) return Math.round(parsed);
-    }
-    if ("value" in value) {
-      const parsed = parseNumeric(value.value);
-      if (parsed != null) return Math.round(parsed);
-    }
-    if ("amountCents" in value) {
-      const parsed = parseNumeric(value.amountCents);
-      if (parsed != null) return Math.round(parsed);
-    }
-    if ("units" in value || "nanos" in value) {
-      const units = parseNumeric(value.units) ?? 0;
-      const nanos = parseNumeric(value.nanos) ?? 0;
-      return Math.round(units * 100 + nanos / 10_000_000);
-    }
-    if ("amount" in value) {
-      const parsed = parseNumeric(value.amount);
-      if (parsed != null) return Math.round(parsed * 100);
-    }
-  }
-
-  return null;
+interface PrepaidChange {
+  amount: ValField;
+  changeOrigin: string; // "PURCHASE" | "SPEND"
+  createTs: string;
+  topupStatus?: string; // "SUCCEEDED" | "FAILED_TO_CHARGE"
+  spendBpKeyMonth?: number;
+  spendBpKeyYear?: number;
 }
 
-function findFirstByKeyPattern(
-  input: unknown,
-  keyPatterns: RegExp[],
-  visited = new Set<unknown>()
-): number | null {
-  if (input == null || visited.has(input)) return null;
-  visited.add(input);
-
-  const direct = toUsdCents(input);
-  if (direct != null && typeof input !== "object") return direct;
-
-  if (Array.isArray(input)) {
-    for (const item of input) {
-      const found = findFirstByKeyPattern(item, keyPatterns, visited);
-      if (found != null) return found;
-    }
-    return null;
-  }
-
-  if (isObject(input)) {
-    for (const [key, value] of Object.entries(input)) {
-      if (keyPatterns.some((pattern) => pattern.test(key))) {
-        const candidate = toUsdCents(value);
-        if (candidate != null) return candidate;
-      }
-    }
-    for (const value of Object.values(input)) {
-      const found = findFirstByKeyPattern(value, keyPatterns, visited);
-      if (found != null) return found;
-    }
-  }
-
-  return null;
+interface PrepaidBalanceResponse {
+  total: ValField; // negative = remaining balance in cents
+  changes: PrepaidChange[];
 }
 
-function safeDate(value: unknown): Date | null {
-  if (typeof value !== "string") return null;
-  const dt = new Date(value);
-  return Number.isNaN(dt.getTime()) ? null : dt;
-}
-
-function extractTimestamp(change: unknown): Date | null {
-  if (!isObject(change)) return null;
-  const candidates = [
-    change.createdAt,
-    change.created_at,
-    change.timestamp,
-    change.time,
-    change.at,
-    change.date,
-  ];
-  for (const candidate of candidates) {
-    const parsed = safeDate(candidate);
-    if (parsed) return parsed;
-  }
-  return null;
-}
-
-function extractChangeAmountCents(change: unknown): number {
-  if (!isObject(change)) return 0;
-  const prioritizedKeys = ["amount", "delta", "change", "value", "usdCents", "cents"];
-
-  for (const key of prioritizedKeys) {
-    if (key in change) {
-      const parsed = toUsdCents(change[key]);
-      if (parsed != null) return parsed;
-    }
-  }
-
-  const found = findFirstByKeyPattern(change, [/amount/i, /delta/i, /change/i, /value/i, /cents/i]);
-  return found ?? 0;
-}
-
-function summarizePrepaid(prepaidData: unknown): {
-  totalCents: number;
-  remainingCents: number;
-  usedCents: number;
-  usedThisMonthCents: number;
-} {
-  const remainingCents =
-    findFirstByKeyPattern(prepaidData, [/^total$/i, /remaining/i, /balance/i]) ?? 0;
-
-  const changes = isObject(prepaidData) && Array.isArray(prepaidData.changes)
-    ? prepaidData.changes
-    : [];
-
-  let positiveCredits = 0;
-  let negativeUsageAll = 0;
-  let negativeUsageThisMonth = 0;
-
-  const now = new Date();
-  const month = now.getUTCMonth();
-  const year = now.getUTCFullYear();
-
-  for (const change of changes) {
-    const amount = extractChangeAmountCents(change);
-    if (amount > 0) {
-      positiveCredits += amount;
-      continue;
-    }
-
-    if (amount < 0) {
-      const absAmount = Math.abs(amount);
-      negativeUsageAll += absAmount;
-      const ts = extractTimestamp(change);
-      if (ts && ts.getUTCMonth() === month && ts.getUTCFullYear() === year) {
-        negativeUsageThisMonth += absAmount;
-      }
-    }
-  }
-
-  const inferredTotal = Math.max(remainingCents + negativeUsageAll, positiveCredits, remainingCents);
-  const usedCents = Math.max(0, inferredTotal - remainingCents);
-
-  return {
-    totalCents: inferredTotal,
-    remainingCents,
-    usedCents,
-    usedThisMonthCents: Math.max(0, negativeUsageThisMonth),
+interface InvoiceResponse {
+  coreInvoice: {
+    prepaidCredits: ValField;
+    prepaidCreditsUsed: ValField; // negative = cents used from prepaid this billing cycle
+    totalWithCorr: ValField;
+    amountAfterVat: string;
   };
+  billingCycle: { month: number; year: number };
 }
 
-function centsToUsd(value: number): number {
-  return Math.round(value) / 100;
+/* ── Helpers ── */
+
+function valToCents(v: ValField | undefined | null): number {
+  if (!v || typeof v.val !== "string") return 0;
+  const n = parseInt(v.val, 10);
+  return Number.isFinite(n) ? n : 0;
 }
 
-async function fetchJson(url: string, init: RequestInit): Promise<{ ok: boolean; status: number; data: JsonValue | null; errorText: string | null }> {
+function centsToDollars(cents: number): number {
+  return Math.round(cents) / 100;
+}
+
+async function fetchJson(url: string, init: RequestInit): Promise<FetchResult> {
   try {
     const response = await fetch(url, init);
     const text = await response.text();
-    let data: JsonValue | null = null;
+    let data: unknown = null;
     if (text) {
-      try {
-        data = JSON.parse(text) as JsonValue;
-      } catch {
-        data = null;
-      }
+      try { data = JSON.parse(text); } catch { data = null; }
     }
     return { ok: response.ok, status: response.status, data, errorText: response.ok ? null : text || null };
   } catch (error) {
     return { ok: false, status: 0, data: null, errorText: String(error) };
   }
 }
+
+/* ── Management API parser ── */
+
+function parseManagementApi(
+  prepaidData: PrepaidBalanceResponse,
+  invoiceData: InvoiceResponse | null,
+): BillingPayload {
+  // total.val is negative cents representing remaining balance
+  // e.g. "-6663" means $66.63 remaining
+  const remainingCents = Math.abs(valToCents(prepaidData.total));
+
+  // Sum all successful purchases (negative amount = credit added)
+  let totalPurchasedCents = 0;
+  let totalSpentCents = 0;
+
+  for (const change of prepaidData.changes ?? []) {
+    const amount = valToCents(change.amount);
+
+    if (change.changeOrigin === "PURCHASE") {
+      // Skip failed purchases
+      if (change.topupStatus === "FAILED_TO_CHARGE") continue;
+      // Purchases have negative val = credits added
+      totalPurchasedCents += Math.abs(amount);
+    } else if (change.changeOrigin === "SPEND") {
+      // Spend has positive val = credits consumed
+      totalSpentCents += Math.abs(amount);
+    }
+  }
+
+  const totalCents = Math.max(totalPurchasedCents, remainingCents + totalSpentCents);
+
+  // Current month usage from invoice preview
+  let usedThisMonthCents = 0;
+  if (invoiceData?.coreInvoice) {
+    // prepaidCreditsUsed.val is negative cents used from prepaid this cycle
+    usedThisMonthCents = Math.abs(valToCents(invoiceData.coreInvoice.prepaidCreditsUsed));
+  }
+
+  // Next invoice amount (postpaid portion after prepaid credits applied)
+  const nextInvoiceCents = invoiceData?.coreInvoice
+    ? parseInt(invoiceData.coreInvoice.amountAfterVat || "0", 10)
+    : 0;
+
+  return {
+    source: "management_api",
+    fetchedAt: new Date().toISOString(),
+    prepaidCredits: {
+      totalUsd: centsToDollars(totalCents),
+      remainingUsd: centsToDollars(remainingCents),
+      usedUsd: centsToDollars(totalCents - remainingCents),
+      usedThisMonthUsd: centsToDollars(usedThisMonthCents),
+    },
+    nextInvoiceUsd: centsToDollars(Math.abs(nextInvoiceCents)),
+  };
+}
+
+/* ── API callers ── */
 
 async function tryManagementApi(): Promise<BillingPayload | null> {
   const managementKey = Deno.env.get("XAI_MANAGEMENT_KEY");
@@ -235,30 +149,13 @@ async function tryManagementApi(): Promise<BillingPayload | null> {
     fetchJson(`${base}/postpaid/invoice/preview`, { method: "GET", headers }),
   ]);
 
-  console.log("[xai-billing-balance] RAW prepaid response:", JSON.stringify(prepaidRes.data));
-  console.log("[xai-billing-balance] RAW invoice response:", JSON.stringify(invoiceRes.data));
-
   if (!prepaidRes.ok || !prepaidRes.data) {
     console.error("[xai-billing-balance] Management prepaid call failed:", prepaidRes.status, prepaidRes.errorText);
     return null;
   }
 
-  const prepaidSummary = summarizePrepaid(prepaidRes.data);
-  const nextInvoiceCents = invoiceRes.ok
-    ? findFirstByKeyPattern(invoiceRes.data, [/invoice/i, /amount/i, /due/i, /total/i]) ?? 0
-    : 0;
-
-  return {
-    source: "management_api",
-    fetchedAt: new Date().toISOString(),
-    prepaidCredits: {
-      totalUsd: centsToUsd(prepaidSummary.totalCents),
-      remainingUsd: centsToUsd(prepaidSummary.remainingCents),
-      usedUsd: centsToUsd(prepaidSummary.usedCents),
-      usedThisMonthUsd: centsToUsd(prepaidSummary.usedThisMonthCents),
-    },
-    nextInvoiceUsd: centsToUsd(nextInvoiceCents),
-  };
+  const invoiceData = invoiceRes.ok ? (invoiceRes.data as InvoiceResponse) : null;
+  return parseManagementApi(prepaidRes.data as PrepaidBalanceResponse, invoiceData);
 }
 
 async function tryLegacyApi(): Promise<BillingPayload | null> {
@@ -276,26 +173,16 @@ async function tryLegacyApi(): Promise<BillingPayload | null> {
     return null;
   }
 
-  const totalCents = findFirstByKeyPattern(creditsRes.data, [/total/i, /initial/i, /credits/i]) ?? 0;
-  const remainingCents = findFirstByKeyPattern(creditsRes.data, [/remaining/i, /balance/i]) ?? totalCents;
-  const usedCents = Math.max(0, totalCents - remainingCents);
-  const usedThisMonthCents =
-    (usageRes.ok
-      ? findFirstByKeyPattern(usageRes.data, [/month/i, /current/i, /usage/i, /spent/i])
-      : null) ?? usedCents;
-
+  // Legacy API shape is unknown / undocumented — return zeros with a note
   return {
     source: "legacy_api",
     fetchedAt: new Date().toISOString(),
-    prepaidCredits: {
-      totalUsd: centsToUsd(totalCents),
-      remainingUsd: centsToUsd(remainingCents),
-      usedUsd: centsToUsd(usedCents),
-      usedThisMonthUsd: centsToUsd(usedThisMonthCents),
-    },
+    prepaidCredits: { totalUsd: 0, remainingUsd: 0, usedUsd: 0, usedThisMonthUsd: 0 },
     nextInvoiceUsd: 0,
   };
 }
+
+/* ── Handler ── */
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -338,35 +225,13 @@ serve(async (req) => {
       });
     }
 
-    // DEBUG: Return raw API response to diagnose parsing
-    const managementKey = Deno.env.get("XAI_MANAGEMENT_KEY");
-    const teamIdVal = Deno.env.get("XAI_TEAM_ID");
-    if (managementKey && teamIdVal) {
-      const debugHeaders = { Authorization: `Bearer ${managementKey}`, "Content-Type": "application/json" };
-      const debugBase = `https://management-api.x.ai/v1/billing/teams/${teamIdVal}`;
-      const [debugPrepaid, debugInvoice] = await Promise.all([
-        fetchJson(`${debugBase}/prepaid/balance`, { method: "GET", headers: debugHeaders }),
-        fetchJson(`${debugBase}/postpaid/invoice/preview`, { method: "GET", headers: debugHeaders }),
-      ]);
-      return new Response(JSON.stringify({
-        debug: true,
-        rawPrepaid: debugPrepaid,
-        rawInvoice: debugInvoice,
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const billing = (await tryManagementApi()) ?? (await tryLegacyApi());
     if (!billing) {
       return new Response(
         JSON.stringify({
           error: "Billing source is not configured. Set XAI_MANAGEMENT_KEY + XAI_TEAM_ID (preferred), or XAI_API_KEY legacy access.",
         }),
-        {
-          status: 503,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
