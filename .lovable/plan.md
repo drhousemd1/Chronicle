@@ -1,22 +1,24 @@
 
 
-# Wire Up xAI Billing — Add Secrets and Test
+# Fix xAI Billing Parser — Get Correct Numbers
 
-## What you gave me
-From your screenshot I can extract both required values:
-- **XAI_MANAGEMENT_KEY**: `xai-token-t5tBqnV5I3yqum5uLwyNbPvqQEnir71WjwXI5Jz88TVpD4QrtBI9lRHCdGwPuIXigfL447YlJhV06lw5`
-- **XAI_TEAM_ID**: `8473ae62-aa65-4739-b065-d826c18907fa` (extracted from the curl URL in the screenshot)
+## Problem
+The edge function's `summarizePrepaid` uses heuristic regex-based field matching (`findFirstByKeyPattern`) that grabs wrong fields from the xAI API response. Real values: $66.63 total, $55.68 remaining, $10.95 used. Parser returns: $247.21 total, -$100 remaining, $347.21 used.
 
 ## Steps
 
-### 1. Add both secrets
-Use Lovable's secret management to store `XAI_MANAGEMENT_KEY` and `XAI_TEAM_ID` so the deployed `xai-billing-balance` edge function can access them.
+### 1. Add raw response logging to the edge function
+Add `console.log(JSON.stringify(prepaidRes.data))` and `console.log(JSON.stringify(invoiceRes.data))` in `tryManagementApi()` so we can see the exact JSON shape xAI returns.
 
-### 2. Test the edge function
-Call the `xai-billing-balance` endpoint to confirm it returns real billing data instead of the 503 error.
+### 2. Deploy and invoke to capture logs
+Redeploy the function, trigger a call, then read the edge function logs.
 
-### 3. Verify the Finance Dashboard
-Confirm the billing card in the admin panel now shows your actual credit balance and usage instead of "Billing unavailable."
+### 3. Replace heuristic parser with exact field mapping
+Once we see the real response shape, replace `summarizePrepaid` and `findFirstByKeyPattern` with direct field access that reads the correct values. No more guessing cents vs dollars — we'll map exactly what the API provides.
 
-No code changes needed — the edge function already handles these credentials. This is purely a secrets configuration + verification task.
+### 4. Verify output matches screenshot
+Confirm the function returns values matching your xAI dashboard: ~$66.63 total, ~$55.68 remaining, ~$10.95 used.
+
+## Technical detail
+The root cause is in `supabase/functions/xai-billing-balance/index.ts` — the `summarizePrepaid` function and `toUsdCents` helper assume values might be in cents and apply `* 100` or `/ 100` transformations based on heuristics. The xAI API likely returns dollar amounts directly, and the parser is mangling them.
 
