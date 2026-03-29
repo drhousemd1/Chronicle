@@ -1295,6 +1295,7 @@ function FinancePage({ users = [], tierPrices = DEFAULT_TIER_PRICES }) {
     elite: typeof tierPrices?.elite === "number" ? tierPrices.elite : DEFAULT_TIER_PRICES.elite,
   }));
   const [chartMonths, setChartMonths] = useState(12);
+  const [financeAdminApiCost, setFinanceAdminApiCost] = useState(0);
 
   const setG = (tier, val) => setGrowth(g => ({ ...g, [tier]: val }));
   const setP = (tier, val) => setPrices(p => ({ ...p, [tier]: Math.max(0, parseFloat(val.toFixed(2))) }));
@@ -1306,6 +1307,15 @@ function FinancePage({ users = [], tierPrices = DEFAULT_TIER_PRICES }) {
       elite: typeof tierPrices?.elite === "number" ? tierPrices.elite : DEFAULT_TIER_PRICES.elite,
     });
   }, [tierPrices?.starter, tierPrices?.premium, tierPrices?.elite]);
+
+  // Fetch real admin API cost for finance snapshot
+  useEffect(() => {
+    fetchAdminUsageTimeseries("month").then((ts) => {
+      const latestPoint = ts.points[ts.points.length - 1];
+      const monthlyCost = latestPoint ? (latestPoint.textCostUsd + latestPoint.imageCostUsd) : 0;
+      setFinanceAdminApiCost(monthlyCost);
+    }).catch(() => {});
+  }, []);
 
   const tierCounts = useMemo(() => ({
     starter: users.filter((u) => u.status === "active" && (u.tierSlug === "starter" || u.tier === "Starter")).length,
@@ -1321,8 +1331,11 @@ function FinancePage({ users = [], tierPrices = DEFAULT_TIER_PRICES }) {
       ...tier,
       price: typeof prices[tier.slug] === "number" ? prices[tier.slug] : DEFAULT_TIER_PRICES[tier.slug],
       users: tierCounts[tier.slug] ?? 0,
+      apiCost: tier.slug === "admin" && tierCounts.admin > 0
+        ? financeAdminApiCost / tierCounts.admin
+        : tier.apiCost,
     }))
-  ), [prices, tierCounts]);
+  ), [prices, tierCounts, financeAdminApiCost]);
 
   const ECON = {
     starter: { price:prices.starter, api:0.827, stripe:prices.starter*0.029+0.30  },
