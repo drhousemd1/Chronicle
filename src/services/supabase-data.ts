@@ -1532,6 +1532,8 @@ export async function fetchUserBackgrounds(userId: string): Promise<UserBackgrou
     isSelected: row.is_selected || false,
     overlayColor: row.overlay_color || 'black',
     overlayOpacity: row.overlay_opacity ?? 10,
+    category: row.category || 'Uncategorized',
+    sortOrder: row.sort_order ?? 0,
     createdAt: new Date(row.created_at).getTime()
   }));
 }
@@ -1572,6 +1574,8 @@ export async function createUserBackground(userId: string, imageUrl: string): Pr
     isSelected: data.is_selected || false,
     overlayColor: (data as any).overlay_color || 'black',
     overlayOpacity: (data as any).overlay_opacity ?? 10,
+    category: (data as any).category || 'Uncategorized',
+    sortOrder: (data as any).sort_order ?? 0,
     createdAt: toTimestamp(data.created_at)
   };
 }
