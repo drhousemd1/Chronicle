@@ -93,22 +93,41 @@ export function SidebarThemeModal({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
-  /* ── Category rows (local state — populated from backgrounds prop) ──── */
-  const [rows, setRows] = useState<CategoryRow[]>([
-    { id: "row-default", label: "Uncategorized", bgIds: [] },
-  ]);
+  /* ── Derive category rows from backgrounds prop ──────────────────── */
+  // Extra rows created by drag (not yet in DB categories)
+  const [extraRows, setExtraRows] = useState<CategoryRow[]>([]);
+  // Renamed labels override (rowLabel -> newLabel)
+  const [labelOverrides, setLabelOverrides] = useState<Record<string, string>>({});
 
-  // Build a set of all bg ids currently assigned to a row
-  const assignedIds = new Set(rows.flatMap((r) => r.bgIds));
-  // Any backgrounds not yet assigned go into the first row conceptually
-  const unassignedBgs = backgrounds.filter((bg) => !assignedIds.has(bg.id));
+  const effectiveRows = useMemo(() => {
+    // Group backgrounds by their category
+    const catMap = new Map<string, string[]>();
+    const sortedBgs = [...backgrounds].sort((a, b) => a.sortOrder - b.sortOrder);
+    for (const bg of sortedBgs) {
+      const cat = bg.category || "Uncategorized";
+      if (!catMap.has(cat)) catMap.set(cat, []);
+      catMap.get(cat)!.push(bg.id);
+    }
 
-  // Effective rows: first row gets unassigned prepended
-  const effectiveRows = rows.map((row, i) =>
-    i === 0
-      ? { ...row, bgIds: [...unassignedBgs.map((b) => b.id), ...row.bgIds.filter((id) => backgrounds.some((b) => b.id === id))] }
-      : { ...row, bgIds: row.bgIds.filter((id) => backgrounds.some((b) => b.id === id)) }
-  );
+    // Ensure "Uncategorized" is always first
+    const rows: CategoryRow[] = [];
+    const uncatIds = catMap.get("Uncategorized") || [];
+    rows.push({ id: "row-Uncategorized", label: labelOverrides["Uncategorized"] || "Uncategorized", bgIds: uncatIds });
+    catMap.delete("Uncategorized");
+
+    for (const [cat, ids] of catMap) {
+      rows.push({ id: `row-${cat}`, label: labelOverrides[cat] || cat, bgIds: ids });
+    }
+
+    // Add any extra rows created by drag that don't have backgrounds yet
+    for (const extra of extraRows) {
+      if (!rows.some((r) => r.label === extra.label)) {
+        rows.push(extra);
+      }
+    }
+
+    return rows;
+  }, [backgrounds, extraRows, labelOverrides]);
 
   const bgMap = new Map(backgrounds.map((b) => [b.id, b]));
 
