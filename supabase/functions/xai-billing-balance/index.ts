@@ -235,6 +235,9 @@ async function tryManagementApi(): Promise<BillingPayload | null> {
     fetchJson(`${base}/postpaid/invoice/preview`, { method: "GET", headers }),
   ]);
 
+  console.log("[xai-billing-balance] RAW prepaid response:", JSON.stringify(prepaidRes.data));
+  console.log("[xai-billing-balance] RAW invoice response:", JSON.stringify(invoiceRes.data));
+
   if (!prepaidRes.ok || !prepaidRes.data) {
     console.error("[xai-billing-balance] Management prepaid call failed:", prepaidRes.status, prepaidRes.errorText);
     return null;
