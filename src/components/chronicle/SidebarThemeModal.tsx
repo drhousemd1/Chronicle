@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback, useMemo } from "react";
+import React, { useRef, useState, useCallback, useMemo, useEffect } from "react";
 import { UserBackground } from "@/types";
 import { updateSidebarBackgroundCategories } from "@/services/supabase-data";
 import {
@@ -38,6 +38,7 @@ interface SidebarThemeModalProps {
   onUpload: (file: File) => Promise<void>;
   onDelete: (id: string, imageUrl: string) => void;
   isUploading: boolean;
+  onReorder?: (updated: UserBackground[]) => void;
 }
 
 /* ── Inline sub-components ────────────────────────────────────────────────── */
@@ -89,47 +90,42 @@ export function SidebarThemeModal({
   onUpload,
   onDelete,
   isUploading,
+  onReorder,
 }: SidebarThemeModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
-  /* ── Derive category rows from backgrounds prop ──────────────────── */
-  // Extra rows created by drag (not yet in DB categories)
-  const [extraRows, setExtraRows] = useState<CategoryRow[]>([]);
-  // Renamed labels override (rowLabel -> newLabel)
-  const [labelOverrides, setLabelOverrides] = useState<Record<string, string>>({});
+  /* ── Local state mirror — source of truth while modal is open ─── */
+  const [localBackgrounds, setLocalBackgrounds] = useState<UserBackground[]>(backgrounds);
 
+  // Sync from prop when backgrounds change (new upload, delete, etc.)
+  useEffect(() => {
+    setLocalBackgrounds(backgrounds);
+  }, [backgrounds]);
+
+  /* ── Derive category rows from local state ──────────────────── */
   const effectiveRows = useMemo(() => {
-    // Group backgrounds by their category
     const catMap = new Map<string, string[]>();
-    const sortedBgs = [...backgrounds].sort((a, b) => a.sortOrder - b.sortOrder);
-    for (const bg of sortedBgs) {
+    const sorted = [...localBackgrounds].sort((a, b) => a.sortOrder - b.sortOrder);
+    for (const bg of sorted) {
       const cat = bg.category || "Uncategorized";
       if (!catMap.has(cat)) catMap.set(cat, []);
       catMap.get(cat)!.push(bg.id);
     }
 
-    // Ensure "Uncategorized" is always first
     const rows: CategoryRow[] = [];
     const uncatIds = catMap.get("Uncategorized") || [];
-    rows.push({ id: "row-Uncategorized", label: labelOverrides["Uncategorized"] || "Uncategorized", bgIds: uncatIds });
+    rows.push({ id: "row-Uncategorized", label: "Uncategorized", bgIds: uncatIds });
     catMap.delete("Uncategorized");
 
     for (const [cat, ids] of catMap) {
-      rows.push({ id: `row-${cat}`, label: labelOverrides[cat] || cat, bgIds: ids });
-    }
-
-    // Add any extra rows created by drag that don't have backgrounds yet
-    for (const extra of extraRows) {
-      if (!rows.some((r) => r.label === extra.label)) {
-        rows.push(extra);
-      }
+      rows.push({ id: `row-${cat}`, label: cat, bgIds: ids });
     }
 
     return rows;
-  }, [backgrounds, extraRows, labelOverrides]);
+  }, [localBackgrounds]);
 
-  const bgMap = new Map(backgrounds.map((b) => [b.id, b]));
+  const bgMap = new Map(localBackgrounds.map((b) => [b.id, b]));
 
   /* ── Drag state ────────────────────────────────────────────────────── */
   const [isDragging, setIsDragging] = useState(false);
@@ -147,29 +143,52 @@ export function SidebarThemeModal({
     }
   };
 
-  /* ── Helper: persist category assignments to DB ─────────────────── */
-  const persistCategories = useCallback((rows: CategoryRow[]) => {
-    const updates: Array<{ id: string; category: string; sort_order: number }> = [];
+  /* ── Helper: apply row structure to localBackgrounds and persist ── */
+  const applyRowChanges = useCallback((rows: CategoryRow[]) => {
+    setLocalBackgrounds((prev) => {
+      const updated = prev.map((bg) => {
+        for (const row of rows) {
+          const idx = row.bgIds.indexOf(bg.id);
+          if (idx !== -1) {
+            return { ...bg, category: row.label, sortOrder: idx };
+          }
+        }
+        return bg;
+      });
+      // Sync parent
+      onReorder?.(updated);
+      return updated;
+    });
+
+    // Persist to DB
+    const dbUpdates: Array<{ id: string; category: string; sort_order: number }> = [];
     for (const row of rows) {
       for (let i = 0; i < row.bgIds.length; i++) {
-        updates.push({ id: row.bgIds[i], category: row.label, sort_order: i });
+        dbUpdates.push({ id: row.bgIds[i], category: row.label, sort_order: i });
       }
     }
-    if (updates.length > 0) {
-      updateSidebarBackgroundCategories(updates).catch(console.error);
+    if (dbUpdates.length > 0) {
+      updateSidebarBackgroundCategories(dbUpdates).catch(console.error);
     }
-  }, []);
+  }, [onReorder]);
 
   const handleRenameRow = (rowId: string, newLabel: string) => {
-    // Find the old label for this row
     const oldRow = effectiveRows.find((r) => r.id === rowId);
     if (!oldRow) return;
-    const oldLabel = oldRow.label;
 
-    setLabelOverrides((prev) => ({ ...prev, [oldLabel]: newLabel }));
-    setExtraRows((prev) => prev.map((r) => (r.id === rowId ? { ...r, label: newLabel } : r)));
+    // Update local state: change category for all bgs in this row
+    setLocalBackgrounds((prev) => {
+      const updated = prev.map((bg) => {
+        if (oldRow.bgIds.includes(bg.id)) {
+          return { ...bg, category: newLabel };
+        }
+        return bg;
+      });
+      onReorder?.(updated);
+      return updated;
+    });
 
-    // Persist: update all backgrounds in this row to the new category name
+    // Persist
     const updates = oldRow.bgIds.map((id, i) => ({ id, category: newLabel, sort_order: i }));
     if (updates.length > 0) {
       updateSidebarBackgroundCategories(updates).catch(console.error);
@@ -215,18 +234,21 @@ export function SidebarThemeModal({
     const drop = dropInfo.current;
     if (!drag || !drop) return;
 
-    let working = effectiveRows.map((r) => ({ ...r }));
+    let working = effectiveRows.map((r) => ({ ...r, bgIds: [...r.bgIds] }));
 
-    // Remove from source
+    // Remove from source row
     working = working.map((r) =>
       r.id === drag.fromRowId ? { ...r, bgIds: r.bgIds.filter((id) => id !== drag.bgId) } : r
     );
 
     if (drop.isNewRow) {
       const newLabel = "New Category";
-      const newRow: CategoryRow = { id: `row-${Date.now()}`, label: newLabel, bgIds: [drag.bgId] };
-      working.push(newRow);
-      setExtraRows((prev) => [...prev, newRow]);
+      let uniqueLabel = newLabel;
+      let counter = 1;
+      while (working.some((r) => r.label === uniqueLabel)) {
+        uniqueLabel = `${newLabel} ${counter++}`;
+      }
+      working.push({ id: `row-${Date.now()}`, label: uniqueLabel, bgIds: [drag.bgId] });
     } else if (drop.toRowId) {
       working = working.map((r) => {
         if (r.id !== drop.toRowId) return r;
@@ -240,8 +262,11 @@ export function SidebarThemeModal({
       });
     }
 
-    // Persist to DB
-    persistCategories(working);
+    // Remove empty rows (except Uncategorized)
+    working = working.filter((r) => r.label === "Uncategorized" || r.bgIds.length > 0);
+
+    // Apply to local state and persist
+    applyRowChanges(working);
   };
 
   const handleScrollAreaDragOver = (e: React.DragEvent) => {
@@ -267,7 +292,6 @@ export function SidebarThemeModal({
 
           {/* ── Header ── */}
           <div className="relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] shadow-[0_6px_16px_rgba(0,0,0,0.35)]">
-            {/* Gloss sheen */}
             <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.07),transparent)] bg-[length:100%_30%] bg-no-repeat pointer-events-none" />
             <div className="relative flex items-center gap-2.5 px-5 py-4">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -296,7 +320,6 @@ export function SidebarThemeModal({
 
               {/* Upload row */}
               <div className="flex justify-end items-center gap-2 mb-4">
-                {/* Close button */}
                 <button
                   type="button"
                   onClick={onClose}
@@ -305,7 +328,6 @@ export function SidebarThemeModal({
                   Close
                 </button>
 
-                {/* Upload dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
@@ -333,7 +355,6 @@ export function SidebarThemeModal({
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                {/* Info tooltip */}
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -484,7 +505,7 @@ export function SidebarThemeModal({
               </div>
 
               {/* Empty state */}
-              {backgrounds.length === 0 && (
+              {localBackgrounds.length === 0 && (
                 <div className="mt-6 py-12 text-center text-zinc-500 border-2 border-dashed border-zinc-700 rounded-2xl">
                   <p className="text-xs font-bold uppercase tracking-widest">No themes uploaded</p>
                   <p className="text-[10px] mt-1">Upload images to customize your sidebar background.</p>

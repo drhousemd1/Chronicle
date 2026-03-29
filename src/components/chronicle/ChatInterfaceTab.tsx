@@ -4991,6 +4991,7 @@ const updatedChar: SideCharacter = {
         onUpload={handleUploadSidebarBg}
         onDelete={handleDeleteSidebarBg}
         isUploading={isUploadingSidebarBg}
+        onReorder={(updated) => setSidebarBackgrounds(updated)}
       />
       
       {/* Memories Modal */}
