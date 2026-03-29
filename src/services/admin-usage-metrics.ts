@@ -309,7 +309,7 @@ export async function fetchAdminApiUsageTestReport(limit = 50): Promise<AdminApi
   const mappedValidationRows = rawValidationRows
     .map((rowId: unknown) => (typeof rowId === "string" ? API_USAGE_VALIDATION_ROW_BY_ID[rowId] : null))
     .filter((row: AdminApiUsageValidationRow | null): row is AdminApiUsageValidationRow => Boolean(row))
-    .sort((a, b) => a.sort - b.sort);
+    .sort((a: AdminApiUsageValidationRow, b: AdminApiUsageValidationRow) => a.sort - b.sort);
   const validationRows = mappedValidationRows.length > 0
     ? mappedValidationRows
     : API_USAGE_VALIDATION_ROWS;

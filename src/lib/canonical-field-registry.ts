@@ -55,8 +55,8 @@ function normalizeText(input: unknown): string {
 
 function normalizeStoryGoalSteps(steps: unknown): GoalStep[] {
   if (!Array.isArray(steps)) return [];
-  return steps
-    .map((step, idx) => {
+  return (steps
+    .map((step: any, idx: number) => {
       const description = normalizeText((step as any)?.description);
       if (!description) return null;
       return {
@@ -69,13 +69,13 @@ function normalizeStoryGoalSteps(steps: unknown): GoalStep[] {
             : undefined,
       };
     })
-    .filter((step): step is GoalStep => Boolean(step));
+    .filter((step: any): step is GoalStep => Boolean(step))) as GoalStep[];
 }
 
 function normalizeStoryGoals(goals: unknown): StoryGoal[] {
   if (!Array.isArray(goals)) return [];
-  return goals
-    .map((goal, idx) => {
+  return (goals
+    .map((goal: any, idx: number) => {
       const title = normalizeText((goal as any)?.title);
       if (!title) return null;
       const flexibilityRaw = normalizeText((goal as any)?.flexibility).toLowerCase();
@@ -97,7 +97,7 @@ function normalizeStoryGoals(goals: unknown): StoryGoal[] {
             : Date.now(),
       };
     })
-    .filter((goal): goal is StoryGoal => Boolean(goal));
+    .filter((goal: any): goal is StoryGoal => Boolean(goal))) as StoryGoal[];
 }
 
 function normalizeStructuredLocations(value: unknown): WorldCore["structuredLocations"] {
