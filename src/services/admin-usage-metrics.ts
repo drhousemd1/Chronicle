@@ -263,9 +263,11 @@ export function getEmptyUsageTimeseries(period: AdminUsagePeriod): AdminUsageTim
   };
 }
 
-export async function fetchAdminUsageTimeseries(period: AdminUsagePeriod): Promise<AdminUsageTimeseries> {
+export async function fetchAdminUsageTimeseries(period: AdminUsagePeriod, userIds?: string[]): Promise<AdminUsageTimeseries> {
+  const body: Record<string, unknown> = { period };
+  if (userIds && userIds.length > 0) body.userIds = userIds;
   const { data, error } = await supabase.functions.invoke("admin-ai-usage-timeseries", {
-    body: { period },
+    body,
   });
   if (error) {
     throw new Error(error.message || "Failed to load admin usage timeseries");
