@@ -134,25 +134,28 @@ serve(async (req) => {
       : inputTokensEst + outputTokensEst;
 
     const insertPayload = {
-      session_id: resolvedSessionId,
       user_id: user.id,
-      event_key: eventKey,
-      api_call_group: typeof body.apiCallGroup === "string" ? body.apiCallGroup.slice(0, MAX_CALL_GROUP) : null,
+      event_type: eventKey,
       event_source: typeof body.eventSource === "string" && body.eventSource.trim() ? body.eventSource.trim().slice(0, MAX_SOURCE) : "client",
-      model_id: typeof body.modelId === "string" ? body.modelId.slice(0, MAX_MODEL) : null,
-      input_chars: toNonNegativeInt(body.inputChars),
-      output_chars: toNonNegativeInt(body.outputChars),
-      input_tokens_est: inputTokensEst,
-      output_tokens_est: outputTokensEst,
-      total_tokens_est: totalTokensEst,
-      est_cost_usd: toNonNegativeFloat(body.estCostUsd),
-      latency_ms: body.latencyMs == null ? null : toNonNegativeInt(body.latencyMs),
-      status: typeof body.status === "string" && body.status.trim() ? body.status.trim().slice(0, 32) : "ok",
-      metadata: normalizeMetadata(body.metadata),
+      event_count: 1,
+      metadata: {
+        ...normalizeMetadata(body.metadata),
+        session_id: resolvedSessionId,
+        api_call_group: typeof body.apiCallGroup === "string" ? body.apiCallGroup.slice(0, MAX_CALL_GROUP) : null,
+        model_id: typeof body.modelId === "string" ? body.modelId.slice(0, MAX_MODEL) : null,
+        input_chars: toNonNegativeInt(body.inputChars),
+        output_chars: toNonNegativeInt(body.outputChars),
+        input_tokens_est: inputTokensEst,
+        output_tokens_est: outputTokensEst,
+        total_tokens_est: totalTokensEst,
+        est_cost_usd: toNonNegativeFloat(body.estCostUsd),
+        latency_ms: body.latencyMs == null ? null : toNonNegativeInt(body.latencyMs),
+        status: typeof body.status === "string" && body.status.trim() ? body.status.trim().slice(0, 32) : "ok",
+      },
     };
 
     const { error: insertError } = await serviceClient
-      .from("ai_usage_test_events")
+      .from("ai_usage_events")
       .insert(insertPayload);
 
     if (insertError) {
