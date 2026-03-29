@@ -338,6 +338,25 @@ serve(async (req) => {
       });
     }
 
+    // DEBUG: Return raw API response to diagnose parsing
+    const managementKey = Deno.env.get("XAI_MANAGEMENT_KEY");
+    const teamIdVal = Deno.env.get("XAI_TEAM_ID");
+    if (managementKey && teamIdVal) {
+      const debugHeaders = { Authorization: `Bearer ${managementKey}`, "Content-Type": "application/json" };
+      const debugBase = `https://management-api.x.ai/v1/billing/teams/${teamIdVal}`;
+      const [debugPrepaid, debugInvoice] = await Promise.all([
+        fetchJson(`${debugBase}/prepaid/balance`, { method: "GET", headers: debugHeaders }),
+        fetchJson(`${debugBase}/postpaid/invoice/preview`, { method: "GET", headers: debugHeaders }),
+      ]);
+      return new Response(JSON.stringify({
+        debug: true,
+        rawPrepaid: debugPrepaid,
+        rawInvoice: debugInvoice,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const billing = (await tryManagementApi()) ?? (await tryLegacyApi());
     if (!billing) {
       return new Response(
