@@ -4994,6 +4994,16 @@ const updatedChar: SideCharacter = {
         onDelete={handleDeleteSidebarBg}
         isUploading={isUploadingSidebarBg}
         onReorder={(updated) => setSidebarBackgrounds(updated)}
+        onAddFromLibrary={async (imageUrl: string) => {
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            const newBg = await supabaseData.createSidebarBackground(user.id, imageUrl);
+            setSidebarBackgrounds(prev => [newBg, ...prev]);
+          } catch (err) {
+            console.error('Failed to add from library:', err);
+          }
+        }}
       />
       
       {/* Memories Modal */}
