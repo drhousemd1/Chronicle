@@ -465,8 +465,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [inlineEditText, setInlineEditText] = useState('');
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [regeneratingMessageId, setRegeneratingMessageId] = useState<string | null>(null);
+  const [currentDay, setCurrentDay] = useState(1);
   const [currentTimeOfDay, setCurrentTimeOfDay] = useState<TimeOfDay>('day');
-  
   // Time progression state
   const [timeProgressionMode, setTimeProgressionMode] = useState<'manual' | 'automatic'>('manual');
   const [timeProgressionInterval, setTimeProgressionInterval] = useState<number>(15);
