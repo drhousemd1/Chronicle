@@ -14,6 +14,81 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_usage_events: {
+        Row: {
+          created_at: string | null
+          event_count: number | null
+          event_source: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_count?: number | null
+          event_source?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_count?: number | null
+          event_source?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_usage_test_sessions: {
+        Row: {
+          conversation_id: string | null
+          conversation_name: string | null
+          created_at: string | null
+          ended_at: string | null
+          id: string
+          metadata: Json | null
+          scenario_id: string | null
+          scenario_name: string | null
+          started_at: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          conversation_name?: string | null
+          created_at?: string | null
+          ended_at?: string | null
+          id?: string
+          metadata?: Json | null
+          scenario_id?: string | null
+          scenario_name?: string | null
+          started_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string | null
+          conversation_name?: string | null
+          created_at?: string | null
+          ended_at?: string | null
+          id?: string
+          metadata?: Json | null
+          scenario_id?: string | null
+          scenario_name?: string | null
+          started_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           id: string
