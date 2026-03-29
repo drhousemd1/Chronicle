@@ -32,7 +32,7 @@ describe('llm canonical prompt coverage', () => {
       work: 'Regal court attire',
       _extras: [{ id: uid('extra'), label: 'Cape', value: 'Emerald travel cape' }],
     };
-    aiCharacter.background = {
+    (aiCharacter as any).background = {
       ...aiCharacter.background,
       residence: 'Spring Court manor',
       motivation: 'Keep his people safe',

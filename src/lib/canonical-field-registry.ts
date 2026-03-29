@@ -129,7 +129,7 @@ function normalizeCustomSections(value: unknown): WorldCustomSection[] {
           label: normalizeText(item?.label),
           value: normalizeText(item?.value),
         }))
-        .filter((item) => item.label || item.value);
+        .filter((item: any) => item.label || item.value);
       const freeformValue = normalizeText((section as any)?.freeformValue);
       if (!title && !items.length && !freeformValue) return null;
       const sectionTypeRaw = normalizeText((section as any)?.type).toLowerCase();
