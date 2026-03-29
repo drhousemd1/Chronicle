@@ -187,7 +187,7 @@ export function SidebarThemeModal({
           const ids = [...r.bgIds];
           if (drop.beforeBgId === null) ids.push(drag.bgId);
           else {
-            const idx = ids.indexOf(drop.beforeBgId);
+            const idx = ids.indexOf(drop.beforeBgId!);
             ids.splice(idx === -1 ? ids.length : idx, 0, drag.bgId);
           }
           return { ...r, bgIds: ids };
