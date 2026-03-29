@@ -216,7 +216,7 @@ const tierBadge  = (t: string) => <Badge label={t}  {...((tierMeta as Record<str
 const statusBadge= (s: string) => <Badge label={s}  {...((statusMeta as Record<string, {bg:string;color:string}>)[s] || statusMeta.cancelled)} />;
 
 const USER_TIER_OVERRIDES_KEY = "admin_user_tier_overrides_v1";
-const DEFAULT_TIER_PRICES = { free: 0, starter: 9.99, premium: 19.99, elite: 39.99 };
+const DEFAULT_TIER_PRICES = { free: 0, starter: 9.99, premium: 19.99, elite: 39.99, admin: 0 };
 const USER_TIER_OPTIONS = [
   { value: "free", label: "Free" },
   { value: "starter", label: "Starter" },
@@ -343,12 +343,14 @@ const TIER_BREAKDOWN = [
   { name:"Starter", price:9.99,  apiCost:0.827, users:24, color:"#1e40af", soft:"#dbeafe" },
   { name:"Premium", price:19.99, apiCost:2.481, users:17, color:"#5b21b6", soft:"#ede9fe" },
   { name:"Elite",   price:39.99, apiCost:6.598, users:6,  color:"#92400e", soft:"#fef3c7" },
+  { name:"Admin",   price:0,     apiCost:0,     users:0,  color:"#dc2626", soft:"#fef2f2" },
 ];
 
 const PAID_TIER_SNAPSHOT_META = [
   { slug:"starter", name:"Starter", color:"#1e40af", apiCost:0.827 },
   { slug:"premium", name:"Premium", color:"#5b21b6", apiCost:2.481 },
   { slug:"elite",   name:"Elite",   color:"#92400e", apiCost:6.598 },
+  { slug:"admin",   name:"Admin",   color:"#dc2626", apiCost:0 },
 ];
 
 // ─── slate header — flush top of ShellCard, no margin needed ──
@@ -669,7 +671,7 @@ function NetIncomeMini() {
 
 // ─── API usage mini card ──────────────────────────────────────
 
-function ApiUsageMini({ expanded = false }) {
+function ApiUsageMini({ expanded = false, users = [] }: { expanded?: boolean; users?: any[] }) {
   const [period,  setPeriod]  = useState<AdminUsagePeriod>("week");
   const [apiType, setApiType] = useState("text");
   const [byTier,  setByTier]  = useState("total");
@@ -678,6 +680,12 @@ function ApiUsageMini({ expanded = false }) {
   const [billingError, setBillingError] = useState<string | null>(null);
   const [usageData, setUsageData] = useState<{ label: string; cost: number }[]>([]);
   const [usageLoading, setUsageLoading] = useState(false);
+
+  const adminUserIds = useMemo(() =>
+    users.filter((u: any) => u.tierSlug === "admin" || u.tierSlug === "admin_cfo" || u.tier === "Admin" || u.tier === "Admin (CFO)")
+      .map((u: any) => u.id),
+    [users]
+  );
 
   const loadBilling = async () => {
     setBillingLoading(true);
@@ -704,7 +712,8 @@ function ApiUsageMini({ expanded = false }) {
   useEffect(() => {
     let cancelled = false;
     setUsageLoading(true);
-    fetchAdminUsageTimeseries(period).then((ts) => {
+    const filterUserIds = byTier === "tier" && adminUserIds.length > 0 ? adminUserIds : undefined;
+    fetchAdminUsageTimeseries(period, filterUserIds).then((ts) => {
       if (cancelled) return;
       setUsageData(
         ts.points.map((p) => ({
@@ -717,7 +726,7 @@ function ApiUsageMini({ expanded = false }) {
       if (!cancelled) setUsageLoading(false);
     });
     return () => { cancelled = true; };
-  }, [period, apiType]);
+  }, [period, apiType, byTier, adminUserIds]);
 
   const data  = usageData;
   const total = data.reduce((a, d) => a + d.cost, 0).toFixed(2);
@@ -1269,7 +1278,7 @@ function OverviewPage({ onNavigate, snapshotRows, users }) {
           <AppGrowth users={users} />
         </div>
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-          <ApiUsageMini />
+          <ApiUsageMini users={users} />
           <NetIncomeMini />
         </div>
       </div>
@@ -1310,6 +1319,7 @@ function FinancePage({ users = [], tierPrices = DEFAULT_TIER_PRICES }) {
     premium: users.filter((u) => u.status === "active" && (u.tierSlug === "premium" || u.tier === "Premium")).length,
     elite:   users.filter((u) => u.status === "active" && (u.tierSlug === "elite" || u.tier === "Elite")).length,
     free:    users.filter((u) => u.status === "active" && (u.tierSlug === "free" || u.tier === "Free")).length,
+    admin:   users.filter((u) => u.status === "active" && (u.tierSlug === "admin" || u.tierSlug === "admin_cfo" || u.tier === "Admin" || u.tier === "Admin (CFO)")).length,
   }), [users]);
 
   const totalPaid = tierCounts.starter + tierCounts.premium + tierCounts.elite;
@@ -1381,7 +1391,7 @@ function FinancePage({ users = [], tierPrices = DEFAULT_TIER_PRICES }) {
         <SubscriberSnapshot rows={financeSnapshotRows} />
         <NetIncomeMini />
         <AppGrowth users={users} />
-        <ApiUsageMini />
+        <ApiUsageMini users={users} />
       </div>
 
       {/* Growth projection */}

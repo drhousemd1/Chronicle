@@ -168,6 +168,9 @@ serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const period = getPeriod(body?.period);
+    const userIds: string[] | null = Array.isArray(body?.userIds) && body.userIds.length > 0
+      ? body.userIds.filter((id: unknown) => typeof id === "string")
+      : null;
     const buckets = buildBuckets(period);
     const points = buckets.map((bucket) => createEmptyPoint(bucket.label));
     const rangeStartIso = buckets[0].start.toISOString();
@@ -209,16 +212,28 @@ serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
+    // Build queries with optional userIds filter
+    let messagesQuery = serviceClient
+      .from("messages")
+      .select("created_at, role")
+      .gte("created_at", rangeStartIso)
+      .in("role", ["user", "assistant"]);
+
+    let eventsQuery = serviceClient
+      .from("ai_usage_events")
+      .select("created_at, event_type, event_count, user_id")
+      .gte("created_at", rangeStartIso);
+
+    if (userIds) {
+      eventsQuery = eventsQuery.in("user_id", userIds);
+      // For messages, we need to filter by conversation owner
+      // Since messages don't have user_id directly, we skip userIds filter on messages
+      // and rely on ai_usage_events which has user_id
+    }
+
     const [messagesRes, eventsRes] = await Promise.all([
-      serviceClient
-        .from("messages")
-        .select("created_at, role")
-        .gte("created_at", rangeStartIso)
-        .in("role", ["user", "assistant"]),
-      serviceClient
-        .from("ai_usage_events")
-        .select("created_at, event_type, event_count")
-        .gte("created_at", rangeStartIso),
+      userIds ? Promise.resolve({ data: [], error: null }) : messagesQuery,
+      eventsQuery,
     ]);
 
     if (messagesRes.error) {
