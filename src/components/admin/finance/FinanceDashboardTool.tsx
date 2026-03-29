@@ -428,20 +428,14 @@ function SubscriberSnapshot({ rows }: { rows?: { name: string; price: number; ap
 
   return (
     <ShellCard style={{ flex:1 }}>
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 20px 0" }}>
-        <SlateHeader title="Subscriber Snapshot" style={{ padding:0, margin:0 }} />
-        <div style={{ display:"flex", gap:2, background:D.shell, borderRadius:6, padding:2 }}>
-          {(["mo","yr"] as const).map(p => (
-            <button key={p} onClick={() => setPeriod(p)} style={{
-              fontSize:11, fontWeight:600, padding:"3px 10px", borderRadius:4, border:"none", cursor:"pointer",
-              color: period === p ? D.text : D.muted,
-              background: period === p ? D.elevated : "transparent",
-              transition: "all .12s",
-            }}>{p === "mo" ? "Mo" : "Yr"}</button>
-          ))}
-        </div>
-      </div>
-      <div style={{ padding:"12px 20px 20px" }}>
+      <SlateHeader title="Subscriber Snapshot" right={
+        <HdrToggle
+          options={[{ v:"mo", l:"Mo" }, { v:"yr", l:"Yr" }]}
+          value={period}
+          onChange={(v) => setPeriod(v as "mo"|"yr")}
+        />
+      } />
+      <div style={{ padding:"18px 20px 20px" }}>
         <div style={{ display:"grid", gridTemplateColumns:"12px 1fr 44px 64px 68px 68px 64px",
           gap:8, paddingBottom:8, borderBottom:`1px solid ${D.divider}` }}>
           <div />
