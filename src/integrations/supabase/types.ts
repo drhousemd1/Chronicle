@@ -1196,6 +1196,7 @@ export type Database = {
       }
       user_backgrounds: {
         Row: {
+          category: string
           created_at: string | null
           id: string
           image_library_selected: boolean | null
@@ -1203,9 +1204,11 @@ export type Database = {
           is_selected: boolean | null
           overlay_color: string
           overlay_opacity: number
+          sort_order: number
           user_id: string
         }
         Insert: {
+          category?: string
           created_at?: string | null
           id?: string
           image_library_selected?: boolean | null
@@ -1213,9 +1216,11 @@ export type Database = {
           is_selected?: boolean | null
           overlay_color?: string
           overlay_opacity?: number
+          sort_order?: number
           user_id: string
         }
         Update: {
+          category?: string
           created_at?: string | null
           id?: string
           image_library_selected?: boolean | null
@@ -1223,6 +1228,7 @@ export type Database = {
           is_selected?: boolean | null
           overlay_color?: string
           overlay_opacity?: number
+          sort_order?: number
           user_id?: string
         }
         Relationships: []
