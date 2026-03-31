@@ -14,7 +14,7 @@ interface GalleryScenarioCardProps {
   onViewDetails: () => void;
 }
 
-export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
+export const GalleryScenarioCard = React.forwardRef<HTMLDivElement, GalleryScenarioCardProps>(({
   published,
   isLiked,
   isSaved,
@@ -22,7 +22,7 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
   onSave,
   onPlay,
   onViewDetails
-}) => {
+}, ref) => {
   const [isLiking, setIsLiking] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -58,7 +58,8 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
   };
 
   return (
-    <div 
+    <div
+      ref={ref}
       className="group relative cursor-pointer transition-all duration-300 group-hover:-translate-y-3"
       onClick={onViewDetails}
     >
@@ -170,4 +171,6 @@ export const GalleryScenarioCard: React.FC<GalleryScenarioCardProps> = ({
       </div>
     </div>
   );
-};
+});
+
+GalleryScenarioCard.displayName = "GalleryScenarioCard";

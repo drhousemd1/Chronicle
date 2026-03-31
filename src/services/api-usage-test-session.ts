@@ -15,6 +15,11 @@ export type ApiUsageTestSession = {
   updatedAt: string;
 };
 
+type FetchActiveSessionOptions = {
+  retries?: number;
+  retryDelayMs?: number;
+};
+
 const ENABLED_KEY = "chronicle_api_usage_test_enabled";
 const SESSION_ID_KEY = "chronicle_api_usage_test_session_id";
 
@@ -32,6 +37,10 @@ export function getApiUsageTestSessionIdLocal(): string | null {
   return window.localStorage.getItem(SESSION_ID_KEY);
 }
 
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function setLocalState(enabled: boolean, sessionId?: string | null) {
   if (!hasWindow()) return;
   window.localStorage.setItem(ENABLED_KEY, enabled ? "1" : "0");
@@ -42,12 +51,44 @@ function setLocalState(enabled: boolean, sessionId?: string | null) {
   }
 }
 
-export async function fetchActiveApiUsageTestSession(): Promise<ApiUsageTestSession | null> {
-  const { data, error } = await supabase.functions.invoke("api-usage-test-session", {
-    body: { action: "get" },
-  });
-  if (error) throw new Error(error.message || "Failed to load test session");
-  return (data?.session || null) as ApiUsageTestSession | null;
+export async function fetchActiveApiUsageTestSession(
+  options: FetchActiveSessionOptions = {},
+): Promise<ApiUsageTestSession | null> {
+  const retries = Math.max(0, options.retries ?? 1);
+  const retryDelayMs = Math.max(0, options.retryDelayMs ?? 350);
+
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    const { data, error } = await supabase.functions.invoke("api-usage-test-session", {
+      body: { action: "get" },
+    });
+
+    if (!error) {
+      return (data?.session || null) as ApiUsageTestSession | null;
+    }
+
+    const payload = (typeof data === "object" && data !== null)
+      ? (data as Record<string, unknown>)
+      : null;
+    const payloadError = typeof payload?.error === "string" ? payload.error : null;
+    const payloadDetails = typeof payload?.details === "string" ? payload.details : null;
+    const errorContext = typeof (error as { context?: unknown }).context === "string"
+      ? (error as { context: string }).context
+      : null;
+
+    const parts = [payloadError, payloadDetails, error.message, errorContext].filter(
+      (value): value is string => Boolean(value),
+    );
+    lastError = new Error(parts.join(" | ") || "Failed to load test session");
+
+    if (attempt < retries) {
+      await delay(retryDelayMs * (attempt + 1));
+      continue;
+    }
+  }
+
+  throw lastError ?? new Error("Failed to load test session");
 }
 
 export async function startApiUsageTestSession(input: {

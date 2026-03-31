@@ -96,7 +96,13 @@ serve(async (req) => {
         .maybeSingle();
 
       if (error) {
-        return new Response(JSON.stringify({ error: "Failed to fetch active session" }), {
+        console.error("[api-usage-test-session] Failed to fetch active session:", error);
+        return new Response(JSON.stringify({
+          error: "Failed to fetch active session",
+          details: error.message ?? null,
+          code: error.code ?? null,
+          hint: error.details ?? null,
+        }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -123,7 +129,13 @@ serve(async (req) => {
           .maybeSingle();
 
         if (activeError) {
-          return new Response(JSON.stringify({ error: "Failed to resolve active session" }), {
+          console.error("[api-usage-test-session] Failed to resolve active session for stop:", activeError);
+          return new Response(JSON.stringify({
+            error: "Failed to resolve active session",
+            details: activeError.message ?? null,
+            code: activeError.code ?? null,
+            hint: activeError.details ?? null,
+          }), {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
@@ -146,7 +158,13 @@ serve(async (req) => {
         .maybeSingle();
 
       if (updateError) {
-        return new Response(JSON.stringify({ error: "Failed to stop test session" }), {
+        console.error("[api-usage-test-session] Failed to stop test session:", updateError);
+        return new Response(JSON.stringify({
+          error: "Failed to stop test session",
+          details: updateError.message ?? null,
+          code: updateError.code ?? null,
+          hint: updateError.details ?? null,
+        }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });

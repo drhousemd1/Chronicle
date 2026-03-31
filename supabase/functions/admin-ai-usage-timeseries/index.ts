@@ -213,7 +213,7 @@ serve(async (req) => {
     });
 
     // Build queries with optional userIds filter
-    let messagesQuery = serviceClient
+    const messagesQuery = serviceClient
       .from("messages")
       .select("created_at, role")
       .gte("created_at", rangeStartIso)
@@ -231,8 +231,36 @@ serve(async (req) => {
       // and rely on ai_usage_events which has user_id
     }
 
+    let filteredMessagesPromise: Promise<{ data: Array<{ created_at: string; role: string }> | null; error: unknown }>;
+    if (userIds) {
+      const { data: conversationRows, error: conversationError } = await serviceClient
+        .from("conversations")
+        .select("id")
+        .in("user_id", userIds);
+
+      if (conversationError) {
+        console.error("[admin-ai-usage-timeseries] Conversation filter query failed:", conversationError);
+        filteredMessagesPromise = Promise.resolve({ data: [], error: null });
+      } else {
+        const conversationIds = (conversationRows || [])
+          .map((row: { id: string }) => row.id)
+          .filter((id: string) => typeof id === "string" && id.length > 0);
+
+        filteredMessagesPromise = conversationIds.length === 0
+          ? Promise.resolve({ data: [], error: null })
+          : serviceClient
+              .from("messages")
+              .select("created_at, role")
+              .gte("created_at", rangeStartIso)
+              .in("role", ["user", "assistant"])
+              .in("conversation_id", conversationIds);
+      }
+    } else {
+      filteredMessagesPromise = messagesQuery;
+    }
+
     const [messagesRes, eventsRes] = await Promise.all([
-      userIds ? Promise.resolve({ data: [], error: null }) : messagesQuery,
+      filteredMessagesPromise,
       eventsQuery,
     ]);
 

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
 /**
  * Chronicle Admin Dashboard
@@ -835,6 +836,35 @@ const AD_CHANNELS = [
   },
 ];
 
+const ADMIN_NOTES_KEY = "overview_notes";
+
+function mapAdSpendRowToChannel(row: any) {
+  return {
+    id: row.id,
+    type: Number(row.recurring_cost || 0) > 0 ? "paid" : "organic",
+    name: row.name || "Untitled",
+    desc: row.description || "",
+    url: row.url || "",
+    status: row.status === "cancelled" ? "cancelled" : "active",
+    spent: Number(row.spent_override || 0),
+    cost: Number(row.recurring_cost || 0),
+    costCadence: row.cost_cadence === "yr" ? "yr" : "mo",
+    startDate: row.start_date || "",
+    cpa: null,
+  };
+}
+
+async function loadAdSpendChannelsFromSupabase() {
+  const { data, error } = await supabase
+    .from("ad_spend")
+    .select("*")
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+  if (!Array.isArray(data) || data.length === 0) return AD_CHANNELS;
+  return data.map(mapAdSpendRowToChannel);
+}
+
 const STATUS_META = {
   active:    { label:"Active",    bg:"#d1fae5", color:"#065f46" },
   cancelled: { label:"Cancelled", bg:"#fee2e2", color:"#991b1b" },
@@ -847,7 +877,24 @@ const TYPE_META = {
 };
 
 function AdSpendMini() {
-  const all         = AD_CHANNELS;
+  const [all, setAll] = useState(AD_CHANNELS);
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadAdSpendChannelsFromSupabase()
+      .then((channels) => {
+        if (cancelled) return;
+        setAll(channels);
+      })
+      .catch((error) => {
+        console.error("Failed to load ad spend mini data:", error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const active      = all.filter(c => c.status === "active");
   const cancelled   = all.filter(c => c.status === "cancelled");
   const paid        = active.filter(c => c.cost > 0);
@@ -892,11 +939,29 @@ function AdSpendTracker() {
   const [filter,     setFilter]     = useState("all");
   const [showAdd,    setShowAdd]    = useState(false);
   const [editTarget, setEditTarget] = useState(null);
+  const [loading,    setLoading]    = useState(true);
+  const [saveError,  setSaveError]  = useState<string | null>(null);
   const [form, setForm] = useState({ name:"", desc:"", url:"", status:"active", spent:"", cost:"", costCadence:"mo", startDate:"" });
 
-  const totalSpent  = channels.reduce((a, c) => a + autoSpent(c), 0);
-  const activeCount = channels.filter(c => c.status === "active").length;
-  const cancelCount = channels.filter(c => c.status === "cancelled").length;
+  const loadChannels = async () => {
+    setLoading(true);
+    try {
+      const nextChannels = await loadAdSpendChannelsFromSupabase();
+      setChannels(nextChannels);
+      setSaveError(null);
+    } catch (error) {
+      console.error("Failed to load ad spend channels:", error);
+      setSaveError("Unable to load ad spend data.");
+      setChannels(AD_CHANNELS);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadChannels();
+  }, []);
+
   const displayed   = channels.filter(c =>
     filter === "all"       ? true :
     filter === "paid"      ? c.cost > 0 :
@@ -931,8 +996,11 @@ function AdSpendTracker() {
     setShowAdd(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name.trim()) return;
+
+    setSaveError(null);
+
     const entry = {
       name: form.name.trim(), desc: form.desc.trim(), url: form.url.trim(),
       status: form.status,
@@ -942,19 +1010,70 @@ function AdSpendTracker() {
       startDate: form.startDate,
       cpa: null,
     };
-    if (editTarget) {
-      setChannels(cs => cs.map(c => c.id !== editTarget ? c : { ...c, ...entry }));
-    } else {
-      setChannels(cs => [...cs, { id: Date.now().toString(), type:"organic", ...entry }]);
+
+    try {
+      if (editTarget) {
+        const { error } = await supabase
+          .from("ad_spend")
+          .update({
+            name: entry.name,
+            description: entry.desc,
+            url: entry.url,
+            status: entry.status === "cancelled" ? "cancelled" : "active",
+            recurring_cost: entry.cost,
+            cost_cadence: entry.costCadence === "yr" ? "yr" : "mo",
+            start_date: entry.startDate || null,
+            spent_override: entry.spent || null,
+          })
+          .eq("id", editTarget);
+
+        if (error) throw error;
+      } else {
+        const { data: authData, error: authError } = await supabase.auth.getUser();
+        if (authError || !authData?.user?.id) throw new Error("Authentication required");
+
+        const { error } = await supabase
+          .from("ad_spend")
+          .insert({
+            created_by: authData.user.id,
+            name: entry.name,
+            description: entry.desc,
+            url: entry.url,
+            status: entry.status === "cancelled" ? "cancelled" : "active",
+            recurring_cost: entry.cost,
+            cost_cadence: entry.costCadence === "yr" ? "yr" : "mo",
+            start_date: entry.startDate || null,
+            spent_override: entry.spent || null,
+          });
+
+        if (error) throw error;
+      }
+
+      await loadChannels();
+      setShowAdd(false);
+      setEditTarget(null);
+    } catch (error) {
+      console.error("Failed to save ad spend channel:", error);
+      setSaveError("Failed to save ad spend channel. Check table/policies.");
     }
-    setShowAdd(false);
-    setEditTarget(null);
   };
 
-  const handleDelete = () => {
-    setChannels(cs => cs.filter(c => c.id !== editTarget));
-    setShowAdd(false);
-    setEditTarget(null);
+  const handleDelete = async () => {
+    if (!editTarget) return;
+    setSaveError(null);
+    try {
+      const { error } = await supabase
+        .from("ad_spend")
+        .delete()
+        .eq("id", editTarget);
+      if (error) throw error;
+      await loadChannels();
+      setShowAdd(false);
+      setEditTarget(null);
+    } catch (error) {
+      console.error("Failed to delete ad spend channel:", error);
+      setSaveError("Failed to delete ad spend channel.");
+    }
   };
 
   const STATUS_BADGES = {
@@ -1054,8 +1173,8 @@ function AdSpendTracker() {
             </div>
           )}
         </div>
-        <p style={{ fontSize:11, color:D.dim, marginTop:12 }}>
-          TODO: Wire to Supabase `ad_spend` table.
+        <p style={{ fontSize:11, color:saveError ? D.red : D.muted, marginTop:12 }}>
+          {loading ? "Loading ad spend data..." : saveError || "Live table: ad_spend"}
         </p>
       </div>
 
@@ -1157,11 +1276,94 @@ function AdSpendTracker() {
 function NotesEditor() {
   const editorRef = React.useRef(null);
   const [fontSize, setFontSize] = useState("14px");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const autoSaveRef = React.useRef<number | null>(null);
 
   const exec = (cmd, val = null) => {
     editorRef.current?.focus();
     document.execCommand(cmd, false, val);
   };
+
+  const loadNote = async () => {
+    setLoading(true);
+    setSaveError(null);
+    try {
+      const { data, error } = await supabase
+        .from("admin_notes")
+        .select("content_html, updated_at")
+        .eq("note_key", ADMIN_NOTES_KEY)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (editorRef.current) {
+        editorRef.current.innerHTML = data?.content_html || "";
+      }
+      if (data?.updated_at) {
+        setLastSavedAt(new Date(data.updated_at).toLocaleString());
+      } else {
+        setLastSavedAt(null);
+      }
+    } catch (error) {
+      console.error("Failed to load admin notes:", error);
+      setSaveError("Unable to load notes from admin_notes.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const persistNote = async (mode: "manual" | "auto") => {
+    if (!editorRef.current) return;
+    const contentHtml = editorRef.current.innerHTML || "";
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError || !authData?.user?.id) throw new Error("Authentication required");
+
+      const { data, error } = await supabase
+        .from("admin_notes")
+        .upsert({
+          note_key: ADMIN_NOTES_KEY,
+          content_html: contentHtml,
+          updated_by: authData.user.id,
+        }, { onConflict: "note_key" })
+        .select("updated_at")
+        .single();
+
+      if (error) throw error;
+      if (data?.updated_at) {
+        setLastSavedAt(new Date(data.updated_at).toLocaleString());
+      } else {
+        setLastSavedAt(new Date().toLocaleString());
+      }
+    } catch (error) {
+      console.error(`Failed to ${mode} save admin notes:`, error);
+      setSaveError("Failed to save notes. Check admin_notes table and RLS.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const scheduleAutoSave = () => {
+    if (autoSaveRef.current) {
+      window.clearTimeout(autoSaveRef.current);
+    }
+    autoSaveRef.current = window.setTimeout(() => {
+      void persistNote("auto");
+    }, 1200);
+  };
+
+  useEffect(() => {
+    void loadNote();
+    return () => {
+      if (autoSaveRef.current) {
+        window.clearTimeout(autoSaveRef.current);
+      }
+    };
+  }, []);
 
   const insertCheckbox = () => {
     editorRef.current?.focus();
@@ -1250,11 +1452,14 @@ function NotesEditor() {
           <ToolBtn icon="☑" title="Add checkbox" cmd={null} val={insertCheckbox} />
           <div style={{ width:1, height:20, background:D.divider, margin:"0 4px" }} />
           <button
-            onMouseDown={e => { e.preventDefault(); /* TODO: save editorRef.current.innerHTML to Supabase admin_notes table */ }}
+            onMouseDown={e => {
+              e.preventDefault();
+              void persistNote("manual");
+            }}
             style={{ padding:"0 14px", height:30, borderRadius:6, border:"none", cursor:"pointer",
               background:D.elevated, boxShadow:D.btnShadow,
               color:D.text, fontSize:12, fontWeight:700, flexShrink:0 }}>
-            Save
+            {saving ? "Saving..." : "Save"}
           </button>
         </div>
 
@@ -1276,10 +1481,16 @@ function NotesEditor() {
             caretColor:D.text,
           }}
           data-placeholder="Start typing your notes..."
-          onInput={() => {/* TODO: debounce + save to Supabase */}}
+          onInput={scheduleAutoSave}
         />
-        <div style={{ fontSize:10, color:D.dim, marginTop:6, textAlign:"right" }}>
-          TODO: auto-save to Supabase on input
+        <div style={{ fontSize:10, color:saveError ? D.red : D.dim, marginTop:6, textAlign:"right" }}>
+          {loading
+            ? "Loading notes..."
+            : saveError
+              ? saveError
+              : lastSavedAt
+                ? `Live table: admin_notes · Last saved ${lastSavedAt}`
+                : "Live table: admin_notes · Not saved yet"}
         </div>
       </div>
     </ShellCard>
@@ -1762,16 +1973,18 @@ const MOCK_STRIKE_HISTORY = {
   ],
 };
 
-function ActionModal({ user, allReports, onClose, onAddStrike, onRemoveStrike, onToggleSuspend, onUpdateReport }) {
+function ActionModal({ user, allReports, strikeHistory, onClose, onAddStrike, onRemoveStrike, onToggleSuspend, onUpdateReport }) {
   const [tab, setTab]                     = useState("reports");
-  const [history, setHistory]             = useState(MOCK_STRIKE_HISTORY[user.id] || []);
   const [showAddStrike, setShowAddStrike] = useState(false);
   const [newReason, setNewReason]         = useState("plagiarism");
   const [newNote, setNewNote]             = useState("");
   const [newFallOff, setNewFallOff]       = useState("");
+  const history = Array.isArray(strikeHistory) ? strikeHistory : [];
 
   const reasonMeta  = Object.fromEntries(STRIKE_REASONS.map(r => [r.id, r]));
-  const userReports = allReports.filter(r => r.accused === user.username);
+  const userReports = allReports.filter((r) => (
+    r.accusedUserId === user.id || r.accused === user.username
+  ));
   const openReports = userReports.filter(r => r.status !== "resolved" && r.status !== "dismissed");
   const ptColor     = (pts) => pts >= 99 ? C.red : pts >= 2 ? C.orange : C.amber;
 
@@ -1783,14 +1996,13 @@ function ActionModal({ user, allReports, onClose, onAddStrike, onRemoveStrike, o
 
   const handleAddStrike = () => {
     const reason = reasonMeta[newReason];
-    const today  = "2026-03-26";
+    const today  = new Date().toISOString().slice(0, 10);
     const entry  = {
-      id: history.length + 1, reason: newReason, points: reason.points,
+      reason: newReason, points: reason.points,
       note: newNote || "(no note)", issuedBy:"admin",
       issuedAt: today, fallsOffAt: newFallOff || null, status:"active",
     };
-    setHistory(h => [...h, entry]);
-    onAddStrike(user.id);
+    void onAddStrike(user.id, entry);
     setNewNote(""); setNewFallOff(""); setShowAddStrike(false);
   };
 
@@ -2085,8 +2297,8 @@ function ActionModal({ user, allReports, onClose, onAddStrike, onRemoveStrike, o
         {/* footer */}
         <div style={{ padding:"12px 24px", borderTop:`1px solid ${C.divider}`,
           fontSize:11, color:C.dim, flexShrink:0 }}>
-          TODO: Wire to Supabase <code>user_strikes</code> + <code>reports</code> tables.
-          Falls-off date set manually per strike — no automatic expiry.
+          Live moderation data from <code>reports</code> and <code>user_strikes</code>.
+          Falls-off date is set manually per strike.
         </div>
       </div>
     </div>
@@ -2097,12 +2309,123 @@ function UsersPage({ users, setUsers, tierPrices, usersLoading, onTierChange, on
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [reports, setReports] = useState([]);
+  const [strikes, setStrikes] = useState([]);
+  const [moderationLoading, setModerationLoading] = useState(false);
+  const [moderationError, setModerationError] = useState<string | null>(null);
   const [actionModal, setActionModal] = useState(null);
   const [pendingTierChange, setPendingTierChange] = useState(null);
   const [editingTierUserId, setEditingTierUserId] = useState(null);
   const [editingTierSlug, setEditingTierSlug] = useState("free");
 
-  const displayed = useMemo(() => users.filter((u) => {
+  const usersById = useMemo(() => {
+    const map = {};
+    users.forEach((user) => {
+      map[user.id] = user;
+    });
+    return map;
+  }, [users]);
+
+  const loadModerationData = async () => {
+    setModerationLoading(true);
+    setModerationError(null);
+    try {
+      const [reportsRes, strikesRes] = await Promise.all([
+        supabase
+          .from("reports")
+          .select("id, reporter_user_id, accused_user_id, story_id, reason, note, status, created_at")
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("user_strikes")
+          .select("id, user_id, report_id, reason, points, note, status, issued_by, issued_at, falls_off_at")
+          .order("issued_at", { ascending: false }),
+      ]);
+
+      if (reportsRes.error) throw reportsRes.error;
+      if (strikesRes.error) throw strikesRes.error;
+
+      const nextReports = (reportsRes.data || []).map((row) => ({
+        id: row.id,
+        reporterUserId: row.reporter_user_id,
+        accusedUserId: row.accused_user_id,
+        reporter: usersById[row.reporter_user_id]?.username || row.reporter_user_id?.slice?.(0, 8) || "unknown",
+        accused: usersById[row.accused_user_id]?.username || row.accused_user_id?.slice?.(0, 8) || "unknown",
+        reason: row.reason || "Policy report",
+        storyId: row.story_id ? String(row.story_id) : "—",
+        date: row.created_at ? String(row.created_at).slice(0, 10) : "unknown",
+        status: row.status || "open",
+        note: row.note || "",
+      }));
+
+      const nextStrikes = (strikesRes.data || []).map((row) => ({
+        id: row.id,
+        userId: row.user_id,
+        reportId: row.report_id,
+        reason: row.reason || "other",
+        points: Number(row.points || 1),
+        note: row.note || "(no note)",
+        status: row.status || "active",
+        issuedBy: row.issued_by ? String(row.issued_by).slice(0, 8) : "admin",
+        issuedAt: row.issued_at ? String(row.issued_at).slice(0, 10) : "unknown",
+        fallsOffAt: row.falls_off_at || null,
+      }));
+
+      setReports(nextReports);
+      setStrikes(nextStrikes);
+    } catch (error) {
+      console.error("Failed to load moderation tables:", error);
+      setModerationError("Moderation tables unavailable (reports/user_strikes).");
+      setReports([]);
+      setStrikes([]);
+    } finally {
+      setModerationLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadModerationData();
+  }, [usersById]);
+
+  const openReportsByUserId = useMemo(() => {
+    const map = {};
+    reports.forEach((report) => {
+      if (report.status !== "resolved" && report.status !== "dismissed") {
+        if (!map[report.accusedUserId]) map[report.accusedUserId] = [];
+        map[report.accusedUserId].push(report);
+      }
+    });
+    return map;
+  }, [reports]);
+
+  const activeStrikesByUserId = useMemo(() => {
+    const map = {};
+    strikes.forEach((strike) => {
+      if (strike.status === "active") {
+        map[strike.userId] = (map[strike.userId] || 0) + 1;
+      }
+    });
+    return map;
+  }, [strikes]);
+
+  const strikeHistoryByUserId = useMemo(() => {
+    const map = {};
+    strikes.forEach((strike) => {
+      if (!map[strike.userId]) map[strike.userId] = [];
+      map[strike.userId].push(strike);
+    });
+    return map;
+  }, [strikes]);
+
+  const usersWithSignals = useMemo(() => users.map((user) => {
+    const openReports = openReportsByUserId[user.id] || [];
+    return {
+      ...user,
+      reportCount: openReports.length,
+      reported: openReports.length > 0,
+      strikes: activeStrikesByUserId[user.id] || 0,
+    };
+  }), [users, openReportsByUserId, activeStrikesByUserId]);
+
+  const displayed = useMemo(() => usersWithSignals.filter((u) => {
     if (filter === "active" && u.status !== "active") return false;
     if (filter === "cancelled" && u.status !== "cancelled") return false;
     if (filter === "suspended" && u.status !== "suspended") return false;
@@ -2114,39 +2437,89 @@ function UsersPage({ users, setUsers, tierPrices, usersLoading, onTierChange, on
       if (!haystack.includes(term)) return false;
     }
     return true;
-  }), [users, filter, search]);
+  }), [usersWithSignals, filter, search]);
 
-  const addStrike = (id) => setUsers((us) => us.map((u) => u.id !== id ? u : {
-    ...u,
-    strikes: u.strikes + 1,
-    status: u.strikes + 1 >= 3 ? "suspended" : u.status,
-  }));
-  const removeStrike = (id) => setUsers((us) => us.map((u) => u.id !== id ? u : {
-    ...u,
-    strikes: Math.max(0, u.strikes - 1),
-  }));
+  const addStrike = async (id, strikePayload) => {
+    setModerationError(null);
+    try {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError || !authData?.user?.id) throw new Error("Authentication required");
+
+      const { error } = await supabase
+        .from("user_strikes")
+        .insert({
+          user_id: id,
+          report_id: strikePayload.reportId || null,
+          reason: strikePayload.reason || "other",
+          points: Number(strikePayload.points || 1),
+          note: strikePayload.note || "(no note)",
+          status: "active",
+          issued_by: authData.user.id,
+          issued_at: new Date().toISOString(),
+          falls_off_at: strikePayload.fallsOffAt || null,
+        });
+      if (error) throw error;
+
+      const nextStrikeCount = (activeStrikesByUserId[id] || 0) + 1;
+      if (nextStrikeCount >= 3) {
+        setUsers((allUsers) => allUsers.map((user) => (
+          user.id === id ? { ...user, status: "suspended" } : user
+        )));
+      }
+      await loadModerationData();
+    } catch (error) {
+      console.error("Failed to add strike:", error);
+      setModerationError("Failed to add strike.");
+    }
+  };
+
+  const removeStrike = async (id) => {
+    setModerationError(null);
+    const latestActiveStrike = strikes.find((strike) => strike.userId === id && strike.status === "active");
+    if (!latestActiveStrike) return;
+    try {
+      const { error } = await supabase
+        .from("user_strikes")
+        .update({ status: "reversed" })
+        .eq("id", latestActiveStrike.id);
+      if (error) throw error;
+      await loadModerationData();
+    } catch (error) {
+      console.error("Failed to remove strike:", error);
+      setModerationError("Failed to reverse strike.");
+    }
+  };
+
   const toggleSuspend = (id) => setUsers((us) => us.map((u) => u.id !== id ? u : {
     ...u,
     status: u.status === "suspended" ? "active" : "suspended",
   }));
-  const updateReport = (id, status) => setReports((rs) => rs.map((r) => r.id === id ? { ...r, status } : r));
+  const updateReport = async (id, status) => {
+    setModerationError(null);
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      const reviewerId = authData?.user?.id || null;
+      const payload = reviewerId
+        ? { status, reviewed_by: reviewerId }
+        : { status };
 
-  const modalUser = actionModal ? users.find((u) => u.id === actionModal.id) : null;
+      const { error } = await supabase
+        .from("reports")
+        .update(payload)
+        .eq("id", id);
+      if (error) throw error;
+      await loadModerationData();
+    } catch (error) {
+      console.error("Failed to update report:", error);
+      setModerationError("Failed to update report status.");
+    }
+  };
+
+  const modalUser = actionModal ? usersWithSignals.find((u) => u.id === actionModal.id) : null;
   const pendingChangeDetails = pendingTierChange ? {
     fromLabel: tierLabelBySlug[pendingTierChange.fromTierSlug] || "Free",
     toLabel: tierLabelBySlug[pendingTierChange.toTierSlug] || "Free",
   } : null;
-
-  const openReportsByUser = useMemo(() => {
-    const map = {};
-    reports.forEach((r) => {
-      if (r.status !== "resolved" && r.status !== "dismissed") {
-        if (!map[r.accused]) map[r.accused] = [];
-        map[r.accused].push(r);
-      }
-    });
-    return map;
-  }, [reports]);
 
   const requestTierChange = (user, rawTierSlug) => {
     const nextTierSlug = normalizeUserTierSlug(rawTierSlug);
@@ -2189,6 +2562,7 @@ function UsersPage({ users, setUsers, tierPrices, usersLoading, onTierChange, on
         <ActionModal
           user={modalUser}
           allReports={reports}
+          strikeHistory={strikeHistoryByUserId[modalUser.id] || []}
           onClose={() => setActionModal(null)}
           onAddStrike={addStrike}
           onRemoveStrike={removeStrike}
@@ -2229,10 +2603,10 @@ function UsersPage({ users, setUsers, tierPrices, usersLoading, onTierChange, on
 
       <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
         {[
-          { label:"Active Users",            value: users.filter((u) => u.status === "active").length },
-          { label:"Cancelled Subscriptions", value: users.filter((u) => u.status === "cancelled").length },
-          { label:"Suspended",               value: users.filter((u) => u.status === "suspended").length },
-          { label:"Pending Reviews",         value: users.filter((u) => u.reported).length },
+          { label:"Active Users",            value: usersWithSignals.filter((u) => u.status === "active").length },
+          { label:"Cancelled Subscriptions", value: usersWithSignals.filter((u) => u.status === "cancelled").length },
+          { label:"Suspended",               value: usersWithSignals.filter((u) => u.status === "suspended").length },
+          { label:"Pending Reviews",         value: usersWithSignals.filter((u) => u.reported).length },
         ].map((s) => (
           <ShellCard key={s.label} style={{ flex:1, minWidth:140 }}>
             <SlateHeader title={s.label} />
@@ -2274,6 +2648,8 @@ function UsersPage({ users, setUsers, tierPrices, usersLoading, onTierChange, on
           Refresh
         </button>
         {usersLoading && <span style={{ fontSize:11, color:D.muted }}>Loading users...</span>}
+        {moderationLoading && <span style={{ fontSize:11, color:D.muted }}>Loading moderation data...</span>}
+        {moderationError && <span style={{ fontSize:11, color:D.red }}>{moderationError}</span>}
       </div>
 
       <ShellCard>
@@ -2291,7 +2667,7 @@ function UsersPage({ users, setUsers, tierPrices, usersLoading, onTierChange, on
             </thead>
             <tbody>
               {displayed.map((u, i) => {
-                const openReports = openReportsByUser[u.username] || [];
+                const openReports = openReportsByUserId[u.id] || [];
                 const hasAction = openReports.length > 0;
                 const latestReport = openReports[0];
                 const membership = formatMembershipAge(u.joined);
@@ -2457,7 +2833,7 @@ function UsersPage({ users, setUsers, tierPrices, usersLoading, onTierChange, on
         </div>
       </ShellCard>
       <p style={{fontSize:11, color:D.dim}}>
-        Wired to live <code style={{ color:D.muted }}>profiles</code> + <code style={{ color:D.muted }}>user_roles</code> + <code style={{ color:D.muted }}>stories</code>. Tier overrides persist in <code style={{ color:D.muted }}>app_settings.{USER_TIER_OVERRIDES_KEY}</code>, and admin UI access syncs to <code style={{ color:D.muted }}>user_roles</code>.
+        Wired to live <code style={{ color:D.muted }}>profiles</code>, <code style={{ color:D.muted }}>user_roles</code>, <code style={{ color:D.muted }}>stories</code>, <code style={{ color:D.muted }}>reports</code>, and <code style={{ color:D.muted }}>user_strikes</code>. Tier overrides persist in <code style={{ color:D.muted }}>app_settings.{USER_TIER_OVERRIDES_KEY}</code>, and admin UI access syncs to <code style={{ color:D.muted }}>user_roles</code>.
       </p>
     </div>
   );
@@ -2771,6 +3147,9 @@ function UsagePage() {
   const [testReport, setTestReport] = useState<AdminApiUsageTestReport>(emptyTestReport);
   const [testReportLoading, setTestReportLoading] = useState(false);
   const [testReportError, setTestReportError] = useState<string | null>(null);
+  const [billing, setBilling] = useState<XaiBillingSummary | null>(null);
+  const [billingLoading, setBillingLoading] = useState(false);
+  const [billingError, setBillingError] = useState<string | null>(null);
 
   const loadUsageSummary = async () => {
     setUsageLoading(true);
@@ -2816,12 +3195,29 @@ function UsagePage() {
     }
   };
 
+  const loadBilling = async () => {
+    setBillingLoading(true);
+    setBillingError(null);
+    try {
+      const summary = await fetchXaiBillingSummary();
+      setBilling(summary);
+    } catch (error) {
+      console.error("Failed to load xAI billing summary:", error);
+      setBillingError("Billing unavailable");
+      setBilling(null);
+    } finally {
+      setBillingLoading(false);
+    }
+  };
+
   useEffect(() => {
     void loadUsageSummary();
     void loadTestReport();
+    void loadBilling();
     const interval = setInterval(() => {
       void loadUsageSummary();
       void loadTestReport();
+      void loadBilling();
     }, 120000);
     return () => clearInterval(interval);
   }, []);
@@ -3282,22 +3678,38 @@ function UsagePage() {
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start",
             flexWrap:"wrap", gap:16, marginBottom:20 }}>
             <div style={{ fontSize:12, color:D.muted, lineHeight:1.6, maxWidth:480 }}>
-              Connect your xAI billing account to see credit balance, usage this month, and a low-balance warning directly here.
+              Live xAI billing summary from the management API/legacy billing API.
               Fetched via a Supabase edge function so your API key never touches the browser.
             </div>
-            <button style={{ padding:"7px 16px", borderRadius:8, border:"none",
+            <button
+              onClick={() => { void loadBilling(); }}
+              style={{ padding:"7px 16px", borderRadius:8, border:"none",
               background:D.elevated, boxShadow:D.btnShadow,
               color:D.text, fontSize:12, fontWeight:700, cursor:"pointer" }}>
-              Connect xAI Billing →
+              {billingLoading ? "Refreshing..." : "Refresh"}
             </button>
           </div>
 
-          {/* Placeholder layout */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:16 }}>
             {[
-              { label:"Prepaid credits remaining", value:"—",    note:"of $— total",       color:D.text },
-              { label:"Used this month",           value:"—",    note:"billed to credits", color:D.text },
-              { label:"Next invoice",              value:"$0.00",note:"no invoiced billing",color:D.text },
+              {
+                label:"Prepaid credits remaining",
+                value: billing ? `$${billing.prepaidCredits.remainingUsd.toFixed(2)}` : "—",
+                note: billing ? `of $${billing.prepaidCredits.totalUsd.toFixed(2)} total` : "No data",
+                color:D.text,
+              },
+              {
+                label:"Used this month",
+                value: billing ? `$${billing.prepaidCredits.usedThisMonthUsd.toFixed(2)}` : "—",
+                note:"billed to credits",
+                color:D.text,
+              },
+              {
+                label:"Next invoice",
+                value: billing ? `$${billing.nextInvoiceUsd.toFixed(2)}` : "$0.00",
+                note: billing ? `source: ${billing.source}` : "no invoiced billing",
+                color:D.text,
+              },
             ].map(s => (
               <div key={s.label} style={{ background:D.tray, boxShadow:D.trayShadow,
                 borderRadius:12, padding:"14px 16px" }}>
@@ -3309,13 +3721,25 @@ function UsagePage() {
             ))}
           </div>
 
-          {/* Waterfall rows */}
           <div style={{ background:D.tray, boxShadow:D.trayShadow, borderRadius:12, overflow:"hidden" }}>
             {[
-              { label:"Total usage",          value:"—",    note:null },
-              { label:"Prepaid credits used", value:"—",    note:null },
-              { label:"Free credits used",    value:"—",    note:null },
-              { label:"Next invoice",         value:"$0.00",note:"No invoiced billing set up", bold:true },
+              {
+                label:"Total usage",
+                value: billing ? `$${billing.prepaidCredits.usedUsd.toFixed(2)}` : "—",
+                note:null,
+              },
+              {
+                label:"Prepaid credits used",
+                value: billing ? `$${billing.prepaidCredits.usedUsd.toFixed(2)}` : "—",
+                note:null,
+              },
+              { label:"Free credits used", value:"$0.00", note:null },
+              {
+                label:"Next invoice",
+                value: billing ? `$${billing.nextInvoiceUsd.toFixed(2)}` : "$0.00",
+                note:"No invoiced billing set up",
+                bold:true,
+              },
             ].map((row, i) => (
               <div key={row.label} style={{ display:"flex", justifyContent:"space-between",
                 alignItems:"center", padding:"11px 16px",
@@ -3330,11 +3754,12 @@ function UsagePage() {
             ))}
           </div>
 
-          <p style={{ fontSize:11, color:D.dim, marginTop:14, lineHeight:1.6 }}>
-            TODO: Create Supabase edge function <code style={{color:D.muted}}>xai-billing-balance</code> that calls
-            <code style={{color:D.muted}}> api.x.ai/v1/billing/credits</code> and <code style={{color:D.muted}}>api.x.ai/v1/billing/usage</code>.
-            Store API key in Supabase secrets. Refresh on page load + manual refresh button.
-            Add a low-balance alert when remaining credits drop below a configurable threshold.
+          <p style={{ fontSize:11, color:D.muted, marginTop:14, lineHeight:1.6 }}>
+            {billingError
+              ? `Status: ${billingError}. Ensure XAI_MANAGEMENT_KEY + XAI_TEAM_ID (preferred) or XAI_API_KEY are configured.`
+              : billing
+                ? `Last updated: ${new Date(billing.fetchedAt).toLocaleString()} (${billing.source}).`
+                : "No billing data yet."}
           </p>
         </div>
       </ShellCard>
@@ -5789,7 +6214,7 @@ export default function ChronicleAdmin() {
           fontSize:10, color:D.dim, lineHeight:1.6,
           textTransform:"uppercase", letterSpacing:"0.05em" }}>
           <div style={{ fontWeight:700, color:D.muted }}>Chronicle RPG Studio</div>
-          <div>Admin v0.1 · placeholder data</div>
+          <div>Finance dashboard · live telemetry</div>
         </div>
       </aside>
 

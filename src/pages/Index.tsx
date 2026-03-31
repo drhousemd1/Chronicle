@@ -353,20 +353,21 @@ const IndexContent = () => {
     }
 
     let cancelled = false;
-    void fetchActiveApiUsageTestSession()
+    void fetchActiveApiUsageTestSession({ retries: 1, retryDelayMs: 500 })
       .then((session) => {
         if (cancelled) return;
         setActiveApiUsageTestSession(session);
       })
       .catch((error) => {
         if (cancelled) return;
-        console.error("[api-usage-test] Failed to fetch active session:", error);
+        const message = error instanceof Error ? error.message : String(error);
+        console.warn("[api-usage-test] Active test session unavailable:", message);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [isAdminState, user?.id, tab, activeId, playingConversationId]);
+  }, [isAdminState, user?.id]);
 
   const handleApiUsageTestToggle = useCallback(async (enabled: boolean) => {
     if (!isAdminState || !user?.id) return;
@@ -444,7 +445,14 @@ const IndexContent = () => {
         try {
           await load();
         } catch (error) {
-          console.warn("[chunk-warmup] failed to preload module", error);
+          const message = error instanceof Error ? error.message : String(error ?? "");
+          const transientChunkWarmupFailure =
+            message.includes("Failed to fetch dynamically imported module") ||
+            message.includes("Importing a module script failed");
+
+          if (!transientChunkWarmupFailure && import.meta.env.DEV) {
+            console.debug("[chunk-warmup] skipped preload for module:", message);
+          }
         }
       }
     };
