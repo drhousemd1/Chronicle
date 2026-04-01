@@ -29,7 +29,7 @@
 | Field | Value |
 |-------|-------|
 | **Route** | `tab === "hub"` inside `Index.tsx` (no URL change — tab state is in-memory) |
-| **Primary Source Files** | `src/pages/Index.tsx` (shell, header, sidebar, state, handlers) · `src/components/chronicle/ScenarioHub.tsx` (card grid + detail modal orchestration) |
+| **Primary Source Files** | `src/pages/Index.tsx` (shell, header, sidebar, state, handlers) · `src/components/chronicle/StoryHub.tsx` (card grid + detail modal orchestration) |
 | **Purpose** | Personal scenario management hub — browse, filter, play, edit, delete, and publish the authenticated user's own scenarios plus any bookmarked (saved) scenarios from the Community Gallery |
 | **User Role Access** | Any authenticated user. No admin/moderator distinction — every user sees only their own scenarios and their saved bookmarks |
 | **Sidebar Position** | Second item: `Your Stories` with the grid icon (`IconsList.Hub`) |
@@ -50,11 +50,11 @@ The hub renders inside the main app shell defined in `Index.tsx`. The overall pa
     └── Settings gear dropdown
   <div>  Content area (flex-1, overflow-hidden)
     └── Background layer (optional user-uploaded image with configurable overlay)
-        └── <ScenarioHub>
+        └── <StoryHub>
               ├── Card grid (responsive columns)
               ├── "New Story" dashed card (always shown)
               ├── Infinite scroll sentinel + loading spinner
-              └── ScenarioDetailModal (overlay)
+              └── StoryDetailModal (overlay)
 ```
 
 ### Header Row
@@ -96,7 +96,7 @@ The hub content area is wrapped in a `div` with `bg-black`. If the user has sele
 
 ### Card Grid
 
-Rendered by `<ScenarioHub>`. Uses a responsive CSS grid:
+Rendered by `<StoryHub>`. Uses a responsive CSS grid:
 
 ```
 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5
@@ -123,9 +123,9 @@ Scenarios load 50 at a time (`SCENARIO_PAGE_SIZE = 50`). An `IntersectionObserve
 | 4 | **Filter pill: Published** | Header, left | `Index.tsx` | Yes — sets `hubFilter` to `"published"` | Dark capsule button |
 | 5 | **Filter pill: All** | Header, left | `Index.tsx` | Yes — sets `hubFilter` to `"all"` | Default active filter |
 | 6 | **Settings gear ⚙️** | Header, right | `Index.tsx` via `DropdownMenu` | Yes — opens dropdown | Single menu item: "Change Background" |
-| 7 | **Scenario Card** | Grid | `ScenarioCard` in `ScenarioHub.tsx` | Yes — click opens detail modal; hover reveals action buttons | See Section 4 for full breakdown |
-| 8 | **"New Story" card** | Grid (last item) | `ScenarioHub.tsx` inline | Yes — calls `onCreate` → `handleCreateNewScenario` | Dashed border, `+` icon, always shown (even when grid is empty) |
-| 9 | **ScenarioDetailModal** | Overlay | `ScenarioDetailModal.tsx` | Yes — Play, Edit, Unpublish buttons | Opened via card click |
+| 7 | **Scenario Card** | Grid | `ScenarioCard` in `StoryHub.tsx` | Yes — click opens detail modal; hover reveals action buttons | See Section 4 for full breakdown |
+| 8 | **"New Story" card** | Grid (last item) | `StoryHub.tsx` inline | Yes — calls `onCreate` → `handleCreateNewScenario` | Dashed border, `+` icon, always shown (even when grid is empty) |
+| 9 | **StoryDetailModal** | Overlay | `StoryDetailModal.tsx` | Yes — Play, Edit, Unpublish buttons | Opened via card click |
 | 10 | **BackgroundPickerModal** | Overlay | `BackgroundPickerModal.tsx` | Yes — select/upload/delete backgrounds, adjust overlay | Opened via Settings dropdown |
 | 11 | **DeleteConfirmDialog** | Overlay | `DeleteConfirmDialog.tsx` | Yes — confirm/cancel | Used for both bookmark removal and scenario deletion with context-aware titles/messages |
 | 12 | **Remix Confirm Dialog** | Overlay | `AlertDialog` in `Index.tsx` | Yes — confirm/cancel | Shown before cloning a bookmarked scenario for editing |
@@ -134,7 +134,7 @@ Scenarios load 50 at a time (`SCENARIO_PAGE_SIZE = 50`). An `IntersectionObserve
 
 ## 4. Cards / List Items — Scenario Card
 
-The `ScenarioCard` component is defined inside `ScenarioHub.tsx`. Each card represents a single scenario.
+The `ScenarioCard` component is defined inside `StoryHub.tsx`. Each card represents a single scenario.
 
 ### Card Container
 | Property | Value |
@@ -144,7 +144,7 @@ The `ScenarioCard` component is defined inside `ScenarioHub.tsx`. Each card repr
 | Shadow | `!shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]` |
 | Border | `border border-[#4a5f7f]` |
 | Hover effect | `-translate-y-3` lift + `shadow-2xl` + cover image `scale-110` zoom |
-| Click | Opens `ScenarioDetailModal` via `onViewDetails` |
+| Click | Opens `StoryDetailModal` via `onViewDetails` |
 
 ### Cover Image
 - Fills the card via `h-full w-full object-cover`
@@ -212,9 +212,9 @@ Always rendered (even when grid is empty). Same `aspect-[2/3]` ratio:
 
 ## 5. Modals and Overlays
 
-### 5.1 ScenarioDetailModal
+### 5.1 StoryDetailModal
 
-**Source:** `src/components/chronicle/ScenarioDetailModal.tsx` (681 lines)
+**Source:** `src/components/chronicle/StoryDetailModal.tsx` (681 lines)
 
 **Trigger:** Clicking a scenario card calls `handleViewDetails(id)` which:
 1. Sets `selectedScenario` from registry
@@ -240,9 +240,9 @@ Always rendered (even when grid is empty). Same `aspect-[2/3]` ratio:
 - **Reviews section** — Fetched via `fetchScenarioReviews`, paginated (5 per page), includes user's own review with edit/delete capability
 - **Creator section** — Avatar, display name, overall rating — clickable to navigate to `/creator/:publisherId`
 
-### 5.2 ShareScenarioModal
+### 5.2 ShareStoryModal
 
-**Source:** `src/components/chronicle/ShareScenarioModal.tsx` (200 lines)
+**Source:** `src/components/chronicle/ShareStoryModal.tsx` (200 lines)
 
 **Note:** This modal is available from the Scenario Builder (World Tab), not directly from the hub. Included here because it controls the publish/unpublish flow that affects hub badges.
 
@@ -385,11 +385,11 @@ Index.tsx (IndexContent)
 │   └── Settings gear → DropdownMenu → "Change Background"
 ├── <div> Content area (tab === "hub")
 │   ├── Background image layer (optional, with configurable overlay)
-│   └── ScenarioHub
+│   └── StoryHub
 │       ├── ScenarioCard (×N) — one per scenario in filteredRegistry
 │       ├── "New Story" card (always shown, even when empty)
 │       ├── Infinite scroll sentinel (IntersectionObserver)
-│       └── ScenarioDetailModal (if selectedScenario)
+│       └── StoryDetailModal (if selectedScenario)
 │           └── TooltipProvider wrapper
 ├── BackgroundPickerModal (if isBackgroundModalOpen)
 │   └── ImageLibraryPickerModal (sub-modal for "From Library" option)
@@ -452,12 +452,12 @@ Index.tsx (IndexContent)
 | `handleSelectBackground(id \| null)` | Calls `setSelectedBackground(userId, id)` → updates `selectedHubBackgroundId` and marks in `hubBackgrounds` |
 | `handleDeleteBackground(id, imageUrl)` | Calls `deleteUserBackground()` → removes from state. If was selected, resets to null (default) |
 
-### ScenarioHub Internal Handlers
+### StoryHub Internal Handlers
 
 | Handler | Location | Action |
 |---------|----------|--------|
-| `handleViewDetails(id)` | `ScenarioHub.tsx` | Sets `selectedScenario`, opens modal, parallel-fetches content themes + publication status |
-| `handleUnpublish()` | `ScenarioHub.tsx` | Calls `unpublishScenario(selectedScenario.id)`, sets `publicationStatus = null`, shows toast |
+| `handleViewDetails(id)` | `StoryHub.tsx` | Sets `selectedScenario`, opens modal, parallel-fetches content themes + publication status |
+| `handleUnpublish()` | `StoryHub.tsx` | Calls `unpublishScenario(selectedScenario.id)`, sets `publicationStatus = null`, shows toast |
 
 ### Pagination Handlers
 

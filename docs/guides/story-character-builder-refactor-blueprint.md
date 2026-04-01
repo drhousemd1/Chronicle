@@ -96,7 +96,7 @@ Result: audits/fixes from external agents frequently miss real owner files.
 - `src/components/chronicle/CharacterEditModal.tsx` (modal-based parallel editor)
 - `src/components/chronicle/StoryCardView.tsx` (scenario card in modal context)
 - `src/components/chronicle/ChatInterfaceTab.tsx` character tile renderer
-- `src/components/chronicle/CharacterEditForm.tsx` (appears legacy/orphan)
+- `src/features/character-editor-modal/CharacterEditorModalScreen.tsx` (appears legacy/orphan)
 
 ---
 
@@ -317,7 +317,7 @@ Exit criteria:
 
 ### Phase 4: Context split for modal/editor duplication
 
-- Move modal-specific UI into `src/features/character-editor-modal` (or `src/features/character-builder/modal`).
+- Move modal-specific UI into `src/features/character-editor-modal` (or `src/features/character-editor-modal/`).
 - Rename modal section components with `Modal` prefix.
 - Ensure Story Builder page sections and modal sections are not accidentally sharing top-level section files.
 
@@ -339,7 +339,7 @@ Exit criteria:
 
 ### Phase 6: Legacy file retirement
 
-- Remove orphan/legacy modules no longer referenced (e.g., `CharacterEditForm.tsx` if confirmed unused).
+- Remove orphan/legacy modules no longer referenced (e.g., `CharacterEditorModalScreen.tsx` if confirmed unused).
 - Remove deprecated adapters after all imports are migrated.
 
 Exit criteria:

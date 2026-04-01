@@ -41,6 +41,8 @@ const runIds = {
   stabilitySweep3: "run-codex-stability-20260330c",
   stabilitySweep4: "run-codex-stability-20260330d",
   stabilitySweep5: "run-codex-stability-20260331a",
+  stabilitySweep6: "run-codex-stability-20260331b",
+  toolIntegrity: "run-codex-tool-integrity-20260331",
   securityDeep: "run-codex-security-deep-20260331",
 } as const;
 
@@ -3107,6 +3109,145 @@ const findings: QualityFinding[] = [
       ],
     },
   ),
+  finding(
+    "qh-stability-20260331-007",
+    "Admin API usage test-session bootstrap emitted avoidable warning noise on soft-fail lookups",
+    "low",
+    "confirmed",
+    "functionality",
+    "Runtime Warning Noise",
+    "App Bootstrap",
+    [
+      "src/pages/Index.tsx",
+      "src/services/api-usage-test-session.ts",
+    ],
+    "The admin-only active-session lookup could throw on transient or non-critical failures and trigger warning-level logging at startup.",
+    "This created false-positive instability noise, making real regression signals harder to spot during debugging and QA.",
+    "Admins could see warning chatter even when no user-facing failure occurred.",
+    "Treat bootstrap lookup as soft-fail by default (bounded retries, then null), and avoid warning-level logging for this non-blocking path.",
+    "runtime",
+    "small",
+    runIds.stabilitySweep6,
+    {
+      status: "fixed",
+      verificationStatus: "verified",
+      verifiedBy: stamp(runIds.stabilitySweep6),
+      expectedBehavior:
+        "Admin startup should continue cleanly when active test-session lookup is unavailable, without warning spam.",
+      actualBehavior:
+        "Bootstrap lookup now supports suppressed errors and resolves to null after retries for non-blocking flows; startup warning noise is eliminated.",
+      route: "/ (app bootstrap)",
+      component: "Index admin startup session probe",
+      evidence: [
+        "Startup effect called `fetchActiveApiUsageTestSession` and logged warning in catch path.",
+        "Lookup flow is non-blocking and can safely operate as null when unavailable.",
+      ],
+      tags: ["module-functionality", "module-data-integrity", "scan-stability-20260331b", "runtime-warning-noise"],
+      comments: [
+        {
+          id: "fix-note-stability6-001",
+          author: "ChatGPT Codex",
+          timestamp: "2026-03-31T18:50:00.000Z",
+          text: "Added soft-fail option to active session lookup and removed non-actionable warning logging from bootstrap path.",
+        },
+      ],
+    },
+  ),
+  finding(
+    "qh-sec-20260331-007",
+    "api-usage-test-session edge function lacked explicit admin-role authorization guard",
+    "medium",
+    "confirmed",
+    "security",
+    "Auth and Access Control",
+    "API Usage Test Session",
+    [
+      "supabase/functions/api-usage-test-session/index.ts",
+      "src/services/api-usage-test-session.ts",
+      "src/pages/Index.tsx",
+    ],
+    "The edge function required authentication but did not explicitly enforce admin role before handling get/start/stop tracing actions.",
+    "UI visibility is not a security boundary; server-side role enforcement is required to prevent direct non-admin invocation.",
+    "Potential unauthorized invocation of internal tracing lifecycle actions through direct API calls.",
+    "Add explicit server-side admin-role check (`has_role`) and return 403 for non-admin requests before action handling.",
+    "security",
+    "small",
+    runIds.stabilitySweep6,
+    {
+      status: "fixed",
+      verificationStatus: "verified",
+      verifiedBy: stamp(runIds.stabilitySweep6),
+      expectedBehavior:
+        "Only admins can invoke api-usage-test-session actions; non-admin callers are rejected with 403.",
+      actualBehavior:
+        "Function now performs explicit `has_role(..., 'admin')` check and blocks non-admin callers before processing actions.",
+      route: "edge function",
+      component: "api-usage-test-session",
+      evidence: [
+        "Function previously validated token but had no explicit admin role check before executing action branches.",
+        "Service-client calls can be made directly regardless of UI route visibility.",
+      ],
+      tags: ["module-security", "module-security-auth-access-control", "scan-stability-20260331b", "api-usage-test-session"],
+      comments: [
+        {
+          id: "fix-note-stability6-002",
+          author: "ChatGPT Codex",
+          timestamp: "2026-03-31T18:50:00.000Z",
+          text: "Added server-side admin authorization guard in api-usage-test-session and kept startup client path resilient through soft-fail handling.",
+        },
+      ],
+    },
+  ),
+  finding(
+    "qh-docs-20260331-008",
+    "App Guide docs referenced stale/retired file paths, reducing scan reliability for non-coder workflows",
+    "low",
+    "confirmed",
+    "documentation",
+    "App Guide Integrity",
+    "App Guide",
+    [
+      "docs/guides/GUIDE_STYLE_RULES.md",
+      "docs/guides/app-overview-global-systems.md",
+      "docs/guides/community-gallery-page-structure-guide.md",
+      "docs/guides/story-character-builder-refactor-blueprint.md",
+      "docs/guides/your-stories-page-structure-guide.md",
+      "docs/guides/character-library-page-structure-guide.md",
+      "docs/guides/scenario-builder-page-structure-guide.md",
+      "docs/guides/shared-elements-architecture-structure-guide.md",
+    ],
+    "Several guide pages still referenced retired file names (`ScenarioHub`, `ScenarioDetailModal`, `ShareScenarioModal`, `Auth.tsx`, `CharacterEditForm.tsx`) that no longer exist in the live repo.",
+    "When docs drift from code truth, LLM agents and non-technical operators get routed to the wrong files and miss real ownership boundaries.",
+    "Troubleshooting and implementation handoffs become unreliable, causing wasted cycles and inconsistent fixes.",
+    "Update guide path references to current file ownership and verify every documented `src/...` reference resolves to an existing path.",
+    "documentation",
+    "small",
+    runIds.toolIntegrity,
+    {
+      status: "fixed",
+      verificationStatus: "verified",
+      verifiedBy: stamp(runIds.toolIntegrity),
+      expectedBehavior:
+        "All App Guide file-path references resolve to real files so scans and handoffs remain code-truth aligned.",
+      actualBehavior:
+        "Stale path references were replaced with current file names and integrity check now reports zero missing guide paths.",
+      route: "documentation tooling",
+      component: "App Guide docs",
+      evidence: [
+        "Integrity check previously reported missing paths for retired names (`ScenarioHub`, `ScenarioDetailModal`, `ShareScenarioModal`, `Auth.tsx`, `CharacterEditForm.tsx`).",
+        "Post-fix path resolution audit now returns `GUIDE_PATH_REFS_OK`.",
+      ],
+      tags: ["module-docs", "module-app-guide-integrity", "scan-tool-integrity-20260331"],
+      comments: [
+        {
+          id: "fix-note-tool-integrity-001",
+          author: "ChatGPT Codex",
+          timestamp: "2026-03-31T19:30:00.000Z",
+          text: "Normalized stale guide references to current StoryHub/StoryDetailModal/ShareStoryModal and current auth/editor ownership paths, then re-ran guide path integrity check to zero missing references.",
+        },
+      ],
+    },
+  ),
 ];
 
 function summaryFor(runFindings: QualityFinding[]) {
@@ -3171,11 +3312,31 @@ const stabilitySweep4Findings = findings.filter((f) =>
 const stabilitySweep5Findings = findings.filter((f) =>
   f.tags.includes("scan-stability-20260331a"),
 );
+const stabilitySweep6Findings = findings.filter((f) =>
+  f.tags.includes("scan-stability-20260331b"),
+);
+const toolIntegrityFindings = findings.filter((f) =>
+  f.tags.includes("scan-tool-integrity-20260331"),
+);
 const securityDeepFindings = findings.filter((f) =>
   f.tags.includes("scan-security-deep-20260331"),
 );
 
 const runs: QualityScanRun[] = [
+  run(
+    runIds.toolIntegrity,
+    "Codex Tool Integrity Sweep — App Guide + App Architecture + API Inspector (March 2026)",
+    ["module-app-guide-integrity", "module-app-architecture-integrity", "module-api-inspector-integrity", "module-docs"],
+    "Completed dedicated integrity sweep across documentation and architecture tooling: refreshed architecture path registry, validated API Inspector integrity tests + Phase-1 coverage status, and corrected stale App Guide file references to current code ownership.",
+    toolIntegrityFindings,
+  ),
+  run(
+    runIds.stabilitySweep6,
+    "Codex Stability Sweep — Runtime Warning Noise + Admin Test-Session Authorization Hardening (March 2026)",
+    ["module-functionality", "module-data-integrity", "module-security", "module-build", "module-tests"],
+    "Validated all quality gates; reduced non-actionable startup warning noise and added explicit server-side admin authorization for API usage test-session actions.",
+    stabilitySweep6Findings,
+  ),
   run(
     runIds.securityDeep,
     "Codex Security Deep Scan — Access Control, Data Exposure, XSS, and Abuse Prevention (March 2026)",
@@ -3369,11 +3530,11 @@ const runs: QualityScanRun[] = [
 export const qualityHubInitialRegistry: QualityHubRegistry = {
   meta: {
     version: QUALITY_HUB_VERSION,
-    registryVersion: 25,
+    registryVersion: 27,
     project: "Chronicle",
     createdAt,
     lastUpdatedAt: scanTimestamp,
-    lastRunId: runIds.securityDeep,
+    lastRunId: runIds.toolIntegrity,
   },
   scanModules: [
     {
@@ -3416,8 +3577,8 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
       description: "Broken flows, regression risk, state synchronization, user-impacting issues.",
       status: "completed",
       priority: "high",
-      lastRunId: runIds.stabilitySweep5,
-      notes: "Latest verification pass re-ran auth-path/runtime sanity checks and confirmed no blocking console/page/runtime failures on current state.",
+      lastRunId: runIds.stabilitySweep6,
+      notes: "Latest stability sweep reduced non-actionable startup warning noise in admin bootstrap paths and reconfirmed no blocking runtime defects.",
       checklist: {
         scope: [
           "src/components/chronicle/**/*",
@@ -3539,8 +3700,8 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
       description: "Rendering hot spots, expensive effects, bundle risk, caching opportunities.",
       status: "completed",
       priority: "medium",
-      lastRunId: runIds.stabilitySweep5,
-      notes: "Latest gate verification confirms stable build/runtime startup behavior on current toolchain baseline.",
+      lastRunId: runIds.stabilitySweep6,
+      notes: "Latest gate verification confirms stable build/runtime startup behavior with reduced non-actionable warning noise in startup paths.",
       checklist: {
         scope: [
           "src/pages/Index.tsx",
@@ -3570,8 +3731,8 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
       description: "Dependency risk, unsafe handling, configuration pitfalls.",
       status: "completed",
       priority: "high",
-      lastRunId: runIds.securityDeep,
-      notes: "Security deep scan completed with dedicated sub-modules and newly logged findings covering authz gaps, storage policies, XSS surface, and abuse-prevention controls.",
+      lastRunId: runIds.stabilitySweep6,
+      notes: "Security deep baseline remains in place; latest sweep added explicit admin authorization hardening for API usage test-session edge actions.",
       checklist: {
         scope: [
           "supabase/functions/**/*",
@@ -3846,7 +4007,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
       description: "Coverage gaps, missing regression tests, flaky or absent test paths.",
       status: "completed",
       priority: "medium",
-      lastRunId: runIds.stabilitySweep5,
+      lastRunId: runIds.stabilitySweep6,
       notes: "Latest verification re-executed all current unit suites with full pass.",
       checklist: {
         scope: [
@@ -3878,7 +4039,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
       description: "Type errors, lint debt, warnings that mask regressions.",
       status: "completed",
       priority: "high",
-      lastRunId: runIds.stabilitySweep5,
+      lastRunId: runIds.stabilitySweep6,
       notes: "Latest verification reconfirmed `lint`, `tsc --noEmit`, `build`, and runtime-console scan are stable.",
       checklist: {
         scope: [
@@ -3911,8 +4072,8 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
       description: "Schema mismatch, stale fields, parsing/merge edge cases.",
       status: "completed",
       priority: "high",
-      lastRunId: runIds.stabilitySweep,
-      notes: "Latest stability sweep hardened active API usage test-session lifecycle by reducing over-fetch churn and adding retry + structured error propagation.",
+      lastRunId: runIds.stabilitySweep6,
+      notes: "Latest stability sweep reduced non-critical warning noise in active API usage test-session bootstrap and preserved retry + structured error propagation.",
       checklist: {
         scope: [
           "src/lib/story-transfer.ts",
@@ -3944,8 +4105,8 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
       description: "Runbooks, maintenance notes, import/export guidance for cross-agent workflow.",
       status: "completed",
       priority: "low",
-      lastRunId: runIds.aiMapping,
-      notes: "5 findings logged including API Inspector contract/model drift findings for AI-enhance routes.",
+      lastRunId: runIds.toolIntegrity,
+      notes: "Tool integrity sweep corrected stale App Guide file references and reconfirmed docs/tooling path truth.",
       checklist: {
         scope: [
           "docs/**/*",
@@ -3972,9 +4133,9 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
       id: "module-app-guide-integrity",
       name: "App Guide Consistency",
       description: "Validate App Guide documents against live routes, components, and architecture semantics.",
-      status: "not-started",
-      lastRunId: undefined,
-      notes: "Reserved for manual rubric scans by Codex/Lovable/Claude.",
+      status: "completed",
+      lastRunId: runIds.toolIntegrity,
+      notes: "Completed: stale/retired file references replaced with current ownership paths; guide path integrity check clean.",
       checklist: {
         scope: [
           "src/components/admin/guide/**/*",
@@ -4003,9 +4164,9 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
       id: "module-app-architecture-integrity",
       name: "App Architecture Map Consistency",
       description: "Verify folder/file/component architecture map matches current repository shape and ownership.",
-      status: "not-started",
-      lastRunId: undefined,
-      notes: "Reserved for manual rubric scans by Codex/Lovable/Claude.",
+      status: "completed",
+      lastRunId: runIds.toolIntegrity,
+      notes: "Completed: regenerated architecture path datasets and verified all mapped paths resolve to live repo files.",
       checklist: {
         scope: [
           "src/pages/style-guide/app-architecture.tsx",
@@ -4033,9 +4194,9 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
       id: "module-api-inspector-integrity",
       name: "API Inspector Map Consistency",
       description: "Cross-verify API Inspector map content with real prompt assembly and runtime payload flow.",
-      status: "not-started",
-      lastRunId: undefined,
-      notes: "Reserved for manual rubric scans by Codex/Lovable/Claude.",
+      status: "completed",
+      lastRunId: runIds.toolIntegrity,
+      notes: "Completed: API Inspector validation tests passed and Phase-1 audit coverage currently reports 0 missing/partial fields.",
       checklist: {
         scope: [
           "src/pages/style-guide/api-inspector.tsx",
@@ -4183,6 +4344,64 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
     },
   ],
   changeLog: [
+    {
+      id: "cl-20260331-005",
+      title: "Tool integrity sweep: close App Guide/App Architecture/API Inspector scan modules",
+      summary: "Tooling Integrity · Correct stale guide paths and verify architecture/inspector code-truth alignment",
+      severity: "patch" as const,
+      status: "completed" as const,
+      problem: "Tool-integrity modules in Quality Hub were still marked not-started, and App Guide docs contained stale file references that reduced scan/handoff reliability for non-technical workflows and LLM agents.",
+      plan: "Run dedicated integrity checks for App Guide, App Architecture, and API Inspector; correct stale references; regenerate architecture path data; verify API Inspector integrity tests and Phase-1 mapping health; then mark modules completed with evidence-backed notes.",
+      changes: "Executed tool-integrity closure pass:\n• Regenerated architecture source/extra path registries via `npm run architecture:refresh`.\n• Corrected stale App Guide references from retired paths/names (`ScenarioHub`, `ScenarioDetailModal`, `ShareScenarioModal`, `Auth.tsx`, `CharacterEditForm.tsx`) to current ownership paths.\n• Verified guide path integrity (`GUIDE_PATH_REFS_OK`) after cleanup.\n• Revalidated API Inspector integrity test suite (`src/lib/api-inspector-utils.test.ts`) and confirmed Phase-1 audit status is fully mapped (0 missing, 0 partial).\n• Marked `module-app-guide-integrity`, `module-app-architecture-integrity`, and `module-api-inspector-integrity` as completed in Quality Hub.",
+      filesAffected: [
+        "docs/guides/GUIDE_STYLE_RULES.md",
+        "docs/guides/app-overview-global-systems.md",
+        "docs/guides/community-gallery-page-structure-guide.md",
+        "docs/guides/story-character-builder-refactor-blueprint.md",
+        "docs/guides/your-stories-page-structure-guide.md",
+        "docs/guides/character-library-page-structure-guide.md",
+        "docs/guides/scenario-builder-page-structure-guide.md",
+        "docs/guides/shared-elements-architecture-structure-guide.md",
+        "src/data/architecture-source-paths.ts",
+        "src/data/architecture-extra-paths.ts",
+        "src/data/ui-audit-findings.ts",
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [
+        "qh-docs-20260331-008",
+      ],
+      relatedRunIds: [runIds.toolIntegrity],
+      tags: ["tool-integrity", "app-guide", "app-architecture", "api-inspector", "quality-hub"],
+      comments: [],
+      createdAt: "2026-03-31T19:35:00.000Z",
+      updatedAt: "2026-03-31T19:35:00.000Z",
+    },
+    {
+      id: "cl-20260331-004",
+      title: "Stability sweep: reduce warning noise and harden admin API test-session authorization",
+      summary: "Runtime Stability + Access Control · Soft-fail bootstrap lookups and enforce role-gated tracing actions",
+      severity: "patch" as const,
+      status: "completed" as const,
+      problem: "Current stability pass surfaced noisy startup warnings for non-critical admin test-session lookups and identified that API usage test-session edge actions were authenticated but not explicitly admin-role gated server-side.",
+      plan: "Keep startup behavior resilient by treating admin active-session bootstrap as soft-fail (bounded retries then null), reduce non-actionable warning-level logs, and add explicit admin-role authorization checks inside `api-usage-test-session` before action handling.",
+      changes: "Implemented targeted stability/security hardening:\n• Added `suppressErrors` option to `fetchActiveApiUsageTestSession` and enabled it for startup bootstrap path.\n• Updated startup session-lookup usage in `Index.tsx` to soft-fail without warning spam for this non-blocking helper path.\n• Downgraded timeout fallback log in `withTimeout` helper from warning-level to dev debug-level to reduce false-positive console noise.\n• Added explicit admin-role check (`has_role`) in `api-usage-test-session` edge function before `get/start/stop` action handling.\n• Expanded start-path edge-function error payloads to include details/code/hint for faster diagnostics.\n• Re-ran full gates (`lint`, `tsc --noEmit`, `test`, `build`, `npm audit --omit=dev`) with clean pass results.",
+      filesAffected: [
+        "src/services/api-usage-test-session.ts",
+        "src/pages/Index.tsx",
+        "supabase/functions/api-usage-test-session/index.ts",
+        "src/data/ui-audit-findings.ts",
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [
+        "qh-stability-20260331-007",
+        "qh-sec-20260331-007",
+      ],
+      relatedRunIds: [runIds.stabilitySweep6],
+      tags: ["stability", "warning-noise", "access-control", "edge-functions", "quality-hub"],
+      comments: [],
+      createdAt: "2026-03-31T18:50:00.000Z",
+      updatedAt: "2026-03-31T18:50:00.000Z",
+    },
     {
       id: "cl-20260331-003",
       title: "Close deep security findings with authorization, policy, XSS, and ingress-throttle hardening",

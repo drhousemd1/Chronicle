@@ -78,6 +78,20 @@ serve(async (req) => {
     }
 
     const user = userResult.user;
+    const { data: isAdmin, error: roleError } = await authClient.rpc("has_role", {
+      _user_id: user.id,
+      _role: "admin",
+    });
+    if (roleError || !isAdmin) {
+      if (roleError) {
+        console.error("[api-usage-test-session] Role check failed:", roleError);
+      }
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const body = await req.json().catch(() => ({}));
     const action = (typeof body?.action === "string" ? body.action : "get") as Action;
 
@@ -194,7 +208,13 @@ serve(async (req) => {
         .maybeSingle();
 
       if (activeSessionError) {
-        return new Response(JSON.stringify({ error: "Failed to resolve active session" }), {
+        console.error("[api-usage-test-session] Failed to resolve active session:", activeSessionError);
+        return new Response(JSON.stringify({
+          error: "Failed to resolve active session",
+          details: activeSessionError.message ?? null,
+          code: activeSessionError.code ?? null,
+          hint: activeSessionError.details ?? null,
+        }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -223,7 +243,13 @@ serve(async (req) => {
             .single();
 
           if (updateError) {
-            return new Response(JSON.stringify({ error: "Failed to refresh active session context" }), {
+            console.error("[api-usage-test-session] Failed to refresh active session context:", updateError);
+            return new Response(JSON.stringify({
+              error: "Failed to refresh active session context",
+              details: updateError.message ?? null,
+              code: updateError.code ?? null,
+              hint: updateError.details ?? null,
+            }), {
               status: 500,
               headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
@@ -265,7 +291,13 @@ serve(async (req) => {
         .single();
 
       if (createError) {
-        return new Response(JSON.stringify({ error: "Failed to start test session" }), {
+        console.error("[api-usage-test-session] Failed to start test session:", createError);
+        return new Response(JSON.stringify({
+          error: "Failed to start test session",
+          details: createError.message ?? null,
+          code: createError.code ?? null,
+          hint: createError.details ?? null,
+        }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });

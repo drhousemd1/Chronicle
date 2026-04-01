@@ -81,7 +81,7 @@ Identical `useEffect` + `ref` auto-resize textarea implementation copy-pasted ac
 | `ScenarioCardView.tsx` | Scenario Card detail view | Duplicated | Used in scenario fields |
 | `ArcBranchLane.tsx` | Arc system (within goals) | Duplicated | Used in branch descriptions |
 | `ArcPhaseCard.tsx` | Arc system (within goals) | Duplicated | Used in phase descriptions |
-| `CharacterEditForm.tsx` | Character edit form | Duplicated | Used in form fields |
+| `CharacterEditorModalScreen.tsx` | Character edit form | Duplicated | Used in form fields |
 
 **Propagation rule**: When changing the auto-resize behavior (e.g., max height, resize logic, styling), you must update **all 9 files independently**. Consider extracting to a shared component.
 

@@ -52,7 +52,7 @@ The app uses a fixed sidebar + content area layout rendered entirely within `src
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />  # src/pages/Index.tsx
-          <Route path="/auth" element={<Auth />} />  # src/pages/Auth.tsx
+          <Route path="/auth" element={<Auth />} />  # src/App.tsx (/auth redirect route)
           <Route path="/creator/:userId" element={<CreatorProfile />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
@@ -69,7 +69,7 @@ The sidebar is defined inline in `src/pages/Index.tsx` using a `SidebarItem` com
 | Sidebar Label | Tab Key | Icon | Component Rendered |
 |---------------|---------|------|--------------------|
 | Gallery | `gallery` | `IconsList.Gallery` | `GalleryHub` |
-| Your Stories | `hub` | `IconsList.Hub` | `ScenarioHub` |
+| Your Stories | `hub` | `IconsList.Hub` | `StoryHub` |
 | Characters | `characters` | `IconsList.Characters` | `CharactersTab` |
 | World | `world` | `IconsList.World` | `WorldTab` |
 | Chat History | `conversations` | `IconsList.Chat` | `ConversationsTab` |
@@ -144,7 +144,7 @@ On authentication, `Index.tsx` fires 8 parallel requests with 15s timeouts:
 Hook: `useAuth()` (`src/hooks/use-auth.ts`)
 - Uses Supabase Auth with email/password
 - Returns: `{ user, loading, signIn, signUp, signOut, isAuthenticated }`
-- Auth page: `src/pages/Auth.tsx` — email + password form with Zod validation
+- Auth page: `src/App.tsx` — email + password form with Zod validation
 - Non-authenticated users redirected to `/auth`
 
 ### 6c. User Roles
@@ -174,7 +174,7 @@ Admin check: `checkIsAdmin(userId)` is an async function that calls `supabase.rp
                 <SidebarItem> (×10+)
                 {/* Content area - conditional on tab */}
                 <GalleryHub>  # src/components/chronicle/GalleryHub.tsx
-                <ScenarioHub>  # src/components/chronicle/ScenarioHub.tsx
+                <StoryHub>  # src/components/chronicle/StoryHub.tsx
                 <CharactersTab>  # src/components/chronicle/CharactersTab.tsx
                 <WorldTab>  # src/components/chronicle/WorldTab.tsx
                 <ConversationsTab>  # src/components/chronicle/ConversationsTab.tsx

@@ -353,15 +353,13 @@ const IndexContent = () => {
     }
 
     let cancelled = false;
-    void fetchActiveApiUsageTestSession({ retries: 1, retryDelayMs: 500 })
+    void fetchActiveApiUsageTestSession({ retries: 1, retryDelayMs: 500, suppressErrors: true })
       .then((session) => {
         if (cancelled) return;
         setActiveApiUsageTestSession(session);
       })
-      .catch((error) => {
+      .catch(() => {
         if (cancelled) return;
-        const message = error instanceof Error ? error.message : String(error);
-        console.warn("[api-usage-test] Active test session unavailable:", message);
       });
 
     return () => {
@@ -490,7 +488,9 @@ const IndexContent = () => {
       promise,
       new Promise<T>((resolve) => {
         setTimeout(() => {
-          console.warn(`[withTimeout] ${label} timed out after ${ms}ms, using fallback`);
+          if (import.meta.env.DEV) {
+            console.debug(`[withTimeout] ${label} timed out after ${ms}ms, using fallback`);
+          }
           resolve(fallback);
         }, ms);
       })

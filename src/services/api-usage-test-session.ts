@@ -18,6 +18,7 @@ export type ApiUsageTestSession = {
 type FetchActiveSessionOptions = {
   retries?: number;
   retryDelayMs?: number;
+  suppressErrors?: boolean;
 };
 
 const ENABLED_KEY = "chronicle_api_usage_test_enabled";
@@ -56,6 +57,7 @@ export async function fetchActiveApiUsageTestSession(
 ): Promise<ApiUsageTestSession | null> {
   const retries = Math.max(0, options.retries ?? 1);
   const retryDelayMs = Math.max(0, options.retryDelayMs ?? 350);
+  const suppressErrors = options.suppressErrors ?? true;
 
   let lastError: Error | null = null;
 
@@ -86,6 +88,10 @@ export async function fetchActiveApiUsageTestSession(
       await delay(retryDelayMs * (attempt + 1));
       continue;
     }
+  }
+
+  if (suppressErrors) {
+    return null;
   }
 
   throw lastError ?? new Error("Failed to load test session");

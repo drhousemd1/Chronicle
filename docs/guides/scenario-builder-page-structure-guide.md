@@ -80,7 +80,7 @@
 | **Art Style Preference section** | Main | Grid of style thumbnails (2–5 columns responsive), radio-select with blue ring on active |
 | **World Codex section** | Main | Dialog Formatting (read-only critical rules + editable additional rules textarea) + Additional Entries (title/body pairs) |
 | **Content Themes section** | Main | Tag selectors for: Character Types, Story Type (SFW/NSFW toggle), Genre, Origin, Trigger Warnings, Custom Tags |
-| **Share Your Story section** | Main | "Publish to Gallery" button, opens ShareScenarioModal |
+| **Share Your Story section** | Main | "Publish to Gallery" button, opens ShareStoryModal |
 
 ### Publish Validation Error States
 
@@ -132,7 +132,7 @@ When the user clicks "Publish to Gallery", `validateForPublish()` runs and highl
 | CoverImageGenerationModal | "Generate with AI" in cover image actions | `CoverImageGenerationModal.tsx` |
 | SceneImageGenerationModal | "Generate with AI" in scene gallery actions | `SceneImageGenerationModal.tsx` |
 | SceneTagEditorModal | Pencil icon on a scene image tile | `SceneTagEditorModal.tsx` |
-| ShareScenarioModal | "Publish to Gallery" button | `ShareScenarioModal.tsx` |
+| ShareStoryModal | "Publish to Gallery" button | `ShareStoryModal.tsx` |
 | ImageLibraryPickerModal | "Select from Library" in cover or scene actions | `ImageLibraryPickerModal.tsx` (reused for both contexts) |
 
 **Styled delete dialogs**: Cover image removal and scene deletion use the `DeleteConfirmDialog` component.
@@ -241,7 +241,7 @@ Index.tsx
     > SceneTagEditorModal
     > CoverImageGenerationModal
     > SceneImageGenerationModal
-    > ShareScenarioModal
+    > ShareStoryModal
 ```
 
 ---

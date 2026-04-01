@@ -24,7 +24,7 @@
 | `# H1` | Page title ONLY. One per document. Must match the page name from Section 0. | `# PAGE: COMMUNITY GALLERY` |
 | `## H2` | Template section headings (1–13). Use the exact numbering and titles from the 13-section template. | `## 3. UI ELEMENTS — COMPLETE INVENTORY` |
 | `### H3` | Sub-sections within a template section. Use for grouping related content. | `### 6a. Primary Data Hook` |
-| `#### H4` | Individual items within sub-sections. Modals, cards, specific components. | `#### Modal: ScenarioDetailModal` |
+| `#### H4` | Individual items within sub-sections. Modals, cards, specific components. | `#### Modal: StoryDetailModal` |
 
 **Rules:**
 - NEVER use H1 for anything other than the page title.
@@ -43,7 +43,7 @@ Tables are the primary information format in these guides. They must be structur
 | **Column consistency** | Use the SAME column structure for the same type of information across all pages. For example, all UI Element Inventory tables must use: `Element \| Type \| Label/Text \| Position \| Color—BG \| Color—Text \| Size/Weight \| Interaction \| Component File \| Notes`. |
 | **No empty cells** | Every cell must contain a value. If not applicable, write `N/A` or `—`. Never leave cells blank — blank cells look like you forgot to fill them in. |
 | **Color values** | Always provide BOTH the hex code AND the Tailwind class together: `#EF4444 / bg-red-500`. Never just "red" or just `bg-red-500`. The hex is for designers; the class is for developers. |
-| **File paths** | Always use backtick-wrapped full paths: `` `src/components/stories/StoryCard.tsx` ``. Never abbreviate. Never write just the filename without the path. |
+| **File paths** | Always use backtick-wrapped full paths: `` `src/components/chronicle/GalleryStoryCard.tsx` ``. Never abbreviate. Never write just the filename without the path. |
 | **When to use tables vs prose** | USE TABLES for: inventories, comparisons, field lists, config values, any structured data with 3+ attributes. USE PROSE for: overviews, explanations, flow descriptions, rationale. Never use a paragraph to list 5+ items — use a table. |
 
 ---
@@ -53,7 +53,7 @@ Tables are the primary information format in these guides. They must be structur
 | Rule | Details |
 |------|---------|
 | **Language tags** | Always specify the language after the opening triple backticks: `` ```typescript ``, `` ```sql ``, `` ```tsx ``, `` ```json ``. This enables syntax highlighting. Never use bare `` ``` `` without a language. |
-| **Inline code** | Use single backticks for: component names (`StoryCard`), function names (`handleSave()`), file paths (`src/hooks/useData.ts`), Tailwind classes (`bg-[#1a1a1a]`), table/column names (`stories.user_id`), hook names (`useStoriesData`), event names (`'add-new-story'`), and cache keys (`['stories']`). |
+| **Inline code** | Use single backticks for: component names (`StoryCard`), function names (`handleSave()`), file paths (`src/services/supabase-data.ts`), Tailwind classes (`bg-[#1a1a1a]`), table/column names (`stories.user_id`), hook names (`useStoriesData`), event names (`'add-new-story'`), and cache keys (`['stories']`). |
 | **Fenced code blocks** | Use fenced code blocks for: component trees (with file path comments), cache/sync flow sequences (numbered steps), TypeScript type definitions, SQL RLS policies, and any multi-line code. Indent nested items consistently. |
 | **Component trees** | Always use a fenced code block with comment-style file paths. Format: `<ComponentName>  # src/path/to/File.tsx`. Indent children with 2 spaces. Add `(conditional)` or `(×N)` annotations where relevant. |
 
@@ -74,7 +74,7 @@ These patterns apply to every section of every guide page. If you catch yourself
 ### GOOD — Write This Instead
 
 - "Page header row: H1 title `Your Stories` (`text-2xl font-bold text-white`), top-right `+ New` button (`#3B82F6 / bg-blue-500`, `text-white`, `text-sm font-semibold`). Below: 2-column grid (`grid-cols-2 md:grid-cols-3 gap-3`) of `ScenarioCard` components."
-- "Hook: `useStoriesData()` (`src/hooks/useStoriesData.ts`). Returns `{ stories: Story[], isLoading }`. Internally calls `useStoriesQuery` with cache key `['stories']`. Cache strategy: IndexedDB first → Supabase if stale > 30min → update IndexedDB + React Query cache."
+- "Hook: `useStoriesData()` (`src/services/supabase-data.ts`). Returns `{ stories: Story[], isLoading }`. Internally calls `useStoriesQuery` with cache key `['stories']`. Cache strategy: IndexedDB first → Supabase if stale > 30min → update IndexedDB + React Query cache."
 - Provide the full modal spec table: `Trigger | Component File | Overlay style | Dimensions | Header text`. Then a Form Fields table: `Field Label | Input Type | Default | Validation | Notes`. Then Action Buttons table: `Button | Label | BG Color | Text Color | Icon | Action`.
 - NEVER write "see the code for details." The entire purpose of this guide is so that no one needs to read the code. If you are tempted to write this, you have not finished documenting the section.
 - "Known Issues: RESOLVED: Stale cache after character deletion — fixed by adding `['characters']` invalidation in delete mutation (2026-02-15). ACTIVE: `AutoResizeTextarea` is duplicated in 9 files — see Shared Elements page."
@@ -101,7 +101,7 @@ Each of the 13 template sections has specific formatting expectations. Key secti
 
 1. **Never write vague descriptions.** "Has some buttons" is unacceptable. Specify exact labels, colors, positions, sizes, and behaviors.
 2. **Never write "see code for details."** Document everything explicitly. If you're tempted, you haven't finished the section.
-3. **Always include file paths.** Every component, hook, utility, and config referenced must include its full `src/...` path in backticks.
+3. **Always include file paths.** Every component, hook, utility, and config referenced must include its full `src/components/chronicle/StoryHub.tsx` path in backticks.
 4. **Dates on known issues.** Every RESOLVED and ACTIVE item must include a date (YYYY-MM-DD).
 5. **No orphan sections.** If a section is truly not applicable to a page (e.g., a page with no modals), write: `No modals or dialogs on this page.` — do not leave the section empty or delete it.
 6. **Update in-place.** Never create duplicate guide documents. Always edit the existing file for a page. If you're unsure which file to edit, check the filename convention: `{page-slug}-page-structure-guide.md`.

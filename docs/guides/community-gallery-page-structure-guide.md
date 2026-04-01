@@ -75,7 +75,7 @@ The component is a full-height flex column with three vertical zones:
 ### Secondary panels / drawers
 
 -   **Category Sidebar** (`GalleryCategorySidebar.tsx`): A left-side panel that slides in when "Browse Categories" is clicked. Width: `w-72` (288px). Background: `bg-[#18181b]`. Border-right: `border-r border-white/10`. Has a yellow accent line at top (`h-0.5 bg-yellow-400`).
--   **Scenario Detail Modal** (`ScenarioDetailModal.tsx`): Full-screen overlay modal. Triggered by clicking any card.
+-   **Scenario Detail Modal** (`StoryDetailModal.tsx`): Full-screen overlay modal. Triggered by clicking any card.
 -   **Review Modal** (`ReviewModal.tsx`): Nested modal within the Detail Modal for leaving/editing reviews.
 
 ### Empty state
@@ -157,7 +157,7 @@ Uses React Query's `useInfiniteQuery` for data fetching with automatic caching (
 | Field | Detail |
 | --- | --- |
 | **Trigger** | Clicking anywhere on a `GalleryScenarioCard` (fires `onViewDetails`). Also increments `view_count`. |
-| **Component File** | `src/components/chronicle/ScenarioDetailModal.tsx` |
+| **Component File** | `src/components/chronicle/StoryDetailModal.tsx` |
 | **Overlay** | `bg-black/90 backdrop-blur-sm` |
 | **Dimensions** | `max-w-6xl max-h-[90vh]`. Two-column layout on desktop (`md:flex-row`), single column on mobile. |
 | **Border radius** | `rounded-[32px]` |
@@ -247,7 +247,7 @@ No IndexedDB caching. No background sync. Fresh fetch every time.
       Active filter chips (conditional)
       <GalleryScenarioCard /> (x N)
     </main>
-    <ScenarioDetailModal /> (conditional)
+    <StoryDetailModal /> (conditional)
       <StarRating />
       <SpiceRating />
       <ReviewModal /> (conditional)

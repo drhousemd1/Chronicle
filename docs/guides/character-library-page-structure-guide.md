@@ -284,7 +284,7 @@ Index.tsx
         │       └── Nicknames field
         │
         └── Right Column (lg:col-span-2)
-            ├── CharacterEditForm.tsx
+            ├── CharacterEditorModalScreen.tsx
             │   ├── Section: Physical Appearance (11 fields + extras)
             │   ├── Section: Currently Wearing (4 fields + extras)
             │   ├── Section: Preferred Clothing (5 fields + extras)
@@ -314,7 +314,7 @@ Index.tsx
 | `handleCancelCharacterEdit()` | `Index.tsx` | Cancel button | For new unsaved characters (in `unsavedNewCharacterIds`): removes from `library`. For persisted characters: just deselects. |
 | `handleAiFill(prompt)` | `Index.tsx` | AI Fill button → AIPromptModal submit | Sends character data + prompt to AI. Merges AI response into character fields. |
 | `handleAiGenerate(prompt)` | `Index.tsx` | AI Generate option | Same as AI Fill but overwrites all fields instead of only empty ones |
-| `handleAddSection(title)` | `CharacterEditForm.tsx` | "+ Add Custom Section" button | Appends new section object to character's `sections` array |
+| `handleAddSection(title)` | `CharacterEditorModalScreen.tsx` | "+ Add Custom Section" button | Appends new section object to character's `sections` array |
 | `handleEnhanceField(fieldKey, getValue, setValue, label)` | `Index.tsx` | Per-field Sparkle button | Sends single field value + context to AI for enhancement. Updates field via `setValue` callback. |
 
 ---
