@@ -41,16 +41,20 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
   onEnhanceField,
   enhancingField,
 }) => {
-  const displayGoals = goals.length === 0 ? [{
-    id: uid('goal'),
-    title: '',
-    desiredOutcome: '',
-    currentStatus: '',
-    progress: 0,
-    steps: [],
-    createdAt: now(),
-    updatedAt: now()
-  }] : goals;
+  const seededDefaultGoalsRef = useRef<CharacterGoal[] | null>(null);
+  if (!seededDefaultGoalsRef.current) {
+    seededDefaultGoalsRef.current = [{
+      id: uid('goal'),
+      title: '',
+      desiredOutcome: '',
+      currentStatus: '',
+      progress: 0,
+      steps: [],
+      createdAt: now(),
+      updatedAt: now()
+    }];
+  }
+  const displayGoals = goals.length === 0 ? seededDefaultGoalsRef.current : goals;
 
   const sortedGoals = [...displayGoals].sort((a, b) => calculateProgress(b) - calculateProgress(a));
 
@@ -58,7 +62,7 @@ export const CharacterGoalsSection: React.FC<CharacterGoalsSectionProps> = ({
     if (goals.length === 0 && displayGoals.length === 1) {
       onChange(displayGoals);
     }
-  }, []);
+  }, [displayGoals, goals.length, onChange]);
 
   const isViewMode = !isExpanded || readOnly;
   const isEditMode = isExpanded && !readOnly;

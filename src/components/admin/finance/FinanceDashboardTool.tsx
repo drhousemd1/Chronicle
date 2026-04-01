@@ -8,7 +8,7 @@
  * TODO markers indicate Supabase wiring points
  */
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
   LineChart, Line, BarChart, Bar, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip,
@@ -1603,7 +1603,19 @@ function FinancePage({ users = [], tierPrices = DEFAULT_TIER_PRICES }) {
       return { mo:`M${mo}`, starter:s, premium:p, elite:e, total:s+p+e,
                rev:Math.round(rev), net:Math.round(rev-costs-HOSTING) };
     });
-  }, [tierCounts, growth, prices]);
+  }, [
+    tierCounts,
+    growth,
+    ECON.starter.api,
+    ECON.starter.price,
+    ECON.starter.stripe,
+    ECON.premium.api,
+    ECON.premium.price,
+    ECON.premium.stripe,
+    ECON.elite.api,
+    ECON.elite.price,
+    ECON.elite.stripe,
+  ]);
 
   const breakEvenMonth = liveData.find(d => d.net >= 0)?.mo ?? "Never";
   const mEnd = liveData[liveData.length - 1];
@@ -2325,7 +2337,7 @@ function UsersPage({ users, setUsers, tierPrices, usersLoading, onTierChange, on
     return map;
   }, [users]);
 
-  const loadModerationData = async () => {
+  const loadModerationData = useCallback(async () => {
     setModerationLoading(true);
     setModerationError(null);
     try {
@@ -2379,11 +2391,11 @@ function UsersPage({ users, setUsers, tierPrices, usersLoading, onTierChange, on
     } finally {
       setModerationLoading(false);
     }
-  };
+  }, [usersById]);
 
   useEffect(() => {
     void loadModerationData();
-  }, [usersById]);
+  }, [loadModerationData]);
 
   const openReportsByUserId = useMemo(() => {
     const map = {};
@@ -3151,7 +3163,7 @@ function UsagePage() {
   const [billingLoading, setBillingLoading] = useState(false);
   const [billingError, setBillingError] = useState<string | null>(null);
 
-  const loadUsageSummary = async () => {
+  const loadUsageSummary = useCallback(async () => {
     setUsageLoading(true);
     setUsageError(null);
     try {
@@ -3163,9 +3175,9 @@ function UsagePage() {
     } finally {
       setUsageLoading(false);
     }
-  };
+  }, []);
 
-  const loadUsageTimeseries = async (nextPeriod: AdminUsagePeriod) => {
+  const loadUsageTimeseries = useCallback(async (nextPeriod: AdminUsagePeriod) => {
     setTimeseriesLoading(true);
     setTimeseriesError(null);
     try {
@@ -3178,9 +3190,9 @@ function UsagePage() {
     } finally {
       setTimeseriesLoading(false);
     }
-  };
+  }, []);
 
-  const loadTestReport = async () => {
+  const loadTestReport = useCallback(async () => {
     setTestReportLoading(true);
     setTestReportError(null);
     try {
@@ -3193,9 +3205,9 @@ function UsagePage() {
     } finally {
       setTestReportLoading(false);
     }
-  };
+  }, [emptyTestReport]);
 
-  const loadBilling = async () => {
+  const loadBilling = useCallback(async () => {
     setBillingLoading(true);
     setBillingError(null);
     try {
@@ -3208,7 +3220,7 @@ function UsagePage() {
     } finally {
       setBillingLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     void loadUsageSummary();
@@ -3220,7 +3232,7 @@ function UsagePage() {
       void loadBilling();
     }, 120000);
     return () => clearInterval(interval);
-  }, []);
+  }, [loadUsageSummary, loadTestReport, loadBilling]);
 
   useEffect(() => {
     void loadUsageTimeseries(period);
@@ -3228,7 +3240,7 @@ function UsagePage() {
       void loadUsageTimeseries(period);
     }, 120000);
     return () => clearInterval(interval);
-  }, [period]);
+  }, [period, loadUsageTimeseries]);
 
   const activeSeries = useMemo(() => {
     if (seriesGroup === "all") return USAGE_SERIES_META;

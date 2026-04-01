@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React from 'react';
 import { CharacterPersonality, PersonalityTrait, PersonalityTraitFlexibility } from '@/types';
 import { Plus, Trash2, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';

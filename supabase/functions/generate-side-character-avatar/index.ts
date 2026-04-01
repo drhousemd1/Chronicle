@@ -7,6 +7,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
 
 // Step 1: Generate optimized image prompt using Grok
 async function generateOptimizedPrompt(
@@ -83,13 +84,36 @@ serve(async (req) => {
     if (userError || !user) {
       return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    const rateDecision = checkRateLimit({
+      scope: "generate-side-character-avatar",
+      key: user.id,
+      windowMs: 60_000,
+      max: 12,
+    });
+    if (!rateDecision.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: "Rate limit exceeded for avatar generation. Please try again shortly.",
+          retryAfterSeconds: rateDecision.retryAfterSeconds,
+        }),
+        {
+          status: 429,
+          headers: {
+            ...corsHeaders,
+            ...getRateLimitHeaders(rateDecision),
+            "Content-Type": "application/json",
+          },
+        },
+      );
+    }
+    const rateHeaders = getRateLimitHeaders(rateDecision);
 
     const { avatarPrompt, characterName, modelId, stylePrompt, negativePrompt } = await req.json();
     
     if (!avatarPrompt) {
       return new Response(JSON.stringify({ error: "avatarPrompt is required" }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -146,7 +170,7 @@ serve(async (req) => {
       console.error("xAI image generation error:", response.status, errorText);
       return new Response(JSON.stringify({ error: "Image generation failed", details: errorText }), {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -175,14 +199,14 @@ serve(async (req) => {
         debug: data 
       }), {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
       });
     }
 
     console.log(`Avatar generated for ${characterName} via xAI`);
 
     return new Response(JSON.stringify({ imageUrl }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
     });
 
   } catch (e: unknown) {

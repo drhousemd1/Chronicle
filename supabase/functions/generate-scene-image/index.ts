@@ -7,6 +7,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -256,6 +257,29 @@ serve(async (req) => {
     if (userError || !user) {
       return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    const rateDecision = checkRateLimit({
+      scope: "generate-scene-image",
+      key: user.id,
+      windowMs: 60_000,
+      max: 12,
+    });
+    if (!rateDecision.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: "Rate limit exceeded for scene image generation. Please try again shortly.",
+          retryAfterSeconds: rateDecision.retryAfterSeconds,
+        }),
+        {
+          status: 429,
+          headers: {
+            ...corsHeaders,
+            ...getRateLimitHeaders(rateDecision),
+            "Content-Type": "application/json",
+          },
+        },
+      );
+    }
+    const rateHeaders = getRateLimitHeaders(rateDecision);
 
     const { 
       recentMessages, 
@@ -269,7 +293,7 @@ serve(async (req) => {
     if (!recentMessages || recentMessages.length === 0) {
       return new Response(JSON.stringify({ error: "recentMessages is required" }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -350,7 +374,7 @@ serve(async (req) => {
         error: "No image generated" 
       }), {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -360,7 +384,7 @@ serve(async (req) => {
       imageUrl,
       prompt: imagePrompt 
     }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
     });
 
   } catch (e: unknown) {

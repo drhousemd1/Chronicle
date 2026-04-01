@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+/* eslint-disable react-refresh/only-export-components */
 import {
   Dialog,
   DialogContent,

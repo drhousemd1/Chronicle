@@ -6,6 +6,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
 
 type Message = {
   role: 'system' | 'user' | 'assistant';
@@ -79,6 +80,29 @@ serve(async (req) => {
     if (userError || !user) {
       return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    const rateDecision = checkRateLimit({
+      scope: "chat",
+      key: user.id,
+      windowMs: 60_000,
+      max: 40,
+    });
+    if (!rateDecision.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: "Rate limit exceeded. Please wait before sending more messages.",
+          retryAfterSeconds: rateDecision.retryAfterSeconds,
+        }),
+        {
+          status: 429,
+          headers: {
+            ...corsHeaders,
+            ...getRateLimitHeaders(rateDecision),
+            "Content-Type": "application/json",
+          },
+        },
+      );
+    }
+    const rateHeaders = getRateLimitHeaders(rateDecision);
 
     const body: ChatRequest = await req.json();
     const { messages, stream = true, max_tokens: maxTokens = 4096 } = body;
@@ -92,11 +116,11 @@ serve(async (req) => {
     }
 
     if (!messages || !modelId) {
-      return new Response(
-        JSON.stringify({ error: "Missing required fields: messages and modelId" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+        return new Response(
+          JSON.stringify({ error: "Missing required fields: messages and modelId" }),
+          { status: 400, headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
     console.log(`[chat] Request received for model: ${modelId}, messages: ${messages.length}`);
 
@@ -108,6 +132,7 @@ serve(async (req) => {
         return new Response(result.response.body, {
           headers: {
             ...corsHeaders,
+            ...rateHeaders,
             "Content-Type": "text/event-stream",
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
@@ -116,7 +141,7 @@ serve(async (req) => {
       } else {
         const data = await result.response.json();
         return new Response(JSON.stringify(data), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
         });
       }
     }
@@ -140,6 +165,7 @@ serve(async (req) => {
           return new Response(retryResult.response.body, {
             headers: {
               ...corsHeaders,
+              ...rateHeaders,
               "Content-Type": "text/event-stream",
               "Cache-Control": "no-cache",
               "Connection": "keep-alive",
@@ -148,7 +174,7 @@ serve(async (req) => {
         } else {
           const data = await retryResult.response.json();
           return new Response(JSON.stringify(data), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
           });
         }
       }
@@ -157,7 +183,7 @@ serve(async (req) => {
       console.log(`[chat] Redirect retry also failed (${retryResult.status}), returning content_filtered`);
       return new Response(
         JSON.stringify({ error: "Content filtered by safety system", error_type: "content_filtered" }),
-        { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 422, headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" } }
       );
     }
 

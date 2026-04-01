@@ -248,6 +248,100 @@ const escapeHtml = (value: string): string =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 
+const SAFE_HTML_TAGS = new Set([
+  "a",
+  "b",
+  "blockquote",
+  "br",
+  "button",
+  "code",
+  "div",
+  "em",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "hr",
+  "i",
+  "li",
+  "ol",
+  "p",
+  "pre",
+  "small",
+  "span",
+  "strong",
+  "table",
+  "tbody",
+  "td",
+  "th",
+  "thead",
+  "tr",
+  "ul",
+]);
+
+const SAFE_HTML_ATTRS = new Set(["class", "id", "title", "href", "target", "rel"]);
+
+const sanitizeUrl = (value: string): string => {
+  const next = value.trim();
+  if (!next) return "";
+  if (next.startsWith("#")) return next;
+  if (next.startsWith("/")) return next;
+  if (next.startsWith("http://") || next.startsWith("https://")) return next;
+  return "";
+};
+
+const sanitizeGuideMarkup = (value: string): string => {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(value, "text/html");
+
+  doc.querySelectorAll("script, iframe, object, embed, link").forEach((node) => node.remove());
+
+  const elements = Array.from(doc.body.querySelectorAll("*"));
+  elements.forEach((node) => {
+    const tagName = node.tagName.toLowerCase();
+    if (!SAFE_HTML_TAGS.has(tagName)) {
+      const parent = node.parentNode;
+      while (node.firstChild) {
+        parent?.insertBefore(node.firstChild, node);
+      }
+      parent?.removeChild(node);
+      return;
+    }
+
+    Array.from(node.attributes).forEach((attr) => {
+      const name = attr.name.toLowerCase();
+      if (name.startsWith("on")) {
+        node.removeAttribute(attr.name);
+        return;
+      }
+      if (name.startsWith("data-") || name.startsWith("aria-")) {
+        return;
+      }
+      if (!SAFE_HTML_ATTRS.has(name)) {
+        node.removeAttribute(attr.name);
+        return;
+      }
+      if (name === "href") {
+        const safeHref = sanitizeUrl(attr.value);
+        if (!safeHref) {
+          node.removeAttribute("href");
+          return;
+        }
+        node.setAttribute("href", safeHref);
+      }
+      if (name === "target") {
+        const safeTarget = attr.value === "_blank" ? "_blank" : "_self";
+        node.setAttribute("target", safeTarget);
+      }
+      if (name === "rel" && node.getAttribute("target") === "_blank") {
+        node.setAttribute("rel", "noopener noreferrer");
+      }
+    });
+  });
+
+  return doc.body.innerHTML.trim();
+};
+
 const hasAuditErrorStatus = (status: PhaseOneAuditField["status"]): boolean =>
   status === "missing" || status === "partial";
 
@@ -683,12 +777,14 @@ src/services/llm.ts (SSE parse loop, lines ~911-971)</div>
     if (detachedNodes.length > 0) {
       const pendingWrapper = doc.createElement("div");
       pendingWrapper.className = "pending-pipelines";
-      pendingWrapper.innerHTML = `
-        <div class="pending-header">Additional Pipelines (Not Part of API Call 1)</div>
-        <div class="pending-sub">
-          These phases are separate flows: response streaming, API Call 2 post-processing, image generation, and AI character generation.
-        </div>
-      `;
+      const pendingHeader = doc.createElement("div");
+      pendingHeader.className = "pending-header";
+      pendingHeader.textContent = "Additional Pipelines (Not Part of API Call 1)";
+      const pendingSub = doc.createElement("div");
+      pendingSub.className = "pending-sub";
+      pendingSub.textContent =
+        "These phases are separate flows: response streaming, API Call 2 post-processing, image generation, and AI character generation.";
+      pendingWrapper.append(pendingHeader, pendingSub);
 
       const pendingTree = doc.createElement("div");
       pendingTree.className = "tree pending-tree";
@@ -722,25 +818,38 @@ src/services/llm.ts (SSE parse loop, lines ~911-971)</div>
     const issueTypeKey = doc.createElement("div");
     issueTypeKey.id = "issueTypeKeyPanel";
     issueTypeKey.className = "issue-type-key";
-    issueTypeKey.innerHTML = `
-      <div class="key-title">Issue Type Key</div>
-      <div><span class="key-label">MISSING FILE</span> — A field or block expected in the prompt but not present at all</div>
-      <div><span class="key-label">MISSING CONTEXT</span> — Data is passed but has no description or framing for the LLM</div>
-      <div><span class="key-label">UNLABELED BLOCK</span> — Data exists but has no header or delimiter for the LLM to parse</div>
-      <div><span class="key-label">FORMAT MISMATCH</span> — Data shape doesn't match what the LLM expects</div>
-      <div><span class="key-label">DEPRIORITIZED</span> — Content likely ignored due to position or length in context window</div>
-      <div><span class="key-label">STALE DATA</span> — Content not refreshing or updating when it should</div>
-      <div><span class="key-label">REDUNDANT</span> — Duplicate content wasting context window space</div>
-      <div><span class="key-label">TRUNCATION RISK</span> — Content may exceed a limit and get cut off</div>
-      <div><span class="key-label">FLOW BROKEN</span> — Pipeline from data source to prompt assembly is interrupted</div>
-    `;
+    const keyTitle = doc.createElement("div");
+    keyTitle.className = "key-title";
+    keyTitle.textContent = "Issue Type Key";
+    issueTypeKey.appendChild(keyTitle);
+
+    const keyRows: Array<{ label: string; text: string }> = [
+      { label: "MISSING FILE", text: "A field or block expected in the prompt but not present at all" },
+      { label: "MISSING CONTEXT", text: "Data is passed but has no description or framing for the LLM" },
+      { label: "UNLABELED BLOCK", text: "Data exists but has no header or delimiter for the LLM to parse" },
+      { label: "FORMAT MISMATCH", text: "Data shape doesn't match what the LLM expects" },
+      { label: "DEPRIORITIZED", text: "Content likely ignored due to position or length in context window" },
+      { label: "STALE DATA", text: "Content not refreshing or updating when it should" },
+      { label: "REDUNDANT", text: "Duplicate content wasting context window space" },
+      { label: "TRUNCATION RISK", text: "Content may exceed a limit and get cut off" },
+      { label: "FLOW BROKEN", text: "Pipeline from data source to prompt assembly is interrupted" },
+    ];
+
+    keyRows.forEach((row) => {
+      const wrapper = doc.createElement("div");
+      const label = doc.createElement("span");
+      label.className = "key-label";
+      label.textContent = row.label;
+      wrapper.append(label, ` — ${row.text}`);
+      issueTypeKey.appendChild(wrapper);
+    });
     const tree = doc.querySelector(".tree");
     if (tree) {
       tree.insertAdjacentElement("beforebegin", issueTypeKey);
     }
   }
 
-  return doc.body.innerHTML.trim();
+  return sanitizeGuideMarkup(doc.body.innerHTML.trim());
 };
 
 const defaultGuideMarkup = normalizeGuideMarkup(apiInspectorGuideCombinedHtml);
@@ -824,6 +933,26 @@ const ApiInspectorPage: React.FC = () => {
 
     root.addEventListener("click", onClickCapture, true);
     return () => root.removeEventListener("click", onClickCapture, true);
+  }, [guideMarkup]);
+
+  useEffect(() => {
+    const root = contentRef.current;
+    if (!root) return;
+
+    const onTreeToggle = (event: Event) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      if (target.closest(".code-view-btn")) return;
+
+      const row = target.closest(".phase-row, .section-row") as HTMLElement | null;
+      if (!row) return;
+      const node = row.parentElement;
+      if (!node?.classList.contains("tree-node")) return;
+      node.classList.toggle("open");
+    };
+
+    root.addEventListener("click", onTreeToggle);
+    return () => root.removeEventListener("click", onTreeToggle);
   }, [guideMarkup]);
 
   useEffect(() => {

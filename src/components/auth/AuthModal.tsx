@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { X, Eye, EyeOff } from 'lucide-react';
 import { z } from 'zod';
 import { lovable } from '@/integrations/lovable/index';
@@ -113,7 +113,17 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) { resetForm(); onClose(); } }}>
       <DialogContent
         className="bg-[hsl(240_6%_10%)] border-[hsl(0_0%_100%_/_0.10)] shadow-[0_10px_30px_hsl(0_0%_0%_/_0.5)] rounded-2xl p-0 max-w-md w-full [&>button]:hidden"
+        aria-describedby={undefined}
       >
+        <DialogTitle className="sr-only">
+          {isSignUp ? 'Create account' : 'Sign in'}
+        </DialogTitle>
+        <DialogDescription className="sr-only">
+          {isSignUp
+            ? 'Create a Chronicle account with email/password or social sign in.'
+            : 'Sign in to Chronicle with email/password or social sign in.'}
+        </DialogDescription>
+
         {/* Close button */}
         <button
           onClick={() => { resetForm(); onClose(); }}

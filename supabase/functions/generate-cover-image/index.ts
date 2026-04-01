@@ -6,6 +6,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -24,6 +25,29 @@ serve(async (req) => {
     if (userError || !user) {
       return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    const rateDecision = checkRateLimit({
+      scope: "generate-cover-image",
+      key: user.id,
+      windowMs: 60_000,
+      max: 8,
+    });
+    if (!rateDecision.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: "Rate limit exceeded for cover image generation. Please try again shortly.",
+          retryAfterSeconds: rateDecision.retryAfterSeconds,
+        }),
+        {
+          status: 429,
+          headers: {
+            ...corsHeaders,
+            ...getRateLimitHeaders(rateDecision),
+            "Content-Type": "application/json",
+          },
+        },
+      );
+    }
+    const rateHeaders = getRateLimitHeaders(rateDecision);
 
     const { prompt, stylePrompt, negativePrompt, scenarioTitle } = await req.json();
     
@@ -54,7 +78,7 @@ serve(async (req) => {
         error: "XAI_API_KEY not configured. Please add your Grok API key in settings." 
       }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -85,7 +109,7 @@ serve(async (req) => {
       console.error("Image generation error:", response.status, errorText);
       return new Response(JSON.stringify({ error: "Image generation failed", details: errorText }), {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -117,14 +141,14 @@ serve(async (req) => {
         debug: data 
       }), {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
       });
     }
 
     console.log(`[generate-cover-image] Cover image generated successfully`);
 
     return new Response(JSON.stringify({ imageUrl }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
     });
 
   } catch (e: unknown) {

@@ -706,7 +706,9 @@ export default function UiAuditPage() {
     return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
   }, [registry, saveToDb]);
 
-  const updateRegistry = (updater: (p: QualityHubRegistry) => QualityHubRegistry) => { setRegistry((p) => nextRegistryWithTimestamp(updater(p))); };
+  const updateRegistry = useCallback((updater: (p: QualityHubRegistry) => QualityHubRegistry) => {
+    setRegistry((p) => nextRegistryWithTimestamp(updater(p)));
+  }, []);
 
   const allAgents = useMemo(() => getAgentList(registry), [registry]);
   const findings = useMemo(() => sortFindings(registry.findings), [registry.findings]);

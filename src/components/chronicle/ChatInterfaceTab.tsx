@@ -90,6 +90,7 @@ interface ChatInterfaceTabProps {
 }
 
 type ActionEvent = { messageId: string; timestamp: number };
+const TIME_SEQUENCE: TimeOfDay[] = ['sunrise', 'day', 'sunset', 'night'];
 
 function parseMessageTokens(text: string, preserveWhitespace = false): { type: string; content: string }[] {
   let cleanRaw = text.replace(/\[SCENE:\s*.*?\]/g, '');
@@ -482,6 +483,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const timeRemainingRef = useRef<number>(15 * 60);
   const timeProgressionIntervalRef = useRef<number>(15);
+  const currentDayRef = useRef<number>(1);
   const scrollRef = useRef<HTMLDivElement>(null);
   
   // Lazy loading state for scroll-based message loading
@@ -603,18 +605,41 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const EXTRACTION_BACKSTOP_INTERVAL = 6;
   const latestConversationsRef = useRef(appData.conversations);
   
+  useEffect(() => {
+    currentDayRef.current = currentDay;
+  }, [currentDay]);
   
   // Reset session tracking when conversation changes
   useEffect(() => {
     responseLengthsRef.current = [];
     sessionMessageCountRef.current = 0;
-    previousDayRef.current = currentDay;
+    previousDayRef.current = currentDayRef.current;
     assistantTurnsSinceExtractionRef.current = 0;
   }, [conversationId]);
 
   useEffect(() => {
     latestConversationsRef.current = appData.conversations;
   }, [appData.conversations]);
+
+  // Update conversation when day/time changes
+  const handleDayTimeChange = useCallback((newDay: number, newTime: TimeOfDay) => {
+    // Preserve current timer settings from refs to prevent stale snapshot overwrites
+    const updatedConvs = latestConversationsRef.current.map(c =>
+      c.id === conversationId
+        ? {
+            ...c,
+            currentDay: newDay,
+            currentTimeOfDay: newTime,
+            timeProgressionMode: timeProgressionMode,
+            timeProgressionInterval: timeProgressionIntervalRef.current,
+            updatedAt: now()
+          }
+        : c
+    );
+    onUpdate(updatedConvs);
+    // Direct DB persist only for day/time — timer settings are NOT written here
+    supabaseData.updateConversationMeta(conversationId, { currentDay: newDay, currentTimeOfDay: newTime });
+  }, [conversationId, onUpdate, timeProgressionMode]);
 
   // Issue #7: Compute length directive based on recent response pattern
   const getLengthDirective = (): string => {
@@ -899,6 +924,55 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   }, [conversationId]);
   
   // Issue #6B: Day-transition compression -- compress bullet memories when day increments
+  // Memory CRUD handlers
+  const handleCreateMemory = useCallback(async (
+    content: string,
+    day: number | null,
+    timeOfDay: TimeOfDay | null,
+    sourceMessageId?: string,
+    entryType: import('@/types').MemoryEntryType = 'bullet'
+  ) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+    
+    const memory = await supabaseData.createMemory(
+      conversationId,
+      user.id,
+      content,
+      day,
+      timeOfDay,
+      sourceMessageId ? 'message' : 'user',
+      sourceMessageId,
+      entryType
+    );
+    setMemories(prev => [...prev, memory]);
+    return memory;
+  }, [conversationId]);
+  
+  const handleUpdateMemory = useCallback(async (id: string, content: string) => {
+    await supabaseData.updateMemory(id, content);
+    setMemories(prev => prev.map(m => m.id === id ? { ...m, content, updatedAt: Date.now() } : m));
+  }, []);
+  
+  const handleDeleteMemory = useCallback(async (id: string) => {
+    await supabaseData.deleteMemory(id);
+    setMemories(prev => prev.filter(m => m.id !== id));
+  }, []);
+  
+  const handleDeleteAllMemories = useCallback(async () => {
+    await supabaseData.deleteAllMemories(conversationId);
+    setMemories([]);
+  }, [conversationId]);
+  
+  const handleQuickSaveMemory = useCallback(async (
+    content: string,
+    day: number | null,
+    timeOfDay: TimeOfDay | null,
+    sourceMessageId: string
+  ) => {
+    await handleCreateMemory(content, day, timeOfDay, sourceMessageId);
+  }, [handleCreateMemory]);
+
   useEffect(() => {
     const prevDay = previousDayRef.current;
     previousDayRef.current = currentDay;
@@ -963,45 +1037,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         console.error('[Day compression] Failed:', err);
       });
     }
-  }, [currentDay, memories, memoriesEnabled, conversationId]);
-
-  // Memory CRUD handlers
-  const handleCreateMemory = async (content: string, day: number | null, timeOfDay: TimeOfDay | null, sourceMessageId?: string, entryType: import('@/types').MemoryEntryType = 'bullet') => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
-    
-    const memory = await supabaseData.createMemory(
-      conversationId,
-      user.id,
-      content,
-      day,
-      timeOfDay,
-      sourceMessageId ? 'message' : 'user',
-      sourceMessageId,
-      entryType
-    );
-    setMemories(prev => [...prev, memory]);
-    return memory;
-  };
-  
-  const handleUpdateMemory = async (id: string, content: string) => {
-    await supabaseData.updateMemory(id, content);
-    setMemories(prev => prev.map(m => m.id === id ? { ...m, content, updatedAt: Date.now() } : m));
-  };
-  
-  const handleDeleteMemory = async (id: string) => {
-    await supabaseData.deleteMemory(id);
-    setMemories(prev => prev.filter(m => m.id !== id));
-  };
-  
-  const handleDeleteAllMemories = async () => {
-    await supabaseData.deleteAllMemories(conversationId);
-    setMemories([]);
-  };
-  
-  const handleQuickSaveMemory = async (content: string, day: number | null, timeOfDay: TimeOfDay | null, sourceMessageId: string) => {
-    await handleCreateMemory(content, day, timeOfDay, sourceMessageId);
-  };
+  }, [currentDay, memories, memoriesEnabled, memoriesLoaded, conversationId, modelId, handleCreateMemory, handleDeleteMemory]);
   
   // Get all character names for memory extraction context
   const allCharacterNames = useMemo(() => {
@@ -1240,6 +1276,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   }, [appData.characters, appData.sideCharacters, getEffectiveCharacter]);
 
   const conversation = appData.conversations.find(c => c.id === conversationId);
+  const conversationCurrentDay = conversation?.currentDay;
+  const conversationCurrentTimeOfDay = conversation?.currentTimeOfDay;
+  const conversationTimeProgressionMode = conversation?.timeProgressionMode;
+  const conversationTimeProgressionInterval = conversation?.timeProgressionInterval;
+  const conversationTimeRemaining = conversation?.timeRemaining;
   
   // Merge all characters (main characters with session overrides + side characters)
   // and dynamically group by their effective characterRole
@@ -1376,27 +1417,34 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   // Sync day/time state from conversation
   // MUST be defined before early return to maintain hooks order
   useEffect(() => {
-    if (conversation) {
-      setCurrentDay(conversation.currentDay || 1);
-      setCurrentTimeOfDay(conversation.currentTimeOfDay || 'day');
-      setTimeProgressionMode(conversation.timeProgressionMode || 'manual');
-      const interval = conversation.timeProgressionInterval || 15;
+    if (conversationId) {
+      setCurrentDay(conversationCurrentDay || 1);
+      setCurrentTimeOfDay(conversationCurrentTimeOfDay || 'day');
+      setTimeProgressionMode(conversationTimeProgressionMode || 'manual');
+      const interval = conversationTimeProgressionInterval || 15;
       setTimeProgressionInterval(interval);
       timeProgressionIntervalRef.current = interval;
       const maxSeconds = interval * 60;
-      const raw = conversation.timeRemaining != null
-        ? conversation.timeRemaining
+      const raw = conversationTimeRemaining != null
+        ? conversationTimeRemaining
         : maxSeconds;
       // Clamp: if persisted timeRemaining exceeds interval window, reset it
       const restored = raw > maxSeconds ? maxSeconds : raw;
       setTimeRemaining(restored);
       timeRemainingRef.current = restored;
       // Persist corrected value if it was clamped
-      if (raw > maxSeconds && conversation.id) {
-        supabaseData.updateConversationMeta(conversation.id, { timeRemaining: maxSeconds });
+      if (raw > maxSeconds && conversationId) {
+        supabaseData.updateConversationMeta(conversationId, { timeRemaining: maxSeconds });
       }
     }
-  }, [conversation?.id]);
+  }, [
+    conversationId,
+    conversationCurrentDay,
+    conversationCurrentTimeOfDay,
+    conversationTimeProgressionMode,
+    conversationTimeProgressionInterval,
+    conversationTimeRemaining,
+  ]);
 
   // Keep refs in sync with state so cleanup/timer captures latest values
   useEffect(() => { timeRemainingRef.current = timeRemaining; }, [timeRemaining]);
@@ -1417,8 +1465,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   }, [conversationId, timeProgressionMode]);
 
   // Auto-advance timer — only runs when mode is 'automatic'
-  const TIME_SEQUENCE: TimeOfDay[] = ['sunrise', 'day', 'sunset', 'night'];
-  
   useEffect(() => {
     if (timeProgressionMode !== 'automatic' || isTimerPaused) return;
     const tick = setInterval(() => {
@@ -1444,7 +1490,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       });
     }, 1000);
     return () => clearInterval(tick);
-  }, [timeProgressionMode, currentTimeOfDay, currentDay, isTimerPaused]);
+  }, [timeProgressionMode, currentTimeOfDay, currentDay, isTimerPaused, handleDayTimeChange]);
 
   // Visibility API — pause/resume timer when tab is hidden
   useEffect(() => {
@@ -3111,26 +3157,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }
     }
   };
-  // Update conversation when day/time changes
-  const handleDayTimeChange = (newDay: number, newTime: TimeOfDay) => {
-    // Preserve current timer settings from refs to prevent stale snapshot overwrites
-    const updatedConvs = appData.conversations.map(c =>
-      c.id === conversationId
-        ? { 
-            ...c, 
-            currentDay: newDay, 
-            currentTimeOfDay: newTime, 
-            timeProgressionMode: timeProgressionMode,
-            timeProgressionInterval: timeProgressionIntervalRef.current,
-            updatedAt: now() 
-          }
-        : c
-    );
-    onUpdate(updatedConvs);
-    // Direct DB persist only for day/time — timer settings are NOT written here
-    supabaseData.updateConversationMeta(conversationId, { currentDay: newDay, currentTimeOfDay: newTime });
-  };
-
   const incrementDay = () => {
     const newDay = currentDay + 1;
     setCurrentDay(newDay);

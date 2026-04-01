@@ -1,6 +1,7 @@
 // App-wide model setting controlled by admin. Not a per-user preference.
 // This context stores which Grok model the entire app uses for text AI.
 // The admin sets it in the Model Settings panel; all users share the same model.
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { LLM_MODELS } from '@/constants';
 import { supabase } from '@/integrations/supabase/client';

@@ -6,6 +6,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -24,6 +25,29 @@ serve(async (req) => {
     if (userError || !user) {
       return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    const rateDecision = checkRateLimit({
+      scope: "generate-side-character",
+      key: user.id,
+      windowMs: 60_000,
+      max: 20,
+    });
+    if (!rateDecision.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: "Rate limit exceeded for side character generation. Please try again shortly.",
+          retryAfterSeconds: rateDecision.retryAfterSeconds,
+        }),
+        {
+          status: 429,
+          headers: {
+            ...corsHeaders,
+            ...getRateLimitHeaders(rateDecision),
+            "Content-Type": "application/json",
+          },
+        },
+      );
+    }
+    const rateHeaders = getRateLimitHeaders(rateDecision);
 
     const { name, dialogContext, extractedTraits, worldContext, modelId } = await req.json();
     
@@ -106,7 +130,7 @@ Return ONLY valid JSON, no markdown formatting.`;
       console.error("xAI error:", response.status, errorText);
       return new Response(JSON.stringify({ error: "AI generation failed", details: errorText }), {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -127,7 +151,7 @@ Return ONLY valid JSON, no markdown formatting.`;
     try {
       const profile = JSON.parse(cleanContent);
       return new Response(JSON.stringify(profile), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
       });
     } catch (parseError) {
       console.error("Failed to parse AI response:", cleanContent);
@@ -136,7 +160,7 @@ Return ONLY valid JSON, no markdown formatting.`;
         raw: cleanContent 
       }), {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
       });
     }
   } catch (e: unknown) {
