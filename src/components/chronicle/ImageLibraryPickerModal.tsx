@@ -10,6 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { FolderOpen, Image as ImageIcon, Loader2, Check, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
+import { toast } from 'sonner';
 import type { ImageFolder, LibraryImage } from './image-library-types';
 
 interface ImageLibraryPickerModalProps {
@@ -30,10 +31,13 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
   const [isLoadingFolders, setIsLoadingFolders] = useState(false);
   const [isLoadingImages, setIsLoadingImages] = useState(false);
+  const [foldersError, setFoldersError] = useState<string | null>(null);
+  const [imagesError, setImagesError] = useState<string | null>(null);
 
   const loadFolders = useCallback(async () => {
     if (!user) return;
     setIsLoadingFolders(true);
+    setFoldersError(null);
     try {
       const { data, error } = await (supabase.rpc as any)('get_folders_with_details');
 
@@ -54,13 +58,25 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
       setFolders(foldersWithDetails);
     } catch (e) {
       console.error('Failed to load folders:', e);
+      const message = e instanceof Error ? e.message : 'Could not load folders.';
+      setFoldersError(message);
+      toast.error('Failed to load folders. Please retry.');
     } finally {
       setIsLoadingFolders(false);
     }
   }, [user]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    setSelectedFolder(null);
+    setSelectedImageUrl(null);
+    setFolderImages([]);
+    void loadFolders();
+  }, [isOpen, loadFolders]);
+
   const loadFolderImages = async (folderId: string) => {
     setIsLoadingImages(true);
+    setImagesError(null);
     try {
       const { data, error } = await supabase
         .from('library_images')
@@ -85,6 +101,9 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
       );
     } catch (e) {
       console.error('Failed to load images:', e);
+      const message = e instanceof Error ? e.message : 'Could not load folder images.';
+      setImagesError(message);
+      toast.error('Failed to load folder images. Please retry.');
     } finally {
       setIsLoadingImages(false);
     }
@@ -116,6 +135,8 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
                   setSelectedImageUrl(null);
                 }}
                 className="p-1 hover:bg-slate-200 rounded-lg transition-colors mr-1"
+                aria-label="Back to folder list"
+                title="Back to folder list"
               >
                 <ArrowLeft className="w-4 h-4" />
               </button>
@@ -130,6 +151,16 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
             {!selectedFolder ? (
               // Folder list view
               <>
+                {foldersError && (
+                  <div className="mb-4 rounded-lg border border-red-500/40 bg-red-950/20 px-3 py-2 text-sm text-red-300">
+                    <div className="flex items-center justify-between gap-3">
+                      <span>Folder load failed: {foldersError}</span>
+                      <Button size="sm" variant="outline" onClick={() => void loadFolders()}>
+                        Retry
+                      </Button>
+                    </div>
+                  </div>
+                )}
                 {isLoadingFolders ? (
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
@@ -180,6 +211,20 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
             ) : (
               // Images in folder view
               <>
+                {imagesError && (
+                  <div className="mb-4 rounded-lg border border-red-500/40 bg-red-950/20 px-3 py-2 text-sm text-red-300">
+                    <div className="flex items-center justify-between gap-3">
+                      <span>Image load failed: {imagesError}</span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => selectedFolder && void loadFolderImages(selectedFolder.id)}
+                      >
+                        Retry
+                      </Button>
+                    </div>
+                  </div>
+                )}
                 {isLoadingImages ? (
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="w-6 h-6 animate-spin text-slate-400" />

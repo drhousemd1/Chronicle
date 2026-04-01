@@ -30,6 +30,20 @@ const CONTENT_REDIRECT_DIRECTIVE = `[CONTENT REDIRECT] The previous user message
 5. FORBIDDEN: Postponement language ("we'll talk later," "let's discuss this soon," "another time"). Act NOW.
 6. FORBIDDEN: Vague redirects ("let's change the subject," "how about we..."). Be specific and decisive.`;
 
+const DEBUG_CHAT_LOGS = Deno.env.get("DEBUG_CHAT_LOGS") === "true";
+
+function debugLog(message: string) {
+  if (DEBUG_CHAT_LOGS) {
+    console.debug(message);
+  }
+}
+
+function warnLog(message: string) {
+  if (DEBUG_CHAT_LOGS) {
+    console.warn(message);
+  }
+}
+
 // GROK ONLY -- All models route to xAI
 async function callXAI(messages: Message[], modelId: string, stream: boolean, maxTokens: number = 4096): Promise<XAIResult> {
   const XAI_API_KEY = Deno.env.get("XAI_API_KEY");
@@ -37,7 +51,7 @@ async function callXAI(messages: Message[], modelId: string, stream: boolean, ma
     throw new Error("XAI_API_KEY is not configured. Please add your Grok API key in settings.");
   }
 
-  console.log(`[chat] Calling xAI/Grok with model: ${modelId}, stream: ${stream}`);
+  debugLog(`[chat] Calling xAI/Grok with model: ${modelId}, stream: ${stream}`);
 
   const response = await fetch("https://api.x.ai/v1/chat/completions", {
     method: "POST",
@@ -56,7 +70,9 @@ async function callXAI(messages: Message[], modelId: string, stream: boolean, ma
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error(`[chat] xAI/Grok error: ${response.status} - ${errorText}`);
+    // Do not log provider payload text in standard mode to avoid leaking user content.
+    console.error(`[chat] xAI/Grok error: ${response.status}`);
+    debugLog(`[chat] xAI/Grok error detail: ${errorText.slice(0, 500)}`);
     return { ok: false, status: response.status, errorText };
   }
 
@@ -112,7 +128,7 @@ serve(async (req) => {
     const modelId = VALID_GROK_MODELS.includes(body.modelId) ? body.modelId : 'grok-4-1-fast-reasoning';
     
     if (body.modelId !== modelId) {
-      console.warn(`[chat] Rejected non-Grok model "${body.modelId}", using "${modelId}" instead`);
+      warnLog(`[chat] Rejected non-Grok model "${body.modelId}", using "${modelId}" instead`);
     }
 
     if (!messages || !modelId) {
@@ -122,7 +138,7 @@ serve(async (req) => {
         );
       }
 
-    console.log(`[chat] Request received for model: ${modelId}, messages: ${messages.length}`);
+    debugLog(`[chat] Request received for model: ${modelId}, messages: ${messages.length}`);
 
     // GROK ONLY -- all requests go to xAI
     const result = await callXAI(messages, modelId, stream, maxTokens);
@@ -148,7 +164,7 @@ serve(async (req) => {
 
     // If 403 (content safety), retry with redirect directive
     if (result.status === 403) {
-      console.log(`[chat] Got 403 content safety rejection, retrying with redirect directive...`);
+      debugLog(`[chat] Got 403 content safety rejection, retrying with redirect directive...`);
 
       // Inject redirect directive as a system message before the last user message
       const redirectMessages: Message[] = [
@@ -160,7 +176,7 @@ serve(async (req) => {
       const retryResult = await callXAI(redirectMessages, modelId, stream, maxTokens);
 
       if (retryResult.ok) {
-        console.log(`[chat] Redirect retry succeeded`);
+        debugLog(`[chat] Redirect retry succeeded`);
         if (stream) {
           return new Response(retryResult.response.body, {
             headers: {
@@ -180,7 +196,7 @@ serve(async (req) => {
       }
 
       // Both attempts failed -- return content_filtered
-      console.log(`[chat] Redirect retry also failed (${retryResult.status}), returning content_filtered`);
+      debugLog(`[chat] Redirect retry also failed (${retryResult.status}), returning content_filtered`);
       return new Response(
         JSON.stringify({ error: "Content filtered by safety system", error_type: "content_filtered" }),
         { status: 422, headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" } }

@@ -130,9 +130,9 @@ const SearchBar: React.FC<{
         {matchCount > 0 ? `${currentMatch + 1}/${matchCount}` : '0 results'}
       </span>
     )}
-    <button onClick={onPrev} className="p-1 rounded transition-colors" style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}><ChevronUp size={14} /></button>
-    <button onClick={onNext} className="p-1 rounded transition-colors" style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}><ChevronDown size={14} /></button>
-    <button onClick={onClose} className="p-1 rounded transition-colors" style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}><X size={14} /></button>
+    <button aria-label="Previous search result" title="Previous search result" onClick={onPrev} className="p-1 rounded transition-colors" style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}><ChevronUp size={14} /></button>
+    <button aria-label="Next search result" title="Next search result" onClick={onNext} className="p-1 rounded transition-colors" style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}><ChevronDown size={14} /></button>
+    <button aria-label="Close search" title="Close search" onClick={onClose} className="p-1 rounded transition-colors" style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}><X size={14} /></button>
   </div>
 );
 

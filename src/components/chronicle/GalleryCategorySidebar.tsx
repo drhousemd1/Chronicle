@@ -187,6 +187,8 @@ export const GalleryCategorySidebar: React.FC<GalleryCategorySidebarProps> = ({
         <button
           onClick={onClose}
           className="p-1 rounded-lg hover:bg-ghost-white transition-colors"
+          aria-label="Close category browser"
+          title="Close category browser"
         >
           <X className="w-4 h-4 text-[rgba(248,250,252,0.3)]" />
         </button>

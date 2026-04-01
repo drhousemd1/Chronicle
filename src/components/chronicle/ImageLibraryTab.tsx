@@ -5,6 +5,7 @@ import { Icons } from '@/constants';
 import { Star, ArrowLeft, Trash2, Pencil, FolderOpen, Plus, Image as ImageIcon, Loader2, X } from 'lucide-react';
 import { FolderEditModal } from './FolderEditModal';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
+import { toast } from 'sonner';
 
 import { supabase } from '@/integrations/supabase/client';
 import { resizeImage, uuid } from '@/utils';
@@ -28,6 +29,8 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
   const [selectedFolder, setSelectedFolder] = useState<ImageFolder | null>(null);
   const [folderImages, setFolderImages] = useState<LibraryImage[]>([]);
   const [isLoadingImages, setIsLoadingImages] = useState(false);
+  const [foldersError, setFoldersError] = useState<string | null>(null);
+  const [imagesError, setImagesError] = useState<string | null>(null);
   const [editingFolder, setEditingFolder] = useState<ImageFolder | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [aspectRatios, setAspectRatios] = useState<Record<string, { label: string; orientation: 'portrait' | 'landscape' | 'square' }>>({});
@@ -88,6 +91,8 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
     if (!userId) return;
     if (fetchInProgressRef.current) return;
     fetchInProgressRef.current = true;
+    setIsLoading(true);
+    setFoldersError(null);
     
     try {
       const { data, error } = await (supabase.rpc as any)('get_folders_with_details');
@@ -110,6 +115,9 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
       hasLoadedRef.current = true;
     } catch (e: any) {
       console.error('Failed to load folders:', e);
+      const message = e?.message || "Could not load image folders.";
+      setFoldersError(message);
+      toast.error("Failed to load image folders. Please try again.");
     } finally {
       setIsLoading(false);
       fetchInProgressRef.current = false;
@@ -125,6 +133,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
 
   const loadFolderImages = async (folderId: string) => {
     setIsLoadingImages(true);
+    setImagesError(null);
     try {
       const { data, error } = await supabase
         .from('library_images')
@@ -149,6 +158,9 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
       );
     } catch (e: any) {
       console.error('Failed to load images:', e);
+      const message = e?.message || "Could not load images for this folder.";
+      setImagesError(message);
+      toast.error("Failed to load folder images. Please try again.");
     } finally {
       setIsLoadingImages(false);
     }
@@ -185,6 +197,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
       setEditingFolder(newFolder);
     } catch (e: any) {
       console.error('Failed to create folder:', e);
+      toast.error(`Failed to create folder: ${e?.message || 'Unknown error'}`);
     }
   };
 
@@ -206,6 +219,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
       }
     } catch (e: any) {
       console.error('Failed to update folder:', e);
+      toast.error(`Failed to update folder: ${e?.message || 'Unknown error'}`);
     }
   };
 
@@ -255,6 +269,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
       }
     } catch (e: any) {
       console.error('Failed to delete folder:', e);
+      toast.error(`Failed to delete folder: ${e?.message || 'Unknown error'}`);
     }
   };
 
@@ -351,6 +366,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
       }
     } catch (e: any) {
       console.error('Failed to upload images:', e);
+      toast.error(`Failed to upload image(s): ${e?.message || 'Unknown error'}`);
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -393,6 +409,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
       }
     } catch (e: any) {
       console.error('Failed to delete image:', e);
+      toast.error(`Failed to delete image: ${e?.message || 'Unknown error'}`);
     }
   };
 
@@ -419,6 +436,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
       );
     } catch (e: any) {
       console.error('Failed to set thumbnail:', e);
+      toast.error(`Failed to set thumbnail: ${e?.message || 'Unknown error'}`);
     }
   };
 
@@ -427,6 +445,20 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
     return (
       <div className="w-full h-full p-4 lg:p-10 flex flex-col overflow-y-auto">
         <div className="w-full">
+          {foldersError && (
+            <div className="mb-4 rounded-xl border border-red-400/40 bg-red-950/25 px-4 py-3 text-sm text-red-200">
+              <div className="flex items-center justify-between gap-3">
+                <span>Folder load failed: {foldersError}</span>
+                <button
+                  type="button"
+                  onClick={() => void loadFolders()}
+                  className="rounded-lg border border-red-300/40 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-red-100 hover:bg-red-900/30"
+                >
+                  Retry
+                </button>
+              </div>
+            </div>
+          )}
           {isLoading ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
@@ -503,6 +535,8 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
                           handleDeleteFolder(folder.id);
                         }}
                         className="absolute top-4 right-4 p-3 bg-black/40 text-white hover:text-rose-400 hover:bg-black/60 rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 z-20"
+                        aria-label={`Delete folder ${folder.name}`}
+                        title={`Delete folder ${folder.name}`}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -567,7 +601,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
       }
     } catch (e: any) {
       console.error('Failed to update tags:', e);
-      console.error('Failed to update tags:', e);
+      toast.error(`Failed to update tags: ${e?.message || 'Unknown error'}`);
     }
   };
 
@@ -585,6 +619,20 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
   return (
     <div className="h-full overflow-y-auto p-4 lg:p-10">
       <div className="max-w-6xl mx-auto space-y-6">
+        {imagesError && (
+          <div className="rounded-xl border border-red-400/40 bg-red-950/25 px-4 py-3 text-sm text-red-200">
+            <div className="flex items-center justify-between gap-3">
+              <span>Image load failed: {imagesError}</span>
+              <button
+                type="button"
+                onClick={() => selectedFolder && void loadFolderImages(selectedFolder.id)}
+                className="rounded-lg border border-red-300/40 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-red-100 hover:bg-red-900/30"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        )}
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-baseline gap-3">
@@ -640,6 +688,8 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
                         ? 'bg-amber-500 text-white'
                         : 'bg-white/80 text-slate-600 opacity-0 group-hover:opacity-100 hover:bg-amber-500 hover:text-white'
                     }`}
+                    aria-label={`Set ${image.title || image.filename} as folder thumbnail`}
+                    title={`Set ${image.title || image.filename} as folder thumbnail`}
                   >
                     <Star className="w-4 h-4" fill={selectedFolder.thumbnailImageId === image.id ? 'currentColor' : 'none'} />
                   </button>
@@ -652,6 +702,8 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
                       handleDeleteImage(image);
                     }}
                     className="absolute top-2 right-2 p-2 bg-black/40 text-white rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 hover:text-rose-400 hover:bg-black/60 z-10"
+                    aria-label={`Delete image ${image.title || image.filename}`}
+                    title={`Delete image ${image.title || image.filename}`}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -726,6 +778,8 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
                       type="button"
                       onClick={() => handleUpdateImageTags(lightboxImage.id, lightboxImage.tags.filter((t) => t !== tag))}
                       className="hover:bg-blue-500/30 rounded-full p-0.5 transition-colors"
+                      aria-label={`Remove tag ${tag}`}
+                      title={`Remove tag ${tag}`}
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -775,6 +829,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
                     );
                   } catch (e: any) {
                     console.error('Failed to save title:', e);
+                    toast.error(`Failed to save image title: ${e?.message || 'Unknown error'}`);
                   }
                   setEditTitle('');
                   setLightboxImage(null);

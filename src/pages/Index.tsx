@@ -38,6 +38,7 @@ import {
   importScenarioFromAny,
   StoryImportMode,
 } from "@/lib/story-transfer";
+import { extractDocxPlainText } from "@/lib/docx-import";
 import { hasPublishErrors, validateForPublish } from "@/utils/publish-validation";
 import { StoryExportFormatModal, StoryExportFormat } from "@/components/chronicle/StoryExportFormatModal";
 import { StoryImportModeModal } from "@/components/chronicle/StoryImportModeModal";
@@ -251,6 +252,7 @@ const IndexContent = () => {
     tone: "success" | "error" | "info";
     text: string;
   } | null>(null);
+  const [storyTransferWarningDetails, setStoryTransferWarningDetails] = useState<string[]>([]);
   // Read URL query params for deep-linking (e.g. /?tab=admin&adminTool=app_guide)
   const [searchParams, setSearchParams] = useSearchParams();
   useEffect(() => {
@@ -269,7 +271,10 @@ const IndexContent = () => {
 
   useEffect(() => {
     if (!storyTransferNotice) return;
-    const t = setTimeout(() => setStoryTransferNotice(null), 4000);
+    const t = setTimeout(() => {
+      setStoryTransferNotice(null);
+      setStoryTransferWarningDetails([]);
+    }, 5000);
     return () => clearTimeout(t);
   }, [storyTransferNotice]);
   // Pagination state
@@ -358,8 +363,11 @@ const IndexContent = () => {
         if (cancelled) return;
         setActiveApiUsageTestSession(session);
       })
-      .catch(() => {
+      .catch((error) => {
         if (cancelled) return;
+        if (import.meta.env.DEV) {
+          console.debug("[api-usage-test] Active session preload skipped:", error);
+        }
       });
 
     return () => {
@@ -416,7 +424,11 @@ const IndexContent = () => {
   useEffect(() => {
     supabaseData.loadNavButtonImages().then((images) => {
       setNavButtonImages((images || {}) as Record<string, any>);
-    }).catch(() => {});
+    }).catch((error) => {
+      if (import.meta.env.DEV) {
+        console.debug("[nav-button-images] preload skipped:", error);
+      }
+    });
   }, []);
 
   // Warm heavy route chunks in the background after first paint.
@@ -999,14 +1011,22 @@ const IndexContent = () => {
                   tags: ['Custom'],
                 }, user.id, { isDraft: true }).then(ok => {
                   if (ok) {
-                    try { localStorage.removeItem(`draft_${id}`); } catch (_) { /* ignore local draft cleanup failures */ }
+                    try {
+                      localStorage.removeItem(`draft_${id}`);
+                    } catch (cleanupError) {
+                      console.warn('[handleEditScenario] Failed to clear recovered local draft:', cleanupError);
+                    }
                     console.log('[handleEditScenario] Auto-repair succeeded');
                   }
                 }).catch(e => console.warn('[handleEditScenario] Auto-repair failed:', e));
               }
             } else if (backendHasChars) {
               // Backend has data — prefer it, discard local snapshot
-                  try { localStorage.removeItem(`draft_${id}`); } catch (_) { /* ignore local draft cleanup failures */ }
+              try {
+                localStorage.removeItem(`draft_${id}`);
+              } catch (cleanupError) {
+                console.warn('[handleEditScenario] Failed to clear stale local draft:', cleanupError);
+              }
             }
           } else {
             // Legacy format: draft is the ScenarioData directly
@@ -1014,7 +1034,11 @@ const IndexContent = () => {
             if (data.characters.length === 0 && legacyHasChars) {
               finalData = draft;
             }
-            try { localStorage.removeItem(`draft_${id}`); } catch (_) { /* ignore legacy draft cleanup failures */ }
+            try {
+              localStorage.removeItem(`draft_${id}`);
+            } catch (cleanupError) {
+              console.warn('[handleEditScenario] Failed to clear legacy local draft:', cleanupError);
+            }
           }
         }
       } catch (e) {
@@ -1105,7 +1129,9 @@ const IndexContent = () => {
         // Very unlikely for a brand new UUID, but handle it
         localStorage.removeItem(`draft_${id}`);
       }
-    } catch (e) { /* ignore */ }
+    } catch (e) {
+      console.warn("[handleCreateNewScenario] Local draft preflight failed:", e);
+    }
     
     setActiveId(id);
     setActiveData(data);
@@ -1199,7 +1225,11 @@ const IndexContent = () => {
         setTab("hub");
       }
       // Clear any leftover localStorage drafts on successful DB save
-      try { localStorage.removeItem(`draft_${scenarioIdToSave}`); } catch (_) { /* ignore local draft cleanup failures */ }
+      try {
+        localStorage.removeItem(`draft_${scenarioIdToSave}`);
+      } catch (cleanupError) {
+        console.warn('[handleSaveWithData] Failed to clear local draft after DB save:', cleanupError);
+      }
 
       return true;
     } catch (e: any) {
@@ -1299,7 +1329,34 @@ const IndexContent = () => {
     if (!file || !activeData) return;
 
     try {
-      const text = await file.text();
+      const fileNameLower = file.name.toLowerCase();
+      const mimeTypeLower = file.type.toLowerCase();
+      const looksLikeDocx =
+        fileNameLower.endsWith(".docx") ||
+        mimeTypeLower.includes("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+      const importWarnings: string[] = [];
+      let text = "";
+
+      if (looksLikeDocx) {
+        try {
+          const extraction = await extractDocxPlainText(await file.arrayBuffer());
+          text = extraction.text;
+          importWarnings.push(...extraction.warnings);
+          if (!text.trim()) {
+            importWarnings.push("DOCX extraction returned empty text; falling back to plain text import.");
+            text = await file.text();
+          }
+        } catch (docxError) {
+          importWarnings.push("DOCX extraction failed; fell back to raw text parsing.");
+          if (import.meta.env.DEV) {
+            console.debug("[story-import] DOCX extraction fallback:", docxError);
+          }
+          text = await file.text();
+        }
+      } else {
+        text = await file.text();
+      }
+
       const result = importScenarioFromAny(
         { text, fileName: file.name, mimeType: file.type },
         activeData,
@@ -1322,13 +1379,16 @@ const IndexContent = () => {
         `${createdCharacterCustomSections + createdWorldCustomSections} custom sections added`,
       ];
 
-      const warningsCount = result.warnings.length;
+      const warningDetails = [...importWarnings, ...result.warnings];
+      const warningsCount = warningDetails.length;
+      setStoryTransferWarningDetails(warningDetails);
       setStoryTransferNotice({
         tone: warningsCount > 0 ? "info" : "success",
         text: `Import ${storyImportMode}: ${summaryParts.join(", ")}.${warningsCount > 0 ? ` ${warningsCount} warning${warningsCount === 1 ? "" : "s"}.` : ""}`,
       });
     } catch (error) {
       console.error("Story import failed:", error);
+      setStoryTransferWarningDetails([]);
       setStoryTransferNotice({
         tone: "error",
         text: "Import failed. Try JSON, Markdown/TXT, HTML/DOC, or DOCX again.",
@@ -1409,12 +1469,18 @@ const IndexContent = () => {
           contentThemes: activeContentThemes,
           savedAt: Date.now(),
         }));
-      } catch (_) { /* quota exceeded — non-fatal */ }
+      } catch (storageError) {
+        console.warn('[saveDraftInBackground] Could not write local safety snapshot:', storageError);
+      }
 
       const verified = await supabaseData.saveScenarioWithVerification(scenarioIdToSave, dataToSave, metadata, user.id, { isDraft: true });
 
       if (verified) {
-        try { localStorage.removeItem(`draft_${scenarioIdToSave}`); } catch (_) { /* ignore local draft cleanup failures */ }
+        try {
+          localStorage.removeItem(`draft_${scenarioIdToSave}`);
+        } catch (cleanupError) {
+          console.warn('[saveDraftInBackground] Failed to clear local draft after verified save:', cleanupError);
+        }
       } else {
         console.warn('Draft saved but child-data verification failed; local snapshot kept as backup.');
       }
@@ -2400,6 +2466,7 @@ const IndexContent = () => {
                         <button
                           type="button"
                           className="inline-flex items-center justify-center h-10 w-10 rounded-xl border-0 bg-[#303035] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:bg-[#343439] active:bg-[#343439] transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40"
+                          aria-label="Story Builder settings"
                           title="Story Builder settings"
                         >
                           <Settings className="w-5 h-5" />
@@ -2427,13 +2494,29 @@ const IndexContent = () => {
                     </DropdownMenu>
                   )}
                   {storyTransferNotice && (
-                    <span className={cn("text-xs truncate max-w-[200px] animate-in fade-in duration-300",
-                      storyTransferNotice.tone === "success" && "text-emerald-400",
-                      storyTransferNotice.tone === "error" && "text-red-400",
-                      storyTransferNotice.tone === "info" && "text-sky-400",
-                    )}>
-                      {storyTransferNotice.text}
-                    </span>
+                    <div className="max-w-[420px] animate-in fade-in duration-300 text-right space-y-1">
+                      <span className={cn("block text-xs",
+                        storyTransferNotice.tone === "success" && "text-emerald-400",
+                        storyTransferNotice.tone === "error" && "text-red-400",
+                        storyTransferNotice.tone === "info" && "text-sky-400",
+                      )}>
+                        {storyTransferNotice.text}
+                      </span>
+                      {storyTransferWarningDetails.length > 0 && (
+                        <details className="text-[11px] text-[#c7d2fe] bg-[#141826] border border-[#334155] rounded-lg px-2 py-1">
+                          <summary className="cursor-pointer list-none font-semibold text-sky-300 hover:text-sky-200">
+                            View import warning details
+                          </summary>
+                          <ul className="mt-1 space-y-1 text-left max-h-32 overflow-auto pr-1">
+                            {storyTransferWarningDetails.map((warning, index) => (
+                              <li key={`${warning}-${index}`} className="leading-snug text-[#dbeafe]">
+                                {index + 1}. {warning}
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      )}
+                    </div>
                   )}
                 </>
               )}
@@ -2453,6 +2536,8 @@ const IndexContent = () => {
                       <button
                         type="button"
                         className="inline-flex items-center justify-center h-10 w-10 rounded-xl border-0 bg-[#303035] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:bg-[#343439] active:bg-[#343439] transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40"
+                        aria-label="Story Hub settings"
+                        title="Story Hub settings"
                       >
                         <Settings className="w-5 h-5" />
                       </button>

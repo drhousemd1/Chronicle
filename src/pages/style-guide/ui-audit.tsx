@@ -82,11 +82,306 @@ const HUB_VIEWS: Array<{ id: HubViewId; label: string; description: string }> = 
   { id: "changelog", label: "Change Log", description: "Development change history and fix log" },
 ];
 
-const TOOL_INTEGRITY_MODULE_IDS = new Set([
-  "module-app-guide-integrity",
-  "module-app-architecture-integrity",
-  "module-api-inspector-integrity",
-]);
+const RESOLVED_FINDING_STATUSES = new Set<QualityFinding["status"]>(["fixed", "verified"]);
+const OPEN_FINDING_STATUSES = new Set<QualityFinding["status"]>(["open", "in-progress"]);
+
+type ScanCatalogRow = {
+  id: string;
+  label: string;
+  description: string;
+  moduleIds: string[];
+  domainHints: QualityFinding["domain"][];
+};
+
+type ScanCatalogSection = {
+  id: string;
+  title: string;
+  description: string;
+  matchPages?: string[];
+  rowIds: string[];
+};
+
+type ScanCatalogRowSummary = ScanCatalogRow & {
+  findingIds: string[];
+  issuesFound: number;
+  openIssues: number;
+  resolvedIssues: number;
+  lastScanAt: string | null;
+  daysSinceLastScan: number | null;
+  checks: string[];
+  logTargets: string[];
+  moduleNames: string[];
+};
+
+type ScanCatalogSectionSummary = ScanCatalogSection & {
+  rows: ScanCatalogRowSummary[];
+  sectionIssuesFound: number;
+  sectionOpenIssues: number;
+};
+
+const MODULE_DOMAIN_HINTS: Record<string, QualityFinding["domain"][]> = {
+  "module-ui-ux": ["ui-ux"],
+  "module-functionality": ["functionality"],
+  "module-orphan-code": ["orphan-code"],
+  "module-cleanup": ["cleanup"],
+  "module-accessibility": ["accessibility"],
+  "module-performance": ["performance"],
+  "module-security": ["security"],
+  "module-security-auth-access-control": ["security"],
+  "module-security-encryption-data-protection": ["security"],
+  "module-security-secrets-key-management": ["security"],
+  "module-security-storage-policies": ["security"],
+  "module-security-client-xss-injection": ["security"],
+  "module-security-api-rate-limit-abuse": ["security"],
+  "module-security-data-visibility": ["security"],
+  "module-security-monitoring-incident-readiness": ["security"],
+  "module-tests": ["tests"],
+  "module-build": ["build"],
+  "module-data-integrity": ["data-integrity"],
+  "module-docs": ["documentation"],
+  "module-runtime-smoke": ["functionality", "build", "performance"],
+  "module-validation-gates": ["build", "tests", "security"],
+  "module-startup-auth-boot": ["functionality", "performance", "security"],
+  "module-app-guide-integrity": ["documentation"],
+  "module-app-architecture-integrity": ["documentation"],
+  "module-api-inspector-integrity": ["data-integrity", "documentation", "functionality"],
+};
+
+const SCAN_CATALOG_ROWS: Record<string, ScanCatalogRow> = {
+  "app-guide-doc": {
+    id: "app-guide-doc",
+    label: "App Guide Documentation Consistency",
+    description: "Checks that each long-form App Guide document still matches live routes, file ownership, and behavior descriptions.",
+    moduleIds: ["module-app-guide-integrity", "module-docs"],
+    domainHints: ["documentation"],
+  },
+  "app-architecture-doc": {
+    id: "app-architecture-doc",
+    label: "App Architecture Documentation Consistency",
+    description: "Verifies folder/file/component ownership in the App Architecture map still matches the live repo structure.",
+    moduleIds: ["module-app-architecture-integrity", "module-docs"],
+    domainHints: ["documentation"],
+  },
+  "api-inspector-doc": {
+    id: "api-inspector-doc",
+    label: "API Inspector Map Consistency",
+    description: "Cross-checks API Inspector flow mapping against real prompt assembly, payload fields, and runtime behavior.",
+    moduleIds: ["module-api-inspector-integrity", "module-data-integrity", "module-docs"],
+    domainHints: ["data-integrity", "documentation", "functionality"],
+  },
+  "quick-stability": {
+    id: "quick-stability",
+    label: "Quick Stability Sweep",
+    description: "Fast safety pass for navigation/runtime health, startup/auth bootstrap behavior, and validation gate sanity.",
+    moduleIds: ["module-runtime-smoke", "module-startup-auth-boot", "module-validation-gates"],
+    domainHints: ["functionality", "build", "performance", "security", "tests"],
+  },
+  "pre-push-full": {
+    id: "pre-push-full",
+    label: "Pre-Push Full Sweep",
+    description: "Deep release pass across UI quality, behavior correctness, dead code, cleanup, accessibility, data integrity, security, and tests.",
+    moduleIds: [
+      "module-ui-ux",
+      "module-functionality",
+      "module-orphan-code",
+      "module-cleanup",
+      "module-accessibility",
+      "module-performance",
+      "module-security",
+      "module-tests",
+      "module-build",
+      "module-data-integrity",
+      "module-docs",
+      "module-runtime-smoke",
+      "module-validation-gates",
+      "module-startup-auth-boot",
+    ],
+    domainHints: QUALITY_DOMAINS,
+  },
+  "security-deep": {
+    id: "security-deep",
+    label: "Security Deep Sweep",
+    description: "Focused security pass on authorization, key handling, storage policy scope, XSS surface, abuse controls, and incident readiness.",
+    moduleIds: [
+      "module-security",
+      "module-security-auth-access-control",
+      "module-security-encryption-data-protection",
+      "module-security-secrets-key-management",
+      "module-security-storage-policies",
+      "module-security-client-xss-injection",
+      "module-security-api-rate-limit-abuse",
+      "module-security-data-visibility",
+      "module-security-monitoring-incident-readiness",
+      "module-validation-gates",
+    ],
+    domainHints: ["security", "build"],
+  },
+  "ui-ux": {
+    id: "ui-ux",
+    label: "UI/UX and Design System",
+    description: "Finds visual inconsistency, token drift, responsive layout regressions, and state-style mismatch.",
+    moduleIds: ["module-ui-ux"],
+    domainHints: ["ui-ux"],
+  },
+  functionality: {
+    id: "functionality",
+    label: "Functionality and Behavior Bugs",
+    description: "Finds broken flows, state desync, non-working controls, and behavior regressions.",
+    moduleIds: ["module-functionality"],
+    domainHints: ["functionality"],
+  },
+  orphan: {
+    id: "orphan",
+    label: "Orphan / Dead Code",
+    description: "Finds unreferenced components/utilities and stale code paths that increase maintenance risk.",
+    moduleIds: ["module-orphan-code"],
+    domainHints: ["orphan-code"],
+  },
+  cleanup: {
+    id: "cleanup",
+    label: "Code Cleanup Candidates",
+    description: "Finds near-duplicate logic, one-off patterns, and consolidation opportunities.",
+    moduleIds: ["module-cleanup"],
+    domainHints: ["cleanup"],
+  },
+  accessibility: {
+    id: "accessibility",
+    label: "Accessibility",
+    description: "Checks labels, keyboard reachability, focus states, contrast, and reflow behavior.",
+    moduleIds: ["module-accessibility"],
+    domainHints: ["accessibility"],
+  },
+  performance: {
+    id: "performance",
+    label: "Performance",
+    description: "Checks initial load strategy, rerender hotspots, large assets, and bundle pressure risks.",
+    moduleIds: ["module-performance"],
+    domainHints: ["performance"],
+  },
+  "data-integrity": {
+    id: "data-integrity",
+    label: "Data and API Integrity",
+    description: "Checks schema/key drift, payload mapping, import/export durability, and AI pipeline data continuity.",
+    moduleIds: ["module-data-integrity"],
+    domainHints: ["data-integrity"],
+  },
+  "build-health": {
+    id: "build-health",
+    label: "Build / Type / Lint / Test Health",
+    description: "Runs repository health gates (`lint`, `typecheck`, `test`, `build`, dependency audit`) and logs deltas.",
+    moduleIds: ["module-build", "module-tests", "module-validation-gates"],
+    domainHints: ["build", "tests", "security"],
+  },
+};
+
+const PAGE_SCAN_ROW_IDS = [
+  "app-guide-doc",
+  "app-architecture-doc",
+  "quick-stability",
+  "pre-push-full",
+  "security-deep",
+  "ui-ux",
+  "functionality",
+  "orphan",
+  "cleanup",
+  "accessibility",
+] as const;
+
+const SCAN_CATALOG_SECTIONS: ScanCatalogSection[] = [
+  {
+    id: "global",
+    title: "Global Systems",
+    description: "Cross-app scans for shared architecture, startup behavior, build/test gates, and security baseline.",
+    rowIds: [
+      "app-guide-doc",
+      "app-architecture-doc",
+      "api-inspector-doc",
+      "quick-stability",
+      "pre-push-full",
+      "security-deep",
+      "ui-ux",
+      "functionality",
+      "orphan",
+      "cleanup",
+      "accessibility",
+      "performance",
+      "data-integrity",
+      "build-health",
+    ],
+  },
+  { id: "community-gallery", title: "Community Gallery", description: "Page-level scans for Community Gallery UX, behavior, and content integrity.", matchPages: ["Community Gallery"], rowIds: [...PAGE_SCAN_ROW_IDS] },
+  { id: "your-stories", title: "Your Stories", description: "Page-level scans for Story Hub/Your Stories list behavior and presentation.", matchPages: ["Your Stories"], rowIds: [...PAGE_SCAN_ROW_IDS] },
+  { id: "character-library", title: "Character Library", description: "Page-level scans for character browsing/select flows and interaction integrity.", matchPages: ["Character Library"], rowIds: [...PAGE_SCAN_ROW_IDS] },
+  { id: "image-library", title: "Image Library", description: "Page-level scans for image upload/folder/tag flows, storage policy impact, and UI behavior.", matchPages: ["Image Library"], rowIds: [...PAGE_SCAN_ROW_IDS] },
+  { id: "chat-history", title: "Chat History", description: "Page-level scans for conversation listing, retrieval, and metadata consistency.", matchPages: ["Chat History"], rowIds: [...PAGE_SCAN_ROW_IDS] },
+  {
+    id: "story-builder",
+    title: "Story Builder",
+    description: "Page-level scans for world-building controls, data contracts, and section-level behavior stability.",
+    matchPages: ["Story Builder"],
+    rowIds: [...PAGE_SCAN_ROW_IDS, "performance", "data-integrity", "build-health"],
+  },
+  {
+    id: "character-builder",
+    title: "Character Builder",
+    description: "Page-level scans for character section controls, AI-enhance wiring, and persistence integrity.",
+    matchPages: ["Character Builder"],
+    rowIds: [...PAGE_SCAN_ROW_IDS, "performance", "data-integrity", "build-health"],
+  },
+  {
+    id: "chat-interface",
+    title: "Chat Interface",
+    description: "Page-level scans for runtime dialogue behavior, state sync, and high-frequency interaction reliability.",
+    matchPages: ["Chat Interface"],
+    rowIds: [...PAGE_SCAN_ROW_IDS, "performance", "data-integrity", "build-health"],
+  },
+  {
+    id: "admin-panel",
+    title: "Admin Panel",
+    description: "Page-level scans for admin tooling safety, navigation consistency, and operational controls.",
+    matchPages: ["Admin"],
+    rowIds: [...PAGE_SCAN_ROW_IDS, "performance", "data-integrity", "build-health"],
+  },
+  {
+    id: "api-inspector-tool",
+    title: "Admin Tool: API Inspector",
+    description: "Tool-specific scans for prompt/payload architecture map correctness and runtime parity.",
+    matchPages: ["API Inspector"],
+    rowIds: ["api-inspector-doc", "quick-stability", "security-deep", "functionality", "data-integrity", "build-health"],
+  },
+  {
+    id: "app-guide-tool",
+    title: "Admin Tool: App Guide",
+    description: "Tool-specific scans for long-form system docs freshness and route/component/source-truth alignment.",
+    matchPages: ["Admin", "Quality Hub"],
+    rowIds: ["app-guide-doc", "quick-stability", "pre-push-full", "build-health"],
+  },
+  {
+    id: "app-architecture-tool",
+    title: "Admin Tool: App Architecture",
+    description: "Tool-specific scans ensuring visual architecture map matches current repo ownership and component boundaries.",
+    matchPages: ["Admin", "Quality Hub"],
+    rowIds: ["app-architecture-doc", "quick-stability", "pre-push-full", "build-health"],
+  },
+  {
+    id: "finance-dashboard-tool",
+    title: "Admin Tool: Finance Dashboard",
+    description: "Tool-specific scans for finance UX, role safety, data integrity, and operational metrics health as implementation expands.",
+    matchPages: ["Finance Dashboard"],
+    rowIds: [
+      "quick-stability",
+      "pre-push-full",
+      "security-deep",
+      "ui-ux",
+      "functionality",
+      "cleanup",
+      "accessibility",
+      "performance",
+      "data-integrity",
+      "build-health",
+    ],
+  },
+];
 
 const severityBadgeClass: Record<string, string> = {
   critical: "bg-[#2f3137] text-[#eaedf1] border border-[#dc2626]",
@@ -95,13 +390,6 @@ const severityBadgeClass: Record<string, string> = {
   low: "bg-[#2f3137] text-[#a5f3fc] border border-[#22B8C9]",
   stylistic: "bg-[#3f3f46] text-[#eaedf1] border border-[rgba(255,255,255,0.20)]",
 };
-const moduleStatusClass: Record<string, string> = {
-  "not-started": "bg-[#3f3f46] text-[#a1a1aa]",
-  "in-progress": "bg-[#2f3137] text-[#a5f3fc] border border-[#3b82f6]",
-  completed: "bg-[#2f3137] text-[#a5f3fc] border border-[#22B8C9]",
-  blocked: "bg-[#2f3137] text-[#eaedf1] border border-[#dc2626]",
-};
-
 function cloneInitialRegistry(): QualityHubRegistry {
   return JSON.parse(JSON.stringify(qualityHubInitialRegistry)) as QualityHubRegistry;
 }
@@ -207,127 +495,6 @@ function ChevronToggleButton({
     >
       <ChevronDown size={20} strokeWidth={2.6} className={cn("transition-transform duration-200", expanded && "rotate-180")} />
     </button>
-  );
-}
-
-function ExpandableChecklist({
-  title,
-  items,
-  expanded,
-  onToggle,
-  limit = 5,
-}: {
-  title: string;
-  items: string[];
-  expanded: boolean;
-  onToggle: () => void;
-  limit?: number;
-}) {
-  const visibleItems = expanded ? items : items.slice(0, limit);
-  const hiddenCount = Math.max(items.length - limit, 0);
-
-  return (
-    <div className={cn(recessedStripClass, "p-3")}>
-      <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">{title}</div>
-      {visibleItems.length === 0 ? (
-        <div className="text-xs text-[#71717a]">No checklist items defined.</div>
-      ) : (
-        <ul className="space-y-1 list-disc pl-5 text-xs text-[#a1a1aa]">
-          {visibleItems.map((item, index) => (
-            <li key={`${title}-${index}`}>{item}</li>
-          ))}
-        </ul>
-      )}
-      {hiddenCount > 0 && (
-        <div className="mt-3 flex items-center justify-end">
-          <ChevronToggleButton
-            expanded={expanded}
-            onToggle={onToggle}
-            label={expanded ? `Collapse ${title}` : `Expand ${title} (${hiddenCount} more items)`}
-          />
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ScanModuleCard({
-  module,
-  completedDate,
-  expandedChecklistKeys,
-  onToggleChecklist,
-}: {
-  module: QualityHubRegistry["scanModules"][number];
-  completedDate: string | null;
-  expandedChecklistKeys: Record<string, boolean>;
-  onToggleChecklist: (key: string) => void;
-}) {
-  const checklist = module.checklist ?? {
-    scope: [],
-    checks: [],
-    evidenceRequired: [],
-    loggingTargets: [],
-    doneCriteria: [],
-  };
-
-  return (
-    <details className={cn(recessedBlockClass, "group open:ring-1 open:ring-[#4a5f7f]/60 p-3")}>
-      <summary className="cursor-pointer list-none relative pr-8">
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <div className="text-sm font-bold text-[#eaedf1]">{module.name}</div>
-            <div className="mt-1 text-xs text-[#a1a1aa]">{module.description}</div>
-          </div>
-          <div className="flex flex-col items-end gap-1">
-            <span className={cn("rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-wider", moduleStatusClass[module.status])}>
-              {module.status}
-            </span>
-            {completedDate && (
-              <span className="text-[10px] text-[#71717a]">{formatShortDate(completedDate)}</span>
-            )}
-          </div>
-        </div>
-        <ChevronDown size={16} className="absolute bottom-1 right-0 text-[#71717a] transition-transform group-open:rotate-180" />
-      </summary>
-      <div className="mt-3 space-y-3">
-        <ExpandableChecklist
-          title="Scope"
-          items={checklist.scope}
-          expanded={!!expandedChecklistKeys[`${module.id}:scope`]}
-          onToggle={() => onToggleChecklist(`${module.id}:scope`)}
-        />
-        <ExpandableChecklist
-          title="Checks"
-          items={checklist.checks}
-          expanded={!!expandedChecklistKeys[`${module.id}:checks`]}
-          onToggle={() => onToggleChecklist(`${module.id}:checks`)}
-        />
-        <ExpandableChecklist
-          title="Evidence Required"
-          items={checklist.evidenceRequired}
-          expanded={!!expandedChecklistKeys[`${module.id}:evidence`]}
-          onToggle={() => onToggleChecklist(`${module.id}:evidence`)}
-        />
-        <ExpandableChecklist
-          title="Where to Log"
-          items={checklist.loggingTargets.map((target) => target.replace(/-/g, " "))}
-          expanded={!!expandedChecklistKeys[`${module.id}:logging`]}
-          onToggle={() => onToggleChecklist(`${module.id}:logging`)}
-        />
-        <ExpandableChecklist
-          title="Done Criteria"
-          items={checklist.doneCriteria}
-          expanded={!!expandedChecklistKeys[`${module.id}:done`]}
-          onToggle={() => onToggleChecklist(`${module.id}:done`)}
-        />
-        {module.notes && (
-          <div className={cn(recessedStripClass, "p-3 text-xs text-[#a1a1aa]")}>
-            <span className="text-[10px] font-black uppercase tracking-[0.16em] text-[#eaedf1]">Module Notes</span>
-            <div className="mt-1">{module.notes}</div>
-          </div>
-        )}
-      </div>
-    </details>
   );
 }
 
@@ -653,10 +820,7 @@ export default function UiAuditPage() {
   const [importFeedback, setImportFeedback] = useState<string>("");
   const [agentDraft, setAgentDraft] = useState<QualityAgent>(qualityHubDefaultAgent);
   const [showHowToUse, setShowHowToUse] = useState(false);
-  const [showAllModules, setShowAllModules] = useState(false);
-  const [showAllToolModules, setShowAllToolModules] = useState(false);
-  const [showAllReviewUnits, setShowAllReviewUnits] = useState(false);
-  const [expandedChecklistKeys, setExpandedChecklistKeys] = useState<Record<string, boolean>>({});
+  const [expandedResolvedGroups, setExpandedResolvedGroups] = useState<Record<string, boolean>>({});
 
   // Load from database on mount (if authenticated)
   useEffect(() => {
@@ -744,6 +908,9 @@ export default function UiAuditPage() {
 
   const moduleCompleted = registry.scanModules.filter((m) => m.status === "completed").length;
   const openFindings = statusCounts.open + statusCounts["in-progress"];
+  const criticalOpenFindings = findings.filter(
+    (finding) => finding.severity === "critical" && OPEN_FINDING_STATUSES.has(finding.status),
+  ).length;
   const dominantDomain = Object.entries(domainCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "n/a";
   const recentChanges = useMemo(
     () => [...(registry.changeLog || [])]
@@ -751,21 +918,97 @@ export default function UiAuditPage() {
       .slice(0, 5),
     [registry.changeLog],
   );
-  const coreScanModules = useMemo(
-    () => registry.scanModules.filter((module) => !TOOL_INTEGRITY_MODULE_IDS.has(module.id)),
-    [registry.scanModules],
-  );
-  const toolIntegrityModules = useMemo(
-    () => registry.scanModules.filter((module) => TOOL_INTEGRITY_MODULE_IDS.has(module.id)),
-    [registry.scanModules],
-  );
+  const scanCatalogSections = useMemo<ScanCatalogSectionSummary[]>(() => {
+    const modulesById = new Map(registry.scanModules.map((module) => [module.id, module]));
+    const runsById = new Map(registry.runs.map((run) => [run.id, run]));
+    const nowMs = Date.now();
 
-  // Helper: get the finished timestamp for a completed scan module
-  const getModuleCompletedDate = (lastRunId?: string): string | null => {
-    if (!lastRunId) return null;
-    const run = registry.runs.find((r) => r.id === lastRunId);
-    return run?.finishedAt || null;
-  };
+    const normalize = (value?: string) => (value ?? "").toLowerCase().trim();
+    const hasPageMatch = (finding: QualityFinding, matchPages: string[]) => {
+      const haystack = [finding.page, finding.route, finding.component]
+        .filter(Boolean)
+        .map((value) => normalize(value))
+        .join(" ");
+      if (!haystack) return false;
+      return matchPages.some((pageLabel) => haystack.includes(normalize(pageLabel)));
+    };
+
+    return SCAN_CATALOG_SECTIONS.map((section) => {
+      const rows = section.rowIds
+        .map((rowId): ScanCatalogRowSummary | null => {
+          const row = SCAN_CATALOG_ROWS[rowId];
+          if (!row) return null;
+
+          const rowModuleSet = new Set(row.moduleIds);
+          const linkedModules = row.moduleIds
+            .map((moduleId) => modulesById.get(moduleId))
+            .filter((module): module is QualityHubRegistry["scanModules"][number] => Boolean(module));
+
+          const findingsForRow = registry.findings.filter((finding) => {
+            const matchesModuleTag = finding.tags.some((tag) => rowModuleSet.has(tag));
+            const matchesDomain = row.domainHints.includes(finding.domain);
+            if (!matchesModuleTag && !matchesDomain) return false;
+            if (!section.matchPages || section.matchPages.length === 0) return true;
+            return hasPageMatch(finding, section.matchPages);
+          });
+
+          const findingIds = findingsForRow.map((finding) => finding.id);
+          const issuesFound = findingsForRow.length;
+          const openIssues = findingsForRow.filter((finding) => OPEN_FINDING_STATUSES.has(finding.status)).length;
+          const resolvedIssues = issuesFound - openIssues;
+
+          const lastScanCandidates = linkedModules
+            .map((module) => module.lastRunId)
+            .filter((runId): runId is string => Boolean(runId))
+            .map((runId) => runsById.get(runId)?.finishedAt)
+            .filter((finishedAt): finishedAt is string => Boolean(finishedAt));
+
+          const lastScanAt = lastScanCandidates
+            .sort((a, b) => Date.parse(b) - Date.parse(a))[0] ?? null;
+          const daysSinceLastScan =
+            lastScanAt && Number.isFinite(Date.parse(lastScanAt))
+              ? Math.max(0, Math.floor((nowMs - Date.parse(lastScanAt)) / 86_400_000))
+              : null;
+
+          const checks = Array.from(
+            new Set(
+              linkedModules.flatMap((module) => module.checklist.checks).map((check) => check.trim()).filter(Boolean),
+            ),
+          );
+          const logTargets = Array.from(
+            new Set(linkedModules.flatMap((module) => module.checklist.loggingTargets).map((target) => target.replace(/-/g, " "))),
+          );
+          const moduleNames = linkedModules.map((module) => module.name);
+
+          return {
+            ...row,
+            findingIds,
+            issuesFound,
+            openIssues,
+            resolvedIssues,
+            lastScanAt,
+            daysSinceLastScan,
+            checks,
+            logTargets,
+            moduleNames,
+          };
+        })
+        .filter((row): row is ScanCatalogRowSummary => Boolean(row));
+
+      const sectionUniqueFindingIds = new Set(rows.flatMap((row) => row.findingIds));
+      const sectionIssuesFound = sectionUniqueFindingIds.size;
+      const sectionOpenIssues = registry.findings.filter(
+        (finding) => sectionUniqueFindingIds.has(finding.id) && OPEN_FINDING_STATUSES.has(finding.status),
+      ).length;
+
+      return {
+        ...section,
+        rows,
+        sectionIssuesFound,
+        sectionOpenIssues,
+      };
+    });
+  }, [registry.findings, registry.runs, registry.scanModules]);
 
   const handleExport = () => { const snapshot = nextRegistryWithTimestamp(registry); setRegistry(snapshot); downloadJson(`chronicle-quality-hub-${toCompactIso()}.json`, buildQualityHubTransferPackage(snapshot)); setImportFeedback("Exported Quality Hub JSON package."); };
   const handleImportClick = () => { fileInputRef.current?.click(); };
@@ -834,9 +1077,6 @@ export default function UiAuditPage() {
   }, [updateRegistry]);
 
   const activeViewMeta = HUB_VIEWS.find((v) => v.id === activeView) || HUB_VIEWS[0];
-  const toggleChecklistList = (key: string) => {
-    setExpandedChecklistKeys((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
 
   return (
     <div className="min-h-screen bg-[#111113] text-[#eaedf1]">
@@ -861,7 +1101,11 @@ export default function UiAuditPage() {
         <section className={panelOuterClass}><div className={panelBodyClass}>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <MetricCard label="Open Issues" value={openFindings} />
-            <MetricCard label="Critical" value={severityCounts.critical} tone="danger" />
+            <MetricCard
+              label="Critical Open"
+              value={criticalOpenFindings}
+              tone={criticalOpenFindings > 0 ? "danger" : "success"}
+            />
             <MetricCard label="Verified" value={statusCounts.verified} tone="success" />
             <MetricCard label="Runs Logged" value={registry.runs.length} />
             <MetricCard label="Modules Completed" value={`${moduleCompleted}/${registry.scanModules.length}`} />
@@ -888,89 +1132,98 @@ export default function UiAuditPage() {
         {/* Overview */}
         {activeView === "overview" && (
           <div className="space-y-6">
-            <Section
-              title="Scan Modules"
-              badge={
-                coreScanModules.length > 5 ? (
-                  <ChevronToggleButton
-                    expanded={showAllModules}
-                    onToggle={() => setShowAllModules((p) => !p)}
-                    label={showAllModules ? "Collapse scan modules" : `Expand scan modules (${coreScanModules.length - 5} hidden)`}
-                  />
-                ) : undefined
-              }
-            >
-              <div className="space-y-3">
-                {(showAllModules ? coreScanModules : coreScanModules.slice(0, 5)).map((module) => (
-                  <ScanModuleCard
-                    key={module.id}
-                    module={module}
-                    completedDate={module.status === "completed" ? getModuleCompletedDate(module.lastRunId) : null}
-                    expandedChecklistKeys={expandedChecklistKeys}
-                    onToggleChecklist={toggleChecklistList}
-                  />
-                ))}
-              </div>
-            </Section>
-
-            <Section
-              title="Tool Integrity Scans"
-              badge={
-                toolIntegrityModules.length > 5 ? (
-                  <ChevronToggleButton
-                    expanded={showAllToolModules}
-                    onToggle={() => setShowAllToolModules((p) => !p)}
-                    label={showAllToolModules ? "Collapse tool scans" : `Expand tool scans (${toolIntegrityModules.length - 5} hidden)`}
-                  />
-                ) : undefined
-              }
-            >
-              <div className="space-y-3">
-                {(showAllToolModules ? toolIntegrityModules : toolIntegrityModules.slice(0, 5)).map((module) => (
-                  <ScanModuleCard
-                    key={module.id}
-                    module={module}
-                    completedDate={module.status === "completed" ? getModuleCompletedDate(module.lastRunId) : null}
-                    expandedChecklistKeys={expandedChecklistKeys}
-                    onToggleChecklist={toggleChecklistList}
-                  />
-                ))}
-              </div>
-            </Section>
-
-            <Section
-              title="App Pages"
-              badge={
-                registry.reviewUnits.length > 5 ? (
-                  <ChevronToggleButton
-                    expanded={showAllReviewUnits}
-                    onToggle={() => setShowAllReviewUnits((p) => !p)}
-                    label={showAllReviewUnits ? "Collapse app pages" : `Expand app pages (${registry.reviewUnits.length - 5} hidden)`}
-                  />
-                ) : undefined
-              }
-            >
-              <div className="space-y-2">
-                {(showAllReviewUnits ? registry.reviewUnits : registry.reviewUnits.slice(0, 5)).map((u) => {
-                  const completedDate = u.status === "reviewed" && u.lastRunId ? getModuleCompletedDate(u.lastRunId) : null;
-                  return (
-                    <div key={u.id} className={cn(recessedBlockClass, "p-3")}>
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <div className="text-sm font-bold text-[#eaedf1]">{u.name}</div>
-                          <div className="text-xs text-[#a1a1aa]">{u.route || "No route set"}</div>
+            {scanCatalogSections.map((section) => (
+              <Section
+                key={section.id}
+                title={section.title}
+                badge={
+                  <span
+                    className={cn(
+                      "rounded-full border bg-[#2f3137] px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em]",
+                      section.sectionOpenIssues === 0
+                        ? "border-[#22c55e] text-[#22c55e]"
+                        : "border-[#ef4444] text-[#ef4444]",
+                    )}
+                  >
+                    Open {section.sectionOpenIssues}
+                  </span>
+                }
+              >
+                <div className="mb-3 text-xs text-[#a1a1aa]">{section.description}</div>
+                <div className={cn(recessedStripClass, "mb-2 hidden px-3 py-2 md:grid md:grid-cols-[minmax(0,1fr)_120px_140px_140px] text-[10px] font-black uppercase tracking-[0.14em] text-[#71717a]")}>
+                  <span>Scan</span>
+                  <span className="text-right">Issue Status</span>
+                  <span className="text-right">Last Scan</span>
+                  <span className="text-right">Days Since Scan</span>
+                </div>
+                <div className="space-y-2">
+                  {section.rows.map((row) => (
+                    <details key={`${section.id}-${row.id}`} className={cn(recessedBlockClass, "group open:ring-1 open:ring-[#4a5f7f]/60")}>
+                      <summary className="cursor-pointer list-none px-3 py-3 relative">
+                        <div className="grid gap-2 md:grid-cols-[minmax(0,1fr)_120px_140px_140px] md:items-center">
+                          <div className="pr-7">
+                            <div className="text-sm font-bold text-[#eaedf1]">{row.label}</div>
+                            <div className="mt-1 text-xs text-[#a1a1aa]">{row.description}</div>
+                          </div>
+                          <div className="md:text-right">
+                            <div className="text-[10px] font-black uppercase tracking-[0.14em] text-[#71717a] md:hidden">Issue Status</div>
+                            <div className="text-[11px]">
+                              <span className="text-[#71717a]">Open:</span>{" "}
+                              <span className={cn("font-black", row.openIssues === 0 ? "text-[#22c55e]" : "text-[#ef4444]")}>
+                                {row.openIssues}
+                              </span>
+                            </div>
+                            <div className="text-[11px]">
+                              <span className="text-[#71717a]">Fixed:</span>{" "}
+                              <span className="font-black text-white">{row.resolvedIssues}</span>
+                            </div>
+                          </div>
+                          <div className="md:text-right">
+                            <div className="text-[10px] font-black uppercase tracking-[0.14em] text-[#71717a] md:hidden">Last Scan</div>
+                            <div className="text-sm font-bold text-[#eaedf1]">{row.lastScanAt ? formatShortDate(row.lastScanAt) : "Never"}</div>
+                          </div>
+                          <div className="md:text-right">
+                            <div className="text-[10px] font-black uppercase tracking-[0.14em] text-[#71717a] md:hidden">Days Since Scan</div>
+                            <div className="text-sm font-bold text-[#eaedf1]">
+                              {row.daysSinceLastScan === null ? "—" : `${row.daysSinceLastScan} days`}
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex flex-col items-end gap-1">
-                          <span className={cn("rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em]", u.status === "in-progress" ? "bg-[#2f3137] text-[#a5f3fc] border border-[#3b82f6]" : u.status === "reviewed" ? "bg-[#2f3137] text-[#a5f3fc] border border-[#22B8C9]" : "bg-[#4a5f7f] text-[#eaedf1]")}>{u.status}</span>
-                          {completedDate && <span className="text-[10px] text-[#71717a]">{formatShortDate(completedDate)}</span>}
+                        <ChevronDown size={16} className="absolute top-3 right-3 text-[#71717a] transition-transform group-open:rotate-180" />
+                      </summary>
+                      <div className="border-t border-[rgba(255,255,255,0.05)] px-3 py-3 space-y-2">
+                        <div className={cn(recessedStripClass, "p-3")}>
+                          <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">What this scan checks</div>
+                          {row.checks.length === 0 ? (
+                            <div className="text-xs text-[#71717a]">No checks are linked yet for this scan row.</div>
+                          ) : (
+                            <ul className="list-disc pl-5 text-xs text-[#a1a1aa] space-y-1">
+                              {row.checks.map((check, index) => (
+                                <li key={`${row.id}-check-${index}`}>{check}</li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                        <div className="grid gap-2 md:grid-cols-2">
+                          <div className={cn(recessedStripClass, "p-3")}>
+                            <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Backed by modules</div>
+                            <div className="text-xs text-[#a1a1aa]">
+                              {row.moduleNames.length > 0 ? row.moduleNames.join(" • ") : "No module linkage defined."}
+                            </div>
+                          </div>
+                          <div className={cn(recessedStripClass, "p-3")}>
+                            <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Where to log results</div>
+                            <div className="text-xs text-[#a1a1aa]">
+                              {row.logTargets.length > 0 ? row.logTargets.join(" • ") : "Issue registry • scan runs • change log"}
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <div className="mt-2 text-xs text-[#a1a1aa]">{u.notes}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </Section>
+                    </details>
+                  ))}
+                </div>
+              </Section>
+            ))}
 
             <Section
               title="Recent Change Log (Mirror)"
@@ -1032,9 +1285,53 @@ export default function UiAuditPage() {
             {orderedGroupEntries.length === 0 ? (
               <div className="rounded-xl border-2 border-dashed border-[#71717a] bg-[linear-gradient(to_bottom_right,#27272a,#18181b)] px-4 py-10 text-center text-sm text-[#a1a1aa]">No findings yet. Import a JSON package to start.</div>
             ) : (
-              orderedGroupEntries.map(([group, items]) => (
-                <Section key={group} title={domainLabel(group)} badge={<span className="rounded-full bg-[#23262b] px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[#eaedf1]">{items.length}</span>}>
-                  <div className="space-y-2">{items.map((f) => (
+              orderedGroupEntries.map(([group, items]) => {
+                const unresolvedCount = items.filter((f) => !RESOLVED_FINDING_STATUSES.has(f.status)).length;
+                const resolvedCount = items.length - unresolvedCount;
+                const showResolved = !!expandedResolvedGroups[group];
+
+                return (
+                <Section
+                  key={group}
+                  title={domainLabel(group)}
+                  badge={
+                    <span
+                      className={cn(
+                        "rounded-full border bg-[#2f3137] px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em]",
+                        unresolvedCount === 0
+                          ? "border-[#22c55e] text-[#22c55e]"
+                          : "border-[#ef4444] text-[#ef4444]",
+                      )}
+                    >
+                      Open {unresolvedCount}
+                    </span>
+                  }
+                >
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <div className={cn(recessedStripClass, "px-3 py-1.5 text-[11px] text-[#a1a1aa]")}>
+                      <span className="font-bold text-white">{unresolvedCount}</span> open/in-progress •{" "}
+                      <span className="font-bold text-white">{resolvedCount}</span> fixed/verified
+                    </div>
+                    {resolvedCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setExpandedResolvedGroups((prev) => ({ ...prev, [group]: !prev[group] }))}
+                        className={cn(recessedStripClass, "inline-flex items-center gap-1 px-3 py-1.5 text-[11px] font-bold text-[#eaedf1] hover:brightness-110 transition")}
+                      >
+                        {showResolved ? "Hide fixed" : `Show fixed (${resolvedCount})`}
+                        <ChevronDown size={14} className={cn("transition-transform", showResolved && "rotate-180")} />
+                      </button>
+                    )}
+                  </div>
+                  {unresolvedCount === 0 && (
+                    <div className={cn(recessedStripClass, "mb-3 p-2 text-xs text-[#a1a1aa]")}>
+                      No open issues in this group. Fixed/verified items are available in the dropdown.
+                    </div>
+                  )}
+                  <div className="space-y-2">{items.map((f) => {
+                    const isResolved = RESOLVED_FINDING_STATUSES.has(f.status);
+                    if (isResolved && !showResolved) return null;
+                    return (
                     <details key={f.id} className={cn(recessedBlockClass, "group open:ring-1 open:ring-[#4a5f7f]/60")}>
                        <summary className="cursor-pointer list-none px-4 py-3 relative">
                         <div className="flex flex-wrap items-start gap-2 pr-8">
@@ -1138,9 +1435,9 @@ export default function UiAuditPage() {
                         {f.comments.length > 0 && <div className="mt-3 space-y-2 rounded-lg border border-[rgba(255,255,255,0.05)] bg-[#1c1c1f] p-3">{f.comments.map((c) => <div key={c.id} className={cn(recessedStripClass, "px-2 py-2 text-xs text-[#a1a1aa]")}><div className="font-bold text-[#eaedf1]">{c.author}</div><div className="text-[10px] text-[#71717a]">{formatDate(c.timestamp)}</div><div className="mt-1">{c.text}</div></div>)}</div>}
                       </div>
                     </details>
-                  ))}</div>
+                  )})}</div>
                 </Section>
-              ))
+              )})
             )}
           </div>
         )}

@@ -91,6 +91,11 @@ interface ChatInterfaceTabProps {
 
 type ActionEvent = { messageId: string; timestamp: number };
 const TIME_SEQUENCE: TimeOfDay[] = ['sunrise', 'day', 'sunset', 'night'];
+const debugLog = (...args: unknown[]) => {
+  if (import.meta.env.DEV) {
+    debugLog(...args);
+  }
+};
 
 function parseMessageTokens(text: string, preserveWhitespace = false): { type: string; content: string }[] {
   let cleanRaw = text.replace(/\[SCENE:\s*.*?\]/g, '');
@@ -1317,10 +1322,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   // Debug: log conversation state on mount and when it changes
   useEffect(() => {
     if (conversationId === "loading") return;
-    console.log('[ChatInterfaceTab] conversationId:', conversationId);
-    console.log('[ChatInterfaceTab] conversation found:', !!conversation);
-    console.log('[ChatInterfaceTab] messages count:', conversation?.messages?.length);
-    console.log('[ChatInterfaceTab] messages:', conversation?.messages?.map(m => ({ id: m.id, role: m.role, text: m.text.slice(0, 50) })));
+    debugLog('[ChatInterfaceTab] conversationId:', conversationId);
+    debugLog('[ChatInterfaceTab] conversation found:', !!conversation);
+    if (import.meta.env.DEV) {
+      debugLog('[ChatInterfaceTab] messages count:', conversation?.messages?.length ?? 0);
+    }
   }, [conversationId, conversation]);
   
   // Trigger update indicator for a character (10-second duration)
@@ -1653,7 +1659,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     dialogContext: string
   ) => {
     try {
-      console.log(`Generating details for new side character: ${name}`);
+      debugLog(`Generating details for new side character: ${name}`);
 
       void trackApiValidationSnapshot({
         eventKey: 'validation.call2.side_character_profile',
@@ -1733,7 +1739,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         
         // 2. Generate avatar using the avatarPrompt - pass modelId and art style
         if (profileData.avatarPrompt) {
-          console.log(`Generating avatar for ${name}...`);
+          debugLog(`Generating avatar for ${name}...`);
           
           // Get the art style prompt from the scenario's selected art style
           const selectedStyleId = appData.selectedArtStyle || DEFAULT_STYLE_ID;
@@ -1796,7 +1802,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
               console.error(`Failed to update side character avatar in database:`, err);
             }
             
-            console.log(`${name} has joined the story!`);
+            debugLog(`${name} has joined the story!`);
           }
         }
       }
@@ -1813,7 +1819,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     const newCharacters = detectNewCharacters(responseText, knownNames);
     
     if (newCharacters.length > 0) {
-      console.log(`Detected ${newCharacters.length} new character(s):`, newCharacters.map(c => c.name));
+      debugLog(`Detected ${newCharacters.length} new character(s):`, newCharacters.map(c => c.name));
       
       const newSideCharacters = newCharacters.map(nc => 
         createSideCharacter(nc.name, nc.dialogContext, conversationId)
@@ -2090,7 +2096,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       if (error || !data?.stepUpdates?.length) return;
 
       if (!isAssistantMessageStillCurrent(sourceAssistantMessageId)) {
-        console.log('[evaluateGoalProgress] Discarded stale result for non-current turn');
+        debugLog('[evaluateGoalProgress] Discarded stale result for non-current turn');
         return;
       }
 
@@ -2112,7 +2118,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         storyGoals: updatedGoals,
       }));
 
-      console.log(`[evaluateGoalProgress] Completed ${completedIds.size} steps`);
+      debugLog(`[evaluateGoalProgress] Completed ${completedIds.size} steps`);
     } catch (err) {
       console.error('[evaluateGoalProgress] Failed:', err);
     }
@@ -2277,16 +2283,16 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   ): Promise<ExtractedUpdate[]> => {
     // Concurrency guard: if busy, enqueue latest request
     if (extractionInProgressRef.current) {
-      console.log('[extractCharacterUpdates] Queuing — extraction already in progress');
+      debugLog('[extractCharacterUpdates] Queuing — extraction already in progress');
       pendingExtractionRef.current = { userMessage, aiResponse, meta };
       return [];
     }
     extractionInProgressRef.current = true;
-    console.log('[extractCharacterUpdates] Started', meta?.reason ? `(${meta.reason})` : '');
+    debugLog('[extractCharacterUpdates] Started', meta?.reason ? `(${meta.reason})` : '');
     try {
       // Build eligible character set
       const eligibleNames = buildEligibleCharacterNames(userMessage, aiResponse);
-      console.log('[extractCharacterUpdates] Eligible characters:', [...eligibleNames]);
+      debugLog('[extractCharacterUpdates] Eligible characters:', [...eligibleNames]);
       if (eligibleNames.size === 0) return [];
 
       // Build character data for context — only eligible characters
@@ -2433,7 +2439,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         .filter((u: ExtractedUpdate) => isAllowedExtractionField(u.field));
 
       if (!isAssistantMessageStillCurrent(meta?.sourceAssistantMessageId)) {
-        console.log('[extractCharacterUpdates] Discarded stale result for non-current turn');
+        debugLog('[extractCharacterUpdates] Discarded stale result for non-current turn');
         return [];
       }
 
@@ -2457,7 +2463,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         });
       }
 
-      console.log(`[extractCharacterUpdates] Completed — ${updates.length} updates (filtered from ${data?.updates?.length || 0})`);
+      debugLog(`[extractCharacterUpdates] Completed — ${updates.length} updates (filtered from ${data?.updates?.length || 0})`);
       return updates;
     } catch (err) {
       console.error('[extractCharacterUpdates] Failed:', err);
@@ -2468,10 +2474,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       const pending = pendingExtractionRef.current;
       if (pending) {
         pendingExtractionRef.current = null;
-        console.log('[extractCharacterUpdates] Processing queued extraction');
+        debugLog('[extractCharacterUpdates] Processing queued extraction');
         extractCharacterUpdatesFromDialogue(pending.userMessage, pending.aiResponse, pending.meta).then(updates => {
           if (updates.length > 0) {
-            console.log(`[extractCharacterUpdates] Queued extraction yielded ${updates.length} updates`);
+            debugLog(`[extractCharacterUpdates] Queued extraction yielded ${updates.length} updates`);
             applyExtractedUpdates(updates);
           }
         }).catch(err => {
@@ -2553,7 +2559,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }
       
       if (!mainChar && !sideChar) {
-        console.log(`[applyExtractedUpdates] Character not found: ${charNameLower}`);
+        debugLog(`[applyExtractedUpdates] Character not found: ${charNameLower}`);
       }
       
       if (mainChar) {
@@ -2576,7 +2582,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         for (const update of charUpdates) {
           const { field, value } = update;
           if (!isAllowedExtractionField(field)) {
-            console.log(`[applyExtractedUpdates] Skipped unsupported field "${field}"`);
+            debugLog(`[applyExtractedUpdates] Skipped unsupported field "${field}"`);
             continue;
           }
           
@@ -2590,7 +2596,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
                   g.title.toLowerCase() === goalTitle.toLowerCase()
                 );
                 if (removeIdx !== -1) {
-                  console.log(`[applyExtractedUpdates] REMOVED goal "${goalTitle}"`);
+                  debugLog(`[applyExtractedUpdates] REMOVED goal "${goalTitle}"`);
                   updatedGoals.splice(removeIdx, 1);
                   goalsModified = true;
                 }
@@ -2684,7 +2690,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
                   ...(desiredOutcome ? { desiredOutcome } : {}),
                   updatedAt: Date.now()
                 };
-                console.log(`[applyExtractedUpdates] Updated goal "${goalTitle}" → ${progress}% (${updatedSteps.filter(s => s.completed).length}/${updatedSteps.length} steps)`);
+                debugLog(`[applyExtractedUpdates] Updated goal "${goalTitle}" → ${progress}% (${updatedSteps.filter(s => s.completed).length}/${updatedSteps.length} steps)`);
               } else {
                 // Change 2: Dedupe guard — reject near-duplicate titles
                 const normalizedTitle = goalTitle.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
@@ -2700,7 +2706,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
                 });
                 
                 if (isDuplicate) {
-                  console.log(`[applyExtractedUpdates] Rejected duplicate goal "${goalTitle}"`);
+                  debugLog(`[applyExtractedUpdates] Rejected duplicate goal "${goalTitle}"`);
                   continue;
                 }
                 
@@ -2723,7 +2729,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
                   createdAt: Date.now(),
                   updatedAt: Date.now()
                 });
-                console.log(`[applyExtractedUpdates] Created new goal "${goalTitle}" → ${progress}% with ${newSteps.length} steps`);
+                debugLog(`[applyExtractedUpdates] Created new goal "${goalTitle}" → ${progress}% with ${newSteps.length} steps`);
               }
               goalsModified = true;
             }
@@ -2748,7 +2754,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
                 };
                 updatedSections.push(newSection);
                 sectionIndex = updatedSections.length - 1;
-                console.log(`[applyExtractedUpdates] Created new section: ${sectionTitle}`);
+                debugLog(`[applyExtractedUpdates] Created new section: ${sectionTitle}`);
               }
               
               // Find or create item in section
@@ -2764,7 +2770,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
                   createdAt: Date.now(),
                   updatedAt: Date.now()
                 });
-                console.log(`[applyExtractedUpdates] Added new item "${itemLabel}" to section "${sectionTitle}"`);
+                debugLog(`[applyExtractedUpdates] Added new item "${itemLabel}" to section "${sectionTitle}"`);
               } else {
                 // Update existing item
                 section.items[itemIndex] = {
@@ -2772,7 +2778,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
                   value: value,
                   updatedAt: Date.now()
                 };
-                console.log(`[applyExtractedUpdates] Updated item "${itemLabel}" in section "${sectionTitle}"`);
+                debugLog(`[applyExtractedUpdates] Updated item "${itemLabel}" in section "${sectionTitle}"`);
               }
               
               section.updatedAt = Date.now();
@@ -2949,9 +2955,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
               if (existIdx !== -1) {
                 if (shouldRefineExistingText(extras[existIdx]?.value || '', newValue || '')) {
                   extras[existIdx] = { ...extras[existIdx], value: newValue };
-                  console.log(`[applyExtractedUpdates] Updated existing ${parent}._extras entry "${parts[0]?.trim()}"`);
+                  debugLog(`[applyExtractedUpdates] Updated existing ${parent}._extras entry "${parts[0]?.trim()}"`);
                 } else {
-                  console.log(`[applyExtractedUpdates] Ignored low-value rewrite for ${parent}._extras entry "${parts[0]?.trim()}"`);
+                  debugLog(`[applyExtractedUpdates] Ignored low-value rewrite for ${parent}._extras entry "${parts[0]?.trim()}"`);
                 }
               } else {
                 const nearDupIdx = findNearDuplicateExtraIndex(extras, parts[0]?.trim() || 'New', newValue);
@@ -2961,9 +2967,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
                       ...extras[nearDupIdx],
                       value: newValue
                     };
-                    console.log(`[applyExtractedUpdates] Refined near-duplicate ${parent}._extras entry "${parts[0]?.trim()}"`);
+                    debugLog(`[applyExtractedUpdates] Refined near-duplicate ${parent}._extras entry "${parts[0]?.trim()}"`);
                   } else {
-                    console.log(`[applyExtractedUpdates] Ignored near-duplicate ${parent}._extras entry "${parts[0]?.trim()}"`);
+                    debugLog(`[applyExtractedUpdates] Ignored near-duplicate ${parent}._extras entry "${parts[0]?.trim()}"`);
                   }
                 } else {
                   extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
@@ -2977,7 +2983,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
               if (sanitizedMood) {
                 patch.currentMood = sanitizedMood;
               } else {
-                console.log(`[applyExtractedUpdates] Skipped invalid currentMood payload: "${value}"`);
+                debugLog(`[applyExtractedUpdates] Skipped invalid currentMood payload: "${value}"`);
               }
             } else {
               patch[field] = value;
@@ -3009,7 +3015,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           showCharacterUpdateIndicator(mainChar.id);
           await supabaseData.updateSessionState(sessionState.id, patch);
           setSessionStates(prev => prev.map(s => s.id === sessionState!.id ? { ...s, ...patch } : s));
-          console.log(`[applyExtractedUpdates] Updated ${mainChar.name}:`, Object.keys(patch));
+          debugLog(`[applyExtractedUpdates] Updated ${mainChar.name}:`, Object.keys(patch));
         }
       } else if (sideChar) {
         // Build patch first, then show indicator only if real changes
@@ -3019,7 +3025,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         for (const update of charUpdates) {
           const { field, value } = update;
           if (!isAllowedExtractionField(field)) {
-            console.log(`[applyExtractedUpdates] Skipped unsupported side-character field "${field}"`);
+            debugLog(`[applyExtractedUpdates] Skipped unsupported side-character field "${field}"`);
             continue;
           }
           if (field.includes('.')) {
@@ -3125,7 +3131,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
               if (sanitizedMood) {
                 patch.currentMood = sanitizedMood;
               } else {
-                console.log(`[applyExtractedUpdates] Skipped invalid side-character currentMood payload: "${value}"`);
+                debugLog(`[applyExtractedUpdates] Skipped invalid side-character currentMood payload: "${value}"`);
               }
             } else {
               patch[field] = value;
@@ -3150,10 +3156,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             );
             onUpdateSideCharacters(updated);
           }
-          console.log(`[applyExtractedUpdates] Updated side character ${sideChar.name}:`, Object.keys(patch));
+          debugLog(`[applyExtractedUpdates] Updated side character ${sideChar.name}:`, Object.keys(patch));
         }
       } else {
-        console.log(`[applyExtractedUpdates] Character not found: ${charNameLower}`);
+        debugLog(`[applyExtractedUpdates] Character not found: ${charNameLower}`);
       }
     }
   };
@@ -3399,7 +3405,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           reason: extractionDecision.reason
         }).then(updates => {
           if (updates.length > 0) {
-            console.log(`[handleSend] Extracted ${updates.length} character updates (${extractionDecision.reason})`, updates);
+            debugLog(`[handleSend] Extracted ${updates.length} character updates (${extractionDecision.reason})`, updates);
             applyExtractedUpdates(updates);
           }
         }).catch(err => {
@@ -3660,9 +3666,9 @@ The response must still contain a concrete scene delta, but it can be subtle and
 If your last 2+ responses each featured multiple AI characters, this response must focus on ONE character only. Break the pattern.
 Do not acknowledge this instruction in your response.`;
       
-      console.log('[handleContinue] Runtime directives:', runtimeDirectives || '(none)');
-      console.log('[handleContinue] Goal context:', goalContext || '(no goals found)');
-      console.log('[handleContinue] Canon note applied:', continueCanonNote ? 'YES' : 'NO');
+      debugLog('[handleContinue] Runtime directives:', runtimeDirectives || '(none)');
+      debugLog('[handleContinue] Goal context:', goalContext || '(no goals found)');
+      debugLog('[handleContinue] Canon note applied:', continueCanonNote ? 'YES' : 'NO');
       
       const stream = generateRoleplayResponseStream(
         llmAppData,
@@ -3729,7 +3735,7 @@ Do not acknowledge this instruction in your response.`;
           reason: extractionDecision.reason
         }).then(updates => {
           if (updates.length > 0) {
-            console.log(`[handleContinue] Extracted ${updates.length} character updates (${extractionDecision.reason})`, updates);
+            debugLog(`[handleContinue] Extracted ${updates.length} character updates (${extractionDecision.reason})`, updates);
             applyExtractedUpdates(updates);
           }
         }).catch(err => {
@@ -4430,12 +4436,16 @@ const updatedChar: SideCharacter = {
 
         {/* Edit dropdown menu - always visible */}
         <div className="absolute top-2 right-2 z-30">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="p-1.5 rounded-lg transition-colors bg-black/30 hover:bg-black/50 text-white/70 hover:text-white">
-                <Pencil className="w-4 h-4" />
-              </button>
-            </DropdownMenuTrigger>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="p-1.5 rounded-lg transition-colors bg-black/30 hover:bg-black/50 text-white/70 hover:text-white"
+                  aria-label={`Open actions for ${char.name}`}
+                  title={`Open actions for ${char.name}`}
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+              </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="shadow-lg z-50 bg-zinc-800 border-ghost-white text-zinc-200">
               <DropdownMenuItem onClick={() => toggleTileRepositionMode(char)} className="hover:!bg-zinc-700 focus:!bg-zinc-700 focus:!text-white">
                 <Move className="w-4 h-4 mr-2" />
@@ -4560,7 +4570,11 @@ const updatedChar: SideCharacter = {
             {/* Settings cog button */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="inline-flex items-center justify-center rounded-xl px-3 py-2 bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:border-[hsl(var(--ui-border-hover))] transition-all active:scale-95">
+                <button
+                  className="inline-flex items-center justify-center rounded-xl px-3 py-2 bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:border-[hsl(var(--ui-border-hover))] transition-all active:scale-95"
+                  aria-label="Open scenario settings"
+                  title="Open scenario settings"
+                >
                   <Settings className="w-4 h-4" />
                 </button>
               </DropdownMenuTrigger>
@@ -4610,6 +4624,7 @@ const updatedChar: SideCharacter = {
                   <button
                     onClick={() => setIsTimerPaused(prev => !prev)}
                     className="p-0.5 rounded hover:bg-black/30 transition-colors"
+                    aria-label={isTimerPaused ? 'Resume timer' : 'Pause timer'}
                     title={isTimerPaused ? 'Resume timer' : 'Pause timer'}
                   >
                     {isTimerPaused
@@ -4634,6 +4649,8 @@ const updatedChar: SideCharacter = {
                     <button 
                       onClick={incrementDay}
                       className="px-1.5 py-0.5 hover:bg-slate-100 transition-colors text-black hover:text-blue-500"
+                      aria-label="Increase day"
+                      title="Increase day"
                     >
                       <ChevronUp className="w-3 h-3" />
                     </button>
@@ -4641,6 +4658,8 @@ const updatedChar: SideCharacter = {
                       onClick={decrementDay}
                       disabled={currentDay <= 1}
                       className="px-1.5 py-0.5 hover:bg-slate-100 transition-colors text-black hover:text-blue-500 disabled:opacity-30 disabled:cursor-not-allowed"
+                      aria-label="Decrease day"
+                      title="Decrease day"
                     >
                       <ChevronDown className="w-3 h-3" />
                     </button>
@@ -4661,6 +4680,7 @@ const updatedChar: SideCharacter = {
                           ? 'bg-blue-100 border-2 border-blue-500 text-blue-500 shadow-sm'
                           : 'bg-white border border-black text-black hover:bg-slate-100'
                       }`}
+                      aria-label={`Set time to ${time}`}
                       title={time.charAt(0).toUpperCase() + time.slice(1)}
                     >
                       {getTimeIcon(time)}
@@ -4816,17 +4836,19 @@ const updatedChar: SideCharacter = {
                     {inlineEditingId === msg.id ? (
                       <>
                         {/* Save (checkmark) */}
-                        <button
-                          onClick={handleInlineEditSave}
-                          className="p-2 rounded-lg hover:bg-ghost-white text-green-400 hover:text-green-300 transition-colors"
-                          title="Save changes"
-                        >
+                          <button
+                            onClick={handleInlineEditSave}
+                            className="p-2 rounded-lg hover:bg-ghost-white text-green-400 hover:text-green-300 transition-colors"
+                            aria-label="Save edited message"
+                            title="Save changes"
+                          >
                           <Check className="w-4 h-4" />
                         </button>
                         {/* Cancel (X) */}
                         <button
                           onClick={handleInlineEditCancel}
                           className="p-2 rounded-lg hover:bg-ghost-white text-red-500 hover:text-red-400 transition-colors"
+                          aria-label="Cancel editing message"
                           title="Cancel editing"
                         >
                           <X className="w-4 h-4" />
@@ -4840,6 +4862,7 @@ const updatedChar: SideCharacter = {
                             onClick={handleContinueConversation}
                             disabled={isStreaming || isRegenerating}
                             className="p-2 rounded-lg hover:bg-ghost-white text-slate-400 hover:text-white transition-colors disabled:opacity-30"
+                            aria-label="Continue conversation"
                             title="Continue"
                           >
                             <StepForward className="w-4 h-4" />
@@ -4852,6 +4875,7 @@ const updatedChar: SideCharacter = {
                             onClick={() => handleRegenerateMessage(msg.id)}
                             disabled={isStreaming || isRegenerating}
                             className="p-2 rounded-lg hover:bg-ghost-white text-slate-400 hover:text-white transition-colors disabled:opacity-30"
+                            aria-label="Regenerate response"
                             title="Regenerate response"
                           >
                             <RefreshCw className={`w-4 h-4 ${regeneratingMessageId === msg.id ? 'animate-spin' : ''}`} />
@@ -4861,7 +4885,11 @@ const updatedChar: SideCharacter = {
                         {/* Three-dot menu - all messages */}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <button className="p-2 rounded-lg hover:bg-ghost-white text-slate-400 hover:text-white transition-colors">
+                            <button
+                              className="p-2 rounded-lg hover:bg-ghost-white text-slate-400 hover:text-white transition-colors"
+                              aria-label="More message actions"
+                              title="More message actions"
+                            >
                               <MoreVertical className="w-4 h-4" />
                             </button>
                           </DropdownMenuTrigger>
@@ -4902,6 +4930,7 @@ const updatedChar: SideCharacter = {
                             onClick={handleGenerateSceneImage}
                             disabled={isGeneratingImage}
                             className="p-3 bg-ghost-white rounded-lg hover:bg-ghost-white transition-colors"
+                            aria-label="Generate new scene image"
                             title="Generate new image"
                           >
                             <RefreshCw className={`w-5 h-5 text-white ${isGeneratingImage ? 'animate-spin' : ''}`} />
@@ -4989,31 +5018,12 @@ const updatedChar: SideCharacter = {
                         )}
                         <div className={showAvatar ? "pt-1 antialiased" : "antialiased"}>
                           {inlineEditingId === msg.id && segIndex === 0 ? (
-                            <div
-                              contentEditable
-                              suppressContentEditableWarning
-                              className="text-[15px] leading-relaxed font-normal whitespace-pre-wrap outline-none rounded-md -mx-1 px-1"
-                              ref={(el) => {
-                                if (el && !el.dataset.initialized) {
-                                  el.innerHTML = tokensToStyledHtml(parseMessageTokens(inlineEditText), dynamicText);
-                                  el.dataset.initialized = 'true';
-                                  const range = document.createRange();
-                                  range.selectNodeContents(el);
-                                  range.collapse(false);
-                                  const sel = window.getSelection();
-                                  sel?.removeAllRanges();
-                                  sel?.addRange(range);
-                                }
-                              }}
-                              onBlur={(e) => setInlineEditText(e.currentTarget.innerText)}
-                              onInput={(e) => {
-                                const el = e.currentTarget as HTMLDivElement;
-                                const rawText = el.innerText.replace(/\u00a0/g, ' ');
-                                const caretPos = getCaretCharOffset(el);
-                                el.innerHTML = tokensToStyledHtml(parseMessageTokens(rawText, true), dynamicText);
-                                setCaretCharOffset(el, caretPos);
-                                setInlineEditText(rawText);
-                              }}
+                            <textarea
+                              value={inlineEditText}
+                              onChange={(e) => setInlineEditText(e.target.value)}
+                              onBlur={(e) => setInlineEditText(e.currentTarget.value)}
+                              className="w-full min-h-[120px] text-[15px] leading-relaxed font-normal whitespace-pre-wrap outline-none rounded-md -mx-1 px-1 py-1 bg-transparent resize-y"
+                              autoFocus
                             />
                           ) : inlineEditingId === msg.id ? null : (
                             <FormattedMessage text={segment.content} dynamicText={dynamicText} />

@@ -993,7 +993,9 @@ export async function* generateRoleplayResponseStream(
 
   messages.push({ role: 'user', content: (sessionMessageCount != null ? `[SESSION: Message ${sessionMessageCount} of current session] ` : '') + (lengthDirective ? lengthDirective + ' ' : '') + userMessage + regenerationDirective + ' ' + getRandomStyleHint(appData.uiSettings?.responseVerbosity || 'balanced') });
 
-  console.log(`[llm.ts] Calling chat edge function with model: ${modelId}`);
+  if (import.meta.env.DEV) {
+    console.debug(`[llm.ts] Calling chat edge function with model: ${modelId}`);
+  }
 
   // Emit call-1 telemetry for every chat turn; test-session mirroring is gated server-side
   // by active ai_usage_test_sessions so no client-local toggle is required.

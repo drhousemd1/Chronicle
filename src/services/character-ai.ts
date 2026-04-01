@@ -5,6 +5,12 @@ import { uid, now } from "@/utils";
 import { trackAiUsageEvent } from "@/services/usage-tracking";
 import { buildRequiredPresence, trackApiValidationSnapshot } from "@/services/api-usage-validation";
 
+const aiDebugLog = (...args: unknown[]) => {
+  if (import.meta.env.DEV) {
+    console.debug(...args);
+  }
+};
+
 // ============================================================
 // Shared Context Builders
 // ============================================================
@@ -570,7 +576,7 @@ export async function aiEnhanceCharacterField(
   const selfContext = buildCharacterSelfContext(character);
   const prompt = buildCharacterFieldPrompt(fieldName, currentValue, fullContext, selfContext, customLabel, mode);
 
-  console.log(`[character-ai] Enhancing field: ${fieldName} with model: ${modelId} (mode: ${mode})`);
+  aiDebugLog(`[character-ai] Enhancing field: ${fieldName} with model: ${modelId} (mode: ${mode})`);
   void trackAiUsageEvent({
     eventType: mode === "precise" ? "character_ai_enhance_precise" : "character_ai_enhance_detailed",
     eventSource: "character-ai",
@@ -1093,7 +1099,9 @@ function extractJsonFromResponse(raw: string): any | null {
     }
   }
 
-  console.error('[ai-fill] All JSON extraction strategies failed. Raw response (first 500 chars):', raw.substring(0, 500));
+  console.error(
+    `[ai-fill] All JSON extraction strategies failed (response length: ${raw.length} chars).`
+  );
   return null;
 }
 
@@ -1136,7 +1144,7 @@ export async function aiFillCharacter(
     (emptyFields.fears?.length || 0) +
     emptyCustomItems.length;
   
-  console.log(`[ai-fill] ${totalEmpty} empty fields detected across all sections`);
+  aiDebugLog(`[ai-fill] ${totalEmpty} empty fields detected across all sections`);
 
   if (totalEmpty === 0) {
     return {}; // Nothing to fill
@@ -1173,7 +1181,7 @@ export async function aiFillCharacter(
       ],
       modelId
     );
-    console.log(`[ai-fill] LLM response length: ${content.length}, first 200 chars:`, content.substring(0, 200));
+    aiDebugLog(`[ai-fill] LLM response length: ${content.length}`);
 
     const result = extractJsonFromResponse(content);
     if (!result) {
@@ -1303,7 +1311,7 @@ export async function aiFillCharacter(
       });
     }
 
-    console.log(`[ai-fill] Done. ${fieldsApplied} fields applied out of ${totalEmpty} empty.`);
+    aiDebugLog(`[ai-fill] Done. ${fieldsApplied} fields applied out of ${totalEmpty} empty.`);
     return patch;
   } catch (e) {
     console.error("[ai-fill] AI Fill failed:", e);

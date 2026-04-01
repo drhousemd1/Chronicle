@@ -172,7 +172,12 @@ export default function CreatorProfile() {
     <div className="min-h-screen bg-[#121214] text-white">
       {/* Header bar */}
       <header className="sticky top-0 z-50 h-16 bg-[rgba(248,250,252,0.3)] border-b border-slate-200 flex items-center px-6 shadow-sm">
-        <button onClick={() => navigate(-1)} className="p-2 hover:bg-slate-100 rounded-full transition-colors mr-3">
+        <button
+          onClick={() => navigate(-1)}
+          className="p-2 hover:bg-slate-100 rounded-full transition-colors mr-3"
+          aria-label="Go back"
+          title="Go back"
+        >
           <ArrowLeft className="w-5 h-5 text-[hsl(var(--ui-surface-2))]" />
         </button>
         <h1 className="text-lg font-black text-[hsl(var(--ui-surface-2))] uppercase tracking-tight">Creator Profile</h1>
