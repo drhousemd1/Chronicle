@@ -46,6 +46,7 @@ import {
   migrateWorldCoreToCanonical,
   needsWorldCoreBackfill,
 } from '@/lib/canonical-field-registry';
+import { uuid } from '@/utils';
 
 // =============================================
 // BASE64 → STORAGE SAFETY NET
@@ -838,21 +839,21 @@ export async function cloneScenarioForRemix(
   // Generate new IDs for all entities
   const clonedCharacters = originalData.characters.map(char => ({
     ...char,
-    id: crypto.randomUUID(),
+    id: uuid(),
     createdAt: Date.now(),
     updatedAt: Date.now()
   }));
   
   const clonedCodexEntries = originalData.world.entries.map(entry => ({
     ...entry,
-    id: crypto.randomUUID(),
+    id: uuid(),
     createdAt: Date.now(),
     updatedAt: Date.now()
   }));
   
   const clonedScenes = originalData.scenes.map(scene => ({
     ...scene,
-    id: crypto.randomUUID(),
+    id: uuid(),
     createdAt: Date.now()
   }));
   
