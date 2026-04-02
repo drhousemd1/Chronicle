@@ -16,6 +16,10 @@ type StopPayload = {
   sessionId?: string | null;
 };
 
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
 function normalizeMetadata(input: unknown): Record<string, unknown> {
   if (!input || typeof input !== "object" || Array.isArray(input)) return {};
   return input as Record<string, unknown>;
@@ -191,11 +195,61 @@ serve(async (req) => {
 
     if (action === "start") {
       const payload = body as StartPayload;
-      const incomingScenarioId = payload.scenarioId || null;
+      const incomingScenarioId = typeof payload.scenarioId === "string" && payload.scenarioId.trim()
+        ? payload.scenarioId.trim()
+        : null;
       const incomingScenarioName = (payload.scenarioName || "").slice(0, 200);
-      const incomingConversationId = payload.conversationId || null;
+      const incomingConversationId = typeof payload.conversationId === "string" && payload.conversationId.trim()
+        ? payload.conversationId.trim()
+        : null;
       const incomingConversationName = (payload.conversationName || "").slice(0, 200);
       const incomingMetadata = normalizeMetadata(payload.metadata);
+      const localScenarioId = incomingScenarioId && !isUuid(incomingScenarioId) ? incomingScenarioId : null;
+      const localConversationId = incomingConversationId && !isUuid(incomingConversationId) ? incomingConversationId : null;
+
+      let resolvedScenarioId: string | null = null;
+      if (incomingScenarioId && isUuid(incomingScenarioId)) {
+        const { data: scenarioRow, error: scenarioError } = await serviceClient
+          .from("stories")
+          .select("id")
+          .eq("id", incomingScenarioId)
+          .maybeSingle();
+        if (scenarioError) {
+          console.error("[api-usage-test-session] Failed to validate scenario id:", scenarioError);
+        } else if (scenarioRow?.id) {
+          resolvedScenarioId = scenarioRow.id;
+        }
+      }
+
+      let resolvedConversationId: string | null = null;
+      if (incomingConversationId && isUuid(incomingConversationId)) {
+        const { data: conversationRow, error: conversationError } = await serviceClient
+          .from("conversations")
+          .select("id")
+          .eq("id", incomingConversationId)
+          .maybeSingle();
+        if (conversationError) {
+          console.error("[api-usage-test-session] Failed to validate conversation id:", conversationError);
+        } else if (conversationRow?.id) {
+          resolvedConversationId = conversationRow.id;
+        }
+      }
+
+      const enrichedMetadata: Record<string, unknown> = {
+        ...incomingMetadata,
+      };
+      if (localScenarioId) {
+        enrichedMetadata.localScenarioId = localScenarioId;
+      }
+      if (localConversationId) {
+        enrichedMetadata.localConversationId = localConversationId;
+      }
+      if (incomingScenarioId && !resolvedScenarioId && isUuid(incomingScenarioId)) {
+        enrichedMetadata.unresolvedScenarioId = incomingScenarioId;
+      }
+      if (incomingConversationId && !resolvedConversationId && isUuid(incomingConversationId)) {
+        enrichedMetadata.unresolvedConversationId = incomingConversationId;
+      }
 
       // Resolve any active session first so we can resume by scenario when appropriate.
       const { data: activeSession, error: activeSessionError } = await serviceClient
@@ -221,20 +275,33 @@ serve(async (req) => {
       }
 
       // Resume the current session when the same scenario is already active.
-      if (activeSession && activeSession.scenario_id === incomingScenarioId) {
-        const mergedMetadata = { ...(activeSession.metadata || {}), ...incomingMetadata };
+      const activeMetadata = normalizeMetadata(activeSession?.metadata || {});
+      const activeLocalScenarioId = typeof activeMetadata.localScenarioId === "string"
+        ? activeMetadata.localScenarioId
+        : null;
+      const sameScenario = Boolean(
+        activeSession &&
+        (
+          (resolvedScenarioId && activeSession.scenario_id === resolvedScenarioId) ||
+          (!resolvedScenarioId && localScenarioId && activeSession.scenario_id === null && activeLocalScenarioId === localScenarioId)
+        )
+      );
+
+      if (sameScenario && activeSession) {
+        const mergedMetadata = { ...activeMetadata, ...enrichedMetadata };
         const shouldUpdateConversation =
-          activeSession.conversation_id !== incomingConversationId ||
+          activeSession.conversation_id !== resolvedConversationId ||
           activeSession.conversation_name !== incomingConversationName;
         const shouldUpdateMetadata = JSON.stringify(activeSession.metadata || {}) !== JSON.stringify(mergedMetadata);
+        const shouldUpdateScenarioName = activeSession.scenario_name !== incomingScenarioName;
 
-        if (shouldUpdateConversation || shouldUpdateMetadata) {
+        if (shouldUpdateConversation || shouldUpdateMetadata || shouldUpdateScenarioName) {
           const { data: updated, error: updateError } = await serviceClient
             .from("ai_usage_test_sessions")
             .update({
-              conversation_id: incomingConversationId,
-              conversation_name: incomingConversationName,
               scenario_name: incomingScenarioName || activeSession.scenario_name,
+              conversation_id: resolvedConversationId,
+              conversation_name: incomingConversationName,
               metadata: mergedMetadata,
             })
             .eq("id", activeSession.id)
@@ -276,12 +343,12 @@ serve(async (req) => {
 
       const insertPayload = {
         user_id: user.id,
-        scenario_id: incomingScenarioId,
+        scenario_id: resolvedScenarioId,
         scenario_name: incomingScenarioName,
-        conversation_id: incomingConversationId,
+        conversation_id: resolvedConversationId,
         conversation_name: incomingConversationName,
         status: "active",
-        metadata: incomingMetadata,
+        metadata: enrichedMetadata,
       };
 
       const { data: created, error: createError } = await serviceClient

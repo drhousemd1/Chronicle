@@ -235,6 +235,7 @@ const IndexContent = () => {
   const [isAdminState, setIsAdminState] = useState(false);
   const [activeApiUsageTestSession, setActiveApiUsageTestSession] = useState<ApiUsageTestSession | null>(null);
   const [isApiUsageToggleBusy, setIsApiUsageToggleBusy] = useState(false);
+  const [apiUsageToggleError, setApiUsageToggleError] = useState<string | null>(null);
   const [navButtonImages, setNavButtonImages] = useState<Record<string, any>>({});
   const [guideTheme, setGuideTheme] = useState<'dark' | 'light'>('dark');
   const guideSaveRef = React.useRef<(() => Promise<void>) | null>(null);
@@ -379,6 +380,7 @@ const IndexContent = () => {
     if (!isAdminState || !user?.id) return;
 
     setIsApiUsageToggleBusy(true);
+    setApiUsageToggleError(null);
     try {
       if (enabled) {
         const scenarioName =
@@ -405,6 +407,8 @@ const IndexContent = () => {
       }
     } catch (error) {
       console.error("[api-usage-test] Failed to toggle tracking:", error);
+      const message = error instanceof Error ? error.message : String(error || "Failed to update tracking");
+      setApiUsageToggleError(message);
     } finally {
       setIsApiUsageToggleBusy(false);
     }
@@ -2040,6 +2044,8 @@ const IndexContent = () => {
     activeApiUsageTestSession?.scenarioId === activeId;
   const apiUsageTrackingStatusText = isApiUsageToggleBusy
     ? "Updating..."
+    : apiUsageToggleError
+      ? `Error: ${apiUsageToggleError}`
     : isApiUsageTrackingCurrentStory
       ? `Tracking this story • ${activeApiUsageTestSession?.id.slice(0, 8)}`
       : isApiUsageTrackingAnyStory

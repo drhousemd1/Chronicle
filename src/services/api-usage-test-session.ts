@@ -115,7 +115,21 @@ export async function startApiUsageTestSession(input: {
     },
   });
 
-  if (error) throw new Error(error.message || "Failed to start test session");
+  if (error) {
+    const payload = (typeof data === "object" && data !== null)
+      ? (data as Record<string, unknown>)
+      : null;
+    const payloadError = typeof payload?.error === "string" ? payload.error : null;
+    const payloadDetails = typeof payload?.details === "string" ? payload.details : null;
+    const payloadHint = typeof payload?.hint === "string" ? payload.hint : null;
+    const context = typeof (error as { context?: unknown }).context === "string"
+      ? (error as { context: string }).context
+      : null;
+    const parts = [payloadError, payloadDetails, payloadHint, error.message, context].filter(
+      (value): value is string => Boolean(value),
+    );
+    throw new Error(parts.join(" | ") || "Failed to start test session");
+  }
   const session = data?.session as ApiUsageTestSession | undefined;
   if (!session?.id) throw new Error("Test session did not return an id");
   setLocalState(true, session.id);
