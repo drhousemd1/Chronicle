@@ -93,7 +93,7 @@ type ActionEvent = { messageId: string; timestamp: number };
 const TIME_SEQUENCE: TimeOfDay[] = ['sunrise', 'day', 'sunset', 'night'];
 const debugLog = (...args: unknown[]) => {
   if (import.meta.env.DEV) {
-    debugLog(...args);
+    console.debug(...args);
   }
 };
 
