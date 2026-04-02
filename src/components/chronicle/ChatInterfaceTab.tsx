@@ -91,9 +91,19 @@ interface ChatInterfaceTabProps {
 
 type ActionEvent = { messageId: string; timestamp: number };
 const TIME_SEQUENCE: TimeOfDay[] = ['sunrise', 'day', 'sunset', 'night'];
+let isDebugLogging = false;
 const debugLog = (...args: unknown[]) => {
-  if (import.meta.env.DEV) {
+  if (!import.meta.env.DEV || isDebugLogging) {
+    return;
+  }
+
+  isDebugLogging = true;
+  try {
     console.debug(...args);
+  } catch {
+    // Never let debug logging crash the chat UI.
+  } finally {
+    isDebugLogging = false;
   }
 };
 
