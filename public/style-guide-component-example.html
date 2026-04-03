@@ -1777,5 +1777,1087 @@
 
 </div>
 
+<div style="height:40px;"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     CARD 4 — Character Creation Modal
+     ═══════════════════════════════════════════════════════════ -->
+<style>
+  /* ── Character Creation / Chooser Modal Preview ── */
+  .ccm-stage {
+    width: 100%;
+    min-height: 420px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 0;
+  }
+  .ccm-modal {
+    width: min(95vw, 520px);
+    background: #2a2a2f;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow:
+      0 12px 32px -2px rgba(0,0,0,0.50),
+      inset 1px 1px 0 rgba(255,255,255,0.09),
+      inset -1px -1px 0 rgba(0,0,0,0.35);
+  }
+  .ccm-header {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    background: linear-gradient(180deg, #5a7292 0%, #4a5f7f 100%);
+    border-top: 1px solid rgba(255,255,255,0.20);
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+  }
+  .ccm-header::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: linear-gradient(to top right, rgba(255,255,255,0.10), transparent);
+    opacity: 0.40;
+    height: 60%;
+    pointer-events: none;
+  }
+  .ccm-title {
+    position: relative;
+    z-index: 1;
+    color: #fff;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+  }
+  .ccm-grid {
+    padding: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .ccm-option {
+    border: 2px solid transparent;
+    border-radius: 16px;
+    background: #2e2e33;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+    box-shadow:
+      inset 1px 1px 0 rgba(255,255,255,0.07),
+      inset -1px -1px 0 rgba(0,0,0,0.30),
+      0 4px 12px rgba(0,0,0,0.25);
+  }
+  .ccm-option.hover-sample {
+    border-color: #3b82f6;
+  }
+  .ccm-icon-wrap {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: #1c1c1f;
+    border-top: 1px solid rgba(0,0,0,0.35);
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.40);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+  }
+  .ccm-label {
+    color: #fff;
+    font-size: 14px;
+    font-weight: 800;
+  }
+  .ccm-desc {
+    color: #a1a1aa;
+    font-size: 12px;
+    line-height: 1.625;
+  }
+</style>
+
+<div class="card">
+
+  <div class="card-header">
+    <span class="card-title">Character Creation Modal</span>
+    <span class="card-sub">CharacterCreationModal.tsx + ChooserModal.tsx — dual-choice action modal</span>
+  </div>
+
+  <!-- Full-width preview -->
+  <div class="preview-section" style="padding:28px 20px;">
+    <div class="preview-inner" style="max-width:840px;">
+      <div class="ccm-stage">
+        <div class="ccm-modal">
+          <div class="ccm-header">
+            <h3 class="ccm-title">Character Creation</h3>
+          </div>
+          <div class="ccm-grid">
+            <div class="ccm-option hover-sample">
+              <div class="ccm-icon-wrap">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg>
+              </div>
+              <div class="ccm-label">Import from Library</div>
+              <p class="ccm-desc">Browse and import an existing character</p>
+            </div>
+            <div class="ccm-option">
+              <div class="ccm-icon-wrap">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+              </div>
+              <div class="ccm-label">+ New Character</div>
+              <p class="ccm-desc">Create a brand new character from scratch</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Collapsible toggle bar -->
+  <div class="details-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open');">
+    <span class="details-toggle-label">Component Details</span>
+    <svg class="details-toggle-chevron" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+  </div>
+
+  <!-- Collapsible details content -->
+  <div class="details-content">
+
+    <div class="details-spec-section">
+
+      <div class="spec-block">
+        <div class="spec-h1">Component Ownership</div>
+        <ul>
+          <li><strong>Wrapper component:</strong> <code>src/components/chronicle/CharacterCreationModal.tsx</code></li>
+          <li><strong>Shared modal shell:</strong> <code>src/components/chronicle/ChooserModal.tsx</code></li>
+          <li><strong>Dialog primitives:</strong> <code>src/components/ui/dialog.tsx</code> (<code>Dialog</code>, <code>DialogContentBare</code>, <code>DialogOverlay</code>)</li>
+          <li><strong>Story Builder trigger path:</strong> <code>src/features/story-builder/StoryBuilderScreen.tsx</code> via <code>StoryRosterSidebar</code> add-character actions</li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-h1">Dialog Shell Layers</div>
+        <ul>
+          <li><strong>Backdrop:</strong> <code>bg-black/80</code> (DialogOverlay)</li>
+          <li><strong>Content width:</strong> <code>sm:max-w-[520px]</code>, <code>max-w-[95vw]</code> (columns=2 mode)</li>
+          <li><strong>Base fill:</strong> <code>background: #2a2a2f</code></li>
+          <li><strong>Radius:</strong> <code>rounded-[24px]</code></li>
+          <li><strong>Shadow stack:</strong> <code>0 12px 32px -2px rgba(0,0,0,0.50), inset 1px 1px 0 rgba(255,255,255,0.09), inset -1px -1px 0 rgba(0,0,0,0.35)</code></li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-h1">Header Layers</div>
+        <ul>
+          <li><strong>Base gradient:</strong> <code>bg-gradient-to-b from-[#5a7292] to-[#4a5f7f]</code></li>
+          <li><strong>Top highlight:</strong> <code>border-t border-white/20</code></li>
+          <li><strong>Gloss overlay:</strong> absolute layer <code>bg-gradient-to-tr from-white/10 to-transparent opacity-40</code>, <code>height: 60%</code></li>
+          <li><strong>Title:</strong> <code>text-white text-xl font-bold tracking-[-0.015em]</code></li>
+          <li><strong>Header layout:</strong> <code>px-5 py-3 flex items-center gap-3 shadow-lg</code></li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-h1">Option Grid & Card Layers</div>
+        <ul>
+          <li><strong>Grid:</strong> <code>p-4 grid grid-cols-2 gap-3</code></li>
+          <li><strong>Card base:</strong> <code>rounded-2xl bg-[#2e2e33] border-2 border-transparent py-5 px-4 gap-3</code></li>
+          <li><strong>Card shadow:</strong> <code>inset 1px 1px 0 rgba(255,255,255,0.07), inset -1px -1px 0 rgba(0,0,0,0.30), 0 4px 12px rgba(0,0,0,0.25)</code></li>
+          <li><strong>Hover border color:</strong> <code>hover:border-blue-500</code> from hover map key <code>blue-500</code></li>
+          <li><strong>Icon container:</strong> <code>w-12 h-12 rounded-[14px] bg-[#1c1c1f] border-t border-black/35 shadow-[inset_0_2px_6px_rgba(0,0,0,0.40)]</code></li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-h1">Character Creation Option Data</div>
+        <ul>
+          <li><strong>Option 1 label:</strong> <code>Import from Library</code></li>
+          <li><strong>Option 1 description:</strong> <code>Browse and import an existing character</code></li>
+          <li><strong>Option 2 label:</strong> <code>+ New Character</code></li>
+          <li><strong>Option 2 description:</strong> <code>Create a brand new character from scratch</code></li>
+          <li><strong>Both option hover colors:</strong> <code>blue-500</code></li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="bottom-section">
+
+      <div class="bottom-col">
+        <div class="spec-block">
+          <div class="spec-h1">Typography</div>
+          <ul>
+            <li><strong>Modal title:</strong> <code>20px / 700 / #fff / tracking -0.015em</code></li>
+            <li><strong>Option label:</strong> <code>text-white text-sm font-extrabold</code></li>
+            <li><strong>Option description:</strong> <code>text-zinc-400 text-xs leading-relaxed</code></li>
+            <li><strong>Icon size:</strong> <code>w-5 h-5 text-white</code></li>
+          </ul>
+        </div>
+        <div class="spec-block">
+          <div class="spec-h1">Layout</div>
+          <ul>
+            <li><strong>Outer modal width:</strong> <code>min(95vw, 520px)</code> in 2-column chooser mode</li>
+            <li><strong>Card spacing:</strong> <code>gap-3</code> with centered vertical layout</li>
+            <li><strong>Content padding:</strong> <code>16px</code> grid container + <code>20px / 16px</code> card padding</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bottom-col">
+        <div class="spec-block">
+          <div class="spec-h1">Story Builder Trigger Path</div>
+          <ul>
+            <li><strong>Sidebar groups:</strong> <code>Main Characters</code> and <code>Side Characters</code></li>
+            <li><strong>Add triggers:</strong> <code>AddCharacterPlaceholderCard</code> with labels <code>Main Character</code> / <code>Side Character</code></li>
+            <li><strong>Open state:</strong> <code>setIsCharacterCreationOpen(true)</code></li>
+            <li><strong>Import action:</strong> forwards to <code>onOpenLibraryPicker</code></li>
+            <li><strong>New action:</strong> forwards to <code>onCreateCharacter</code></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bottom-col">
+        <div class="spec-block">
+          <div class="spec-h1">Chooser Modal Reuse</div>
+          <ul>
+            <li><strong>Shared by:</strong> Character Creation, Content Type, Enhancement Style, Import Mode, Export Story</li>
+            <li><strong>Columns supported:</strong> <code>2</code> or <code>3</code> via <code>columns</code> prop</li>
+            <li><strong>Hover map keys:</strong> <code>blue-500</code>, <code>purple-500</code>, <code>rose-500</code>, <code>emerald-500</code>, <code>indigo-500</code>, <code>amber-500</code></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bottom-col">
+        <div class="spec-block">
+          <div class="spec-h1">Colors</div>
+          <table class="color-table">
+            <thead><tr><th>Name</th><th>Swatch</th><th>Hex</th><th>Role</th></tr></thead>
+            <tbody>
+              <tr><td>Backdrop</td><td><span class="swatch" style="background:rgba(0,0,0,0.8);"></span></td><td><code>rgba(0,0,0,0.8)</code></td><td>Modal overlay</td></tr>
+              <tr><td>Modal Shell</td><td><span class="swatch" style="background:#2a2a2f;"></span></td><td><code>#2a2a2f</code></td><td>Dialog body</td></tr>
+              <tr><td>Header Gradient</td><td><span class="swatch" style="background:linear-gradient(90deg,#5a7292,#4a5f7f);"></span></td><td><code>#5a7292 to #4a5f7f</code></td><td>Header fill</td></tr>
+              <tr><td>Option Card</td><td><span class="swatch" style="background:#2e2e33;"></span></td><td><code>#2e2e33</code></td><td>Choice card base</td></tr>
+              <tr><td>Icon Tile</td><td><span class="swatch" style="background:#1c1c1f;"></span></td><td><code>#1c1c1f</code></td><td>Icon background</td></tr>
+              <tr><td>Hover Border</td><td><span class="swatch" style="background:#3b82f6;"></span></td><td><code>#3b82f6</code></td><td>Option hover state</td></tr>
+              <tr><td>Description Text</td><td><span class="swatch" style="background:#a1a1aa;"></span></td><td><code>#a1a1aa</code></td><td>Secondary text</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<div style="height:40px;"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     CARD 5 — Page Header System
+     ═══════════════════════════════════════════════════════════ -->
+<style>
+  /* ── Page Header System Preview ── */
+  .ph-system-preview {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .ph-row {
+    min-height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    border-radius: 0;
+    border: 1px solid #dbe0e8;
+    background: #f8fafc;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.08);
+    padding: 12px 16px;
+  }
+  .ph-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+  .ph-title {
+    color: #2a2a2f;
+    font-size: 17px;
+    font-weight: 900;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .ph-back-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: #2a2a2f;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    line-height: 1;
+    cursor: default;
+  }
+  .ph-tabs {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border-radius: 999px;
+    padding: 4px;
+    background: #2b2b2e;
+    border: 1px solid #2b2b2e;
+  }
+  .ph-tab {
+    border: none;
+    border-radius: 999px;
+    padding: 8px 14px;
+    background: transparent;
+    color: #a1a1aa;
+    font-size: 11px;
+    font-weight: 800;
+    cursor: default;
+    white-space: nowrap;
+  }
+  .ph-tab.active {
+    color: #fff;
+    background: linear-gradient(180deg, #5a7292 0%, #4a5f7f 100%);
+    border-top: 1px solid rgba(255,255,255,0.20);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.24);
+  }
+  .ph-search-wrap {
+    height: 36px;
+    min-width: 280px;
+    border-radius: 999px;
+    border: 1px solid #2b2b2e;
+    background: #2b2b2e;
+    display: inline-flex;
+    align-items: center;
+    padding: 4px;
+  }
+  .ph-search-input {
+    width: 100%;
+    height: 100%;
+    border: none;
+    outline: none;
+    border-radius: 999px;
+    background: transparent;
+    padding: 0 12px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff;
+    cursor: default;
+  }
+  .ph-search-input::placeholder {
+    color: #71717a;
+    opacity: 1;
+  }
+  .ph-actions {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .ph-btn {
+    height: 40px;
+    border: none;
+    border-radius: 14px;
+    padding: 0 22px;
+    background: #303035;
+    color: #eaedf1;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.03em;
+    text-transform: none;
+    box-shadow:
+      0 8px 24px rgba(0,0,0,0.45),
+      inset 0 1px 0 rgba(255,255,255,0.09),
+      inset 0 -1px 0 rgba(0,0,0,0.20);
+    cursor: default;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    white-space: nowrap;
+  }
+  .ph-btn.icon {
+    width: 40px;
+    padding: 0;
+  }
+  .ph-callout {
+    border-radius: 12px;
+    border: 1px dashed rgba(74,95,127,0.40);
+    background: #f8fafc;
+    padding: 10px 12px;
+    color: #334155;
+    font-size: 12px;
+    line-height: 1.45;
+    margin-bottom: 18px;
+  }
+  @media (max-width: 960px) {
+    .ph-row {
+      align-items: flex-start;
+      padding-top: 14px;
+      padding-bottom: 14px;
+    }
+    .ph-actions {
+      width: 100%;
+      margin-left: 0;
+      justify-content: flex-start;
+    }
+    .ph-search-wrap {
+      min-width: 220px;
+    }
+    .ph-title {
+      font-size: 15px;
+    }
+  }
+</style>
+
+<div class="card">
+
+  <div class="card-header">
+    <span class="card-title">Page Header System</span>
+    <span class="card-sub">Index.tsx — shared app header shell with slot-based variants</span>
+  </div>
+
+  <!-- Full-width preview -->
+  <div class="preview-section" style="padding:30px 20px;">
+    <div class="preview-inner" style="max-width:1120px;">
+      <div class="ph-system-preview">
+
+        <div class="ph-row">
+          <div class="ph-left">
+            <span class="ph-title">Community Gallery</span>
+            <div class="ph-tabs">
+              <button class="ph-tab active">All Stories</button>
+              <button class="ph-tab">Recent</button>
+              <button class="ph-tab">Liked</button>
+              <button class="ph-tab">Saved</button>
+              <button class="ph-tab">Played</button>
+              <button class="ph-tab">Following</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="ph-row">
+          <div class="ph-left">
+            <span class="ph-title">My Stories</span>
+            <div class="ph-tabs">
+              <button class="ph-tab">My Stories</button>
+              <button class="ph-tab">Saved Stories</button>
+              <button class="ph-tab">Published</button>
+              <button class="ph-tab">Drafts</button>
+              <button class="ph-tab active">All</button>
+            </div>
+          </div>
+          <div class="ph-actions">
+            <button class="ph-btn icon" aria-label="Settings">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.84 2.84l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .16 1.7 1.7 0 0 0-.96 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-.96-1.55 1.7 1.7 0 0 0-1-.16 1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.84-2.84l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.16-1 1.7 1.7 0 0 0-1.55-.96H2.8a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.44 8a1.7 1.7 0 0 0 .16-1 1.7 1.7 0 0 0-.34-1.88l-.06-.06A2 2 0 1 1 7.04 2.2l.06.06A1.7 1.7 0 0 0 8.98 2.6a1.7 1.7 0 0 0 1-.16A1.7 1.7 0 0 0 10.94.89V.8a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 .96 1.55 1.7 1.7 0 0 0 1 .16 1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.84 2.84l-.06.06A1.7 1.7 0 0 0 19.4 8a1.7 1.7 0 0 0 .16 1 1.7 1.7 0 0 0 1.55.96h.09a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.56 14a1.7 1.7 0 0 0-.16 1Z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="ph-row">
+          <div class="ph-left">
+            <span class="ph-title">Character Library</span>
+            <div class="ph-search-wrap">
+              <input class="ph-search-input" type="text" placeholder="Search characters..." value="" readonly aria-label="Search characters" />
+            </div>
+          </div>
+        </div>
+
+        <div class="ph-row">
+          <div class="ph-left">
+            <span class="ph-title">Image Library</span>
+          </div>
+          <div class="ph-actions">
+            <button class="ph-btn icon" aria-label="Settings">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.84 2.84l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .16 1.7 1.7 0 0 0-.96 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-.96-1.55 1.7 1.7 0 0 0-1-.16 1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.84-2.84l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.16-1 1.7 1.7 0 0 0-1.55-.96H2.8a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.44 8a1.7 1.7 0 0 0 .16-1 1.7 1.7 0 0 0-.34-1.88l-.06-.06A2 2 0 1 1 7.04 2.2l.06.06A1.7 1.7 0 0 0 8.98 2.6a1.7 1.7 0 0 0 1-.16A1.7 1.7 0 0 0 10.94.89V.8a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 .96 1.55 1.7 1.7 0 0 0 1 .16 1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.84 2.84l-.06.06A1.7 1.7 0 0 0 19.4 8a1.7 1.7 0 0 0 .16 1 1.7 1.7 0 0 0 1.55.96h.09a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.56 14a1.7 1.7 0 0 0-.16 1Z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="ph-row">
+          <div class="ph-left">
+            <button class="ph-back-btn" aria-label="Back">&lsaquo;</button>
+            <span class="ph-title">Story Builder</span>
+          </div>
+          <div class="ph-actions">
+            <button class="ph-btn">Import</button>
+            <button class="ph-btn">Export</button>
+            <button class="ph-btn">Finalize and Close</button>
+            <button class="ph-btn">Save Draft</button>
+            <button class="ph-btn icon" aria-label="Settings">
+              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.84 2.84l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .16 1.7 1.7 0 0 0-.96 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-.96-1.55 1.7 1.7 0 0 0-1-.16 1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.84-2.84l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.16-1 1.7 1.7 0 0 0-1.55-.96H2.8a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.44 8a1.7 1.7 0 0 0 .16-1 1.7 1.7 0 0 0-.34-1.88l-.06-.06A2 2 0 1 1 7.04 2.2l.06.06A1.7 1.7 0 0 0 8.98 2.6a1.7 1.7 0 0 0 1-.16A1.7 1.7 0 0 0 10.94.89V.8a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 .96 1.55 1.7 1.7 0 0 0 1 .16 1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.84 2.84l-.06.06A1.7 1.7 0 0 0 19.4 8a1.7 1.7 0 0 0 .16 1 1.7 1.7 0 0 0 1.55.96h.09a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.56 14a1.7 1.7 0 0 0-.16 1Z"/></svg>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Collapsible toggle bar -->
+  <div class="details-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open');">
+    <span class="details-toggle-label">Component Details</span>
+    <svg class="details-toggle-chevron" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+  </div>
+
+  <!-- Collapsible details content -->
+  <div class="details-content">
+
+    <div class="details-spec-section">
+      <div class="ph-callout">
+        One header container, many variants. Keep shell + tokens fixed and switch only slot content.
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-h1">System Contract</div>
+        <ul>
+          <li><strong>Canonical owner:</strong> <code>src/pages/Index.tsx</code> top-level header block</li>
+          <li><strong>Shell class baseline:</strong> <code>flex flex-shrink-0 flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-[rgba(248,250,252,0.3)] px-4 py-3 shadow-sm lg:px-8</code></li>
+          <li><strong>Variant families:</strong> Root + Tabs, Root + Search, Root + Title + Settings, Child + Back + Actions</li>
+          <li><strong>Rule:</strong> do not invent new header styling; compose from this system</li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-h1">Back Button Rule</div>
+        <ul>
+          <li><strong>Show back button:</strong> detail/builder contexts (e.g. Story Builder)</li>
+          <li><strong>Hide back button:</strong> top-level pages launched directly from sidebar</li>
+          <li><strong>Placement:</strong> always leading slot before the page title</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="bottom-section" style="grid-template-columns: 1.2fr 1fr 1fr 1fr;">
+      <div class="bottom-col">
+        <div class="spec-block">
+          <div class="spec-h1">Variant Matrix</div>
+          <ul>
+            <li><strong>Root + Tabs:</strong> Community Gallery, My Stories</li>
+            <li><strong>Root + Search:</strong> Character Library</li>
+            <li><strong>Root + Title + Settings:</strong> Image Library</li>
+            <li><strong>Child + Back + Actions:</strong> Story Builder</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bottom-col">
+        <div class="spec-block">
+          <div class="spec-h1">Title + Search Tokens</div>
+          <ul>
+            <li><strong>Title:</strong> <code>text-lg font-black text-[hsl(var(--ui-surface-2))] uppercase tracking-tight</code></li>
+            <li><strong>Search wrapper:</strong> <code>bg-[#2b2b2e] rounded-full p-1 border border-[#2b2b2e]</code></li>
+            <li><strong>Search input:</strong> <code>h-7 w-56 px-3 py-1 text-xs font-bold rounded-full bg-transparent text-white placeholder:text-zinc-500</code></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bottom-col">
+        <div class="spec-block">
+          <div class="spec-h1">Tabs + Actions Tokens</div>
+          <ul>
+            <li><strong>Tabs group:</strong> <code>flex items-center bg-[#2b2b2e] rounded-full p-1 gap-0.5 border border-[#2b2b2e]</code></li>
+            <li><strong>Active tab:</strong> <code>bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-white/20 text-white</code></li>
+            <li><strong>Action buttons:</strong> <code>bg-[#303035] text-[#eaedf1] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]</code></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bottom-col">
+        <div class="spec-block">
+          <div class="spec-h1">Prompt Contract</div>
+          <ul>
+            <li><strong>Template:</strong> <code>Use Header System variant: [VariantName]. Keep base shell unchanged. Reuse existing tabs/search/buttons from style guide. Do not create new header styling.</code></li>
+            <li><strong>With search:</strong> <code>Use variant Root + Search.</code></li>
+            <li><strong>With back:</strong> <code>Use variant Child + Back + Actions.</code></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+
+<div style="height:40px;"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     CARD 6 — Story Tile System
+     ═══════════════════════════════════════════════════════════ -->
+<style>
+  /* ── Story Tile System Preview ── */
+  .ts-system-preview {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .ts-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .ts-item {
+    min-width: 0;
+  }
+  .ts-caption {
+    margin-top: 7px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #a1a1aa;
+    text-align: center;
+  }
+  .ts-tile {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    overflow: hidden;
+    border-radius: 32px;
+    border: 1px solid #4a5f7f;
+    background: #0f1117;
+    box-shadow: 0 12px 32px -2px rgba(0,0,0,0.50);
+    isolation: isolate;
+  }
+  .ts-media {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 700ms ease;
+  }
+  .ts-fallback-story {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  }
+  .ts-fallback-character {
+    background: linear-gradient(135deg, #27272a 0%, #18181b 100%);
+  }
+  .ts-fallback-folder {
+    background: #0f172a;
+  }
+  .ts-fallback-admin {
+    background: #18181b;
+  }
+  .ts-fallback-letter {
+    font-size: 56px;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    color: #f8fafc;
+    text-transform: uppercase;
+    font-style: italic;
+  }
+  .ts-icon {
+    width: 56px;
+    height: 56px;
+  }
+  .ts-icon.folder { color: #f8fafc; }
+  .ts-icon.admin { color: #52525b; }
+  .ts-tile:hover .ts-media,
+  .ts-item.is-hover .ts-media {
+    transform: scale(1.08);
+  }
+  .ts-gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.00) 40%, rgba(0,0,0,0.72) 100%);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .ts-top-left,
+  .ts-top-right {
+    position: absolute;
+    top: 12px;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .ts-top-left { left: 12px; }
+  .ts-top-right { right: 12px; }
+  .ts-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 9px;
+    border-radius: 9px;
+    background: #2a2a2f;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    line-height: 1;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.34);
+  }
+  .ts-pill.nsfw { color: #ef4444; }
+  .ts-pill.count { background: #3b82f6; color: #fff; }
+  .ts-badge-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+  .ts-role-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 8px;
+    border-radius: 6px;
+    font-size: 8px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    line-height: 1;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.34);
+  }
+  .ts-role-chip.main {
+    background: #4f46e5;
+    color: #fff;
+  }
+  .ts-role-chip.side {
+    background: #475569;
+    color: rgba(255,255,255,0.8);
+  }
+  .ts-bottom {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+    padding: 14px 14px 15px;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.7), 0 0 1px rgba(0,0,0,0.9);
+    pointer-events: none;
+  }
+  .ts-title {
+    font-size: 17px;
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    margin-bottom: 2px;
+  }
+  .ts-desc {
+    font-size: 12px;
+    line-height: 1.35;
+    font-style: italic;
+    color: rgba(248,250,252,0.9);
+    min-height: 32px;
+  }
+  .ts-meta {
+    margin-top: 7px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-size: 10px;
+    font-weight: 500;
+    color: rgba(248,250,252,0.92);
+  }
+  .ts-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .ts-meta svg {
+    width: 11px;
+    height: 11px;
+    color: currentColor;
+  }
+  .ts-created {
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(248,250,252,0.94);
+  }
+  .ts-hover-actions {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px;
+    opacity: 0;
+    transform: scale(0.92);
+    transition: opacity 250ms ease, transform 250ms ease;
+  }
+  .ts-tile:hover .ts-hover-actions,
+  .ts-item.is-hover .ts-hover-actions {
+    opacity: 1;
+    transform: scale(1);
+  }
+  .ts-action-btn {
+    border: none;
+    border-radius: 12px;
+    height: 30px;
+    padding: 0 13px;
+    font-size: 10px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    box-shadow: 0 12px 26px rgba(0,0,0,0.48);
+    cursor: default;
+  }
+  .ts-action-btn.edit { background: #fff; color: #2a2a2f; }
+  .ts-action-btn.open { background: #3b82f6; color: #fff; }
+  .ts-delete-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 5;
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: 12px;
+    background: rgba(0,0,0,0.45);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 200ms ease;
+    cursor: default;
+  }
+  .ts-delete-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+  .ts-tile:hover .ts-delete-btn,
+  .ts-item.is-hover .ts-delete-btn {
+    opacity: 1;
+  }
+  .ts-callout {
+    border-radius: 12px;
+    border: 1px dashed rgba(74,95,127,0.45);
+    background: #f8fafc;
+    padding: 10px 12px;
+    color: #334155;
+    font-size: 12px;
+    line-height: 1.45;
+    margin-bottom: 18px;
+  }
+  @media (max-width: 1200px) {
+    .ts-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (max-width: 760px) {
+    .ts-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+</style>
+
+<div class="card">
+
+  <div class="card-header">
+    <span class="card-title">Story Tile System</span>
+    <span class="card-sub">StoryHub.tsx, GalleryStoryCard.tsx, ImageLibraryTab.tsx, CharacterBuilderScreen.tsx, Admin.tsx</span>
+  </div>
+
+  <!-- Full-width preview -->
+  <div class="preview-section" style="padding:30px 20px;">
+    <div class="preview-inner" style="max-width:1120px;">
+      <div class="ts-system-preview">
+        <div class="ts-grid">
+
+          <div class="ts-item">
+            <div class="ts-tile">
+              <div class="ts-media ts-fallback-story">
+                <div class="ts-fallback-letter">A</div>
+              </div>
+              <div class="ts-top-right">
+                <span class="ts-pill nsfw">NSFW</span>
+              </div>
+              <div class="ts-gradient"></div>
+              <div class="ts-bottom">
+                <div class="ts-title">Acotar</div>
+                <div class="ts-desc">Feyre is about to marry Tamlin. Rhysand shows up...</div>
+                <div class="ts-meta">
+                  <span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2.1 12s3.8-7 9.9-7 9.9 7 9.9 7-3.8 7-9.9 7-9.9-7-9.9-7Z"/><circle cx="12" cy="12" r="3"/></svg>21</span>
+                  <span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 14c1.5-1.5 2-3.6.6-5.6C18.4 6.6 16.4 6 14.8 7c-1 .6-1.7 1.6-2.3 2.5C11.9 8.6 11.2 7.6 10.2 7 8.6 6 6.6 6.6 5.4 8.4 4 10.4 4.5 12.5 6 14l6.5 6Z"/></svg>1</span>
+                  <span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z"/></svg>2</span>
+                  <span><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>7</span>
+                </div>
+                <div class="ts-created">Created by: Dr. House</div>
+              </div>
+            </div>
+            <div class="ts-caption">Story / Gallery Tile</div>
+          </div>
+
+          <div class="ts-item">
+            <div class="ts-tile">
+              <div class="ts-media ts-fallback-character">
+                <div class="ts-fallback-letter">F</div>
+              </div>
+              <div class="ts-gradient"></div>
+              <div class="ts-bottom">
+                <div class="ts-badge-row">
+                  <span class="ts-role-chip main">Main Character</span>
+                </div>
+                <div class="ts-title">Feyre</div>
+                <div class="ts-desc">Based on the character Feyre from the book series ACOTAR.</div>
+              </div>
+            </div>
+            <div class="ts-caption">Character Tile</div>
+          </div>
+
+          <div class="ts-item">
+            <div class="ts-tile">
+              <div class="ts-media ts-fallback-folder">
+                <svg class="ts-icon folder" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h5l2 2h11v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+              </div>
+              <div class="ts-gradient"></div>
+              <div class="ts-bottom">
+                <span class="ts-pill count">3 Images</span>
+                <div class="ts-title" style="margin-top:8px;">Test Folder</div>
+                <div class="ts-desc">Character Profile Images</div>
+              </div>
+            </div>
+            <div class="ts-caption">Folder Tile (Default)</div>
+          </div>
+
+          <div class="ts-item is-hover">
+            <div class="ts-tile">
+              <div class="ts-media ts-fallback-folder">
+                <svg class="ts-icon folder" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h5l2 2h11v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+              </div>
+              <button class="ts-delete-btn" aria-label="Delete">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+              </button>
+              <div class="ts-gradient"></div>
+              <div class="ts-hover-actions">
+                <button class="ts-action-btn edit">Edit</button>
+                <button class="ts-action-btn open">Open</button>
+              </div>
+              <div class="ts-bottom">
+                <span class="ts-pill count">18 Images</span>
+                <div class="ts-title" style="margin-top:8px;">Moodboard</div>
+                <div class="ts-desc">Shared references and scene concepts</div>
+              </div>
+            </div>
+            <div class="ts-caption">Folder Tile (Hover)</div>
+          </div>
+
+          <div class="ts-item">
+            <div class="ts-tile">
+              <div class="ts-media ts-fallback-admin">
+                <svg class="ts-icon admin" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/></svg>
+              </div>
+              <div class="ts-bottom">
+                <div class="ts-title">AI Status</div>
+                <div class="ts-desc">View active models and backend health</div>
+              </div>
+            </div>
+            <div class="ts-caption">Admin Tool Tile</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Collapsible toggle bar -->
+  <div class="details-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open');">
+    <span class="details-toggle-label">Component Details</span>
+    <svg class="details-toggle-chevron" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+  </div>
+
+  <!-- Collapsible details content -->
+  <div class="details-content">
+
+    <div class="details-spec-section">
+      <div class="ts-callout">
+        Use one tile shell system with composable slots. Keep dimensions, border, radius, shadow, and hover motion fixed; vary only badges, overlays, and actions.
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-h1">System Contract</div>
+        <ul>
+          <li><strong>Canonical shell:</strong> <code>aspect-[2/3] + rounded-[2rem] + border-[#4a5f7f] + drop shadow + hover lift + media zoom</code></li>
+          <li><strong>Canonical owners:</strong> <code>StoryHub</code>, <code>GalleryStoryCard</code>, <code>ImageLibraryTab</code>, <code>CharacterBuilderScreen</code>, <code>Admin</code></li>
+          <li><strong>Do not fork styling:</strong> create variants by toggling slot content, not shell geometry/colors</li>
+        </ul>
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-h1">Behavior Contract</div>
+        <ul>
+          <li><strong>Primary action:</strong> tile body click opens item</li>
+          <li><strong>Secondary actions:</strong> keep explicit hover buttons (<code>Edit</code>, <code>Open</code>, <code>Delete</code>)</li>
+          <li><strong>Accessibility:</strong> keyboard open with <code>Enter</code> and <code>Space</code> on tile container</li>
+          <li><strong>Image Library rule:</strong> folder cards support both full-tile open and explicit <code>Open</code> button</li>
+          <li><strong>Story/Gallery top-left:</strong> optional remix indicator is icon-only when <code>allow_remix</code> is true (not an Edit text badge)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="bottom-section" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
+      <div class="bottom-col">
+        <div class="spec-block">
+          <div class="spec-h1">Base Shell Tokens</div>
+          <ul>
+            <li><strong>Geometry:</strong> <code>aspect-[2/3]</code>, <code>rounded-[2rem]</code>, <code>overflow-hidden</code></li>
+            <li><strong>Border:</strong> <code>border border-[#4a5f7f]</code></li>
+            <li><strong>Shadow:</strong> <code>shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)]</code> + hover elevation</li>
+            <li><strong>Motion:</strong> <code>group-hover:-translate-y-3</code>, media <code>scale-110</code></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bottom-col">
+        <div class="spec-block">
+          <div class="spec-h1">Overlay Slots</div>
+          <ul>
+            <li><strong>Top-left:</strong> optional icon badges only (e.g. remix pencil)</li>
+            <li><strong>Top-right:</strong> NSFW badge and/or delete affordance</li>
+            <li><strong>Bottom:</strong> title + description + optional stats + optional author; character role badge also lives in bottom block</li>
+            <li><strong>Readability layer:</strong> bottom gradient <code>to-black/70</code></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bottom-col">
+        <div class="spec-block">
+          <div class="spec-h1">Variant Matrix</div>
+          <ul>
+            <li><strong>Story / Gallery:</strong> badges + stats + creator line + like/save/play hover actions</li>
+            <li><strong>Character:</strong> role badge inside bottom content + profile summary + optional delete affordance</li>
+            <li><strong>Folder:</strong> image-count badge + folder metadata + edit/open hover actions</li>
+            <li><strong>Admin Tool:</strong> minimal text-first bottom content, optional hover controls</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bottom-col">
+        <div class="spec-block">
+          <div class="spec-h1">Prompt Contract</div>
+          <ul>
+            <li><strong>Template:</strong> <code>Use Tile System shell. Variant: [Story|Character|Folder|Admin]. Keep aspect 2:3, radius 2rem, border #4a5f7f, and existing hover behavior.</code></li>
+            <li><strong>Folder behavior:</strong> <code>Keep Open button and support click-anywhere open on the tile body.</code></li>
+            <li><strong>Prohibition:</strong> <code>Do not introduce a new tile style family unless explicitly approved.</code></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
 
 </html>

@@ -4774,6 +4774,28 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260402-002",
+      title: "Align style-guide tile specs to code truth and standardize character role badge wording",
+      summary: "App Style Guide + Character Library · Removed speculative tile artifacts, enforced real fallback states, enabled click-anywhere folder open, and relabeled role badge to explicit Main/Side character text",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "The new Story Tile System preview introduced non-canonical visuals (extra badges/text overlays, synthetic flare backgrounds, and incorrect hover affordances) that did not match runtime components. Character Library role chip text (`Main`/`Side`) was also ambiguous for operators and agents consuming the style guide as source of truth.",
+      plan: "Reconcile tile preview and behavior against runtime component code paths (GalleryStoryCard, CharacterBuilderScreen, ImageLibraryTab, Admin), remove guessed artifacts, and update role label copy to explicit wording tied to stored `characterRole` values.",
+      changes: "Applied code-truth alignment across style guide + runtime:\n• Updated Story Tile System preview in `style-guide-component-example.html` to remove speculative chips/text and use component-accurate fallback states (story/character initial cards, folder icon fallback, admin icon fallback).\n• Corrected top-slot behavior guidance: story/gallery remix is icon-only when `allow_remix` is true; removed incorrect text-style edit badge representation.\n• Corrected folder hover affordance representation to trash/delete icon treatment instead of an `X` glyph.\n• Updated Image Library folder cards to support both explicit `Open` button and click-anywhere tile open, with keyboard activation (`Enter`/`Space`) for parity/accessibility.\n• Updated Character Library role badge text from raw role token to explicit wording:\n  - `Main Character`\n  - `Side Character`\n• Removed stray non-source `Fae` badge from the style guide character tile variant.",
+      filesAffected: [
+        "public/style-guide-component-example.html",
+        "src/components/chronicle/ImageLibraryTab.tsx",
+        "src/features/character-builder/CharacterBuilderScreen.tsx",
+        "src/data/ui-audit-findings.ts",
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["style-guide", "source-of-truth", "tile-system", "image-library", "character-library", "role-badge", "ui-consistency"],
+      comments: [],
+      createdAt: "2026-04-02T21:10:00.000Z",
+      updatedAt: "2026-04-02T21:10:00.000Z",
+    },
+    {
       id: "cl-20260402-001",
       title: "Canonicalize alias-expanded speaker tags to preserve character-card/avatar binding",
       summary: "Chat Interface · Unified segment merge/render speaker resolution so alias variants (e.g., Rhysand) resolve to canonical card names (e.g., Rhys)",

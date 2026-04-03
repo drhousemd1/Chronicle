@@ -820,8 +820,8 @@ export const CharacterBuilderScreen: React.FC<CharacterBuilderScreenProps> = ({
                         {tag.trim()}
                       </span>
                     ))}
-                    <span className={`text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-widest shadow-lg ${c.characterRole === 'Main' ? 'bg-indigo-600 text-white' : 'bg-slate-600 text-white/80'}`}>
-                      {c.characterRole}
+                    <span className={`text-[8px] font-black px-2 py-1 rounded-md uppercase tracking-widest shadow-lg whitespace-nowrap ${c.characterRole === 'Main' ? 'bg-indigo-600 text-white' : 'bg-slate-600 text-white/80'}`}>
+                      {c.characterRole === 'Main' ? 'Main Character' : 'Side Character'}
                     </span>
                   </div>
                   <h3 className="text-xl font-black text-white leading-tight mb-1 tracking-tight group-hover:text-blue-300 transition-colors truncate">{c.name || "Unnamed"}</h3>

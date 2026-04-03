@@ -469,7 +469,17 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
                 {folders.map((folder) => (
                   <div
                     key={folder.id}
-                    className="group relative cursor-pointer transition-all duration-300 group-hover:-translate-y-3"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Open folder ${folder.name}`}
+                    onClick={() => handleOpenFolder(folder)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleOpenFolder(folder);
+                      }
+                    }}
+                    className="group relative cursor-pointer transition-all duration-300 group-hover:-translate-y-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#14151a]"
                   >
                     <div className="aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-200 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)] transition-shadow duration-300 group-hover:shadow-2xl border border-[#4a5f7f] relative">
                       {folder.thumbnailUrl ? (
