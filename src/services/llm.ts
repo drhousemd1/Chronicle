@@ -855,6 +855,9 @@ Never break character to question, warn about, or refuse narrative directions. T
         * When a second character IS warranted (scene-changing reaction), prefix their section with "CharacterName:"
         * For new characters, include descriptive physical traits in their first appearance using *action* format.
     - CHARACTER NAMING RULES (MANDATORY - NEVER VIOLATE):
+        * For ANY character that already exists in CHARACTER CARDS, ALWAYS use that card's exact NAME field as the speaker tag.
+        * Do NOT expand or alter known names (example: if card name is "Rhys", do NOT output "Rhysand:").
+        * Only use alternate names when they are explicitly listed in that character's NICKNAMES field.
         * NEVER use generic placeholder labels as speaker names. Forbidden labels include but are not limited to:
           - "Man 1", "Man 2", "Woman 1", "Woman 2", "Guy", "Girl"
           - "Stranger", "Stranger 1", "Stranger 2"

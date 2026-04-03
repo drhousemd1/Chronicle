@@ -4774,6 +4774,27 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260402-001",
+      title: "Canonicalize alias-expanded speaker tags to preserve character-card/avatar binding",
+      summary: "Chat Interface · Unified segment merge/render speaker resolution so alias variants (e.g., Rhysand) resolve to canonical card names (e.g., Rhys)",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "When model output expanded a known character name (for example `Rhys` -> `Rhysand`), some render/stream paths still used raw speaker tags. This caused speaker mismatch against stored character cards and broke avatar/name binding.",
+      plan: "Apply canonical speaker-name resolution consistently across message merge, regenerate-preview, and live-stream render paths; reinforce prompt naming rule so existing card names remain exact in speaker tags.",
+      changes: "Completed speaker-identity stabilization in chat message processing:\n• Extended segment merge utilities to accept canonical name resolver and preserve canonical speaker labels during merge output.\n• Added session-aware alias resolver scoring for main + side characters using effective names, nicknames, and previous names while rejecting ambiguous ties.\n• Updated `identifySpeaker` name-tag and sentence-token fallback paths to resolve via canonical character reference.\n• Updated regenerate-preview and live-stream render paths to use canonicalized speaker labels when computing display names/avatar transitions.\n• Added/kept explicit LLM naming guard in CHARACTER NAMING RULES: existing character cards must use exact card name unless nickname is explicitly listed.",
+      filesAffected: [
+        "src/components/chronicle/ChatInterfaceTab.tsx",
+        "src/services/llm.ts",
+        "src/data/ui-audit-findings.ts",
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["chat-interface", "speaker-resolution", "avatar-binding", "llm-prompt", "stability"],
+      comments: [],
+      createdAt: "2026-04-02T00:20:00.000Z",
+      updatedAt: "2026-04-02T00:20:00.000Z",
+    },
+    {
       id: "cl-20260401-005",
       title: "Align Issue Registry header badges with Overview open-issue semantics",
       summary: "Issue Registry · Group header badges now display only unresolved open count with green/red state logic",

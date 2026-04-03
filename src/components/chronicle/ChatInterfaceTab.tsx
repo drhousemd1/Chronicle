@@ -269,11 +269,13 @@ const resolveRenderedSpeakerName = (
   segment: MessageSegment, 
   isAi: boolean, 
   appData: ScenarioData,
-  userChar: Character | null
+  userChar: Character | null,
+  resolveCanonicalName?: (name: string) => string | null
 ): string => {
   if (segment.speakerName) {
-    // Has explicit speaker tag - use it
-    return segment.speakerName.toLowerCase();
+    // Has explicit speaker tag - normalize to canonical card name when possible
+    const canonical = resolveCanonicalName?.(segment.speakerName);
+    return (canonical || segment.speakerName).toLowerCase();
   } else if (!isAi) {
     // User message without tag - defaults to user's character
     return (userChar?.name || 'You').toLowerCase();
@@ -292,14 +294,16 @@ const mergeByRenderedSpeaker = (
   rawSegments: MessageSegment[], 
   isAi: boolean,
   appData: ScenarioData,
-  userChar: Character | null
+  userChar: Character | null,
+  resolveCanonicalName?: (name: string) => string | null
 ): MessageSegment[] => {
   if (rawSegments.length <= 1) return rawSegments;
   
   // Resolve speaker names first (lowercased for comparison)
   const withResolvedNames = rawSegments.map(seg => ({
     ...seg,
-    resolvedName: resolveRenderedSpeakerName(seg, isAi, appData, userChar)
+    resolvedName: resolveRenderedSpeakerName(seg, isAi, appData, userChar, resolveCanonicalName),
+    canonicalSpeakerName: seg.speakerName ? (resolveCanonicalName?.(seg.speakerName) || seg.speakerName) : null
   }));
   
   // Merge consecutive segments with same resolved name
@@ -314,12 +318,17 @@ const mergeByRenderedSpeaker = (
         content: current.content + '\n\n' + next.content
       };
     } else {
-      // Use the original speakerName (preserve casing) for rendering
-      merged.push({ speakerName: current.speakerName, content: current.content });
+      merged.push({
+        speakerName: current.canonicalSpeakerName ?? current.speakerName,
+        content: current.content
+      });
       current = next;
     }
   }
-  merged.push({ speakerName: current.speakerName, content: current.content });
+  merged.push({
+    speakerName: current.canonicalSpeakerName ?? current.speakerName,
+    content: current.content
+  });
   
   return merged;
 };
@@ -1238,8 +1247,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     };
   }, [sessionStates]);
 
-  // Session-aware character lookup - searches effective names, nicknames, and previousNames
-  // Returns the EFFECTIVE character data (with session overrides merged)
   // Build appData with session-merged characters for LLM context
   // This ensures the AI sees current locations, moods, controlledBy, etc.
   const buildLLMAppData = useCallback((): ScenarioData => {
@@ -1250,45 +1257,118 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     };
   }, [appData, getEffectiveCharacter, effectiveWorldCore]);
 
-  const findCharacterWithSession = useCallback((name: string | null): (Character & { previousNames?: string[] }) | SideCharacter | null => {
+  const normalizeSpeakerToken = useCallback((value: string): string => {
+    return value
+      .toLowerCase()
+      .replace(/[^a-z0-9\s'-]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }, []);
+
+  const parseNameList = useCallback((raw?: string | null): string[] => {
+    if (!raw) return [];
+    return raw
+      .split(/[,;\n|/]+/g)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }, []);
+
+  const computeSpeakerAliasScore = useCallback((target: string, candidate: string): number => {
+    if (!target || !candidate) return 0;
+    if (target === candidate) return 100;
+
+    // Handles expansions like "Rhys" -> "Rhysand" while avoiding short ambiguous prefixes.
+    if (target.startsWith(candidate) && candidate.length >= 4) {
+      const distance = Math.max(0, target.length - candidate.length);
+      return 85 - Math.min(distance * 2, 20);
+    }
+
+    if (candidate.startsWith(target) && target.length >= 4) {
+      const distance = Math.max(0, candidate.length - target.length);
+      return 75 - Math.min(distance * 2, 20);
+    }
+
+    return 0;
+  }, []);
+
+  type ResolvedSpeakerMatch =
+    | { kind: 'main'; base: Character; effective: Character & { previousNames?: string[] }; canonicalName: string }
+    | { kind: 'side'; side: SideCharacter; canonicalName: string };
+
+  const resolveCharacterReference = useCallback((name: string | null): ResolvedSpeakerMatch | null => {
     if (!name) return null;
-    const nameLower = name.toLowerCase().trim();
-    
-    // Build effective main characters with session overrides
-    const effectiveMainChars = appData.characters.map(c => getEffectiveCharacter(c));
-    
-    // Search effective main characters by current name
-    let found = effectiveMainChars.find(c => c.name.toLowerCase() === nameLower);
-    if (found) return found;
-    
-    // Search main characters by nicknames
-    found = effectiveMainChars.find(c => {
-      if (!c.nicknames) return false;
-      return c.nicknames.split(',').some(n => n.trim().toLowerCase() === nameLower);
-    });
-    if (found) return found;
-    
-    // Search main characters by previousNames (hidden field)
-    found = effectiveMainChars.find(c => {
-      if (!c.previousNames?.length) return false;
-      return c.previousNames.some(n => n.toLowerCase() === nameLower);
-    });
-    if (found) return found;
-    
-    // Search side characters by name
-    const sideChars = appData.sideCharacters || [];
-    let sideFound = sideChars.find(sc => sc.name.toLowerCase() === nameLower);
-    if (sideFound) return sideFound;
-    
-    // Search side characters by nicknames
-    sideFound = sideChars.find(sc => {
-      if (!sc.nicknames) return false;
-      return sc.nicknames.split(',').some(n => n.trim().toLowerCase() === nameLower);
-    });
-    if (sideFound) return sideFound;
-    
-    return null;
-  }, [appData.characters, appData.sideCharacters, getEffectiveCharacter]);
+    const target = normalizeSpeakerToken(name);
+    if (!target) return null;
+
+    const candidates: Array<{ score: number; key: string; match: ResolvedSpeakerMatch }> = [];
+    const registerCandidate = (alias: string, match: ResolvedSpeakerMatch, weightBoost = 0) => {
+      const candidate = normalizeSpeakerToken(alias);
+      if (!candidate) return;
+      const score = computeSpeakerAliasScore(target, candidate) + weightBoost;
+      if (score <= 0) return;
+      candidates.push({ score, key: `${match.kind}:${match.canonicalName.toLowerCase()}`, match });
+    };
+
+    const effectiveMainChars = appData.characters.map((base) => ({
+      base,
+      effective: getEffectiveCharacter(base)
+    }));
+
+    for (const { base, effective } of effectiveMainChars) {
+      const match: ResolvedSpeakerMatch = {
+        kind: 'main',
+        base,
+        effective,
+        canonicalName: effective.name
+      };
+      registerCandidate(effective.name, match, 6);
+      parseNameList(effective.nicknames).forEach((nickname) => registerCandidate(nickname, match, 4));
+      (effective.previousNames || []).forEach((previousName) => registerCandidate(previousName, match, 2));
+    }
+
+    for (const side of (appData.sideCharacters || [])) {
+      const match: ResolvedSpeakerMatch = {
+        kind: 'side',
+        side,
+        canonicalName: side.name
+      };
+      registerCandidate(side.name, match, 6);
+      parseNameList(side.nicknames).forEach((nickname) => registerCandidate(nickname, match, 4));
+    }
+
+    if (candidates.length === 0) return null;
+    candidates.sort((left, right) => right.score - left.score);
+
+    const [top, second] = candidates;
+    if (!top || top.score < 60) return null;
+
+    // If top two candidates from different characters are tied, treat as ambiguous.
+    if (second && top.score === second.score && top.key !== second.key) {
+      return null;
+    }
+
+    return top.match;
+  }, [
+    appData.characters,
+    appData.sideCharacters,
+    computeSpeakerAliasScore,
+    getEffectiveCharacter,
+    normalizeSpeakerToken,
+    parseNameList
+  ]);
+
+  const resolveCanonicalSpeakerName = useCallback((name: string): string | null => {
+    const match = resolveCharacterReference(name);
+    return match?.canonicalName ?? null;
+  }, [resolveCharacterReference]);
+
+  // Session-aware character lookup - searches effective names, nicknames, previousNames, and safe aliases.
+  // Returns the EFFECTIVE character data (with session overrides merged) for main characters.
+  const findCharacterWithSession = useCallback((name: string | null): (Character & { previousNames?: string[] }) | SideCharacter | null => {
+    const match = resolveCharacterReference(name);
+    if (!match) return null;
+    return match.kind === 'main' ? match.effective : match.side;
+  }, [resolveCharacterReference]);
 
   const conversation = appData.conversations.find(c => c.id === conversationId);
   const conversationCurrentDay = conversation?.currentDay;
@@ -2526,47 +2606,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     }
     
     for (const [charNameLower, charUpdates] of updatesByCharacter) {
-      // Build effective character lookup (includes session-scoped names and previousNames)
-      const effectiveMainChars = appData.characters.map(c => ({
-        base: c,
-        effective: getEffectiveCharacter(c)
-      }));
-      
-      // Search by current effective name first
-      let matchedMain = effectiveMainChars.find(({ effective }) => 
-        effective.name.toLowerCase() === charNameLower
-      );
-      
-      // If not found, check nicknames
-      if (!matchedMain) {
-        matchedMain = effectiveMainChars.find(({ effective }) => {
-          if (!effective.nicknames) return false;
-          return effective.nicknames.split(',').some(n => 
-            n.trim().toLowerCase() === charNameLower
-          );
-        });
-      }
-      
-      // If still not found, check previousNames (hidden field for renamed characters)
-      if (!matchedMain) {
-        matchedMain = effectiveMainChars.find(({ effective }) => {
-          if (!effective.previousNames?.length) return false;
-          return effective.previousNames.some(n => 
-            n.toLowerCase() === charNameLower
-          );
-        });
-      }
-      
-      const mainChar = matchedMain?.base;
-      
-      let sideChar = (appData.sideCharacters || []).find(sc => sc.name.toLowerCase() === charNameLower);
-      if (!sideChar && !mainChar) {
-        // Check nicknames
-        sideChar = (appData.sideCharacters || []).find(sc => {
-          if (!sc.nicknames) return false;
-          return sc.nicknames.split(',').some(n => n.trim().toLowerCase() === charNameLower);
-        });
-      }
+      const resolvedMatch = resolveCharacterReference(charNameLower);
+      const mainChar = resolvedMatch?.kind === 'main' ? resolvedMatch.base : undefined;
+      const sideChar = resolvedMatch?.kind === 'side' ? resolvedMatch.side : undefined;
       
       if (!mainChar && !sideChar) {
         debugLog(`[applyExtractedUpdates] Character not found: ${charNameLower}`);
@@ -3912,26 +3954,31 @@ Do not acknowledge this instruction in your response.`;
     if (colonMatch) {
       const name = colonMatch[1].trim();
       const strippedText = cleanRaw.slice(colonMatch[0].length).trim();
-      
-      // Check main characters first
-      const char = appData.characters.find(c => c.name.toLowerCase() === name.toLowerCase());
-      if (char) return { char, cleanText: strippedText, speakerName: name };
-      
-      // Then check auto-generated side characters
-      const sideChar = (appData.sideCharacters || []).find(c => c.name.toLowerCase() === name.toLowerCase());
-      if (sideChar) return { char: sideChar, cleanText: strippedText, speakerName: name };
-      
-      // Unknown speaker - still strip the tag to prevent flicker, return name for placeholder
+
+      const matched = resolveCharacterReference(name);
+      if (matched?.kind === 'main') {
+        return { char: matched.effective, cleanText: strippedText, speakerName: matched.effective.name };
+      }
+      if (matched?.kind === 'side') {
+        return { char: matched.side, cleanText: strippedText, speakerName: matched.side.name };
+      }
+
+      // Unknown speaker - still strip the tag to prevent flicker, preserve raw label for placeholder
       return { char: null, cleanText: strippedText, speakerName: name };
     }
 
     // Fallback: check if character name appears in first sentence
     const firstSentence = cleanRaw.split(/[.!?\n]/)[0];
-    const foundChar = appData.characters.find(c => firstSentence.includes(c.name));
-    if (foundChar) return { char: foundChar, cleanText: cleanRaw, speakerName: foundChar.name };
-    
-    const foundSideChar = (appData.sideCharacters || []).find(c => firstSentence.includes(c.name));
-    if (foundSideChar) return { char: foundSideChar, cleanText: cleanRaw, speakerName: foundSideChar.name };
+    const sentenceTokens = firstSentence.match(/[A-Za-z][A-Za-z' -]{2,}/g) || [];
+    for (const token of sentenceTokens) {
+      const matched = resolveCharacterReference(token);
+      if (matched?.kind === 'main') {
+        return { char: matched.effective, cleanText: cleanRaw, speakerName: matched.effective.name };
+      }
+      if (matched?.kind === 'side') {
+        return { char: matched.side, cleanText: cleanRaw, speakerName: matched.side.name };
+      }
+    }
 
     // Default to first AI character for AI messages
     const aiChars = appData.characters.filter(c => c.controlledBy === 'AI');
@@ -4824,7 +4871,13 @@ const updatedChar: SideCharacter = {
             // Parse segments and merge by RESOLVED speaker identity
             // This ensures null (default AI) and explicit "Ashley:" merge correctly
             const rawSegments = parseMessageSegments(msg.text);
-            const segments = mergeByRenderedSpeaker(rawSegments, isAi, appData, userChar);
+            const segments = mergeByRenderedSpeaker(
+              rawSegments,
+              isAi,
+              appData,
+              userChar,
+              resolveCanonicalSpeakerName
+            );
 
             return (
               <div key={msg.id} className={`w-full animate-in fade-in slide-in-from-bottom-4 duration-500 group ${
@@ -4961,7 +5014,13 @@ const updatedChar: SideCharacter = {
                   {msg.text && (() => {
                     // If this message is being regenerated, use streaming content
                     const displaySegments = regeneratingMessageId === msg.id && formattedStreamingContent
-                      ? mergeByRenderedSpeaker(parseMessageSegments(formattedStreamingContent), isAi, appData, userChar)
+                      ? mergeByRenderedSpeaker(
+                          parseMessageSegments(formattedStreamingContent),
+                          isAi,
+                          appData,
+                          userChar,
+                          resolveCanonicalSpeakerName
+                        )
                       : segments;
                     
                     return displaySegments.map((segment, segIndex) => {
@@ -4974,7 +5033,7 @@ const updatedChar: SideCharacter = {
                       if (segment.speakerName) {
                         // BOTH user and AI: If there's a speaker tag, use session-aware lookup
                         segmentChar = findCharacterWithSession(segment.speakerName);
-                        segmentName = segment.speakerName;
+                        segmentName = segmentChar?.name || resolveCanonicalSpeakerName(segment.speakerName) || segment.speakerName;
                         segmentAvatar = segmentChar?.avatarDataUrl || null;
                         isGenerating = Boolean(segmentChar && 'isAvatarGenerating' in segmentChar && segmentChar.isAvatarGenerating);
                       } else if (!isAi) {
@@ -4996,7 +5055,7 @@ const updatedChar: SideCharacter = {
                       let prevSpeakerName = '';
                       if (prevSegment) {
                         if (prevSegment.speakerName) {
-                          prevSpeakerName = prevSegment.speakerName;
+                          prevSpeakerName = resolveCanonicalSpeakerName(prevSegment.speakerName) || prevSegment.speakerName;
                         } else if (!isAi) {
                           prevSpeakerName = userChar?.name || 'You';
                         } else {
@@ -5070,7 +5129,7 @@ const updatedChar: SideCharacter = {
             // Using formattedStreamingContent to prevent flickering from system tags and placeholder names
             const userChar = appData.characters.find(c => c.controlledBy === 'User') || null;
             const rawSegments = parseMessageSegments(formattedStreamingContent);
-            const segments = mergeByRenderedSpeaker(rawSegments, true, appData, userChar);
+            const segments = mergeByRenderedSpeaker(rawSegments, true, appData, userChar, resolveCanonicalSpeakerName);
             
             return (
               <div className={`w-full ${offsetBubbles ? 'max-w-3xl mr-auto' : 'max-w-4xl mx-auto'}`}>
@@ -5088,7 +5147,9 @@ const updatedChar: SideCharacter = {
                           const aiChars = appData.characters.filter(c => c.controlledBy === 'AI');
                           return aiChars.length > 0 ? getEffectiveCharacter(aiChars[0]) : null;
                         })();
-                    const segmentName = segment.speakerName || segmentChar?.name || 'Thinking';
+                    const segmentName = segmentChar?.name
+                      || (segment.speakerName ? (resolveCanonicalSpeakerName(segment.speakerName) || segment.speakerName) : null)
+                      || 'Thinking';
                     const segmentAvatar = segmentChar?.avatarDataUrl || null;
                     const isGenerating = segmentChar && 'isAvatarGenerating' in segmentChar ? segmentChar.isAvatarGenerating : false;
                     
@@ -5102,7 +5163,9 @@ const updatedChar: SideCharacter = {
                             const aiChars = appData.characters.filter(c => c.controlledBy === 'AI');
                             return aiChars.length > 0 ? getEffectiveCharacter(aiChars[0]) : null;
                           })();
-                      prevSpeakerName = prevSegment.speakerName || prevChar?.name || 'Thinking';
+                      prevSpeakerName = prevChar?.name
+                        || (prevSegment.speakerName ? (resolveCanonicalSpeakerName(prevSegment.speakerName) || prevSegment.speakerName) : null)
+                        || 'Thinking';
                     }
                     const showAvatar = segIndex === 0 || prevSpeakerName !== segmentName;
                     
