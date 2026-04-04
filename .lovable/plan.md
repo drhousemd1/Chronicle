@@ -1,37 +1,29 @@
 
 
-# Fix Build Error + Runtime 401
+# Fix extract-memory-events 401 "Invalid JWT"
 
-## Two Issues Found
+## Root Cause
 
-### 1. Build Error — `admin-ai-usage-timeseries/index.ts` (lines 249, 259)
+The `config.toml` file has `verify_jwt = true` for `extract-memory-events` (line 15-16). This was added by ChatGPT Codex. It causes the Supabase **gateway** to reject the request with `{"code":401,"message":"Invalid JWT"}` before the function code ever runs.
 
-**Root cause**: The variable `filteredMessagesPromise` is typed as `Promise<...>`, but a Supabase `PostgrestFilterBuilder` (which is thenable but not a true `Promise`) is assigned to it on lines 249-256 and 259. Deno's type checker rejects this because `PostgrestFilterBuilder` is missing `catch` and `finally`.
+Lovable Cloud deploys edge functions with `verify_jwt = false` by default. All your edge functions already validate JWTs internally in their own code (lines 17-25 of `extract-memory-events/index.ts` do `getUser()` checks). The gateway-level check is redundant and creates race conditions when the frontend calls functions before the auth session is fully refreshed.
 
-**Fix**: Wrap the two non-Promise assignments with `Promise.resolve(...)`:
-- Line 251-256: wrap `serviceClient.from("messages")...` in `Promise.resolve(...)`
-- Line 259: wrap `messagesQuery` in `Promise.resolve(messagesQuery)`
+This same issue affects **every function** listed in `config.toml` — they all have `verify_jwt = true` added by Codex.
 
-No other files need changes.
+## Fix
 
-### 2. Runtime 401 "Invalid JWT" — `api-usage-test-session`
+**File**: `supabase/config.toml`
 
-**Root cause**: The `api-usage-test-session` function has `verify_jwt = true` in `config.toml` (line 54-55). This means the Supabase gateway validates the JWT *before* the function code runs. The frontend calls `fetchActiveApiUsageTestSession` on app startup (Index.tsx line 371), and if the token is expired or the auth session hasn't refreshed yet, the gateway rejects it with `{"code":401,"message":"Invalid JWT"}` before the function's own auth logic ever executes.
+Remove all `verify_jwt = true` function blocks. Keep only the `project_id` line. Lovable Cloud's default (`verify_jwt = false`) will apply, and each function's internal auth check continues to protect it.
 
-The function already does its own JWT validation internally (lines 53-82) plus admin role check (lines 85-97), so gateway-level JWT verification is redundant and causes startup race conditions.
+The resulting file will be:
+```toml
+project_id = "gialzvvswxadxolnwots"
+```
 
-**Fix**: This is already handled correctly — the startup call uses `suppressErrors: true` so the 401 is silently ignored. The blank screen mentioned in the error report is likely a coincidence (the `has_blank_screen: true` is from the error reporter, not an actual user-visible blank screen).
+No other files change. No edge function code changes. The functions already handle auth internally.
 
-However, to eliminate the error entirely: no config.toml change needed since Lovable deploys with `verify_jwt = false` by default. The `verify_jwt = true` entries in config.toml were added by ChatGPT Codex. Since the function validates auth internally, these are safe to remove — but that's a broader change across all functions. For this fix, we only address the build error.
+## Why This Is Safe
 
-## Changes
-
-**File**: `supabase/functions/admin-ai-usage-timeseries/index.ts`
-- Line 251: wrap query builder in `Promise.resolve()`
-- Line 259: wrap `messagesQuery` in `Promise.resolve()`
-
-## What stays untouched
-- All other edge functions
-- `config.toml` — no changes
-- Frontend code — the 401 is already handled gracefully with `suppressErrors: true`
+Every edge function in the repo already has internal JWT validation (`getUser()` or `getClaims()` + admin role checks). Removing the gateway-level check just stops the double-validation that causes the 401 race condition.
 
