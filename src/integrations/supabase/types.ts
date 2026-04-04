@@ -14,6 +14,105 @@ export type Database = {
   }
   public: {
     Tables: {
+      ad_spend: {
+        Row: {
+          amount: number
+          campaign_name: string
+          cost_cadence: string | null
+          created_at: string
+          created_by: string
+          currency: string
+          description: string | null
+          id: string
+          name: string | null
+          notes: string
+          period_end: string
+          period_start: string
+          platform: string
+          recurring_cost: number | null
+          spent_override: number | null
+          start_date: string | null
+          status: string | null
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          amount?: number
+          campaign_name?: string
+          cost_cadence?: string | null
+          created_at?: string
+          created_by: string
+          currency?: string
+          description?: string | null
+          id?: string
+          name?: string | null
+          notes?: string
+          period_end: string
+          period_start: string
+          platform: string
+          recurring_cost?: number | null
+          spent_override?: number | null
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          amount?: number
+          campaign_name?: string
+          cost_cadence?: string | null
+          created_at?: string
+          created_by?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          name?: string | null
+          notes?: string
+          period_end?: string
+          period_start?: string
+          platform?: string
+          recurring_cost?: number | null
+          spent_override?: number | null
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: []
+      }
+      admin_notes: {
+        Row: {
+          author_id: string
+          content: string
+          content_html: string | null
+          created_at: string
+          id: string
+          note_key: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          author_id: string
+          content?: string
+          content_html?: string | null
+          created_at?: string
+          id?: string
+          note_key?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          content_html?: string | null
+          created_at?: string
+          id?: string
+          note_key?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       ai_usage_events: {
         Row: {
           created_at: string | null
@@ -43,6 +142,89 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      ai_usage_test_events: {
+        Row: {
+          api_call_group: string | null
+          created_at: string
+          error_message: string | null
+          est_cost_usd: number | null
+          event_key: string | null
+          event_source: string | null
+          event_type: string
+          function_name: string
+          id: string
+          input_chars: number | null
+          input_tokens_est: number | null
+          latency_ms: number | null
+          metadata: Json | null
+          model_id: string | null
+          output_chars: number | null
+          output_tokens_est: number | null
+          payload: Json | null
+          response_summary: string | null
+          session_id: string
+          status_code: number | null
+          total_tokens_est: number | null
+          user_id: string | null
+        }
+        Insert: {
+          api_call_group?: string | null
+          created_at?: string
+          error_message?: string | null
+          est_cost_usd?: number | null
+          event_key?: string | null
+          event_source?: string | null
+          event_type: string
+          function_name?: string
+          id?: string
+          input_chars?: number | null
+          input_tokens_est?: number | null
+          latency_ms?: number | null
+          metadata?: Json | null
+          model_id?: string | null
+          output_chars?: number | null
+          output_tokens_est?: number | null
+          payload?: Json | null
+          response_summary?: string | null
+          session_id: string
+          status_code?: number | null
+          total_tokens_est?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          api_call_group?: string | null
+          created_at?: string
+          error_message?: string | null
+          est_cost_usd?: number | null
+          event_key?: string | null
+          event_source?: string | null
+          event_type?: string
+          function_name?: string
+          id?: string
+          input_chars?: number | null
+          input_tokens_est?: number | null
+          latency_ms?: number | null
+          metadata?: Json | null
+          model_id?: string | null
+          output_chars?: number | null
+          output_tokens_est?: number | null
+          payload?: Json | null
+          response_summary?: string | null
+          session_id?: string
+          status_code?: number | null
+          total_tokens_est?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_test_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_usage_test_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ai_usage_test_sessions: {
         Row: {
@@ -526,6 +708,45 @@ export type Database = {
         }
         Relationships: []
       }
+      finance_documents: {
+        Row: {
+          category: string
+          created_at: string
+          file_name: string
+          id: string
+          mime_type: string
+          note: string
+          size_bytes: number
+          storage_path: string
+          updated_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          file_name: string
+          id?: string
+          mime_type: string
+          note?: string
+          size_bytes: number
+          storage_path: string
+          updated_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          file_name?: string
+          id?: string
+          mime_type?: string
+          note?: string
+          size_bytes?: number
+          storage_path?: string
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Relationships: []
+      }
       guide_documents: {
         Row: {
           content: Json | null
@@ -887,6 +1108,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      reports: {
+        Row: {
+          accused: string
+          accused_user_id: string | null
+          created_at: string
+          id: string
+          note: string | null
+          reason: string
+          reporter: string
+          reporter_user_id: string | null
+          reviewed_by: string | null
+          status: string
+          story_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          accused: string
+          accused_user_id?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          reason: string
+          reporter: string
+          reporter_user_id?: string | null
+          reviewed_by?: string | null
+          status?: string
+          story_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accused?: string
+          accused_user_id?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          reason?: string
+          reporter?: string
+          reporter_user_id?: string | null
+          reviewed_by?: string | null
+          status?: string
+          story_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       saved_scenarios: {
         Row: {
@@ -1326,6 +1592,54 @@ export type Database = {
         }
         Relationships: []
       }
+      user_strikes: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          falls_off_at: string | null
+          id: string
+          issued_at: string | null
+          issued_by: string
+          note: string | null
+          points: number | null
+          reason: string
+          report_id: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          falls_off_at?: string | null
+          id?: string
+          issued_at?: string | null
+          issued_by: string
+          note?: string | null
+          points?: number | null
+          reason: string
+          report_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          falls_off_at?: string | null
+          id?: string
+          issued_at?: string | null
+          issued_by?: string
+          note?: string | null
+          points?: number | null
+          reason?: string
+          report_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1431,6 +1745,10 @@ export type Database = {
           p_story: Json
           p_user_id: string
         }
+        Returns: undefined
+      }
+      set_admin_access: {
+        Args: { _enabled: boolean; _target_user_id: string }
         Returns: undefined
       }
     }

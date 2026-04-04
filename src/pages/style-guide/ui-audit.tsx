@@ -196,7 +196,7 @@ const SCAN_CATALOG_ROWS: Record<string, ScanCatalogRow> = {
       "module-validation-gates",
       "module-startup-auth-boot",
     ],
-    domainHints: QUALITY_DOMAINS,
+    domainHints: [...QUALITY_DOMAINS],
   },
   "security-deep": {
     id: "security-deep",
