@@ -1,36 +1,57 @@
 
 
-# Finance Dashboard Contract Repair
+# Idempotent Hardening of Finance Repair Migration
 
 ## Problem
-The previous migration created tables with schemas that don't match what the frontend code and edge functions expect. Every table has missing columns:
+The repair migration's UPDATE statements reference columns that may not exist in a fresh database replay:
+- `ad_spend`: references `campaign_name`, `platform`, `amount`, `notes` — never added
+- `admin_notes`: references `content` — never added
+- `reports`: references `reporter`, `accused` — never added  
+- `ai_usage_test_events`: references `event_type`, `payload` — never added
 
-| Table | Missing columns code needs |
-|-------|---------------------------|
-| `ad_spend` | `name`, `description`, `url`, `status`, `recurring_cost`, `cost_cadence`, `start_date`, `spent_override` |
-| `admin_notes` | `note_key`, `content_html`, `updated_by` |
-| `reports` | `reporter_user_id`, `accused_user_id`, `note` |
-| `ai_usage_test_events` | `user_id`, `event_key`, `api_call_group`, `event_source`, `model_id`, `input_chars`, `output_chars`, `input_tokens_est`, `output_tokens_est`, `total_tokens_est`, `est_cost_usd`, `status`, `metadata` |
-| `user_strikes` | `report_id`, `points`, `note`, `status`, `issued_at`, `falls_off_at`, `updated_at` |
-| `set_admin_access` | Function arg is `_user_id` but code calls `_target_user_id` |
+If the migration runs against a DB where the earlier creation migration used different column sets, these UPDATEs fail.
 
-## What I will do
+## Fix
+Patch the existing `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` blocks in `supabase/migrations/20260404051740_72f00518-df04-4eda-a14e-38593ab3fbea.sql` to include ALL columns referenced in the subsequent UPDATE statements. No new migration file. No logic changes.
 
-### Step 1: Apply the repair migration
-Create `supabase/migrations/20260404_finance_contract_repair.sql` with the exact SQL provided. This adds all missing columns using `ADD COLUMN IF NOT EXISTS`, backfills data, rebuilds RLS policies, and recreates `set_admin_access` with the correct `_target_user_id` argument name.
+### ad_spend section (line 16-24)
+Add to the ALTER block:
+- `campaign_name text`
+- `platform text`
+- `amount numeric(12,2)`
+- `currency text`
+- `period_start date`
+- `period_end date`
+- `notes text`
 
-### Step 2: Verify with SQL queries
-Run the 4 verification queries to confirm all columns, functions, and policies are correct.
+### admin_notes section (line 61-64)
+Add to the ALTER block:
+- `content text`
+- `author_id uuid`
 
-### Step 3: Code checks
-Confirm `FinanceDashboardTool.tsx`, `track-api-usage-test/index.ts`, and `admin-api-usage-test-report/index.ts` field references match the repaired schema. No code changes needed — the migration aligns the DB to the existing code contract.
+### reports section (line 92-96)
+Add to the ALTER block:
+- `reporter text`
+- `accused text`
+- `story_id uuid`
 
-## Files changed
-- **New migration**: `supabase/migrations/20260404_finance_contract_repair.sql`
-- Types file will auto-regenerate after migration
+### ai_usage_test_events section (line 194-206)
+Add to the ALTER block:
+- `event_type text`
+- `function_name text`
+- `payload jsonb`
+- `response_summary text`
+- `status_code integer`
+- `error_message text`
 
 ## What stays untouched
-- `src/components/admin/finance/FinanceDashboardTool.tsx` — already uses correct field names
-- All edge functions — already use correct field names
-- All UI layout and styling
+- All policy/trigger/function logic — identical
+- All UPDATE backfill logic — identical
+- All other files — no changes
+- The second migration file (`20260404051750_...`) — untouched
+
+## Verification
+- Run column inventory query for all 5 tables
+- Confirm `set_admin_access` args are `_target_user_id uuid, _enabled boolean`
+- Confirm build passes
 
