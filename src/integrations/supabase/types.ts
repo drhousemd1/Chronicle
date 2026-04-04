@@ -176,7 +176,7 @@ export type Database = {
           est_cost_usd?: number | null
           event_key?: string | null
           event_source?: string | null
-          event_type: string
+          event_type?: string
           function_name?: string
           id?: string
           input_chars?: number | null
