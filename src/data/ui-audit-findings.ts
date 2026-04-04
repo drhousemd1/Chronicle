@@ -4774,6 +4774,25 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260404-007",
+      title: "Add missing status column to ai_usage_test_events table",
+      summary: "Database Schema Fix · Added `status text` column so edge functions can write trace events without column-not-found errors",
+      severity: "patch" as const,
+      status: "completed" as const,
+      problem: "The `ai_usage_test_events` table had a `status_code` (integer) column but was missing a `status` (text) column. Both `track-api-usage-test` and `track-ai-usage` edge functions attempted to insert `status: \"ok\"` or `status: \"error\"` into this non-existent column, causing every trace insert to fail with a 500 \"Failed to insert trace event\" response. This broke the entire API usage tracking telemetry system — every tracked event (character AI, chat, memory, avatars, etc.) silently failed.",
+      plan: "Run a single idempotent migration: `ALTER TABLE public.ai_usage_test_events ADD COLUMN IF NOT EXISTS status text DEFAULT 'ok';` No edge function or frontend code changes needed since they already reference the correct column name.",
+      changes: "Added `status text DEFAULT 'ok'` column to `ai_usage_test_events` via database migration. No code changes required — edge functions and frontend tracking code were already using the correct column name.",
+      filesAffected: [
+        "supabase/migrations/ (new migration)",
+      ],
+      agent: "Lovable",
+      relatedFindingIds: ["cl-20260404-006"],
+      tags: ["database", "schema-fix", "telemetry", "api-usage", "edge-function"],
+      comments: [],
+      createdAt: "2026-04-04T22:30:00.000Z",
+      updatedAt: "2026-04-04T22:30:00.000Z",
+    },
+    {
       id: "cl-20260404-006",
       title: "Remove redundant verify_jwt = true from config.toml to fix 401 race conditions",
       summary: "Edge Function Auth Fix · Stripped all gateway-level verify_jwt = true entries added by ChatGPT Codex; functions already validate JWTs internally",
