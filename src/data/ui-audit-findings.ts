@@ -3551,8 +3551,8 @@ const findingsResolved = findings.map((findingEntry) => {
 
   return {
     ...findingEntry,
-    status: "fixed",
-    verificationStatus: "verified",
+    status: "fixed" as const,
+    verificationStatus: "verified" as const,
     verifiedBy: stamp(note.runId),
     expectedBehavior:
       note.expectedBehavior ||
