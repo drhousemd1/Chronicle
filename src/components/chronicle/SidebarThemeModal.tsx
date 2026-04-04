@@ -280,6 +280,8 @@ export function SidebarThemeModal({
   /* ── Drag handlers ─────────────────────────────────────────────────── */
   const onTileDragStart = (e: React.DragEvent, bgId: string, fromRowId: string) => {
     dragInfo.current = { bgId, fromRowId };
+    dropInfo.current = null;
+    setDropTarget(null);
     setIsDragging(true);
     e.dataTransfer.clearData();
     e.dataTransfer.setData("text/plain", bgId);
@@ -309,7 +311,16 @@ export function SidebarThemeModal({
   };
 
   const onDropZoneDragOver = (e: React.DragEvent, toRowId: string, beforeBgId: string | null = null) => {
-    if (!dragInfo.current) return;
+    const drag = dragInfo.current;
+    if (!drag) return;
+
+    // Dropping "before itself" is a no-op; don't show a misleading placeholder at source.
+    if (drag.fromRowId === toRowId && beforeBgId === drag.bgId) {
+      dropInfo.current = null;
+      setDropTarget((prev) => (prev ? null : prev));
+      return;
+    }
+
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
     dropInfo.current = { toRowId, beforeBgId, isNewRow: false };
@@ -369,8 +380,14 @@ export function SidebarThemeModal({
     }
 
     const sourceRow = effectiveRows.find((r) => r.id === drag.fromRowId);
+    const currentIdx = sourceRow ? sourceRow.bgIds.indexOf(drag.bgId) : -1;
+
+    // Same-row move: once the dragged tile is removed, destination index shifts left.
+    if (sourceRow && sourceRow.label === destRow.label && destIndex !== null && currentIdx !== -1 && currentIdx < destIndex) {
+      destIndex -= 1;
+    }
+
     if (sourceRow && sourceRow.label === destRow.label) {
-      const currentIdx = sourceRow.bgIds.indexOf(drag.bgId);
       if (destIndex === currentIdx || (destIndex === null && currentIdx === sourceRow.bgIds.length - 1)) {
         resetDragState();
         return;
@@ -463,16 +480,16 @@ export function SidebarThemeModal({
                       <ChevronDown className="w-3 h-3" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-44 bg-[#3c3e47] border-black/20 shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09)] z-50">
+                  <DropdownMenuContent align="end" className="w-44">
                     <DropdownMenuItem
                       onClick={() => fileInputRef.current?.click()}
-                      className="cursor-pointer text-zinc-200 hover:!bg-white/[0.06] focus:!bg-white/[0.06] focus:!text-white"
+                      className="cursor-pointer"
                     >
                       <Upload className="w-4 h-4 mr-2" /> From Device
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => setIsPickerOpen(true)}
-                      className="cursor-pointer text-zinc-200 hover:!bg-white/[0.06] focus:!bg-white/[0.06] focus:!text-white"
+                      className="cursor-pointer"
                     >
                       <Image className="w-4 h-4 mr-2" /> From Library
                     </DropdownMenuItem>
@@ -522,7 +539,7 @@ export function SidebarThemeModal({
                             onClick={() => onSelectBackground(null)}
                             className={`relative w-full aspect-[1/3] rounded-xl overflow-hidden transition-all cursor-default bg-[#1c1c1f] ${
                               selectedBackgroundId === null
-                                ? "ring-2 ring-blue-500 ring-inset border border-blue-500/30"
+                                ? "border-2 border-blue-500"
                                 : "border border-white/[0.08]"
                             }`}
                           >
@@ -544,7 +561,12 @@ export function SidebarThemeModal({
                         const bg = bgMap.get(bgId);
                         if (!bg) return null;
 
-                        const isDropBeforeThis = isDragging && dropTarget?.toRowId === row.id && dropTarget?.beforeBgId === bgId;
+                        const isOriginSlot = dragInfo.current?.fromRowId === row.id && dragInfo.current?.bgId === bgId;
+                        const isDropBeforeThis =
+                          isDragging &&
+                          !isOriginSlot &&
+                          dropTarget?.toRowId === row.id &&
+                          dropTarget?.beforeBgId === bgId;
 
                         return (
                           <React.Fragment key={bg.id}>
@@ -568,7 +590,7 @@ export function SidebarThemeModal({
                               onClick={() => onSelectBackground(bg.id)}
                               className={`group relative aspect-[1/3] rounded-xl overflow-hidden transition-all cursor-grab select-none bg-[#1c1c1f] ${
                                 selectedBackgroundId === bg.id
-                                  ? "ring-2 ring-blue-500 ring-inset border border-blue-500/30"
+                                  ? "border-2 border-blue-500"
                                   : "border border-white/[0.08]"
                               }`}
                             >
@@ -596,7 +618,7 @@ export function SidebarThemeModal({
 
                               {/* Selection check */}
                               {selectedBackgroundId === bg.id && (
-                                <div className="absolute top-2 left-2 w-[22px] h-[22px] bg-blue-500 rounded-md flex items-center justify-center z-[3]">
+                                <div className="absolute top-2 right-2 w-[22px] h-[22px] bg-blue-500 rounded-md flex items-center justify-center z-[3]">
                                   <Check className="w-3.5 h-3.5 text-white" />
                                 </div>
                               )}
@@ -609,6 +631,15 @@ export function SidebarThemeModal({
                       {isDragging && dropTarget?.toRowId === row.id && dropTarget?.beforeBgId === null && (
                         <div
                           className="aspect-[1/3] rounded-xl border-2 border-dashed border-white/20 bg-white/[0.04]"
+                          onDragOver={(e) => onDropZoneDragOver(e, row.id, null)}
+                          onDrop={onDrop}
+                        />
+                      )}
+
+                      {/* Keep a real end-of-row drop target mounted while dragging. */}
+                      {isDragging && !(dropTarget?.toRowId === row.id && dropTarget?.beforeBgId === null) && (
+                        <div
+                          className="aspect-[1/3] opacity-0"
                           onDragOver={(e) => onDropZoneDragOver(e, row.id, null)}
                           onDrop={onDrop}
                         />

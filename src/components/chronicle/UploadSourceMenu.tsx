@@ -44,7 +44,7 @@ export const UploadSourceMenu: React.FC<UploadSourceMenuProps> = ({
             <ChevronDown className="w-3.5 h-3.5" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-48 bg-white border-slate-200 shadow-lg z-50">
+        <DropdownMenuContent align="start" className="w-48">
           <DropdownMenuItem
             onClick={onUploadFromDevice}
             className="cursor-pointer"

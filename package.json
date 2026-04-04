@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
+    "typecheck": "tsc -b",
+    "ship-check": "npm run -s typecheck && npm run -s lint && npm run -s build",
     "architecture:refresh": "node scripts/refresh-architecture-paths.mjs",
     "quality:scan": "node scripts/run-quality-hub-scan.mjs",
     "lint": "eslint .",

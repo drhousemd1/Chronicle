@@ -2860,4 +2860,323 @@
 </div>
 
 
+<div style="height:40px;"></div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     CARD 7 — Dropdown / Overflow Menu System
+     ═══════════════════════════════════════════════════════════ -->
+<style>
+  .dm-system-preview {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .dm-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .dm-col {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .dm-col-label {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #a1a1aa;
+  }
+  .dm-menu {
+    width: 100%;
+    border-radius: 14px;
+    background: #2e2e33;
+    border: 1px solid rgba(255,255,255,0.07);
+    box-shadow:
+      inset 1px 1px 0 rgba(255,255,255,0.07),
+      inset -1px -1px 0 rgba(0,0,0,0.30),
+      0 4px 12px rgba(0,0,0,0.25);
+    padding: 7px;
+  }
+  .dm-item-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .dm-item-wrap.rows .dm-item {
+    background: #3c3e47;
+    box-shadow:
+      0 8px 24px rgba(0,0,0,0.45),
+      inset 0 1px 0 rgba(255,255,255,0.09),
+      inset 0 -1px 0 rgba(0,0,0,0.20);
+  }
+  .dm-item-wrap.list .dm-item {
+    background: transparent;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,0.00);
+  }
+  .dm-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 38px;
+    border-radius: 9px;
+    padding: 8px 10px;
+    color: #eaedf1;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    line-height: 1;
+  }
+  .dm-item svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    opacity: 0.95;
+  }
+  .dm-item.active {
+    background: #3c3e47;
+    box-shadow:
+      0 8px 24px rgba(0,0,0,0.45),
+      inset 0 1px 0 rgba(255,255,255,0.09),
+      inset 0 -1px 0 rgba(0,0,0,0.20);
+  }
+  .dm-item.danger {
+    color: #ef4444;
+  }
+  .dm-settings {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-radius: 9px;
+    min-height: 56px;
+    padding: 10px 12px;
+    background: #3c3e47;
+    box-shadow:
+      0 8px 24px rgba(0,0,0,0.45),
+      inset 0 1px 0 rgba(255,255,255,0.09),
+      inset 0 -1px 0 rgba(0,0,0,0.20);
+  }
+  .dm-menu-flat-light {
+    background: #3c3e47;
+    border: 1px solid rgba(255,255,255,0.09);
+    box-shadow:
+      0 8px 24px rgba(0,0,0,0.45),
+      inset 0 1px 0 rgba(255,255,255,0.09),
+      inset 0 -1px 0 rgba(0,0,0,0.20);
+  }
+  .dm-settings-flat {
+    background: transparent;
+    box-shadow: none;
+  }
+  .dm-settings-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #eaedf1;
+    line-height: 1.1;
+  }
+  .dm-settings-sub {
+    margin-top: 4px;
+    font-size: 11px;
+    color: #a1a1aa;
+    line-height: 1.2;
+  }
+  .dm-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #eaedf1;
+    font-weight: 700;
+    font-size: 11px;
+  }
+  .dm-switch {
+    width: 76px;
+    height: 34px;
+    border-radius: 999px;
+    border: 1px solid rgba(0,0,0,0.35);
+    background: #181a20;
+    position: relative;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.4);
+  }
+  .dm-switch::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 4px;
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    background: #f8fafc;
+  }
+  .dm-switch.on::after {
+    left: 46px;
+  }
+  .dm-callout {
+    border-radius: 12px;
+    border: 1px dashed rgba(74,95,127,0.45);
+    background: #f8fafc;
+    padding: 10px 12px;
+    color: #334155;
+    font-size: 12px;
+    line-height: 1.45;
+    margin-bottom: 18px;
+  }
+  @media (max-width: 980px) {
+    .dm-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="card">
+
+  <div class="card-header">
+    <span class="card-title">Dropdown / Overflow Menu System</span>
+    <span class="card-sub">dropdown-menu.tsx + Index.tsx + CharacterBuilderScreen.tsx + SidebarThemeModal.tsx</span>
+  </div>
+
+  <div class="preview-section" style="padding:30px 20px;">
+    <div class="preview-inner" style="max-width:1120px;">
+      <div class="dm-system-preview">
+        <div class="dm-grid">
+            <div class="dm-col">
+              <div class="dm-col-label">Upload Source Menu</div>
+              <div class="dm-menu dm-menu-flat-light">
+                <div class="dm-item-wrap list">
+                  <div class="dm-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="m8 7 4-4 4 4"/><path d="M6 21h12"/></svg>
+                    From Device
+                  </div>
+                  <div class="dm-item active">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3-3a2 2 0 0 0-3 0l-6 6"/></svg>
+                    From Library
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="dm-col">
+              <div class="dm-col-label">Character Tile Menu</div>
+              <div class="dm-menu dm-menu-flat-light">
+                <div class="dm-item-wrap list">
+                  <div class="dm-item">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20"/><path d="m15 5-3-3-3 3"/><path d="m9 19 3 3 3-3"/><path d="M2 12h20"/><path d="m5 9-3 3 3 3"/><path d="m19 9 3 3-3 3"/></svg>
+                    Reposition Image
+                  </div>
+                  <div class="dm-item active">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                    Edit Character
+                  </div>
+                  <div class="dm-item danger">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                    Delete Character
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="dm-col">
+              <div class="dm-col-label">Settings Panel Menu</div>
+              <div class="dm-menu dm-menu-flat-light">
+                <div class="dm-item-wrap rows">
+                  <div class="dm-settings dm-settings-flat">
+                    <div>
+                      <div class="dm-settings-title">Track API Usage</div>
+                      <div class="dm-settings-sub">Off</div>
+                    </div>
+                    <div class="dm-toggle">
+                      Off
+                      <span class="dm-switch"></span>
+                      On
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="details-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open');">
+    <span class="details-toggle-label">Component Details</span>
+    <svg class="details-toggle-chevron" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+  </div>
+
+  <div class="details-content">
+
+    <div class="details-spec-section">
+      <div class="dm-callout">
+        Canonical term: <strong>menu button + dropdown menu</strong> (also called overflow/action menu). Dark-only system. No light menu variant and no white outer padding layer.
+      </div>
+
+      <div class="spec-block">
+        <div class="spec-h1">System Contract</div>
+        <ul>
+          <li><strong>Primitive owner:</strong> <code>src/components/ui/dropdown-menu.tsx</code></li>
+          <li><strong>Primary app callsites:</strong> <code>src/pages/Index.tsx</code>, <code>src/features/character-builder/CharacterBuilderScreen.tsx</code>, <code>src/components/chronicle/SidebarThemeModal.tsx</code>, <code>src/components/chronicle/UploadSourceMenu.tsx</code></li>
+          <li><strong>Theme rule:</strong> dropdowns render in Chronicle dark styling only</li>
+          <li><strong>Layer rule:</strong> no light outer shell and no reversed layering (lighter outside, darker inside)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="bottom-section" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
+      <div class="bottom-col">
+        <div class="spec-block">
+          <div class="spec-h1">Shell Tokens</div>
+          <ul>
+            <li><strong>Tray background (shown variant):</strong> <code>#3c3e47</code> flat-light treatment on all three examples</li>
+            <li><strong>Interactive row background:</strong> <code>#3c3e47</code></li>
+            <li><strong>Radius:</strong> <code>14px</code> tray, <code>9px</code> row</li>
+            <li><strong>Shadow stack:</strong> tray uses inset bevel + ambient shadow; rows use Chronicle button stack</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bottom-col">
+        <div class="spec-block">
+          <div class="spec-h1">Item Tokens</div>
+          <ul>
+            <li><strong>Text:</strong> <code>#eaedf1</code>, 13px, semibold</li>
+            <li><strong>Hover/active row:</strong> <code>#3c3e47</code> with inset top/bottom edges</li>
+            <li><strong>Destructive row:</strong> <code>#ef4444</code></li>
+            <li><strong>Muted helper text:</strong> <code>#a1a1aa</code></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bottom-col">
+        <div class="spec-block">
+          <div class="spec-h1">Variant Matrix</div>
+          <ul>
+            <li><strong>Action list:</strong> icon + label rows (edit/reposition/delete)</li>
+            <li><strong>Source picker:</strong> two-row action list (device/library)</li>
+            <li><strong>Settings panel:</strong> single rich row with inline toggle</li>
+            <li><strong>Single-action menu:</strong> one row (e.g., Change Background)</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bottom-col">
+        <div class="spec-block">
+          <div class="spec-h1">Prompt Contract</div>
+          <ul>
+            <li><strong>Template:</strong> <code>Use Dropdown Menu System (dark-only). Keep menu shell/background/border/shadow tokens from style guide. Do not introduce white menu styling.</code></li>
+            <li><strong>Behavior:</strong> <code>Menu button trigger opens action list; preserve existing item order and labels.</code></li>
+            <li><strong>Prohibition:</strong> <code>No light menu variant and no extra outer padding frame behind the menu.</code></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+
 </html>

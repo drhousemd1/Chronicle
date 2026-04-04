@@ -301,6 +301,8 @@ const IndexContent = () => {
   type GallerySortOption = 'all' | 'recent' | 'liked' | 'saved' | 'played' | 'following';
   const [gallerySortBy, setGallerySortBy] = useState<GallerySortOption>('all');
   const [accountActiveTab, setAccountActiveTab] = useState<string>('settings');
+  const accountProfileSaveRef = React.useRef<(() => Promise<void>) | null>(null);
+  const [isAccountProfileSaving, setIsAccountProfileSaving] = useState(false);
   const [savedScenarios, setSavedScenarios] = useState<SavedScenario[]>([]);
   const [publishedScenariosData, setPublishedScenariosData] = useState<Map<string, PublishedScenario>>(new Map());
   const [contentThemesMap, setContentThemesMap] = useState<Map<string, ContentThemes>>(new Map());
@@ -351,6 +353,13 @@ const IndexContent = () => {
   useEffect(() => {
     if (user?.id) checkIsAdmin(user.id).then(setIsAdminState);
   }, [user?.id]);
+
+  useEffect(() => {
+    if (tab !== 'account' || accountActiveTab !== 'profile') {
+      accountProfileSaveRef.current = null;
+      setIsAccountProfileSaving(false);
+    }
+  }, [tab, accountActiveTab]);
 
   useEffect(() => {
     if (!isAdminState || !user?.id) {
@@ -2477,24 +2486,22 @@ const IndexContent = () => {
                         >
                           <Settings className="w-5 h-5" />
                         </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-72 p-2">
-                        <div className="rounded-lg bg-[#3c3e47] p-3 shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="min-w-0">
-                              <div className="text-[13px] font-semibold text-[#eaedf1]">Track API Usage</div>
-                              <div className="text-[11px] text-[#a1a1aa] mt-0.5 truncate">{apiUsageTrackingStatusText}</div>
-                            </div>
-                            <LabeledToggle
-                              checked={isApiUsageTrackingCurrentStory}
-                              disabled={isApiUsageToggleBusy}
-                              onCheckedChange={(checked) => {
-                                void handleApiUsageTestToggle(checked);
-                              }}
-                              offLabel="Off"
-                              onLabel="On"
-                            />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-72 p-2">
+                        <div className="flex items-center justify-between gap-3 rounded-[9px] px-2 py-1">
+                          <div className="min-w-0">
+                            <div className="text-[13px] font-semibold text-[#eaedf1]">Track API Usage</div>
+                            <div className="text-[11px] text-[#a1a1aa] mt-0.5 truncate">{apiUsageTrackingStatusText}</div>
                           </div>
+                          <LabeledToggle
+                            checked={isApiUsageTrackingCurrentStory}
+                            disabled={isApiUsageToggleBusy}
+                            onCheckedChange={(checked) => {
+                              void handleApiUsageTestToggle(checked);
+                            }}
+                            offLabel="Off"
+                            onLabel="On"
+                          />
                         </div>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -2636,6 +2643,18 @@ const IndexContent = () => {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
+              )}
+              {tab === "account" && accountActiveTab === "profile" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    void accountProfileSaveRef.current?.();
+                  }}
+                  disabled={isAccountProfileSaving}
+                  className="inline-flex items-center justify-center h-10 px-6 rounded-xl border-0 bg-[#303035] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:bg-[#343439] active:bg-[#343439] transition-all active:scale-95 text-xs font-bold leading-none disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40"
+                >
+                  {isAccountProfileSaving ? 'Saving...' : 'Save'}
+                </button>
               )}
               {(tab === "characters" || tab === "library") && (
                 <>
@@ -3044,13 +3063,16 @@ const IndexContent = () => {
                         key={option.key}
                         onClick={() => setAccountActiveTab(option.key)}
                         className={cn(
-                          "px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap",
+                          "px-4 py-1.5 rounded-full text-xs font-bold transition-colors whitespace-nowrap border-t",
                           accountActiveTab === option.key
-                            ? "bg-[#4a5f7f] text-white shadow-sm"
-                            : "text-[#a1a1aa] hover:text-[#e4e4e7]"
+                            ? "relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-white/20 text-white shadow-sm"
+                            : "border-transparent text-[#a1a1aa] hover:text-[#e4e4e7]"
                         )}
                       >
-                        {option.label}
+                        {accountActiveTab === option.key && (
+                          <div className="absolute inset-0 rounded-full bg-gradient-to-b from-white/[0.07] via-transparent to-transparent pointer-events-none" />
+                        )}
+                        <span className="relative z-[1]">{option.label}</span>
                       </button>
                     ))}
                   </div>
@@ -3067,7 +3089,14 @@ const IndexContent = () => {
                 )}
                 {accountActiveTab === 'profile' && (
                   <React.Suspense fallback={<LazyTabFallback className="bg-[#121214]" />}>
-                    <PublicProfileTab user={user} />
+                    <PublicProfileTab
+                      user={user}
+                      onRegisterSave={(saveFn) => {
+                        accountProfileSaveRef.current = saveFn;
+                      }}
+                      onSavingStateChange={setIsAccountProfileSaving}
+                      onPlayScenario={handleGalleryPlay}
+                    />
                   </React.Suspense>
                 )}
               </div>

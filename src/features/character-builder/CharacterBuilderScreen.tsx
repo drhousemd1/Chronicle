@@ -1040,8 +1040,8 @@ export const CharacterBuilderScreen: React.FC<CharacterBuilderScreenProps> = ({
                                       <Pencil className="w-4 h-4" />
                                     </button>
                                   </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end" className="shadow-lg z-50 bg-zinc-800 border-ghost-white text-zinc-200">
-                                    <DropdownMenuItem onClick={() => setIsRepositioning(true)} className="hover:!bg-zinc-700 focus:!bg-zinc-700 focus:!text-white">
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => setIsRepositioning(true)}>
                                       <Move className="w-4 h-4 mr-2" />
                                       Reposition image
                                     </DropdownMenuItem>

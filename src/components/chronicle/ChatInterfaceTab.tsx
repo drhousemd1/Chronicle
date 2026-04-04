@@ -4503,18 +4503,18 @@ const updatedChar: SideCharacter = {
                   <Pencil className="w-4 h-4" />
                 </button>
               </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="shadow-lg z-50 bg-zinc-800 border-ghost-white text-zinc-200">
-              <DropdownMenuItem onClick={() => toggleTileRepositionMode(char)} className="hover:!bg-zinc-700 focus:!bg-zinc-700 focus:!text-white">
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => toggleTileRepositionMode(char)}>
                 <Move className="w-4 h-4 mr-2" />
                 {isRepositioning ? 'Done repositioning' : 'Reposition image'}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => openCharacterEditModal(char)} className="hover:!bg-zinc-700 focus:!bg-zinc-700 focus:!text-white">
+              <DropdownMenuItem onClick={() => openCharacterEditModal(char)}>
                 <Pencil className="w-4 h-4 mr-2" />
                 Edit character
               </DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={() => handleDeleteMainCharacter(char.id)}
-                className="text-red-600 focus:text-red-600 focus:!bg-zinc-700 hover:!bg-zinc-700"
+                className="text-red-400 focus:text-red-400"
               >
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete character
@@ -4628,15 +4628,15 @@ const updatedChar: SideCharacter = {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  className="inline-flex items-center justify-center rounded-xl px-3 py-2 bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:border-[hsl(var(--ui-border-hover))] transition-all active:scale-95"
+                  className="inline-flex items-center justify-center h-10 w-10 rounded-xl border-0 bg-[#303035] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:bg-[#343439] active:bg-[#343439] transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40"
                   aria-label="Open scenario settings"
                   title="Open scenario settings"
                 >
-                  <Settings className="w-4 h-4" />
+                  <Settings className="w-5 h-5" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 bg-zinc-800 border-ghost-white text-zinc-200">
-                <DropdownMenuItem onClick={() => setIsSidebarThemeOpen(true)} className="cursor-pointer hover:!bg-zinc-700 focus:!bg-zinc-700 focus:!text-white">
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => setIsSidebarThemeOpen(true)} className="cursor-pointer">
                   <ImageIcon className="w-4 h-4 mr-2" />
                   Set Theme
                 </DropdownMenuItem>
@@ -4967,7 +4967,7 @@ const updatedChar: SideCharacter = {
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               onClick={() => handleDeleteMessage(msg.id)}
-                              className="text-red-500 focus:text-red-500"
+                              className="text-red-400 focus:text-red-400"
                             >
                               <Trash2 className="w-4 h-4 mr-2" />
                               Delete
@@ -5203,13 +5203,13 @@ const updatedChar: SideCharacter = {
           </div>
         </div>
 
-        <div className={`pt-3 pb-3 px-8 border-t border-[hsl(var(--ui-border))] shadow-[0_-4px_12px_rgba(0,0,0,0.15)] transition-colors relative z-20 bg-[hsl(var(--ui-surface))]`}>
-          <div className="w-full max-w-7xl mx-auto space-y-3">
+        <div className="relative z-20 border-t border-[hsl(var(--ui-border))] bg-[#2a2a2f] px-5 pb-4 pt-4 shadow-[0_-6px_16px_rgba(0,0,0,0.24)] transition-colors md:px-8">
+          <div className="mx-auto w-full max-w-7xl space-y-3">
             {/* Quick Actions Bar - Above Input */}
-            <div className="relative flex flex-wrap items-center gap-2">
+            <div className="relative flex flex-wrap items-center gap-2.5">
               <button
                 onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                className="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest border transition-all active:scale-95 cursor-pointer bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:border-[hsl(var(--ui-border-hover))]"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/[0.10] bg-[#3c3e47] px-4 text-[11px] font-black uppercase tracking-[0.12em] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] transition-colors hover:bg-[#44464f] active:scale-95"
               >
                 <Settings className="w-4 h-4" />
                 Chat Settings
@@ -5219,7 +5219,7 @@ const updatedChar: SideCharacter = {
               <button
                 onClick={handleGenerateSceneImage}
                 disabled={isGeneratingImage || !conversation?.messages?.length}
-                className="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest border transition-all active:scale-95 cursor-pointer bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:border-[hsl(var(--ui-border-hover))] disabled:opacity-50 disabled:pointer-events-none"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/[0.10] bg-[#3c3e47] px-4 text-[11px] font-black uppercase tracking-[0.12em] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] transition-colors hover:bg-[#44464f] active:scale-95 disabled:pointer-events-none disabled:opacity-50"
               >
                 {isGeneratingImage ? (
                   <>
@@ -5236,7 +5236,7 @@ const updatedChar: SideCharacter = {
 
               <button
                 onClick={() => setIsColorModalOpen(true)}
-                className="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest border transition-all active:scale-95 cursor-pointer bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:border-[hsl(var(--ui-border-hover))]"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/[0.10] bg-[#3c3e47] px-4 text-[11px] font-black uppercase tracking-[0.12em] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] transition-colors hover:bg-[#44464f] active:scale-95"
               >
                 <Palette className="w-4 h-4" />
                 Change Color
@@ -5245,14 +5245,19 @@ const updatedChar: SideCharacter = {
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || isStreaming}
-                className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2 text-[10px] font-bold uppercase tracking-widest border transition-all active:scale-95 cursor-pointer shadow-[0_10px_30px_rgba(0,0,0,0.35)] disabled:pointer-events-none sm:ml-auto sm:w-auto ${input.trim() ? 'bg-[#4a5f7f] text-white border-[#4a5f7f] hover:bg-[#5a6f8f]' : 'bg-[hsl(var(--ui-surface-2))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text-muted))] opacity-50'}`}
+                className={cn(
+                  'inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border px-5 text-[11px] font-black uppercase tracking-[0.12em] transition-colors active:scale-95 disabled:pointer-events-none sm:ml-auto sm:w-auto',
+                  input.trim() && !isStreaming
+                    ? 'border-[#5f7ca7] bg-[#5a7292] text-white shadow-[0_10px_28px_rgba(0,0,0,0.42),inset_0_1px_0_rgba(255,255,255,0.16),inset_0_-1px_0_rgba(0,0,0,0.26)] hover:bg-[#6884ab]'
+                    : 'border-white/[0.10] bg-[#3c3e47] text-[#8f95a3] opacity-50 shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]',
+                )}
               >
                 {isStreaming ? '...' : 'Send'}
               </button>
             </div>
             
             {/* Input Area */}
-            <div className="bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] rounded-2xl p-2">
+            <div className="rounded-2xl border border-white/[0.08] bg-[#2e2e33] p-2.5 shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -5260,7 +5265,7 @@ const updatedChar: SideCharacter = {
                 rows={3}
                 spellCheck={true}
                 onKeyDown={(e: any) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }}}
-                className="block w-full bg-white text-black placeholder-gray-400 rounded-xl px-4 py-3 text-sm outline-none border-0 resize-none overflow-hidden focus:ring-1 focus:ring-[hsl(var(--accent-teal))]/30 transition-all"
+                className="block w-full resize-none overflow-hidden rounded-xl border border-white/[0.10] bg-[#3c3e47] px-4 py-3 text-sm leading-6 text-[#eaedf1] placeholder:text-[#8f95a3] outline-none transition-all focus:border-[#6e89ad] focus:ring-2 focus:ring-[#4a5f7f]/60"
                 ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; }}}
               />
             </div>

@@ -51,18 +51,18 @@ export function CoverImageActionButtons({
           </DropdownMenuTrigger>
           <DropdownMenuContent
             align="center"
-            className="w-48 bg-[hsl(var(--ui-surface))] border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-lg z-50"
+            className="w-48"
           >
             <DropdownMenuItem
               onClick={onUploadFromDevice}
-              className="cursor-pointer hover:bg-ghost-white focus:bg-ghost-white text-[10px]"
+              className="cursor-pointer"
             >
               <Upload className="w-3.5 h-3.5 mr-2" />
               From Device
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => setIsPickerOpen(true)}
-              className="cursor-pointer hover:bg-ghost-white focus:bg-ghost-white text-[10px]"
+              className="cursor-pointer"
             >
               <ImageIcon className="w-3.5 h-3.5 mr-2" />
               From Library

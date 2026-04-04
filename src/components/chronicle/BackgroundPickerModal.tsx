@@ -2,9 +2,10 @@ import React, { useRef, useState } from "react";
 import { UserBackground } from "@/types";
 import {
   Dialog,
+  DialogDescription,
   DialogContent,
+  DialogTitle,
 } from "@/components/ui/dialog";
-import { Card, Button } from "./UI";
 import { Icons } from "@/constants";
 import { Check, Image, ChevronDown, Upload } from "lucide-react";
 import {
@@ -60,158 +61,186 @@ export function BackgroundPickerModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-2xl p-0 border-0 bg-transparent shadow-none [&>button]:hidden">
-        <Card className="p-8 !shadow-[0_12px_32px_-2px_rgba(0,0,0,0.15)] border-transparent ring-1 ring-slate-900/5">
-          {/* Header - matches Scene Gallery exactly */}
-          <div className="flex justify-between items-center mb-8 pb-4 border-b border-slate-100">
-            <h2 className="text-lg font-black text-[hsl(var(--ui-surface-2))] flex items-center gap-2 uppercase tracking-tight">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
-                <circle cx="9" cy="9" r="2"/>
-                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+      <DialogContent className="w-[min(96vw,1280px)] max-w-none p-0 border-0 bg-transparent shadow-none [&>button]:hidden">
+        <DialogTitle className="sr-only">{title}</DialogTitle>
+        <DialogDescription className="sr-only">
+          Select and manage background images for this page.
+        </DialogDescription>
+        <div className="bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.55),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
+          <div className="relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] shadow-[0_6px_16px_rgba(0,0,0,0.35)]">
+            <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.07),transparent)] bg-[length:100%_30%] bg-no-repeat pointer-events-none" />
+            <div className="relative flex items-center gap-2.5 px-5 py-4">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                <circle cx="9" cy="9" r="2" />
+                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
               </svg>
-              {title}
-            </h2>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="bg-slate-900 text-white hover:bg-slate-800 font-black text-xs tracking-widest uppercase h-9 gap-1 px-3" disabled={isUploading}>
-                  {isUploading ? "Uploading..." : "+ Upload Background"} <ChevronDown className="w-3 h-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44 bg-white z-50">
-                <DropdownMenuItem onClick={() => fileInputRef.current?.click()} className="cursor-pointer">
-                  <Upload className="w-4 h-4 mr-2" /> From Device
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setIsPickerOpen(true)} className="cursor-pointer">
-                  <Image className="w-4 h-4 mr-2" /> From Library
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <input type="file" ref={fileInputRef} className="hidden" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} />
-            <ImageLibraryPickerModal isOpen={isPickerOpen} onClose={() => setIsPickerOpen(false)} onSelect={(url) => { onSelectBackground(url as any); setIsPickerOpen(false); }} />
+              <span className="text-base font-black text-white uppercase tracking-widest">
+                {title}
+              </span>
+            </div>
           </div>
 
-          {/* Overlay Controls - only show when a background is selected */}
-          {selectedBackgroundId && onOverlayChange && (
-            <div className="mb-6 p-4 bg-ghost-white rounded-xl border border-slate-100">
-              <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-3">Overlay Settings</h3>
-              <div className="flex items-center gap-6">
-                {/* Color toggle */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-slate-600">Color:</span>
-                  <div className="flex gap-1">
+          <div className="p-5">
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleFileChange}
+            />
+
+            <div className="bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)] p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-5 pb-4 border-b border-white/10">
+                <span className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa]">Background Library</span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
                     <button
                       type="button"
-                      onClick={() => onOverlayChange(selectedBackgroundId, 'black', overlayOpacity)}
-                      className={`w-8 h-8 rounded-lg border-2 transition-all ${
-                        overlayColor === 'black' 
-                          ? 'border-blue-500 ring-2 ring-blue-200' 
-                          : 'border-slate-200 hover:border-slate-300'
-                      } bg-black`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => onOverlayChange(selectedBackgroundId, 'white', overlayOpacity)}
-                      className={`w-8 h-8 rounded-lg border-2 transition-all ${
-                        overlayColor === 'white' 
-                          ? 'border-blue-500 ring-2 ring-blue-200' 
-                          : 'border-slate-200 hover:border-slate-300'
-                      } bg-white`}
-                    />
+                      disabled={isUploading}
+                      className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl border-0 bg-[#3c3e47] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] text-[#eaedf1] text-xs font-bold leading-none hover:bg-[#44464f] active:bg-[#44464f] transition-colors disabled:opacity-50"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      {isUploading ? "Uploading..." : "+ Upload Background"}
+                      <ChevronDown className="w-3 h-3" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuItem onClick={() => fileInputRef.current?.click()} className="cursor-pointer">
+                      <Upload className="w-4 h-4 mr-2" /> From Device
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setIsPickerOpen(true)} className="cursor-pointer">
+                      <Image className="w-4 h-4 mr-2" /> From Library
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              {selectedBackgroundId && onOverlayChange && (
+                <div className="mb-5 p-4 rounded-xl border border-black/30 bg-[#3c3e47] shadow-[0_8px_24px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.08),inset_0_-1px_0_rgba(0,0,0,0.20)]">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-[#a1a1aa] mb-3">Overlay Settings</h3>
+                  <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-[#d7d8df]">Color:</span>
+                      <div className="flex gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => onOverlayChange(selectedBackgroundId, "black", overlayOpacity)}
+                          className={`w-8 h-8 rounded-lg border-2 transition-all ${
+                            overlayColor === "black"
+                              ? "border-[#4f7fdc] ring-2 ring-[#4f7fdc]/35"
+                              : "border-white/15 hover:border-white/25"
+                          } bg-black`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => onOverlayChange(selectedBackgroundId, "white", overlayOpacity)}
+                          className={`w-8 h-8 rounded-lg border-2 transition-all ${
+                            overlayColor === "white"
+                              ? "border-[#4f7fdc] ring-2 ring-[#4f7fdc]/35"
+                              : "border-white/15 hover:border-white/25"
+                          } bg-white`}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="min-w-[220px] flex-1 flex items-center gap-3">
+                      <span className="text-xs font-bold text-[#d7d8df] whitespace-nowrap">Opacity:</span>
+                      <Slider
+                        value={[overlayOpacity]}
+                        onValueChange={([val]) => onOverlayChange(selectedBackgroundId, overlayColor, val)}
+                        min={0}
+                        max={80}
+                        step={5}
+                        className="flex-1"
+                      />
+                      <span className="text-xs font-bold text-[#a1a1aa] w-8 text-right">{overlayOpacity}%</span>
+                    </div>
                   </div>
-                </div>
-                {/* Opacity slider */}
-                <div className="flex-1 flex items-center gap-3">
-                  <span className="text-xs font-bold text-slate-600 whitespace-nowrap">Opacity:</span>
-                  <Slider
-                    value={[overlayOpacity]}
-                    onValueChange={([val]) => onOverlayChange(selectedBackgroundId, overlayColor, val)}
-                    min={0}
-                    max={80}
-                    step={5}
-                    className="flex-1"
-                  />
-                  <span className="text-xs font-bold text-slate-500 w-8 text-right">{overlayOpacity}%</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Grid - matches Scene Gallery layout */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-            {/* Default Tile - special styling */}
-            <button
-              type="button"
-              onClick={() => onSelectBackground(null)}
-              className={`group relative aspect-video rounded-xl overflow-hidden border shadow-sm bg-ghost-white transition-all cursor-pointer ${
-                selectedBackgroundId === null 
-                  ? 'ring-2 ring-blue-500 ring-offset-2 border-blue-200' 
-                  : 'border-slate-200 hover:border-slate-300'
-              }`}
-            >
-              {/* Subtle gradient preview matching actual default bg */}
-              <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-slate-100/80 to-slate-50" />
-              
-              {/* Centered label */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-                <Image className="w-8 h-8 text-slate-300" />
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Default</span>
-              </div>
-
-              {/* Selected indicator - blue check */}
-              {selectedBackgroundId === null && (
-                <div className="absolute top-2 right-2 w-6 h-6 bg-blue-500 rounded-lg flex items-center justify-center shadow-lg">
-                  <Check className="w-4 h-4 text-white" />
                 </div>
               )}
-            </button>
 
-            {/* Uploaded backgrounds - same card styling as Scene Gallery */}
-            {backgrounds.map((bg) => (
-              <div
-                key={bg.id}
-                onClick={() => onSelectBackground(bg.id)}
-                className={`group relative aspect-video rounded-xl overflow-hidden border shadow-sm bg-ghost-white cursor-pointer transition-all ${
-                  selectedBackgroundId === bg.id 
-                    ? 'ring-2 ring-blue-500 ring-offset-2 border-blue-200' 
-                    : 'border-slate-200 hover:border-slate-300'
-                }`}
-              >
-                <img src={bg.imageUrl} alt="Background" className="w-full h-full object-cover" />
-                
-                {/* Hover overlay with gradient - like Scene Gallery */}
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent h-16 opacity-0 group-hover:opacity-100 transition-opacity" />
-
-                {/* Delete button - rose-500 like Scene Gallery */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(bg.id, bg.imageUrl);
-                  }}
-                  className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-600"
+                  onClick={() => onSelectBackground(null)}
+                  className={`group relative aspect-video rounded-xl overflow-hidden cursor-pointer transition-all ${
+                    selectedBackgroundId === null
+                      ? "border-2 border-blue-500"
+                      : "border border-white/12 hover:border-white/25"
+                  }`}
                 >
-                  <Icons.Trash />
+                  <div className="absolute inset-0 bg-[#1c1c1f] shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30)]" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                    <Image className="w-8 h-8 text-[#7d8498]" />
+                    <span className="text-xs font-bold text-[#aeb6cc] uppercase tracking-widest">Default</span>
+                  </div>
+                  {selectedBackgroundId === null && (
+                    <div className="absolute top-2 right-2 w-6 h-6 bg-[#4f7fdc] rounded-lg flex items-center justify-center shadow-lg">
+                      <Check className="w-4 h-4 text-white" />
+                    </div>
+                  )}
                 </button>
 
-                {/* Selected indicator */}
-                {selectedBackgroundId === bg.id && (
-                  <div className="absolute top-2 left-2 w-6 h-6 bg-blue-500 rounded-lg flex items-center justify-center shadow-lg">
-                    <Check className="w-4 h-4 text-white" />
+                {backgrounds.map((bg) => (
+                  <div
+                    key={bg.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => onSelectBackground(bg.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onSelectBackground(bg.id);
+                      }
+                    }}
+                    className={`group relative aspect-video rounded-xl overflow-hidden cursor-pointer transition-all ${
+                      selectedBackgroundId === bg.id
+                        ? "border-2 border-blue-500"
+                        : "border border-white/12 hover:border-white/25"
+                    }`}
+                  >
+                    <img src={bg.imageUrl} alt="Background" className="w-full h-full object-cover" />
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 to-transparent h-16 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(bg.id, bg.imageUrl);
+                      }}
+                      className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-600"
+                    >
+                      <Icons.Trash />
+                    </button>
+
+                    {selectedBackgroundId === bg.id && (
+                      <div className="absolute top-2 left-2 w-6 h-6 bg-[#4f7fdc] rounded-lg flex items-center justify-center shadow-lg">
+                        <Check className="w-4 h-4 text-white" />
+                      </div>
+                    )}
                   </div>
-                )}
+                ))}
               </div>
-            ))}
+
+              {backgrounds.length === 0 && (
+                <div className="col-span-full mt-5 py-12 text-center rounded-2xl bg-[#1c1c1f] shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
+                  <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">No backgrounds uploaded</p>
+                  <p className="text-sm mt-1 text-zinc-500">Upload images to customize your page background.</p>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Empty state - matches Scene Gallery style */}
-          {backgrounds.length === 0 && (
-            <div className="mt-6 py-12 text-center text-slate-400 border-2 border-dashed border-slate-100 rounded-2xl">
-              <p className="text-xs font-bold uppercase tracking-widest">No backgrounds uploaded</p>
-              <p className="text-[10px] mt-1">Upload images to customize your page background.</p>
-            </div>
-          )}
-        </Card>
+          <ImageLibraryPickerModal
+            isOpen={isPickerOpen}
+            onClose={() => setIsPickerOpen(false)}
+            onSelect={(url) => {
+              onSelectBackground(url as any);
+              setIsPickerOpen(false);
+            }}
+          />
+        </div>
       </DialogContent>
     </Dialog>
   );

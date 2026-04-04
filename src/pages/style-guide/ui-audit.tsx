@@ -90,7 +90,7 @@ type ScanCatalogRow = {
   label: string;
   description: string;
   moduleIds: string[];
-  domainHints: QualityFinding["domain"][];
+  domainHints: readonly QualityFinding["domain"][];
 };
 
 type ScanCatalogSection = {

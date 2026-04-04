@@ -107,26 +107,25 @@ export const SubscriptionTab: React.FC = () => {
             >
               <div className="h-1 w-full" style={{ background: tier.accent }} />
 
-              {tier.badge && (
-                <div className="absolute right-4 top-4">
-                  <span
-                    className="rounded-full px-3 py-1 text-[11px] font-bold tracking-wide text-white"
-                    style={{ background: tier.accent }}
-                  >
-                    {tier.badge}
-                  </span>
-                </div>
-              )}
-
-              {isCurrent && (
-                <div className="absolute left-4 top-4">
-                  <span className="rounded-full border border-emerald-500/35 bg-emerald-500/20 px-3 py-1 text-[11px] font-bold tracking-wide text-emerald-300">
-                    Current Plan
-                  </span>
-                </div>
-              )}
-
               <div className="flex flex-1 flex-col p-6">
+                <div className="mb-4 min-h-[28px] flex flex-wrap items-center gap-2">
+                  {isCurrent && (
+                    <span className="rounded-full border border-emerald-500/35 bg-emerald-500/20 px-3 py-1 text-[11px] font-bold tracking-wide text-emerald-300">
+                      Current Plan
+                    </span>
+                  )}
+                  {tier.badge && (
+                    <span
+                      className="rounded-full px-3 py-1 text-[11px] font-bold tracking-wide text-white"
+                      style={{
+                        background: `linear-gradient(180deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.06) 42%, rgba(0,0,0,0.16) 100%), ${tier.accent}`,
+                      }}
+                    >
+                      {tier.badge}
+                    </span>
+                  )}
+                </div>
+
                 <div className="mb-4 flex items-center gap-3">
                   <Icon className="h-6 w-6" style={{ color: tier.accent }} />
                   <h3 className="text-3xl font-extrabold text-white">{tier.name}</h3>
@@ -141,10 +140,12 @@ export const SubscriptionTab: React.FC = () => {
 
                 <button
                   disabled={isActionDisabled}
-                  className="mb-5 w-full rounded-xl px-4 py-3 text-xl font-bold text-white transition disabled:cursor-not-allowed"
+                  className="mb-5 w-full rounded-xl border-t border-white/20 px-4 py-3 text-xl font-bold text-white transition shadow-[0_10px_26px_rgba(0,0,0,0.42)] hover:brightness-105 active:brightness-95 disabled:cursor-not-allowed"
                   style={{
-                    background: isActionDisabled ? "#62656f" : tier.accent,
-                    opacity: isActionDisabled ? 0.55 : 1,
+                    background: isActionDisabled
+                      ? "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 42%, rgba(0,0,0,0.18) 100%), #62656f"
+                      : `linear-gradient(180deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.06) 42%, rgba(0,0,0,0.16) 100%), ${tier.accent}`,
+                    opacity: isActionDisabled ? 0.62 : 1,
                   }}
                 >
                   {isCurrent

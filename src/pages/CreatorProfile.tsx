@@ -67,7 +67,7 @@ export default function CreatorProfile() {
         supabase.rpc('get_creator_stats', { creator_user_id: userId }),
         supabase.from('published_scenarios').select(`
           id, scenario_id, like_count, play_count, view_count, save_count, allow_remix,
-          scenarios!inner (title, description, cover_image_url, cover_image_position)
+          stories!inner (title, description, cover_image_url, cover_image_position)
         `).eq('publisher_id', userId).eq('is_published', true).eq('is_hidden', false).order('created_at', { ascending: false }),
       ]);
 
@@ -98,7 +98,7 @@ export default function CreatorProfile() {
         const themesMap = new Map((themesData || []).map((t: any) => [t.scenario_id, t.story_type]));
         setWorks(worksRes.data.map((w: any) => ({
           ...w,
-          scenario: w.scenarios,
+          scenario: w.stories,
           storyType: themesMap.get(w.scenario_id) || null,
         })));
       }

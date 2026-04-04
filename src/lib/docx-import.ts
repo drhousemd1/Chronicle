@@ -52,7 +52,7 @@ export async function extractDocxPlainText(buffer: ArrayBuffer): Promise<DocxExt
         chunkParts.push("\n");
       });
 
-      return chunkParts.join("").replaceAll("\u000b", "\n").trim();
+      return chunkParts.join("").split("\u000b").join("\n").trim();
     })
     .filter(Boolean);
 
