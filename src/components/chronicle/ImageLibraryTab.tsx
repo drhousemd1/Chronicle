@@ -746,108 +746,131 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
 
       {/* Click-based lightbox */}
       {lightboxImage && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-8 bg-black/85"
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-black/85"
           onClick={() => {
             setEditTitle('');
             setLightboxImage(null);
           }}
         >
-          <div 
-            className="relative bg-zinc-900 rounded-xl shadow-2xl border border-[#4a5f7f] p-3 w-[600px] max-w-[95vw] animate-in fade-in zoom-in-95 duration-150 flex flex-col"
+          <div
+            className="relative w-[min(96vw,820px)] max-w-none bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.55),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)] animate-in fade-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
-            <img
-              src={lightboxImage.imageUrl}
-              alt={lightboxImage.title || lightboxImage.filename}
-              className="w-full h-[50vh] object-contain rounded-lg"
-            />
-
-            {/* Editable Title */}
-            <div className="mt-3 px-2">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-1 block">Title</label>
-              <input
-                type="text"
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#4a5f7f]"
-                placeholder="Enter image title..."
+            <div className="relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center shadow-lg">
+              <div
+                className="absolute inset-0 z-0 bg-gradient-to-tr from-white/10 to-transparent opacity-40 pointer-events-none"
+                style={{ height: '60%' }}
               />
-            </div>
-
-            {/* Tag Editor */}
-            <div className="mt-3 px-2 space-y-2">
-              <div className="flex flex-wrap gap-1.5">
-                {(lightboxImage.tags || []).map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs font-medium border border-blue-500/30"
-                  >
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={() => handleUpdateImageTags(lightboxImage.id, lightboxImage.tags.filter((t) => t !== tag))}
-                      className="hover:bg-blue-500/30 rounded-full p-0.5 transition-colors"
-                      aria-label={`Remove tag ${tag}`}
-                      title={`Remove tag ${tag}`}
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-              <input
-                type="text"
-                placeholder="Add tag and press Enter..."
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#4a5f7f]"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    const val = (e.target as HTMLInputElement).value.trim().toLowerCase();
-                    if (val && !lightboxImage.tags.includes(val)) {
-                      handleUpdateImageTags(lightboxImage.id, [...lightboxImage.tags, val]);
-                    }
-                    (e.target as HTMLInputElement).value = '';
-                  }
-                }}
-              />
-              <p className="text-[10px] text-zinc-500">{lightboxImage.tags.length}/10 tags • Press Enter to add</p>
-            </div>
-
-            {/* Save / Cancel footer */}
-            <div className="mt-4 px-2 pb-1 flex justify-end gap-3">
+              <h3 className="relative z-[1] text-white text-xl font-bold tracking-[-0.015em]">Image Details</h3>
               <button
                 type="button"
                 onClick={() => {
                   setEditTitle('');
                   setLightboxImage(null);
                 }}
-                className="rounded-xl bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] h-10 px-6 text-[10px] font-bold uppercase tracking-wider hover:opacity-90 transition-opacity"
+                aria-label="Close image editor"
+                className="relative z-[1] ml-auto w-7 h-7 rounded-lg bg-black/25 flex items-center justify-center hover:bg-black/40 transition-colors"
               >
-                Cancel
+                <X className="w-3.5 h-3.5 text-white/70" />
               </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    const { error } = await supabase
-                      .from('library_images')
-                      .update({ title: editTitle } as any)
-                      .eq('id', lightboxImage.id);
-                    if (error) throw error;
-                    setFolderImages((prev) =>
-                      prev.map((img) => (img.id === lightboxImage.id ? { ...img, title: editTitle } : img))
-                    );
-                  } catch (e: any) {
-                    console.error('Failed to save title:', e);
-                    toast.error(`Failed to save image title: ${e?.message || 'Unknown error'}`);
-                  }
-                  setEditTitle('');
-                  setLightboxImage(null);
-                }}
-                className="rounded-xl bg-[hsl(var(--ui-surface-2))] border border-[hsl(var(--ui-border))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] h-10 px-6 text-[10px] font-bold uppercase tracking-wider hover:opacity-90 transition-opacity"
-              >
-                Save
-              </button>
+            </div>
+
+            <div className="p-4 sm:p-5">
+              <div className="bg-[#2e2e33] rounded-2xl p-4 sm:p-5 space-y-4 shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
+                <div className="w-full rounded-2xl border border-black/35 bg-[#1c1c1f] overflow-hidden shadow-[inset_0_2px_6px_rgba(0,0,0,0.40)]">
+                  <img
+                    src={lightboxImage.imageUrl}
+                    alt={lightboxImage.title || lightboxImage.filename}
+                    className="w-full max-h-[50vh] object-contain"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block">Title</label>
+                  <input
+                    type="text"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    className="w-full h-11 px-3.5 bg-[#1c1c1f] border border-black/35 rounded-xl text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                    placeholder="Enter image title..."
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block">Tags</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(lightboxImage.tags || []).map((tag) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border border-blue-500/30 bg-blue-500/20 text-blue-300"
+                      >
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateImageTags(lightboxImage.id, lightboxImage.tags.filter((t) => t !== tag))}
+                          className="rounded-full p-0.5 transition-colors hover:bg-blue-500/30"
+                          aria-label={`Remove tag ${tag}`}
+                          title={`Remove tag ${tag}`}
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Add tag and press Enter..."
+                    className="w-full h-11 px-3.5 bg-[#1c1c1f] border border-black/35 rounded-xl text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const val = (e.target as HTMLInputElement).value.trim().toLowerCase();
+                        if (val && !lightboxImage.tags.includes(val) && lightboxImage.tags.length < 10) {
+                          handleUpdateImageTags(lightboxImage.id, [...lightboxImage.tags, val]);
+                        }
+                        (e.target as HTMLInputElement).value = '';
+                      }
+                    }}
+                  />
+                  <p className="text-[10px] text-zinc-500">{lightboxImage.tags.length}/10 tags • Press Enter to add</p>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditTitle('');
+                      setLightboxImage(null);
+                    }}
+                    className="inline-flex items-center justify-center h-10 px-5 rounded-xl border-0 bg-[#3c3e47] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] text-[#eaedf1] text-xs font-bold leading-none hover:bg-[#44464f] active:bg-[#44464f] transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        const { error } = await supabase
+                          .from('library_images')
+                          .update({ title: editTitle } as any)
+                          .eq('id', lightboxImage.id);
+                        if (error) throw error;
+                        setFolderImages((prev) =>
+                          prev.map((img) => (img.id === lightboxImage.id ? { ...img, title: editTitle } : img))
+                        );
+                      } catch (e: any) {
+                        console.error('Failed to save title:', e);
+                        toast.error(`Failed to save image title: ${e?.message || 'Unknown error'}`);
+                      }
+                      setEditTitle('');
+                      setLightboxImage(null);
+                    }}
+                    className="inline-flex items-center justify-center h-10 px-5 rounded-xl border-0 bg-[#3c3e47] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] text-[#eaedf1] text-xs font-bold leading-none hover:bg-[#44464f] active:bg-[#44464f] transition-colors"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

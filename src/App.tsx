@@ -9,6 +9,7 @@ import UiAuditPage from "./pages/style-guide/ui-audit";
 import ApiInspectorPage from "./pages/style-guide/api-inspector";
 import AppArchitecturePage from "./pages/style-guide/app-architecture";
 import { Navigate } from "react-router-dom";
+import { Toaster } from "sonner";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+        <Toaster richColors position="top-right" closeButton />
       </TooltipProvider>
     </ArtStylesProvider>
   </QueryClientProvider>

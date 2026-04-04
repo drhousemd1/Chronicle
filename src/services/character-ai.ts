@@ -529,6 +529,43 @@ Return ONLY the enhanced text. No explanations, no prefixes, no markdown formatt
 
 const MAX_RETRIES = 3;
 
+function extractAssistantText(data: unknown): string {
+  const payload = (data ?? {}) as Record<string, unknown>;
+  const choice = Array.isArray(payload.choices) ? payload.choices[0] as Record<string, unknown> | undefined : undefined;
+  const message = (choice?.message ?? {}) as Record<string, unknown>;
+  const raw = message.content ?? choice?.text ?? payload.output_text;
+
+  if (typeof raw === 'string') {
+    return raw.trim();
+  }
+
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    const maybeText = (raw as Record<string, unknown>).text;
+    if (typeof maybeText === 'string') {
+      return maybeText.trim();
+    }
+  }
+
+  if (Array.isArray(raw)) {
+    const joined = raw
+      .map((part) => {
+        if (typeof part === 'string') return part;
+        if (!part || typeof part !== 'object') return '';
+        const record = part as Record<string, unknown>;
+        if (typeof record.text === 'string') return record.text;
+        if (typeof record.content === 'string') return record.content;
+        return '';
+      })
+      .filter(Boolean)
+      .join('\n')
+      .trim();
+
+    if (joined) return joined;
+  }
+
+  return '';
+}
+
 async function callAIWithRetry(
   messages: { role: string; content: string }[],
   modelId: string,
@@ -536,22 +573,26 @@ async function callAIWithRetry(
 ): Promise<string> {
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     const { data, error } = await supabase.functions.invoke('chat', {
-      body: { messages, modelId, stream }
+      body: { messages, modelId, stream },
     });
 
     if (error) {
-      console.error(`[character-ai] Attempt ${attempt}/${MAX_RETRIES} failed:`, error);
+      const payload = (data && typeof data === 'object') ? data as Record<string, unknown> : null;
+      const payloadError = typeof payload?.error === 'string' ? payload.error : '';
+      const payloadDetails = typeof payload?.details === 'string' ? payload.details : '';
+      const details = [payloadError, payloadDetails, error.message].filter(Boolean).join(' | ');
+      console.error(`[character-ai] Attempt ${attempt}/${MAX_RETRIES} failed:`, details || error);
       if (attempt < MAX_RETRIES) continue;
-      throw new Error('AI request failed after 3 attempts. Please try again.');
+      throw new Error(details || 'AI request failed after 3 attempts. Please try again.');
     }
 
-    const finishReason = data?.choices?.[0]?.finish_reason;
-    const content = data?.choices?.[0]?.message?.content;
+    const finishReason = (data as any)?.choices?.[0]?.finish_reason;
+    const content = extractAssistantText(data);
 
     if (finishReason === 'content_filter' || !content) {
       console.warn(`[character-ai] Attempt ${attempt}/${MAX_RETRIES} blocked (${finishReason || 'empty content'})`);
       if (attempt < MAX_RETRIES) continue;
-      throw new Error('AI request failed after 3 attempts. Try rephrasing the content.');
+      throw new Error('AI request failed after 3 attempts (empty/filtered response). Try rephrasing or switching model.');
     }
 
     return content.trim().replace(/^["']|["']$/g, '');

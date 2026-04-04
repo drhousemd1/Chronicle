@@ -76,6 +76,7 @@ import {
   Size2D,
 } from '@/features/shared-builder/utils/image-position';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export interface CharacterBuilderScreenProps {
   appData: ScenarioData;
@@ -479,6 +480,8 @@ export const CharacterBuilderScreen: React.FC<CharacterBuilderScreenProps> = ({
       setValue(enhanced);
     } catch (error) {
       console.error('Enhancement failed:', error);
+      const message = error instanceof Error ? error.message : 'AI Enhance failed.';
+      toast.error(message || 'AI Enhance failed. Please try again.');
     } finally {
       setEnhancingField(null);
     }

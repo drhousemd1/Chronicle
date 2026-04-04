@@ -61,6 +61,42 @@ const FIELD_PROMPTS: Record<EnhanceableWorldFields, { label: string; instruction
   }
 };
 
+function extractAssistantText(data: unknown): string {
+  const payload = (data ?? {}) as Record<string, unknown>;
+  const choice = Array.isArray(payload.choices) ? payload.choices[0] as Record<string, unknown> | undefined : undefined;
+  const message = (choice?.message ?? {}) as Record<string, unknown>;
+  const raw = message.content ?? choice?.text ?? payload.output_text;
+
+  if (typeof raw === 'string') {
+    return raw.trim();
+  }
+
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    const maybeText = (raw as Record<string, unknown>).text;
+    if (typeof maybeText === 'string') {
+      return maybeText.trim();
+    }
+  }
+
+  if (Array.isArray(raw)) {
+    const joined = raw
+      .map((part) => {
+        if (typeof part === 'string') return part;
+        if (!part || typeof part !== 'object') return '';
+        const record = part as Record<string, unknown>;
+        if (typeof record.text === 'string') return record.text;
+        if (typeof record.content === 'string') return record.content;
+        return '';
+      })
+      .filter(Boolean)
+      .join('\n')
+      .trim();
+    if (joined) return joined;
+  }
+
+  return '';
+}
+
 /**
  * Build a structured expansion prompt for the AI
  */
@@ -196,15 +232,19 @@ export async function aiEnhanceWorldField(
       ],
       modelId,
       stream: false
-    }
+    },
   });
 
   if (error) {
-    console.error('[world-ai] Enhancement error:', error);
-    throw new Error(error.message || 'Failed to enhance field');
+    const payload = (data && typeof data === 'object') ? data as Record<string, unknown> : null;
+    const payloadError = typeof payload?.error === 'string' ? payload.error : '';
+    const payloadDetails = typeof payload?.details === 'string' ? payload.details : '';
+    const details = [payloadError, payloadDetails, error.message].filter(Boolean).join(' | ');
+    console.error('[world-ai] Enhancement error:', details || error);
+    throw new Error(details || 'Failed to enhance field');
   }
 
-  const content = data?.choices?.[0]?.message?.content;
+  const content = extractAssistantText(data);
   if (!content) {
     throw new Error('No content returned from AI');
   }

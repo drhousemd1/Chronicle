@@ -34,6 +34,7 @@ import { TabFieldNavigator } from '@/components/chronicle/TabFieldNavigator';
 import { StoryRosterSidebar } from '@/features/story-builder/sidebar/StoryRosterSidebar';
 import { trackAiUsageEvent } from '@/services/usage-tracking';
 import { buildRequiredPresence, trackApiValidationSnapshot } from '@/services/api-usage-validation';
+import { toast } from 'sonner';
 
 export interface StoryBuilderScreenProps {
   scenarioId: string;
@@ -196,6 +197,7 @@ export const StoryBuilderScreen: React.FC<StoryBuilderScreenProps> = ({
   const handleEnhanceField = async (fieldName: EnhanceableWorldFields, mode: EnhanceMode = 'detailed') => {
     if (!modelId) {
       console.error("No model selected. Please select a model in settings.");
+      toast.error("No model selected. Please choose a model in settings.");
       return;
     }
     
@@ -215,6 +217,8 @@ export const StoryBuilderScreen: React.FC<StoryBuilderScreenProps> = ({
       updateCore({ [fieldName]: enhanced });
     } catch (error: any) {
       console.error('Enhancement failed:', error);
+      const message = error instanceof Error ? error.message : 'AI Enhance failed.';
+      toast.error(message || 'AI Enhance failed. Please try again.');
     } finally {
       setEnhancingField(null);
     }
@@ -731,6 +735,8 @@ className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border border-black/3
                                           updateCore({ customWorldSections: sections });
                                         }).catch(err => {
                                           console.error('Enhancement failed:', err);
+                                          const message = err instanceof Error ? err.message : 'AI Enhance failed. Please try again.';
+                                          toast.error(message);
                                         }).finally(() => {
                                           setEnhancingField(null);
                                         });
@@ -901,6 +907,8 @@ className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                 setValue(enhanced);
               }).catch(err => {
                 console.error('Enhancement failed:', err);
+                const message = err instanceof Error ? err.message : 'AI Enhance failed. Please try again.';
+                toast.error(message);
               }).finally(() => {
                 setEnhancingField(null);
               });
