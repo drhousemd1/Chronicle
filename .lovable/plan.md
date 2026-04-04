@@ -1,29 +1,32 @@
 
 
-# Fix extract-memory-events 401 "Invalid JWT"
+# Add Missing `status` Column to `ai_usage_test_events`
 
-## Root Cause
+## Problem
 
-The `config.toml` file has `verify_jwt = true` for `extract-memory-events` (line 15-16). This was added by ChatGPT Codex. It causes the Supabase **gateway** to reject the request with `{"code":401,"message":"Invalid JWT"}` before the function code ever runs.
+The `ai_usage_test_events` table is missing a `status` text column. Two edge functions try to insert into it:
 
-Lovable Cloud deploys edge functions with `verify_jwt = false` by default. All your edge functions already validate JWTs internally in their own code (lines 17-25 of `extract-memory-events/index.ts` do `getUser()` checks). The gateway-level check is redundant and creates race conditions when the frontend calls functions before the auth session is fully refreshed.
+1. **`track-api-usage-test`** (line 167) — inserts `status: "ok"` or `"fail"`
+2. **`track-ai-usage`** (line in the test-trace mirror block) — inserts `status: "ok"` or custom string
 
-This same issue affects **every function** listed in `config.toml` — they all have `verify_jwt = true` added by Codex.
+The table has `status_code` (integer) but no `status` (text). Every insert that includes `status` fails with a column-not-found error, producing the 500 "Failed to insert trace event" response.
+
+This is the root cause of the errors you're seeing when the API usage test tracking is active — every tracked event (character AI, chat, memory, avatars, etc.) tries to write a trace row and fails.
 
 ## Fix
 
-**File**: `supabase/config.toml`
+One database migration adding the missing column:
 
-Remove all `verify_jwt = true` function blocks. Keep only the `project_id` line. Lovable Cloud's default (`verify_jwt = false`) will apply, and each function's internal auth check continues to protect it.
-
-The resulting file will be:
-```toml
-project_id = "gialzvvswxadxolnwots"
+```sql
+ALTER TABLE public.ai_usage_test_events
+  ADD COLUMN IF NOT EXISTS status text DEFAULT 'ok';
 ```
 
-No other files change. No edge function code changes. The functions already handle auth internally.
+No edge function or frontend code changes needed — they already use the correct column name.
 
-## Why This Is Safe
-
-Every edge function in the repo already has internal JWT validation (`getUser()` or `getClaims()` + admin role checks). Removing the gateway-level check just stops the double-validation that causes the 401 race condition.
+## What stays untouched
+- All edge function code (already correct)
+- All frontend tracking code (`trackAiUsageEvent`, `trackApiValidationSnapshot`)
+- All other tables
+- UI layout and styling
 
