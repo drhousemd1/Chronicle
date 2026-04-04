@@ -18,41 +18,65 @@ export type Database = {
         Row: {
           amount: number
           campaign_name: string
+          cost_cadence: string | null
           created_at: string
           created_by: string
           currency: string
+          description: string | null
           id: string
+          name: string | null
           notes: string
           period_end: string
           period_start: string
           platform: string
+          recurring_cost: number | null
+          spent_override: number | null
+          start_date: string | null
+          status: string | null
           updated_at: string
+          url: string | null
         }
         Insert: {
           amount?: number
           campaign_name?: string
+          cost_cadence?: string | null
           created_at?: string
           created_by: string
           currency?: string
+          description?: string | null
           id?: string
+          name?: string | null
           notes?: string
           period_end: string
           period_start: string
           platform: string
+          recurring_cost?: number | null
+          spent_override?: number | null
+          start_date?: string | null
+          status?: string | null
           updated_at?: string
+          url?: string | null
         }
         Update: {
           amount?: number
           campaign_name?: string
+          cost_cadence?: string | null
           created_at?: string
           created_by?: string
           currency?: string
+          description?: string | null
           id?: string
+          name?: string | null
           notes?: string
           period_end?: string
           period_start?: string
           platform?: string
+          recurring_cost?: number | null
+          spent_override?: number | null
+          start_date?: string | null
+          status?: string | null
           updated_at?: string
+          url?: string | null
         }
         Relationships: []
       }
@@ -60,23 +84,32 @@ export type Database = {
         Row: {
           author_id: string
           content: string
+          content_html: string | null
           created_at: string
           id: string
+          note_key: string | null
           updated_at: string
+          updated_by: string | null
         }
         Insert: {
           author_id: string
           content?: string
+          content_html?: string | null
           created_at?: string
           id?: string
+          note_key?: string | null
           updated_at?: string
+          updated_by?: string | null
         }
         Update: {
           author_id?: string
           content?: string
+          content_html?: string | null
           created_at?: string
           id?: string
+          note_key?: string | null
           updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
@@ -112,40 +145,76 @@ export type Database = {
       }
       ai_usage_test_events: {
         Row: {
+          api_call_group: string | null
           created_at: string
           error_message: string | null
+          est_cost_usd: number | null
+          event_key: string | null
+          event_source: string | null
           event_type: string
           function_name: string
           id: string
+          input_chars: number | null
+          input_tokens_est: number | null
           latency_ms: number | null
+          metadata: Json | null
+          model_id: string | null
+          output_chars: number | null
+          output_tokens_est: number | null
           payload: Json | null
           response_summary: string | null
           session_id: string
           status_code: number | null
+          total_tokens_est: number | null
+          user_id: string | null
         }
         Insert: {
+          api_call_group?: string | null
           created_at?: string
           error_message?: string | null
+          est_cost_usd?: number | null
+          event_key?: string | null
+          event_source?: string | null
           event_type: string
           function_name?: string
           id?: string
+          input_chars?: number | null
+          input_tokens_est?: number | null
           latency_ms?: number | null
+          metadata?: Json | null
+          model_id?: string | null
+          output_chars?: number | null
+          output_tokens_est?: number | null
           payload?: Json | null
           response_summary?: string | null
           session_id: string
           status_code?: number | null
+          total_tokens_est?: number | null
+          user_id?: string | null
         }
         Update: {
+          api_call_group?: string | null
           created_at?: string
           error_message?: string | null
+          est_cost_usd?: number | null
+          event_key?: string | null
+          event_source?: string | null
           event_type?: string
           function_name?: string
           id?: string
+          input_chars?: number | null
+          input_tokens_est?: number | null
           latency_ms?: number | null
+          metadata?: Json | null
+          model_id?: string | null
+          output_chars?: number | null
+          output_tokens_est?: number | null
           payload?: Json | null
           response_summary?: string | null
           session_id?: string
           status_code?: number | null
+          total_tokens_est?: number | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -1043,30 +1112,42 @@ export type Database = {
       reports: {
         Row: {
           accused: string
+          accused_user_id: string | null
           created_at: string
           id: string
+          note: string | null
           reason: string
           reporter: string
+          reporter_user_id: string | null
+          reviewed_by: string | null
           status: string
           story_id: string | null
           updated_at: string
         }
         Insert: {
           accused: string
+          accused_user_id?: string | null
           created_at?: string
           id?: string
+          note?: string | null
           reason: string
           reporter: string
+          reporter_user_id?: string | null
+          reviewed_by?: string | null
           status?: string
           story_id?: string | null
           updated_at?: string
         }
         Update: {
           accused?: string
+          accused_user_id?: string | null
           created_at?: string
           id?: string
+          note?: string | null
           reason?: string
           reporter?: string
+          reporter_user_id?: string | null
+          reviewed_by?: string | null
           status?: string
           story_id?: string | null
           updated_at?: string
@@ -1515,25 +1596,46 @@ export type Database = {
         Row: {
           created_at: string
           expires_at: string | null
+          falls_off_at: string | null
           id: string
+          issued_at: string | null
           issued_by: string
+          note: string | null
+          points: number | null
           reason: string
+          report_id: string | null
+          status: string | null
+          updated_at: string | null
           user_id: string
         }
         Insert: {
           created_at?: string
           expires_at?: string | null
+          falls_off_at?: string | null
           id?: string
+          issued_at?: string | null
           issued_by: string
+          note?: string | null
+          points?: number | null
           reason: string
+          report_id?: string | null
+          status?: string | null
+          updated_at?: string | null
           user_id: string
         }
         Update: {
           created_at?: string
           expires_at?: string | null
+          falls_off_at?: string | null
           id?: string
+          issued_at?: string | null
           issued_by?: string
+          note?: string | null
+          points?: number | null
           reason?: string
+          report_id?: string | null
+          status?: string | null
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -1646,7 +1748,7 @@ export type Database = {
         Returns: undefined
       }
       set_admin_access: {
-        Args: { _enabled: boolean; _user_id: string }
+        Args: { _enabled: boolean; _target_user_id: string }
         Returns: undefined
       }
     }
