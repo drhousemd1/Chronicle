@@ -164,6 +164,7 @@ export type Database = {
           payload: Json | null
           response_summary: string | null
           session_id: string
+          status: string | null
           status_code: number | null
           total_tokens_est: number | null
           user_id: string | null
@@ -188,6 +189,7 @@ export type Database = {
           payload?: Json | null
           response_summary?: string | null
           session_id: string
+          status?: string | null
           status_code?: number | null
           total_tokens_est?: number | null
           user_id?: string | null
@@ -212,6 +214,7 @@ export type Database = {
           payload?: Json | null
           response_summary?: string | null
           session_id?: string
+          status?: string | null
           status_code?: number | null
           total_tokens_est?: number | null
           user_id?: string | null
