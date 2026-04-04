@@ -3239,7 +3239,7 @@ const findings: QualityFinding[] = [
     "When docs drift from code truth, LLM agents and non-technical operators get routed to the wrong files and miss real ownership boundaries.",
     "Troubleshooting and implementation handoffs become unreliable, causing wasted cycles and inconsistent fixes.",
     "Update guide path references to current file ownership and verify every documented `src/...` reference resolves to an existing path.",
-    "documentation",
+    "infrastructure",
     "small",
     runIds.toolIntegrity,
     {
