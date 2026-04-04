@@ -4774,6 +4774,25 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260404-005",
+      title: "Fix Promise type mismatch in admin-ai-usage-timeseries edge function",
+      summary: "Edge Function Build Fix · Wrapped PostgrestFilterBuilder assignments in Promise.resolve() to satisfy Deno type checker",
+      severity: "patch" as const,
+      status: "completed" as const,
+      problem: "The `filteredMessagesPromise` variable in `admin-ai-usage-timeseries` was typed as `Promise<...>` but was being assigned a Supabase `PostgrestFilterBuilder` (thenable but not a full Promise). Deno's type checker rejected this because `PostgrestFilterBuilder` lacks `.catch` and `.finally` methods required by the `Promise` interface.",
+      plan: "Wrap the two non-Promise assignments with `Promise.resolve()` so the values satisfy the declared Promise type without changing runtime behavior.",
+      changes: "Applied type-safe Promise wrapping:\n• Line 251: wrapped `serviceClient.from('messages').select(...)...` chain in `Promise.resolve()`.\n• Line 259: wrapped `messagesQuery` in `Promise.resolve(messagesQuery)`.\n• Redeployed `admin-ai-usage-timeseries` edge function and verified build passes.",
+      filesAffected: [
+        "supabase/functions/admin-ai-usage-timeseries/index.ts",
+      ],
+      agent: "Lovable",
+      relatedFindingIds: [],
+      tags: ["edge-function", "build-fix", "typescript", "promise-type", "api-usage"],
+      comments: [],
+      createdAt: "2026-04-04T21:30:00.000Z",
+      updatedAt: "2026-04-04T21:30:00.000Z",
+    },
+    {
       id: "cl-20260404-004",
       title: "Eliminate Gallery ref warnings and suppress unauthenticated API usage session probes",
       summary: "Gallery + API Usage Test Session · Added forwardRef support for gallery containers and prevented pre-auth edge-function calls that generated 401 runtime noise",
