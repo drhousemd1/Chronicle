@@ -139,12 +139,12 @@ const CategorySection: React.FC<CategorySectionProps> = ({
   );
 };
 
-export const GalleryCategorySidebar: React.FC<GalleryCategorySidebarProps> = ({
+export const GalleryCategorySidebar = React.forwardRef<HTMLDivElement, GalleryCategorySidebarProps>(({
   isOpen,
   onClose,
   selectedFilters,
   onFilterChange,
-}) => {
+}, ref) => {
   if (!isOpen) return null;
 
   const toggleFilter = (category: keyof CategoryFilters, item: string) => {
@@ -177,7 +177,7 @@ export const GalleryCategorySidebar: React.FC<GalleryCategorySidebarProps> = ({
     selectedFilters.customTags.length > 0;
 
   return (
-    <div className="w-72 flex-shrink-0 bg-[#18181b] border-r border-ghost-white flex flex-col h-full">
+    <div ref={ref} className="w-72 flex-shrink-0 bg-[#18181b] border-r border-ghost-white flex flex-col h-full">
       {/* Yellow accent border */}
       <div className="h-0.5 bg-yellow-400" />
       
@@ -254,4 +254,6 @@ export const GalleryCategorySidebar: React.FC<GalleryCategorySidebarProps> = ({
       </ScrollArea>
     </div>
   );
-};
+});
+
+GalleryCategorySidebar.displayName = "GalleryCategorySidebar";

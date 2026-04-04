@@ -42,6 +42,24 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function requireAccessToken(suppressErrors: boolean): Promise<string | null> {
+  const {
+    data: { session },
+    error,
+  } = await supabase.auth.getSession();
+
+  if (error) {
+    if (suppressErrors) return null;
+    throw new Error(error.message || "Unable to read auth session");
+  }
+
+  const token = session?.access_token ?? null;
+  if (!token && !suppressErrors) {
+    throw new Error("No active authenticated session");
+  }
+  return token;
+}
+
 function setLocalState(enabled: boolean, sessionId?: string | null) {
   if (!hasWindow()) return;
   window.localStorage.setItem(ENABLED_KEY, enabled ? "1" : "0");
@@ -60,10 +78,17 @@ export async function fetchActiveApiUsageTestSession(
   const suppressErrors = options.suppressErrors ?? true;
 
   let lastError: Error | null = null;
+  const accessToken = await requireAccessToken(suppressErrors);
+  if (!accessToken) {
+    return null;
+  }
 
   for (let attempt = 0; attempt <= retries; attempt += 1) {
     const { data, error } = await supabase.functions.invoke("api-usage-test-session", {
       body: { action: "get" },
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
     });
 
     if (!error) {
@@ -104,6 +129,11 @@ export async function startApiUsageTestSession(input: {
   conversationName?: string;
   metadata?: Record<string, unknown>;
 }): Promise<ApiUsageTestSession> {
+  const accessToken = await requireAccessToken(false);
+  if (!accessToken) {
+    throw new Error("No active authenticated session");
+  }
+
   const { data, error } = await supabase.functions.invoke("api-usage-test-session", {
     body: {
       action: "start",
@@ -112,6 +142,9 @@ export async function startApiUsageTestSession(input: {
       conversationId: input.conversationId || null,
       conversationName: input.conversationName || "",
       metadata: input.metadata || {},
+    },
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
     },
   });
 
@@ -137,8 +170,16 @@ export async function startApiUsageTestSession(input: {
 }
 
 export async function stopApiUsageTestSession(sessionId?: string | null): Promise<ApiUsageTestSession | null> {
+  const accessToken = await requireAccessToken(false);
+  if (!accessToken) {
+    throw new Error("No active authenticated session");
+  }
+
   const { data, error } = await supabase.functions.invoke("api-usage-test-session", {
     body: { action: "stop", sessionId: sessionId || null },
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
   });
   if (error) throw new Error(error.message || "Failed to stop test session");
   setLocalState(false, null);

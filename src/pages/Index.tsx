@@ -362,7 +362,7 @@ const IndexContent = () => {
   }, [tab, accountActiveTab]);
 
   useEffect(() => {
-    if (!isAdminState || !user?.id) {
+    if (authLoading || !isAuthenticated || !isAdminState || !user?.id) {
       setActiveApiUsageTestSession(null);
       return;
     }
@@ -383,7 +383,7 @@ const IndexContent = () => {
     return () => {
       cancelled = true;
     };
-  }, [isAdminState, user?.id]);
+  }, [authLoading, isAuthenticated, isAdminState, user?.id]);
 
   const handleApiUsageTestToggle = useCallback(async (enabled: boolean) => {
     if (!isAdminState || !user?.id) return;

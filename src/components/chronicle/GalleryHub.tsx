@@ -42,7 +42,13 @@ const defaultFilters: CategoryFilters = {
   customTags: [],
 };
 
-export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, sortBy, onSortChange, onAuthRequired }) => {
+export const GalleryHub = React.forwardRef<HTMLDivElement, GalleryHubProps>(({
+  onPlay,
+  onSaveChange,
+  sortBy,
+  onSortChange,
+  onAuthRequired,
+}, ref) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
@@ -343,7 +349,7 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
   }, [selectedPublished, scenarios]);
 
   return (
-    <div className="w-full h-full flex flex-col bg-[#121214]">
+    <div ref={ref} className="w-full h-full flex flex-col bg-[#121214]">
       {/* Glassmorphic Header */}
       <header 
         className="sticky top-0 z-50 px-6 py-4 flex items-center gap-4"
@@ -584,4 +590,6 @@ export const GalleryHub: React.FC<GalleryHubProps> = ({ onPlay, onSaveChange, so
       )}
     </div>
   );
-};
+});
+
+GalleryHub.displayName = "GalleryHub";

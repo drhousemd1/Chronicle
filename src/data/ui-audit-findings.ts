@@ -4774,6 +4774,28 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260404-004",
+      title: "Eliminate Gallery ref warnings and suppress unauthenticated API usage session probes",
+      summary: "Gallery + API Usage Test Session · Added forwardRef support for gallery containers and prevented pre-auth edge-function calls that generated 401 runtime noise",
+      severity: "patch" as const,
+      status: "completed" as const,
+      problem: "Runtime warnings were still appearing in dev: React reported function-component ref warnings for Gallery containers, and startup could attempt `api-usage-test-session` lookups before a valid auth token existed, producing avoidable 401 Invalid JWT responses.",
+      plan: "Stabilize both paths without changing user behavior: add `forwardRef` support to gallery container components that may receive refs from parent wrappers, and enforce authenticated token presence before invoking API usage test-session edge functions.",
+      changes: "Applied runtime stability hardening:\n• Wrapped `GalleryHub` and `GalleryCategorySidebar` with `React.forwardRef` and attached forwarded refs to their root containers to remove function-component ref warnings.\n• Added session token guard helper in `api-usage-test-session` service so calls short-circuit when no authenticated session is present.\n• Added explicit Bearer token headers for `get/start/stop` test-session function invokes.\n• Tightened startup preload effect in `Index.tsx` to require `!authLoading && isAuthenticated && isAdminState` before probing active test sessions.",
+      filesAffected: [
+        "src/components/chronicle/GalleryHub.tsx",
+        "src/components/chronicle/GalleryCategorySidebar.tsx",
+        "src/services/api-usage-test-session.ts",
+        "src/pages/Index.tsx",
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["runtime-stability", "gallery", "forwardref", "auth-guard", "api-usage-test-session"],
+      comments: [],
+      createdAt: "2026-04-04T20:35:00.000Z",
+      updatedAt: "2026-04-04T20:35:00.000Z",
+    },
+    {
       id: "cl-20260404-003",
       title: "Repair finance database contract to match dashboard/runtime expectations",
       summary: "Finance Dashboard · Added missing finance tables/columns, aligned RPC signature, rebuilt RLS/storage policy coverage, and restored backend contract parity for live widgets",
