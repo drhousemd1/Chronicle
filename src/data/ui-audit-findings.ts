@@ -3144,7 +3144,7 @@ const findings: QualityFinding[] = [
     "This created false-positive instability noise, making real regression signals harder to spot during debugging and QA.",
     "Admins could see warning chatter even when no user-facing failure occurred.",
     "Treat bootstrap lookup as soft-fail by default (bounded retries, then null), and avoid warning-level logging for this non-blocking path.",
-    "runtime",
+    "infrastructure",
     "small",
     runIds.stabilitySweep6,
     {
