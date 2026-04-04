@@ -2708,7 +2708,7 @@ const findings: QualityFinding[] = [
     "Missing dialog semantics reduce screen-reader clarity and generate warning noise that can mask real regressions.",
     "Users relying on assistive tech receive lower-quality context for modal purpose; operators see persistent accessibility warnings.",
     "Add hidden semantic title/description and explicit `aria-describedby` handling for the auth dialog content.",
-    "accessibility",
+    "shared-component",
     "small",
     runIds.stabilitySweep2,
     {
