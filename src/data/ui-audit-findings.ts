@@ -4774,6 +4774,25 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260404-006",
+      title: "Remove redundant verify_jwt = true from config.toml to fix 401 race conditions",
+      summary: "Edge Function Auth Fix · Stripped all gateway-level verify_jwt = true entries added by ChatGPT Codex; functions already validate JWTs internally",
+      severity: "patch" as const,
+      status: "completed" as const,
+      problem: "Every edge function in `config.toml` had `verify_jwt = true` added by ChatGPT Codex. This caused the Supabase gateway to reject requests with `{\"code\":401,\"message\":\"Invalid JWT\"}` before the function code could run its own auth logic. On app startup or during session refresh, tokens could be momentarily expired, triggering 401 errors (e.g. `extract-memory-events`, `api-usage-test-session`) even though the functions handle auth internally.",
+      plan: "Remove all function-specific `[functions.*] verify_jwt = true` blocks from `config.toml`, leaving only the `project_id` line. Lovable Cloud deploys with `verify_jwt = false` by default, and every function already validates JWTs via `getUser()` or `getClaims()` + role checks internally.",
+      changes: "Reduced `supabase/config.toml` from 61 lines (20 function blocks with `verify_jwt = true`) to a single `project_id` line. No edge function code was changed — internal auth checks remain intact.",
+      filesAffected: [
+        "supabase/config.toml",
+      ],
+      agent: "Lovable",
+      relatedFindingIds: ["cl-20260404-005", "cl-20260404-004"],
+      tags: ["edge-function", "auth", "config", "401-fix", "race-condition"],
+      comments: [],
+      createdAt: "2026-04-04T22:00:00.000Z",
+      updatedAt: "2026-04-04T22:00:00.000Z",
+    },
+    {
       id: "cl-20260404-005",
       title: "Fix Promise type mismatch in admin-ai-usage-timeseries edge function",
       summary: "Edge Function Build Fix · Wrapped PostgrestFilterBuilder assignments in Promise.resolve() to satisfy Deno type checker",
