@@ -3189,7 +3189,7 @@ const findings: QualityFinding[] = [
     "UI visibility is not a security boundary; server-side role enforcement is required to prevent direct non-admin invocation.",
     "Potential unauthorized invocation of internal tracing lifecycle actions through direct API calls.",
     "Add explicit server-side admin-role check (`has_role`) and return 403 for non-admin requests before action handling.",
-    "security",
+    "infrastructure",
     "small",
     runIds.stabilitySweep6,
     {
