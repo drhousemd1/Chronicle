@@ -182,12 +182,7 @@ const MOCK_USERS = [
   { id:8, email:"henry@example.com", username:"henry_b",  tier:"Starter", status:"active",    strikes:0, stories:9,  reportCount:0, reported:false, joined:"2026-02-18" },
 ];
 
-const MOCK_REPORTS = [
-  { id:1, reporter:"carol_s", accused:"bob_r",   reason:"Stolen character art",         storyId:"s-0042", date:"2026-03-20", status:"open"      },
-  { id:2, reporter:"frank_l", accused:"dave_m",  reason:"Deepfake explicit content",    storyId:"s-0017", date:"2026-03-19", status:"open"      },
-  { id:3, reporter:"alice_w", accused:"grace_k", reason:"Underage character depiction", storyId:"s-0081", date:"2026-03-18", status:"reviewing" },
-  { id:4, reporter:"henry_b", accused:"dave_m",  reason:"Copyright infringement",       storyId:"s-0017", date:"2026-03-15", status:"resolved"  },
-];
+
 
 const MODEL_RATES = [
   { model:"grok-3-fast",       input:"$0.20/M", output:"$0.50/M",   note:"Primary chat model"  },
