@@ -2855,13 +2855,45 @@ function UsersPage({ users, setUsers, tierPrices, usersLoading, onTierChange, on
 // REPORTS
 // ══════════════════════════════════════════════════════════════
 function ReportsPage() {
-  const [reports,setReports] = useState(MOCK_REPORTS);
+  const [reports,setReports] = useState([]);
   const [filter, setFilter]  = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState(null);
+
+  const loadReports = useCallback(async () => {
+    setLoading(true); setError(null);
+    try {
+      const { data, error: e } = await supabase.from("reports").select("*").order("created_at", { ascending: false });
+      if (e) throw e;
+      setReports((data || []).map(r => ({
+        id: r.id, reporter: r.reporter, accused: r.accused,
+        reason: r.reason, storyId: r.story_id,
+        date: new Date(r.created_at).toISOString().slice(0,10),
+        status: r.status,
+      })));
+    } catch (err) { setError(err.message || "Failed to load reports"); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { loadReports(); }, [loadReports]);
+
+  useEffect(() => {
+    const channel = supabase.channel("reports-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "reports" }, () => loadReports())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [loadReports]);
+
+  const update = async (id, status) => {
+    setReports(rs => rs.map(r => r.id === id ? { ...r, status } : r));
+    await supabase.from("reports").update({ status }).eq("id", id);
+  };
 
   const displayed = reports.filter(r=>filter==="all"||r.status===filter);
-  const update    = (id,status) => setReports(rs=>rs.map(r=>r.id===id?{...r,status}:r));
+  const ss = { open:{bg:C.redSoft,color:C.red}, reviewing:{bg:C.amberSoft,color:C.amber}, resolved:{bg:C.greenSoft,color:C.green}, dismissed:{bg:C.hover,color:C.dim} };
 
-  const ss = { open:{bg:C.redSoft,color:C.red}, reviewing:{bg:C.amberSoft,color:C.amber}, resolved:{bg:C.greenSoft,color:C.green} };
+  if (loading) return <div style={{ padding:40, textAlign:"center", color:C.dim }}>Loading reports…</div>;
+  if (error) return <div style={{ padding:40, textAlign:"center", color:C.red }}>{error} <button onClick={loadReports} style={{ marginLeft:8, cursor:"pointer" }}>Retry</button></div>;
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
@@ -2873,10 +2905,11 @@ function ReportsPage() {
 
       <Toggle
         options={[{label:"All",value:"all"},{label:"Open",value:"open"},
-          {label:"Reviewing",value:"reviewing"},{label:"Resolved",value:"resolved"}]}
+          {label:"Reviewing",value:"reviewing"},{label:"Resolved",value:"resolved"},{label:"Dismissed",value:"dismissed"}]}
         value={filter} onChange={setFilter}/>
 
       <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+        {displayed.length === 0 && <div style={{ padding:32, textAlign:"center", color:C.dim, fontSize:13 }}>No reports match this filter.</div>}
         {displayed.map(r=>{
           const style = ss[r.status]||ss.resolved;
           return (
@@ -2896,23 +2929,21 @@ function ReportsPage() {
                   <div style={{fontSize:13,color:C.muted,marginBottom:10}}>
                     Reason: <span style={{color:C.text}}>{r.reason}</span>
                   </div>
-                  <a href={`#story/${r.storyId}`}
+                  {r.storyId && <a href={`#story/${r.storyId}`}
                     style={{fontSize:12,color:C.blue,textDecoration:"none",fontWeight:500}}>
                     → Inspect story {r.storyId}
-                  </a>
+                  </a>}
                 </div>
                 <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                  {r.status!=="reviewing" && <ActionBtn label="Mark Reviewing" color={C.amber} onClick={()=>update(r.id,"reviewing")}/>}
+                  {r.status!=="reviewing" && r.status!=="dismissed" && <ActionBtn label="Mark Reviewing" color={C.amber} onClick={()=>update(r.id,"reviewing")}/>}
                   {r.status!=="resolved"  && <ActionBtn label="Resolve"        color={C.green} onClick={()=>update(r.id,"resolved")}/>}
+                  {r.status!=="dismissed" && <ActionBtn label="Dismiss"        color={C.dim}   onClick={()=>update(r.id,"dismissed")}/>}
                 </div>
               </div>
             </Card>
           );
         })}
       </div>
-      <p style={{fontSize:11,color:C.dim}}>
-        TODO: Wire to Supabase `reports` table. Add realtime subscription for instant notification of new reports.
-      </p>
     </div>
   );
 }
