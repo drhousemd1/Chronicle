@@ -116,7 +116,7 @@ serve(async (req) => {
 
     const { data: events, error: eventsError } = await serviceClient
       .from("ai_usage_test_events")
-      .select("session_id, event_key, total_tokens_est, est_cost_usd, status, metadata")
+      .select("session_id, event_key, total_tokens_est, est_cost_usd, status_code, error_message, metadata")
       .in("session_id", sessionIds);
 
     if (eventsError) {
