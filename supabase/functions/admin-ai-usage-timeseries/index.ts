@@ -248,15 +248,15 @@ serve(async (req) => {
 
         filteredMessagesPromise = conversationIds.length === 0
           ? Promise.resolve({ data: [], error: null })
-          : serviceClient
+          : Promise.resolve(serviceClient
               .from("messages")
               .select("created_at, role")
               .gte("created_at", rangeStartIso)
               .in("role", ["user", "assistant"])
-              .in("conversation_id", conversationIds);
+              .in("conversation_id", conversationIds));
       }
     } else {
-      filteredMessagesPromise = messagesQuery;
+      filteredMessagesPromise = Promise.resolve(messagesQuery);
     }
 
     const [messagesRes, eventsRes] = await Promise.all([
