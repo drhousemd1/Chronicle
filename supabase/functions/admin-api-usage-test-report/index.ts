@@ -198,7 +198,7 @@ serve(async (req) => {
 
       const messagesSent = countByEventKey("chat_call_1");
       const messagesGenerated = sessionEvents
-        .filter((event) => event.event_key === "chat_call_1" && event.status === "ok")
+        .filter((event) => event.event_key === "chat_call_1" && !event.error_message && (event.status_code === null || event.status_code === 200))
         .reduce((sum, event) => sum + countFromEvent(event), 0);
 
       const sceneImagesGenerated = countByEventKey("scene_image_generated");
