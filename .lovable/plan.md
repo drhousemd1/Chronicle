@@ -1,32 +1,25 @@
 
 
-# Add Missing `status` Column to `ai_usage_test_events`
+# Fix `event_type` NOT NULL Constraint on `ai_usage_test_events`
 
 ## Problem
-
-The `ai_usage_test_events` table is missing a `status` text column. Two edge functions try to insert into it:
-
-1. **`track-api-usage-test`** (line 167) — inserts `status: "ok"` or `"fail"`
-2. **`track-ai-usage`** (line in the test-trace mirror block) — inserts `status: "ok"` or custom string
-
-The table has `status_code` (integer) but no `status` (text). Every insert that includes `status` fails with a column-not-found error, producing the 500 "Failed to insert trace event" response.
-
-This is the root cause of the errors you're seeing when the API usage test tracking is active — every tracked event (character AI, chat, memory, avatars, etc.) tries to write a trace row and fails.
+The `ai_usage_test_events` table has an `event_type` column that is `NOT NULL` with no default. Both edge functions (`track-api-usage-test` and `track-ai-usage`) insert rows using `event_key` but never set `event_type`. Every insert fails with a not-null constraint violation.
 
 ## Fix
-
-One database migration adding the missing column:
+One database migration:
 
 ```sql
 ALTER TABLE public.ai_usage_test_events
-  ADD COLUMN IF NOT EXISTS status text DEFAULT 'ok';
+  ALTER COLUMN event_type SET DEFAULT '';
 ```
 
-No edge function or frontend code changes needed — they already use the correct column name.
+This makes existing inserts succeed by falling back to an empty string. No edge function or frontend code changes needed.
+
+## Files changed
+- **New migration** — adds default `''` to `event_type` column
 
 ## What stays untouched
-- All edge function code (already correct)
-- All frontend tracking code (`trackAiUsageEvent`, `trackApiValidationSnapshot`)
+- All edge function code
+- All frontend code
 - All other tables
-- UI layout and styling
 
