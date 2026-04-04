@@ -256,7 +256,7 @@ serve(async (req) => {
               .in("conversation_id", conversationIds));
       }
     } else {
-      filteredMessagesPromise = messagesQuery;
+      filteredMessagesPromise = Promise.resolve(messagesQuery);
     }
 
     const [messagesRes, eventsRes] = await Promise.all([
