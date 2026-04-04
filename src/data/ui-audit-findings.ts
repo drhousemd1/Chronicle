@@ -2708,7 +2708,7 @@ const findings: QualityFinding[] = [
     "Missing dialog semantics reduce screen-reader clarity and generate warning noise that can mask real regressions.",
     "Users relying on assistive tech receive lower-quality context for modal purpose; operators see persistent accessibility warnings.",
     "Add hidden semantic title/description and explicit `aria-describedby` handling for the auth dialog content.",
-    "accessibility",
+    "shared-component",
     "small",
     runIds.stabilitySweep2,
     {
@@ -3144,7 +3144,7 @@ const findings: QualityFinding[] = [
     "This created false-positive instability noise, making real regression signals harder to spot during debugging and QA.",
     "Admins could see warning chatter even when no user-facing failure occurred.",
     "Treat bootstrap lookup as soft-fail by default (bounded retries, then null), and avoid warning-level logging for this non-blocking path.",
-    "runtime",
+    "infrastructure",
     "small",
     runIds.stabilitySweep6,
     {
@@ -3189,7 +3189,7 @@ const findings: QualityFinding[] = [
     "UI visibility is not a security boundary; server-side role enforcement is required to prevent direct non-admin invocation.",
     "Potential unauthorized invocation of internal tracing lifecycle actions through direct API calls.",
     "Add explicit server-side admin-role check (`has_role`) and return 403 for non-admin requests before action handling.",
-    "security",
+    "infrastructure",
     "small",
     runIds.stabilitySweep6,
     {
@@ -3239,7 +3239,7 @@ const findings: QualityFinding[] = [
     "When docs drift from code truth, LLM agents and non-technical operators get routed to the wrong files and miss real ownership boundaries.",
     "Troubleshooting and implementation handoffs become unreliable, causing wasted cycles and inconsistent fixes.",
     "Update guide path references to current file ownership and verify every documented `src/...` reference resolves to an existing path.",
-    "documentation",
+    "infrastructure",
     "small",
     runIds.toolIntegrity,
     {
@@ -3551,8 +3551,8 @@ const findingsResolved = findings.map((findingEntry) => {
 
   return {
     ...findingEntry,
-    status: "fixed",
-    verificationStatus: "verified",
+    status: "fixed" as const,
+    verificationStatus: "verified" as const,
     verifiedBy: stamp(note.runId),
     expectedBehavior:
       note.expectedBehavior ||

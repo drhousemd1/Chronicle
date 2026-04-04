@@ -182,12 +182,7 @@ const MOCK_USERS = [
   { id:8, email:"henry@example.com", username:"henry_b",  tier:"Starter", status:"active",    strikes:0, stories:9,  reportCount:0, reported:false, joined:"2026-02-18" },
 ];
 
-const MOCK_REPORTS = [
-  { id:1, reporter:"carol_s", accused:"bob_r",   reason:"Stolen character art",         storyId:"s-0042", date:"2026-03-20", status:"open"      },
-  { id:2, reporter:"frank_l", accused:"dave_m",  reason:"Deepfake explicit content",    storyId:"s-0017", date:"2026-03-19", status:"open"      },
-  { id:3, reporter:"alice_w", accused:"grace_k", reason:"Underage character depiction", storyId:"s-0081", date:"2026-03-18", status:"reviewing" },
-  { id:4, reporter:"henry_b", accused:"dave_m",  reason:"Copyright infringement",       storyId:"s-0017", date:"2026-03-15", status:"resolved"  },
-];
+
 
 const MODEL_RATES = [
   { model:"grok-3-fast",       input:"$0.20/M", output:"$0.50/M",   note:"Primary chat model"  },
@@ -2855,13 +2850,45 @@ function UsersPage({ users, setUsers, tierPrices, usersLoading, onTierChange, on
 // REPORTS
 // ══════════════════════════════════════════════════════════════
 function ReportsPage() {
-  const [reports,setReports] = useState(MOCK_REPORTS);
+  const [reports,setReports] = useState([]);
   const [filter, setFilter]  = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState(null);
+
+  const loadReports = useCallback(async () => {
+    setLoading(true); setError(null);
+    try {
+      const { data, error: e } = await supabase.from("reports").select("*").order("created_at", { ascending: false });
+      if (e) throw e;
+      setReports((data || []).map(r => ({
+        id: r.id, reporter: r.reporter, accused: r.accused,
+        reason: r.reason, storyId: r.story_id,
+        date: new Date(r.created_at).toISOString().slice(0,10),
+        status: r.status,
+      })));
+    } catch (err) { setError(err.message || "Failed to load reports"); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { loadReports(); }, [loadReports]);
+
+  useEffect(() => {
+    const channel = supabase.channel("reports-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "reports" }, () => loadReports())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [loadReports]);
+
+  const update = async (id, status) => {
+    setReports(rs => rs.map(r => r.id === id ? { ...r, status } : r));
+    await supabase.from("reports").update({ status }).eq("id", id);
+  };
 
   const displayed = reports.filter(r=>filter==="all"||r.status===filter);
-  const update    = (id,status) => setReports(rs=>rs.map(r=>r.id===id?{...r,status}:r));
+  const ss = { open:{bg:C.redSoft,color:C.red}, reviewing:{bg:C.amberSoft,color:C.amber}, resolved:{bg:C.greenSoft,color:C.green}, dismissed:{bg:C.hover,color:C.dim} };
 
-  const ss = { open:{bg:C.redSoft,color:C.red}, reviewing:{bg:C.amberSoft,color:C.amber}, resolved:{bg:C.greenSoft,color:C.green} };
+  if (loading) return <div style={{ padding:40, textAlign:"center", color:C.dim }}>Loading reports…</div>;
+  if (error) return <div style={{ padding:40, textAlign:"center", color:C.red }}>{error} <button onClick={loadReports} style={{ marginLeft:8, cursor:"pointer" }}>Retry</button></div>;
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
@@ -2873,10 +2900,11 @@ function ReportsPage() {
 
       <Toggle
         options={[{label:"All",value:"all"},{label:"Open",value:"open"},
-          {label:"Reviewing",value:"reviewing"},{label:"Resolved",value:"resolved"}]}
+          {label:"Reviewing",value:"reviewing"},{label:"Resolved",value:"resolved"},{label:"Dismissed",value:"dismissed"}]}
         value={filter} onChange={setFilter}/>
 
       <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+        {displayed.length === 0 && <div style={{ padding:32, textAlign:"center", color:C.dim, fontSize:13 }}>No reports match this filter.</div>}
         {displayed.map(r=>{
           const style = ss[r.status]||ss.resolved;
           return (
@@ -2896,23 +2924,21 @@ function ReportsPage() {
                   <div style={{fontSize:13,color:C.muted,marginBottom:10}}>
                     Reason: <span style={{color:C.text}}>{r.reason}</span>
                   </div>
-                  <a href={`#story/${r.storyId}`}
+                  {r.storyId && <a href={`#story/${r.storyId}`}
                     style={{fontSize:12,color:C.blue,textDecoration:"none",fontWeight:500}}>
                     → Inspect story {r.storyId}
-                  </a>
+                  </a>}
                 </div>
                 <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                  {r.status!=="reviewing" && <ActionBtn label="Mark Reviewing" color={C.amber} onClick={()=>update(r.id,"reviewing")}/>}
+                  {r.status!=="reviewing" && r.status!=="dismissed" && <ActionBtn label="Mark Reviewing" color={C.amber} onClick={()=>update(r.id,"reviewing")}/>}
                   {r.status!=="resolved"  && <ActionBtn label="Resolve"        color={C.green} onClick={()=>update(r.id,"resolved")}/>}
+                  {r.status!=="dismissed" && <ActionBtn label="Dismiss"        color={C.dim}   onClick={()=>update(r.id,"dismissed")}/>}
                 </div>
               </div>
             </Card>
           );
         })}
       </div>
-      <p style={{fontSize:11,color:C.dim}}>
-        TODO: Wire to Supabase `reports` table. Add realtime subscription for instant notification of new reports.
-      </p>
     </div>
   );
 }
@@ -5515,31 +5541,30 @@ function CalcTab({ API_COST, stripeFee }) {
   );
 }
 function DocumentsPage() {
-  const STORAGE_KEY = "chronicle_admin_docs_v2";
-
-  const loadDocs = () => {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); }
-    catch { return []; }
-  };
-
-  const [docs,        setDocs]        = useState(loadDocs);
+  const [docs,        setDocs]        = useState([]);
+  const [loading,     setLoading]     = useState(true);
   const [showUpload,  setShowUpload]  = useState(false);
   const [dragging,    setDragging]    = useState(false);
-  const [staged,      setStaged]      = useState(null); // file ready to save
+  const [staged,      setStaged]      = useState(null); // { file, name, type, size }
   const [category,    setCategory]    = useState("");
   const [note,        setNote]        = useState("");
   const [preview,     setPreview]     = useState(null);
+  const [uploading,   setUploading]   = useState(false);
 
-  const now = new Date();
-  const dateStr = now.toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" });
-  const timeStr = now.toLocaleTimeString("en-US", { hour:"2-digit", minute:"2-digit" });
+  const loadDocs = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.from("finance_documents").select("*").order("created_at", { ascending: false });
+      if (error) throw error;
+      setDocs(data || []);
+    } catch { /* silently fail */ }
+    finally { setLoading(false); }
+  }, []);
 
-  const persist = (updated) => { setDocs(updated); localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)); };
+  useEffect(() => { loadDocs(); }, [loadDocs]);
 
   const stageFile = (file) => {
-    const reader = new FileReader();
-    reader.onload = (e) => setStaged({ name:file.name, type:file.type, size:file.size, data:e.target.result });
-    reader.readAsDataURL(file);
+    setStaged({ file, name: file.name, type: file.type, size: file.size });
   };
 
   const handleDrop = (e) => {
@@ -5548,23 +5573,49 @@ function DocumentsPage() {
     if (file) stageFile(file);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!staged) return;
-    const doc = {
-      id:       Date.now(),
-      name:     staged.name,
-      type:     staged.type,
-      size:     staged.size,
-      data:     staged.data,
-      category: category.trim() || "Uncategorized",
-      note:     note.trim(),
-      uploaded: `${dateStr} ${timeStr}`,
-    };
-    persist([doc, ...docs]);
-    setShowUpload(false); setStaged(null); setCategory(""); setNote("");
+    setUploading(true);
+    try {
+      const path = `${Date.now()}_${staged.name}`;
+      const { error: uploadErr } = await supabase.storage.from("finance_documents").upload(path, staged.file, { contentType: staged.type });
+      if (uploadErr) throw uploadErr;
+      const { error: insertErr } = await supabase.from("finance_documents").insert({
+        uploaded_by: (await supabase.auth.getUser()).data.user?.id,
+        file_name: staged.name,
+        storage_path: path,
+        mime_type: staged.type || "application/octet-stream",
+        size_bytes: staged.size,
+        category: category.trim() || "Uncategorized",
+        note: note.trim(),
+      });
+      if (insertErr) throw insertErr;
+      setShowUpload(false); setStaged(null); setCategory(""); setNote("");
+      loadDocs();
+    } catch (err) { alert("Upload failed: " + (err.message || err)); }
+    finally { setUploading(false); }
   };
 
-  const deleteDoc = (id) => persist(docs.filter(d => d.id !== id));
+  const deleteDoc = async (doc) => {
+    setDocs(ds => ds.filter(d => d.id !== doc.id));
+    await supabase.storage.from("finance_documents").remove([doc.storage_path]);
+    await supabase.from("finance_documents").delete().eq("id", doc.id);
+  };
+
+  const getSignedUrl = async (storagePath) => {
+    const { data } = await supabase.storage.from("finance_documents").createSignedUrl(storagePath, 3600);
+    return data?.signedUrl || "";
+  };
+
+  const openPreview = async (doc) => {
+    const url = await getSignedUrl(doc.storage_path);
+    setPreview({ ...doc, url });
+  };
+
+  const downloadDoc = async (doc) => {
+    const url = await getSignedUrl(doc.storage_path);
+    if (url) { const a = document.createElement("a"); a.href = url; a.download = doc.file_name; a.click(); }
+  };
 
   const fmtSize = (b) => b < 1024*1024 ? `${(b/1024).toFixed(1)} KB` : `${(b/1024/1024).toFixed(1)} MB`;
 
@@ -5578,6 +5629,10 @@ function DocumentsPage() {
   };
 
   const canPreview = (type) => type?.includes("pdf") || type?.includes("image") || type?.includes("text");
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" });
+  const timeStr = now.toLocaleTimeString("en-US", { hour:"2-digit", minute:"2-digit" });
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
@@ -5652,13 +5707,13 @@ function DocumentsPage() {
                     background:D.tray, color:D.muted, fontSize:13, fontWeight:600, cursor:"pointer" }}>
                   Cancel
                 </button>
-                <button onClick={handleSave} disabled={!staged}
+                <button onClick={handleSave} disabled={!staged || uploading}
                   style={{ padding:"8px 20px", borderRadius:8, border:"none",
-                    cursor: staged ? "pointer" : "default",
+                    cursor: staged && !uploading ? "pointer" : "default",
                     background: staged ? D.blue : D.dim,
                     boxShadow: staged ? D.blueGlow : "none",
                     color:"#fff", fontSize:13, fontWeight:700 }}>
-                  Save Document
+                  {uploading ? "Uploading…" : "Save Document"}
                 </button>
               </div>
             </div>
@@ -5675,16 +5730,15 @@ function DocumentsPage() {
             display:"flex", flexDirection:"column", borderRadius:24, overflow:"hidden",
             background:D.shell, boxShadow:D.shellShadow,
           }} onClick={e => e.stopPropagation()}>
-            <SlateHeader title={preview.name}
+            <SlateHeader title={preview.file_name}
               right={
                 <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-                  <span style={{ fontSize:11, color:"rgba(255,255,255,0.55)" }}>{preview.uploaded} · {fmtSize(preview.size)}</span>
-                  <a href={preview.data} download={preview.name} style={{
+                  <span style={{ fontSize:11, color:"rgba(255,255,255,0.55)" }}>{fmtSize(preview.size_bytes)}</span>
+                  <button onClick={() => downloadDoc(preview)} style={{
                     padding:"4px 14px", borderRadius:8, border:"none",
                     background:D.elevated, boxShadow:D.btnShadow,
-                    color:D.text, fontSize:11, fontWeight:700,
-                    textDecoration:"none", display:"inline-block",
-                  }}>Download</a>
+                    color:D.text, fontSize:11, fontWeight:700, cursor:"pointer",
+                  }}>Download</button>
                   <button onClick={() => setPreview(null)} style={{
                     width:26, height:26, borderRadius:"50%", border:"none",
                     background:D.elevated, color:D.muted, cursor:"pointer", fontSize:15,
@@ -5694,17 +5748,16 @@ function DocumentsPage() {
               }
             />
             <div style={{ flex:1, overflow:"auto", background:D.tray }}>
-              {preview.type?.includes("pdf") ? (
-                <iframe src={preview.data} style={{ width:"100%", height:"75vh", border:"none" }} title={preview.name}/>
-              ) : preview.type?.includes("image") ? (
+              {preview.mime_type?.includes("pdf") ? (
+                <iframe src={preview.url} style={{ width:"100%", height:"75vh", border:"none" }} title={preview.file_name}/>
+              ) : preview.mime_type?.includes("image") ? (
                 <div style={{ padding:24, textAlign:"center" }}>
-                  <img src={preview.data} alt={preview.name} style={{ maxWidth:"100%", maxHeight:"70vh", borderRadius:8 }}/>
+                  <img src={preview.url} alt={preview.file_name} style={{ maxWidth:"100%", maxHeight:"70vh", borderRadius:8 }}/>
                 </div>
               ) : (
-                <pre style={{ padding:24, fontSize:12, lineHeight:1.7, color:D.text,
-                  whiteSpace:"pre-wrap", wordBreak:"break-word", margin:0, fontFamily:"monospace" }}>
-                  {atob(preview.data.split(",")[1])}
-                </pre>
+                <div style={{ padding:24, fontSize:13, color:D.text }}>
+                  Preview not available for this file type. Use the download button.
+                </div>
               )}
             </div>
           </div>
@@ -5714,7 +5767,7 @@ function DocumentsPage() {
       {/* toolbar */}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
         <div style={{ fontSize:13, color:D.muted }}>
-          {docs.length} document{docs.length !== 1 ? "s" : ""} stored
+          {loading ? "Loading…" : `${docs.length} document${docs.length !== 1 ? "s" : ""} stored`}
         </div>
         <button onClick={() => setShowUpload(true)} style={{
           padding:"8px 20px", borderRadius:10, border:"none", cursor:"pointer",
@@ -5743,7 +5796,8 @@ function DocumentsPage() {
                   No documents yet. Click "+ Upload Document" to add your first one.
                 </td></tr>
               ) : docs.map((doc, i) => {
-                const fc = FILE_COLOR(doc.type);
+                const fc = FILE_COLOR(doc.mime_type);
+                const uploaded = new Date(doc.created_at).toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" });
                 return (
                   <tr key={doc.id} style={{
                     borderBottom:`1px solid ${D.divider}`,
@@ -5758,7 +5812,7 @@ function DocumentsPage() {
                     </td>
                     <td style={{ padding:"12px 16px", fontWeight:600, color:D.text,
                       maxWidth:220, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                      {doc.name}
+                      {doc.file_name}
                     </td>
                     <td style={{ padding:"12px 16px", color:D.muted, fontSize:12 }}>{doc.category}</td>
                     <td style={{ padding:"12px 16px", color:D.muted, fontSize:12,
@@ -5766,24 +5820,23 @@ function DocumentsPage() {
                       {doc.note || <span style={{color:D.dim}}>—</span>}
                     </td>
                     <td style={{ padding:"12px 16px", color:D.muted, fontSize:11, whiteSpace:"nowrap" }}>
-                      {doc.uploaded}
+                      {uploaded}
                     </td>
                     <td style={{ padding:"12px 16px" }}>
                       <div style={{ display:"flex", gap:6 }}>
-                        {canPreview(doc.type) && (
-                          <button onClick={() => setPreview(doc)} style={{
+                        {canPreview(doc.mime_type) && (
+                          <button onClick={() => openPreview(doc)} style={{
                             padding:"4px 12px", borderRadius:8, border:"none",
                             background:D.elevated, boxShadow:D.btnShadow,
                             color:D.text, fontSize:11, fontWeight:600, cursor:"pointer",
                           }}>View</button>
                         )}
-                        <a href={doc.data} download={doc.name} style={{
+                        <button onClick={() => downloadDoc(doc)} style={{
                           padding:"4px 12px", borderRadius:8, border:"none",
                           background:D.elevated, boxShadow:D.btnShadow,
-                          color:D.text, fontSize:11, fontWeight:600,
-                          textDecoration:"none", display:"inline-block",
-                        }}>↓</a>
-                        <button onClick={() => deleteDoc(doc.id)} style={{
+                          color:D.text, fontSize:11, fontWeight:600, cursor:"pointer",
+                        }}>↓</button>
+                        <button onClick={() => deleteDoc(doc)} style={{
                           padding:"4px 10px", borderRadius:8, border:"none",
                           background:"rgba(239,68,68,0.15)", color:"#ef4444",
                           fontSize:11, fontWeight:700, cursor:"pointer",
@@ -5797,11 +5850,6 @@ function DocumentsPage() {
           </table>
         </div>
       </ShellCard>
-
-      <p style={{ fontSize:11, color:D.dim }}>
-        Documents are saved in your browser's local storage.
-        TODO: Wire to Supabase Storage for persistent storage across devices.
-      </p>
     </div>
   );
 }
