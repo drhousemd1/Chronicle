@@ -1,57 +1,38 @@
 
 
-# Idempotent Hardening of Finance Repair Migration
+# Replay-Safety Hardening for Finance Migration
 
 ## Problem
-The repair migration's UPDATE statements reference columns that may not exist in a fresh database replay:
-- `ad_spend`: references `campaign_name`, `platform`, `amount`, `notes` — never added
-- `admin_notes`: references `content` — never added
-- `reports`: references `reporter`, `accused` — never added  
-- `ai_usage_test_events`: references `event_type`, `payload` — never added
+Migration `20260404051740...` has ALTER blocks that add only *some* columns, but the subsequent UPDATE statements reference columns that aren't added yet (they're added later in `20260404053120...`). On a fresh DB replay, the UPDATEs fail.
 
-If the migration runs against a DB where the earlier creation migration used different column sets, these UPDATEs fail.
+## Exact Changes
 
-## Fix
-Patch the existing `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` blocks in `supabase/migrations/20260404051740_72f00518-df04-4eda-a14e-38593ab3fbea.sql` to include ALL columns referenced in the subsequent UPDATE statements. No new migration file. No logic changes.
+**File**: `supabase/migrations/20260404051740_72f00518-df04-4eda-a14e-38593ab3fbea.sql`
 
-### ad_spend section (line 16-24)
-Add to the ALTER block:
-- `campaign_name text`
-- `platform text`
-- `amount numeric(12,2)`
-- `currency text`
-- `period_start date`
-- `period_end date`
-- `notes text`
+### 2.1 — ad_spend ALTER block (lines 16-24)
+Add 7 missing columns: `campaign_name`, `platform`, `amount`, `currency`, `period_start`, `period_end`, `notes`
 
-### admin_notes section (line 61-64)
-Add to the ALTER block:
-- `content text`
-- `author_id uuid`
+### 2.2 — admin_notes ALTER block (lines 61-64)
+Add 2 missing columns: `content`, `author_id`
 
-### reports section (line 92-96)
-Add to the ALTER block:
-- `reporter text`
-- `accused text`
-- `story_id uuid`
+### 2.3 — reports ALTER block (lines 92-96)
+Add 3 missing columns: `reporter`, `accused`, `story_id`
 
-### ai_usage_test_events section (line 194-206)
-Add to the ALTER block:
-- `event_type text`
-- `function_name text`
-- `payload jsonb`
-- `response_summary text`
-- `status_code integer`
-- `error_message text`
+### 2.4 — user_strikes ALTER block (lines 141-148)
+Add 1 missing column: `expires_at`
+
+### 2.5 — ai_usage_test_events ALTER block (lines 194-206)
+Add 6 missing columns: `event_type`, `function_name`, `payload`, `response_summary`, `status_code`, `error_message`
 
 ## What stays untouched
+- All UPDATE/backfill logic — identical
 - All policy/trigger/function logic — identical
-- All UPDATE backfill logic — identical
 - All other files — no changes
-- The second migration file (`20260404051750_...`) — untouched
+- The second migration file (`20260404053120...`) — untouched (becomes a harmless no-op)
+- `FinanceDashboardTool.tsx`, edge functions, `types.ts` — untouched
 
 ## Verification
-- Run column inventory query for all 5 tables
-- Confirm `set_admin_access` args are `_target_user_id uuid, _enabled boolean`
-- Confirm build passes
+- Build + lint pass
+- Column inventory query for all 5 tables
+- `set_admin_access` signature check
 
