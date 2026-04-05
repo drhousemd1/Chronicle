@@ -11,8 +11,14 @@ import { useAuth } from '@/hooks/use-auth';
 import { uploadSceneImage, uploadCoverImage, dataUrlToBlob } from '@/services/supabase-data';
 import { supabase } from '@/integrations/supabase/client';
 
-import { Sunrise, Sun, Sunset, Moon, ChevronUp, ChevronDown, Sparkles, Share2, Trash2, Plus, X, Info, Lock, BrainCog } from 'lucide-react';
+import { Sunrise, Sun, Sunset, Moon, ChevronUp, ChevronDown, Sparkles, Share2, Trash2, Plus, X, Info, Lock, BrainCog, Move, Pencil } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { StoryGoalsSection } from '@/components/chronicle/StoryGoalsSection';
 import { useArtStyles } from '@/contexts/ArtStylesContext';
 import { cn } from '@/lib/utils';
@@ -346,6 +352,7 @@ export const StoryBuilderScreen: React.FC<StoryBuilderScreenProps> = ({
           
           onUpdateCoverImage(publicUrl);
           onUpdateCoverPosition({ x: 50, y: 50 });
+          setIsRepositioningCover(true);
         } catch (error) {
           console.error('Cover upload failed:', error);
         } finally {
@@ -362,12 +369,16 @@ export const StoryBuilderScreen: React.FC<StoryBuilderScreenProps> = ({
   };
 
   const handleDeleteCover = () => {
+    setIsRepositioningCover(false);
+    setCoverDragStart(null);
     setPendingDeleteCover(true);
   };
 
   const confirmDeleteCover = () => {
     onUpdateCoverImage('');
     onUpdateCoverPosition({ x: 50, y: 50 });
+    setIsRepositioningCover(false);
+    setCoverDragStart(null);
     setPendingDeleteCover(false);
   };
 
@@ -511,12 +522,20 @@ export const StoryBuilderScreen: React.FC<StoryBuilderScreenProps> = ({
                             draggable={false}
                           />
                           {isRepositioningCover && (
-                            <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                              <div className="w-full h-[1px] bg-blue-500/40 absolute" />
-                              <div className="h-full w-[1px] bg-blue-500/40 absolute" />
-                               <div className="bg-blue-500 text-white text-[9px] font-black uppercase px-3 py-1.5 rounded-lg absolute bottom-3 tracking-widest shadow-xl">
-                                Drag to Refocus
-                              </div>
+                            <div className="absolute inset-0 z-[18] touch-none cursor-move pointer-events-auto">
+                              <button
+                                type="button"
+                                className="absolute left-2 top-2 rounded-md bg-black/55 border border-white/20 px-2 py-1 text-[9px] font-bold text-white hover:bg-black/70 pointer-events-auto z-20"
+                                onMouseDown={(e) => e.stopPropagation()}
+                                onTouchStart={(e) => e.stopPropagation()}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setCoverDragStart(null);
+                                  setIsRepositioningCover(false);
+                                }}
+                              >
+                                Done
+                              </button>
                             </div>
                           )}
                         </>
@@ -524,6 +543,35 @@ export const StoryBuilderScreen: React.FC<StoryBuilderScreenProps> = ({
                         <div className="w-full h-full bg-[#1c1c1f] flex flex-col items-center justify-center gap-3 rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
                           <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-500"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
                           <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">No Cover</span>
+                        </div>
+                      )}
+                      {coverImage && (
+                        <div className="absolute top-2 right-2 z-30">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                type="button"
+                                className="p-1.5 rounded-lg transition-colors bg-black/30 hover:bg-black/50 text-white/70 hover:text-white"
+                                aria-label="Cover image options"
+                                title="Cover image options"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => setIsRepositioningCover(true)}>
+                                <Move className="w-4 h-4 mr-2" />
+                                Reposition image
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={handleDeleteCover}
+                                className="text-red-400 focus:text-red-400"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete image
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       )}
                     </div>
@@ -539,6 +587,7 @@ export const StoryBuilderScreen: React.FC<StoryBuilderScreenProps> = ({
                         onSelectFromLibrary={(imageUrl) => {
                           onUpdateCoverImage(imageUrl);
                           onUpdateCoverPosition({ x: 50, y: 50 });
+                          setIsRepositioningCover(true);
                         }}
                         onGenerateClick={() => setShowCoverGenModal(true)}
                         disabled={isUploadingCover || isGeneratingCover}
@@ -558,27 +607,6 @@ export const StoryBuilderScreen: React.FC<StoryBuilderScreenProps> = ({
                         <AutoResizeTextarea value={world.core.briefDescription || ''} onChange={(v) => updateCore({ briefDescription: v })} rows={2} placeholder="A short summary that appears on your story card (1-2 sentences)..." className={`px-3 py-2 text-sm bg-[#1c1c1f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${publishErrors.briefDescription ? 'border border-red-500 ring-2 ring-red-500' : 'border border-black/35'}`} />
                         {publishErrors.briefDescription && <p className="text-sm text-red-500 font-medium mt-1">{publishErrors.briefDescription}</p>}
                       </div>
-                      
-                      {coverImage && (
-                        <div className="flex flex-wrap gap-3">
-                          <button 
-                            onClick={() => setIsRepositioningCover(!isRepositioningCover)}
-                            className={`h-10 px-5 rounded-xl text-[10px] font-bold leading-none transition-colors ${
-                              isRepositioningCover 
-                                ? 'bg-blue-500 text-white' 
-                                : 'bg-[#303035] border-0 text-[#eaedf1] hover:bg-[#343439] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]'
-                            }`}
-                          >
-                            {isRepositioningCover ? "Done" : "Reposition"}
-                          </button>
-                          <button 
-                            onClick={handleDeleteCover}
-                            className="h-10 px-5 rounded-xl text-[10px] font-bold leading-none bg-[hsl(var(--destructive))] hover:brightness-110 text-[hsl(var(--destructive-foreground))] border-0 shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] transition-colors"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      )}
                       
                       <input 
                         type="file" 
@@ -1478,6 +1506,7 @@ className="px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white plac
             onUpdateCoverImage(imageUrl);
           }
           onUpdateCoverPosition({ x: 50, y: 50 });
+          setIsRepositioningCover(true);
           setShowCoverGenModal(false);
           
         }}

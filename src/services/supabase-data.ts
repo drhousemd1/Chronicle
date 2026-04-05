@@ -1859,6 +1859,7 @@ function dbToSideCharacter(row: any): SideCharacter {
     preferredClothing: dbPreferredClothingToApp(row.preferred_clothing),
     background: row.background || defaultSideCharacterBackground,
     personality: row.personality || defaultSideCharacterPersonality,
+    sections: Array.isArray(row.custom_sections) ? row.custom_sections : [],
     avatarDataUrl: row.avatar_url || '',
     avatarPosition: row.avatar_position || { x: 50, y: 50 },
     firstMentionedIn: row.first_mentioned_in || '',
@@ -1903,6 +1904,7 @@ export async function saveSideCharacter(
       preferred_clothing: appPreferredClothingToDb(sideChar.preferredClothing),
       background: sideChar.background,
       personality: sideChar.personality,
+      custom_sections: sideChar.sections || [],
       avatar_url: sideChar.avatarDataUrl,
       avatar_position: sideChar.avatarPosition,
       first_mentioned_in: sideChar.firstMentionedIn,
@@ -1936,6 +1938,7 @@ export async function updateSideCharacter(
   }
   if (patch.background !== undefined) updateData.background = patch.background;
   if (patch.personality !== undefined) updateData.personality = patch.personality;
+  if (patch.sections !== undefined) updateData.custom_sections = patch.sections;
   if (patch.avatarDataUrl !== undefined) updateData.avatar_url = patch.avatarDataUrl;
   if (patch.avatarPosition !== undefined) updateData.avatar_position = patch.avatarPosition;
   if (patch.extractedTraits !== undefined) updateData.extracted_traits = patch.extractedTraits;

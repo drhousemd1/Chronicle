@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+echo "[pre-push] Running ship-check (typecheck + lint + build)..."
+npm run -s ship-check
+echo "[pre-push] ship-check passed."

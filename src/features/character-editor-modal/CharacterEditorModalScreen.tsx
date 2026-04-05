@@ -19,9 +19,41 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Loader2, Plus, Trash2, X, Pencil, ChevronDown, ChevronUp, Sparkles, Globe, Lock, Info, Fingerprint, Accessibility, Shirt, Brain, Mic2, ScrollText, Users, EyeOff, TriangleAlert, Flag, CircleUserRound, Stars, type LucideIcon } from 'lucide-react';
+import {
+  Loader2,
+  Plus,
+  Trash2,
+  X,
+  Pencil,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
+  Globe,
+  Lock,
+  Info,
+  Fingerprint,
+  Accessibility,
+  Shirt,
+  Brain,
+  Mic2,
+  ScrollText,
+  Users,
+  EyeOff,
+  TriangleAlert,
+  Flag,
+  CircleUserRound,
+  Stars,
+  Move,
+  type LucideIcon,
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client'; 
 import * as supabaseData from '@/services/supabase-data'; 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 import { cn } from '@/lib/utils';
 import { AvatarActionButtons } from '@/components/chronicle/AvatarActionButtons';
@@ -132,6 +164,12 @@ const MODAL_NAV_ICON_BY_KEY: Record<string, LucideIcon> = {
 
 const navActionButtonClass =
   "relative w-full min-h-[48px] px-[14px] rounded-xl border-2 border-transparent text-left select-none overflow-hidden flex items-center justify-between gap-3 bg-[#3c3e47] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] transition-[filter,transform,box-shadow,border-color] duration-150 ease-out hover:brightness-[1.12] hover:-translate-y-px active:brightness-95 active:translate-y-0 active:scale-[0.99]";
+
+const isSideCharacterRecord = (value: Character | SideCharacter): value is SideCharacter =>
+  'firstMentionedIn' in value;
+
+const isMainCharacterRecord = (value: Character | SideCharacter): value is Character =>
+  !isSideCharacterRecord(value);
 
 // ─── Sidebar button ─────────────────────────────────────────────
 const ModalNavButton: React.FC<{
@@ -377,11 +415,13 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
   const [isDeepScanning, setIsDeepScanning] = useState(false);
   const [isTooltipOpen, setIsTooltipOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const avatarContainerRef = useRef<HTMLDivElement>(null);
+  const [isRepositioningAvatar, setIsRepositioningAvatar] = useState(false);
+  const [avatarDragStart, setAvatarDragStart] = useState<{ x: number; y: number; pos: { x: number; y: number } } | null>(null);
   
   // View mode toggle: 'character' or 'scenario'
   type ViewMode = 'character' | 'scenario';
   const [viewMode, setViewMode] = useState<ViewMode>('character');
-  
   // Sidebar nav state
   const [activeTraitSection, setActiveTraitSection] = useState<string>('basics');
   
@@ -393,6 +433,8 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
     if (open) {
       setViewMode('character');
       setActiveTraitSection('basics');
+      setIsRepositioningAvatar(false);
+      setAvatarDragStart(null);
     }
   }, [open]);
   
@@ -498,11 +540,11 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
         baseDraft.mainPersonality = JSON.parse(JSON.stringify((character as Character).personality));
       }
 
-      if ('sections' in character) {
+      if (isMainCharacterRecord(character)) {
         baseDraft.sections = character.sections?.map(s => ({ ...s, items: [...s.items] })) || [];
-        baseDraft.controlledBy = (character as Character).controlledBy;
-        baseDraft.characterRole = (character as Character).characterRole;
-        const mainChar = character as Character;
+        baseDraft.controlledBy = character.controlledBy;
+        baseDraft.characterRole = character.characterRole;
+        const mainChar = character;
         baseDraft.mainBackground = mainChar.background ? { ...mainChar.background } : undefined;
         baseDraft.tone = mainChar.tone ? { ...mainChar.tone } : undefined;
         baseDraft.keyLifeEvents = mainChar.keyLifeEvents ? { ...mainChar.keyLifeEvents } : undefined;
@@ -511,13 +553,14 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
         baseDraft.fears = mainChar.fears ? { ...mainChar.fears } : undefined;
       }
 
-      if ('background' in character) {
-        const sc = character as SideCharacter;
+      if (isSideCharacterRecord(character)) {
+        const sc = character;
         baseDraft.background = { ...sc.background };
         baseDraft.personality = { 
           ...sc.personality,
           traits: sc.personality?.traits ? [...sc.personality.traits] : []
         };
+        baseDraft.sections = sc.sections?.map(s => ({ ...s, items: [...s.items] })) || [];
         baseDraft.controlledBy = sc.controlledBy;
         baseDraft.characterRole = sc.characterRole;
       }
@@ -574,8 +617,26 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
       const concatenatedAi = aiMessages.join('\n\n---\n\n');
       
       const buildCharData = (c: Character | SideCharacter) => {
-        const isMain = 'sections' in c;
-        const mainChar = isMain ? c as Character : null;
+        const mainChar = isMainCharacterRecord(c) ? c : null;
+        const sideChar = isSideCharacterRecord(c) ? c : null;
+        const customSections = (c.sections || []).map(s => ({
+          title: s.title,
+          items: s.items.map(i => ({ label: i.label, value: i.value }))
+        }));
+        const sharedBackground = mainChar?.background ?? sideChar?.background;
+        const sharedPersonality = mainChar
+          ? {
+              splitMode: mainChar.personality?.splitMode,
+              traits: (mainChar.personality?.traits || []).map(t => ({ label: t.label, value: t.value })),
+              outwardTraits: (mainChar.personality?.outwardTraits || []).map(t => ({ label: t.label, value: t.value })),
+              inwardTraits: (mainChar.personality?.inwardTraits || []).map(t => ({ label: t.label, value: t.value })),
+            }
+          : sideChar
+            ? {
+                splitMode: false,
+                traits: (sideChar.personality?.traits || []).map((trait) => ({ label: trait, value: '' })),
+              }
+            : undefined;
         return {
           name: c.name,
           previousNames: ('previousNames' in c) ? (c as any).previousNames : [],
@@ -594,19 +655,9 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
                 steps: (g.steps || []).map(s => ({ id: s.id, description: s.description, completed: s.completed }))
               }))
             : [],
-          customSections: (mainChar?.sections)
-            ? mainChar.sections.map(s => ({
-                title: s.title,
-                items: s.items.map(i => ({ label: i.label, value: i.value }))
-              }))
-            : [],
-          background: mainChar?.background,
-          personality: mainChar?.personality ? {
-            splitMode: mainChar.personality.splitMode,
-            traits: (mainChar.personality.traits || []).map(t => ({ label: t.label, value: t.value })),
-            outwardTraits: (mainChar.personality.outwardTraits || []).map(t => ({ label: t.label, value: t.value })),
-            inwardTraits: (mainChar.personality.inwardTraits || []).map(t => ({ label: t.label, value: t.value })),
-          } : undefined,
+          customSections,
+          background: sharedBackground,
+          personality: sharedPersonality,
           tone: mainChar?.tone,
           keyLifeEvents: mainChar?.keyLifeEvents,
           relationships: mainChar?.relationships,
@@ -855,6 +906,7 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
       const filename = `session-avatar-${Date.now()}.jpg`;
       const publicUrl = await supabaseData.uploadAvatar(user.id, resizedBlob, filename);
       setDraft(prev => ({ ...prev, avatarDataUrl: publicUrl, avatarPosition: { x: 50, y: 50 } }));
+      setIsRepositioningAvatar(true);
     } catch (err) {
       console.error('Avatar upload failed:', err);
     } finally {
@@ -909,6 +961,7 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
           },
         });
         setDraft(prev => ({ ...prev, avatarDataUrl: data.imageUrl, avatarPosition: { x: 50, y: 50 } }));
+        setIsRepositioningAvatar(true);
       }
     } catch (err) {
       console.error('Avatar regeneration failed:', err);
@@ -919,6 +972,80 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
 
   const updateField = <K extends keyof CharacterEditDraft>(field: K, value: CharacterEditDraft[K]) => {
     setDraft(prev => ({ ...prev, [field]: value }));
+  };
+
+  const clampPercent = (value: number) => Math.max(0, Math.min(100, value));
+  const hasAvatarImage = Boolean(draft.avatarDataUrl || character?.avatarDataUrl);
+
+  const handleAvatarMouseDown = (e: React.MouseEvent) => {
+    if (!isRepositioningAvatar || !hasAvatarImage) return;
+    e.preventDefault();
+    setAvatarDragStart({
+      x: e.clientX,
+      y: e.clientY,
+      pos: {
+        x: draft.avatarPosition?.x ?? character?.avatarPosition?.x ?? 50,
+        y: draft.avatarPosition?.y ?? character?.avatarPosition?.y ?? 50,
+      },
+    });
+  };
+
+  const handleAvatarMouseMove = (e: React.MouseEvent) => {
+    if (!isRepositioningAvatar || !avatarDragStart || !avatarContainerRef.current) return;
+    const rect = avatarContainerRef.current.getBoundingClientRect();
+    const deltaX = ((e.clientX - avatarDragStart.x) / rect.width) * 100;
+    const deltaY = ((e.clientY - avatarDragStart.y) / rect.height) * 100;
+    setDraft((prev) => ({
+      ...prev,
+      avatarPosition: {
+        x: clampPercent(avatarDragStart.pos.x - deltaX),
+        y: clampPercent(avatarDragStart.pos.y - deltaY),
+      },
+    }));
+  };
+
+  const handleAvatarMouseUp = () => {
+    setAvatarDragStart(null);
+  };
+
+  const handleAvatarTouchStart = (e: React.TouchEvent) => {
+    if (!isRepositioningAvatar || !hasAvatarImage) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    setAvatarDragStart({
+      x: touch.clientX,
+      y: touch.clientY,
+      pos: {
+        x: draft.avatarPosition?.x ?? character?.avatarPosition?.x ?? 50,
+        y: draft.avatarPosition?.y ?? character?.avatarPosition?.y ?? 50,
+      },
+    });
+  };
+
+  const handleAvatarTouchMove = (e: React.TouchEvent) => {
+    if (!isRepositioningAvatar || !avatarDragStart || !avatarContainerRef.current) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = avatarContainerRef.current.getBoundingClientRect();
+    const deltaX = ((touch.clientX - avatarDragStart.x) / rect.width) * 100;
+    const deltaY = ((touch.clientY - avatarDragStart.y) / rect.height) * 100;
+    setDraft((prev) => ({
+      ...prev,
+      avatarPosition: {
+        x: clampPercent(avatarDragStart.pos.x - deltaX),
+        y: clampPercent(avatarDragStart.pos.y - deltaY),
+      },
+    }));
+  };
+
+  const handleAvatarTouchEnd = () => {
+    setAvatarDragStart(null);
+  };
+
+  const handleDeleteAvatar = () => {
+    setDraft((prev) => ({ ...prev, avatarDataUrl: '', avatarPosition: { x: 50, y: 50 } }));
+    setAvatarDragStart(null);
+    setIsRepositioningAvatar(false);
   };
 
   const updatePhysicalAppearance = (field: keyof PhysicalAppearance, value: string) => {
@@ -1061,10 +1188,25 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
         {/* Left column: Avatar + buttons */}
         <div className="flex flex-col gap-3">
-          <div className={cn(
-            "relative group w-full aspect-square rounded-2xl shadow-lg select-none overflow-hidden",
-            (draft.avatarDataUrl || character.avatarDataUrl) ? "border-2 border-[#4a5f7f]" : ""
-          )}>
+          <div
+            ref={avatarContainerRef}
+            className={cn(
+              "relative group w-full aspect-square rounded-2xl shadow-lg select-none",
+              isRepositioningAvatar
+                ? "ring-4 ring-blue-500 cursor-move overflow-hidden"
+                : hasAvatarImage
+                  ? "border-2 border-[#4a5f7f] overflow-hidden"
+                  : ""
+            )}
+            onMouseDown={handleAvatarMouseDown}
+            onMouseMove={handleAvatarMouseMove}
+            onMouseUp={handleAvatarMouseUp}
+            onMouseLeave={handleAvatarMouseUp}
+            onTouchStart={handleAvatarTouchStart}
+            onTouchMove={handleAvatarTouchMove}
+            onTouchEnd={handleAvatarTouchEnd}
+            style={isRepositioningAvatar ? { touchAction: 'none' } : undefined}
+          >
             {(isUploadingAvatar || isRegeneratingAvatar) ? (
               <div className="w-full h-full flex items-center justify-center bg-zinc-900">
                 <Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
@@ -1087,6 +1229,53 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
                 <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">No Avatar</span>
               </div>
             )}
+
+            {hasAvatarImage && !isRepositioningAvatar && (
+              <div className="absolute top-2 right-2 z-30">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="p-1.5 rounded-lg transition-colors bg-black/30 hover:bg-black/50 text-white/70 hover:text-white"
+                      aria-label="Avatar image options"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setIsRepositioningAvatar(true)}>
+                      <Move className="w-4 h-4 mr-2" />
+                      Reposition image
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={handleDeleteAvatar}
+                      className="text-red-400 focus:text-red-400"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete image
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
+
+            {isRepositioningAvatar && hasAvatarImage && (
+              <div className="absolute inset-0 z-[18] touch-none cursor-move pointer-events-auto">
+                <button
+                  type="button"
+                  className="absolute left-2 top-2 rounded-md bg-black/55 border border-white/20 px-2 py-1 text-[9px] font-bold text-white hover:bg-black/70 pointer-events-auto z-20"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onTouchStart={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setAvatarDragStart(null);
+                    setIsRepositioningAvatar(false);
+                  }}
+                >
+                  Done
+                </button>
+              </div>
+            )}
           </div>
           
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
@@ -1095,6 +1284,7 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
             onUploadFromDevice={() => fileInputRef.current?.click()}
             onSelectFromLibrary={(imageUrl) => {
               setDraft(prev => ({ ...prev, avatarDataUrl: imageUrl, avatarPosition: { x: 50, y: 50 } }));
+              setIsRepositioningAvatar(true);
             }}
             onGenerateClick={handleRegenerateAvatar}
             disabled={isUploadingAvatar}
@@ -1379,6 +1569,16 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
           <FieldTextarea label="Secrets" value={draft.personality?.secrets || ''} onChange={(v) => updatePersonality('secrets', v)} placeholder="Hidden information..." rows={2} />
           <FieldTextarea label="Miscellaneous" value={draft.personality?.miscellaneous || ''} onChange={(v) => updatePersonality('miscellaneous', v)} placeholder="Other personality notes..." rows={2} />
         </CollapsibleSection>
+
+        {draft.sections?.map((section) => renderCustomSection(section))}
+
+        <button
+          type="button"
+          onClick={() => setShowCategoryTypeModal(true)}
+          className="w-full h-[72px] rounded-[20px] border border-white/10 bg-[#4a4d59] text-white font-black tracking-[0.06em] text-lg shadow-[0_8px_24px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.08)] hover:brightness-105 transition"
+        >
+          + Custom Content
+        </button>
       </div>
     </ScrollArea>
   );

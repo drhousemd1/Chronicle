@@ -27,7 +27,7 @@
 | Field | Detail |
 |-------|--------|
 | **Tab Key** | `chat` |
-| **Source File** | `src/components/chronicle/ChatInterfaceTab.tsx` (~3873 lines) |
+| **Source File** | `src/components/chronicle/ChatInterfaceTab.tsx` (~6023 lines) |
 | **Purpose** | The core roleplay/chat experience. Renders conversation messages, handles LLM streaming, manages character state tracking, side character discovery, scene images, and memory system. |
 | **Entry Point** | Activated when user clicks "Resume" on a conversation or starts a new session from Your Stories |
 | **User Role** | Authenticated users only |
@@ -36,11 +36,13 @@
 
 ## 2. Layout & Structure
 
-The chat interface uses a two-panel layout:
-- **Main panel**: Message stream with input area at bottom
-- **Right sidebar**: Character cards, side characters, settings, scene gallery
+The chat interface uses a fixed two-panel layout rendered in `src/components/chronicle/ChatInterfaceTab.tsx`.
 
-The right sidebar is collapsible and contains multiple scrollable sections.
+- **Shell**: `flex flex-1 min-h-0 min-w-0 h-full w-full flex-row overflow-hidden relative`
+- **Sidebar panel**: fixed-width split pane on the left. Width is locked to `300px` via `CHAT_SIDEBAR_WIDTH = CHAT_TILE_WIDTH + 32`; shell uses `h-full flex-shrink-0 border-r border-slate-200 flex flex-col overflow-hidden`
+- **Main panel**: `flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden h-full relative z-10`
+
+The character column is intentionally kept as a fixed session sidebar and does **not** stack above the transcript when the browser narrows. The transcript area is the pane that shrinks first.
 
 ---
 
@@ -67,7 +69,7 @@ The right sidebar is collapsible and contains multiple scrollable sections.
 |--------|---------|--------|
 | Send message | `handleSendMessage` | Saves user message, streams AI response via `generateRoleplayResponseStream()` |
 | Regenerate | `handleRegenerate` | Deletes last AI message, re-streams response |
-| Edit message | `handleEditMessage` | Opens inline editor, saves edited content |
+| Edit message | `openInlineMessageEditor()` → `handleInlineEditSave()` / `handleInlineEditCancel()` | Opens in-place rich editors inside the existing bubble, preserves avatar wrap + token styling, and keeps every multi-speaker row editable in its original position |
 | Delete message | `handleDeleteMessage` | Removes message from conversation |
 | Copy message | `handleCopy` | Copies message text to clipboard |
 | Time change | `handleTimeChange` | Updates `current_time_of_day` on conversation |
@@ -230,6 +232,10 @@ Service: `src/services/side-character-generator.ts`
 | Plain text | Default narrative text |
 | `[SCENE: ...]` | Stripped from display, used for scene image triggers |
 
+Inline edit mode reuses the same token parsing/styling path instead of swapping to a plain textarea. `InlineFormattedMessageEditor` renders the editable surface in-place with `contentEditable`, `text-[15px] leading-relaxed`, and token HTML from `parseMessageTokens()` + `tokensToStyledHtml()` so dialogue/action/thought styling remains visible during edits.
+
+For multi-speaker messages, `openInlineMessageEditor()` builds per-segment edit state from `parseMessageSegments()` + `mergeByRenderedSpeaker()`. Edit mode renders one inline editor per merged speaker block so later character rows stay visible instead of collapsing into the first segment.
+
 ### 9b. Chat Settings
 
 Configurable via `onUpdateUiSettings`:
@@ -306,6 +312,9 @@ Applied in both `renderCharacterCard()` (main characters) and `SideCharacterCard
 - **RESOLVED — 2026-03-06**: Chat settings (NSFW Intensity, Realism Mode, Time Mode, etc.) not persisting across navigation. Root-cause: `onUpdateUiSettings` in `Index.tsx` only updated in-memory state via `handleUpdateActive`, never wrote to DB. Fix: added `updateStoryUiSettings()` in `supabase-data.ts` for targeted `stories.ui_settings` update; `onUpdateUiSettings` handler now fire-and-forgets a DB write after merging the patch.
 - **RESOLVED — 2026-03-06**: Time progression mode/interval not persisting. Root-cause: `updateConversationMeta` only mapped `currentDay`, `currentTimeOfDay`, `title` — `timeProgressionMode` and `timeProgressionInterval` were silently dropped. Fix: expanded patch type and DB column mapping in `updateConversationMeta`; `onSaveScenario` handler now passes both fields.
 - **RESOLVED — 2026-03-06**: Auto-timer `timeRemaining` resetting on navigation. Root-cause: remaining seconds were never persisted — always defaulted to full interval on load. Fix: added `time_remaining` column to `conversations` table; `ChatInterfaceTab` saves remaining seconds on unmount/beforeunload via `updateConversationMeta`, restores on load.
+- **RESOLVED — 2026-04-04**: Chat sidebar stacked above the transcript after the responsive shell pass. Root-cause: `ChatInterfaceTab` used `flex-col lg:flex-row` plus `w-full` / bounded-height sidebar rules, which caused the character column to jump above the conversation at narrower widths. Fix: restored a fixed split-pane shell and locked sidebar width to `CHAT_SIDEBAR_WIDTH` (`300px`) so the transcript shrinks before the character column reflows.
+- **RESOLVED — 2026-04-04**: Inline message edit mode lost Chronicle text styling and shifted under the avatar. Root-cause: the in-place formatted editor was replaced with a plain transparent `<textarea>`, which broke avatar wrapping, token styling, and bubble-height continuity. Fix: restored an in-place rich editor (`InlineFormattedMessageEditor`) that keeps dialogue/action/thought styling visible while editing inside the existing bubble.
+- **RESOLVED — 2026-04-04**: Multi-speaker inline edit mode blanked later speaker rows. Root-cause: edit mode only mounted the editor in the first rendered segment while later speaker shells stayed mounted with null content, so second/third character rows appeared empty under their avatars. Fix: `openInlineMessageEditor()` now captures structured per-segment edit state and edit mode renders one `InlineFormattedMessageEditor` per merged speaker block.
 
 ---
 
@@ -313,4 +322,4 @@ Applied in both `renderCharacterCard()` (main characters) and `SideCharacterCard
 
 None documented.
 
-> Last updated: 2026-03-20 — Outward/Inward Personality Precedence Fix. Added score offset in `personalityContext()`: outward traits +15, inward traits -10 to effective score during prompt formatting. Updated PERSONALITY TRAIT ADHERENCE with explicit outward-first precedence rule and bracket-based conflict resolution. Added TONE ENFORCEMENT block as mandatory expression filter. Added OUTWARD/INWARD CONFLICT IN INTIMATE SCENES to NSFW modulation. Updated personality headers to annotate role (governs visible behavior vs governs thoughts).
+> Last updated: 2026-04-04 — Restored the fixed split-pane chat sidebar, repaired inline message editing, and fixed multi-speaker edit mode so every speaker block stays visible in place while editing.

@@ -107,12 +107,19 @@ const debugLog = (...args: unknown[]) => {
   }
 };
 
-function parseMessageTokens(text: string, preserveWhitespace = false): { type: string; content: string }[] {
+type MessageToken = {
+  type: 'plain' | 'speech' | 'action' | 'thought';
+  content: string;
+  trailing?: string;
+};
+
+function parseMessageTokens(text: string, preserveWhitespace = false): MessageToken[] {
   let cleanRaw = text.replace(/\[SCENE:\s*.*?\]/g, '');
   if (!preserveWhitespace) cleanRaw = cleanRaw.trim();
-  const regex = /(\*.*?\*)|(".*?")|(\(.*?\))/g;
+  // Supports straight and smart quotes, and keeps optional trailing punctuation with the speech token.
+  const regex = /(\*[\s\S]*?\*)|([“"][\s\S]*?[”"][,.!?;:]?)|(\([\s\S]*?\))/g;
 
-  const parts: { type: string; content: string }[] = [];
+  const parts: MessageToken[] = [];
   let lastIndex = 0;
   let match;
 
@@ -124,8 +131,19 @@ function parseMessageTokens(text: string, preserveWhitespace = false): { type: s
     const found = match[0];
     if (found.startsWith('*')) {
       parts.push({ type: 'action', content: found.slice(1, -1) });
-    } else if (found.startsWith('"')) {
-      parts.push({ type: 'speech', content: found.slice(1, -1) });
+    } else if (found.startsWith('"') || found.startsWith('“')) {
+      // [opening quote][body][closing quote][optional punctuation]
+      const speechMatch = found.match(/^([“"])([\s\S]*?)([”"])([,.!?;:]?)$/);
+      if (speechMatch) {
+        parts.push({
+          type: 'speech',
+          content: speechMatch[2],
+          trailing: speechMatch[4] || '',
+        });
+      } else {
+        // Fallback for malformed quote blocks; still treat as speech so styling remains consistent.
+        parts.push({ type: 'speech', content: found.replace(/^["“]|["”]$/g, '') });
+      }
     } else if (found.startsWith('(')) {
       parts.push({ type: 'thought', content: found.slice(1, -1) });
     }
@@ -144,16 +162,16 @@ function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function tokensToStyledHtml(tokens: { type: string; content: string }[], dynamicText: boolean): string {
+function tokensToStyledHtml(tokens: MessageToken[], dynamicText: boolean): string {
   return tokens.map(token => {
     if (!dynamicText) {
       if (token.type === 'speech') {
-        return `<span style="color:white;font-weight:500">"${escapeHtml(token.content)}"</span>`;
+        return `<span style="color:white;font-weight:500">"${escapeHtml(token.content)}"${escapeHtml(token.trailing || '')}</span>`;
       }
       return `<span style="color:white;font-weight:500">${escapeHtml(token.content)}</span>`;
     }
     if (token.type === 'speech') {
-      return `<span style="color:white;font-weight:500">"${escapeHtml(token.content)}"</span>`;
+      return `<span style="color:white;font-weight:500">"${escapeHtml(token.content)}"${escapeHtml(token.trailing || '')}</span>`;
     }
     if (token.type === 'action') {
       return `<span style="color:rgb(148,163,184);font-style:italic">*${escapeHtml(token.content)}*</span>`;
@@ -213,7 +231,7 @@ const FormattedMessage: React.FC<{ text: string; dynamicText?: boolean }> = ({ t
           if (token.type === 'speech') {
             return (
               <span key={i} className="text-white font-medium">
-                &ldquo;{token.content}&rdquo;
+                &ldquo;{token.content}&rdquo;{token.trailing || ''}
               </span>
             );
           }
@@ -227,7 +245,7 @@ const FormattedMessage: React.FC<{ text: string; dynamicText?: boolean }> = ({ t
         if (token.type === 'speech') {
           return (
             <span key={i} className="text-white font-medium">
-              &ldquo;{token.content}&rdquo;
+              &ldquo;{token.content}&rdquo;{token.trailing || ''}
             </span>
           );
         }
@@ -258,6 +276,59 @@ const FormattedMessage: React.FC<{ text: string; dynamicText?: boolean }> = ({ t
         );
       })}
     </div>
+  );
+};
+
+// Guardrail: chat message editing must stay visually in-place inside the bubble.
+// Do not replace this with a plain textarea/modal flow unless the replacement
+// preserves avatar wrapping, bubble sizing, and dialogue/action/thought styling.
+const InlineFormattedMessageEditor: React.FC<{
+  value: string;
+  dynamicText: boolean;
+  autoFocus?: boolean;
+  onChange: (value: string) => void;
+}> = ({ value, dynamicText, autoFocus = false, onChange }) => {
+  const editorRef = useRef<HTMLDivElement | null>(null);
+  const hasInitializedRef = useRef(false);
+
+  React.useLayoutEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const nextHtml = tokensToStyledHtml(parseMessageTokens(value, true), dynamicText);
+    if (editor.innerHTML !== nextHtml) {
+      editor.innerHTML = nextHtml;
+    }
+
+    if (!hasInitializedRef.current && autoFocus) {
+      hasInitializedRef.current = true;
+      editor.focus();
+      setCaretCharOffset(editor, editor.innerText.length);
+    }
+  }, [autoFocus, dynamicText, value]);
+
+  return (
+    <div
+      ref={editorRef}
+      contentEditable
+      suppressContentEditableWarning
+      role="textbox"
+      aria-label="Edit message"
+      aria-multiline="true"
+      spellCheck
+      className="min-h-[1.5rem] whitespace-pre-wrap break-words rounded-md -mx-1 px-1 py-1 text-[15px] leading-relaxed font-normal outline-none"
+      onBlur={(e) => {
+        onChange(e.currentTarget.innerText.replace(/\u00a0/g, ' '));
+      }}
+      onInput={(e) => {
+        const editor = e.currentTarget;
+        const rawText = editor.innerText.replace(/\u00a0/g, ' ');
+        const caretPos = getCaretCharOffset(editor);
+        editor.innerHTML = tokensToStyledHtml(parseMessageTokens(rawText, true), dynamicText);
+        setCaretCharOffset(editor, caretPos);
+        onChange(rawText);
+      }}
+    />
   );
 };
 
@@ -332,10 +403,46 @@ const mergeByRenderedSpeaker = (
   
   return merged;
 };
+
+const MESSAGE_SYSTEM_TAG_REGEX = /\[SCENE:\s*.*?\]|\[UPDATE:[^\]]*\]|\[ADDROW:[^\]]*\]|\[NEWCAT:[^\]]*\]/g;
+
+const extractHiddenMessageTags = (text: string): string[] => text.match(MESSAGE_SYSTEM_TAG_REGEX) ?? [];
+
+const buildEditableMessageSegments = (
+  text: string,
+  isAi: boolean,
+  appData: ScenarioData,
+  userChar: Character | null,
+  resolveCanonicalName?: (name: string) => string | null
+): MessageSegment[] => mergeByRenderedSpeaker(
+  parseMessageSegments(text),
+  isAi,
+  appData,
+  userChar,
+  resolveCanonicalName
+);
+
+const serializeEditableMessageSegments = (segments: MessageSegment[]): string => segments
+  .map((segment) => {
+    const content = segment.content.trim();
+    if (!content) return '';
+    return segment.speakerName ? `${segment.speakerName}: ${content}` : content;
+  })
+  .filter(Boolean)
+  .join('\n\n')
+  .trim();
+
+const buildInlineEditedMessageText = (segments: MessageSegment[], systemTags: string[]): string => {
+  const visibleBody = serializeEditableMessageSegments(segments);
+  const hiddenTags = systemTags.join('\n').trim();
+  return [hiddenTags, visibleBody].filter((part) => part.trim().length > 0).join('\n\n').trim();
+};
+
 const clampPercent = (value: number): number => Math.max(0, Math.min(100, value));
 const CHARACTER_AVATAR_PREVIEW_SIZE = 192;
 const CHAT_TILE_HEIGHT = 140;
 const CHAT_TILE_WIDTH = 268;
+const CHAT_SIDEBAR_WIDTH = CHAT_TILE_WIDTH + 32;
 
 type Size2D = { width: number; height: number };
 const avatarNaturalSizeCache = new Map<string, Size2D>();
@@ -493,7 +600,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [editText, setEditText] = useState('');
   const [inlineEditingId, setInlineEditingId] = useState<string | null>(null);
-  const [inlineEditText, setInlineEditText] = useState('');
+  const [inlineEditSegments, setInlineEditSegments] = useState<MessageSegment[]>([]);
+  const [inlineEditSystemTags, setInlineEditSystemTags] = useState<string[]>([]);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [regeneratingMessageId, setRegeneratingMessageId] = useState<string | null>(null);
   const [currentDay, setCurrentDay] = useState(1);
@@ -1202,6 +1310,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       ...(baseChar.preferredClothing || {}),
       ...(sessionState.preferredClothing || {}),
     };
+    const effectiveSections =
+      Array.isArray(sessionState.customSections) && sessionState.customSections.length > 0
+        ? sessionState.customSections
+        : (baseChar.sections || []);
 
     return {
       ...baseChar,
@@ -1217,7 +1329,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       physicalAppearance: mergedPhysicalAppearance,
       currentlyWearing: mergedCurrentlyWearing,
       preferredClothing: mergedPreferredClothing,
-      sections: sessionState.customSections || baseChar.sections,
+      sections: effectiveSections,
       // Session-scoped goals overrides
       goals: sessionState.goals?.length ? sessionState.goals : (baseChar.goals || []),
       // Session-scoped avatar overrides
@@ -2385,32 +2497,32 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       debugLog('[extractCharacterUpdates] Eligible characters:', [...eligibleNames]);
       if (eligibleNames.size === 0) return [];
 
+      const normalizeSectionItems = (section: any): Array<{ label: string; value: string }> => {
+        const sectionTitle = (section?.title || '').trim();
+        const rawItems = Array.isArray(section?.items) ? section.items : [];
+        const normalized = rawItems
+          .map((item: any) => ({
+            label: (item?.label || '').trim(),
+            value: (item?.value || '').trim()
+          }))
+          .filter((item: any) => item.label || item.value)
+          .map((item: any) => ({
+            label: item.label || (sectionTitle ? `${sectionTitle} Details` : 'Details'),
+            value: item.value || item.label
+          }));
+
+        if (normalized.length > 0) return normalized;
+
+        const freeform = (section?.freeformValue || '').trim();
+        if (freeform) {
+          return [{ label: sectionTitle ? `${sectionTitle} Notes` : 'Details', value: freeform }];
+        }
+        return [];
+      };
+
       // Build character data for context — only eligible characters
       const charactersData = appData.characters.map(c => {
         const effective = getEffectiveCharacter(c);
-        const normalizeSectionItems = (section: any): Array<{ label: string; value: string }> => {
-          const sectionTitle = (section?.title || '').trim();
-          const rawItems = Array.isArray(section?.items) ? section.items : [];
-          const normalized = rawItems
-            .map((item: any) => ({
-              label: (item?.label || '').trim(),
-              value: (item?.value || '').trim()
-            }))
-            .filter((item: any) => item.label || item.value)
-            .map((item: any) => ({
-              label: item.label || (sectionTitle ? `${sectionTitle} Details` : 'Details'),
-              value: item.value || item.label
-            }));
-
-          if (normalized.length > 0) return normalized;
-
-          const freeform = (section?.freeformValue || '').trim();
-          if (freeform) {
-            return [{ label: sectionTitle ? `${sectionTitle} Notes` : 'Details', value: freeform }];
-          }
-          return [];
-        };
-
         return {
           name: effective.name,
           previousNames: effective.previousNames || [],
@@ -2453,6 +2565,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       ).map(sc => ({
         name: sc.name,
         nicknames: sc.nicknames,
+        customSections: (sc.sections || []).map(s => ({
+          title: s.title,
+          items: normalizeSectionItems(s)
+        }))
+        .filter((s) => (s.title || '').trim() || s.items.length > 0),
         physicalAppearance: sc.physicalAppearance,
         currentlyWearing: sc.currentlyWearing,
         preferredClothing: sc.preferredClothing,
@@ -3085,7 +3202,49 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             let normalizedChild = child;
             if (parent === 'preferredClothing' && child === 'underwear') normalizedChild = 'undergarments';
             
-            if (parent === 'physicalAppearance') {
+            if (parent === 'sections') {
+              const parts = field.split('.');
+              if (parts.length >= 3) {
+                const sectionTitle = parts[1];
+                const itemLabel = parts.slice(2).join('.');
+                const existingSections = patch.sections || sideChar.sections || [];
+                const updatedSections = [...existingSections];
+
+                let sectionIndex = updatedSections.findIndex(s => s.title.toLowerCase() === sectionTitle.toLowerCase());
+                if (sectionIndex === -1) {
+                  updatedSections.push({
+                    id: `sec_${uuid().slice(0, 12)}`,
+                    title: sectionTitle,
+                    type: 'structured',
+                    items: [],
+                    createdAt: Date.now(),
+                    updatedAt: Date.now()
+                  });
+                  sectionIndex = updatedSections.length - 1;
+                }
+
+                const section = updatedSections[sectionIndex];
+                const itemIndex = section.items.findIndex((i: any) => i.label.toLowerCase() === itemLabel.toLowerCase());
+                if (itemIndex === -1) {
+                  section.items.push({
+                    id: `item_${uuid().slice(0, 12)}`,
+                    label: itemLabel,
+                    value,
+                    createdAt: Date.now(),
+                    updatedAt: Date.now()
+                  });
+                } else {
+                  section.items[itemIndex] = {
+                    ...section.items[itemIndex],
+                    value,
+                    updatedAt: Date.now()
+                  };
+                }
+
+                section.updatedAt = Date.now();
+                patch.sections = updatedSections;
+              }
+            } else if (parent === 'physicalAppearance') {
               if (normalizedChild === '_extras') {
                 const existing = patch.physicalAppearance || sideChar.physicalAppearance || {};
                 const extras = [...((existing as any)._extras || [])];
@@ -3512,13 +3671,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   };
 
   const handleInlineEditSave = () => {
-    if (!inlineEditingId || !inlineEditText.trim()) return;
+    const inlineEditedText = buildInlineEditedMessageText(inlineEditSegments, inlineEditSystemTags);
+    if (!inlineEditingId || !inlineEditedText.trim()) return;
     const updatedConvs = appData.conversations.map(c =>
       c.id === conversationId
         ? {
             ...c,
             messages: c.messages.map(m =>
-              m.id === inlineEditingId ? { ...m, text: inlineEditText } : m
+              m.id === inlineEditingId ? { ...m, text: inlineEditedText } : m
             ),
             updatedAt: now()
           }
@@ -3527,12 +3687,29 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     onUpdate(updatedConvs);
     onSaveScenario(updatedConvs);
     setInlineEditingId(null);
-    setInlineEditText('');
+    setInlineEditSegments([]);
+    setInlineEditSystemTags([]);
   };
 
   const handleInlineEditCancel = () => {
     setInlineEditingId(null);
-    setInlineEditText('');
+    setInlineEditSegments([]);
+    setInlineEditSystemTags([]);
+  };
+
+  const openInlineMessageEditor = (msg: Message, isAi: boolean) => {
+    const userChar = appData.characters.find(c => c.controlledBy === 'User') || null;
+    setInlineEditingId(msg.id);
+    setInlineEditSystemTags(extractHiddenMessageTags(msg.text));
+    setInlineEditSegments(
+      buildEditableMessageSegments(
+        msg.text,
+        isAi,
+        appData,
+        userChar,
+        resolveCanonicalSpeakerName
+      )
+    );
   };
 
   const handleRegenerateMessage = async (messageId: string) => {
@@ -4138,6 +4315,7 @@ const updatedChar: SideCharacter = {
         preferredClothing: { ...char.preferredClothing, ...draft.preferredClothing },
         background: draft.background ? { ...char.background, ...draft.background } : char.background,
         personality: draft.personality ? { ...char.personality, ...draft.personality } : char.personality,
+        sections: draft.sections ?? char.sections,
         avatarDataUrl: draft.avatarDataUrl || char.avatarDataUrl,
         avatarPosition: draft.avatarPosition || char.avatarPosition,
         updatedAt: now(),
@@ -4586,18 +4764,27 @@ const updatedChar: SideCharacter = {
   }
 
   // Layout guardrail:
-  // Keep lg breakpoint (not xl) for split-pane mode so ~1024-1279px widths
-  // still render sidebar + main panel side-by-side instead of stacking.
+  // The chat sidebar is intentionally a fixed split pane during active sessions.
+  // Do not reintroduce stacked/mobile sidebar behavior here: the transcript should
+  // shrink first, because moving the character column above the chat breaks the
+  // intended Chronicle runtime layout and disorients in-session navigation.
   return (
     <div
-      className={`flex flex-1 min-h-0 min-w-0 h-full w-full flex-col lg:flex-row overflow-hidden relative ${darkMode ? 'bg-slate-900' : ''}`}
+      className={`flex flex-1 min-h-0 min-w-0 h-full w-full flex-row overflow-hidden relative ${darkMode ? 'bg-slate-900' : ''}`}
       style={{ backgroundColor: chatCanvasColor }}
     >
 
       {/* Height-chain guardrail:
-          lg:h-full + parent h-full/min-h-0 are required for full-height sidebar
-          and nested scroll containers to stay functional. */}
-      <aside className={`w-full lg:w-[clamp(250px,28vw,300px)] max-h-[52vh] lg:max-h-none h-auto lg:h-full flex-shrink-0 border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-col shadow-[inset_-4px_0_12px_rgba(0,0,0,0.02)] z-10 transition-colors relative overflow-hidden ${showBackground ? 'bg-white/90 backdrop-blur-md' : 'bg-white'}`}>
+          Chat sidebar width/height are fixed on purpose to preserve the split-pane
+          session layout. Keep h-full/min-h-0 so nested scroll containers stay functional. */}
+      <aside
+        className={`h-full flex-shrink-0 border-r border-slate-200 flex flex-col shadow-[inset_-4px_0_12px_rgba(0,0,0,0.02)] z-10 transition-colors relative overflow-hidden ${showBackground ? 'bg-white/90 backdrop-blur-md' : 'bg-white'}`}
+        style={{
+          width: CHAT_SIDEBAR_WIDTH,
+          minWidth: CHAT_SIDEBAR_WIDTH,
+          maxWidth: CHAT_SIDEBAR_WIDTH,
+        }}
+      >
         {/* Sidebar background image layer */}
         {selectedSidebarBgUrl && (
           <div className="absolute inset-0 z-0">
@@ -4961,7 +5148,7 @@ const updatedChar: SideCharacter = {
                               <Copy className="w-4 h-4 mr-2" />
                               Copy
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => { setInlineEditingId(msg.id); setInlineEditText(msg.text); }}>
+                            <DropdownMenuItem onClick={() => openInlineMessageEditor(msg, isAi)}>
                               <Pencil className="w-4 h-4 mr-2" />
                               Edit
                             </DropdownMenuItem>
@@ -5012,16 +5199,19 @@ const updatedChar: SideCharacter = {
                   {/* Render text segments - avatar only shows when speaker changes */}
                   {/* If this message is being regenerated, show streaming content instead */}
                   {msg.text && (() => {
+                    const isEditingThisMessage = inlineEditingId === msg.id;
                     // If this message is being regenerated, use streaming content
-                    const displaySegments = regeneratingMessageId === msg.id && formattedStreamingContent
-                      ? mergeByRenderedSpeaker(
-                          parseMessageSegments(formattedStreamingContent),
-                          isAi,
-                          appData,
-                          userChar,
-                          resolveCanonicalSpeakerName
-                        )
-                      : segments;
+                    const displaySegments = isEditingThisMessage
+                      ? (inlineEditSegments.length > 0 ? inlineEditSegments : segments)
+                      : regeneratingMessageId === msg.id && formattedStreamingContent
+                        ? mergeByRenderedSpeaker(
+                            parseMessageSegments(formattedStreamingContent),
+                            isAi,
+                            appData,
+                            userChar,
+                            resolveCanonicalSpeakerName
+                          )
+                        : segments;
                     
                     return displaySegments.map((segment, segIndex) => {
                       // Determine speaker for this segment
@@ -5086,15 +5276,23 @@ const updatedChar: SideCharacter = {
                           </div>
                         )}
                         <div className={showAvatar ? "pt-1 antialiased" : "antialiased"}>
-                          {inlineEditingId === msg.id && segIndex === 0 ? (
-                            <textarea
-                              value={inlineEditText}
-                              onChange={(e) => setInlineEditText(e.target.value)}
-                              onBlur={(e) => setInlineEditText(e.currentTarget.value)}
-                              className="w-full min-h-[120px] text-[15px] leading-relaxed font-normal whitespace-pre-wrap outline-none rounded-md -mx-1 px-1 py-1 bg-transparent resize-y"
-                              autoFocus
+                          {/* Guardrail: multi-speaker edit mode must keep every rendered speaker row visible.
+                              Do not collapse editing back into only the first segment, or later character
+                              blocks will render as empty shells underneath their avatars. */}
+                          {isEditingThisMessage ? (
+                            <InlineFormattedMessageEditor
+                              value={segment.content}
+                              dynamicText={dynamicText}
+                              autoFocus={segIndex === 0}
+                              onChange={(nextContent) => {
+                                setInlineEditSegments(prev => prev.map((editSegment, editIndex) => (
+                                  editIndex === segIndex
+                                    ? { ...editSegment, content: nextContent }
+                                    : editSegment
+                                )));
+                              }}
                             />
-                          ) : inlineEditingId === msg.id ? null : (
+                          ) : (
                             <FormattedMessage text={segment.content} dynamicText={dynamicText} />
                           )}
                         </div>

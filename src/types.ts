@@ -349,6 +349,7 @@ export type SideCharacter = {
   // Side-character specific sections
   background: SideCharacterBackground;
   personality: SideCharacterPersonality;
+  sections: CharacterTraitSection[];
   
   avatarDataUrl: string;
   avatarPosition?: { x: number; y: number };

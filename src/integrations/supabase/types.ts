@@ -1364,6 +1364,7 @@ export type Database = {
           conversation_id: string
           created_at: string | null
           current_mood: string | null
+          custom_sections: Json | null
           currently_wearing: Json | null
           custom_sections: Json
           extracted_traits: Json | null
@@ -1391,6 +1392,7 @@ export type Database = {
           conversation_id: string
           created_at?: string | null
           current_mood?: string | null
+          custom_sections?: Json | null
           currently_wearing?: Json | null
           custom_sections?: Json
           extracted_traits?: Json | null
@@ -1418,6 +1420,7 @@ export type Database = {
           conversation_id?: string
           created_at?: string | null
           current_mood?: string | null
+          custom_sections?: Json | null
           currently_wearing?: Json | null
           custom_sections?: Json
           extracted_traits?: Json | null

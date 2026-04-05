@@ -529,9 +529,19 @@ export const CharacterBuilderScreen: React.FC<CharacterBuilderScreenProps> = ({
         avatarDataUrl: finalUrl,
         avatarPosition: { x: 50, y: 50 }
       });
-
+      setIsRepositioning(true);
     }
     setShowAvatarModal(false);
+  };
+
+  const handleDeleteAvatar = () => {
+    if (!selected) return;
+    onUpdate(selected.id, {
+      avatarDataUrl: '',
+      avatarPosition: { x: 50, y: 50 }
+    });
+    setDragStart(null);
+    setIsRepositioning(false);
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -1048,6 +1058,13 @@ export const CharacterBuilderScreen: React.FC<CharacterBuilderScreenProps> = ({
                                       <Move className="w-4 h-4 mr-2" />
                                       Reposition image
                                     </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={handleDeleteAvatar}
+                                      className="text-red-400 focus:text-red-400"
+                                    >
+                                      <Trash2 className="w-4 h-4 mr-2" />
+                                      Delete image
+                                    </DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
                               </div>
@@ -1079,6 +1096,7 @@ export const CharacterBuilderScreen: React.FC<CharacterBuilderScreenProps> = ({
                                   avatarDataUrl: imageUrl,
                                   avatarPosition: { x: 50, y: 50 }
                                 });
+                                setIsRepositioning(true);
                               }
                             }}
                             onGenerateClick={handleAiPortrait}

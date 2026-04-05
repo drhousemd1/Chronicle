@@ -292,6 +292,7 @@ export function createSideCharacter(
     
     background: { ...defaultSideCharacterBackground },
     personality: { ...defaultSideCharacterPersonality },
+    sections: [],
     
     avatarDataUrl: '',
     isAvatarGenerating: true,  // Will trigger async generation
