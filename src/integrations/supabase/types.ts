@@ -1365,6 +1365,7 @@ export type Database = {
           created_at: string | null
           current_mood: string | null
           currently_wearing: Json | null
+          custom_sections: Json
           extracted_traits: Json | null
           first_mentioned_in: string | null
           id: string
@@ -1391,6 +1392,7 @@ export type Database = {
           created_at?: string | null
           current_mood?: string | null
           currently_wearing?: Json | null
+          custom_sections?: Json
           extracted_traits?: Json | null
           first_mentioned_in?: string | null
           id?: string
@@ -1417,6 +1419,7 @@ export type Database = {
           created_at?: string | null
           current_mood?: string | null
           currently_wearing?: Json | null
+          custom_sections?: Json
           extracted_traits?: Json | null
           first_mentioned_in?: string | null
           id?: string
