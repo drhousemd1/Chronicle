@@ -4774,6 +4774,26 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260404-014",
+      title: "Reconcile generated side-character schema types after remote migration merge",
+      summary: "Supabase Type Sync · Removed duplicate `custom_sections` identifiers after rebasing local side-character parity work onto the already-applied backend migration",
+      severity: "patch" as const,
+      status: "completed" as const,
+      problem: "The side-character custom-sections migration was already applied and pushed to `main` while local runtime/editor parity work was still being prepared. After rebasing, the generated Supabase `side_characters` types contained duplicate `custom_sections` keys, which caused the automatic pre-push ship-check to fail and blocked deployment.",
+      plan: "Keep the backend migration as the source of truth and reconcile the generated local table typing so `side_characters` exposes one canonical `custom_sections` field shape across Row/Insert/Update.",
+      changes: "Removed the duplicate `custom_sections` field declarations from generated `side_characters` Supabase types so the local repo matches the migrated backend schema and passes the pre-push type check gate.",
+      filesAffected: [
+        "src/integrations/supabase/types.ts",
+        "src/data/ui-audit-findings.ts"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["schema-sync", "supabase-types", "pre-push-checks", "side-characters"],
+      comments: [],
+      createdAt: "2026-04-04T22:20:00.000Z",
+      updatedAt: "2026-04-04T22:20:00.000Z",
+    },
+    {
       id: "cl-20260404-013",
       title: "Keep every speaker row visible during inline chat editing",
       summary: "Chat Interface · Fixed the multi-speaker inline editor so each character block remains editable in place instead of blanking later rows",
