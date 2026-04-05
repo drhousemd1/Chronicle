@@ -1,25 +1,37 @@
 
 
-# Fix `event_type` NOT NULL Constraint on `ai_usage_test_events`
+# Add `custom_sections` Column to `side_characters`
 
-## Problem
-The `ai_usage_test_events` table has an `event_type` column that is `NOT NULL` with no default. Both edge functions (`track-api-usage-test` and `track-ai-usage`) insert rows using `event_key` but never set `event_type`. Every insert fails with a not-null constraint violation.
+## Change
+One database migration adding a single column to the existing `side_characters` table, backfilling NULLs, then enforcing NOT NULL.
 
-## Fix
-One database migration:
-
+## SQL
 ```sql
-ALTER TABLE public.ai_usage_test_events
-  ALTER COLUMN event_type SET DEFAULT '';
+ALTER TABLE public.side_characters
+  ADD COLUMN IF NOT EXISTS custom_sections jsonb DEFAULT '[]'::jsonb;
+
+UPDATE public.side_characters
+  SET custom_sections = '[]'::jsonb
+  WHERE custom_sections IS NULL;
+
+ALTER TABLE public.side_characters
+  ALTER COLUMN custom_sections SET NOT NULL;
 ```
 
-This makes existing inserts succeed by falling back to an empty string. No edge function or frontend code changes needed.
+## Scope
+- No other tables touched
+- No RLS policy changes
+- No column renames or removals
 
 ## Files changed
-- **New migration** — adds default `''` to `event_type` column
+- **New migration** — adds `custom_sections jsonb NOT NULL DEFAULT '[]'` to `side_characters`
+- `src/integrations/supabase/types.ts` — auto-regenerated
 
-## What stays untouched
-- All edge function code
-- All frontend code
-- All other tables
+## Acceptance criteria
+- `public.side_characters.custom_sections` exists
+- Type is `jsonb`
+- Default is `'[]'::jsonb`
+- Existing rows backfilled (no NULLs)
+- Column is `NOT NULL`
+- No unrelated schema changes
 
