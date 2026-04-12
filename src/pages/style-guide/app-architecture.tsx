@@ -4238,11 +4238,13 @@ export default function AppArchitecturePage() {
       <header className="header">
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <button
+            type="button"
             onClick={() => navigate("/?tab=admin&adminTool=style_guide")}
-            className="p-2 rounded-full hover:bg-slate-100 transition-colors"
-            aria-label="Back to Admin"
+            className="p-2 text-[hsl(var(--ui-surface-2))] hover:bg-slate-100 rounded-full transition-colors"
+            aria-label="Go back"
+            title="Go back"
           >
-            <ArrowLeft size={20} />
+            <ArrowLeft size={20} strokeWidth={2.5} />
           </button>
           <h1 className="page-title" style={{ margin: 0 }}>App Architecture</h1>
         </div>
