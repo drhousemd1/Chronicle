@@ -1,37 +1,28 @@
 
 
-# Add `custom_sections` Column to `side_characters`
+# Add Back Navigation Button to App Architecture Page
 
-## Change
-One database migration adding a single column to the existing `side_characters` table, backfilling NULLs, then enforcing NOT NULL.
+## Problem
+The App Architecture page is missing the back navigation chevron that other admin pages (API Inspector, UI Audit) have. Once you're in it, there's no way to navigate back without using browser back.
 
-## SQL
-```sql
-ALTER TABLE public.side_characters
-  ADD COLUMN IF NOT EXISTS custom_sections jsonb DEFAULT '[]'::jsonb;
+## Solution
+Add a back button with ArrowLeft icon to the header, matching the pattern used in API Inspector and UI Audit pages. The button navigates back to the App Dashboard (/?tab=admin).
 
-UPDATE public.side_characters
-  SET custom_sections = '[]'::jsonb
-  WHERE custom_sections IS NULL;
+## Changes
 
-ALTER TABLE public.side_characters
-  ALTER COLUMN custom_sections SET NOT NULL;
-```
+**File: src/pages/style-guide/app-architecture.tsx**
 
-## Scope
-- No other tables touched
-- No RLS policy changes
-- No column renames or removals
+1. **Add imports** (lines 1-2):
+   - Add `useNavigate` import from "react-router-dom"
+   - Add `ArrowLeft` import from "lucide-react"
 
-## Files changed
-- **New migration** — adds `custom_sections jsonb NOT NULL DEFAULT '[]'` to `side_characters`
-- `src/integrations/supabase/types.ts` — auto-regenerated
+2. **Add navigate hook** (inside the component, before the return statement):
+   - Add `const navigate = useNavigate();`
 
-## Acceptance criteria
-- `public.side_characters.custom_sections` exists
-- Type is `jsonb`
-- Default is `'[]'::jsonb`
-- Existing rows backfilled (no NULLs)
-- Column is `NOT NULL`
-- No unrelated schema changes
+3. **Update header** (around line 4236):
+   - Add back button with ArrowLeft icon before the page title
+   - Button navigates to `/?tab=admin&adminTool=style_guide`
+   - Match the styling from API Inspector (p-2, rounded-full, hover:bg-slate-100)
+
+The back button will appear to the left of "App Architecture" text, consistent with other pages in the admin section.
 
