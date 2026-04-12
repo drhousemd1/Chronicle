@@ -1,10 +1,10 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Heart, Bookmark, Play, Pencil, Edit, Loader2, Eye, X, Globe } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Dialog, DialogContent, DialogOverlay, DialogPortal } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogOverlay, DialogPortal } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { fetchScenarioCharacters, ScenarioCharacter, fetchScenarioReviews, fetchUserReview, type ScenarioReview } from '@/services/gallery-data';
 import { StarRating } from './StarRating';
@@ -124,8 +124,13 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
   
   const [hasMoreReviews, setHasMoreReviews] = useState(false);
   const [loadingMoreReviews, setLoadingMoreReviews] = useState(false);
+  const detailScrollRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const spiceReviews = reviews.filter((review) => typeof review.spice_level === 'number' && review.spice_level > 0);
+  const averageSpiceRating = spiceReviews.length > 0
+    ? Math.round((spiceReviews.reduce((sum, review) => sum + (review.spice_level ?? 0), 0) / spiceReviews.length) * 2) / 2
+    : 0;
 
   const REVIEWS_PAGE_SIZE = 5;
 
@@ -215,6 +220,20 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
     }
   };
 
+  const handleDetailPaneWheel = useCallback((event: React.WheelEvent<HTMLDivElement>) => {
+    const container = detailScrollRef.current;
+    if (!container || event.deltaY === 0) return;
+
+    const hasOverflow = container.scrollHeight > container.clientHeight + 1;
+    if (!hasOverflow) return;
+
+    // Route gesture scrolling into the modal detail pane so trackpad/mouse-wheel input
+    // still works even when the pointer is over nested non-scrollable content.
+    event.preventDefault();
+    event.stopPropagation();
+    container.scrollTop += event.deltaY;
+  }, []);
+
   // Check if content themes has any data
   const hasContentThemes = contentThemes && (
     contentThemes.genres.length > 0 ||
@@ -233,8 +252,11 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
         <DialogOverlay className="bg-black/90 backdrop-blur-sm" />
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => onOpenChange(false)}>
           <div 
-            className="relative w-full max-w-[900px] max-h-[700px] bg-[#2a2a2f] rounded-[32px] overflow-hidden flex flex-col md:flex-row"
-            style={{ boxShadow: '0 20px 50px rgba(0,0,0,0.5), inset 1px 1px 0 rgba(255,255,255,0.09), inset -1px -1px 0 rgba(0,0,0,0.35)' }}
+            className="relative flex h-full w-full max-w-[900px] flex-col overflow-hidden rounded-[32px] bg-[#2a2a2f] md:flex-row"
+            style={{
+              height: 'min(700px, calc(100vh - 2rem))',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.5), inset 1px 1px 0 rgba(255,255,255,0.09), inset -1px -1px 0 rgba(0,0,0,0.35)',
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close Button */}
@@ -421,7 +443,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
             </div>
 
             {/* Right Column */}
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
               {/* Header banner — gradient from HTML */}
               <div
                 className="relative flex-shrink-0 overflow-hidden"
@@ -442,22 +464,31 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                 </h1>
               </div>
 
-              {/* Scrollable content */}
-              <ScrollArea className="flex-1" thumbClassName="bg-black">
+              {/* Keep this as native overflow so wheel/trackpad scroll works reliably in the shared story-detail modal.
+                  The shell is height-constrained and wheel gestures are explicitly routed here to preserve reliable trackpad scrolling. */}
+              <div
+                ref={detailScrollRef}
+                onWheelCapture={handleDetailPaneWheel}
+                className="min-h-0 flex-1 overflow-y-auto scrollbar-none overscroll-contain"
+              >
                 <div style={{ padding: '24px 48px 32px 32px' }}>
                   {/* Ratings + Stats */}
                   <div style={{ paddingRight: '32px' }}>
                     {/* Star + Spice ratings */}
-                    {!isOwned && reviewCount > 0 && (
+                    {!isOwned && (avgRating > 0 || averageSpiceRating > 0) && (
                       <div className="flex items-center gap-4" style={{ marginTop: '6px' }}>
-                        <div className="flex items-center gap-1.5">
-                          <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>Story</span>
-                          <StarRating rating={Math.round(avgRating * 2) / 2} size={16} />
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>Spice</span>
-                          <SpiceRating rating={Math.round((reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.spice_level, 0) / reviews.length : 0) * 2) / 2} size={16} />
-                        </div>
+                        {avgRating > 0 && (
+                          <div className="flex items-center gap-1.5">
+                            <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>Story</span>
+                            <StarRating rating={Math.round(avgRating * 2) / 2} size={16} />
+                          </div>
+                        )}
+                        {averageSpiceRating > 0 && (
+                          <div className="flex items-center gap-1.5">
+                            <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>Spice</span>
+                            <SpiceRating rating={averageSpiceRating} size={16} />
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -531,9 +562,18 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                           </span>
                         )}
                         {allowRemix && (
-                          <span className="inline-flex w-fit px-2.5 py-1 bg-purple-500/20 rounded-lg text-xs font-bold text-purple-400">
-                            EDITABLE
-                          </span>
+                          <TooltipProvider delayDuration={150}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="inline-flex w-fit cursor-help px-2.5 py-1 bg-purple-500/20 rounded-lg text-xs font-bold text-purple-400">
+                                  EDITABLE
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-[280px] text-xs font-semibold leading-relaxed normal-case tracking-normal">
+                                This story can be loaded into Story Builder from My Stories to create a custom version. This does not change the original published story.
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         )}
                       </div>
                     )}
@@ -646,17 +686,9 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                         <p className="m-0" style={{ fontSize: '12px', fontWeight: 900, color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Reviews ({reviewCount})</p>
                         {user && (
                           <button
+                            type="button"
                             onClick={() => setIsReviewModalOpen(true)}
-                            style={{
-                              padding: '6px 12px',
-                              background: '#4a5f7f',
-                              border: 'none',
-                              borderRadius: '999px',
-                              color: '#fff',
-                              fontSize: '12px',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                            }}
+                            className="inline-flex h-9 items-center justify-center rounded-full border-t border-white/20 bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] px-4 text-xs font-bold leading-none text-white shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.14),inset_0_-1px_0_rgba(0,0,0,0.22)] transition-all hover:brightness-105 active:scale-[0.99] active:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5a7292]/60"
                           >
                             {userReview ? 'Edit Review' : 'Leave a Review'}
                           </button>
@@ -695,14 +727,18 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                                   <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)' }}>{formatDistanceToNow(new Date(review.created_at), { addSuffix: true })}</span>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                  <div className="flex items-center gap-1.5">
-                                    <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>Story</span>
-                                    <StarRating rating={Math.round(review.raw_weighted_score * 2) / 2} size={16} />
-                                  </div>
-                                  <div className="flex items-center gap-1.5">
-                                    <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>Spice</span>
-                                    <SpiceRating rating={review.spice_level} size={16} />
-                                  </div>
+                                  {typeof review.raw_weighted_score === 'number' && review.raw_weighted_score > 0 && (
+                                    <div className="flex items-center gap-1.5">
+                                      <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>Story</span>
+                                      <StarRating rating={Math.round(review.raw_weighted_score * 2) / 2} size={16} />
+                                    </div>
+                                  )}
+                                  {typeof review.spice_level === 'number' && review.spice_level > 0 && (
+                                    <div className="flex items-center gap-1.5">
+                                      <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>Spice</span>
+                                      <SpiceRating rating={review.spice_level} size={16} />
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                               {review.comment && (
@@ -732,7 +768,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
                     </div>
                   )}
                 </div>
-              </ScrollArea>
+              </div>
             </div>
           </div>
         </div>
@@ -745,6 +781,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
           onOpenChange={setIsReviewModalOpen}
           publishedScenarioId={publishedScenarioId}
           userId={user.id}
+          storyType={contentThemes?.storyType ?? null}
           existingReview={userReview}
           onReviewSubmitted={loadReviews}
         />

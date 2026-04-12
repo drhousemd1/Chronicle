@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 
 interface GalleryScenarioCardProps {
   published: PublishedScenario;
+  maskNsfwCover?: boolean;
   isLiked: boolean;
   isSaved: boolean;
   onLike: () => void;
@@ -16,6 +17,7 @@ interface GalleryScenarioCardProps {
 
 export const GalleryScenarioCard = React.forwardRef<HTMLDivElement, GalleryScenarioCardProps>(({
   published,
+  maskNsfwCover = false,
   isLiked,
   isSaved,
   onLike,
@@ -67,12 +69,20 @@ export const GalleryScenarioCard = React.forwardRef<HTMLDivElement, GalleryScena
         
         {/* Cover Image */}
         {scenario?.cover_image_url ? (
-          <img
-            src={scenario.cover_image_url}
-            alt={scenario.title}
-            style={{ objectPosition: `${coverPosition.x}% ${coverPosition.y}%` }}
-            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-          />
+          <>
+            <img
+              src={scenario.cover_image_url}
+              alt={scenario.title}
+              style={{ objectPosition: `${coverPosition.x}% ${coverPosition.y}%` }}
+              className={cn(
+                "h-full w-full object-cover transition-transform duration-700 group-hover:scale-110",
+                maskNsfwCover && "scale-[1.06] blur-xl group-hover:scale-[1.12]"
+              )}
+            />
+            {maskNsfwCover && (
+              <div className="absolute inset-0 bg-[#121214]/18 pointer-events-none" />
+            )}
+          </>
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900 p-10 text-center">
             <div className="font-black text-ghost-white text-6xl uppercase tracking-tighter italic break-words p-4 text-center">

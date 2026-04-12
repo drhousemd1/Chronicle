@@ -11,6 +11,7 @@ import { Button } from "@/components/chronicle/UI";
 import { aiFillCharacter, aiGenerateCharacter } from "@/services/character-ai";
 import { CharacterPicker, CharacterPickerWithRefresh } from "@/components/chronicle/CharacterPicker";
 import { BackgroundPickerModal } from "@/components/chronicle/BackgroundPickerModal";
+import { GalleryNsfwToggle } from "@/components/chronicle/GalleryNsfwToggle";
 import { useAuth } from "@/hooks/use-auth";
 
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LabeledToggle } from "@/components/ui/labeled-toggle";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useGalleryNsfwPreference } from "@/hooks/use-gallery-nsfw-preference";
 import * as supabaseData from "@/services/supabase-data";
 import { DeleteConfirmDialog } from "@/components/chronicle/DeleteConfirmDialog";
 import { ChangeNameModal } from "@/components/chronicle/ChangeNameModal";
@@ -300,6 +302,7 @@ const IndexContent = () => {
   // Gallery sort state (lifted from GalleryHub)
   type GallerySortOption = 'all' | 'recent' | 'liked' | 'saved' | 'played' | 'following';
   const [gallerySortBy, setGallerySortBy] = useState<GallerySortOption>('all');
+  const [galleryShowNsfw, setGalleryShowNsfw] = useGalleryNsfwPreference();
   const [accountActiveTab, setAccountActiveTab] = useState<string>('settings');
   const accountProfileSaveRef = React.useRef<(() => Promise<void>) | null>(null);
   const [isAccountProfileSaving, setIsAccountProfileSaving] = useState(false);
@@ -2401,6 +2404,12 @@ const IndexContent = () => {
               )}
             </div>
             <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
+              {tab === "gallery" && (
+                <GalleryNsfwToggle
+                  checked={galleryShowNsfw}
+                  onCheckedChange={setGalleryShowNsfw}
+                />
+              )}
               {tab === "world" && (
                 <>
                   <button
@@ -2824,34 +2833,36 @@ const IndexContent = () => {
 
           {tab === "gallery" && (
             <React.Suspense fallback={<LazyTabFallback className="bg-black" />}>
-              <GalleryHub onPlay={handleGalleryPlay} onSaveChange={handleGallerySaveChange} sortBy={gallerySortBy} onSortChange={setGallerySortBy} onAuthRequired={() => setAuthModalOpen(true)} />
+              <GalleryHub onPlay={handleGalleryPlay} onSaveChange={handleGallerySaveChange} sortBy={gallerySortBy} onSortChange={setGallerySortBy} onAuthRequired={() => setAuthModalOpen(true)} showNsfw={galleryShowNsfw} />
             </React.Suspense>
           )}
 
-          <div 
-            className={cn("relative w-full h-full bg-black", tab === "image_library" ? "block" : "hidden")}
-            style={selectedImageLibraryBackgroundUrl ? {
-              backgroundImage: `url(${selectedImageLibraryBackgroundUrl})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
-            } : undefined}
-          >
-            {selectedImageLibraryBackgroundUrl && (
-              <div className="absolute inset-0 bg-black/10 pointer-events-none" />
-            )}
-            <React.Suspense fallback={<LazyTabFallback className="bg-black/80" />}>
-              <ImageLibraryTab 
-                userId={user?.id ?? null}
-                onFolderChange={(inFolder, exitFn) => {
-                  setIsInImageFolder(inFolder);
-                  imageLibraryExitFolderRef.current = exitFn || null;
-                  if (!inFolder) setImageLibrarySearchQuery('');
-                }}
-                searchQuery={imageLibrarySearchQuery}
-                uploadRef={imageLibraryUploadRef}
-              />
-            </React.Suspense>
-          </div>
+          {tab === "image_library" && (
+            <div 
+              className="relative w-full h-full bg-black"
+              style={selectedImageLibraryBackgroundUrl ? {
+                backgroundImage: `url(${selectedImageLibraryBackgroundUrl})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center'
+              } : undefined}
+            >
+              {selectedImageLibraryBackgroundUrl && (
+                <div className="absolute inset-0 bg-black/10 pointer-events-none" />
+              )}
+              <React.Suspense fallback={<LazyTabFallback className="bg-black/80" />}>
+                <ImageLibraryTab 
+                  userId={user?.id ?? null}
+                  onFolderChange={(inFolder, exitFn) => {
+                    setIsInImageFolder(inFolder);
+                    imageLibraryExitFolderRef.current = exitFn || null;
+                    if (!inFolder) setImageLibrarySearchQuery('');
+                  }}
+                  searchQuery={imageLibrarySearchQuery}
+                  uploadRef={imageLibraryUploadRef}
+                />
+              </React.Suspense>
+            </div>
+          )}
 
           {tab === "library" && (
             <div className="h-full overflow-y-auto bg-black p-4 relative z-10 sm:p-6 lg:p-10">

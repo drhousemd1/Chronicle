@@ -40,6 +40,13 @@ The Account page uses sub-tabs managed by `accountActiveTab` state in Index.tsx:
 | Public Profile | `profile` | `PublicProfileTab` |
 | Subscription | `subscription` | `SubscriptionTab` |
 
+`PublicProfileTab` uses two Chronicle panel sections:
+
+- **Profile Info card**: `w-full bg-[#2a2a2f] rounded-[24px] overflow-hidden` with a header gradient `from-[#5a7292] to-[#4a5f7f]`
+- **Profile body layout**: `grid grid-cols-1 gap-6 md:grid-cols-[288px_minmax(0,1fr)] md:items-start`
+- **Avatar column**: fixed `288px` rail for square avatar + upload/generate actions
+- **Details column**: `space-y-4 min-w-0`; display name, bio, and preferred genres fields remain beside the avatar from medium widths upward and only stack below on narrower/mobile widths
+
 ---
 
 ## 3. UI Elements — Complete Inventory
@@ -108,7 +115,18 @@ RLS: Public read, owner-only insert/update, no delete.
 
 ## 9. Styling Reference
 
-Account pages follow the Chronicle dark theme. Specific styles documented per sub-tab component.
+Account pages follow the Chronicle dark theme.
+
+### 9a. Public Profile Styling
+
+| Element | Classes / Values | Notes |
+|--------|-------------------|-------|
+| Outer profile panel | `bg-[#2a2a2f] rounded-[24px] shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]` | Chronicle dark slate shell |
+| Panel header | `bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3` | Matches Chronicle blue header bars |
+| Panel body | `p-5 bg-[#2e2e33] rounded-b-[24px]` | Inner slate tray |
+| Field labels | `text-[10px] font-bold text-zinc-400 uppercase tracking-widest` | Labels sit above fields, matching Story Builder / Character Builder |
+| Text inputs / textarea | `bg-[#1c1c1f] border border-black/35 rounded-xl px-4 py-2.5 text-white text-sm placeholder:text-zinc-600 focus:ring-blue-500/20` | Same Chronicle recessed input treatment |
+| Genre add button | `h-10 shrink-0 rounded-xl bg-[#3c3e47] text-[#eaedf1] text-xs font-bold` | Raised Chronicle action button |
 
 ---
 
@@ -131,7 +149,7 @@ Account pages follow the Chronicle dark theme. Specific styles documented per su
 
 ## 12. Known Issues & Gotchas
 
-No active issues documented. (2026-03-01)
+- RESOLVED: 2026-04-04 — Public Profile fields used left-side labels and stacked below the avatar too early. Root cause: `PublicProfileTab` used fixed-width horizontal label rows plus an `xl`-only two-column layout (`xl:grid-cols-[288px_minmax(0,1fr)]`). Fix: moved the split layout to `md`, let the form column shrink with `min-w-0`, and converted the editable fields to stacked label-above-input groups to match builder pages.
 
 ---
 
@@ -139,4 +157,4 @@ No active issues documented. (2026-03-01)
 
 None documented.
 
-> Last updated: 2026-03-01 — Initial creation.
+> Last updated: 2026-04-04 — Updated Public Profile layout documentation to reflect the fixed avatar/details split and stacked Chronicle field-label pattern.

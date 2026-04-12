@@ -3,7 +3,9 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { GalleryHub } from '@/components/chronicle/GalleryHub';
+import { GalleryNsfwToggle } from '@/components/chronicle/GalleryNsfwToggle';
 import { useAuth } from '@/hooks/use-auth';
+import { useGalleryNsfwPreference } from '@/hooks/use-gallery-nsfw-preference';
 import { cn } from '@/lib/utils';
 import type { SortOption } from '@/services/gallery-data';
 
@@ -11,6 +13,7 @@ const Gallery: React.FC = () => {
   const { user, loading: authLoading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [sortBy, setSortBy] = useState<SortOption>('all');
+  const [showNsfw, setShowNsfw] = useGalleryNsfwPreference();
 
   // Redirect to home if not authenticated (auth modal will handle login)
   useEffect(() => {
@@ -38,7 +41,7 @@ const Gallery: React.FC = () => {
     <div className="min-h-screen bg-ghost-white flex flex-col">
       {/* Header */}
       <header className="bg-[rgba(248,250,252,0.3)] border-b border-slate-200 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/')}
@@ -77,12 +80,16 @@ const Gallery: React.FC = () => {
               </div>
             </div>
           </div>
+          <GalleryNsfwToggle
+            checked={showNsfw}
+            onCheckedChange={setShowNsfw}
+          />
         </div>
       </header>
 
       {/* Main Content */}
       <main className="flex-1">
-        <GalleryHub onPlay={handlePlay} sortBy={sortBy} onSortChange={setSortBy} />
+        <GalleryHub onPlay={handlePlay} sortBy={sortBy} onSortChange={setSortBy} showNsfw={showNsfw} />
       </main>
     </div>
   );

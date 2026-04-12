@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { 
   ChevronDown, 
   ChevronRight, 
-  X,
   Shield,
   Flame,
   Wand2,
@@ -25,7 +24,6 @@ import {
   Compass
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { GENRES, ORIGINS, TRIGGER_WARNINGS, STORY_TYPES } from '@/constants/content-themes';
 
@@ -40,6 +38,7 @@ export interface CategoryFilters {
 interface GalleryCategorySidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  showNsfw: boolean;
   selectedFilters: CategoryFilters;
   onFilterChange: (filters: CategoryFilters) => void;
 }
@@ -102,16 +101,16 @@ const CategorySection: React.FC<CategorySectionProps> = ({
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-      <CollapsibleTrigger className="flex items-center justify-between w-full py-3 px-4 hover:bg-ghost-white transition-colors">
-        <span className="text-sm font-semibold text-white">{title}</span>
+      <CollapsibleTrigger className="flex w-full items-center justify-between rounded-xl border border-black/30 bg-[#3c3e47] px-4 py-3 text-left shadow-[0_8px_20px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.07),inset_0_-1px_0_rgba(0,0,0,0.18)] transition-colors hover:bg-[#44464f]">
+        <span className="text-sm font-bold tracking-[-0.01em] text-white/90">{title}</span>
         {isOpen ? (
-          <ChevronDown className="w-4 h-4 text-[rgba(248,250,252,0.3)]" />
+          <ChevronDown className="h-4 w-4 text-zinc-400" />
         ) : (
-          <ChevronRight className="w-4 h-4 text-[rgba(248,250,252,0.3)]" />
+          <ChevronRight className="h-4 w-4 text-zinc-400" />
         )}
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className="pl-4 pr-2 pb-2 space-y-0.5">
+        <div className="space-y-1.5 px-1 pb-1 pt-3">
           {items.map((item) => {
             const Icon = getIcon ? getIcon(item) : Tag;
             const iconColor = getIconColor ? getIconColor(item) : 'text-[rgba(248,250,252,0.3)]';
@@ -122,13 +121,13 @@ const CategorySection: React.FC<CategorySectionProps> = ({
                 key={item}
                 onClick={() => onToggle(item)}
                 className={cn(
-                  "flex items-center gap-2 w-full px-3 py-2 rounded-lg text-left text-sm transition-colors",
+                  "flex w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-sm transition-colors",
                   isSelected 
-                    ? "bg-blue-500/20 text-blue-500" 
-                    : "text-white/70 hover:bg-ghost-white hover:text-white"
+                    ? "border-[#6e89ad]/45 bg-[#4a5f7f]/25 text-[#e7eef8] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]" 
+                    : "border-transparent text-zinc-300 hover:bg-white/[0.04] hover:text-white"
                 )}
               >
-                <Icon className={cn("w-4 h-4 flex-shrink-0", isSelected ? "text-blue-500" : iconColor)} />
+                <Icon className={cn("h-4 w-4 flex-shrink-0", isSelected ? "text-[#9fb5d4]" : iconColor)} />
                 <span className="truncate">{item}</span>
               </button>
             );
@@ -141,11 +140,15 @@ const CategorySection: React.FC<CategorySectionProps> = ({
 
 export const GalleryCategorySidebar = React.forwardRef<HTMLDivElement, GalleryCategorySidebarProps>(({
   isOpen,
-  onClose,
+  showNsfw,
   selectedFilters,
   onFilterChange,
 }, ref) => {
   if (!isOpen) return null;
+
+  const visibleStoryTypes = showNsfw
+    ? STORY_TYPES
+    : STORY_TYPES.filter((type) => type !== 'NSFW');
 
   const toggleFilter = (category: keyof CategoryFilters, item: string) => {
     const current = selectedFilters[category];
@@ -177,42 +180,30 @@ export const GalleryCategorySidebar = React.forwardRef<HTMLDivElement, GalleryCa
     selectedFilters.customTags.length > 0;
 
   return (
-    <div ref={ref} className="w-72 flex-shrink-0 bg-[#18181b] border-r border-ghost-white flex flex-col h-full">
-      {/* Yellow accent border */}
-      <div className="h-0.5 bg-yellow-400" />
-      
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-ghost-white">
-        <span className="text-sm font-bold text-white">Browse Categories</span>
-        <button
-          onClick={onClose}
-          className="p-1 rounded-lg hover:bg-ghost-white transition-colors"
-          aria-label="Close category browser"
-          title="Close category browser"
-        >
-          <X className="w-4 h-4 text-[rgba(248,250,252,0.3)]" />
-        </button>
-      </div>
-      
-      {/* Clear filters button */}
+    <div
+      ref={ref}
+      className="flex h-full min-h-0 w-full flex-col bg-[#2e2e33]"
+    >
       {hasActiveFilters && (
-        <div className="px-4 py-2 border-b border-ghost-white">
-          <button
-            onClick={clearAllFilters}
-            className="text-xs text-blue-500 hover:text-blue-300 font-medium"
-          >
-            Clear all filters
-          </button>
+        <div className="bg-[#2e2e33] px-4 py-3 shadow-[inset_1px_1px_0_rgba(255,255,255,0.04),inset_-1px_-1px_0_rgba(0,0,0,0.18)]">
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-[#6e89ad]/30 bg-[#4a5f7f]/12 px-3 py-2 text-xs text-zinc-300">
+            <span>{selectedFilters.storyTypes.length + selectedFilters.genres.length + selectedFilters.origins.length + selectedFilters.triggerWarnings.length + selectedFilters.customTags.length} filters active</span>
+            <button
+              onClick={clearAllFilters}
+              className="font-bold text-[#dbe7f4] transition-colors hover:text-white"
+            >
+              Clear all
+            </button>
+          </div>
         </div>
       )}
       
-      {/* Scrollable categories */}
-      <ScrollArea className="flex-1">
-        <div className="py-2">
+      <div className="flex-1 overflow-y-auto bg-[#2e2e33] p-3 scrollbar-none">
+        <div className="space-y-3">
           {/* Story Type */}
           <CategorySection
             title="Story Type"
-            items={STORY_TYPES}
+            items={visibleStoryTypes}
             selectedItems={selectedFilters.storyTypes}
             onToggle={(item) => toggleFilter('storyTypes', item)}
             getIcon={(item) => item === 'SFW' ? Shield : Flame}
@@ -251,7 +242,7 @@ export const GalleryCategorySidebar = React.forwardRef<HTMLDivElement, GalleryCa
             defaultOpen={false}
           />
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 });
