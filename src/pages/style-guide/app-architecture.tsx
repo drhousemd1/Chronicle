@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import {
   ArchitectureNode,
   ArchitectureRegistry,
@@ -4244,7 +4244,7 @@ export default function AppArchitecturePage() {
             aria-label="Go back"
             title="Go back"
           >
-            <ArrowLeft size={20} strokeWidth={2.5} />
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
           </button>
           <h1 className="page-title" style={{ margin: 0 }}>App Architecture</h1>
         </div>
