@@ -221,12 +221,12 @@ Always rendered (even when grid is empty). Same `aspect-[2/3]` ratio:
 2. Opens modal (`detailModalOpen = true`)
 3. Parallel-fetches `contentThemes` and `publicationStatus`
 
-**Layout:** Full-screen overlay with `bg-black/90 backdrop-blur-sm`. Content container: `max-w-6xl max-h-[90vh] bg-[#121214] rounded-[32px]`, split into two columns:
+**Layout:** Full-screen overlay with `bg-black/90 backdrop-blur-sm`. Content container: `max-w-[900px] max-h-[700px] bg-[#2a2a2f] rounded-[32px]`, split into two columns:
 
 | Column | Width | Content |
 |--------|-------|---------|
-| **Left** | `md:w-[420px]` | Cover image (aspect `3:4`, rounded-2xl), SFW/NSFW badge, Allow-Edits badge, action buttons row, "Remove from Gallery" button |
-| **Right** | `flex-1` (ScrollArea) | Title, star/spice ratings (gallery mode), stats row (gallery mode), creator section (gallery mode), description, tags, content themes, character roster, reviews section |
+| **Left** | `w-[340px]` on desktop | Cover image (aspect `3:4`, rounded-2xl), SFW/NSFW badge, Allow-Edits badge, action buttons row, "Remove from Gallery" button |
+| **Right** | `flex-1` with native `overflow-y-auto scrollbar-none` | Title, star/spice ratings (gallery mode), stats row (gallery mode), creator section (gallery mode), description, tags, content themes, character roster, reviews section. Native scrolling is used intentionally so trackpad and mouse-wheel scrolling work without a visible scrollbar thumb. |
 
 **Action Buttons (Owned mode — `isOwned: true`):**
 - Edit (white/5 bg, Edit icon) + Play (blue-500 bg, Play icon)
@@ -238,7 +238,11 @@ Always rendered (even when grid is empty). Same `aspect-[2/3]` ratio:
 - **Unpublish button** — "Remove from Gallery" — shown when `isPublished && isOwned`
 - **Character roster** — Fetched via `fetchScenarioCharacters(scenarioId)`, displayed as avatar circles
 - **Reviews section** — Fetched via `fetchScenarioReviews`, paginated (5 per page), includes user's own review with edit/delete capability
+- **Review CTA styling** — `Leave a Review` / `Edit Review` uses Chronicle's raised slate-blue pill treatment rather than a flat fill
 - **Creator section** — Avatar, display name, overall rating — clickable to navigate to `/creator/:publisherId`
+- **Editable tooltip** — The `EDITABLE` badge explains that loading the story into Story Builder creates a separate custom version and does not modify the original published story
+- **Review input model** — ReviewModal now starts with quick story stars and optional spice flames, then hides a trimmed set of deeper category ratings inside an optional expandable `Additional Feedback` section (`Concept Strength`, `Motivation / Tension`, `Worldbuilding & Vibe`, `Replayability`, `Character Details & Complexity`). The text comment remains a separate optional note field.
+- **Nested modal dismissal** — Clicking outside ReviewModal dismisses only the review popup and returns the user to the underlying StoryDetailModal instead of closing both layers.
 
 ### 5.2 ShareStoryModal
 

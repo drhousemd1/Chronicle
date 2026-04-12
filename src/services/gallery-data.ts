@@ -563,18 +563,18 @@ export interface ScenarioReview {
   id: string;
   published_scenario_id: string;
   user_id: string;
-  concept_strength: number;
-  initial_situation: number;
-  role_clarity: number;
-  motivation_tension: number;
-  tone_promise: number;
-  low_friction_start: number;
-  worldbuilding_vibe: number;
-  replayability: number;
-  character_details_complexity: number;
-  spice_level: number;
+  concept_strength?: number | null;
+  initial_situation?: number | null;
+  role_clarity?: number | null;
+  motivation_tension?: number | null;
+  tone_promise?: number | null;
+  low_friction_start?: number | null;
+  worldbuilding_vibe?: number | null;
+  replayability?: number | null;
+  character_details_complexity?: number | null;
+  spice_level?: number | null;
   comment: string | null;
-  raw_weighted_score: number;
+  raw_weighted_score?: number | null;
   created_at: string;
   updated_at: string;
   reviewer?: {
@@ -584,32 +584,44 @@ export interface ScenarioReview {
   };
 }
 
+export interface ReviewSubmissionInput {
+  storyRating?: number | null;
+  spiceLevel?: number | null;
+  detailedRatings?: Record<string, number>;
+  comment?: string;
+}
+
 // Submit or update a review
 export async function submitReview(
   publishedScenarioId: string,
   userId: string,
-  ratings: Record<string, number>,
-  spiceLevel: number,
-  comment: string,
-  rawWeightedScore: number
+  input: ReviewSubmissionInput,
 ): Promise<void> {
+  const storyRating = typeof input.storyRating === 'number' ? input.storyRating : null;
+  const spiceLevel = typeof input.spiceLevel === 'number' ? input.spiceLevel : null;
+  const detailedRatings = input.detailedRatings ?? {};
+
+  if (storyRating === null && spiceLevel === null) {
+    throw new Error('A story or spice rating is required.');
+  }
+
   const { error } = await supabase
     .from('scenario_reviews')
     .upsert({
       published_scenario_id: publishedScenarioId,
       user_id: userId,
-      concept_strength: ratings.conceptStrength,
-      initial_situation: ratings.initialSituation,
-      role_clarity: ratings.roleClarity,
-      motivation_tension: ratings.motivationTension,
-      tone_promise: ratings.tonePromise,
-      low_friction_start: ratings.lowFrictionStart,
-      worldbuilding_vibe: ratings.worldbuildingVibe,
-      replayability: ratings.replayability,
-      character_details_complexity: ratings.characterDetailsComplexity,
+      concept_strength: detailedRatings.conceptStrength ?? null,
+      initial_situation: detailedRatings.initialSituation ?? null,
+      role_clarity: detailedRatings.roleClarity ?? null,
+      motivation_tension: detailedRatings.motivationTension ?? null,
+      tone_promise: detailedRatings.tonePromise ?? null,
+      low_friction_start: detailedRatings.lowFrictionStart ?? null,
+      worldbuilding_vibe: detailedRatings.worldbuildingVibe ?? null,
+      replayability: detailedRatings.replayability ?? null,
+      character_details_complexity: detailedRatings.characterDetailsComplexity ?? null,
       spice_level: spiceLevel,
-      comment: comment || null,
-      raw_weighted_score: rawWeightedScore,
+      comment: input.comment?.trim() ? input.comment.trim() : null,
+      raw_weighted_score: storyRating,
     } as any, { onConflict: 'published_scenario_id,user_id' });
 
 if (error) throw error;
@@ -673,20 +685,27 @@ export async function fetchUserReview(publishedScenarioId: string, userId: strin
 
 // Fetch creator overall rating across all their published scenarios
 export async function fetchCreatorOverallRating(publisherId: string): Promise<{ rating: number; totalReviews: number } | null> {
-  const { data, error } = await supabase
+  const { data: publishedStories, error } = await supabase
     .from('published_scenarios')
-    .select('avg_rating, review_count')
+    .select('id')
     .eq('publisher_id', publisherId)
     .eq('is_published', true);
 
   if (error) throw error;
-  if (!data || data.length === 0) return null;
+  if (!publishedStories || publishedStories.length === 0) return null;
 
-  const reviewed = data.filter((d: any) => d.review_count > 0);
-  if (reviewed.length === 0) return null;
+  const publishedScenarioIds = publishedStories.map((story) => story.id);
+  const { data: reviews, error: reviewsError } = await supabase
+    .from('scenario_reviews')
+    .select('raw_weighted_score')
+    .in('published_scenario_id', publishedScenarioIds)
+    .not('raw_weighted_score', 'is', null);
 
-  const totalReviews = reviewed.reduce((sum: number, d: any) => sum + d.review_count, 0);
-  const avgRating = reviewed.reduce((sum: number, d: any) => sum + Number(d.avg_rating) * d.review_count, 0) / totalReviews;
+  if (reviewsError) throw reviewsError;
+  if (!reviews || reviews.length === 0) return null;
+
+  const totalReviews = reviews.length;
+  const avgRating = reviews.reduce((sum: number, review: any) => sum + Number(review.raw_weighted_score), 0) / totalReviews;
 
   return { rating: Math.round(avgRating * 2) / 2, totalReviews };
 }

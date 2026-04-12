@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Globe, LayoutGrid, X } from 'lucide-react';
+import { Search, Globe, LayoutGrid, X, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GalleryScenarioCard } from './GalleryStoryCard';
 import { ScenarioDetailModal } from './StoryDetailModal';
@@ -30,6 +30,7 @@ interface GalleryHubProps {
   sortBy: SortOption;
   onSortChange: (sort: SortOption) => void;
   onAuthRequired?: () => void;
+  showNsfw?: boolean;
 }
 
 const PAGE_SIZE = 20;
@@ -48,6 +49,7 @@ export const GalleryHub = React.forwardRef<HTMLDivElement, GalleryHubProps>(({
   sortBy,
   onSortChange,
   onAuthRequired,
+  showNsfw = false,
 }, ref) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -81,18 +83,35 @@ export const GalleryHub = React.forwardRef<HTMLDivElement, GalleryHubProps>(({
     staleTime: 60_000,
   });
 
+  useEffect(() => {
+    if (showNsfw || !categoryFilters.storyTypes.includes('NSFW')) return;
+
+    setCategoryFilters((prev) => ({
+      ...prev,
+      storyTypes: prev.storyTypes.filter((type) => type !== 'NSFW'),
+    }));
+  }, [showNsfw, categoryFilters.storyTypes]);
+
+  const effectiveStoryTypes = useMemo(() => {
+    const storyTypes = showNsfw
+      ? categoryFilters.storyTypes
+      : categoryFilters.storyTypes.filter((type) => type !== 'NSFW');
+
+    return storyTypes.length > 0 ? storyTypes : undefined;
+  }, [showNsfw, categoryFilters.storyTypes]);
+
   // Build query params
   const queryParams = useMemo((): Omit<FetchGalleryParams, 'limit' | 'offset'> => ({
     searchText: searchText || undefined,
     searchTags: searchTags.length > 0 ? searchTags : undefined,
     sortBy,
-    storyTypes: categoryFilters.storyTypes.length > 0 ? categoryFilters.storyTypes : undefined,
+    storyTypes: effectiveStoryTypes,
     genres: categoryFilters.genres.length > 0 ? categoryFilters.genres : undefined,
     origins: categoryFilters.origins.length > 0 ? categoryFilters.origins : undefined,
     triggerWarnings: categoryFilters.triggerWarnings.length > 0 ? categoryFilters.triggerWarnings : undefined,
     customTags: categoryFilters.customTags.length > 0 ? categoryFilters.customTags : undefined,
     publisherIds: sortBy === 'following' ? (followedCreatorIds || []) : undefined,
-  }), [searchText, searchTags, sortBy, categoryFilters, followedCreatorIds]);
+  }), [searchText, searchTags, sortBy, effectiveStoryTypes, categoryFilters.genres, categoryFilters.origins, categoryFilters.triggerWarnings, categoryFilters.customTags, followedCreatorIds]);
 
   // Main infinite query
   const {
@@ -126,8 +145,14 @@ export const GalleryHub = React.forwardRef<HTMLDivElement, GalleryHubProps>(({
     return data?.pages.flat() || [];
   }, [data]);
 
+  const visibleScenarios = useMemo(() => {
+    // Keep NSFW stories in the gallery flow even when hidden so the grid density
+    // stays stable; the card itself is responsible for masking explicit cover art.
+    return scenarios;
+  }, [scenarios]);
+
   // Fetch user interactions (likes/saves) for visible scenarios
-  const scenarioIds = useMemo(() => scenarios.map(s => s.id), [scenarios]);
+  const scenarioIds = useMemo(() => visibleScenarios.map(s => s.id), [visibleScenarios]);
   
   const { data: interactions } = useQuery({
     queryKey: ['gallery-interactions', user?.id, scenarioIds],
@@ -214,9 +239,9 @@ export const GalleryHub = React.forwardRef<HTMLDivElement, GalleryHubProps>(({
     };
   }, [queryClient, queryParams]);
 
-  const handleSearch = () => {
+  const applySearchQuery = useCallback((value: string) => {
     // Extract hashtags as tags, rest as search text
-    const parts = searchQuery.split(/\s+/);
+    const parts = value.split(/\s+/);
     const tags: string[] = [];
     const textParts: string[] = [];
     
@@ -230,11 +255,20 @@ export const GalleryHub = React.forwardRef<HTMLDivElement, GalleryHubProps>(({
     
     setSearchTags(tags);
     setSearchText(textParts.join(' '));
-  };
+  }, []);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      applySearchQuery(searchQuery);
+    }, 220);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [applySearchQuery, searchQuery]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      handleSearch();
+      e.preventDefault();
+      applySearchQuery(searchQuery);
     }
   };
 
@@ -350,75 +384,109 @@ export const GalleryHub = React.forwardRef<HTMLDivElement, GalleryHubProps>(({
 
   return (
     <div ref={ref} className="w-full h-full flex flex-col bg-[#121214]">
-      {/* Glassmorphic Header */}
-      <header 
-        className="sticky top-0 z-50 px-6 py-4 flex items-center gap-4"
-        style={{
-          backgroundColor: 'rgba(18, 18, 20, 0.8)',
-          backdropFilter: 'blur(12px)',
-        }}
-      >
-        {/* Search input */}
-        <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Search titles, descriptions, or #tags..."
-            className="w-full pl-12 pr-24 py-3 bg-[#3a3a3f]/50 border border-ghost-white rounded-xl text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#4a5f7f] focus:border-transparent"
-          />
-          <button
-            onClick={handleSearch}
-            className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-1.5 bg-[#4a5f7f] text-white rounded-lg font-semibold text-sm hover:bg-[#5a6f8f] transition-colors"
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        {sidebarOpen && (
+          <aside
+            id="gallery-category-panel"
+            className="flex h-full w-[280px] flex-shrink-0 flex-col border-r border-white/[0.08] bg-[#2a2a2f] shadow-[0_18px_42px_-24px_rgba(0,0,0,0.68),inset_1px_0_0_rgba(255,255,255,0.04),inset_-1px_0_0_rgba(0,0,0,0.26)]"
           >
-            Search
-          </button>
-        </div>
-        
-        {/* Browse Categories button */}
-         <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className={cn(
-            "flex items-center gap-2 px-4 py-3 rounded-lg font-semibold text-sm transition-colors flex-shrink-0",
-            sidebarOpen 
-              ? "bg-[#5a6f8f] text-white" 
-              : "bg-[#4a5f7f] text-white hover:bg-[#5a6f8f]"
-          )}
-        >
-          <LayoutGrid className="w-4 h-4" />
-          <span>Browse Categories</span>
-          {activeFilterCount > 0 && (
-            <span className="ml-1 px-1.5 py-0.5 bg-ghost-white rounded-full text-xs">
-              {activeFilterCount}
-            </span>
-          )}
-        </button>
-      </header>
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(false)}
+              aria-expanded={sidebarOpen}
+              aria-controls="gallery-category-panel"
+              className="relative flex h-[73px] w-full items-center gap-3 border-b border-white/[0.08] bg-[#3c3e47] px-6 text-left text-sm font-bold leading-none text-white shadow-[0_10px_24px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.10),inset_0_-1px_0_rgba(0,0,0,0.18)] transition-colors hover:bg-[#44464f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6e89ad]/60"
+            >
+              <LayoutGrid className="relative z-[1] h-4 w-4 flex-shrink-0" />
+              <span className="relative z-[1] flex-1">Browse Categories</span>
+              {activeFilterCount > 0 && (
+                <span className="relative z-[1] inline-flex min-w-6 items-center justify-center rounded-full bg-black/20 px-2 py-1 text-[10px] font-black text-white">
+                  {activeFilterCount}
+                </span>
+              )}
+              <ChevronDown className="relative z-[1] h-4 w-4 flex-shrink-0 rotate-180" />
+            </button>
 
-      {/* Sticky blue gradient divider */}
-      <div 
-        className="sticky top-[60px] z-40 h-px opacity-50"
-        style={{
-          backgroundImage: 'linear-gradient(90deg, transparent 0%, rgb(59, 130, 246) 50%, transparent 100%)',
-        }}
-      />
+            <GalleryCategorySidebar
+              isOpen={sidebarOpen}
+              onClose={() => setSidebarOpen(false)}
+              showNsfw={showNsfw}
+              selectedFilters={categoryFilters}
+              onFilterChange={setCategoryFilters}
+            />
+          </aside>
+        )}
 
-      {/* Main content with sidebar */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Category Sidebar */}
-        <GalleryCategorySidebar
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          selectedFilters={categoryFilters}
-          onFilterChange={setCategoryFilters}
-        />
-        
-        {/* Main content area */}
-        <main className="flex-1 overflow-y-auto">
+        <div className="min-w-0 flex-1 flex flex-col overflow-hidden">
+          <header
+            className="sticky top-0 z-50 px-6 py-4"
+            style={{
+              backgroundColor: 'rgba(18, 18, 20, 0.8)',
+              backdropFilter: 'blur(12px)',
+            }}
+          >
+            <div className="flex items-start gap-4">
+              {!sidebarOpen && (
+                <div className="relative flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setSidebarOpen(true)}
+                    aria-expanded={sidebarOpen}
+                    aria-controls="gallery-category-panel"
+                    className="relative flex h-14 items-center gap-3 overflow-hidden rounded-[20px] border-t border-white/20 bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] px-4 pr-5 text-left text-sm font-bold leading-none text-white shadow-[0_10px_24px_rgba(0,0,0,0.42),inset_0_1px_0_rgba(255,255,255,0.12),inset_0_-1px_0_rgba(0,0,0,0.22)] transition-all hover:brightness-105 active:scale-[0.99] active:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6e89ad]/60"
+                  >
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/[0.07] via-transparent to-transparent" />
+                    <LayoutGrid className="relative z-[1] h-4 w-4 flex-shrink-0" />
+                    <span className="relative z-[1] flex-1">Browse Categories</span>
+                    {activeFilterCount > 0 && (
+                      <span className="relative z-[1] inline-flex min-w-6 items-center justify-center rounded-full bg-black/20 px-2 py-1 text-[10px] font-black text-white">
+                        {activeFilterCount}
+                      </span>
+                    )}
+                    <ChevronDown className="relative z-[1] h-4 w-4 flex-shrink-0" />
+                  </button>
+                </div>
+              )}
+
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute left-4 top-1/2 z-[1] h-[18px] w-[18px] -translate-y-1/2 text-zinc-500" />
+                <input
+                  id="gallery-search"
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Search titles, descriptions, or #tags"
+                  className="h-12 w-full rounded-full border border-black/40 bg-[#1c1c1f] pl-12 pr-14 text-sm font-medium text-white placeholder:font-medium placeholder:text-zinc-500 shadow-[inset_0_2px_8px_rgba(0,0,0,0.45),0_10px_24px_rgba(0,0,0,0.18)] focus:outline-none focus:ring-2 focus:ring-[#4a5f7f] focus:border-transparent"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSearchText('');
+                      setSearchTags([]);
+                    }}
+                    aria-label="Clear search"
+                    className="absolute right-2 top-1/2 z-[1] inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-[#3c3e47] text-zinc-200 shadow-[0_8px_20px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] transition-colors hover:bg-[#44464f] hover:text-white"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+            <div
+              className="mt-4 h-px opacity-60"
+              style={{
+                backgroundImage: 'linear-gradient(90deg, transparent 0%, rgba(110,137,173,0.55) 18%, rgba(110,137,173,0.8) 50%, rgba(110,137,173,0.55) 82%, transparent 100%)',
+              }}
+            />
+          </header>
+
+          {/* Main content area */}
+          <main className="min-h-0 flex-1 overflow-y-auto">
           {/* Active Filters */}
-          <div className="px-8 pt-6 pb-4">
+          <div className={cn("pb-4 pt-4", sidebarOpen ? "px-6" : "px-6")}>
             {(searchTags.length > 0 || searchText || activeFilterCount > 0) && (
               <div className="flex items-center gap-2 mb-4 flex-wrap">
                 <span className="text-sm text-white/70">Filtering by:</span>
@@ -495,7 +563,7 @@ export const GalleryHub = React.forwardRef<HTMLDivElement, GalleryHubProps>(({
           </div>
 
           {/* Gallery Grid */}
-          <div className="px-8 pb-10">
+          <div className="px-6 pb-10">
             {isLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 lg:gap-8">
                 {[0, 1, 2, 3].map((i) => (
@@ -505,7 +573,7 @@ export const GalleryHub = React.forwardRef<HTMLDivElement, GalleryHubProps>(({
                   />
                 ))}
               </div>
-            ) : scenarios.length === 0 ? (
+            ) : visibleScenarios.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-64 text-center">
                 <div className="w-20 h-20 bg-ghost-white rounded-full flex items-center justify-center mb-4">
                   <Globe className="w-10 h-10 text-white/30" />
@@ -524,10 +592,11 @@ export const GalleryHub = React.forwardRef<HTMLDivElement, GalleryHubProps>(({
             ) : (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 lg:gap-8">
-                  {scenarios.map((published) => (
+                  {visibleScenarios.map((published) => (
                     <GalleryScenarioCard
                       key={published.id}
                       published={published}
+                      maskNsfwCover={!showNsfw && published.contentThemes?.storyType === 'NSFW'}
                       isLiked={likes.has(published.id)}
                       isSaved={saves.has(published.id)}
                       onLike={() => handleLike(published)}
@@ -543,14 +612,15 @@ export const GalleryHub = React.forwardRef<HTMLDivElement, GalleryHubProps>(({
                   {isFetchingNextPage && (
                     <p className="text-white/50 text-sm">Loading more stories…</p>
                   )}
-                  {!hasNextPage && scenarios.length > 0 && (
+                  {!hasNextPage && visibleScenarios.length > 0 && (
                     <p className="text-white/30 text-sm">You've reached the end</p>
                   )}
                 </div>
               </>
             )}
           </div>
-        </main>
+          </main>
+        </div>
       </div>
 
       {/* Detail Modal */}

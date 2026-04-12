@@ -437,7 +437,7 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({
   const panelShineClass = "absolute inset-0 z-0 bg-gradient-to-tr from-white/10 to-transparent opacity-40";
   const fieldLabelClass = "text-[10px] font-bold text-zinc-400 uppercase tracking-widest";
   const fieldInputClass =
-    "flex-1 bg-[#1c1c1f] border border-black/35 rounded-xl px-4 py-2.5 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500";
+    "bg-[#1c1c1f] border border-black/35 rounded-xl px-4 py-2.5 text-white text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500";
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 pb-8">
@@ -458,7 +458,9 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({
           <h3 className="relative z-[1] text-white text-xl font-bold tracking-[-0.015em]">Public Profile</h3>
         </div>
         <div className={panelBodyClass}>
-          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[288px_minmax(0,1fr)]">
+          {/* Responsive guardrail: keep avatar + profile details side-by-side from medium widths upward.
+              The profile form should shrink first; stacking too early makes the details pane jump under the avatar. */}
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-[288px_minmax(0,1fr)] md:items-start">
             {/* Avatar column */}
             <div className="flex flex-col items-center gap-3 w-full max-w-[288px]">
               <div
@@ -552,32 +554,33 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({
                 <span className="text-sm text-zinc-300">Hide Profile Details</span>
               </label>
 
-              <div className="flex items-center gap-3">
-                <label className={`${fieldLabelClass} w-32 shrink-0`}>Display Name</label>
+              {/* Match Story Builder / Character Builder field pattern: labels sit above inputs, not to the left. */}
+              <div className="space-y-1.5 min-w-0">
+                <label className={`${fieldLabelClass} block`}>Display Name</label>
                 <input
                   type="text"
                   value={profile.display_name}
                   onChange={(e) => setProfile(prev => ({ ...prev, display_name: e.target.value }))}
-                  className={fieldInputClass}
+                  className={`w-full ${fieldInputClass}`}
                   placeholder="Your display name"
                   maxLength={30}
                 />
               </div>
 
-              <div className="flex items-start gap-3">
-                <label className={`${fieldLabelClass} w-32 shrink-0 pt-2.5`}>About Me</label>
+              <div className="space-y-1.5 min-w-0">
+                <label className={`${fieldLabelClass} block`}>About Me</label>
                 <textarea
                   value={profile.about_me}
                   onChange={(e) => setProfile(prev => ({ ...prev, about_me: e.target.value }))}
-                  className={`${fieldInputClass} resize-none h-24`}
+                  className={`w-full ${fieldInputClass} resize-none h-24`}
                   placeholder="Tell others about yourself..."
                   maxLength={500}
                 />
               </div>
 
-              <div className="flex items-start gap-3">
-                <label className={`${fieldLabelClass} w-32 shrink-0 pt-2.5`}>Preferred Genres</label>
-                <div className="flex-1 space-y-2">
+              <div className="space-y-1.5 min-w-0">
+                <label className={`${fieldLabelClass} block`}>Preferred Genres</label>
+                <div className="space-y-2 min-w-0">
                   {profile.preferred_genres.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                       {profile.preferred_genres.map((genre) => (
@@ -597,19 +600,19 @@ export const PublicProfileTab: React.FC<PublicProfileTabProps> = ({
                       ))}
                     </div>
                   )}
-                  <div className="flex gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
                     <input
                       type="text"
                       value={genreInput}
                       onChange={(e) => setGenreInput(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addGenre())}
-                      className={fieldInputClass}
+                      className={`min-w-0 flex-1 ${fieldInputClass}`}
                       placeholder="Add a genre..."
                     />
                     <button
                       type="button"
                       onClick={addGenre}
-                      className="inline-flex items-center justify-center h-10 px-4 rounded-xl border-0 bg-[#3c3e47] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] text-[#eaedf1] text-xs font-bold leading-none hover:bg-[#44464f] transition-colors"
+                      className="inline-flex h-10 shrink-0 items-center justify-center px-4 rounded-xl border-0 bg-[#3c3e47] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] text-[#eaedf1] text-xs font-bold leading-none hover:bg-[#44464f] transition-colors"
                     >
                       Add
                     </button>

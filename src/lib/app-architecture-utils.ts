@@ -86,6 +86,9 @@ function pathToNodeId(path: string): string {
 }
 
 function inferFileKind(path: string): string {
+  if (/\/supabase\/functions\/[^/]+\/index\.ts$/.test(path)) return "edge-function";
+  if (/\/supabase\/functions\/_shared\/.+\.ts$/.test(path)) return "backend-shared";
+  if (/\/supabase\/migrations\/.+\.sql$/.test(path)) return "database-script";
   if (/\/pages\//.test(path)) return "route-page";
   if (/\/features\//.test(path) && /Screen\.tsx$/.test(path)) return "feature-screen";
   if (/\/features\//.test(path) && /\.tsx$/.test(path)) return "feature-component";
@@ -124,6 +127,8 @@ function describeFile(path: string, kind: string): string {
   if (kind === "service") return `${fileName} is a service-layer module for data/API operations.`;
   if (kind === "context-provider") return `${fileName} defines shared app state via a React context provider.`;
   if (kind === "integration") return `${fileName} contains external integration setup or generated integration types.`;
+  if (kind === "edge-function") return `${fileName} is a Supabase edge function entry point for server-side app workflows.`;
+  if (kind === "backend-shared") return `${fileName} contains shared backend helper logic reused across edge functions.`;
   if (kind === "utility") return `${fileName} is a utility/helper module used by other app layers.`;
   if (kind === "types") return `${fileName} defines shared data and interface types.`;
   if (kind === "style-sheet") return `${fileName} controls styling rules and visual behavior.`;
@@ -144,6 +149,7 @@ function inferFileTags(path: string, kind: string): string[] {
   if (/\/hooks\//.test(path)) tags.add("state-layer");
   if (/\/services\//.test(path) || /\/integrations\//.test(path)) tags.add("data-layer");
   if (/\/supabase\//.test(path)) tags.add("backend-layer");
+  if (/\/supabase\/functions\//.test(path)) tags.add("edge-runtime");
   if (/\/docs\//.test(path)) tags.add("documentation");
 
   return Array.from(tags);

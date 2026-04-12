@@ -60,21 +60,22 @@ When `tab === "gallery"`, the header displays the page title and sort toggle pil
 
 The component is a full-height flex column with three vertical zones:
 
-1.  **Glassmorphic search header** (`sticky top-0 z-50`):
+1.  **Chronicle discovery toolbar** (`sticky top-0 z-50`):
     
     -   Background: `rgba(18, 18, 20, 0.8)` with `backdrop-filter: blur(12px)`
-    -   Contains: search input (left, flex-1) + "Browse Categories" button (right, flex-shrink-0)
-2.  **Blue gradient divider** (`sticky top-[60px] z-40 h-px opacity-50`):
+    -   Contains: a left `Browse Categories` control rail (`lg:w-72`) plus a Chronicle recessed search surface (`flex-1`)
+    -   The category trigger now lives on the left so it visually aligns with and opens the left filter panel instead of launching a panel on the opposite side of the page
+2.  **Slate-blue divider**:
     
-    -   `linear-gradient(90deg, transparent 0%, rgb(59, 130, 246) 50%, transparent 100%)`
-3.  **Main content area** (flex row):
+    -   `linear-gradient(90deg, transparent 0%, rgba(110,137,173,0.55) 18%, rgba(110,137,173,0.8) 50%, rgba(110,137,173,0.55) 82%, transparent 100%)`
+3.  **Main content area** (`flex-col lg:flex-row`):
     
-    -   **Left**: `<GalleryCategorySidebar />` (conditional, 288px wide, `w-72`)
+    -   **Left**: `<GalleryCategorySidebar />` (conditional, `w-full lg:w-72`) inside an animated width wrapper so the left filter rail expands/collapses from the same side as the trigger
     -   **Right**: Scrollable main content with active filter chips + card grid
 
 ### Secondary panels / drawers
 
--   **Category Sidebar** (`GalleryCategorySidebar.tsx`): A left-side panel that slides in when "Browse Categories" is clicked. Width: `w-72` (288px). Background: `bg-[#18181b]`. Border-right: `border-r border-white/10`. Has a yellow accent line at top (`h-0.5 bg-yellow-400`).
+-   **Category Sidebar** (`GalleryCategorySidebar.tsx`): A Chronicle shell panel that opens from the left rail when `Browse Categories` is toggled. Width: `w-full` on smaller widths and `w-72` (288px) on desktop. Outer shell: `bg-[#2a2a2f]` with Chronicle bevel shadow. Header: `bg-gradient-to-b from-[#5a7292] to-[#4a5f7f]`. Body: `bg-[#2e2e33]`. The old yellow accent strip was removed in favor of Chronicle slate-blue styling.
 -   **Scenario Detail Modal** (`StoryDetailModal.tsx`): Full-screen overlay modal. Triggered by clicking any card.
 -   **Review Modal** (`ReviewModal.tsx`): Nested modal within the Detail Modal for leaving/editing reviews.
 
@@ -97,11 +98,11 @@ Uses React Query's `useInfiniteQuery` for data fetching with automatic caching (
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Page title | Heading | "Community Gallery" | Header bar, left side | Transparent | `text-slate-900` | `text-lg font-black uppercase tracking-tight` | Static | `src/pages/Index.tsx` | Rendered by Index.tsx header, not GalleryHub |
 | Sort pill bar | Button group | "All Stories", "Recent", "Liked", "Saved", "Played", "Following" | Header bar, right of title | Container: `bg-[#2b2b2e]` | Active: white. Inactive: `#a1a1aa` | `text-xs font-bold` | Clicking sets `gallerySortBy` state, triggers data refetch | `src/pages/Index.tsx` | Sort state is lifted to Index.tsx and passed as prop |
-| Search input | Text input | No placeholder text | GalleryHub header, left | `bg-[#3a3a3f]/50 border border-white/10` | `text-white` | Full width, `py-3 pl-12 pr-24 rounded-xl` | Type search terms, press Enter or click Search to filter by tags | `src/components/chronicle/GalleryHub.tsx` | Splits input on commas/semicolons/spaces, strips `#` prefix |
-| Search icon | Icon | n/a | Inside search input, left | Transparent | `text-zinc-400` | `w-5 h-5` | Decorative | `src/components/chronicle/GalleryHub.tsx` | Lucide `Search` |
-| Search button | Button | "Search" | Inside search input, right | `bg-[#4a5f7f]` | White | `px-4 py-1.5 rounded-lg font-semibold text-sm` | Triggers tag search | `src/components/chronicle/GalleryHub.tsx` | Hover: `bg-[#5a6f8f]` |
-| Browse Categories button | Button | "Browse Categories" | GalleryHub header, far right | Default: `bg-[#4a5f7f]`, Active: `bg-[#5a6f8f]` | White | `px-4 py-3 rounded-lg font-semibold text-sm` | Toggles category sidebar open/close | `src/components/chronicle/GalleryHub.tsx` | Shows filter count badge when filters active |
-| Filter count badge | Badge | Number (e.g. "3") | On Browse Categories button, right | `bg-white/20` | White | `px-1.5 py-0.5 rounded-full text-xs` | Static, shows count of active category filters | `src/components/chronicle/GalleryHub.tsx` | Only rendered when `activeFilterCount > 0` |
+| Browse Categories button | Button | "Browse Categories" | GalleryHub toolbar, left rail | Closed: `#3c3e47 / bg-[#3c3e47]`. Open: `#2a2a2f / bg-[#2a2a2f]` | `#FFFFFF / text-white`, supporting copy `#A1A1AA / text-zinc-400` | Full rail card, `rounded-[24px] px-4 py-3` | Toggles the left filter panel open/close. The control now stays on the same side as the panel it opens. | `src/components/chronicle/GalleryHub.tsx` | Includes a `LayoutGrid` icon capsule, helper copy, active-filter count badge, and chevron |
+| Filter count badge | Badge | Number (e.g. "3") | Right side of Browse Categories button | `#4A5F7F / bg-[#4a5f7f]/30` | White | `rounded-full px-2 py-1 text-[10px] font-black` | Static, shows count of active category filters | `src/components/chronicle/GalleryHub.tsx` | Only rendered when `activeFilterCount > 0` |
+| Search shell | Text input surface | "Search titles, descriptions, or #tags..." | GalleryHub toolbar, right side | `#2A2A2F / bg-[#2a2a2f]` with inner icon well `#1C1C1F / bg-[#1c1c1f]` | `#FFFFFF / text-white`, placeholder `#71717A / text-zinc-500` | `min-h-[72px] rounded-[24px] px-4 py-3` | Live-applies search after a short debounce; Enter also applies immediately | `src/components/chronicle/GalleryHub.tsx` | Replaces the older flat search input + separate Search button combination |
+| Search icon | Icon | n/a | Inside search shell, left icon well | `#1C1C1F / bg-[#1c1c1f]` | `#A1A1AA / text-zinc-400` | `h-4 w-4` inside `h-11 w-11` pill | Decorative | `src/components/chronicle/GalleryHub.tsx` | Lucide `Search` |
+| Clear search button | Button | "Clear" | Right side of search shell | `#3C3E47 / bg-[#3c3e47]` | `#EAEDF1 / text-[#eaedf1]` | `h-10 rounded-xl px-4 text-xs font-bold` | Clears `searchQuery`, `searchText`, and `searchTags` | `src/components/chronicle/GalleryHub.tsx` | Only shown when the search field is not empty |
 | Active filter chips | Chip/pill | Filter name (e.g. "#romance", "Fantasy") | Below GalleryHub header, in filter bar | Search tags: `bg-white/20`. Story types: `bg-blue-500/20`. Genres: `bg-purple-500/20`. Origins: `bg-green-500/20`. Trigger warnings: `bg-amber-500/20` | Search: white. Types: `text-blue-400`. Genres: `text-purple-400`. Origins: `text-green-400`. Warnings: `text-amber-400` | `px-2 py-1 rounded-full text-xs font-medium` | Click X to remove individual filter | `src/components/chronicle/GalleryHub.tsx` | Each chip has an X button (`hover:text-red-300`) |
 | "Clear all" link | Text button | "Clear all" | After filter chips, right | Transparent | `text-white/70 hover:text-white` | `text-sm underline` | Clears all search tags and category filters | `src/components/chronicle/GalleryHub.tsx` |  |
 | Loading spinner | Spinner | n/a | Center of content area | Transparent | `text-slate-400` | `w-8 h-8` | Animated spin | `src/components/chronicle/GalleryHub.tsx` | Lucide `Loader2` |
@@ -116,7 +117,8 @@ Uses React Query's `useInfiniteQuery` for data fetching with automatic caching (
 ### Card Grid Layout
 
 -   Grid classes: `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 lg:gap-8`
--   Container padding: `px-8 pb-10`
+-   Outer gallery region padding: `px-6 pb-6 pt-4`
+-   Grid wrapper padding: `pb-10`
 
 ### Card Container (`GalleryScenarioCard.tsx`)
 
@@ -159,14 +161,18 @@ Uses React Query's `useInfiniteQuery` for data fetching with automatic caching (
 | **Trigger** | Clicking anywhere on a `GalleryScenarioCard` (fires `onViewDetails`). Also increments `view_count`. |
 | **Component File** | `src/components/chronicle/StoryDetailModal.tsx` |
 | **Overlay** | `bg-black/90 backdrop-blur-sm` |
-| **Dimensions** | `max-w-6xl max-h-[90vh]`. Two-column layout on desktop (`md:flex-row`), single column on mobile. |
+| **Dimensions** | `max-w-[900px] max-h-[700px]`. Two-column layout on desktop (`md:flex-row`), single column on mobile. |
 | **Border radius** | `rounded-[32px]` |
-| **Background** | `bg-[#121214]` |
-| **Border** | `border border-white/10` |
+| **Background** | `bg-[#2a2a2f]` |
+| **Border** | No explicit border; Chronicle bevel comes from inset shell shadows |
 
-**Left Column (md:w-\[420px\]):** Cover image (3:4 aspect), SFW/NSFW badge, remix badge, action buttons row (Like, Save, Play), "Remove from Gallery" button (publisher only).
+**Left Column (`w-[340px]` desktop):** Cover image (3:4 aspect), SFW/NSFW badge, remix badge, action buttons row (Like, Save, Play), "Remove from Gallery" button (publisher only).
 
-**Right Column (ScrollArea, flex-1):** Title, star/spice ratings, stats row, creator section (clickable avatar + name), status badges, synopsis, content themes grid, trigger warnings, custom tags, characters section (circular avatars), reviews section with pagination.
+**Right Column (native `overflow-y-auto`, `scrollbar-none`, `flex-1`):** Title, star/spice ratings, stats row, creator section (clickable avatar + name), status badges, synopsis, content themes grid, trigger warnings, custom tags, characters section (circular avatars), reviews section with pagination. The modal intentionally uses native scrolling here so mouse-wheel and trackpad gestures work reliably without a visible scrollbar thumb.
+
+**Status badge behavior:** The purple `EDITABLE` badge shows a tooltip clarifying that loading the story into Story Builder creates a separate custom version and does not change the original published story.
+
+**Review CTA:** `Leave a Review` / `Edit Review` uses the Chronicle raised slate-blue pill treatment instead of a flat fill.
 
 ### Modal: Review Modal
 
@@ -176,7 +182,12 @@ Uses React Query's `useInfiniteQuery` for data fetching with automatic caching (
 | **Component File** | `src/components/chronicle/ReviewModal.tsx` |
 | **Dimensions** | `max-w-xl max-h-[90vh]` |
 
-9 rating categories (conceptStrength, initialSituation, roleClarity, motivationTension, tonePromise, lowFrictionStart, worldbuildingVibe, replayability, characterDetailsComplexity) + spice level + optional comment. All ratings must be >= 1 before submit is enabled.
+Chronicle-styled quick review flow with three tiers:
+- **Quick rating:** `Story` 1-5 stars (main rating) and optional `Spice` 1-5 flames
+- **Additional Feedback:** collapsible optional category ratings for deeper creator feedback (`Concept Strength`, `Motivation / Tension`, `Worldbuilding & Vibe`, `Replayability`, `Character Details & Complexity`)
+- **Optional comment:** separate freeform note field
+
+Submit is enabled once the user has set either a story rating or a spice rating. The detailed category ratings stay hidden behind the optional expandable Additional Feedback section so the modal stays low-friction by default, and the modal body remains scrollable when the section is expanded. Clicking outside this nested modal closes only the review modal and returns the user to the Scenario Detail Modal.
 
 ### Modal: Delete Confirm Dialog
 
@@ -323,12 +334,15 @@ The Gallery does not dispatch or listen for custom DOM events. All communication
 
 ## 12\. KNOWN ISSUES & GOTCHAS
 
--   None currently identified. All previously tracked issues have been resolved.
+-   RESOLVED: 2026-04-10 — The gallery discovery shell used a disconnected control model where `Browse Categories` lived on the far right while the filter panel opened on the left. The trigger now lives on the left rail, visually aligns with the panel, and uses Chronicle shell styling instead of the old off-theme yellow accent treatment.
 
 * * *
 
 ## 13\. RECENTLY IMPLEMENTED IMPROVEMENTS
 
+-   **Gallery discovery shell refresh**: Reworked the Community Gallery toolbar so `Browse Categories` now lives on the left rail and visually aligns with the left filter panel. Replaced the older flat search field + separate Search button with a Chronicle recessed search surface that auto-applies after a short debounce, and restyled the filter panel itself into Chronicle dark slate-blue shell language.
+-   **Scenario detail modal interaction polish**: Replaced the modal's custom scrollbar wrapper with native hidden-scroll behavior so trackpad/wheel scrolling works reliably in the right detail pane. Added explanatory tooltip copy to the `EDITABLE` badge and upgraded the review CTA to the Chronicle raised slate-blue pill style.
+-   **Review flow simplification**: Reworked `ReviewModal` into a Chronicle-styled quick review surface with story stars, optional spice flames, an expandable Additional Feedback ratings section, and a separate optional comment field instead of the old always-open weighted questionnaire.
 -   **Infinite scroll**: Stories load 20 at a time as user scrolls. IntersectionObserver triggers fetching next page. "You've reached the end" message when all loaded.
 -   **Server-side filtering**: All content theme filters (story type, genre, origin, trigger warnings, custom tags) are now applied server-side via the `fetch_gallery_scenarios` RPC function.
 -   **Full-text search**: Search now works on story titles and descriptions (not just tags). Uses PostgreSQL GIN index with `to_tsvector` plus ILIKE fallback for partial matches. Hashtag prefixed terms (#fantasy) search tags; plain text searches titles/descriptions.
@@ -340,3 +354,5 @@ The Gallery does not dispatch or listen for custom DOM events. All communication
 ## 14\. PLANNED / FUTURE CHANGES
 
 -   No planned changes at this time.
+
+> Last updated: 2026-04-10 — refreshed the gallery discovery toolbar, left filter rail, and Chronicle search shell

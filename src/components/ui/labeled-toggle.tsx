@@ -10,11 +10,16 @@ interface LabeledToggleProps {
   className?: string;
   offLabel?: string;  // Custom label for off state (default: "Off")
   onLabel?: string;   // Custom label for on state (default: "On")
+  labelTone?: "default" | "dark";
 }
 
 const LabeledToggle = React.forwardRef<HTMLButtonElement, LabeledToggleProps>(
-  ({ checked, onCheckedChange, disabled = false, locked = false, className, offLabel = "Off", onLabel = "On" }, ref) => {
+  ({ checked, onCheckedChange, disabled = false, locked = false, className, offLabel = "Off", onLabel = "On", labelTone = "default" }, ref) => {
     const isDisabled = disabled || locked;
+    const offInactiveClass = "text-zinc-500";
+    const onInactiveClass = "text-zinc-500";
+    const offActiveClass = labelTone === "dark" ? "text-zinc-900" : "text-zinc-200";
+    const onActiveClass = labelTone === "dark" ? "text-[#4a5f7f]" : "text-blue-500";
     
     return (
       <button
@@ -33,7 +38,7 @@ const LabeledToggle = React.forwardRef<HTMLButtonElement, LabeledToggleProps>(
         {/* Off label */}
         <span className={cn(
           "text-xs font-semibold transition-colors",
-          checked ? "text-zinc-500" : "text-zinc-200"
+          checked ? offInactiveClass : offActiveClass
         )}>
           {offLabel}
         </span>
@@ -53,7 +58,7 @@ const LabeledToggle = React.forwardRef<HTMLButtonElement, LabeledToggleProps>(
         {/* On label */}
         <span className={cn(
           "text-xs font-semibold transition-colors",
-          checked ? "text-blue-500" : "text-zinc-500"
+          checked ? onActiveClass : onInactiveClass
         )}>
           {onLabel}
         </span>
