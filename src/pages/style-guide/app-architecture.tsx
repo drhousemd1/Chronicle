@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft, ChevronDown } from "lucide-react";
 import {
   ArchitectureNode,
   ArchitectureRegistry,
@@ -3930,6 +3931,7 @@ function SchemaSection({
 }
 
 export default function AppArchitecturePage() {
+  const navigate = useNavigate();
   const baselineRegistry = useMemo(() => buildArchitectureRegistry(GENERATED_PATHS, "Chronicle-main"), []);
   const registry = baselineRegistry;
   const rootNode = registry.nodes[registry.rootId];
@@ -4234,7 +4236,16 @@ export default function AppArchitecturePage() {
       <style>{architectureStyles}</style>
 
       <header className="header">
-        <h1 className="page-title">App Architecture</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <button
+            onClick={() => navigate("/?tab=admin&adminTool=style_guide")}
+            className="p-2 rounded-full hover:bg-slate-100 transition-colors"
+            aria-label="Back to Admin"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <h1 className="page-title" style={{ margin: 0 }}>App Architecture</h1>
+        </div>
 
         <div className="header-filter-wrap">
           <div className="architecture-filter-dropdown" ref={filterRef}>
