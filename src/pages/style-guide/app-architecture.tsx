@@ -406,6 +406,9 @@ const architectureStyles = `
   --indent: 28px;
   --danger-red: #ef4444;
   --live-header-height: 76px;
+  --nav-rail-width: 296px;
+  --header-pad-x: 24px;
+  --content-pad: 24px;
   min-height: 100%;
   height: 100%;
   background: var(--bg);
@@ -467,8 +470,8 @@ const architectureStyles = `
 }
 
 .app-architecture-page .nav-rail-shell {
-  flex: 0 0 296px;
-  width: 296px;
+  flex: 0 0 var(--nav-rail-width);
+  width: var(--nav-rail-width);
   height: calc(100vh - var(--live-header-height));
   min-height: calc(100vh - var(--live-header-height));
   max-height: calc(100vh - var(--live-header-height));
@@ -1500,7 +1503,7 @@ const architectureStyles = `
   background: rgba(255,255,255,0.95);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid #e0e0e0;
-  padding: 14px 24px;
+  padding: 14px var(--header-pad-x);
   display: flex;
   align-items: center;
   gap: 18px;
@@ -1553,7 +1556,7 @@ const architectureStyles = `
   height: calc(100vh - 76px);
   min-height: calc(100vh - 76px);
   overflow: auto;
-  padding: 24px;
+  padding: var(--content-pad);
 }
 
 .app-architecture-page .legend {
@@ -2495,7 +2498,124 @@ const architectureStyles = `
   margin-top: 6px;
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 1420px) {
+  .app-architecture-page {
+    --nav-rail-width: 268px;
+    --header-pad-x: 20px;
+    --content-pad: 20px;
+  }
+
+  .app-architecture-page .header {
+    gap: 14px;
+  }
+
+  .app-architecture-page .nav-rail-body {
+    padding: 14px 12px 18px;
+  }
+
+  .app-architecture-page .nav-section-stack {
+    gap: 12px;
+  }
+
+  .app-architecture-page .nav-section {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 1280px) {
+  .app-architecture-page {
+    --nav-rail-width: 232px;
+    --header-pad-x: 16px;
+    --content-pad: 16px;
+  }
+
+  .app-architecture-page .header {
+    gap: 12px;
+  }
+
+  .app-architecture-page .page-title {
+    font-size: 16px;
+  }
+
+  .app-architecture-page .nav-root-link,
+  .app-architecture-page .nav-section-link,
+  .app-architecture-page .nav-section-title {
+    min-height: 40px;
+    border-radius: 12px;
+    font-size: 12px;
+  }
+
+  .app-architecture-page .nav-root-link {
+    padding: 0 14px;
+  }
+
+  .app-architecture-page .nav-section-link,
+  .app-architecture-page .nav-section-title {
+    padding: 0 12px;
+  }
+
+  .app-architecture-page .nav-tree-group {
+    gap: 6px;
+    padding-left: 16px;
+  }
+
+  .app-architecture-page .nav-branch-link,
+  .app-architecture-page .nav-tree-item {
+    min-height: 34px;
+    font-size: 12px;
+  }
+
+  .app-architecture-page .nav-link-body {
+    min-height: 34px;
+    padding: 0 10px;
+  }
+
+  .app-architecture-page .folder-row {
+    padding: 8px 12px;
+    gap: 7px;
+  }
+
+  .app-architecture-page .folder-desc {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 1120px) {
+  .app-architecture-page {
+    --nav-rail-width: 212px;
+    --header-pad-x: 14px;
+    --content-pad: 14px;
+  }
+
+  .app-architecture-page .header {
+    gap: 10px;
+  }
+
+  .app-architecture-page .folder-row {
+    padding: 8px 10px;
+  }
+
+  .app-architecture-page .folder-count {
+    padding: 0 8px;
+    font-size: 10px;
+  }
+
+  .app-architecture-page .app-card-header {
+    padding: 12px 14px;
+  }
+
+  .app-architecture-page .app-card-body {
+    padding: 14px 14px 16px;
+  }
+
+  .app-architecture-page .detail-block > summary,
+  .app-architecture-page .schema-block > summary,
+  .app-architecture-page .app-card-row {
+    padding: 12px 12px;
+  }
+}
+
+@media (max-width: 980px) {
   .app-architecture-page .page-shell {
     display: block;
   }

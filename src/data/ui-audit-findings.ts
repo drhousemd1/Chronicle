@@ -4774,6 +4774,26 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260411-004",
+      title: "Keep App Architecture navigation visible longer in embedded preview widths",
+      summary: "App Architecture · Replaced the aggressive nav-hide breakpoint with a stepped responsive layout so the left rail stays usable in narrower preview canvases like Lovable",
+      severity: "patch" as const,
+      status: "completed" as const,
+      problem: "The rebuilt App Architecture page hid its left navigation rail as soon as the available width dropped below 1180px. In embedded preview environments like Lovable, opening the AI sidebar shrank the preview enough to cross that breakpoint, which made the navigation disappear even though the page still had enough room to remain usable. That behavior felt inconsistent with the rest of Chronicle and made the page seem broken in preview.",
+      plan: "Keep the left rail visible longer by making the page respond more intelligently first: reduce header/content spacing, narrow the rail in measured steps, tighten nav spacing, and only hide the rail once the viewport becomes genuinely too narrow to support the dual-column layout.",
+      changes: "Updated App Architecture responsive behavior:\n• Added responsive layout variables for rail width, header padding, and content padding so the page can compress progressively instead of flipping immediately to a rail-less layout.\n• Added stepped breakpoints that reduce spacing and rail width at medium widths while keeping text readable and the left rail functional.\n• Tightened nav spacing, folder chip sizing, and card spacing at narrower widths so the main content adapts before the rail is removed.\n• Moved the hard rail-hide breakpoint down from 1180px to 980px, which keeps the navigation visible in Lovable-style embedded preview widths where the page still has enough room to function.",
+      filesAffected: [
+        "src/pages/style-guide/app-architecture.tsx",
+        "src/data/ui-audit-findings.ts"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["app-architecture", "responsive-layout", "lovable-preview", "left-rail", "admin-ui"],
+      comments: [],
+      createdAt: "2026-04-11T22:35:00.000Z",
+      updatedAt: "2026-04-11T22:35:00.000Z",
+    },
+    {
       id: "cl-20260411-003",
       title: "Rebuild App Architecture into the new mockup-driven operator map",
       summary: "App Architecture · Reworked the page around the approved dark mockup, added richer file relationship metadata, and surfaced backend schema inventory directly inside the architecture flow",
