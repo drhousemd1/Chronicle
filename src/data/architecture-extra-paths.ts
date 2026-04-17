@@ -122,4 +122,5 @@ export const architectureExtraPaths: string[] = [
   '/supabase/migrations/20260404095700_1f06ecdb-655e-497f-b7dc-85061f16fcdb.sql',
   '/supabase/migrations/20260404133000_add_side_character_custom_sections.sql',
   '/supabase/migrations/20260405034024_03a99d6f-3355-4189-8d72-204d655c9994.sql',
+  '/supabase/migrations/20260417041136_297c107c-c7f2-49be-9458-9f4502ee75a7.sql',
 ];

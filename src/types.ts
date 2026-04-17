@@ -5,6 +5,7 @@ export type TimeOfDay = "sunrise" | "day" | "sunset" | "night";
 
 export type Message = {
   id: string;
+  generationId?: string;
   role: MessageRole;
   text: string;
   imageUrl?: string;  // For generated scene images
@@ -475,8 +476,50 @@ export type Memory = {
   source: MemorySource;
   entryType: MemoryEntryType;
   sourceMessageId?: string;
+  sourceGenerationId?: string;
   createdAt: number;
   updatedAt: number;
+};
+
+export type CharacterStateSnapshotPayload = Partial<Character> & {
+  previousNames?: string[];
+};
+
+export type CharacterStateMessageSnapshot = {
+  id: string;
+  conversationId: string;
+  characterId: string;
+  sourceMessageId: string;
+  sourceGenerationId: string;
+  sourceRole?: 'user' | 'assistant';
+  statePayload: CharacterStateSnapshotPayload;
+  createdAt: number;
+};
+
+export type SideCharacterStateSnapshotPayload = Partial<SideCharacter>;
+
+export type SideCharacterMessageSnapshot = {
+  id: string;
+  conversationId: string;
+  sideCharacterId: string;
+  sourceMessageId: string;
+  sourceGenerationId: string;
+  sourceRole?: 'user' | 'assistant';
+  statePayload: SideCharacterStateSnapshotPayload;
+  createdAt: number;
+};
+
+export type StoryGoalStepDerivation = {
+  id: string;
+  conversationId: string;
+  goalId: string;
+  stepId: string;
+  sourceMessageId: string;
+  sourceGenerationId: string;
+  completed: boolean;
+  day: number | null;
+  timeOfDay: TimeOfDay | null;
+  createdAt: number;
 };
 
 // =============================================

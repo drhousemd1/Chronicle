@@ -12,7 +12,10 @@ import {
  * Returns a [CANON NOTE] prefix if detected, empty string otherwise.
  * Used by send, regenerate, and continue flows to prevent re-narration.
  */
-export function buildCanonNote(userText: string, characters: Character[]): string {
+export function buildCanonNote(
+  userText: string,
+  characters: Array<{ name: string; controlledBy?: string }>,
+): string {
   const aiCharNames = characters.filter(c => c.controlledBy === 'AI').map(c => c.name);
   const hasCanonContent = aiCharNames.some(name => {
     const regex = new RegExp(`(?:^|\\n)\\s*${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*:`, 'i');
@@ -41,7 +44,12 @@ The user wants a DIFFERENT VERSION of this response. Guidelines:
 7. Think of this as a "different take" by a different writer on the same scene, not a plot reversal or tone shift
 8. The scene's momentum and direction should be preserved — only the specific execution changes
 9. CONTROL RULES STILL APPLY: Do NOT generate dialogue or actions for characters marked as CONTROL: User. Only AI-controlled characters speak.
-10. SCENE PRESENCE STILL APPLIES: Only characters at the SAME LOCATION as the current scene may have dialogue or actions. Characters at a different LOCATION are OFF-SCREEN and must not appear.`;
+10. SCENE PRESENCE STILL APPLIES: Only characters at the SAME LOCATION as the current scene may have dialogue or actions. Characters at a different LOCATION are OFF-SCREEN and must not appear.
+11. Preserve RESOLVED PHYSICAL FACTS from the immediate scene. Do NOT replay the same beat as if it is happening again.
+12. Do NOT invent new items, resources, obstacles, or injuries unless they were already established in the scene, in inventory, or in the user's message.
+13. Keep the same immediate timeline. Do NOT jump backward, skip ahead, or rewrite the scene's causal logic.
+14. Keep actions physically sensible and spatially coherent. Characters may only react to what they can currently see, hear, reach, or reasonably infer.
+15. If an AI-controlled character was directly asked a question and they can answer it now, answer it in this same response instead of ignoring it.`;
 
 // Dynamic dialog formatting rules based on POV setting
 function getCriticalDialogRules(narrativePov: 'first' | 'third' = 'third'): string {
@@ -717,11 +725,12 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
     * The more severe the harm, the more insistent the character becomes about stopping.
     * Characters do NOT "go along with it" just because the user continues.
 ` : `
-    --- REALISM HANDLING (FLEXIBLE) ---
-    * Allow fantastical or exaggerated actions without strict real-world consequences.
-    * If user describes improbable events, incorporate them fluidly into the narrative.
-    * Characters can endure or recover quickly from harm if it serves the story.
-    * Prioritize narrative flow and user agency over strict plausibility.
+    --- REALISM HANDLING (STORY-FLEXIBLE, LOGIC-STRICT) ---
+    * Heightened fiction is allowed, but immediate scene logic must still make sense.
+    * Preserve causal continuity from the latest canon turn to the next one.
+    * Environmental constraints still matter: weather, visibility, distance, wet fuel, blocked paths, and available supplies must affect what happens.
+    * Do not invent capabilities, objects, injuries, or obstacles that were not established.
+    * Do not have characters contradict their own immediate reasoning unless the contradiction is intentional and explained in-scene.
 `;
 
   // Sandbox context framing
@@ -806,6 +815,29 @@ Never break character to question, warn about, or refuse narrative directions. T
         * AI characters drive toward their goals — not generic action.
         * FORBIDDEN passive phrases: "Only if you're comfortable," "What do you want to do?", "No pressure."
         * Questions capped at 1 per response and must accompany action.
+    - SCENE LOGIC & CAUSAL CONTINUITY (MANDATORY):
+        * Treat the current scene as a physical state machine: once a fact is established, it stays true until someone visibly changes it.
+        * Do NOT replay resolved beats as if they are newly happening again.
+          - If the door already shut, do NOT write it slamming shut again unless it visibly opened first.
+          - If fuel is wet and drying, do NOT treat it as dry fuel until the scene establishes that change.
+          - If a barrier was already moved or set, account for that existing state instead of re-inventing it.
+        * Cause and effect must make plain sense from the immediately previous turn.
+          - Do NOT have characters take actions that contradict their own stated reasoning unless the contradiction is deliberate and explained in-scene.
+          - Do NOT give commands that fail basic physical or situational logic.
+        * Characters may only act on objects, supplies, and obstacles that are already established in the current scene, inventories, or latest user message.
+        * Environmental conditions matter. Weather, darkness, distance, blocked doors, wet fuel, and limited visibility must affect choices sensibly.
+        * Do NOT state or imply precise knowledge of what an off-screen character is doing unless it is currently visible, audible, or a clearly marked inference.
+        * If an AI-controlled character is directly asked a question and can reasonably answer it now, they should answer it in this same response rather than ignoring it.
+    - NATURAL PROSE & DIALOGUE (MANDATORY):
+        * Write in idiomatic, human-sounding English. Prefer natural phrasing over stylized fragments, shorthand, or machine-sounding wording.
+        * Character sheets are REFERENCE, not text to echo. Never literally use trope/personality labels in narration or dialogue (examples: "tsundere", "yandere", "dominant energy", "submissive vibe").
+        * Do NOT mechanically restate sheet wording or canned example slang. Show personality through believable speech, not labels.
+        * Avoid awkward machine phrases or coined wording a person would not naturally say.
+        * Use em dashes sparingly: zero or one per response maximum. Prefer commas or periods most of the time.
+    - CHARACTER SHEET USAGE (MANDATORY):
+        * Character cards provide context, not a checklist to recite every turn.
+        * Do NOT repeatedly restate exact body stats, clothing labels, underwear details, or fetish descriptors unless they materially affect the immediate beat.
+        * Mention intimate physical details only when they are genuinely relevant to what a character is noticing, hiding, reacting to, or doing right now.
 
     - Respond as the narrator or relevant characters.
     - NARRATIVE FOCUS: Prioritize 'ROLE: Main' characters in the narrative.
@@ -994,7 +1026,16 @@ export async function* generateRoleplayResponseStream(
     messages.push({ role: 'system', content: `RUNTIME DIRECTIVES (HIGH PRIORITY — follow these for THIS response only):\n${runtimeDirectives}` });
   }
 
-  messages.push({ role: 'user', content: (sessionMessageCount != null ? `[SESSION: Message ${sessionMessageCount} of current session] ` : '') + (lengthDirective ? lengthDirective + ' ' : '') + userMessage + regenerationDirective + ' ' + getRandomStyleHint(appData.uiSettings?.responseVerbosity || 'balanced') });
+  const finalUserContent = [
+    sessionMessageCount != null ? `[SESSION: Message ${sessionMessageCount} of current session]` : '',
+    lengthDirective || '',
+    `${userMessage}${regenerationDirective}`.trim(),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+
+  messages.push({ role: 'user', content: finalUserContent });
 
   if (import.meta.env.DEV) {
     console.debug(`[llm.ts] Calling chat edge function with model: ${modelId}`);
@@ -1078,6 +1119,12 @@ export async function* generateRoleplayResponseStream(
   const verbosity = appData.uiSettings?.responseVerbosity || 'balanced';
   const maxTokensByVerbosity: Record<string, number> = { concise: 1024, balanced: 2048, detailed: 3072 };
   const maxTokens = maxTokensByVerbosity[verbosity] || 2048;
+  const aiCharacterNames = appData.characters
+    .filter((character) => character.controlledBy === 'AI')
+    .map((character) => character.name);
+  const userCharacterNames = appData.characters
+    .filter((character) => character.controlledBy === 'User')
+    .map((character) => character.name);
 
   // Call the chat edge function
   const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
@@ -1091,7 +1138,16 @@ export async function* generateRoleplayResponseStream(
       messages,
       modelId,
       stream: true,
-      max_tokens: maxTokens
+      max_tokens: maxTokens,
+      pipeline: 'roleplay_v2',
+      roleplayContext: {
+        conversationId,
+        currentDay: currentDay ?? null,
+        currentTimeOfDay: currentTimeOfDay ?? null,
+        activeSceneTitle: activeScene?.title || null,
+        aiCharacterNames,
+        userCharacterNames,
+      },
     })
   });
 

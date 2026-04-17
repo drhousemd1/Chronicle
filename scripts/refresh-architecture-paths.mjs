@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
+import ts from "typescript";
 
 const projectRoot = process.cwd();
 const srcRoot = path.join(projectRoot, "src");
@@ -113,6 +114,7 @@ function isCodeLikeFile(absPath) {
     ".tsx",
     ".js",
     ".jsx",
+    ".mjs",
     ".sql",
     ".md",
     ".json",
@@ -136,6 +138,101 @@ function readTextIfPossible(absPath) {
 
 function uniqueSorted(values) {
   return Array.from(new Set(values.filter(Boolean))).sort((a, b) => a.localeCompare(b));
+}
+
+function isAstCodeFile(absPath) {
+  return [".ts", ".tsx", ".js", ".jsx", ".mjs"].includes(path.extname(absPath).toLowerCase());
+}
+
+function getScriptKind(absPath) {
+  const ext = path.extname(absPath).toLowerCase();
+  if (ext === ".tsx") return ts.ScriptKind.TSX;
+  if (ext === ".jsx") return ts.ScriptKind.JSX;
+  if (ext === ".js" || ext === ".mjs") return ts.ScriptKind.JS;
+  return ts.ScriptKind.TS;
+}
+
+function getStringArg(node) {
+  if (node.arguments.length === 0) return null;
+  const [firstArg] = node.arguments;
+  return ts.isStringLiteralLike(firstArg) ? firstArg.text.trim() : null;
+}
+
+function extractAstRelationships(absPath, text) {
+  if (!isAstCodeFile(absPath) || !text.trim()) {
+    return {
+      imports: [],
+      tables: [],
+      rpcs: [],
+      edgeFunctions: [],
+      storageBuckets: [],
+    };
+  }
+
+  const sourceFile = ts.createSourceFile(
+    absPath,
+    text,
+    ts.ScriptTarget.Latest,
+    true,
+    getScriptKind(absPath),
+  );
+
+  const imports = [];
+  const tables = [];
+  const rpcs = [];
+  const edgeFunctions = [];
+  const storageBuckets = [];
+
+  function visit(node) {
+    if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) {
+      const moduleSpecifier = node.moduleSpecifier;
+      if (moduleSpecifier && ts.isStringLiteralLike(moduleSpecifier)) {
+        const resolved = resolveImportSpecifier(absPath, moduleSpecifier.text);
+        if (resolved) imports.push(toWebPath(resolved));
+      }
+    }
+
+    if (ts.isCallExpression(node)) {
+      if (node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+        const dynamicSpecifier = getStringArg(node);
+        if (dynamicSpecifier) {
+          const resolved = resolveImportSpecifier(absPath, dynamicSpecifier);
+          if (resolved) imports.push(toWebPath(resolved));
+        }
+      } else if (ts.isPropertyAccessExpression(node.expression)) {
+        const propertyName = node.expression.name.text;
+        const stringArg = getStringArg(node);
+
+        if (stringArg) {
+          if (
+            propertyName === "from" &&
+            ts.isPropertyAccessExpression(node.expression.expression) &&
+            node.expression.expression.name.text === "storage"
+          ) {
+            storageBuckets.push(stringArg);
+          } else if (propertyName === "from") {
+            tables.push(stringArg);
+          } else if (propertyName === "rpc") {
+            rpcs.push(stringArg);
+          } else if (propertyName === "invoke") {
+            edgeFunctions.push(stringArg);
+          }
+        }
+      }
+    }
+
+    ts.forEachChild(node, visit);
+  }
+
+  visit(sourceFile);
+
+  return {
+    imports: uniqueSorted(imports),
+    tables: uniqueSorted(tables),
+    rpcs: uniqueSorted(rpcs),
+    edgeFunctions: uniqueSorted(edgeFunctions),
+    storageBuckets: uniqueSorted(storageBuckets),
+  };
 }
 
 function resolveImportSpecifier(fromAbsPath, specifier) {
@@ -218,25 +315,21 @@ const analysisByPath = new Map();
 
 [...sourceAbsPaths, ...extraAbsPaths].forEach((absPath) => {
   const text = readTextIfPossible(absPath);
-  const imports = [];
-
-  extractMatches(text, /from\s+["'`]([^"'`]+)["'`]/g).forEach((specifier) => {
-    const resolved = resolveImportSpecifier(absPath, specifier);
-    if (resolved) imports.push(toWebPath(resolved));
-  });
-
-  extractMatches(text, /import\(\s*["'`]([^"'`]+)["'`]\s*\)/g).forEach((specifier) => {
-    const resolved = resolveImportSpecifier(absPath, specifier);
-    if (resolved) imports.push(toWebPath(resolved));
-  });
+  const {
+    imports,
+    tables,
+    rpcs,
+    edgeFunctions,
+    storageBuckets,
+  } = extractAstRelationships(absPath, text);
 
   analysisByPath.set(toWebPath(absPath), {
-    imports: uniqueSorted(imports),
+    imports,
     importedBy: [],
-    tables: uniqueSorted(extractMatches(text, /\.from\(\s*["'`]([^"'`]+)["'`]\s*\)/g)),
-    rpcs: uniqueSorted(extractMatches(text, /\.rpc\(\s*["'`]([^"'`]+)["'`]\s*\)/g)),
-    edgeFunctions: uniqueSorted(extractMatches(text, /\.invoke\(\s*["'`]([^"'`]+)["'`]\s*\)/g)),
-    storageBuckets: uniqueSorted(extractMatches(text, /\.storage\.from\(\s*["'`]([^"'`]+)["'`]\s*\)/g)),
+    tables,
+    rpcs,
+    edgeFunctions,
+    storageBuckets,
   });
 });
 

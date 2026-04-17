@@ -917,6 +917,7 @@ const IndexContent = () => {
       if (openingText) {
         initialMessages.push({
           id: uuid(),
+          generationId: uuid(),
           role: "assistant",
           text: openingText,
           day: startingDay,

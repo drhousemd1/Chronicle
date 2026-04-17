@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { ScenarioData, Character, Conversation, Message, CharacterTraitSection, Scene, TimeOfDay, SideCharacter, CharacterSessionState, Memory, WorldCore, StoryGoal, GoalFlexibility } from '../../types';
+import { ScenarioData, Character, CharacterStateMessageSnapshot, CharacterStateSnapshotPayload, Conversation, Message, CharacterTraitSection, Scene, TimeOfDay, SideCharacter, SideCharacterMessageSnapshot, SideCharacterStateSnapshotPayload, CharacterSessionState, Memory, WorldCore, StoryGoal, GoalFlexibility, StoryGoalStepDerivation } from '../../types';
 import { Button, TextArea } from './UI';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 import { uid, now, uuid } from '@/utils';
-import { generateRoleplayResponseStream, getSystemInstruction, conciseStyleHints, balancedStyleHints, detailedStyleHints, REGENERATION_DIRECTIVE_TEXT, buildCanonNote } from '../../services/llm';
+import { generateRoleplayResponseStream, getSystemInstruction, REGENERATION_DIRECTIVE_TEXT, buildCanonNote } from '../../services/llm';
 import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2, StepForward, Settings, Image as ImageIcon, Brain, Check, X, Info, Play, Pause, Move, Palette } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import {
@@ -46,6 +46,7 @@ import {
   defaultCurrentlyWearing,
   defaultPhysicalAppearance,
   defaultPreferredClothing,
+  defaultSideCharacterPersonality,
   type CurrentlyWearing,
   type PhysicalAppearance,
   type PreferredClothing,
@@ -162,11 +163,16 @@ function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function tokensToStyledHtml(tokens: MessageToken[], dynamicText: boolean): string {
+type PlainTextMode = 'default' | 'action';
+
+function tokensToStyledHtml(tokens: MessageToken[], dynamicText: boolean, plainTextMode: PlainTextMode = 'default'): string {
   return tokens.map(token => {
     if (!dynamicText) {
       if (token.type === 'speech') {
         return `<span style="color:white;font-weight:500">"${escapeHtml(token.content)}"${escapeHtml(token.trailing || '')}</span>`;
+      }
+      if (token.type === 'plain' && plainTextMode === 'action') {
+        return `<span style="color:rgb(148,163,184);font-style:italic">${escapeHtml(token.content)}</span>`;
       }
       return `<span style="color:white;font-weight:500">${escapeHtml(token.content)}</span>`;
     }
@@ -178,6 +184,9 @@ function tokensToStyledHtml(tokens: MessageToken[], dynamicText: boolean): strin
     }
     if (token.type === 'thought') {
       return `<span style="color:rgba(199,210,254,0.9);font-style:italic;letter-spacing:-0.025em;text-shadow:0 0 8px rgba(129,140,248,0.6),0 0 16px rgba(129,140,248,0.4),0 0 24px rgba(129,140,248,0.2)">(${escapeHtml(token.content)})</span>`;
+    }
+    if (plainTextMode === 'action') {
+      return `<span style="color:rgb(148,163,184);font-style:italic">${escapeHtml(token.content)}</span>`;
     }
     return `<span style="color:rgb(203,213,225)">${escapeHtml(token.content)}</span>`;
   }).join('');
@@ -221,7 +230,11 @@ function setCaretCharOffset(el: HTMLElement, offset: number) {
   }
 }
 
-const FormattedMessage: React.FC<{ text: string; dynamicText?: boolean }> = ({ text, dynamicText = true }) => {
+const FormattedMessage: React.FC<{ text: string; dynamicText?: boolean; plainTextMode?: PlainTextMode }> = ({
+  text,
+  dynamicText = true,
+  plainTextMode = 'default',
+}) => {
   const tokens = useMemo(() => parseMessageTokens(text), [text]);
 
   return (
@@ -232,6 +245,13 @@ const FormattedMessage: React.FC<{ text: string; dynamicText?: boolean }> = ({ t
             return (
               <span key={i} className="text-white font-medium">
                 &ldquo;{token.content}&rdquo;{token.trailing || ''}
+              </span>
+            );
+          }
+          if (token.type === 'plain' && plainTextMode === 'action') {
+            return (
+              <span key={i} className="text-slate-400 italic">
+                {token.content}
               </span>
             );
           }
@@ -269,6 +289,13 @@ const FormattedMessage: React.FC<{ text: string; dynamicText?: boolean }> = ({ t
             </span>
           );
         }
+        if (plainTextMode === 'action') {
+          return (
+            <span key={i} className="text-slate-400 italic">
+              {token.content}
+            </span>
+          );
+        }
         return (
           <span key={i} className="text-slate-300">
             {token.content}
@@ -285,9 +312,10 @@ const FormattedMessage: React.FC<{ text: string; dynamicText?: boolean }> = ({ t
 const InlineFormattedMessageEditor: React.FC<{
   value: string;
   dynamicText: boolean;
+  plainTextMode?: PlainTextMode;
   autoFocus?: boolean;
   onChange: (value: string) => void;
-}> = ({ value, dynamicText, autoFocus = false, onChange }) => {
+}> = ({ value, dynamicText, plainTextMode = 'default', autoFocus = false, onChange }) => {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const hasInitializedRef = useRef(false);
 
@@ -295,7 +323,7 @@ const InlineFormattedMessageEditor: React.FC<{
     const editor = editorRef.current;
     if (!editor) return;
 
-    const nextHtml = tokensToStyledHtml(parseMessageTokens(value, true), dynamicText);
+    const nextHtml = tokensToStyledHtml(parseMessageTokens(value, true), dynamicText, plainTextMode);
     if (editor.innerHTML !== nextHtml) {
       editor.innerHTML = nextHtml;
     }
@@ -305,7 +333,7 @@ const InlineFormattedMessageEditor: React.FC<{
       editor.focus();
       setCaretCharOffset(editor, editor.innerText.length);
     }
-  }, [autoFocus, dynamicText, value]);
+  }, [autoFocus, dynamicText, plainTextMode, value]);
 
   return (
     <div
@@ -324,7 +352,7 @@ const InlineFormattedMessageEditor: React.FC<{
         const editor = e.currentTarget;
         const rawText = editor.innerText.replace(/\u00a0/g, ' ');
         const caretPos = getCaretCharOffset(editor);
-        editor.innerHTML = tokensToStyledHtml(parseMessageTokens(rawText, true), dynamicText);
+        editor.innerHTML = tokensToStyledHtml(parseMessageTokens(rawText, true), dynamicText, plainTextMode);
         setCaretCharOffset(editor, caretPos);
         onChange(rawText);
       }}
@@ -336,6 +364,43 @@ const InlineFormattedMessageEditor: React.FC<{
  * Resolve a segment's speaker to the identity that will actually be rendered.
  * This normalizes null (default speaker) to the actual character name.
  */
+const inferCanonicalNarrativeSpeakerName = (
+  segment: MessageSegment,
+  appData: ScenarioData,
+  resolveCanonicalName?: (name: string) => string | null
+): string | null => {
+  const trimmed = segment.content.trim();
+  if (!trimmed) return null;
+
+  const aliases: Array<{ alias: string; canonicalName: string }> = [];
+
+  for (const character of appData.characters) {
+    aliases.push({ alias: character.name, canonicalName: character.name });
+    character.nicknames?.split(',').map((value) => value.trim()).filter(Boolean).forEach((nickname) => {
+      aliases.push({ alias: nickname, canonicalName: character.name });
+    });
+  }
+
+  for (const character of (appData.sideCharacters || [])) {
+    aliases.push({ alias: character.name, canonicalName: character.name });
+    character.nicknames?.split(',').map((value) => value.trim()).filter(Boolean).forEach((nickname) => {
+      aliases.push({ alias: nickname, canonicalName: character.name });
+    });
+  }
+
+  aliases.sort((left, right) => right.alias.length - left.alias.length);
+
+  for (const entry of aliases) {
+    const escapedAlias = entry.alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const pattern = new RegExp(`^${escapedAlias}(?:['’]s\\b|\\b(?=[\\s,]))`, 'i');
+    if (pattern.test(trimmed)) {
+      return resolveCanonicalName?.(entry.canonicalName) || entry.canonicalName;
+    }
+  }
+
+  return null;
+};
+
 const resolveRenderedSpeakerName = (
   segment: MessageSegment, 
   isAi: boolean, 
@@ -347,6 +412,11 @@ const resolveRenderedSpeakerName = (
     // Has explicit speaker tag - normalize to canonical card name when possible
     const canonical = resolveCanonicalName?.(segment.speakerName);
     return (canonical || segment.speakerName).toLowerCase();
+  } else if (isAi) {
+    const inferredName = inferCanonicalNarrativeSpeakerName(segment, appData, resolveCanonicalName);
+    if (inferredName) return inferredName.toLowerCase();
+    const aiChars = appData.characters.filter(c => c.controlledBy === 'AI');
+    return (aiChars[0]?.name || 'Narrator').toLowerCase();
   } else if (!isAi) {
     // User message without tag - defaults to user's character
     return (userChar?.name || 'You').toLowerCase();
@@ -374,7 +444,9 @@ const mergeByRenderedSpeaker = (
   const withResolvedNames = rawSegments.map(seg => ({
     ...seg,
     resolvedName: resolveRenderedSpeakerName(seg, isAi, appData, userChar, resolveCanonicalName),
-    canonicalSpeakerName: seg.speakerName ? (resolveCanonicalName?.(seg.speakerName) || seg.speakerName) : null
+    canonicalSpeakerName: seg.speakerName
+      ? (resolveCanonicalName?.(seg.speakerName) || seg.speakerName)
+      : inferCanonicalNarrativeSpeakerName(seg, appData, resolveCanonicalName)
   }));
   
   // Merge consecutive segments with same resolved name
@@ -629,6 +701,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   // Session states for per-playthrough character overrides
   const [sessionStates, setSessionStates] = useState<CharacterSessionState[]>([]);
   const [sessionStatesLoaded, setSessionStatesLoaded] = useState(false);
+  const [characterStateSnapshots, setCharacterStateSnapshots] = useState<CharacterStateMessageSnapshot[]>([]);
+  const [sideCharacterSnapshots, setSideCharacterSnapshots] = useState<SideCharacterMessageSnapshot[]>([]);
+  const [goalStepDerivations, setGoalStepDerivations] = useState<StoryGoalStepDerivation[]>([]);
   
   // Sidebar theme state
   const [isSidebarThemeOpen, setIsSidebarThemeOpen] = useState(false);
@@ -709,19 +784,79 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [sideCharsCollapsed, setSideCharsCollapsed] = useState(false);
   const [canScrollDownMainChars, setCanScrollDownMainChars] = useState(true);
   const mainCharsScrollRef = useRef<HTMLDivElement>(null);
+  const conversation = appData.conversations.find(c => c.id === conversationId);
 
-  // Build effective world core by merging base with session overrides
+  const buildMessageGenerationMap = useCallback((messages: Message[]): Map<string, string> => {
+    const map = new Map<string, string>();
+    for (const message of messages) {
+      map.set(message.id, message.generationId || message.id);
+    }
+    return map;
+  }, []);
+
+  const latestMessageGenerationMap = useMemo(() => {
+    return buildMessageGenerationMap(conversation?.messages || []);
+  }, [buildMessageGenerationMap, conversation?.messages]);
+
+  const buildActiveGoalCompletionIds = useCallback((
+    derivations: StoryGoalStepDerivation[],
+    generationMap: Map<string, string>,
+  ): Set<string> => {
+    const completed = new Set<string>();
+    for (const derivation of derivations) {
+      if (!derivation.completed) continue;
+      if (generationMap.get(derivation.sourceMessageId) !== derivation.sourceGenerationId) continue;
+      completed.add(derivation.stepId);
+    }
+    return completed;
+  }, []);
+
+  const activeGoalCompletionIds = useMemo(() => {
+    return buildActiveGoalCompletionIds(goalStepDerivations, latestMessageGenerationMap);
+  }, [buildActiveGoalCompletionIds, goalStepDerivations, latestMessageGenerationMap]);
+
+  const buildActiveMemories = useCallback((
+    sourceMemories: Memory[],
+    generationMap: Map<string, string>,
+  ): Memory[] => {
+    return sourceMemories.filter((memory) => {
+      if (!memory.sourceMessageId) return true;
+      const currentGeneration = generationMap.get(memory.sourceMessageId);
+      if (!currentGeneration) return false;
+      if (!memory.sourceGenerationId) return true;
+      return currentGeneration === memory.sourceGenerationId;
+    });
+  }, []);
+
+  const activeMemories = useMemo(() => {
+    return buildActiveMemories(memories, latestMessageGenerationMap);
+  }, [buildActiveMemories, memories, latestMessageGenerationMap]);
+
+  // Build effective world core by merging base with session overrides and canonical goal derivations
   const effectiveWorldCore = useMemo((): WorldCore => {
-    if (!worldCoreSessionOverrides) return appData.world.core;
+    const manualCore = worldCoreSessionOverrides
+      ? {
+          ...appData.world.core,
+          ...worldCoreSessionOverrides,
+          structuredLocations: worldCoreSessionOverrides.structuredLocations ?? appData.world.core.structuredLocations,
+          customWorldSections: worldCoreSessionOverrides.customWorldSections ?? appData.world.core.customWorldSections,
+          storyGoals: worldCoreSessionOverrides.storyGoals ?? appData.world.core.storyGoals,
+        }
+      : appData.world.core;
+
+    const storyGoals = (manualCore.storyGoals || []).map((goal) => ({
+      ...goal,
+      steps: (goal.steps || []).map((step) => {
+        if (!activeGoalCompletionIds.has(step.id)) return step;
+        return step.completed ? step : { ...step, completed: true };
+      }),
+    }));
+
     return {
-      ...appData.world.core,
-      ...worldCoreSessionOverrides,
-      // Deep merge arrays that may have been overridden
-      structuredLocations: worldCoreSessionOverrides.structuredLocations ?? appData.world.core.structuredLocations,
-      customWorldSections: worldCoreSessionOverrides.customWorldSections ?? appData.world.core.customWorldSections,
-      storyGoals: worldCoreSessionOverrides.storyGoals ?? appData.world.core.storyGoals,
+      ...manualCore,
+      storyGoals,
     };
-  }, [appData.world.core, worldCoreSessionOverrides]);
+  }, [activeGoalCompletionIds, appData.world.core, worldCoreSessionOverrides]);
   
   // Persistent map for placeholder name replacements (ensures consistency across the conversation)
   const placeholderMapRef = useRef<PlaceholderNameMap>({});
@@ -1013,6 +1148,26 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     
     return () => cancelAnimationFrame(frameId);
   }, [conversationId]);
+
+  useEffect(() => {
+    if (conversationId === "loading") return;
+
+    const frameId = requestAnimationFrame(() => {
+      Promise.all([
+        supabaseData.fetchCharacterStateMessageSnapshots(conversationId),
+        supabaseData.fetchSideCharacterMessageSnapshots(conversationId),
+        supabaseData.fetchStoryGoalStepDerivations(conversationId),
+      ]).then(([snapshots, sideSnapshots, derivations]) => {
+        setCharacterStateSnapshots(snapshots);
+        setSideCharacterSnapshots(sideSnapshots);
+        setGoalStepDerivations(derivations);
+      }).catch(err => {
+        console.error('Failed to load canonical chat derivations:', err);
+      });
+    });
+
+    return () => cancelAnimationFrame(frameId);
+  }, [conversationId]);
   
   // Load sidebar backgrounds when auth is ready - DEFERRED to not block first render
   useEffect(() => {
@@ -1062,6 +1217,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     day: number | null,
     timeOfDay: TimeOfDay | null,
     sourceMessageId?: string,
+    sourceGenerationId?: string,
     entryType: import('@/types').MemoryEntryType = 'bullet'
   ) => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -1075,6 +1231,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       timeOfDay,
       sourceMessageId ? 'message' : 'user',
       sourceMessageId,
+      sourceGenerationId,
       entryType
     );
     setMemories(prev => [...prev, memory]);
@@ -1112,7 +1269,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     // Only compress when day increments (not decrements or initial load)
     if (currentDay > prevDay && memoriesEnabled && memoriesLoaded) {
       const completedDay = prevDay;
-      const bulletMemories = memories.filter(
+      const bulletMemories = activeMemories.filter(
         m => m.day === completedDay && m.entryType === 'bullet'
       );
       if (bulletMemories.length === 0) return;
@@ -1160,7 +1317,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
               outputChars: data.synopsis.length,
             },
           });
-          await handleCreateMemory(data.synopsis, completedDay, null, undefined, 'synopsis');
+          await handleCreateMemory(data.synopsis, completedDay, null, undefined, undefined, 'synopsis');
           for (const bm of bulletMemories) {
             await handleDeleteMemory(bm.id);
           }
@@ -1169,14 +1326,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         console.error('[Day compression] Failed:', err);
       });
     }
-  }, [currentDay, memories, memoriesEnabled, memoriesLoaded, conversationId, modelId, handleCreateMemory, handleDeleteMemory]);
-  
-  // Get all character names for memory extraction context
-  const allCharacterNames = useMemo(() => {
-    const mainNames = appData.characters.map(c => c.name);
-    const sideNames = (appData.sideCharacters || []).map(sc => sc.name);
-    return [...mainNames, ...sideNames];
-  }, [appData.characters, appData.sideCharacters]);
+  }, [activeMemories, currentDay, memoriesEnabled, memoriesLoaded, conversationId, modelId, handleCreateMemory, handleDeleteMemory]);
   
   // Sidebar background handlers
   const selectedSidebarBgUrl = useMemo(() => {
@@ -1269,8 +1419,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     }
   };
   
-// Helper to get effective character (base + session overrides merged)
-  const getEffectiveCharacter = useCallback((baseChar: Character): Character & { previousNames?: string[] } => {
+// Helper to get effective character (base + stable session overrides + canonical message-scoped snapshots)
+  const getManualSessionCharacter = useCallback((baseChar: Character): Character & { previousNames?: string[] } => {
     const sessionState = sessionStates.find(s => s.characterId === baseChar.id);
     if (!sessionState) return baseChar;
 
@@ -1359,15 +1509,242 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     };
   }, [sessionStates]);
 
+  const buildActiveCharacterSnapshotMap = useCallback((
+    snapshots: CharacterStateMessageSnapshot[],
+    generationMap: Map<string, string>,
+    messages: Message[],
+  ): Map<string, CharacterStateMessageSnapshot> => {
+    const messageOrder = new Map<string, number>();
+    messages.forEach((message, index) => {
+      messageOrder.set(message.id, index);
+    });
+
+    const latestByCharacter = new Map<string, { order: number; createdAt: number; snapshot: CharacterStateMessageSnapshot }>();
+
+    for (const snapshot of snapshots) {
+      if (generationMap.get(snapshot.sourceMessageId) !== snapshot.sourceGenerationId) continue;
+      const order = messageOrder.get(snapshot.sourceMessageId);
+      if (order == null) continue;
+      const existing = latestByCharacter.get(snapshot.characterId);
+      if (!existing || order > existing.order || (order === existing.order && snapshot.createdAt >= existing.createdAt)) {
+        latestByCharacter.set(snapshot.characterId, {
+          order,
+          createdAt: snapshot.createdAt,
+          snapshot,
+        });
+      }
+    }
+
+    return new Map(
+      Array.from(latestByCharacter.entries()).map(([characterId, value]) => [characterId, value.snapshot]),
+    );
+  }, []);
+
+  const activeCharacterSnapshotMap = useMemo(
+    () => buildActiveCharacterSnapshotMap(characterStateSnapshots, latestMessageGenerationMap, conversation?.messages || []),
+    [buildActiveCharacterSnapshotMap, characterStateSnapshots, latestMessageGenerationMap, conversation?.messages],
+  );
+
+  const buildActiveSideCharacterSnapshotMap = useCallback((
+    snapshots: SideCharacterMessageSnapshot[],
+    generationMap: Map<string, string>,
+    messages: Message[],
+  ): Map<string, SideCharacterMessageSnapshot> => {
+    const messageOrder = new Map<string, number>();
+    messages.forEach((message, index) => {
+      messageOrder.set(message.id, index);
+    });
+
+    const latestByCharacter = new Map<string, { order: number; createdAt: number; snapshot: SideCharacterMessageSnapshot }>();
+
+    for (const snapshot of snapshots) {
+      if (generationMap.get(snapshot.sourceMessageId) !== snapshot.sourceGenerationId) continue;
+      const order = messageOrder.get(snapshot.sourceMessageId);
+      if (order == null) continue;
+      const existing = latestByCharacter.get(snapshot.sideCharacterId);
+      if (!existing || order > existing.order || (order === existing.order && snapshot.createdAt >= existing.createdAt)) {
+        latestByCharacter.set(snapshot.sideCharacterId, {
+          order,
+          createdAt: snapshot.createdAt,
+          snapshot,
+        });
+      }
+    }
+
+    return new Map(
+      Array.from(latestByCharacter.entries()).map(([sideCharacterId, value]) => [sideCharacterId, value.snapshot]),
+    );
+  }, []);
+
+  const activeSideCharacterSnapshotMap = useMemo(
+    () => buildActiveSideCharacterSnapshotMap(sideCharacterSnapshots, latestMessageGenerationMap, conversation?.messages || []),
+    [buildActiveSideCharacterSnapshotMap, sideCharacterSnapshots, latestMessageGenerationMap, conversation?.messages],
+  );
+
+  const computeEffectiveCharacter = useCallback((
+    baseChar: Character,
+    snapshotMap: Map<string, CharacterStateMessageSnapshot> = activeCharacterSnapshotMap,
+  ): Character & { previousNames?: string[] } => {
+    const manualMerged = getManualSessionCharacter(baseChar);
+    const snapshot = snapshotMap.get(baseChar.id);
+    if (!snapshot?.statePayload) return manualMerged;
+
+    const payload = snapshot.statePayload;
+    const merged = {
+      ...manualMerged,
+      ...payload,
+      id: baseChar.id,
+      sections: payload.sections ?? manualMerged.sections,
+      avatarDataUrl: payload.avatarDataUrl ?? manualMerged.avatarDataUrl,
+      previousNames: payload.previousNames ?? manualMerged.previousNames ?? [],
+    };
+    return merged as Character & { previousNames?: string[] };
+  }, [activeCharacterSnapshotMap, getManualSessionCharacter]);
+
+  const getEffectiveCharacter = useCallback((baseChar: Character): Character & { previousNames?: string[] } => {
+    return computeEffectiveCharacter(baseChar);
+  }, [computeEffectiveCharacter]);
+
+  const effectiveMainCharacters = useMemo(
+    () => appData.characters.map((character) => getEffectiveCharacter(character)),
+    [appData.characters, getEffectiveCharacter],
+  );
+
+  const computeEffectiveSideCharacter = useCallback((
+    baseChar: SideCharacter,
+    snapshotMap: Map<string, SideCharacterMessageSnapshot> = activeSideCharacterSnapshotMap,
+  ): SideCharacter => {
+    const snapshot = snapshotMap.get(baseChar.id);
+    if (!snapshot?.statePayload) return baseChar;
+
+    const payload = snapshot.statePayload;
+    return {
+      ...baseChar,
+      ...payload,
+      id: baseChar.id,
+      physicalAppearance: payload.physicalAppearance ?? baseChar.physicalAppearance,
+      currentlyWearing: payload.currentlyWearing ?? baseChar.currentlyWearing,
+      preferredClothing: payload.preferredClothing ?? baseChar.preferredClothing,
+      background: payload.background ?? baseChar.background,
+      personality: payload.personality ?? baseChar.personality,
+      sections: payload.sections ?? baseChar.sections,
+      avatarDataUrl: payload.avatarDataUrl ?? baseChar.avatarDataUrl,
+      avatarPosition: payload.avatarPosition ?? baseChar.avatarPosition,
+      extractedTraits: payload.extractedTraits ?? baseChar.extractedTraits,
+    };
+  }, [activeSideCharacterSnapshotMap]);
+
+  const effectiveSideCharacters = useMemo(
+    () => (appData.sideCharacters || []).map((sideChar) => computeEffectiveSideCharacter(sideChar)),
+    [appData.sideCharacters, computeEffectiveSideCharacter],
+  );
+
+  // Get all character names for memory extraction context
+  const allCharacterNames = useMemo(() => {
+    const mainNames = effectiveMainCharacters.map(c => c.name);
+    const sideNames = effectiveSideCharacters.map(sc => sc.name);
+    return [...mainNames, ...sideNames];
+  }, [effectiveMainCharacters, effectiveSideCharacters]);
+
   // Build appData with session-merged characters for LLM context
   // This ensures the AI sees current locations, moods, controlledBy, etc.
-  const buildLLMAppData = useCallback((): ScenarioData => {
+  const buildLLMAppData = useCallback((overrides?: {
+    snapshots?: CharacterStateMessageSnapshot[];
+    sideSnapshots?: SideCharacterMessageSnapshot[];
+    goalDerivations?: StoryGoalStepDerivation[];
+    conversationMessages?: Message[];
+  }): ScenarioData => {
+    const conversationMessages = overrides?.conversationMessages ?? conversation?.messages ?? [];
+    const overrideGenerationMap = overrides?.conversationMessages
+      ? buildMessageGenerationMap(conversationMessages)
+      : latestMessageGenerationMap;
+
+    const snapshotMap =
+      overrides?.snapshots || overrides?.conversationMessages
+        ? buildActiveCharacterSnapshotMap(
+            overrides?.snapshots ?? characterStateSnapshots,
+            overrideGenerationMap,
+            conversationMessages,
+          )
+        : activeCharacterSnapshotMap;
+
+    const sideSnapshotMap =
+      overrides?.sideSnapshots || overrides?.conversationMessages
+        ? buildActiveSideCharacterSnapshotMap(
+            overrides?.sideSnapshots ?? sideCharacterSnapshots,
+            overrideGenerationMap,
+            conversationMessages,
+          )
+        : activeSideCharacterSnapshotMap;
+
+    const overrideGoalCompletionIds =
+      overrides?.goalDerivations || overrides?.conversationMessages
+        ? buildActiveGoalCompletionIds(
+            overrides?.goalDerivations ?? goalStepDerivations,
+            overrideGenerationMap,
+          )
+        : activeGoalCompletionIds;
+
+    const manualCore = worldCoreSessionOverrides
+      ? {
+          ...appData.world.core,
+          ...worldCoreSessionOverrides,
+          structuredLocations: worldCoreSessionOverrides.structuredLocations ?? appData.world.core.structuredLocations,
+          customWorldSections: worldCoreSessionOverrides.customWorldSections ?? appData.world.core.customWorldSections,
+          storyGoals: worldCoreSessionOverrides.storyGoals ?? appData.world.core.storyGoals,
+        }
+      : appData.world.core;
+
+    const worldCore = {
+      ...manualCore,
+      storyGoals: (manualCore.storyGoals || []).map((goal) => ({
+        ...goal,
+        steps: (goal.steps || []).map((step) => (
+          overrideGoalCompletionIds.has(step.id) && !step.completed
+            ? { ...step, completed: true }
+            : step
+        )),
+      })),
+    };
+
     return {
       ...appData,
-      characters: appData.characters.map(c => getEffectiveCharacter(c)),
-      world: { ...appData.world, core: effectiveWorldCore }
+      characters: appData.characters.map(c => computeEffectiveCharacter(c, snapshotMap)),
+      sideCharacters: (appData.sideCharacters || []).map((sideChar) => computeEffectiveSideCharacter(sideChar, sideSnapshotMap)),
+      conversations: overrides?.conversationMessages
+        ? appData.conversations.map((entry) => (
+            entry.id === conversationId
+              ? { ...entry, messages: conversationMessages }
+              : entry
+          ))
+        : appData.conversations,
+      world: { ...appData.world, core: worldCore }
     };
-  }, [appData, getEffectiveCharacter, effectiveWorldCore]);
+  }, [
+    activeCharacterSnapshotMap,
+    activeGoalCompletionIds,
+    activeSideCharacterSnapshotMap,
+    appData,
+    buildActiveGoalCompletionIds,
+    buildActiveCharacterSnapshotMap,
+    buildActiveSideCharacterSnapshotMap,
+    buildMessageGenerationMap,
+    characterStateSnapshots,
+    conversationId,
+    computeEffectiveCharacter,
+    computeEffectiveSideCharacter,
+    conversation?.messages,
+    goalStepDerivations,
+    latestMessageGenerationMap,
+    sideCharacterSnapshots,
+    worldCoreSessionOverrides,
+  ]);
+
+  const effectiveAppData = useMemo(() => buildLLMAppData(), [buildLLMAppData]);
+  const canonNoteCharacters = useMemo(
+    () => [...effectiveMainCharacters, ...effectiveSideCharacters],
+    [effectiveMainCharacters, effectiveSideCharacters],
+  );
 
   const normalizeSpeakerToken = useCallback((value: string): string => {
     return value
@@ -1405,7 +1782,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
   type ResolvedSpeakerMatch =
     | { kind: 'main'; base: Character; effective: Character & { previousNames?: string[] }; canonicalName: string }
-    | { kind: 'side'; side: SideCharacter; canonicalName: string };
+    | { kind: 'side'; base: SideCharacter; effective: SideCharacter; canonicalName: string };
 
   const resolveCharacterReference = useCallback((name: string | null): ResolvedSpeakerMatch | null => {
     if (!name) return null;
@@ -1439,13 +1816,15 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     }
 
     for (const side of (appData.sideCharacters || [])) {
+      const effectiveSide = computeEffectiveSideCharacter(side);
       const match: ResolvedSpeakerMatch = {
         kind: 'side',
-        side,
-        canonicalName: side.name
+        base: side,
+        effective: effectiveSide,
+        canonicalName: effectiveSide.name
       };
-      registerCandidate(side.name, match, 6);
-      parseNameList(side.nicknames).forEach((nickname) => registerCandidate(nickname, match, 4));
+      registerCandidate(effectiveSide.name, match, 6);
+      parseNameList(effectiveSide.nicknames).forEach((nickname) => registerCandidate(nickname, match, 4));
     }
 
     if (candidates.length === 0) return null;
@@ -1463,6 +1842,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   }, [
     appData.characters,
     appData.sideCharacters,
+    computeEffectiveSideCharacter,
     computeSpeakerAliasScore,
     getEffectiveCharacter,
     normalizeSpeakerToken,
@@ -1479,10 +1859,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const findCharacterWithSession = useCallback((name: string | null): (Character & { previousNames?: string[] }) | SideCharacter | null => {
     const match = resolveCharacterReference(name);
     if (!match) return null;
-    return match.kind === 'main' ? match.effective : match.side;
+    return match.effective;
   }, [resolveCharacterReference]);
 
-  const conversation = appData.conversations.find(c => c.id === conversationId);
   const conversationCurrentDay = conversation?.currentDay;
   const conversationCurrentTimeOfDay = conversation?.currentTimeOfDay;
   const conversationTimeProgressionMode = conversation?.timeProgressionMode;
@@ -1498,12 +1877,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       ...getEffectiveCharacter(c),
       _source: 'character' as const
     }));
-    const sideChars = (appData.sideCharacters || []).map(sc => ({
+    const sideChars = effectiveSideCharacters.map(sc => ({
       ...sc,
       _source: 'sideCharacter' as const
     }));
     return [...effectiveMainChars, ...sideChars];
-  }, [appData.characters, appData.sideCharacters, getEffectiveCharacter, conversationId]);
+  }, [appData.characters, effectiveSideCharacters, getEffectiveCharacter, conversationId]);
   
   const mainCharactersForDisplay = useMemo(() => 
     allCharactersForDisplay.filter(c => c.characterRole === 'Main'),
@@ -1850,7 +2229,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
   // Helper to find any character (main, side, or auto-generated) by name
   const findAnyCharacterByName = (name: string | null): Character | SideCharacter | null => {
-    return findCharacterByName(name, appData);
+    return findCharacterByName(name, effectiveAppData);
   };
 
   // Async function to generate side character details via edge function
@@ -2017,7 +2396,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const processResponseForNewCharacters = async (responseText: string) => {
     if (!onUpdateSideCharacters) return;
     
-    const knownNames = getKnownCharacterNames(appData);
+    const knownNames = getKnownCharacterNames(effectiveAppData);
     const newCharacters = detectNewCharacters(responseText, knownNames);
     
     if (newCharacters.length > 0) {
@@ -2221,23 +2600,34 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   // GOAL PROGRESS EVALUATION (step completion - runs in parallel)
   // ============================================================================
 
-  const isAssistantMessageStillCurrent = useCallback((assistantMessageId?: string): boolean => {
-    if (!assistantMessageId) return true;
+  const isMessageGenerationStillCurrent = useCallback((messageId?: string, generationId?: string): boolean => {
+    if (!messageId) return true;
     const latestConversation = latestConversationsRef.current.find(c => c.id === conversationId);
     if (!latestConversation) return false;
 
-    const assistantIndex = latestConversation.messages.findIndex(
-      m => m.id === assistantMessageId && m.role === 'assistant'
+    const messageIndex = latestConversation.messages.findIndex(
+      m => m.id === messageId,
     );
-    if (assistantIndex === -1) return false;
+    if (messageIndex === -1) return false;
+
+    const currentMessage = latestConversation.messages[messageIndex];
+    const currentGenerationId = currentMessage.generationId || currentMessage.id;
+    if (generationId && currentGenerationId !== generationId) return false;
+
+    if (currentMessage.role !== 'assistant') return true;
 
     const hasLaterUserMessage = latestConversation.messages
-      .slice(assistantIndex + 1)
+      .slice(messageIndex + 1)
       .some(m => m.role === 'user');
     return !hasLaterUserMessage;
   }, [conversationId]);
 
-  const evaluateGoalProgress = async (userMessage: string, aiResponse: string, sourceAssistantMessageId?: string) => {
+  const evaluateGoalProgress = async (
+    userMessage: string,
+    aiResponse: string,
+    sourceAssistantMessageId?: string,
+    sourceAssistantGenerationId?: string,
+  ) => {
     const storyGoals = effectiveWorldCore.storyGoals;
     if (!storyGoals?.length) return;
 
@@ -2297,30 +2687,54 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
       if (error || !data?.stepUpdates?.length) return;
 
-      if (!isAssistantMessageStillCurrent(sourceAssistantMessageId)) {
+      if (!isMessageGenerationStillCurrent(sourceAssistantMessageId, sourceAssistantGenerationId)) {
         debugLog('[evaluateGoalProgress] Discarded stale result for non-current turn');
         return;
       }
 
-      const completedIds = new Set(data.stepUpdates.filter((u: any) => u.completed).map((u: any) => u.stepId));
-      if (completedIds.size === 0) return;
+      const completions = data.stepUpdates
+        .filter((u: any) => u.completed)
+        .map((u: any) => {
+          const pending = pendingSteps.find(step => step.stepId === u.stepId);
+          if (!pending) return null;
+          return {
+            goalId: pending.goalId,
+            stepId: u.stepId,
+            completed: true,
+          };
+        })
+        .filter(Boolean) as Array<{ goalId: string; stepId: string; completed: boolean }>;
+      if (completions.length === 0 || !sourceAssistantMessageId || !sourceAssistantGenerationId) return;
 
-      const updatedGoals = storyGoals.map(goal => {
-        const newSteps = (goal.steps || []).map(step => {
-          if (completedIds.has(step.id)) {
-            return { ...step, completed: true, completedAt: Date.now() };
-          }
-          return step;
-        });
-        return { ...goal, steps: newSteps, updatedAt: Date.now() };
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const persisted = await supabaseData.upsertStoryGoalStepDerivations({
+        conversationId,
+        userId: user.id,
+        sourceMessageId: sourceAssistantMessageId,
+        sourceGenerationId: sourceAssistantGenerationId,
+        day: currentDay,
+        timeOfDay: currentTimeOfDay,
+        completions,
       });
 
-      setWorldCoreSessionOverrides(prev => ({
-        ...(prev || {}),
-        storyGoals: updatedGoals,
-      }));
+      setGoalStepDerivations(prev => {
+        const next = [...prev];
+        for (const derivation of persisted) {
+          const index = next.findIndex(
+            (entry) =>
+              entry.stepId === derivation.stepId &&
+              entry.sourceMessageId === derivation.sourceMessageId &&
+              entry.sourceGenerationId === derivation.sourceGenerationId,
+          );
+          if (index === -1) next.push(derivation);
+          else next[index] = derivation;
+        }
+        return next;
+      });
 
-      debugLog(`[evaluateGoalProgress] Completed ${completedIds.size} steps`);
+      debugLog(`[evaluateGoalProgress] Completed ${completions.length} steps`);
     } catch (err) {
       console.error('[evaluateGoalProgress] Failed:', err);
     }
@@ -2337,7 +2751,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   }
 
   interface ExtractionRequestMeta {
-    sourceAssistantMessageId?: string;
+    sourceMessageId?: string;
+    sourceMessageGenerationId?: string;
     reason?: string;
   }
 
@@ -2429,6 +2844,31 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     return bestScore >= 0.72 ? bestIdx : -1;
   };
 
+  const findNearDuplicateStringIndex = (existing: string[], nextValue: string): number => {
+    let bestIdx = -1;
+    let bestScore = 0;
+    for (let i = 0; i < existing.length; i += 1) {
+      const score = tokenSimilarity(existing[i] || '', nextValue);
+      if (score > bestScore) {
+        bestScore = score;
+        bestIdx = i;
+      }
+    }
+    return bestScore >= 0.72 ? bestIdx : -1;
+  };
+
+  const normalizeSideCharacterTraitText = (entry: unknown): string => {
+    if (typeof entry === 'string') return entry.trim();
+    if (entry && typeof entry === 'object') {
+      const trait = entry as { label?: unknown; value?: unknown };
+      const label = typeof trait.label === 'string' ? trait.label.trim() : '';
+      const value = typeof trait.value === 'string' ? trait.value.trim() : '';
+      if (label && value) return `${label}: ${value}`;
+      return label || value;
+    }
+    return '';
+  };
+
   const shouldRefineExistingText = (existing: string, incoming: string): boolean => {
     const oldText = (existing || '').trim();
     const newText = (incoming || '').trim();
@@ -2459,15 +2899,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     const combinedText = (userMessage + ' ' + aiResponse).toLowerCase();
     
     // Check all characters (main + side) by name, nicknames, previousNames
-    const effectiveMainChars = appData.characters.map(c => getEffectiveCharacter(c));
-    for (const c of effectiveMainChars) {
+    for (const c of effectiveMainCharacters) {
       const names = [c.name, ...(c.nicknames?.split(',').map(n => n.trim()) || []), ...(c.previousNames || [])].filter(Boolean);
       const mentioned = names.some(n => combinedText.includes(n.toLowerCase()));
       if (mentioned) {
         eligible.add(c.name.toLowerCase());
       }
     }
-    for (const sc of (appData.sideCharacters || [])) {
+    for (const sc of effectiveSideCharacters) {
       const names = [sc.name, ...(sc.nicknames?.split(',').map(n => n.trim()) || [])].filter(Boolean);
       const mentioned = names.some(n => combinedText.includes(n.toLowerCase()));
       if (mentioned) {
@@ -2475,7 +2914,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }
     }
     return eligible;
-  }, [appData.characters, appData.sideCharacters, getEffectiveCharacter]);
+  }, [effectiveMainCharacters, effectiveSideCharacters]);
 
   // Call the dedicated extraction edge function
   const extractCharacterUpdatesFromDialogue = async (
@@ -2521,8 +2960,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       };
 
       // Build character data for context — only eligible characters
-      const charactersData = appData.characters.map(c => {
-        const effective = getEffectiveCharacter(c);
+      const charactersData = effectiveMainCharacters.map((effective) => {
         return {
           name: effective.name,
           previousNames: effective.previousNames || [],
@@ -2560,7 +2998,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }).filter(c => eligibleNames.has(c.name.toLowerCase()));
       
       // Also include eligible side characters
-      const sideCharsData = (appData.sideCharacters || []).filter(sc => 
+      const sideCharsData = effectiveSideCharacters.filter(sc => 
         eligibleNames.has(sc.name.toLowerCase())
       ).map(sc => ({
         name: sc.name,
@@ -2645,7 +3083,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         .filter((u: ExtractedUpdate) => eligibleNames.has(u.character.toLowerCase()))
         .filter((u: ExtractedUpdate) => isAllowedExtractionField(u.field));
 
-      if (!isAssistantMessageStillCurrent(meta?.sourceAssistantMessageId)) {
+      if (!isMessageGenerationStillCurrent(meta?.sourceMessageId, meta?.sourceMessageGenerationId)) {
         debugLog('[extractCharacterUpdates] Discarded stale result for non-current turn');
         return [];
       }
@@ -2685,7 +3123,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         extractCharacterUpdatesFromDialogue(pending.userMessage, pending.aiResponse, pending.meta).then(updates => {
           if (updates.length > 0) {
             debugLog(`[extractCharacterUpdates] Queued extraction yielded ${updates.length} updates`);
-            applyExtractedUpdates(updates);
+            applyExtractedUpdates(updates, pending.meta);
           }
         }).catch(err => {
           console.error('[extractCharacterUpdates] Queued extraction failed:', err);
@@ -2709,8 +3147,441 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     return forbiddenPattern.test(limited) ? '' : limited;
   };
 
-  // Apply extracted updates to session state (enhanced to handle custom sections)
-  const applyExtractedUpdates = async (updates: ExtractedUpdate[]) => {
+  const cloneData = <T,>(value: T): T => {
+    if (typeof structuredClone === 'function') return structuredClone(value);
+    return JSON.parse(JSON.stringify(value));
+  };
+
+  const upsertExtrasEntry = (
+    existing: Array<{ id?: string; label: string; value: string }>,
+    rawValue: string,
+  ) => {
+    const parts = rawValue.split(':');
+    const nextLabel = parts[0]?.trim() || 'New';
+    const nextValue = parts.slice(1).join(':').trim() || rawValue;
+    const exactIndex = existing.findIndex((entry) => entry.label.toLowerCase() === nextLabel.toLowerCase());
+    if (exactIndex !== -1) {
+      if (shouldRefineExistingText(existing[exactIndex]?.value || '', nextValue || '')) {
+        existing[exactIndex] = { ...existing[exactIndex], value: nextValue };
+      }
+      return;
+    }
+    const nearDupIdx = findNearDuplicateExtraIndex(existing as Array<{ label: string; value: string }>, nextLabel, nextValue);
+    if (nearDupIdx !== -1) {
+      if (shouldRefineExistingText(existing[nearDupIdx]?.value || '', nextValue || '')) {
+        existing[nearDupIdx] = { ...existing[nearDupIdx], value: nextValue };
+      }
+      return;
+    }
+    existing.push({ id: `extra_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, label: nextLabel, value: nextValue });
+  };
+
+  const parseGoalSteps = (raw: string): Array<{ id: string; description: string; completed: boolean }> => {
+    const stepEntries = raw.split(/(?:^|\n)Step\s+\d+:\s*/i).filter(Boolean);
+    return stepEntries
+      .map(desc => desc.trim().replace(/\|$/, '').trim())
+      .filter(Boolean)
+      .slice(0, 8)
+      .map(desc => ({ id: `step_${uuid().slice(0, 12)}`, description: desc, completed: false }));
+  };
+
+  const toCharacterStateSnapshotPayload = (
+    character: Character & { previousNames?: string[] },
+  ): CharacterStateSnapshotPayload => ({
+    nicknames: character.nicknames,
+    previousNames: cloneData(character.previousNames || []),
+    location: character.location,
+    currentMood: character.currentMood,
+    physicalAppearance: cloneData(character.physicalAppearance || defaultPhysicalAppearance),
+    currentlyWearing: cloneData(character.currentlyWearing || defaultCurrentlyWearing),
+    preferredClothing: cloneData(character.preferredClothing || defaultPreferredClothing),
+    sections: cloneData(character.sections || []),
+    goals: cloneData(character.goals || []),
+    personality: character.personality ? cloneData(character.personality) : undefined,
+    background: character.background ? cloneData(character.background) : undefined,
+    tone: character.tone ? cloneData(character.tone) : undefined,
+    keyLifeEvents: character.keyLifeEvents ? cloneData(character.keyLifeEvents) : undefined,
+    relationships: character.relationships ? cloneData(character.relationships) : undefined,
+    secrets: character.secrets ? cloneData(character.secrets) : undefined,
+    fears: character.fears ? cloneData(character.fears) : undefined,
+  });
+
+  const toSideCharacterStateSnapshotPayload = (
+    character: SideCharacter,
+  ): SideCharacterStateSnapshotPayload => ({
+    name: character.name,
+    nicknames: character.nicknames,
+    age: character.age,
+    sexType: character.sexType,
+    sexualOrientation: character.sexualOrientation,
+    location: character.location,
+    currentMood: character.currentMood,
+    controlledBy: character.controlledBy,
+    characterRole: character.characterRole,
+    roleDescription: character.roleDescription,
+    physicalAppearance: cloneData(character.physicalAppearance || defaultPhysicalAppearance),
+    currentlyWearing: cloneData(character.currentlyWearing || defaultCurrentlyWearing),
+    preferredClothing: cloneData(character.preferredClothing || defaultPreferredClothing),
+    background: cloneData(character.background || {}),
+    personality: cloneData(character.personality || {}),
+    sections: cloneData(character.sections || []),
+    avatarDataUrl: character.avatarDataUrl,
+    avatarPosition: character.avatarPosition ? cloneData(character.avatarPosition) : undefined,
+    extractedTraits: cloneData(character.extractedTraits || []),
+  });
+
+  const applyUpdatesToCharacterSnapshot = (
+    effectiveChar: Character & { previousNames?: string[] },
+    charUpdates: ExtractedUpdate[],
+  ): Character & { previousNames?: string[] } => {
+    const nextState = cloneData({
+      ...effectiveChar,
+      sections: cloneData(effectiveChar.sections || []),
+      goals: cloneData(effectiveChar.goals || []),
+      physicalAppearance: cloneData(effectiveChar.physicalAppearance || {}),
+      currentlyWearing: cloneData(effectiveChar.currentlyWearing || {}),
+      preferredClothing: cloneData(effectiveChar.preferredClothing || {}),
+      background: cloneData(effectiveChar.background || {}),
+      tone: cloneData(effectiveChar.tone || {}),
+      keyLifeEvents: cloneData(effectiveChar.keyLifeEvents || {}),
+      relationships: cloneData(effectiveChar.relationships || {}),
+      secrets: cloneData(effectiveChar.secrets || {}),
+      fears: cloneData(effectiveChar.fears || {}),
+      personality: effectiveChar.personality ? cloneData(effectiveChar.personality) : undefined,
+      previousNames: cloneData(effectiveChar.previousNames || []),
+    }) as Character & { previousNames?: string[] };
+
+    for (const update of charUpdates) {
+      const { field, value } = update;
+      if (!isAllowedExtractionField(field)) continue;
+
+      if (field.startsWith('goals.')) {
+        const goalTitle = field.slice(6);
+        if (!goalTitle) continue;
+        const existingGoals = [...(nextState.goals || [])];
+
+        if (value.trim() === 'REMOVE') {
+          nextState.goals = existingGoals.filter(g => g.title.toLowerCase() !== goalTitle.toLowerCase());
+          continue;
+        }
+
+        let desiredOutcome = '';
+        let currentStatus = value;
+        let progress = 0;
+        const desiredMatch = value.match(/desired_outcome:\s*(.*?)\s*\|\s*current_status:/i);
+        if (desiredMatch) desiredOutcome = desiredMatch[1].trim();
+        const statusMatch = value.match(/current_status:\s*(.*?)\s*\|\s*progress:/i);
+        if (statusMatch) {
+          currentStatus = statusMatch[1].trim();
+        } else {
+          currentStatus = value
+            .replace(/desired_outcome:\s*.*?\s*\|\s*/i, '')
+            .replace(/\s*\|\s*progress:\s*\d+.*/i, '')
+            .replace(/current_status:\s*/i, '')
+            .trim();
+        }
+        const progressMatch = value.match(/progress:\s*(\d+)/i);
+        if (progressMatch) progress = Math.min(100, Math.max(0, parseInt(progressMatch[1], 10)));
+        const completeStepsMatch = value.match(/complete_steps:\s*([^|]+)/i);
+        const newStepsMatch = value.match(/new_steps:\s*(.*)/i);
+
+        const existingGoalIndex = existingGoals.findIndex(g => g.title.toLowerCase() === goalTitle.toLowerCase());
+        if (existingGoalIndex !== -1) {
+          const existingGoal = existingGoals[existingGoalIndex];
+          let updatedSteps = [...(existingGoal.steps || [])];
+          if (newStepsMatch) {
+            updatedSteps = parseGoalSteps(newStepsMatch[1].trim());
+          }
+          if (completeStepsMatch) {
+            const indices = completeStepsMatch[1].trim().split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+            for (const idx of indices) {
+              if (idx >= 1 && idx <= updatedSteps.length) {
+                updatedSteps[idx - 1] = { ...updatedSteps[idx - 1], completed: true, completedAt: Date.now() };
+              }
+            }
+          }
+          if (updatedSteps.length > 0) {
+            const completedCount = updatedSteps.filter(s => s.completed).length;
+            progress = Math.round((completedCount / updatedSteps.length) * 100);
+          }
+          existingGoals[existingGoalIndex] = {
+            ...existingGoal,
+            currentStatus,
+            progress,
+            steps: updatedSteps,
+            ...(desiredOutcome ? { desiredOutcome } : {}),
+            updatedAt: Date.now(),
+          };
+        } else {
+          existingGoals.push({
+            id: `goal_${uuid().slice(0, 12)}`,
+            title: goalTitle,
+            desiredOutcome,
+            currentStatus,
+            progress,
+            steps: newStepsMatch ? parseGoalSteps(newStepsMatch[1].trim()) : [],
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            flexibility: 'normal',
+          });
+        }
+        nextState.goals = existingGoals;
+        continue;
+      }
+
+      if (field.startsWith('sections.')) {
+        const parts = field.split('.');
+        if (parts.length < 3) continue;
+        const sectionTitle = parts[1];
+        const itemLabel = parts.slice(2).join('.');
+        const sections = [...(nextState.sections || [])];
+        let sectionIndex = sections.findIndex(s => s.title.toLowerCase() === sectionTitle.toLowerCase());
+        if (sectionIndex === -1) {
+          sections.push({
+            id: `section_${uuid().slice(0, 12)}`,
+            title: sectionTitle,
+            items: [],
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          });
+          sectionIndex = sections.length - 1;
+        }
+        const section = { ...sections[sectionIndex], items: [...(sections[sectionIndex].items || [])], updatedAt: Date.now() };
+        const itemIndex = section.items.findIndex(item => item.label.toLowerCase() === itemLabel.toLowerCase());
+        if (itemIndex === -1) {
+          section.items.push({
+            id: `item_${uuid().slice(0, 12)}`,
+            label: itemLabel,
+            value,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          });
+        } else {
+          section.items[itemIndex] = {
+            ...section.items[itemIndex],
+            value,
+            updatedAt: Date.now(),
+          };
+        }
+        sections[sectionIndex] = section;
+        nextState.sections = sections;
+        continue;
+      }
+
+      if (field.includes('.')) {
+        const [parent, child] = field.split('.');
+        const normalizedChild = parent === 'preferredClothing' && child === 'underwear' ? 'undergarments' : child;
+        if (parent === 'physicalAppearance' || parent === 'currentlyWearing' || parent === 'preferredClothing' || parent === 'background') {
+          const target = cloneData((nextState as any)[parent] || {});
+          if (normalizedChild === '_extras') {
+            const extras = [...(target._extras || [])];
+            upsertExtrasEntry(extras, value);
+            target._extras = extras;
+          } else {
+            target[normalizedChild] = value;
+          }
+          (nextState as any)[parent] = target;
+          continue;
+        }
+
+        if (parent === 'personality') {
+          const personality = cloneData(nextState.personality || { splitMode: false, traits: [], outwardTraits: [], inwardTraits: [] });
+          if (normalizedChild === 'splitMode') {
+            personality.splitMode = value.trim().toLowerCase() === 'true';
+          } else if (normalizedChild === 'traits' || normalizedChild === 'outwardTraits' || normalizedChild === 'inwardTraits') {
+            let newTraits: Array<{ label: string; value: string }> = [];
+            try {
+              const parsed = JSON.parse(value);
+              if (Array.isArray(parsed)) newTraits = parsed;
+            } catch {
+              const traitParts = value.split(/,\s*(?=[A-Z])/);
+              for (const part of traitParts) {
+                const colonIdx = part.indexOf(':');
+                if (colonIdx > 0) newTraits.push({ label: part.slice(0, colonIdx).trim(), value: part.slice(colonIdx + 1).trim() });
+                else if (part.trim()) newTraits.push({ label: part.trim(), value: '' });
+              }
+            }
+            const existingTraits = [...((personality as any)[normalizedChild] || [])];
+            for (const nt of newTraits) {
+              const exactIndex = existingTraits.findIndex((t: any) => t.label.toLowerCase() === nt.label.toLowerCase());
+              if (exactIndex !== -1) {
+                if (shouldRefineExistingText(existingTraits[exactIndex].value || '', nt.value || '')) {
+                  existingTraits[exactIndex] = { ...existingTraits[exactIndex], value: nt.value };
+                }
+              } else {
+                const nearDupIdx = findNearDuplicateTraitIndex(existingTraits, nt.label, nt.value);
+                if (nearDupIdx !== -1) {
+                  const existing = existingTraits[nearDupIdx];
+                  if (shouldRefineExistingText(existing.value || '', nt.value || '')) {
+                    existingTraits[nearDupIdx] = { ...existing, value: nt.value };
+                  }
+                } else {
+                  existingTraits.push({ id: `trait_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, label: nt.label, value: nt.value, flexibility: 'normal' });
+                }
+              }
+            }
+            (personality as any)[normalizedChild] = existingTraits;
+          }
+          nextState.personality = personality;
+          continue;
+        }
+
+        if (['tone', 'keyLifeEvents', 'relationships', 'secrets', 'fears'].includes(parent) && normalizedChild === '_extras') {
+          const sectionKey = parent as 'tone' | 'keyLifeEvents' | 'relationships' | 'secrets' | 'fears';
+          const section = cloneData((nextState as any)[sectionKey] || {});
+          const extras = [...(section._extras || [])];
+          upsertExtrasEntry(extras, value);
+          section._extras = extras;
+          (nextState as any)[sectionKey] = section;
+          continue;
+        }
+      }
+
+      if (field === 'currentMood') {
+        const sanitizedMood = sanitizeMoodValue(value);
+        if (sanitizedMood) nextState.currentMood = sanitizedMood;
+      } else {
+        (nextState as any)[field] = value;
+      }
+    }
+
+    return nextState;
+  };
+
+  const applyUpdatesToSideCharacterSnapshot = (
+    effectiveChar: SideCharacter,
+    charUpdates: ExtractedUpdate[],
+  ): SideCharacter => {
+    const nextState = cloneData({
+      ...effectiveChar,
+      sections: cloneData(effectiveChar.sections || []),
+      physicalAppearance: cloneData(effectiveChar.physicalAppearance || {}),
+      currentlyWearing: cloneData(effectiveChar.currentlyWearing || {}),
+      preferredClothing: cloneData(effectiveChar.preferredClothing || {}),
+      background: cloneData(effectiveChar.background || {}),
+      personality: cloneData(effectiveChar.personality || {}),
+      extractedTraits: cloneData(effectiveChar.extractedTraits || []),
+    }) as SideCharacter;
+
+    for (const update of charUpdates) {
+      const { field, value } = update;
+      if (!isAllowedExtractionField(field)) continue;
+
+      if (field.startsWith('sections.')) {
+        const parts = field.split('.');
+        if (parts.length < 3) continue;
+        const sectionTitle = parts[1];
+        const itemLabel = parts.slice(2).join('.');
+        const sections = [...(nextState.sections || [])];
+        let sectionIndex = sections.findIndex(s => s.title.toLowerCase() === sectionTitle.toLowerCase());
+        if (sectionIndex === -1) {
+          sections.push({
+            id: `section_${uuid().slice(0, 12)}`,
+            title: sectionTitle,
+            items: [],
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          });
+          sectionIndex = sections.length - 1;
+        }
+        const section = { ...sections[sectionIndex], items: [...(sections[sectionIndex].items || [])], updatedAt: Date.now() };
+        const itemIndex = section.items.findIndex(item => item.label.toLowerCase() === itemLabel.toLowerCase());
+        if (itemIndex === -1) {
+          section.items.push({
+            id: `item_${uuid().slice(0, 12)}`,
+            label: itemLabel,
+            value,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          });
+        } else {
+          section.items[itemIndex] = {
+            ...section.items[itemIndex],
+            value,
+            updatedAt: Date.now(),
+          };
+        }
+        sections[sectionIndex] = section;
+        nextState.sections = sections;
+        continue;
+      }
+
+      if (field.includes('.')) {
+        const [parent, child] = field.split('.');
+        const normalizedChild = parent === 'preferredClothing' && child === 'underwear' ? 'undergarments' : child;
+
+        if (parent === 'physicalAppearance' || parent === 'currentlyWearing' || parent === 'preferredClothing' || parent === 'background') {
+          const target = cloneData((nextState as any)[parent] || {});
+          if (normalizedChild === '_extras') {
+            const extras = [...(target._extras || [])];
+            upsertExtrasEntry(extras, value);
+            target._extras = extras;
+          } else {
+            target[normalizedChild] = value;
+          }
+          (nextState as any)[parent] = target;
+          continue;
+        }
+
+        if (parent === 'personality') {
+          const personality = cloneData(nextState.personality || defaultSideCharacterPersonality);
+          if (normalizedChild === 'traits') {
+            let newTraits: string[] = [];
+            try {
+              const parsed = JSON.parse(value);
+              if (Array.isArray(parsed)) {
+                newTraits = parsed.map(normalizeSideCharacterTraitText).filter(Boolean);
+              }
+            } catch {
+              newTraits = value.split(/\s*,\s*/).map((part) => part.trim()).filter(Boolean);
+            }
+
+            const existingTraits = [...(personality.traits || [])]
+              .map((trait) => normalizeSideCharacterTraitText(trait))
+              .filter(Boolean);
+            for (const nextTrait of newTraits) {
+              const exactIndex = existingTraits.findIndex((trait) => trait.toLowerCase() === nextTrait.toLowerCase());
+              if (exactIndex !== -1) {
+                if (shouldRefineExistingText(existingTraits[exactIndex] || '', nextTrait || '')) {
+                  existingTraits[exactIndex] = nextTrait;
+                }
+              } else {
+                const nearDupIdx = findNearDuplicateStringIndex(existingTraits, nextTrait);
+                if (nearDupIdx !== -1) {
+                  const existing = existingTraits[nearDupIdx];
+                  if (shouldRefineExistingText(existing || '', nextTrait || '')) {
+                    existingTraits[nearDupIdx] = nextTrait;
+                  }
+                } else {
+                  existingTraits.push(nextTrait);
+                }
+              }
+            }
+            personality.traits = existingTraits;
+          } else {
+            (personality as any)[normalizedChild] = value;
+          }
+          nextState.personality = personality;
+          continue;
+        }
+      }
+
+      if (field === 'currentMood') {
+        const sanitizedMood = sanitizeMoodValue(value);
+        if (sanitizedMood) {
+          nextState.currentMood = sanitizedMood;
+        }
+        continue;
+      }
+
+      (nextState as any)[field] = value;
+    }
+
+    return nextState;
+  };
+
+  // Apply extracted updates to canonical per-message state for main characters.
+  const applyExtractedUpdates = async (updates: ExtractedUpdate[], meta?: ExtractionRequestMeta) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user || updates.length === 0) return;
     
@@ -2725,655 +3596,221 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     for (const [charNameLower, charUpdates] of updatesByCharacter) {
       const resolvedMatch = resolveCharacterReference(charNameLower);
       const mainChar = resolvedMatch?.kind === 'main' ? resolvedMatch.base : undefined;
-      const sideChar = resolvedMatch?.kind === 'side' ? resolvedMatch.side : undefined;
+      const sideChar = resolvedMatch?.kind === 'side' ? resolvedMatch.base : undefined;
       
       if (!mainChar && !sideChar) {
         debugLog(`[applyExtractedUpdates] Character not found: ${charNameLower}`);
       }
       
       if (mainChar) {
-        // Build patch first, then only show indicator if there are real changes
-        
-        // Find or create session state
-        let sessionState = sessionStates.find(s => s.characterId === mainChar!.id);
-        if (!sessionState) {
-          sessionState = await supabaseData.createSessionState(mainChar, conversationId, user.id);
-          setSessionStates(prev => [...prev, sessionState!]);
-        }
-        
-        // Build patch from updates
-        const patch: Record<string, any> = {};
-        let sectionsModified = false;
-        let goalsModified = false;
-        const updatedSections = [...(sessionState.customSections || mainChar.sections || [])];
-        const updatedGoals = [...(sessionState.goals || mainChar.goals || [])];
-        
-        for (const update of charUpdates) {
-          const { field, value } = update;
-          if (!isAllowedExtractionField(field)) {
-            debugLog(`[applyExtractedUpdates] Skipped unsupported field "${field}"`);
-            continue;
-          }
-          
-          // Handle goals.GoalTitle = "desired_outcome: X | ..." or "REMOVE" format
-          if (field.startsWith('goals.')) {
-            const goalTitle = field.slice(6); // Remove 'goals.' prefix
-            if (goalTitle) {
-              // Change 2: Handle REMOVE signal — delete obsolete goals
-              if (value.trim() === 'REMOVE') {
-                const removeIdx = updatedGoals.findIndex(g => 
-                  g.title.toLowerCase() === goalTitle.toLowerCase()
-                );
-                if (removeIdx !== -1) {
-                  debugLog(`[applyExtractedUpdates] REMOVED goal "${goalTitle}"`);
-                  updatedGoals.splice(removeIdx, 1);
-                  goalsModified = true;
-                }
-                continue;
-              }
-
-              let desiredOutcome = '';
-              let currentStatus = value;
-              let progress = 0;
-              
-              // Parse all fields from the value string
-              const desiredMatch = value.match(/desired_outcome:\s*(.*?)\s*\|\s*current_status:/i);
-              if (desiredMatch) {
-                desiredOutcome = desiredMatch[1].trim();
-              }
-              
-              const statusMatch = value.match(/current_status:\s*(.*?)\s*\|\s*progress:/i);
-              if (statusMatch) {
-                currentStatus = statusMatch[1].trim();
-              } else {
-                currentStatus = value
-                  .replace(/desired_outcome:\s*.*?\s*\|\s*/i, '')
-                  .replace(/\s*\|\s*progress:\s*\d+.*/i, '')
-                  .replace(/current_status:\s*/i, '')
-                  .trim();
-              }
-              
-              const progressMatch = value.match(/progress:\s*(\d+)/i);
-              if (progressMatch) {
-                progress = Math.min(100, Math.max(0, parseInt(progressMatch[1], 10)));
-              }
-              
-              // Parse step operations
-              const completeStepsMatch = value.match(/complete_steps:\s*([^|]+)/i);
-              const newStepsMatch = value.match(/new_steps:\s*(.*)/i);
-
-              // Helper: parse steps with line-boundary-anchored regex (Change 1 - Gap 1)
-              const parseSteps = (raw: string): Array<{ id: string; description: string; completed: boolean }> => {
-                const stepEntries = raw.split(/(?:^|\n)Step\s+\d+:\s*/i).filter(Boolean);
-                return stepEntries
-                  .map(desc => desc.trim().replace(/\|$/, '').trim())
-                  .filter(Boolean)
-                  .map(desc => ({ id: `step_${uuid().slice(0, 12)}`, description: desc, completed: false }));
-              };
-              
-              // Find existing goal or create new one
-              const existingGoalIndex = updatedGoals.findIndex(g => 
-                g.title.toLowerCase() === goalTitle.toLowerCase()
-              );
-              
-              if (existingGoalIndex !== -1) {
-                const existingGoal = updatedGoals[existingGoalIndex];
-                
-                // Change 1: REPLACE steps instead of appending
-                let updatedSteps = [...(existingGoal.steps || [])];
-                
-                if (newStepsMatch) {
-                  const parsedSteps = parseSteps(newStepsMatch[1].trim());
-                  
-                  // Hard cap: reject absurd payloads (>15 parsed steps = broken output)
-                  if (parsedSteps.length > 15) {
-                    console.warn(`[applyExtractedUpdates] Rejected ${parsedSteps.length} steps for "${goalTitle}" (>15 = broken output). Keeping existing steps.`);
-                    // Only apply progress/status, don't touch steps
-                  } else {
-                    // Cap at 8 steps max
-                    updatedSteps = parsedSteps.slice(0, 8);
-                  }
-                }
-                
-                // Apply complete_steps AFTER replacement (Change 1 fix: order matters)
-                if (completeStepsMatch) {
-                  const indices = completeStepsMatch[1].trim().split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
-                  for (const idx of indices) {
-                    if (idx >= 1 && idx <= updatedSteps.length) {
-                      updatedSteps[idx - 1] = { ...updatedSteps[idx - 1], completed: true, completedAt: Date.now() };
-                    }
-                  }
-                }
-                
-                // Recalculate progress from steps if steps exist
-                if (updatedSteps.length > 0) {
-                  const completedCount = updatedSteps.filter(s => s.completed).length;
-                  progress = Math.round((completedCount / updatedSteps.length) * 100);
-                }
-                
-                updatedGoals[existingGoalIndex] = {
-                  ...existingGoal,
-                  currentStatus,
-                  progress,
-                  steps: updatedSteps,
-                  ...(desiredOutcome ? { desiredOutcome } : {}),
-                  updatedAt: Date.now()
-                };
-                debugLog(`[applyExtractedUpdates] Updated goal "${goalTitle}" → ${progress}% (${updatedSteps.filter(s => s.completed).length}/${updatedSteps.length} steps)`);
-              } else {
-                // Change 2: Dedupe guard — reject near-duplicate titles
-                const normalizedTitle = goalTitle.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
-                const isDuplicate = updatedGoals.some(g => {
-                  const existingNorm = g.title.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
-                  if (existingNorm === normalizedTitle) return true;
-                  // Simple similarity: check if 80%+ words overlap
-                  const newWords = new Set(normalizedTitle.split(/\s+/));
-                  const existWords = new Set(existingNorm.split(/\s+/));
-                  const overlap = [...newWords].filter(w => existWords.has(w)).length;
-                  const maxLen = Math.max(newWords.size, existWords.size);
-                  return maxLen > 0 && (overlap / maxLen) > 0.8;
-                });
-                
-                if (isDuplicate) {
-                  debugLog(`[applyExtractedUpdates] Rejected duplicate goal "${goalTitle}"`);
-                  continue;
-                }
-                
-                // Change 2: Enforce max 5 active goals
-                if (updatedGoals.length >= 5) {
-                  console.warn(`[applyExtractedUpdates] Goal cap reached (5). Ignoring new goal "${goalTitle}"`);
-                  continue;
-                }
-
-                // Create new goal - parse any new_steps
-                const newSteps = newStepsMatch ? parseSteps(newStepsMatch[1].trim()).slice(0, 8) : [];
-                
-                updatedGoals.push({
-                  id: `goal_${uuid().slice(0, 12)}`,
-                  title: goalTitle,
-                  desiredOutcome,
-                  currentStatus,
-                  progress,
-                  steps: newSteps,
-                  createdAt: Date.now(),
-                  updatedAt: Date.now()
-                });
-                debugLog(`[applyExtractedUpdates] Created new goal "${goalTitle}" → ${progress}% with ${newSteps.length} steps`);
-              }
-              goalsModified = true;
-            }
-          }
-          // Handle sections.SectionTitle.ItemLabel format
-          else if (field.startsWith('sections.')) {
-            const parts = field.split('.');
-            if (parts.length >= 3) {
-              const sectionTitle = parts[1];
-              const itemLabel = parts.slice(2).join('.'); // Allow dots in item labels
-              
-              // Find or create section
-              let sectionIndex = updatedSections.findIndex(s => s.title.toLowerCase() === sectionTitle.toLowerCase());
-              if (sectionIndex === -1) {
-                // Create new section
-                const newSection = {
-                  id: `sec_${uuid().slice(0, 12)}`,
-                  title: sectionTitle,
-                  items: [],
-                  createdAt: Date.now(),
-                  updatedAt: Date.now()
-                };
-                updatedSections.push(newSection);
-                sectionIndex = updatedSections.length - 1;
-                debugLog(`[applyExtractedUpdates] Created new section: ${sectionTitle}`);
-              }
-              
-              // Find or create item in section
-              const section = updatedSections[sectionIndex];
-              const itemIndex = section.items.findIndex(i => i.label.toLowerCase() === itemLabel.toLowerCase());
-              
-              if (itemIndex === -1) {
-                // Add new item
-                section.items.push({
-                  id: `item_${uuid().slice(0, 12)}`,
-                  label: itemLabel,
-                  value: value,
-                  createdAt: Date.now(),
-                  updatedAt: Date.now()
-                });
-                debugLog(`[applyExtractedUpdates] Added new item "${itemLabel}" to section "${sectionTitle}"`);
-              } else {
-                // Update existing item
-                section.items[itemIndex] = {
-                  ...section.items[itemIndex],
-                  value: value,
-                  updatedAt: Date.now()
-                };
-                debugLog(`[applyExtractedUpdates] Updated item "${itemLabel}" in section "${sectionTitle}"`);
-              }
-              
-              section.updatedAt = Date.now();
-              sectionsModified = true;
-            }
-          } else if (field.includes('.')) {
-            const [parent, child] = field.split('.');
-            // Legacy compat: prompt now uses 'undergarments' but old cached extractions may still use 'underwear'
-            let normalizedChild = child;
-            if (parent === 'preferredClothing' && child === 'underwear') normalizedChild = 'undergarments';
-            
-            if (parent === 'physicalAppearance') {
-              if (normalizedChild === '_extras') {
-                // Change 7: _extras deduplication for physicalAppearance
-                const existing = patch.physicalAppearance || sessionState.physicalAppearance || mainChar.physicalAppearance || {};
-                const extras = [...((existing as any)._extras || [])];
-                const parts = value.split(':');
-                const newLabel = (parts[0]?.trim() || 'New').toLowerCase();
-                const newValue = parts.slice(1).join(':')?.trim() || value;
-                const existIdx = extras.findIndex((e: any) => e.label.toLowerCase() === newLabel);
-                if (existIdx !== -1) {
-                  extras[existIdx] = { ...extras[existIdx], value: newValue };
-                } else {
-                  const nearDupIdx = findNearDuplicateExtraIndex(extras, parts[0]?.trim() || 'New', newValue);
-                  if (nearDupIdx !== -1) {
-                    extras[nearDupIdx] = {
-                      ...extras[nearDupIdx],
-                      value: extras[nearDupIdx].value.length >= newValue.length ? extras[nearDupIdx].value : newValue
-                    };
-                  } else {
-                    extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
-                  }
-                }
-                patch.physicalAppearance = { ...existing, ...(patch.physicalAppearance || {}), _extras: extras };
-              } else {
-                patch.physicalAppearance = { ...(mainChar.physicalAppearance || {}), ...(sessionState.physicalAppearance || {}), ...(patch.physicalAppearance || {}), [normalizedChild]: value };
-              }
-            } else if (parent === 'currentlyWearing') {
-              if (normalizedChild === '_extras') {
-                const existing = patch.currentlyWearing || sessionState.currentlyWearing || mainChar.currentlyWearing || {};
-                const extras = [...((existing as any)._extras || [])];
-                const parts = value.split(':');
-                const newLabel = (parts[0]?.trim() || 'New').toLowerCase();
-                const newValue = parts.slice(1).join(':')?.trim() || value;
-                const existIdx = extras.findIndex((e: any) => e.label.toLowerCase() === newLabel);
-                if (existIdx !== -1) {
-                  extras[existIdx] = { ...extras[existIdx], value: newValue };
-                } else {
-                  const nearDupIdx = findNearDuplicateExtraIndex(extras, parts[0]?.trim() || 'New', newValue);
-                  if (nearDupIdx !== -1) {
-                    extras[nearDupIdx] = {
-                      ...extras[nearDupIdx],
-                      value: extras[nearDupIdx].value.length >= newValue.length ? extras[nearDupIdx].value : newValue
-                    };
-                  } else {
-                    extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
-                  }
-                }
-                patch.currentlyWearing = { ...existing, ...(patch.currentlyWearing || {}), _extras: extras };
-              } else {
-                patch.currentlyWearing = { ...(mainChar.currentlyWearing || {}), ...(sessionState.currentlyWearing || {}), ...(patch.currentlyWearing || {}), [normalizedChild]: value };
-              }
-            } else if (parent === 'preferredClothing') {
-              if (normalizedChild === '_extras') {
-                const existing = patch.preferredClothing || sessionState.preferredClothing || mainChar.preferredClothing || {};
-                const extras = [...((existing as any)._extras || [])];
-                const parts = value.split(':');
-                const newLabel = (parts[0]?.trim() || 'New').toLowerCase();
-                const newValue = parts.slice(1).join(':')?.trim() || value;
-                const existIdx = extras.findIndex((e: any) => e.label.toLowerCase() === newLabel);
-                if (existIdx !== -1) {
-                  extras[existIdx] = { ...extras[existIdx], value: newValue };
-                } else {
-                  const nearDupIdx = findNearDuplicateExtraIndex(extras, parts[0]?.trim() || 'New', newValue);
-                  if (nearDupIdx !== -1) {
-                    extras[nearDupIdx] = {
-                      ...extras[nearDupIdx],
-                      value: extras[nearDupIdx].value.length >= newValue.length ? extras[nearDupIdx].value : newValue
-                    };
-                  } else {
-                    extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
-                  }
-                }
-                patch.preferredClothing = { ...existing, ...(patch.preferredClothing || {}), _extras: extras };
-              } else {
-                patch.preferredClothing = { ...(mainChar.preferredClothing || {}), ...(sessionState.preferredClothing || {}), ...(patch.preferredClothing || {}), [normalizedChild]: value };
-              }
-            } else if (parent === 'background') {
-              // Update background hardcoded fields in session state
-              const bg = patch.background || sessionState.background || mainChar.background || { jobOccupation: '', educationLevel: '', residence: '', hobbies: '', financialStatus: '', motivation: '' };
-              if (normalizedChild === '_extras') {
-                // Change 7: _extras deduplication for background
-                const extras = [...((bg as any)._extras || [])];
-                const parts = value.split(':');
-                const newLabel = (parts[0]?.trim() || 'New').toLowerCase();
-                const newValue = parts.slice(1).join(':')?.trim() || value;
-                const existIdx = extras.findIndex((e: any) => e.label.toLowerCase() === newLabel);
-                if (existIdx !== -1) {
-                  extras[existIdx] = { ...extras[existIdx], value: newValue };
-                } else {
-                  const nearDupIdx = findNearDuplicateExtraIndex(extras, parts[0]?.trim() || 'New', newValue);
-                  if (nearDupIdx !== -1) {
-                    extras[nearDupIdx] = {
-                      ...extras[nearDupIdx],
-                      value: extras[nearDupIdx].value.length >= newValue.length ? extras[nearDupIdx].value : newValue
-                    };
-                  } else {
-                    extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
-                  }
-                }
-                (bg as any)._extras = extras;
-              } else {
-                (bg as any)[normalizedChild] = value;
-              }
-              patch.background = bg;
-            } else if (parent === 'personality') {
-              // Change 3 (Gap 2): Add personality branch — was completely missing
-              const pers = (patch as any).personality || (sessionState as any).personality || (mainChar as any).personality || {};
-              if (normalizedChild === 'outwardTraits' || normalizedChild === 'inwardTraits' || normalizedChild === 'traits') {
-                // Parse trait entries from "Label: Description" or JSON format
-                let newTraits: Array<{ label: string; value: string }> = [];
-                try {
-                  const parsed = JSON.parse(value);
-                  if (Array.isArray(parsed)) newTraits = parsed;
-                } catch {
-                  // Parse "Label: Description, Label2: Description2" or single "Label: Description"
-                  const traitParts = value.split(/,\s*(?=[A-Z])/);
-                  for (const part of traitParts) {
-                    const colonIdx = part.indexOf(':');
-                    if (colonIdx > 0) {
-                      newTraits.push({ label: part.slice(0, colonIdx).trim(), value: part.slice(colonIdx + 1).trim() });
-                    } else if (part.trim()) {
-                      newTraits.push({ label: part.trim(), value: '' });
-                    }
-                  }
-                }
-                // Merge: update existing traits by label, append new ones
-                const existingTraits = [...(pers[normalizedChild] || [])];
-                for (const nt of newTraits) {
-                  const idx = existingTraits.findIndex((t: any) => t.label.toLowerCase() === nt.label.toLowerCase());
-                  if (idx !== -1) {
-                    if (shouldRefineExistingText(existingTraits[idx].value || '', nt.value || '')) {
-                      existingTraits[idx] = { ...existingTraits[idx], value: nt.value };
-                    }
-                  } else {
-                    const nearDupIdx = findNearDuplicateTraitIndex(existingTraits, nt.label, nt.value);
-                    if (nearDupIdx !== -1) {
-                      const existing = existingTraits[nearDupIdx];
-                      if (shouldRefineExistingText(existing.value || '', nt.value || '')) {
-                        existingTraits[nearDupIdx] = {
-                          ...existing,
-                          value: nt.value
-                        };
-                      }
-                    } else {
-                      existingTraits.push({ id: `trait_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, ...nt });
-                    }
-                  }
-                }
-                (patch as any).personality = { ...pers, [normalizedChild]: existingTraits };
-              } else {
-                // Direct assignment for other personality fields (e.g., splitMode)
-                (patch as any).personality = { ...pers, [normalizedChild]: value };
-              }
-            } else if (['tone', 'keyLifeEvents', 'relationships', 'secrets', 'fears'].includes(parent) && normalizedChild === '_extras') {
-              // Change 7: _extras deduplication for extras-only sections
-              const sectionKey = parent as 'tone' | 'keyLifeEvents' | 'relationships' | 'secrets' | 'fears';
-              const existing = (patch as any)[sectionKey] || (sessionState as any)[sectionKey] || (mainChar as any)[sectionKey] || {};
-              const extras = [...(existing._extras || [])];
-              const parts = value.split(':');
-              const newLabel = (parts[0]?.trim() || 'New').toLowerCase();
-              const newValue = parts.slice(1).join(':')?.trim() || value;
-              const existIdx = extras.findIndex((e: any) => e.label.toLowerCase() === newLabel);
-              if (existIdx !== -1) {
-                if (shouldRefineExistingText(extras[existIdx]?.value || '', newValue || '')) {
-                  extras[existIdx] = { ...extras[existIdx], value: newValue };
-                  debugLog(`[applyExtractedUpdates] Updated existing ${parent}._extras entry "${parts[0]?.trim()}"`);
-                } else {
-                  debugLog(`[applyExtractedUpdates] Ignored low-value rewrite for ${parent}._extras entry "${parts[0]?.trim()}"`);
-                }
-              } else {
-                const nearDupIdx = findNearDuplicateExtraIndex(extras, parts[0]?.trim() || 'New', newValue);
-                if (nearDupIdx !== -1) {
-                  if (shouldRefineExistingText(extras[nearDupIdx]?.value || '', newValue || '')) {
-                    extras[nearDupIdx] = {
-                      ...extras[nearDupIdx],
-                      value: newValue
-                    };
-                    debugLog(`[applyExtractedUpdates] Refined near-duplicate ${parent}._extras entry "${parts[0]?.trim()}"`);
-                  } else {
-                    debugLog(`[applyExtractedUpdates] Ignored near-duplicate ${parent}._extras entry "${parts[0]?.trim()}"`);
-                  }
-                } else {
-                  extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
-                }
-              }
-              (patch as any)[sectionKey] = { ...existing, _extras: extras };
-            }
-          } else {
-            if (field === 'currentMood') {
-              const sanitizedMood = sanitizeMoodValue(value);
-              if (sanitizedMood) {
-                patch.currentMood = sanitizedMood;
-              } else {
-                debugLog(`[applyExtractedUpdates] Skipped invalid currentMood payload: "${value}"`);
-              }
-            } else {
-              patch[field] = value;
-            }
-          }
-        }
-        
-        // Add sections to patch if modified
-        if (sectionsModified) {
-          patch.customSections = updatedSections;
-        }
-        // Add goals to patch if modified
-        if (goalsModified) {
-          patch.goals = updatedGoals;
+        if (!meta?.sourceMessageId || !meta?.sourceMessageGenerationId) {
+          debugLog(`[applyExtractedUpdates] Missing canonical source metadata for ${mainChar.name}; skipping main-character snapshot persist`);
+          continue;
         }
 
-        // Do not persist no-op writes; they create noisy "updated" signals.
-        for (const key of Object.keys(patch)) {
-          const sessionValue = (sessionState as any)[key];
-          const baseValue = (mainChar as any)[key];
-          const effectiveCurrent = sessionValue !== undefined ? sessionValue : baseValue;
-          if (JSON.stringify(effectiveCurrent) === JSON.stringify((patch as any)[key])) {
-            delete (patch as any)[key];
-          }
+        const effectiveChar = computeEffectiveCharacter(mainChar);
+        const nextEffectiveChar = applyUpdatesToCharacterSnapshot(effectiveChar, charUpdates);
+        const currentPayload = toCharacterStateSnapshotPayload(effectiveChar);
+        const nextPayload = toCharacterStateSnapshotPayload(nextEffectiveChar);
+
+        if (JSON.stringify(currentPayload) === JSON.stringify(nextPayload)) {
+          debugLog(`[applyExtractedUpdates] No canonical delta for ${mainChar.name}`);
+          continue;
         }
-        
-        if (Object.keys(patch).length > 0) {
-          // Only show indicator when there are real changes to apply
-          showCharacterUpdateIndicator(mainChar.id);
-          await supabaseData.updateSessionState(sessionState.id, patch);
-          setSessionStates(prev => prev.map(s => s.id === sessionState!.id ? { ...s, ...patch } : s));
-          debugLog(`[applyExtractedUpdates] Updated ${mainChar.name}:`, Object.keys(patch));
-        }
+
+        showCharacterUpdateIndicator(mainChar.id);
+
+        const persistedSnapshot = await supabaseData.upsertCharacterStateMessageSnapshot({
+          conversationId,
+          characterId: mainChar.id,
+          userId: user.id,
+          sourceMessageId: meta.sourceMessageId,
+          sourceGenerationId: meta.sourceMessageGenerationId,
+          statePayload: nextPayload,
+        });
+
+        setCharacterStateSnapshots((prev) => {
+          const next = [...prev];
+          const index = next.findIndex(
+            (entry) =>
+              entry.characterId === persistedSnapshot.characterId &&
+              entry.sourceMessageId === persistedSnapshot.sourceMessageId &&
+              entry.sourceGenerationId === persistedSnapshot.sourceGenerationId,
+          );
+          if (index === -1) next.push(persistedSnapshot);
+          else next[index] = persistedSnapshot;
+          return next;
+        });
+
+        debugLog(`[applyExtractedUpdates] Persisted canonical snapshot for ${mainChar.name}:`, Object.keys(nextPayload));
       } else if (sideChar) {
-        // Build patch first, then show indicator only if real changes
-        
-        // Change 8: Expanded side character update paths (mirrors main character logic)
-        const patch: Record<string, any> = {};
-        for (const update of charUpdates) {
-          const { field, value } = update;
-          if (!isAllowedExtractionField(field)) {
-            debugLog(`[applyExtractedUpdates] Skipped unsupported side-character field "${field}"`);
-            continue;
-          }
-          if (field.includes('.')) {
-            const [parent, child] = field.split('.');
-            let normalizedChild = child;
-            if (parent === 'preferredClothing' && child === 'underwear') normalizedChild = 'undergarments';
-            
-            if (parent === 'sections') {
-              const parts = field.split('.');
-              if (parts.length >= 3) {
-                const sectionTitle = parts[1];
-                const itemLabel = parts.slice(2).join('.');
-                const existingSections = patch.sections || sideChar.sections || [];
-                const updatedSections = [...existingSections];
-
-                let sectionIndex = updatedSections.findIndex(s => s.title.toLowerCase() === sectionTitle.toLowerCase());
-                if (sectionIndex === -1) {
-                  updatedSections.push({
-                    id: `sec_${uuid().slice(0, 12)}`,
-                    title: sectionTitle,
-                    type: 'structured',
-                    items: [],
-                    createdAt: Date.now(),
-                    updatedAt: Date.now()
-                  });
-                  sectionIndex = updatedSections.length - 1;
-                }
-
-                const section = updatedSections[sectionIndex];
-                const itemIndex = section.items.findIndex((i: any) => i.label.toLowerCase() === itemLabel.toLowerCase());
-                if (itemIndex === -1) {
-                  section.items.push({
-                    id: `item_${uuid().slice(0, 12)}`,
-                    label: itemLabel,
-                    value,
-                    createdAt: Date.now(),
-                    updatedAt: Date.now()
-                  });
-                } else {
-                  section.items[itemIndex] = {
-                    ...section.items[itemIndex],
-                    value,
-                    updatedAt: Date.now()
-                  };
-                }
-
-                section.updatedAt = Date.now();
-                patch.sections = updatedSections;
-              }
-            } else if (parent === 'physicalAppearance') {
-              if (normalizedChild === '_extras') {
-                const existing = patch.physicalAppearance || sideChar.physicalAppearance || {};
-                const extras = [...((existing as any)._extras || [])];
-                const parts = value.split(':');
-                const newLabel = (parts[0]?.trim() || 'New').toLowerCase();
-                const newValue = parts.slice(1).join(':')?.trim() || value;
-                const existIdx = extras.findIndex((e: any) => e.label.toLowerCase() === newLabel);
-                if (existIdx !== -1) extras[existIdx] = { ...extras[existIdx], value: newValue };
-                else {
-                  const nearDupIdx = findNearDuplicateExtraIndex(extras, parts[0]?.trim() || 'New', newValue);
-                  if (nearDupIdx !== -1) {
-                    extras[nearDupIdx] = {
-                      ...extras[nearDupIdx],
-                      value: extras[nearDupIdx].value.length >= newValue.length ? extras[nearDupIdx].value : newValue
-                    };
-                  } else {
-                    extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
-                  }
-                }
-                patch.physicalAppearance = { ...existing, ...(patch.physicalAppearance || {}), _extras: extras };
-              } else {
-                patch.physicalAppearance = { ...(sideChar.physicalAppearance || {}), ...(patch.physicalAppearance || {}), [normalizedChild]: value };
-              }
-            } else if (parent === 'currentlyWearing') {
-              patch.currentlyWearing = { ...(sideChar.currentlyWearing || {}), ...(patch.currentlyWearing || {}), [normalizedChild]: value };
-            } else if (parent === 'preferredClothing') {
-              patch.preferredClothing = { ...(sideChar.preferredClothing || {}), ...(patch.preferredClothing || {}), [normalizedChild]: value };
-            } else if (parent === 'background') {
-              const bg = patch.background || sideChar.background || {};
-              if (normalizedChild === '_extras') {
-                const extras = [...((bg as any)._extras || [])];
-                const parts = value.split(':');
-                const newLabel = (parts[0]?.trim() || 'New').toLowerCase();
-                const newValue = parts.slice(1).join(':')?.trim() || value;
-                const existIdx = extras.findIndex((e: any) => e.label.toLowerCase() === newLabel);
-                if (existIdx !== -1) extras[existIdx] = { ...extras[existIdx], value: newValue };
-                else {
-                  const nearDupIdx = findNearDuplicateExtraIndex(extras, parts[0]?.trim() || 'New', newValue);
-                  if (nearDupIdx !== -1) {
-                    extras[nearDupIdx] = {
-                      ...extras[nearDupIdx],
-                      value: extras[nearDupIdx].value.length >= newValue.length ? extras[nearDupIdx].value : newValue
-                    };
-                  } else {
-                    extras.push({ id: `extra_${Date.now()}`, label: parts[0]?.trim() || 'New', value: newValue });
-                  }
-                }
-                (bg as any)._extras = extras;
-              } else {
-                (bg as any)[normalizedChild] = value;
-              }
-              patch.background = bg;
-            } else if (parent === 'personality') {
-              const pers = patch.personality || sideChar.personality || {};
-              if (normalizedChild === 'outwardTraits' || normalizedChild === 'inwardTraits' || normalizedChild === 'traits') {
-                let newTraits: Array<{ label: string; value: string }> = [];
-                try { const parsed = JSON.parse(value); if (Array.isArray(parsed)) newTraits = parsed; } catch {
-                  const traitParts = value.split(/,\s*(?=[A-Z])/);
-                  for (const part of traitParts) {
-                    const colonIdx = part.indexOf(':');
-                    if (colonIdx > 0) newTraits.push({ label: part.slice(0, colonIdx).trim(), value: part.slice(colonIdx + 1).trim() });
-                    else if (part.trim()) newTraits.push({ label: part.trim(), value: '' });
-                  }
-                }
-                const existingTraits = [...((pers as any)[normalizedChild] || [])];
-                for (const nt of newTraits) {
-                  const idx = existingTraits.findIndex((t: any) => t.label.toLowerCase() === nt.label.toLowerCase());
-                  if (idx !== -1) {
-                    if (shouldRefineExistingText(existingTraits[idx].value || '', nt.value || '')) {
-                      existingTraits[idx] = { ...existingTraits[idx], value: nt.value };
-                    }
-                  } else {
-                    const nearDupIdx = findNearDuplicateTraitIndex(existingTraits, nt.label, nt.value);
-                    if (nearDupIdx !== -1) {
-                      const existing = existingTraits[nearDupIdx];
-                      if (shouldRefineExistingText(existing.value || '', nt.value || '')) {
-                        existingTraits[nearDupIdx] = {
-                          ...existing,
-                          value: nt.value
-                        };
-                      }
-                    } else {
-                      existingTraits.push({ id: `trait_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, ...nt });
-                    }
-                  }
-                }
-                patch.personality = { ...pers, [normalizedChild]: existingTraits };
-              } else {
-                patch.personality = { ...pers, [normalizedChild]: value };
-              }
-            }
-          } else {
-            if (field === 'currentMood') {
-              const sanitizedMood = sanitizeMoodValue(value);
-              if (sanitizedMood) {
-                patch.currentMood = sanitizedMood;
-              } else {
-                debugLog(`[applyExtractedUpdates] Skipped invalid side-character currentMood payload: "${value}"`);
-              }
-            } else {
-              patch[field] = value;
-            }
-          }
+        if (!meta?.sourceMessageId || !meta?.sourceMessageGenerationId) {
+          debugLog(`[applyExtractedUpdates] Missing canonical source metadata for ${sideChar.name}; skipping side-character snapshot persist`);
+          continue;
         }
 
-        for (const key of Object.keys(patch)) {
-          const current = (sideChar as any)[key];
-          if (JSON.stringify(current) === JSON.stringify((patch as any)[key])) {
-            delete (patch as any)[key];
-          }
+        const effectiveSideChar = computeEffectiveSideCharacter(sideChar);
+        const nextEffectiveSideChar = applyUpdatesToSideCharacterSnapshot(effectiveSideChar, charUpdates);
+        const currentPayload = toSideCharacterStateSnapshotPayload(effectiveSideChar);
+        const nextPayload = toSideCharacterStateSnapshotPayload(nextEffectiveSideChar);
+
+        if (JSON.stringify(currentPayload) === JSON.stringify(nextPayload)) {
+          debugLog(`[applyExtractedUpdates] No canonical delta for ${sideChar.name}`);
+          continue;
         }
-        
-        if (Object.keys(patch).length > 0) {
-          // Only show indicator when there are real changes
-          showCharacterUpdateIndicator(sideChar.id);
-          await supabaseData.updateSideCharacter(sideChar.id, patch);
-          if (onUpdateSideCharacters) {
-            const updated = (appData.sideCharacters || []).map(sc => 
-              sc.id === sideChar!.id ? { ...sc, ...patch } : sc
-            );
-            onUpdateSideCharacters(updated);
-          }
-          debugLog(`[applyExtractedUpdates] Updated side character ${sideChar.name}:`, Object.keys(patch));
-        }
+
+        showCharacterUpdateIndicator(sideChar.id);
+
+        const persistedSnapshot = await supabaseData.upsertSideCharacterMessageSnapshot({
+          conversationId,
+          sideCharacterId: sideChar.id,
+          userId: user.id,
+          sourceMessageId: meta.sourceMessageId,
+          sourceGenerationId: meta.sourceMessageGenerationId,
+          statePayload: nextPayload,
+        });
+
+        setSideCharacterSnapshots((prev) => {
+          const next = [...prev];
+          const index = next.findIndex(
+            (entry) =>
+              entry.sideCharacterId === persistedSnapshot.sideCharacterId &&
+              entry.sourceMessageId === persistedSnapshot.sourceMessageId &&
+              entry.sourceGenerationId === persistedSnapshot.sourceGenerationId,
+          );
+          if (index === -1) next.push(persistedSnapshot);
+          else next[index] = persistedSnapshot;
+          return next;
+        });
+
+        debugLog(`[applyExtractedUpdates] Persisted canonical side-character snapshot for ${sideChar.name}:`, Object.keys(nextPayload));
       } else {
         debugLog(`[applyExtractedUpdates] Character not found: ${charNameLower}`);
       }
     }
   };
+
+  const queueAssistantMemoryExtraction = useCallback((messageText: string, sourceMessage: Message) => {
+    if (!memoriesEnabled) return;
+
+    void trackAiUsageEvent({
+      eventType: 'memory_extraction_call',
+      eventSource: 'chat-interface',
+      metadata: {
+        conversationId,
+        day: sourceMessage.day ?? currentDay,
+        timeOfDay: sourceMessage.timeOfDay ?? currentTimeOfDay,
+        inputChars: messageText.length,
+        modelId,
+      },
+    });
+
+    void trackApiValidationSnapshot({
+      eventKey: 'validation.call2.memory_extract',
+      eventSource: 'chat-interface.memory-extract',
+      apiCallGroup: 'call_2',
+      parentRowId: 'summary.call2.memory_extract',
+      detailPresence: buildRequiredPresence([
+        ['call2.memory_extract.message_text', messageText],
+        ['call2.memory_extract.character_names', allCharacterNames],
+        ['call2.memory_extract.model_id', modelId],
+      ]),
+      diagnostics: {
+        characterCount: allCharacterNames.length,
+      },
+    });
+
+    supabase.functions.invoke('extract-memory-events', {
+      body: {
+        messageText,
+        characterNames: allCharacterNames,
+        modelId,
+      }
+    }).then(({ data, error }) => {
+      if (error || !data?.extractedEvents?.length) return;
+      if (!isMessageGenerationStillCurrent(sourceMessage.id, sourceMessage.generationId)) {
+        debugLog('[memoryExtraction] Discarded stale result for non-current turn');
+        return;
+      }
+
+      const events: string[] = data.extractedEvents;
+      void trackAiUsageEvent({
+        eventType: 'memory_events_extracted',
+        eventSource: 'chat-interface',
+        count: events.length,
+        metadata: {
+          conversationId,
+          day: sourceMessage.day ?? currentDay,
+          timeOfDay: sourceMessage.timeOfDay ?? currentTimeOfDay,
+          outputChars: events.join('\n').length,
+        },
+      });
+
+      const combinedContent = events.length === 1
+        ? events[0]
+        : events.map((event: string) => `- ${event}`).join('\n');
+
+      handleCreateMemory(
+        combinedContent,
+        sourceMessage.day ?? currentDay,
+        sourceMessage.timeOfDay ?? currentTimeOfDay,
+        sourceMessage.id,
+        sourceMessage.generationId,
+      );
+    }).catch(err => {
+      console.error('[queueAssistantMemoryExtraction] Memory extraction failed:', err);
+    });
+  }, [
+    allCharacterNames,
+    conversationId,
+    currentDay,
+    currentTimeOfDay,
+    handleCreateMemory,
+    isMessageGenerationStillCurrent,
+    memoriesEnabled,
+    modelId,
+  ]);
+
+  const queueAssistantDerivedWork = (
+    userText: string,
+    aiText: string,
+    sourceMessage: Message,
+  ) => {
+    queueAssistantMemoryExtraction(aiText, sourceMessage);
+
+    evaluateGoalProgress(
+      userText,
+      aiText,
+      sourceMessage.id,
+      sourceMessage.generationId,
+    ).catch(err => {
+      console.error('[queueAssistantDerivedWork] Goal progress evaluation failed:', err);
+    });
+
+    assistantTurnsSinceExtractionRef.current += 1;
+    const extractionDecision = getExtractionDecision(userText, aiText);
+    if (!extractionDecision.shouldExtract) return;
+
+    assistantTurnsSinceExtractionRef.current = 0;
+    const extractionMeta: ExtractionRequestMeta = {
+      sourceMessageId: sourceMessage.id,
+      sourceMessageGenerationId: sourceMessage.generationId,
+      reason: extractionDecision.reason,
+    };
+
+    extractCharacterUpdatesFromDialogue(userText, aiText, extractionMeta).then(updates => {
+      if (updates.length > 0) {
+        debugLog(
+          `[queueAssistantDerivedWork] Extracted ${updates.length} character updates (${extractionDecision.reason})`,
+          updates,
+        );
+        applyExtractedUpdates(updates, extractionMeta);
+      }
+    }).catch(err => {
+      console.error('[queueAssistantDerivedWork] Character extraction failed:', err);
+    });
+  };
+
   const incrementDay = () => {
     const newDay = currentDay + 1;
     setCurrentDay(newDay);
@@ -3457,6 +3894,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
     const userMsg: Message = { 
       id: uuid(), 
+      generationId: uuid(),
       role: 'user', 
       text: input, 
       day: currentDay,
@@ -3467,6 +3905,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       c.id === conversationId ? { ...c, messages: [...c.messages, userMsg], updatedAt: now() } : c
     );
 
+    latestConversationsRef.current = nextConvsWithUser;
     onUpdate(nextConvsWithUser);
     setInput('');
     setIsStreaming(true);
@@ -3477,7 +3916,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       let fullText = '';
       const llmAppData = buildLLMAppData();
       // Issue #8: Detect user-authored AI character content and prepend canon note
-      const canonNote = buildCanonNote(input, appData.characters);
+      const canonNote = buildCanonNote(input, canonNoteCharacters);
       
       // Issue #7: Compute length directive and increment session counter
       const lengthDirective = getLengthDirective();
@@ -3495,7 +3934,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         modelId,
         currentDay,
         currentTimeOfDay,
-        memories,
+        activeMemories,
         memoriesEnabled,
         undefined,
         lengthDirective || undefined,
@@ -3509,7 +3948,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         setStreamingContent(fullText);
         
         // Format streaming content on-the-fly to prevent flickering
-        const existingNamesForStream = getKnownCharacterNames(appData);
+        const existingNamesForStream = getKnownCharacterNames(effectiveAppData);
         const formatted = stripUpdateTags(fullText);
         const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, placeholderMapRef.current);
         setFormattedStreamingContent(normalizedText);
@@ -3521,76 +3960,17 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       let cleanedText = stripUpdateTags(fullText);
       
       // Apply placeholder name guard to replace "Man 1:", "Cashier:", etc. with proper names
-      const existingNames = getKnownCharacterNames(appData);
+      const existingNames = getKnownCharacterNames(effectiveAppData);
       const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, placeholderMapRef.current);
       cleanedText = normalizedText;
       
       // Issue #7: Track response word count for adaptive length directives
       responseLengthsRef.current.push(cleanedText.split(/\s+/).length);
 
-      // Issue #6A: Auto-extract memory events (non-blocking, mirrors character extraction pattern)
-      if (memoriesEnabled) {
-        void trackAiUsageEvent({
-          eventType: 'memory_extraction_call',
-          eventSource: 'chat-interface',
-          metadata: {
-            conversationId,
-            day: currentDay,
-            timeOfDay: currentTimeOfDay,
-            inputChars: cleanedText.length,
-            modelId,
-          },
-        });
-
-        void trackApiValidationSnapshot({
-          eventKey: 'validation.call2.memory_extract',
-          eventSource: 'chat-interface.memory-extract',
-          apiCallGroup: 'call_2',
-          parentRowId: 'summary.call2.memory_extract',
-          detailPresence: buildRequiredPresence([
-            ['call2.memory_extract.message_text', cleanedText],
-            ['call2.memory_extract.character_names', allCharacterNames],
-            ['call2.memory_extract.model_id', modelId],
-          ]),
-          diagnostics: {
-            characterCount: allCharacterNames.length,
-          },
-        });
-
-        supabase.functions.invoke('extract-memory-events', {
-          body: {
-            messageText: cleanedText,
-            characterNames: allCharacterNames,
-            modelId
-          }
-        }).then(({ data, error }) => {
-          if (!error && data?.extractedEvents?.length > 0) {
-            const events: string[] = data.extractedEvents;
-            void trackAiUsageEvent({
-              eventType: 'memory_events_extracted',
-              eventSource: 'chat-interface',
-              count: events.length,
-              metadata: {
-                conversationId,
-                day: currentDay,
-                timeOfDay: currentTimeOfDay,
-                outputChars: events.join('\n').length,
-              },
-            });
-            const combinedContent = events.length === 1
-              ? events[0]
-              : events.map((e: string) => `- ${e}`).join('\n');
-            handleCreateMemory(combinedContent, currentDay, currentTimeOfDay);
-          }
-        }).catch(err => {
-          console.error('[handleSend] Memory extraction failed:', err);
-        });
-      }
-
-
       const aiMessageId = uuid();
       const aiMsg: Message = { 
         id: aiMessageId, 
+        generationId: uuid(),
         role: 'assistant', 
         text: cleanedText, 
         day: currentDay,
@@ -3600,29 +3980,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       const nextConvsWithAi = appData.conversations.map(c =>
         c.id === conversationId ? { ...c, messages: [...c.messages, userMsg, aiMsg], updatedAt: now() } : c
       );
+      latestConversationsRef.current = nextConvsWithAi;
       onUpdate(nextConvsWithAi);
       onSaveScenario(nextConvsWithAi);
-
-      evaluateGoalProgress(userInput, cleanedText, aiMessageId).catch(err => {
-        console.error('[handleSend] Goal progress evaluation failed:', err);
-      });
-
-      assistantTurnsSinceExtractionRef.current += 1;
-      const extractionDecision = getExtractionDecision(userInput, cleanedText);
-      if (extractionDecision.shouldExtract) {
-        assistantTurnsSinceExtractionRef.current = 0;
-        extractCharacterUpdatesFromDialogue(userInput, cleanedText, {
-          sourceAssistantMessageId: aiMessageId,
-          reason: extractionDecision.reason
-        }).then(updates => {
-          if (updates.length > 0) {
-            debugLog(`[handleSend] Extracted ${updates.length} character updates (${extractionDecision.reason})`, updates);
-            applyExtractedUpdates(updates);
-          }
-        }).catch(err => {
-          console.error('[handleSend] Character extraction failed:', err);
-        });
-      }
+      queueAssistantDerivedWork(userInput, cleanedText, aiMsg);
       
       // Process AI response for new character detection
       processResponseForNewCharacters(cleanedText);
@@ -3646,26 +4007,38 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         ? { ...c, messages: c.messages.filter(m => m.id !== messageId), updatedAt: now() }
         : c
     );
+    latestConversationsRef.current = updatedConvs;
     onUpdate(updatedConvs);
-    onSaveScenario(updatedConvs);
+    supabaseData.deleteConversationMessage(messageId).catch(err => {
+      console.error('[handleDeleteMessage] Failed to delete message:', err);
+    });
   };
 
   const handleEditMessage = () => {
     if (!editingMessage || !editText.trim()) return;
+
+    const updatedMessage: Message = {
+      ...editingMessage,
+      text: editText,
+      generationId: uuid(),
+    };
     
     const updatedConvs = appData.conversations.map(c =>
       c.id === conversationId
         ? {
             ...c,
             messages: c.messages.map(m =>
-              m.id === editingMessage.id ? { ...m, text: editText } : m
+              m.id === editingMessage.id ? updatedMessage : m
             ),
             updatedAt: now()
           }
         : c
     );
+    latestConversationsRef.current = updatedConvs;
     onUpdate(updatedConvs);
-    onSaveScenario(updatedConvs);
+    supabaseData.saveNewMessages(conversationId, [updatedMessage]).catch(err => {
+      console.error('[handleEditMessage] Failed to persist edited message:', err);
+    });
     setEditingMessage(null);
     setEditText('');
   };
@@ -3673,19 +4046,31 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const handleInlineEditSave = () => {
     const inlineEditedText = buildInlineEditedMessageText(inlineEditSegments, inlineEditSystemTags);
     if (!inlineEditingId || !inlineEditedText.trim()) return;
+    const targetMessage = conversation?.messages.find((message) => message.id === inlineEditingId);
+    if (!targetMessage) return;
+
+    const updatedMessage: Message = {
+      ...targetMessage,
+      text: inlineEditedText,
+      generationId: uuid(),
+    };
+
     const updatedConvs = appData.conversations.map(c =>
       c.id === conversationId
         ? {
             ...c,
             messages: c.messages.map(m =>
-              m.id === inlineEditingId ? { ...m, text: inlineEditedText } : m
+              m.id === inlineEditingId ? updatedMessage : m
             ),
             updatedAt: now()
           }
         : c
     );
+    latestConversationsRef.current = updatedConvs;
     onUpdate(updatedConvs);
-    onSaveScenario(updatedConvs);
+    supabaseData.saveNewMessages(conversationId, [updatedMessage]).catch(err => {
+      console.error('[handleInlineEditSave] Failed to persist inline edit:', err);
+    });
     setInlineEditingId(null);
     setInlineEditSegments([]);
     setInlineEditSystemTags([]);
@@ -3698,14 +4083,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   };
 
   const openInlineMessageEditor = (msg: Message, isAi: boolean) => {
-    const userChar = appData.characters.find(c => c.controlledBy === 'User') || null;
+    const userChar = effectiveMainCharacters.find(c => c.controlledBy === 'User') || null;
     setInlineEditingId(msg.id);
     setInlineEditSystemTags(extractHiddenMessageTags(msg.text));
     setInlineEditSegments(
       buildEditableMessageSegments(
         msg.text,
         isAi,
-        appData,
+        effectiveAppData,
         userChar,
         resolveCanonicalSpeakerName
       )
@@ -3714,14 +4099,17 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
   const handleRegenerateMessage = async (messageId: string) => {
     regenerateEventsRef.current.push({ messageId, timestamp: Date.now() });
-    const msgIndex = conversation?.messages.findIndex(m => m.id === messageId);
-    if (msgIndex === undefined || msgIndex < 1) return;
+    const conv = conversation;
+    if (!conv) return;
+
+    const msgIndex = conv.messages.findIndex(m => m.id === messageId);
+    if (msgIndex < 1) return;
     
     // Search backward from msgIndex for the nearest user message
     let userMessage: Message | undefined;
     for (let i = msgIndex - 1; i >= 0; i--) {
-      if (conversation?.messages[i]?.role === 'user') {
-        userMessage = conversation.messages[i];
+      if (conv.messages[i]?.role === 'user') {
+        userMessage = conv.messages[i];
         break;
       }
     }
@@ -3738,22 +4126,20 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       // Strip the old AI response AND the triggering user message from context
       // (generateRoleplayResponseStream will re-add the user message as the final turn,
       //  so including it in history would duplicate it and reinforce confirmation loops)
-      const llmAppData = buildLLMAppData();
-      const conv = llmAppData.conversations.find(c => c.id === conversationId);
       const userMsgIdx = conv?.messages.findIndex(m => m.id === userMessage.id) ?? msgIndex;
       const truncateAt = userMsgIdx >= 0 ? userMsgIdx : msgIndex;
-      const truncatedConvs = llmAppData.conversations.map(c =>
-        c.id === conversationId
-          ? { ...c, messages: c.messages.slice(0, truncateAt) }
-          : c
+      const truncatedMessages = conv?.messages.slice(0, truncateAt) || [];
+      const truncatedAppData = buildLLMAppData({ conversationMessages: truncatedMessages });
+      const truncatedMemories = buildActiveMemories(
+        memories,
+        buildMessageGenerationMap(truncatedMessages),
       );
-      const truncatedAppData = { ...llmAppData, conversations: truncatedConvs };
       
       let fullText = '';
       const antiLoopDirective = getAntiLoopDirective();
       const runtimeDirectives = antiLoopDirective || undefined;
       // Apply canon note to regenerate flow so user-authored AI dialogue is preserved
-      const canonNote = buildCanonNote(userMessage.text, appData.characters);
+      const canonNote = buildCanonNote(userMessage.text, canonNoteCharacters);
       const regenInput = canonNote + userMessage.text;
       const stream = generateRoleplayResponseStream(
         truncatedAppData,
@@ -3762,7 +4148,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         modelId,
         currentDay,
         currentTimeOfDay,
-        memories,
+        truncatedMemories,
         memoriesEnabled,
         true,
         undefined,
@@ -3776,7 +4162,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         setStreamingContent(fullText);
         
         // Format streaming content on-the-fly
-        const existingNamesForStream = getKnownCharacterNames(appData);
+        const existingNamesForStream = getKnownCharacterNames(effectiveAppData);
         const formatted = stripUpdateTags(fullText);
         const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, placeholderMapRef.current);
         setFormattedStreamingContent(normalizedText);
@@ -3788,26 +4174,45 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       let cleanedText = stripUpdateTags(fullText);
       
       // Apply placeholder name guard
-      const existingNames = getKnownCharacterNames(appData);
+      const existingNames = getKnownCharacterNames(effectiveAppData);
       const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, placeholderMapRef.current);
       cleanedText = normalizedText;
       
       // UPDATE IN-PLACE: Replace the existing message instead of creating a new one
+      const existingMessage = conv.messages.find((message) => message.id === messageId);
+      if (!existingMessage) {
+        console.warn('[handleRegenerate] Target message missing during regenerate:', messageId);
+        return;
+      }
+
+      const regeneratedMessage = {
+        ...existingMessage,
+        text: cleanedText,
+        day: currentDay,
+        timeOfDay: currentTimeOfDay,
+        createdAt: now(),
+        generationId: uuid(),
+      };
+
       const updatedConvs = appData.conversations.map(c =>
         c.id === conversationId
           ? {
               ...c,
               messages: c.messages.map(m =>
                 m.id === messageId
-                  ? { ...m, text: cleanedText, day: currentDay, timeOfDay: currentTimeOfDay, createdAt: now() }
+                  ? regeneratedMessage
                   : m
               ),
               updatedAt: now()
             }
           : c
       );
+      latestConversationsRef.current = updatedConvs;
       onUpdate(updatedConvs);
-      onSaveScenario(updatedConvs);
+      supabaseData.saveNewMessages(conversationId, [regeneratedMessage]).catch(err => {
+        console.error('[handleRegenerate] Failed to persist regenerated message:', err);
+      });
+      queueAssistantDerivedWork(userMessage.text, cleanedText, regeneratedMessage);
       
       // Process for new characters after normalization
       processResponseForNewCharacters(cleanedText);
@@ -3833,13 +4238,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     
     // Use session-merged data so the AI sees current locations/moods/control
     const llmAppData = buildLLMAppData();
+    const allPlayableCharacters = [...llmAppData.characters, ...(llmAppData.sideCharacters || [])];
     
     // Get character control lists from session-merged data
-    const userControlledNames = llmAppData.characters
+    const userControlledNames = allPlayableCharacters
       .filter(c => c.controlledBy === 'User')
       .map(c => c.name);
     
-    const aiControlledNames = llmAppData.characters
+    const aiControlledNames = allPlayableCharacters
       .filter(c => c.controlledBy === 'AI')
       .map(c => c.name);
     
@@ -3853,11 +4259,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       // Pass 13 continued: Build goal-aware continue prompt
       // Gather active character goals with current step info
       const goalSummaryParts: string[] = [];
-      llmAppData.characters
+      allPlayableCharacters
         .filter(c => c.controlledBy === 'AI')
         .forEach(c => {
           const session = sessionStates.find(s => s.characterId === c.id);
-          const goals = session?.goals || c.goals;
+          const goals = session?.goals || ('goals' in c ? c.goals : undefined);
           if (Array.isArray(goals)) {
             goals.forEach((g: any) => {
               const label = typeof g === 'string' ? g : (g?.title || g?.label || g?.value || '');
@@ -3884,7 +4290,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       // Canon carry-forward for continue: check if the most recent user message
       // contained AI-authored dialogue that should not be re-narrated
       const lastUserMsg = conversation.messages.slice().reverse().find(m => m.role === 'user');
-      const continueCanonNote = lastUserMsg ? buildCanonNote(lastUserMsg.text, appData.characters) : '';
+      const continueCanonNote = lastUserMsg ? buildCanonNote(lastUserMsg.text, canonNoteCharacters) : '';
       
       const continuePrompt = `${continueCanonNote}[CONTINUE INSTRUCTION]
 Continue the narrative by having AI-controlled characters advance one plausible goal-driven micro-step now.
@@ -3906,7 +4312,7 @@ Do not acknowledge this instruction in your response.`;
         modelId,
         currentDay,
         currentTimeOfDay,
-        memories,
+        activeMemories,
         memoriesEnabled,
         undefined,
         undefined,
@@ -3920,7 +4326,7 @@ Do not acknowledge this instruction in your response.`;
         setStreamingContent(fullText);
         
         // Format streaming content on-the-fly
-        const existingNamesForStream = getKnownCharacterNames(appData);
+        const existingNamesForStream = getKnownCharacterNames(effectiveAppData);
         const formatted = stripUpdateTags(fullText);
         const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, placeholderMapRef.current);
         setFormattedStreamingContent(normalizedText);
@@ -3930,7 +4336,7 @@ Do not acknowledge this instruction in your response.`;
       let cleanedText = stripUpdateTags(fullText);
       
       // Apply placeholder name guard
-      const existingNames = getKnownCharacterNames(appData);
+      const existingNames = getKnownCharacterNames(effectiveAppData);
       const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, placeholderMapRef.current);
       cleanedText = normalizedText;
       
@@ -3940,6 +4346,7 @@ Do not acknowledge this instruction in your response.`;
       const aiMessageId = uuid();
       const aiMsg: Message = { 
         id: aiMessageId, 
+        generationId: uuid(),
         role: 'assistant', 
         text: cleanedText, 
         day: currentDay,
@@ -3952,25 +4359,10 @@ Do not acknowledge this instruction in your response.`;
           ? { ...c, messages: [...c.messages, aiMsg], updatedAt: now() } 
           : c
       );
+      latestConversationsRef.current = updatedConvs;
       onUpdate(updatedConvs);
       onSaveScenario(updatedConvs);
-
-      assistantTurnsSinceExtractionRef.current += 1;
-      const extractionDecision = getExtractionDecision('', cleanedText);
-      if (extractionDecision.shouldExtract) {
-        assistantTurnsSinceExtractionRef.current = 0;
-        extractCharacterUpdatesFromDialogue('', cleanedText, {
-          sourceAssistantMessageId: aiMessageId,
-          reason: extractionDecision.reason
-        }).then(updates => {
-          if (updates.length > 0) {
-            debugLog(`[handleContinue] Extracted ${updates.length} character updates (${extractionDecision.reason})`, updates);
-            applyExtractedUpdates(updates);
-          }
-        }).catch(err => {
-          console.error('[handleContinue] Character extraction failed:', err);
-        });
-      }
+      queueAssistantDerivedWork('', cleanedText, aiMsg);
       
       processResponseForNewCharacters(cleanedText);
       
@@ -4013,7 +4405,7 @@ Do not acknowledge this instruction in your response.`;
       
       // Build character data for mentioned characters
       const charactersData = [...mentionedNames].map(name => {
-        const char = findCharacterByName(name, appData);
+        const char = findCharacterByName(name, effectiveAppData);
         if (!char) return null;
         return {
           name: char.name,
@@ -4074,6 +4466,7 @@ Do not acknowledge this instruction in your response.`;
       // Create image message
       const imageMessage: Message = {
         id: uuid(),
+        generationId: uuid(),
         role: 'assistant',
         text: '',  // Empty text for image-only messages
         imageUrl: data.imageUrl,
@@ -4113,7 +4506,7 @@ Do not acknowledge this instruction in your response.`;
     const cleanRaw = text.replace(/\[SCENE:\s*.*?\]/g, '').trim();
 
     if (isUser) {
-      const userChar = appData.characters.find(c => c.controlledBy === 'User');
+      const userChar = effectiveMainCharacters.find(c => c.controlledBy === 'User');
       if (userChar) {
         if (cleanRaw.toLowerCase().startsWith(userChar.name.toLowerCase() + ':')) {
           return { 
@@ -4137,7 +4530,7 @@ Do not acknowledge this instruction in your response.`;
         return { char: matched.effective, cleanText: strippedText, speakerName: matched.effective.name };
       }
       if (matched?.kind === 'side') {
-        return { char: matched.side, cleanText: strippedText, speakerName: matched.side.name };
+        return { char: matched.effective, cleanText: strippedText, speakerName: matched.effective.name };
       }
 
       // Unknown speaker - still strip the tag to prevent flicker, preserve raw label for placeholder
@@ -4153,12 +4546,12 @@ Do not acknowledge this instruction in your response.`;
         return { char: matched.effective, cleanText: cleanRaw, speakerName: matched.effective.name };
       }
       if (matched?.kind === 'side') {
-        return { char: matched.side, cleanText: cleanRaw, speakerName: matched.side.name };
+        return { char: matched.effective, cleanText: cleanRaw, speakerName: matched.effective.name };
       }
     }
 
     // Default to first AI character for AI messages
-    const aiChars = appData.characters.filter(c => c.controlledBy === 'AI');
+    const aiChars = effectiveMainCharacters.filter(c => c.controlledBy === 'AI');
     if (!isUser && aiChars.length > 0) {
       return { char: aiChars[0], cleanText: cleanRaw, speakerName: aiChars[0].name };
     }
@@ -4960,7 +5353,7 @@ const updatedChar: SideCharacter = {
                 <div className="space-y-2 pb-2">
                 {mainCharactersForDisplay.map(char => 
                   char._source === 'character' 
-                    ? renderCharacterCard(appData.characters.find(c => c.id === char.id)!)
+                    ? renderCharacterCard(char as Character)
                     : (
                       <SideCharacterCard
                         key={char.id}
@@ -5003,7 +5396,7 @@ const updatedChar: SideCharacter = {
               <div className="space-y-2 pb-2">
                 {sideCharactersForDisplay.map(char => 
                   char._source === 'character' 
-                    ? renderCharacterCard(appData.characters.find(c => c.id === char.id)!)
+                    ? renderCharacterCard(char as Character)
                     : (
                       <SideCharacterCard
                         key={char.id}
@@ -5053,7 +5446,7 @@ const updatedChar: SideCharacter = {
             const isAi = msg.role === 'assistant';
             
             // Get the primary speaker for user messages
-            const userChar = appData.characters.find(c => c.controlledBy === 'User') || null;
+            const userChar = effectiveMainCharacters.find(c => c.controlledBy === 'User') || null;
             
             // Parse segments and merge by RESOLVED speaker identity
             // This ensures null (default AI) and explicit "Ashley:" merge correctly
@@ -5061,7 +5454,7 @@ const updatedChar: SideCharacter = {
             const segments = mergeByRenderedSpeaker(
               rawSegments,
               isAi,
-              appData,
+              effectiveAppData,
               userChar,
               resolveCanonicalSpeakerName
             );
@@ -5207,7 +5600,7 @@ const updatedChar: SideCharacter = {
                         ? mergeByRenderedSpeaker(
                             parseMessageSegments(formattedStreamingContent),
                             isAi,
-                            appData,
+                            effectiveAppData,
                             userChar,
                             resolveCanonicalSpeakerName
                           )
@@ -5234,8 +5627,8 @@ const updatedChar: SideCharacter = {
                         segmentAvatar = effectiveUserChar?.avatarDataUrl || null;
                       } else {
                         // AI message without speaker - use first AI character's effective data
-                        const aiChars = appData.characters.filter(c => c.controlledBy === 'AI');
-                        segmentChar = aiChars.length > 0 ? getEffectiveCharacter(aiChars[0]) : null;
+                        const aiChars = effectiveMainCharacters.filter(c => c.controlledBy === 'AI');
+                        segmentChar = aiChars.length > 0 ? aiChars[0] : null;
                         segmentName = segmentChar?.name || 'Narrator';
                         segmentAvatar = segmentChar?.avatarDataUrl || null;
                       }
@@ -5249,7 +5642,7 @@ const updatedChar: SideCharacter = {
                         } else if (!isAi) {
                           prevSpeakerName = userChar?.name || 'You';
                         } else {
-                          const aiChars = appData.characters.filter(c => c.controlledBy === 'AI');
+                          const aiChars = effectiveMainCharacters.filter(c => c.controlledBy === 'AI');
                           prevSpeakerName = aiChars.length > 0 ? aiChars[0]?.name || 'Narrator' : 'Narrator';
                         }
                       }
@@ -5283,6 +5676,7 @@ const updatedChar: SideCharacter = {
                             <InlineFormattedMessageEditor
                               value={segment.content}
                               dynamicText={dynamicText}
+                              plainTextMode={isAi ? 'action' : 'default'}
                               autoFocus={segIndex === 0}
                               onChange={(nextContent) => {
                                 setInlineEditSegments(prev => prev.map((editSegment, editIndex) => (
@@ -5293,7 +5687,7 @@ const updatedChar: SideCharacter = {
                               }}
                             />
                           ) : (
-                            <FormattedMessage text={segment.content} dynamicText={dynamicText} />
+                            <FormattedMessage text={segment.content} dynamicText={dynamicText} plainTextMode={isAi ? 'action' : 'default'} />
                           )}
                         </div>
                         {showAvatar && <div className="clear-both" />}
@@ -5325,9 +5719,9 @@ const updatedChar: SideCharacter = {
           {formattedStreamingContent && !regeneratingMessageId && (() => {
             // Parse formatted streaming content into segments for multi-speaker rendering (only for NEW messages, not regeneration)
             // Using formattedStreamingContent to prevent flickering from system tags and placeholder names
-            const userChar = appData.characters.find(c => c.controlledBy === 'User') || null;
+            const userChar = effectiveMainCharacters.find(c => c.controlledBy === 'User') || null;
             const rawSegments = parseMessageSegments(formattedStreamingContent);
-            const segments = mergeByRenderedSpeaker(rawSegments, true, appData, userChar, resolveCanonicalSpeakerName);
+            const segments = mergeByRenderedSpeaker(rawSegments, true, effectiveAppData, userChar, resolveCanonicalSpeakerName);
             
             return (
               <div className={`w-full ${offsetBubbles ? 'max-w-3xl mr-auto' : 'max-w-4xl mx-auto'}`}>
@@ -5342,8 +5736,8 @@ const updatedChar: SideCharacter = {
                     const segmentChar = segment.speakerName 
                       ? findCharacterWithSession(segment.speakerName)
                       : (() => {
-                          const aiChars = appData.characters.filter(c => c.controlledBy === 'AI');
-                          return aiChars.length > 0 ? getEffectiveCharacter(aiChars[0]) : null;
+                          const aiChars = effectiveMainCharacters.filter(c => c.controlledBy === 'AI');
+                          return aiChars.length > 0 ? aiChars[0] : null;
                         })();
                     const segmentName = segmentChar?.name
                       || (segment.speakerName ? (resolveCanonicalSpeakerName(segment.speakerName) || segment.speakerName) : null)
@@ -5358,8 +5752,8 @@ const updatedChar: SideCharacter = {
                       const prevChar = prevSegment.speakerName 
                         ? findCharacterWithSession(prevSegment.speakerName)
                         : (() => {
-                            const aiChars = appData.characters.filter(c => c.controlledBy === 'AI');
-                            return aiChars.length > 0 ? getEffectiveCharacter(aiChars[0]) : null;
+                            const aiChars = effectiveMainCharacters.filter(c => c.controlledBy === 'AI');
+                            return aiChars.length > 0 ? aiChars[0] : null;
                           })();
                       prevSpeakerName = prevChar?.name
                         || (prevSegment.speakerName ? (resolveCanonicalSpeakerName(prevSegment.speakerName) || prevSegment.speakerName) : null)
@@ -5388,7 +5782,7 @@ const updatedChar: SideCharacter = {
                           </div>
                         )}
                         <div className={showAvatar ? "pt-1 antialiased" : "antialiased"}>
-                          <FormattedMessage text={segment.content} dynamicText={dynamicText} />
+                          <FormattedMessage text={segment.content} dynamicText={dynamicText} plainTextMode="action" />
                         </div>
                         {showAvatar && <div className="clear-both" />}
                       </div>
@@ -5610,7 +6004,7 @@ const updatedChar: SideCharacter = {
         conversationId={conversationId}
         currentDay={currentDay}
         currentTimeOfDay={currentTimeOfDay}
-        memories={memories}
+        memories={activeMemories}
         memoriesEnabled={memoriesEnabled}
         onMemoriesChange={setMemories}
         onToggleEnabled={setMemoriesEnabled}
@@ -5875,8 +6269,8 @@ const updatedChar: SideCharacter = {
                       onClick={() => {
                         if (!conversation) return;
                         const allChars = [
-                          ...appData.characters.map(c => ({ name: c.name, control: c.controlledBy })),
-                          ...appData.sideCharacters.map(c => ({ name: c.name, control: c.controlledBy }))
+                          ...effectiveAppData.characters.map(c => ({ name: c.name, control: c.controlledBy })),
+                          ...effectiveAppData.sideCharacters.map(c => ({ name: c.name, control: c.controlledBy }))
                         ];
                         const userChars = allChars.filter(c => c.control === 'User').map(c => c.name);
                         const aiChars = allChars.filter(c => c.control === 'AI').map(c => c.name);
@@ -5960,7 +6354,7 @@ const updatedChar: SideCharacter = {
                           llmAppData,
                           currentDay,
                           currentTimeOfDay,
-                          memories,
+                          activeMemories,
                           memoriesEnabled,
                           activeScene
                         );
@@ -5976,10 +6370,9 @@ const updatedChar: SideCharacter = {
                         
                         // Length directive (current state)
                         const lengthDirective = getLengthDirective();
-                        
-                        // Style hint pool
-                        const hintMap: Record<string, string[]> = { concise: conciseStyleHints, balanced: balancedStyleHints, detailed: detailedStyleHints };
-                        const activeHints = hintMap[verbosity] || balancedStyleHints;
+                        const supabaseRuntimeTarget = /localhost|127\.0\.0\.1/i.test(import.meta.env.VITE_SUPABASE_URL || '')
+                          ? 'local'
+                          : 'hosted';
                         
                         const exportDate = new Date().toISOString().slice(0, 16).replace('T', ' ');
                         const lines: string[] = [];
@@ -5987,7 +6380,8 @@ const updatedChar: SideCharacter = {
                         lines.push('# Master Prompt Snapshot');
                         lines.push(`**Model:** ${modelId}`);
                         lines.push(`**Verbosity:** ${verbosity} → max_tokens: ${maxTokens}`);
-                        lines.push(`**Temperature:** 0.9 (hardcoded in edge function)`);
+                        lines.push(`**Supabase Target:** ${supabaseRuntimeTarget}`);
+                        lines.push(`**Temperature:** ${supabaseRuntimeTarget === 'local' ? '0.55 (local edge function repo value)' : 'Hosted edge function target — local repo is 0.55, but deployed value may differ until chat is redeployed'}`);
                         lines.push(`**Stream:** true`);
                         lines.push(`**Session Message Count:** ${sessionMessageCountRef.current}`);
                         lines.push(`**Exported:** ${exportDate}`);
@@ -6016,14 +6410,11 @@ const updatedChar: SideCharacter = {
                         lines.push(lengthDirective || 'None — response lengths are varied');
                         lines.push('');
                         
-                        // Style hint pool
-                        lines.push(`### Style Hint Pool (${verbosity} mode)`);
+                        // Style hint runtime
+                        lines.push('### Style Hint Runtime');
                         lines.push('');
-                        lines.push('One of these is randomly appended to each user message:');
-                        lines.push('');
-                        for (const hint of activeHints) {
-                          lines.push(`- ${hint}`);
-                        }
+                        lines.push('Random style hints are currently DISABLED for live roleplay requests.');
+                        lines.push('No style hint is appended to the final user message in the current runtime.');
                         lines.push('');
                         
                         // Regeneration directive
