@@ -871,6 +871,7 @@ export type Database = {
           entry_type: string
           id: string
           source: string | null
+          source_generation_id: string | null
           source_message_id: string | null
           time_of_day: string | null
           updated_at: string | null
@@ -884,6 +885,7 @@ export type Database = {
           entry_type?: string
           id?: string
           source?: string | null
+          source_generation_id?: string | null
           source_message_id?: string | null
           time_of_day?: string | null
           updated_at?: string | null
@@ -897,6 +899,7 @@ export type Database = {
           entry_type?: string
           id?: string
           source?: string | null
+          source_generation_id?: string | null
           source_message_id?: string | null
           time_of_day?: string | null
           updated_at?: string | null
@@ -910,6 +913,7 @@ export type Database = {
           conversation_id: string
           created_at: string | null
           day: number | null
+          generation_id: string
           id: string
           role: string
           time_of_day: string | null
@@ -919,6 +923,7 @@ export type Database = {
           conversation_id: string
           created_at?: string | null
           day?: number | null
+          generation_id?: string
           id?: string
           role: string
           time_of_day?: string | null
@@ -928,6 +933,7 @@ export type Database = {
           conversation_id?: string
           created_at?: string | null
           day?: number | null
+          generation_id?: string
           id?: string
           role?: string
           time_of_day?: string | null
@@ -938,6 +944,173 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      character_state_message_snapshots: {
+        Row: {
+          character_id: string
+          conversation_id: string
+          created_at: string
+          id: string
+          snapshot: Json
+          source_generation_id: string
+          source_message_id: string
+          user_id: string
+        }
+        Insert: {
+          character_id: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          snapshot?: Json
+          source_generation_id: string
+          source_message_id: string
+          user_id: string
+        }
+        Update: {
+          character_id?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          snapshot?: Json
+          source_generation_id?: string
+          source_message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "character_state_message_snapshots_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_state_message_snapshots_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "character_state_message_snapshots_source_message_id_fkey"
+            columns: ["source_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      side_character_message_snapshots: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          side_character_id: string
+          snapshot: Json
+          source_generation_id: string
+          source_message_id: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          side_character_id: string
+          snapshot?: Json
+          source_generation_id: string
+          source_message_id: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          side_character_id?: string
+          snapshot?: Json
+          source_generation_id?: string
+          source_message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "side_character_message_snapshots_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "side_character_message_snapshots_side_character_id_fkey"
+            columns: ["side_character_id"]
+            isOneToOne: false
+            referencedRelation: "side_characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "side_character_message_snapshots_source_message_id_fkey"
+            columns: ["source_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_goal_step_derivations: {
+        Row: {
+          completed: boolean
+          conversation_id: string
+          created_at: string
+          day: number | null
+          goal_id: string
+          id: string
+          source_generation_id: string
+          source_message_id: string
+          step_id: string
+          time_of_day: string | null
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          conversation_id: string
+          created_at?: string
+          day?: number | null
+          goal_id: string
+          id?: string
+          source_generation_id: string
+          source_message_id: string
+          step_id: string
+          time_of_day?: string | null
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          conversation_id?: string
+          created_at?: string
+          day?: number | null
+          goal_id?: string
+          id?: string
+          source_generation_id?: string
+          source_message_id?: string
+          step_id?: string
+          time_of_day?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_goal_step_derivations_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "story_goal_step_derivations_source_message_id_fkey"
+            columns: ["source_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
             referencedColumns: ["id"]
           },
         ]

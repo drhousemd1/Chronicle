@@ -96,6 +96,28 @@ export interface MessageSegment {
   content: string;
 }
 
+const SPEAKER_TAG_RESERVED_WORDS = new Set([
+  'day',
+  'time',
+  'scene',
+  'location',
+  'mood',
+  'notes',
+  'system',
+  'update',
+  'action',
+  'thought',
+  'description',
+  'narrator',
+]);
+
+function isLikelySpeakerTagName(name: string): boolean {
+  const normalized = name.trim().toLowerCase();
+  if (!normalized) return false;
+  if (SPEAKER_TAG_RESERVED_WORDS.has(normalized)) return false;
+  return /^[a-z][a-z\s'-]{0,29}$/i.test(name.trim());
+}
+
 /**
  * Parse a message for CharacterName: tags using PARAGRAPH-BASED splitting.
  * 
@@ -115,9 +137,18 @@ export function parseMessageSegments(text: string): MessageSegment[] {
     .trim();
   
   if (!cleanText) return [];
+
+  const normalizedText = cleanText.replace(
+    /([.!?]["”']?\s+)(?:\*\*)?([A-Z][a-zA-Z\s'-]{0,29})(?:\*\*)?:\s*/g,
+    (fullMatch, prefix, possibleName) => (
+      isLikelySpeakerTagName(possibleName)
+        ? `${prefix}\n\n${possibleName}: `
+        : fullMatch
+    ),
+  );
   
   // Split by blank lines (one or more empty lines)
-  const paragraphs = cleanText.split(/\n\s*\n+/);
+  const paragraphs = normalizedText.split(/\n\s*\n+/);
   
   const segments: MessageSegment[] = [];
   
@@ -135,7 +166,7 @@ export function parseMessageSegments(text: string): MessageSegment[] {
     
     const tagMatch = trimmed.match(tagRegex);
     
-    if (tagMatch) {
+    if (tagMatch && isLikelySpeakerTagName(tagMatch[1])) {
       // Paragraph starts with a speaker tag
       const speakerName = tagMatch[1].trim();
       const content = trimmed.slice(tagMatch[0].length).trim();

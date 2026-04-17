@@ -14,10 +14,16 @@ import { databaseSchemaInventory } from "@/data/database-schema-inventory";
 import securityShieldIcon from "@/assets/admin/security-shield-v2-cropped.png";
 
 const STATIC_ARCHITECTURE_PATHS = [
+  "/README.md",
   "/package.json",
   "/vite.config.ts",
+  "/playwright.config.ts",
+  "/eslint.config.js",
+  "/tsconfig.json",
   "/components.json",
   "/scripts/refresh-architecture-paths.mjs",
+  "/scripts/run-quality-hub-scan.mjs",
+  "/scripts/verify-prompt-serialization.ts",
   "/e2e/smoke.spec.ts",
 ];
 
@@ -118,6 +124,15 @@ type LineCountState = {
   rowSignal?: "refactor";
 };
 
+type RefactorTriageOverride = {
+  suppressAutoRefactor?: boolean;
+  lineBadgeClass?: LineCountState["badgeClass"];
+  lineBadgeDescription?: string;
+  fileSignal?: "refactor";
+  fileNote?: string;
+  rowOverrides?: Record<string, Partial<Pick<FileRow, "signal" | "note">>>;
+};
+
 type HeaderBadge = {
   label:
     | "TOOLING"
@@ -166,12 +181,76 @@ type StaticFileOverride = {
   rows: FileRow[];
 };
 
+const REFACTOR_TRIAGE_OVERRIDES: Record<string, RefactorTriageOverride> = {
+  "/src/pages/Index.tsx": {
+    fileNote:
+      "Refactor target: split the workspace shell into smaller ownership layers for auth/bootstrap, tab routing, scenario state, modal orchestration, and page-specific loaders. Right now one change to app navigation or startup flow can easily collide with unrelated chat, builder, or admin behavior.",
+  },
+  "/src/components/admin/finance/FinanceDashboardTool.tsx": {
+    fileNote:
+      "Refactor target: break this dashboard into smaller finance modules for overview metrics, user/subscription management, usage telemetry, billing, validation reporting, and document workflows. At its current size, one finance fix can destabilize the entire admin finance surface.",
+  },
+  "/src/components/chronicle/ChatInterfaceTab.tsx": {
+    fileNote:
+      "Refactor target: separate message rendering/composer UI, effective canonical-state resolution, AI request orchestration, and modal/tool launchers into smaller units. This file now carries both the visible chat UX and the generation-safe continuity engine, which makes safe iteration harder than it should be.",
+  },
+  "/src/features/story-builder/StoryBuilderScreen.tsx": {
+    fileNote:
+      "Refactor target: split the story-builder shell into layout/sidebar ownership, section render configuration, media/modals, and AI-enhance orchestration. The screen currently carries too much UI, workflow, and persistence-adjacent behavior in one place.",
+  },
+  "/src/features/character-builder/CharacterBuilderScreen.tsx": {
+    fileNote:
+      "Refactor target: split the character-builder shell into navigation/progress UI, hardcoded section rendering, custom-content rendering, and enhance/media flows. That would make custom-field work and AI-enhance fixes safer and easier to reason about.",
+  },
+  "/src/services/character-ai.ts": {
+    fileNote:
+      "Refactor target: split section prompt construction, enhance request execution, response parsing, and persistence/update helpers into focused modules. The current file is carrying too much end-to-end responsibility for the character-enhance pipeline.",
+  },
+  "/src/services/llm.ts": {
+    fileNote:
+      "Refactor target: separate prompt assembly, `roleplay_v2` request execution, post-response parsing, and follow-up extraction/update helpers. This is one of the highest-risk files in the app because it now sits directly on the planner/writer/validator chat runtime path.",
+  },
+  "/src/pages/style-guide/app-architecture.tsx": {
+    fileNote:
+      "Refactor target: split this page into shell/layout, left-rail navigation, file-card rendering, schema rendering, legend/filter controls, and static triage metadata. The architecture tool is now strong enough that it needs its own modular structure too.",
+  },
+  "/src/data/ui-audit-findings.ts": {
+    fileNote:
+      "Refactor target: split Quality Hub data into smaller registries for overview metadata, scan modules, findings, scan runs, and change-log entries. Keeping all operator history and scan definitions in one mega file is becoming a maintenance bottleneck.",
+  },
+  "/src/data/api-inspector-guide-template.ts": {
+    fileNote:
+      "Refactor target: split the API Inspector template content by lifecycle section or API call so prompt-map maintenance stops flowing through one 3k-line content registry. Smaller slices would also make code-truth updates much less error-prone.",
+  },
+  "/src/data/api-inspector-guide-phases.ts": {
+    lineBadgeClass: "is-refactor-needed",
+    lineBadgeDescription: "Refactor needed: this phase registry is approaching the same maintenance cliff as the larger inspector template files.",
+    fileSignal: "refactor",
+    fileNote:
+      "Refactor target: split phase definitions by lifecycle segment or API-call family instead of one shared registry. This file is already dense enough that keeping all phases together is starting to work against clarity.",
+  },
+  "/src/data/database-schema-inventory.ts": {
+    suppressAutoRefactor: true,
+    lineBadgeClass: "is-large",
+    lineBadgeDescription: "Large generated schema inventory file. Size alone is expected here and should not be treated as refactor debt.",
+  },
+  "/src/integrations/supabase/types.ts": {
+    suppressAutoRefactor: true,
+    lineBadgeClass: "is-large",
+    lineBadgeDescription: "Large generated Supabase types file. Size alone is expected here and should not be treated as refactor debt.",
+  },
+};
+
 const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
   {
     title: "Root Files",
     children: [
+      { kind: "file", path: "/README.md" },
       { kind: "file", path: "/package.json" },
       { kind: "file", path: "/vite.config.ts" },
+      { kind: "file", path: "/playwright.config.ts" },
+      { kind: "file", path: "/eslint.config.js" },
+      { kind: "file", path: "/tsconfig.json" },
       { kind: "file", path: "/components.json" },
     ],
   },
@@ -181,12 +260,59 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
     children: [
       {
         kind: "folder",
+        path: "/src/pages",
+        children: [
+          { kind: "file", path: "/src/pages/Index.tsx" },
+          { kind: "file", path: "/src/pages/Admin.tsx" },
+          { kind: "file", path: "/src/pages/Gallery.tsx" },
+        ],
+      },
+      {
+        kind: "folder",
+        path: "/src/features",
+        children: [
+          {
+            kind: "folder",
+            path: "/src/features/story-builder",
+            children: [{ kind: "file", path: "/src/features/story-builder/StoryBuilderScreen.tsx" }],
+          },
+          {
+            kind: "folder",
+            path: "/src/features/character-builder",
+            children: [{ kind: "file", path: "/src/features/character-builder/CharacterBuilderScreen.tsx" }],
+          },
+          {
+            kind: "folder",
+            path: "/src/features/character-editor-modal",
+            children: [{ kind: "file", path: "/src/features/character-editor-modal/CharacterEditorModalScreen.tsx" }],
+          },
+        ],
+      },
+      {
+        kind: "folder",
         path: "/src/services",
         children: [
           { kind: "file", path: "/src/services/llm.ts" },
           { kind: "file", path: "/src/services/supabase-data.ts" },
+          {
+            kind: "folder",
+            path: "/src/services/persistence",
+            children: [
+              { kind: "file", path: "/src/services/persistence/shared.ts" },
+              { kind: "file", path: "/src/services/persistence/characters.ts" },
+              { kind: "file", path: "/src/services/persistence/scenarios.ts" },
+              { kind: "file", path: "/src/services/persistence/conversations.ts" },
+              { kind: "file", path: "/src/services/persistence/side-characters.ts" },
+              { kind: "file", path: "/src/services/persistence/content-themes.ts" },
+              { kind: "file", path: "/src/services/persistence/media-settings.ts" },
+            ],
+          },
           { kind: "file", path: "/src/services/usage-tracking.ts" },
         ],
+      },
+      {
+        kind: "file",
+        path: "/src/types.ts",
       },
       {
         kind: "folder",
@@ -207,6 +333,22 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
         children: [
           {
             kind: "folder",
+            path: "/src/components/admin",
+            children: [
+              {
+                kind: "folder",
+                path: "/src/components/admin/guide",
+                children: [{ kind: "file", path: "/src/components/admin/guide/AppGuideTool.tsx" }],
+              },
+              {
+                kind: "folder",
+                path: "/src/components/admin/finance",
+                children: [{ kind: "file", path: "/src/components/admin/finance/FinanceDashboardTool.tsx" }],
+              },
+            ],
+          },
+          {
+            kind: "folder",
             path: "/src/components/chronicle",
             children: [
               { kind: "file", path: "/src/components/chronicle/ChatInterfaceTab.tsx" },
@@ -214,6 +356,24 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
               { kind: "file", path: "/src/components/chronicle/MemoriesModal.tsx" },
             ],
           },
+        ],
+      },
+      {
+        kind: "folder",
+        path: "/src/data",
+        children: [
+          { kind: "file", path: "/src/data/database-schema-inventory.ts" },
+          { kind: "file", path: "/src/data/ui-audit-findings.ts" },
+          { kind: "file", path: "/src/data/api-inspector-map-registry.ts" },
+        ],
+      },
+      {
+        kind: "folder",
+        path: "/src/lib",
+        children: [
+          { kind: "file", path: "/src/lib/app-architecture-utils.ts" },
+          { kind: "file", path: "/src/lib/canonical-field-registry.ts" },
+          { kind: "file", path: "/src/lib/api-inspector-schema.ts" },
         ],
       },
       {
@@ -239,14 +399,26 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
       {
         kind: "folder",
         path: "/docs/guides",
-        children: [{ kind: "file", path: "/docs/guides/chat-interface-page-structure-guide.md" }],
+        children: [
+          { kind: "file", path: "/docs/guides/app-overview-global-systems.md" },
+          { kind: "file", path: "/docs/guides/chat-interface-page-structure-guide.md" },
+          { kind: "file", path: "/docs/guides/scenario-builder-page-structure-guide.md" },
+          { kind: "file", path: "/docs/guides/character-builder-page-structure-guide.md" },
+          { kind: "file", path: "/docs/guides/edge-functions-ai-services-structure-guide.md" },
+          { kind: "file", path: "/docs/guides/quality-hub-scan-playbook.md" },
+          { kind: "file", path: "/docs/guides/story-character-builder-refactor-blueprint.md" },
+        ],
       },
     ],
   },
   {
     title: "scripts",
     path: "/scripts",
-    children: [{ kind: "file", path: "/scripts/refresh-architecture-paths.mjs" }],
+    children: [
+      { kind: "file", path: "/scripts/refresh-architecture-paths.mjs" },
+      { kind: "file", path: "/scripts/run-quality-hub-scan.mjs" },
+      { kind: "file", path: "/scripts/verify-prompt-serialization.ts" },
+    ],
   },
   {
     title: "e2e",
@@ -272,12 +444,27 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
             path: "/supabase/functions/track-ai-usage",
             children: [{ kind: "file", path: "/supabase/functions/track-ai-usage/index.ts" }],
           },
+          {
+            kind: "folder",
+            path: "/supabase/functions/api-usage-test-session",
+            children: [{ kind: "file", path: "/supabase/functions/api-usage-test-session/index.ts" }],
+          },
+          {
+            kind: "folder",
+            path: "/supabase/functions/xai-billing-balance",
+            children: [{ kind: "file", path: "/supabase/functions/xai-billing-balance/index.ts" }],
+          },
         ],
       },
       {
         kind: "folder",
         path: "/supabase/migrations",
-        children: [{ kind: "file", path: "/supabase/migrations/20260319102704_328b0fc5-7ae1-4fb5-a4ec-6cbb50f65c28.sql" }],
+        children: [
+          { kind: "file", path: "/supabase/migrations/20260331153000_security_rls_hardening.sql" },
+          { kind: "file", path: "/supabase/migrations/20260329112000_finance_live_wiring_tables.sql" },
+          { kind: "file", path: "/supabase/migrations/20260404133000_add_side_character_custom_sections.sql" },
+          { kind: "file", path: "/supabase/migrations/20260417041136_297c107c-c7f2-49be-9458-9f4502ee75a7.sql" },
+        ],
       },
     ],
   },
@@ -304,8 +491,12 @@ type SchemaBucket = (typeof databaseSchemaInventory.storage_buckets)[number];
 type SchemaEdgeFunction = (typeof databaseSchemaInventory.edge_functions)[number];
 
 const ROOT_CHILD_ORDER: readonly string[] = [
+  "README.md",
   "package.json",
   "vite.config.ts",
+  "playwright.config.ts",
+  "eslint.config.js",
+  "tsconfig.json",
   "components.json",
   "src",
   "docs",
@@ -315,14 +506,37 @@ const ROOT_CHILD_ORDER: readonly string[] = [
 ];
 
 const STATIC_LINE_COUNT_OVERRIDES: Record<string, number> = {
+  "/README.md": 73,
   "/package.json": 111,
   "/vite.config.ts": 35,
+  "/playwright.config.ts": 11,
+  "/eslint.config.js": 39,
+  "/tsconfig.json": 24,
   "/components.json": 20,
   "/scripts/refresh-architecture-paths.mjs": 276,
+  "/scripts/run-quality-hub-scan.mjs": 48,
+  "/scripts/verify-prompt-serialization.ts": 290,
   "/e2e/smoke.spec.ts": 11,
 };
 
 const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
+  "/README.md": {
+    description: "Top-level operator-facing project overview, setup notes, and repository orientation document.",
+    rows: [
+      {
+        id: "readme-project-orientation",
+        title: "Project Orientation",
+        summary: "Gives the repo-level starting context for what Chronicle is, how to run it locally, and where major workspace commands begin.",
+        badgeLabel: "DOCUMENTATION",
+        badgeClass: "documentation",
+        details: [
+          { label: "Defines", values: ["project overview", "local setup flow", "baseline development commands"], kind: "plain" },
+          { label: "Used By", values: ["new contributors", "local onboarding", "high-level repo orientation"], kind: "plain" },
+          { label: "Requires", values: ["stays aligned with actual package scripts and current local workflow"], kind: "plain" },
+        ],
+      },
+    ],
+  },
   "/package.json": {
     description: "Project manifest and command hub for Chronicle's frontend, test, and architecture-maintenance workflows.",
     rows: [
@@ -359,19 +573,670 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       },
     ],
   },
+  "/playwright.config.ts": {
+    description: "Playwright entry config that delegates Chronicle's browser smoke tests through Lovable's shared Playwright wrapper.",
+    rows: [
+      {
+        id: "playwright-config-e2e-harness",
+        title: "E2E Harness Settings",
+        summary: "Pins the Chronicle end-to-end test runner to Lovable's shared Playwright config factory so smoke checks inherit the expected preview/browser defaults.",
+        badgeLabel: "TOOLING",
+        badgeClass: "tooling",
+        details: [
+          { label: "Defines", values: ["Playwright config bootstrap", "Lovable preview/browser defaults", "e2e folder as the default test home"], kind: "plain" },
+          { label: "Used By", values: ["npm run test:e2e", "/e2e/smoke.spec.ts"], kind: "plain" },
+          { label: "Requires", values: ["the shared Lovable Playwright package stays installed and the e2e suite remains compatible with its wrapper contract"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/eslint.config.js": {
+    description: "Workspace lint policy file that sets the baseline TypeScript and React hygiene rules used in ship-check and quality scans.",
+    rows: [
+      {
+        id: "eslint-config-lint-policy",
+        title: "Lint Policy Settings",
+        summary: "Defines which files are linted, which config files are ignored, and which React/TypeScript rule severities Chronicle uses during local and pre-push validation.",
+        badgeLabel: "TOOLING",
+        badgeClass: "tooling",
+        details: [
+          { label: "Defines", values: ["TypeScript ESLint baseline", "React hooks and refresh rules", "explicit ignore list for config files"], kind: "plain" },
+          { label: "Used By", values: ["npm run lint", "npm run ship-check", "quality scan validation gates"], kind: "plain" },
+          { label: "Requires", values: ["rule intent stays aligned with the repo's actual tolerance for warnings vs blocking issues"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/tsconfig.json": {
+    description: "TypeScript workspace root config that controls cross-project references and baseline compiler strictness.",
+    rows: [
+      {
+        id: "tsconfig-workspace-compiler-contract",
+        title: "Workspace Compiler Contract",
+        summary: "Defines the shared TypeScript aliasing and strictness defaults that the app and node-side config projects inherit.",
+        badgeLabel: "TOOLING",
+        badgeClass: "tooling",
+        details: [
+          { label: "Defines", values: ["@/* path alias", "noImplicitAny enabled", "strictNullChecks enabled", "app/node project references"], kind: "plain" },
+          { label: "Used By", values: ["npm run typecheck", "editor IntelliSense", "Vite/TS module resolution"], kind: "plain" },
+          { label: "Requires", values: ["aliases stay synchronized with Vite and generated code paths"], kind: "plain" },
+        ],
+      },
+    ],
+  },
   "/components.json": {
-    description: "shadcn/ui registry config for aliases, Tailwind wiring, and component generation defaults.",
+    description: "shadcn/Radix generation config that still defines alias and Tailwind defaults for the repo's shared UI primitive layer.",
     rows: [
       {
         id: "components-json-component-registry-settings",
         title: "Component Registry Settings",
-        summary: "Pins the shadcn style preset, Tailwind entry points, and alias paths used when new UI primitives are generated.",
+        summary: "Pins the registry preset, Tailwind entry points, and alias paths that still back Chronicle's shared `src/components/ui` primitive layer.",
         badgeLabel: "TOOLING",
         badgeClass: "tooling",
         details: [
           { label: "Defines", values: ["tsx: true", "Tailwind CSS path src/index.css", "base color slate", "aliases for components, ui, lib, and hooks"], kind: "plain" },
-          { label: "Used By", values: ["component generation flows", "future shadcn/ui maintenance inside the repo"], kind: "plain" },
+          { label: "Used By", values: ["shared Radix/shadcn-style UI primitives in src/components/ui", "component generation flows", "future registry maintenance inside the repo"], kind: "plain" },
           { label: "Requires", values: ["alias paths stay synchronized with TypeScript and Vite resolution so generated code lands in the right places"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/scripts/run-quality-hub-scan.mjs": {
+    description: "Quality Hub sweep script that runs the core repo validation gates in sequence and stops at the first failure.",
+    rows: [
+      {
+        id: "quality-scan-validation-runner",
+        title: "Validation Gate Runner",
+        summary: "Executes the repeatable baseline scan stack for Quality Hub so lint, typecheck, tests, build, and dependency audit can be run as one ordered sweep.",
+        badgeLabel: "SCRIPT",
+        badgeClass: "script",
+        details: [
+          { label: "Defines", values: ["lint", "Type Check", "Unit Tests", "Build", "Dependency Audit"], kind: "plain" },
+          { label: "Calls", values: ["npm run lint", "npx tsc --noEmit", "npm run test", "npm run build", "npm audit --omit=dev"], kind: "plain" },
+          { label: "Used By", values: ["npm run quality:scan", "Quality Hub stability sweeps", "pre-push validation passes"], kind: "plain" },
+          { label: "Requires", values: ["each downstream command stays green and the stop-on-first-failure behavior remains intentional"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/scripts/verify-prompt-serialization.ts": {
+    description: "Prompt-contract verification script that constructs realistic story and character fixtures and asserts the assembled AI instruction blocks still include required authored data.",
+    rows: [
+      {
+        id: "verify-prompt-serialization-contract",
+        title: "Prompt Serialization Verification",
+        summary: "Builds sample scenario, main-character, user-character, and side-character data and checks that Chronicle's prompt assembler still serializes the required sections into the final instruction output.",
+        badgeLabel: "SCRIPT",
+        badgeClass: "script",
+        details: [
+          { label: "Uses", values: ["/src/utils.ts", "/src/types.ts", "/src/services/llm.ts"], kind: "files" },
+          { label: "Defines", values: ["fixture scenario data", "fixture main/user/side characters", "prompt content assertions"], kind: "plain" },
+          { label: "Used By", values: ["manual prompt regression checks", "future serialization automation", "AI contract debugging"], kind: "plain" },
+          { label: "Requires", values: ["fixture shapes stay aligned with current app types and prompt assembly rules"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/src/pages/Index.tsx": {
+    description: "Main Chronicle workspace shell that owns tab routing, auth-aware app bootstrap, scenario state, and lazy loading for the primary app surfaces.",
+    rows: [
+      {
+        id: "index-workspace-shell",
+        title: "Workspace Shell",
+        summary: "Acts as the central runtime shell for Chronicle's primary logged-in experience and orchestrates which major tabs, builders, chat flows, and admin surfaces are loaded.",
+        badgeLabel: "REACT COMPONENT",
+        badgeClass: "component",
+        details: [
+          { label: "Renders / Opens", values: ["/src/components/chronicle/GalleryHub.tsx", "/src/components/chronicle/StoryHub.tsx", "/src/components/chronicle/ChatInterfaceTab.tsx", "/src/features/story-builder/StoryBuilderScreen.tsx", "/src/features/character-builder/CharacterBuilderScreen.tsx", "/src/pages/Admin.tsx"], kind: "files" },
+          { label: "Uses", values: ["/src/services/supabase-data.ts", "/src/services/api-usage-test-session.ts", "/src/hooks/use-auth.ts", "/src/features/navigation/builder-tabs.ts"], kind: "files" },
+          { label: "Access", values: ["client-rendered primary app shell after auth/bootstrap", "owns tab selection and active scenario state"], kind: "plain" },
+          { label: "Requires", values: ["lazy-loaded tab contracts stay stable", "scenario state, auth state, and navigation state remain synchronized"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/src/types.ts": {
+    description: "Shared Chronicle runtime contract file defining scenario, character, conversation, message, snapshot, and derivation shapes used across UI, persistence, and backend boundaries.",
+    rows: [
+      {
+        id: "types-continuity-contract",
+        title: "Continuity Contract Types",
+        summary: "Defines the canonical app-level types for generation-aware messages, main/side-character snapshots, goal derivations, and scenario payloads so the UI, persistence layer, and backend pipeline all speak the same language.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          {
+            label: "Defines",
+            values: [
+              "Message.generationId",
+              "CharacterStateMessageSnapshot",
+              "SideCharacterMessageSnapshot",
+              "StoryGoalStepDerivation",
+              "ScenarioData",
+            ],
+            kind: "plain",
+          },
+          {
+            label: "Used By",
+            values: [
+              "/src/components/chronicle/ChatInterfaceTab.tsx",
+              "/src/services/llm.ts",
+              "/src/services/persistence/conversations.ts",
+              "/src/services/persistence/side-characters.ts",
+            ],
+            kind: "files",
+          },
+          {
+            label: "Requires",
+            values: ["type definitions stay synchronized with Supabase schema changes and the live chat continuity pipeline"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/services/supabase-data.ts": {
+    description: "Thin compatibility barrel that preserves Chronicle's older persistence import surface while delegating the real work to focused domain modules under `src/services/persistence/`.",
+    rows: [
+      {
+        id: "supabase-data-compatibility-barrel",
+        title: "Persistence Compatibility Barrel",
+        summary: "Keeps the rest of the app stable while the persistence layer is split into smaller ownership modules, so imports do not have to be rewritten all at once.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          {
+            label: "Uses",
+            values: [
+              "/src/services/persistence/shared.ts",
+              "/src/services/persistence/characters.ts",
+              "/src/services/persistence/scenarios.ts",
+              "/src/services/persistence/conversations.ts",
+              "/src/services/persistence/side-characters.ts",
+              "/src/services/persistence/content-themes.ts",
+              "/src/services/persistence/media-settings.ts",
+            ],
+            kind: "files",
+          },
+          {
+            label: "Used By",
+            values: [
+              "/src/pages/Index.tsx",
+              "/src/features/story-builder/StoryBuilderScreen.tsx",
+              "/src/features/character-builder/CharacterBuilderScreen.tsx",
+              "/src/components/chronicle/ChatInterfaceTab.tsx",
+            ],
+            kind: "files",
+          },
+          {
+            label: "Access",
+            values: ["client-side persistence facade for Chronicle's main workspace flows"],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["export names stay backward compatible until direct imports are migrated to the domain modules"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/services/persistence/shared.ts": {
+    description: "Shared persistence helper layer for common converters, extra-row normalization, timestamp utilities, and storage upload helpers reused by the domain modules.",
+    rows: [
+      {
+        id: "persistence-shared-helpers",
+        title: "Shared Persistence Helpers",
+        summary: "Provides the low-level conversion and storage helpers the split persistence modules reuse so field normalization and upload handling stay consistent across the app.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          {
+            label: "Used By",
+            values: [
+              "/src/services/persistence/characters.ts",
+              "/src/services/persistence/scenarios.ts",
+              "/src/services/persistence/side-characters.ts",
+              "/src/services/persistence/media-settings.ts",
+            ],
+            kind: "files",
+          },
+          {
+            label: "Defines",
+            values: ["shared converters", "extra-row normalization", "timestamp helpers", "storage upload helpers"],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["shared conversion rules stay aligned with the character and scenario type contracts"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/services/persistence/scenarios.ts": {
+    description: "Scenario/world persistence module for story records, world-core loading, codex entries, scenes, and scenario bootstrap assembly.",
+    rows: [
+      {
+        id: "persistence-scenarios-module",
+        title: "Scenario Persistence",
+        summary: "Owns scenario-level CRUD and load-for-play/bootstrap behavior, including world-core backfill checks and the main story payload returned to the builders and chat runtime.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          {
+            label: "Uses Tables",
+            values: ["stories", "characters", "codex_entries", "scenes", "conversations"],
+            kind: "tables",
+          },
+          {
+            label: "Used By",
+            values: [
+              "/src/services/supabase-data.ts",
+              "/src/pages/Index.tsx",
+              "/src/features/story-builder/StoryBuilderScreen.tsx",
+            ],
+            kind: "files",
+          },
+          {
+            label: "Mutates",
+            values: ["scenario metadata", "world core", "codex entries", "scene records", "scenario bootstrap payloads"],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["world-core migration and canonical field rules stay aligned with current Story Builder terminology"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/services/persistence/conversations.ts": {
+    description: "Conversation and continuity persistence module for messages, session state, memories, and generation-scoped derivation ledgers.",
+    rows: [
+      {
+        id: "persistence-conversations-module",
+        title: "Conversation Persistence",
+        summary: "Owns conversation/message loading and save flows, along with the durable memory and session-state records that Chronicle's live chat depends on.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          {
+            label: "Uses Tables",
+            values: ["conversations", "messages", "character_session_states", "memories"],
+            kind: "tables",
+          },
+          {
+            label: "Used By",
+            values: ["/src/services/supabase-data.ts", "/src/components/chronicle/ChatInterfaceTab.tsx"],
+            kind: "files",
+          },
+          {
+            label: "Mutates",
+            values: ["conversation history", "message rows", "manual session overrides", "memory visibility"],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["message ordering and canonical conversation hydration stay stable before chat runtime state is derived"],
+            kind: "plain",
+          },
+        ],
+      },
+      {
+        id: "persistence-generation-ledger",
+        title: "Generation Ledger Persistence",
+        summary: "Stores and resolves the message-scoped snapshot and derivation records that make refresh/regenerate safe instead of letting stale branches overwrite canon.",
+        badgeLabel: "DATA BLOCK",
+        badgeClass: "data-block",
+        details: [
+          {
+            label: "Uses Tables",
+            values: ["character_state_message_snapshots", "story_goal_step_derivations", "messages", "memories"],
+            kind: "tables",
+          },
+          {
+            label: "Used By",
+            values: ["/src/components/chronicle/ChatInterfaceTab.tsx", "/src/types.ts"],
+            kind: "files",
+          },
+          {
+            label: "Requires",
+            values: ["active message generation filters stay aligned with ChatInterfaceTab's effective-state resolver"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/services/persistence/side-characters.ts": {
+    description: "Side-character persistence module for roster CRUD plus generation-scoped canonical snapshot storage.",
+    rows: [
+      {
+        id: "persistence-side-character-roster",
+        title: "Side Character Persistence",
+        summary: "Handles durable side-character roster reads and writes, including custom sections and other builder-authored fields that the live chat should inherit.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          {
+            label: "Uses Tables",
+            values: ["side_characters"],
+            kind: "tables",
+          },
+          {
+            label: "Used By",
+            values: ["/src/services/supabase-data.ts", "/src/components/chronicle/ChatInterfaceTab.tsx"],
+            kind: "files",
+          },
+          {
+            label: "Mutates",
+            values: ["side-character roster rows", "custom sections", "chat-visible side-character source state"],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["side-character field contracts stay aligned with Character Builder and side-character edit surfaces"],
+            kind: "plain",
+          },
+        ],
+      },
+      {
+        id: "persistence-side-character-snapshots",
+        title: "Side Character Snapshot Ledger",
+        summary: "Stores AI-derived side-character canon per message generation so refresh/regenerate no longer mutates the wrong timeline branch.",
+        badgeLabel: "DATA BLOCK",
+        badgeClass: "data-block",
+        details: [
+          {
+            label: "Uses Tables",
+            values: ["side_character_message_snapshots"],
+            kind: "tables",
+          },
+          {
+            label: "Used By",
+            values: ["/src/components/chronicle/ChatInterfaceTab.tsx", "/src/types.ts"],
+            kind: "files",
+          },
+          {
+            label: "Requires",
+            values: ["snapshot writes and active generation resolution stay synchronized with the message ledger contract"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/components/chronicle/ChatInterfaceTab.tsx": {
+    description: "Primary Chronicle chat workspace that renders the live conversation while resolving effective canonical state, orchestrating generation side effects, and launching adjacent chat tools.",
+    rows: [
+      {
+        id: "chat-interface-live-workspace",
+        title: "Live Chat Workspace",
+        summary: "Owns the visible Chronicle conversation surface, message flow controls, regenerate/edit actions, and the surrounding chat-adjacent tools.",
+        badgeLabel: "REACT COMPONENT",
+        badgeClass: "component",
+        details: [
+          {
+            label: "Used By",
+            values: ["/src/pages/Index.tsx"],
+            kind: "files",
+          },
+          {
+            label: "Uses",
+            values: [
+              "/src/services/llm.ts",
+              "/src/services/persistence/conversations.ts",
+              "/src/services/persistence/side-characters.ts",
+            ],
+            kind: "files",
+          },
+          {
+            label: "Access",
+            values: ["client-rendered Chronicle roleplay workspace for the active scenario and conversation"],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["conversation state, scenario state, and speaker rendering rules remain synchronized across send, regenerate, continue, and edit flows"],
+            kind: "plain",
+          },
+        ],
+      },
+      {
+        id: "chat-interface-effective-canon",
+        title: "Effective Canonical State Resolver",
+        summary: "Builds the active main-character, side-character, memory, and goal state from the current message generation before anything is rendered or sent back to the AI.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          {
+            label: "Uses",
+            values: [
+              "/src/types.ts",
+              "/src/services/persistence/conversations.ts",
+              "/src/services/persistence/side-characters.ts",
+            ],
+            kind: "files",
+          },
+          {
+            label: "Mutates",
+            values: ["effective main-character state", "effective side-character state", "active memory view", "effective story-goal progress"],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["generation IDs, snapshot tables, and message ordering all resolve to the same active canon branch"],
+            kind: "plain",
+          },
+        ],
+      },
+      {
+        id: "chat-interface-roleplay-runtime-path",
+        title: "Roleplay Runtime Path",
+        summary: "Packages the effective chat runtime into the Chronicle LLM request path and then applies the returned generation's post-response derivations back into the continuity ledger.",
+        badgeLabel: "API CALL",
+        badgeClass: "api-call",
+        details: [
+          {
+            label: "Calls",
+            values: ["/src/services/llm.ts", "/supabase/functions/chat/index.ts"],
+            kind: "files",
+          },
+          {
+            label: "Mutates",
+            values: ["message generation IDs", "snapshot writes", "memory/goal derivations tied to the returned response"],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["the frontend request contract and backend `roleplay_v2` pipeline stay in sync"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/services/llm.ts": {
+    description: "Chronicle's main prompt-assembly and AI transport layer for paid roleplay chat, prompt serialization, and response-stream handling.",
+    rows: [
+      {
+        id: "llm-chat-request-assembly",
+        title: "Chronicle Chat Request Assembly",
+        summary: "Builds the live system instruction, runtime directives, recent transcript slice, and final user wrapper before the paid Chronicle chat request is fired.",
+        badgeLabel: "API CALL",
+        badgeClass: "api-call",
+        details: [
+          {
+            label: "Used By",
+            values: ["/src/components/chronicle/ChatInterfaceTab.tsx", "/scripts/verify-prompt-serialization.ts"],
+            kind: "files",
+          },
+          {
+            label: "Calls",
+            values: ["/supabase/functions/chat/index.ts"],
+            kind: "files",
+          },
+          {
+            label: "Requires",
+            values: ["prompt serialization stays aligned with current scenario, character, and side-character runtime contracts"],
+            kind: "plain",
+          },
+        ],
+      },
+      {
+        id: "llm-roleplay-v2-context",
+        title: "roleplay_v2 Runtime Context Injection",
+        summary: "Attaches the current conversation, temporal state, active scene, and AI/user speaker lists so the backend planner/writer/validator pipeline can reason against the right live canon.",
+        badgeLabel: "CONTEXT INJECTION",
+        badgeClass: "context-injection",
+        details: [
+          {
+            label: "Uses",
+            values: ["/src/types.ts", "/src/components/chronicle/ChatInterfaceTab.tsx"],
+            kind: "files",
+          },
+          {
+            label: "Calls",
+            values: ["/supabase/functions/chat/index.ts"],
+            kind: "files",
+          },
+          {
+            label: "Requires",
+            values: ["effective character resolution and active scene metadata are correct before the request is sent"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/supabase/functions/chat/index.ts": {
+    description: "Server-side Chronicle chat edge function that receives the assembled request and routes it through the paid chat runtime, including the newer multi-pass roleplay pipeline.",
+    rows: [
+      {
+        id: "chat-edge-entry",
+        title: "Chronicle Chat Entry Point",
+        summary: "Acts as the backend entry point for Chronicle's live roleplay requests, authenticating the caller, applying rate limits, and choosing which chat pipeline executes.",
+        badgeLabel: "EDGE FUNCTION",
+        badgeClass: "edge-fn",
+        details: [
+          {
+            label: "Used By",
+            values: ["/src/services/llm.ts"],
+            kind: "files",
+          },
+          {
+            label: "Access",
+            values: ["server-side paid AI orchestration behind Supabase auth and rate-limit guards"],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["valid auth/session headers, working xAI credentials, and stable request-body contracts from the frontend"],
+            kind: "plain",
+          },
+        ],
+      },
+      {
+        id: "chat-edge-roleplay-v2",
+        title: "roleplay_v2 Planner / Writer / Validator Pipeline",
+        summary: "Runs Chronicle chat through a continuity planner, constrained writer, and validator/reviser so the final response is grounded in the latest canon instead of a single-pass raw draft.",
+        badgeLabel: "API CALL",
+        badgeClass: "api-call",
+        details: [
+          {
+            label: "Defines",
+            values: ["recent-history window", "supporting-history selection", "planner pass", "writer pass", "validator/reviser pass"],
+            kind: "plain",
+          },
+          {
+            label: "Used By",
+            values: ["/src/services/llm.ts", "/src/components/chronicle/ChatInterfaceTab.tsx"],
+            kind: "files",
+          },
+          {
+            label: "Requires",
+            values: ["the latest user turn remains highest priority and supporting history never overrides the current canon branch"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/supabase/migrations/20260417041136_297c107c-c7f2-49be-9458-9f4502ee75a7.sql": {
+    description: "Continuity migration that introduced Chronicle's generation ledger schema for rollback-safe chat canon, message-scoped snapshots, and goal derivations.",
+    rows: [
+      {
+        id: "message-generation-ledger-schema",
+        title: "Message Generation Ledger Schema",
+        summary: "Adds the backend schema that lets chat refresh/regenerate branch safely instead of overwriting canon in place, including message generation IDs and per-message snapshot/derivation tables.",
+        badgeLabel: "DB MIGRATION",
+        badgeClass: "db-migration",
+        details: [
+          {
+            label: "Defines",
+            values: [
+              "messages.generation_id",
+              "memories.source_generation_id",
+              "character_state_message_snapshots",
+              "side_character_message_snapshots",
+              "story_goal_step_derivations",
+            ],
+            kind: "plain",
+          },
+          {
+            label: "Used By",
+            values: [
+              "/src/services/persistence/conversations.ts",
+              "/src/services/persistence/side-characters.ts",
+              "/src/components/chronicle/ChatInterfaceTab.tsx",
+              "/src/types.ts",
+            ],
+            kind: "files",
+          },
+          {
+            label: "Requires",
+            values: ["typed Supabase metadata and runtime active-generation filtering stay aligned with this schema contract"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/data/ui-audit-findings.ts": {
+    description: "Quality Hub source-of-truth registry containing issue entries, scan-run records, overview row metadata, and implementation change-log history.",
+    rows: [
+      {
+        id: "ui-audit-findings-registry",
+        title: "Quality Hub Registry",
+        summary: "Stores the structured findings, scan packs, app-unit review rows, and change-log entries that the Quality Hub renders as its operator-facing history and scan catalog.",
+        badgeLabel: "DATA BLOCK",
+        badgeClass: "data-block",
+        details: [
+          { label: "Uses", values: ["/src/lib/ui-audit-schema.ts"], kind: "files" },
+          { label: "Used By", values: ["/src/pages/style-guide/ui-audit.tsx"], kind: "files" },
+          { label: "Mutates", values: ["Issue Registry contents", "Scan Runs history", "Change Log history", "Overview scan metadata"], kind: "plain" },
+          { label: "Requires", values: ["schema keys remain aligned with ui-audit.tsx rendering expectations and Quality Hub typing"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/src/lib/app-architecture-utils.ts": {
+    description: "Core registry builder and inference helper for the App Architecture page's generated tree, file-kind tagging, and node descriptions.",
+    rows: [
+      {
+        id: "app-architecture-utils-registry-builder",
+        title: "Architecture Registry Builder",
+        summary: "Turns the generated repo path inventory into the normalized tree structure the App Architecture page renders, while inferring file kinds, tags, descriptions, and prompt-friendly summaries.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          { label: "Used By", values: ["/src/pages/style-guide/app-architecture.tsx"], kind: "files" },
+          { label: "Defines", values: ["node typing", "file-kind inference", "folder/file descriptions", "registry assembly", "descendant counting"], kind: "plain" },
+          { label: "Requires", values: ["path normalization and file-kind inference rules stay aligned with the repo's actual ownership patterns"], kind: "plain" },
         ],
       },
     ],
@@ -2750,31 +3615,52 @@ function resolveHeaderBadge(node: ArchitectureNode): HeaderBadge {
   return { label: "CODE LOGIC", className: "code-logic", filterValue: "code-logic", navAccent: "code-logic" };
 }
 
-function getLineCountState(lineCount: number): LineCountState {
-  if (lineCount >= 1200) {
-    return {
+function getLineCountState(path: string, lineCount: number): LineCountState {
+  const override = REFACTOR_TRIAGE_OVERRIDES[path];
+
+  let state: LineCountState;
+
+  if (override?.suppressAutoRefactor) {
+    state = {
+      badgeClass: lineCount >= 300 ? "is-large" : "",
+      description: lineCount >= 300 ? "Large file. Keep an eye on it." : "Healthy size.",
+    };
+  } else if (lineCount >= 1200) {
+    state = {
       badgeClass: "is-refactor-needed",
       description: "File needs refactoring due to being too large.",
       fileSignal: "refactor",
     };
-  }
-  if (lineCount >= 600) {
-    return {
+  } else if (lineCount >= 600) {
+    state = {
       badgeClass: "is-refactor-soon",
       description: "Consider refactoring soon.",
       rowSignal: "refactor",
     };
-  }
-  if (lineCount >= 300) {
-    return {
+  } else if (lineCount >= 300) {
+    state = {
       badgeClass: "is-large",
       description: "Large file. Keep an eye on it.",
     };
+  } else {
+    state = {
+      badgeClass: "",
+      description: "Healthy size.",
+    };
   }
-  return {
-    badgeClass: "",
-    description: "Healthy size.",
-  };
+
+  if (override?.lineBadgeClass) {
+    state.badgeClass = override.lineBadgeClass;
+  }
+  if (override?.lineBadgeDescription) {
+    state.description = override.lineBadgeDescription;
+  }
+  if (override?.fileSignal === "refactor") {
+    delete state.rowSignal;
+    state.fileSignal = "refactor";
+  }
+
+  return state;
 }
 
 function rowFilterValue(row: FileRow): FilterValue {
@@ -2956,7 +3842,19 @@ function buildFileRows(
 ): FileRow[] {
   const staticOverride = STATIC_FILE_OVERRIDES[node.path];
   if (staticOverride) {
-    return staticOverride.rows;
+    const override = REFACTOR_TRIAGE_OVERRIDES[node.path];
+    return staticOverride.rows.map((row) => {
+      const rowOverride =
+        override?.rowOverrides?.[row.id] ??
+        override?.rowOverrides?.[row.title] ??
+        override?.rowOverrides?.primary;
+      if (!rowOverride) return row;
+      return {
+        ...row,
+        signal: rowOverride.signal ?? row.signal,
+        note: rowOverride.note ?? row.note,
+      };
+    });
   }
 
   const fileKind = node.fileMeta?.fileKind ?? "source-file";
@@ -3003,6 +3901,17 @@ function buildFileRows(
   let badgeLabel: FileRow["badgeLabel"] = "CODE LOGIC";
   let badgeClass: FileRow["badgeClass"] = "code-logic";
   let summary = node.description;
+  const rowOverrideMap = REFACTOR_TRIAGE_OVERRIDES[node.path]?.rowOverrides;
+
+  const applyRowOverride = (rowKey: string, row: FileRow): FileRow => {
+    const override = rowOverrideMap?.[rowKey] ?? rowOverrideMap?.[row.id];
+    if (!override) return row;
+    return {
+      ...row,
+      signal: override.signal ?? row.signal,
+      note: override.note ?? row.note,
+    };
+  };
 
   if (headerBadge.filterValue === "tooling") {
     badgeLabel = "TOOLING";
@@ -3056,17 +3965,19 @@ function buildFileRows(
     tables.length > 0 &&
     (node.path.includes("supabase-data") || node.path.includes("track-ai-usage") || node.path.includes("chat") || /auth|role|policy|secure|usage/i.test(node.path));
 
-  rows.push({
-    id: `${node.id}-primary`,
-    title: createPrimaryTitle(node),
-    summary,
-    badgeLabel,
-    badgeClass,
-    details: primaryDetails,
-    signal: lineState.rowSignal,
-    note: lineState.rowSignal === "refactor" ? "This row should be split out soon because the file is already carrying too much responsibility." : undefined,
-    security: primarySecurity,
-  });
+  rows.push(
+    applyRowOverride("primary", {
+      id: `${node.id}-primary`,
+      title: createPrimaryTitle(node),
+      summary,
+      badgeLabel,
+      badgeClass,
+      details: primaryDetails,
+      signal: lineState.rowSignal,
+      note: lineState.rowSignal === "refactor" ? "This row should be split out soon because the file is already carrying too much responsibility." : undefined,
+      security: primarySecurity,
+    }),
+  );
 
   if (tables.length > 0 || rpcs.length > 0 || storageBuckets.length > 0) {
     const persistenceDetails: DetailLine[] = [];
@@ -3080,15 +3991,17 @@ function buildFileRows(
     }
     pushDetail(persistenceDetails, "Requires", requireValues, "plain");
 
-    rows.push({
-      id: `${node.id}-persistence`,
-      title: "Persistence touchpoints",
-      summary: "Shows the durable data, RPC, and storage surfaces this file directly depends on.",
-      badgeLabel: "DATA BLOCK",
-      badgeClass: "data-block",
-      details: persistenceDetails,
-      security: tables.length > 0,
-    });
+    rows.push(
+      applyRowOverride("persistence", {
+        id: `${node.id}-persistence`,
+        title: "Persistence touchpoints",
+        summary: "Shows the durable data, RPC, and storage surfaces this file directly depends on.",
+        badgeLabel: "DATA BLOCK",
+        badgeClass: "data-block",
+        details: persistenceDetails,
+        security: tables.length > 0,
+      }),
+    );
   }
 
   if (edgeFunctions.length > 0) {
@@ -3103,17 +4016,19 @@ function buildFileRows(
       pushDetail(edgeDetails, "Tracks Usage In", ["ai_usage_events"], "plain");
     }
 
-    rows.push({
-      id: `${node.id}-edge`,
-      title: isPaidApiPath ? "Paid AI request path" : "Edge function usage",
-      summary: isPaidApiPath
-        ? "This row participates in a usage-tracked AI request flow that reaches paid backend inference paths."
-        : "This row invokes backend edge functions as part of the runtime behavior in this file.",
-      badgeLabel: isPaidApiPath ? "API CALL" : "EDGE FUNCTION",
-      badgeClass: isPaidApiPath ? "api-call" : "edge-fn",
-      details: edgeDetails,
-      security: true,
-    });
+    rows.push(
+      applyRowOverride("edge", {
+        id: `${node.id}-edge`,
+        title: isPaidApiPath ? "Paid AI request path" : "Edge function usage",
+        summary: isPaidApiPath
+          ? "This row participates in a usage-tracked AI request flow that reaches paid backend inference paths."
+          : "This row invokes backend edge functions as part of the runtime behavior in this file.",
+        badgeLabel: isPaidApiPath ? "API CALL" : "EDGE FUNCTION",
+        badgeClass: isPaidApiPath ? "api-call" : "edge-fn",
+        details: edgeDetails,
+        security: true,
+      }),
+    );
   }
 
   if (missingTables.length > 0 || missingRpcs.length > 0 || missingEdgeFunctions.length > 0 || missingBuckets.length > 0) {
@@ -3121,17 +4036,19 @@ function buildFileRows(
     pushDetail(mismatchDetails, "Code Reference", [...missingTables, ...missingRpcs, ...missingEdgeFunctions, ...missingBuckets], "plain");
     pushDetail(mismatchDetails, "Verified Tables", tables.filter((name) => knownTables.has(name)), "tables");
 
-    rows.push({
-      id: `${node.id}-mismatch`,
-      title: "Backend contract mismatch",
-      summary: "Code in this file references backend resources that do not appear in the latest live schema inventory.",
-      badgeLabel: "CODE LOGIC",
-      badgeClass: "code-logic",
-      details: mismatchDetails,
-      signal: "issue",
-      note: "This usually means the code is expecting an old name, a missing migration, or a backend resource that was never created.",
-      security: false,
-    });
+    rows.push(
+      applyRowOverride("mismatch", {
+        id: `${node.id}-mismatch`,
+        title: "Backend contract mismatch",
+        summary: "Code in this file references backend resources that do not appear in the latest live schema inventory.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: mismatchDetails,
+        signal: "issue",
+        note: "This usually means the code is expecting an old name, a missing migration, or a backend resource that was never created.",
+        security: false,
+      }),
+    );
   }
 
   return rows;
@@ -3269,7 +4186,8 @@ function ArchitectureFileCard({
   onDetailToggle: (detailId: string, open: boolean) => void;
 }) {
   const headerBadge = resolveHeaderBadge(node);
-  const lineState = getLineCountState(lineCount);
+  const lineState = getLineCountState(node.path, lineCount);
+  const triageOverride = REFACTOR_TRIAGE_OVERRIDES[node.path];
   const rows = buildFileRows(node, analysis, lineState, knownTables, knownRpcs, knownEdgeFunctions, knownBuckets);
   const issueRowCount = rows.filter((row) => row.signal === "issue").length;
   const refactorRowCount = rows.filter((row) => row.signal === "refactor").length;
@@ -3302,8 +4220,10 @@ function ArchitectureFileCard({
       <div className="app-card-body">
         <div className="app-card-desc">{resolveFileDescription(node)}</div>
 
-        {lineState.fileSignal === "refactor" && (
-          <div className="inline-size-warning">File needs refactoring due to being too large.</div>
+        {(lineState.fileSignal === "refactor" || triageOverride?.fileNote) && (
+          <div className="inline-size-warning">
+            {triageOverride?.fileNote ?? "File needs refactoring due to being too large."}
+          </div>
         )}
 
         {hasIssue && (
@@ -3978,7 +4898,7 @@ export default function AppArchitecturePage() {
       const rows = buildFileRows(
         node,
         analysis,
-        getLineCountState(resolveLineCount(node.path, architectureFileMetrics)),
+        getLineCountState(node.path, resolveLineCount(node.path, architectureFileMetrics)),
         knownTables,
         knownRpcs,
         knownEdgeFunctions,
@@ -4028,7 +4948,7 @@ export default function AppArchitecturePage() {
       const rows = buildFileRows(
         node,
         analysis,
-        getLineCountState(resolveLineCount(node.path, architectureFileMetrics)),
+        getLineCountState(node.path, resolveLineCount(node.path, architectureFileMetrics)),
         knownTables,
         knownRpcs,
         knownEdgeFunctions,
