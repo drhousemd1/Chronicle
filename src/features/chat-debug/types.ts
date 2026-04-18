@@ -9,12 +9,15 @@ export type ChatDebugTraceExcerpt = {
 
 export type ChatDebugPlannerPlan = {
   focusCharacter: string | null;
+  allowedSpeakers: string[];
+  maxSpeakerBlocks: number;
   directQuestionsToAnswer: string[];
   mentionedAiCharacters: string[];
   immediateBeat: string;
   mustInclude: string[];
   mustAvoid: string[];
   continuityNotes: string[];
+  sceneStateFacts: string[];
   formattingNotes: string[];
 };
 

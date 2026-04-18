@@ -40,12 +40,15 @@ type XAIResult = { ok: true; response: Response } | { ok: false; status: number;
 
 type PlannerPlan = {
   focusCharacter: string | null;
+  allowedSpeakers: string[];
+  maxSpeakerBlocks: number;
   directQuestionsToAnswer: string[];
   mentionedAiCharacters: string[];
   immediateBeat: string;
   mustInclude: string[];
   mustAvoid: string[];
   continuityNotes: string[];
+  sceneStateFacts: string[];
   formattingNotes: string[];
 };
 
@@ -122,8 +125,9 @@ const SUPPORTING_HISTORY_WINDOW = 8;
 
 const TEMP_DIRECT = 0.55;
 const TEMP_PLANNER = 0.15;
-const TEMP_WRITER = 0.4;
+const TEMP_WRITER = 0.3;
 const TEMP_VALIDATOR = 0.1;
+const TEMP_REPAIR = 0.1;
 
 const BANNED_TROPE_REPLACEMENTS: Record<string, string> = {
   tsundere: 'sharp-edged',
@@ -134,12 +138,15 @@ const BANNED_TROPE_REPLACEMENTS: Record<string, string> = {
 
 const FALLBACK_PLAN: PlannerPlan = {
   focusCharacter: null,
+  allowedSpeakers: [],
+  maxSpeakerBlocks: 1,
   directQuestionsToAnswer: [],
   mentionedAiCharacters: [],
   immediateBeat: '',
   mustInclude: [],
   mustAvoid: [],
   continuityNotes: [],
+  sceneStateFacts: [],
   formattingNotes: [],
 };
 
@@ -216,6 +223,24 @@ async function callXAIForJson(
   }
 }
 
+async function callXAIForText(
+  messages: Message[],
+  modelId: string,
+  maxTokens: number,
+  temperature: number,
+): Promise<{ ok: true; content: string } | { ok: false; reason: string }> {
+  const result = await callXAI(messages, modelId, false, maxTokens, temperature);
+  if (!result.ok) return { ok: false, reason: `status_${result.status}` };
+  try {
+    const data = await result.response.json();
+    const content: string = data?.choices?.[0]?.message?.content ?? '';
+    if (!content) return { ok: false, reason: 'empty_content' };
+    return { ok: true, content };
+  } catch (e) {
+    return { ok: false, reason: `parse_${(e as Error).message}` };
+  }
+}
+
 function extractJsonObject(raw: string): unknown | null {
   if (!raw) return null;
   const trimmed = raw.trim()
@@ -238,6 +263,86 @@ function previewText(text: string, maxLength = 220): string {
   if (!normalized) return '';
   if (normalized.length <= maxLength) return normalized;
   return `${normalized.slice(0, maxLength - 3).trimEnd()}...`;
+}
+
+function extractSpeakerBlockNames(text: string): string[] {
+  const lines = (text || '').split('\n').filter((line) => line.trim().length > 0);
+  const names: string[] = [];
+  const tagRegex = /^\s*(?:\*\*)?([A-Z][a-zA-Z\s'-]{0,29})(?:\*\*)?:\s*/;
+
+  for (const line of lines) {
+    const match = line.match(tagRegex);
+    if (!match) continue;
+    const name = match[1].trim();
+    if (!name) continue;
+    if (names.length === 0 || names[names.length - 1] !== name) {
+      names.push(name);
+    }
+  }
+
+  return names;
+}
+
+function analyzePolicyViolations(text: string, plan: PlannerPlan): string[] {
+  const issues: string[] = [];
+
+  if (/^\s*(?:-{3,}|\*{3,}|```(?:\w+)?|<\/?writer_draft>)\s*$/gim.test(text)) {
+    issues.push('Remove leaked separator or wrapper lines such as ---, ***, code fences, or <writer_draft> tags.');
+  }
+
+  const speakerBlocks = extractSpeakerBlockNames(text);
+  if (speakerBlocks.length > (plan.maxSpeakerBlocks || 1)) {
+    issues.push(`Reduce speaker-tagged blocks to ${plan.maxSpeakerBlocks || 1} or fewer.`);
+  }
+
+  if (plan.allowedSpeakers.length > 0) {
+    const allowed = new Set(plan.allowedSpeakers.map((name) => name.toLowerCase()));
+    const disallowed = [...new Set(speakerBlocks.filter((name) => !allowed.has(name.toLowerCase())))];
+    if (disallowed.length > 0) {
+      issues.push(`Use only these allowed speaker tags: ${plan.allowedSpeakers.join(', ')}. Remove: ${disallowed.join(', ')}.`);
+    }
+  }
+
+  return issues;
+}
+
+async function repairResponseForPolicyViolations(
+  text: string,
+  plan: PlannerPlan,
+  issues: string[],
+  modelId: string,
+  maxTokens: number,
+): Promise<{ ok: true; content: string } | { ok: false; reason: string }> {
+  const repairSystem: Message = {
+    role: 'system',
+    content: `You are the FINAL POLICY REPAIR pass for a roleplay writing pipeline.
+
+Output ONLY the corrected roleplay response text. No JSON. No commentary. No code fences.
+
+Hard requirements:
+- Keep the same scene meaning and momentum unless a listed violation forces a correction.
+- Use ONLY allowed speaker tags from the plan.
+- Stay within the max speaker block count from the plan.
+- Remove any leaked separator lines, wrapper tags, or formatting artifacts.
+- Preserve current scene-state facts; do not replay resolved beats as if they are happening again.
+- Use natural idiomatic English.
+
+Plan:
+${JSON.stringify(plan, null, 2)}
+
+Violations to repair:
+${issues.map((issue) => `- ${issue}`).join('\n')}`,
+  };
+
+  return await callXAIForText(
+    [
+      repairSystem,
+      { role: 'user', content: `Repair this response:\n<draft>\n${text}\n</draft>` },
+    ],
+    modelId,
+    maxTokens,
+    TEMP_REPAIR,
+  );
 }
 
 function buildRoleplayContextSummary(ctx: RoleplayContext | undefined): RoleplayDebugTrace['roleplayContext'] {
@@ -435,6 +540,8 @@ function normalizeFinalText(text: string): string {
   for (const [bad, replacement] of Object.entries(BANNED_TROPE_REPLACEMENTS)) {
     out = out.replace(new RegExp(`\\b${bad}\\b`, 'gi'), replacement);
   }
+  // Remove leaked validator / markdown wrapper artifacts if they appear as standalone lines.
+  out = out.replace(/^\s*(?:-{3,}|\*{3,}|```(?:\w+)?|<\/?writer_draft>)\s*$/gim, '');
   // Collapse multiple em dashes in a row to a single one
   out = out.replace(/(?:\s*—\s*){2,}/g, ' — ');
   // Whitespace cleanup
@@ -576,23 +683,29 @@ async function runRoleplayV2(
 Required JSON shape (use these EXACT field names):
 {
   "focusCharacter": string | null,
+  "allowedSpeakers": string[],
+  "maxSpeakerBlocks": number,
   "directQuestionsToAnswer": string[],
   "mentionedAiCharacters": string[],
   "immediateBeat": string,
   "mustInclude": string[],
   "mustAvoid": string[],
   "continuityNotes": string[],
+  "sceneStateFacts": string[],
   "formattingNotes": string[]
 }
 
 Rules:
 - focusCharacter: the AI character whose POV/voice should drive the response, or null if narration.
+- allowedSpeakers: AI character names allowed to receive tagged paragraphs this turn. Usually exactly one name.
+- maxSpeakerBlocks: default 1. Use 2 only if a second AI character's reaction genuinely changes the scene.
 - directQuestionsToAnswer: literal questions from the latest user turn that the response MUST answer.
 - mentionedAiCharacters: AI characters explicitly referenced or implied by the latest turn.
 - immediateBeat: one concise sentence describing the next concrete in-scene action.
 - mustInclude: short bullet phrases (facts, callbacks, named objects) the writer must respect.
-- mustAvoid: anti-patterns (off-screen perception, contradictions, invented props, trope labels).
+- mustAvoid: anti-patterns (off-screen perception, contradictions, invented props, trope labels, repeated resolved beats, mixed-up group references, robotic wording).
 - continuityNotes: facts from earlier turns the writer must preserve.
+- sceneStateFacts: current physical-state facts that remain true right now. Treat these like a state machine snapshot.
 - formattingNotes: tone/length/format hints (e.g. "two paragraphs, no bullet lists").
 
 ${ctxLines ? `Context:\n${ctxLines}\n` : ''}`,
@@ -615,14 +728,22 @@ ${ctxLines ? `Context:\n${ctxLines}\n` : ''}`,
       const p = parsed as Partial<PlannerPlan>;
       plan = {
         focusCharacter: typeof p.focusCharacter === 'string' ? p.focusCharacter : null,
+        allowedSpeakers: Array.isArray(p.allowedSpeakers) ? p.allowedSpeakers.map(String).filter(Boolean) : [],
+        maxSpeakerBlocks: typeof p.maxSpeakerBlocks === 'number' && Number.isFinite(p.maxSpeakerBlocks)
+          ? Math.max(1, Math.min(2, Math.round(p.maxSpeakerBlocks)))
+          : 1,
         directQuestionsToAnswer: Array.isArray(p.directQuestionsToAnswer) ? p.directQuestionsToAnswer.map(String) : [],
         mentionedAiCharacters: Array.isArray(p.mentionedAiCharacters) ? p.mentionedAiCharacters.map(String) : [],
         immediateBeat: typeof p.immediateBeat === 'string' ? p.immediateBeat : '',
         mustInclude: Array.isArray(p.mustInclude) ? p.mustInclude.map(String) : [],
         mustAvoid: Array.isArray(p.mustAvoid) ? p.mustAvoid.map(String) : [],
         continuityNotes: Array.isArray(p.continuityNotes) ? p.continuityNotes.map(String) : [],
+        sceneStateFacts: Array.isArray(p.sceneStateFacts) ? p.sceneStateFacts.map(String) : [],
         formattingNotes: Array.isArray(p.formattingNotes) ? p.formattingNotes.map(String) : [],
       };
+      if (!plan.allowedSpeakers.length && plan.focusCharacter) {
+        plan.allowedSpeakers = [plan.focusCharacter];
+      }
     } else {
       plannerUsedFallback = true;
       plannerFailureReason = 'planner_json_parse_failed';
@@ -633,6 +754,12 @@ ${ctxLines ? `Context:\n${ctxLines}\n` : ''}`,
     plannerFailureReason = plannerCall.reason;
     warnLog(`[chat] planner call failed (${plannerCall.reason}) -- using fallback plan`);
   }
+  if (!plan.allowedSpeakers.length) {
+    const fallbackSpeaker = plan.focusCharacter || plan.mentionedAiCharacters[0] || ctx?.aiCharacterNames?.[0] || null;
+    if (fallbackSpeaker) {
+      plan.allowedSpeakers = [fallbackSpeaker];
+    }
+  }
 
   // ---- 2) Writer ----------------------------------------------------------
   const writerPlanInjection: Message = {
@@ -642,12 +769,17 @@ ${JSON.stringify(plan, null, 2)}
 
 Writer rules:
 - Honor mustInclude and mustAvoid strictly.
+- Treat sceneStateFacts as current truth. Do not reset or replay resolved beats.
 - Answer every entry in directQuestionsToAnswer.
 - Stay in-scene; no out-of-character commentary.
 - No trope labels (tsundere, yandere, deredere, kuudere).
 - Do not invent objects, locations, or resources not established.
 - Do not describe what off-screen characters perceive.
 - Use ≤1 em dash per response.
+- Use ONLY these speaker tags for tagged paragraphs: ${plan.allowedSpeakers.length ? plan.allowedSpeakers.join(', ') : '(focus character only)'}.
+- Use at most ${plan.maxSpeakerBlocks} speaker-tagged block(s) in the whole response.
+- If a second speaker block is used, it must materially change the scene; no ping-pong reactions.
+- Do NOT output markdown separator lines such as --- or ***.
 - Supporting older excerpts may inform facts but must NEVER override the latest user turn.`,
   };
 
@@ -760,13 +892,21 @@ If the writer draft has no violations, set approved=true and copy the draft verb
 If there are violations, set approved=false, list them in issues, and put the corrected text in revisedResponse.
 
 Check for: contradictions with prior canon, repeated beats, invented objects/resources, off-screen perception, trope labels (tsundere/yandere/deredere/kuudere), robotic phrasing, malformed formatting, more than one em dash, ignoring directQuestionsToAnswer or mustInclude, violating mustAvoid.
+Also check specifically for:
+- violating sceneStateFacts by replaying already-resolved beats or regressing object state
+- speaker-tag violations (using names outside allowedSpeakers or exceeding maxSpeakerBlocks)
+- mixed-up addressee/group logic ("girls" when a male is present, impossible commands, contradictory physical instructions)
+- leaked separator lines or wrapper artifacts such as --- or <writer_draft>
+- responses that ignore a directly answerable question from an on-screen AI character
+
+Never include wrapper tags, separator lines, or meta labels in revisedResponse.
 
 Plan (for reference):
 ${JSON.stringify(plan)}`,
   };
   const validatorInput: Message[] = [
     validatorSystem,
-    { role: 'user', content: `Writer draft:\n---\n${writerDraft}\n---\n\nReturn the JSON validation result now.` },
+    { role: 'user', content: `Writer draft:\n<writer_draft>\n${writerDraft}\n</writer_draft>\n\nReturn the JSON validation result now.` },
   ];
 
   let finalText = writerDraft;
@@ -819,7 +959,29 @@ ${JSON.stringify(plan)}`,
     validatorFailureReason = validatorFailureReason ?? `normalization_error:${(e as Error).message}`;
     warnLog(`[chat] normalization error -- using pre-normalized text: ${(e as Error).message}`);
   }
-  const normalizationChanged = finalText !== preNormalizedText;
+  let normalizationChanged = finalText !== preNormalizedText;
+
+  const policyViolations = analyzePolicyViolations(finalText, plan);
+  if (policyViolations.length > 0) {
+    const repairCall = await repairResponseForPolicyViolations(finalText, plan, policyViolations, modelId, maxTokens);
+    if (repairCall.ok && repairCall.content.trim()) {
+      try {
+        const repairedNormalized = normalizeFinalText(repairCall.content);
+        if (repairedNormalized.trim()) {
+          finalText = repairedNormalized;
+          normalizationChanged = normalizationChanged || finalText !== preNormalizedText;
+          finalPath = 'roleplay_v2_policy_repaired';
+          validatorUsedRevision = true;
+          validatorIssues = [...validatorIssues, ...policyViolations];
+          validatorRevisedText = finalText;
+        }
+      } catch (e) {
+        validatorFailureReason = validatorFailureReason ?? `repair_normalization_error:${(e as Error).message}`;
+      }
+    } else {
+      validatorFailureReason = validatorFailureReason ?? `policy_repair_failed:${repairCall.reason}`;
+    }
+  }
 
   if (!finalText.trim()) {
     return {
@@ -870,7 +1032,10 @@ ${JSON.stringify(plan)}`,
       validatorFailureReason,
       validatorRevisedText,
       normalizationChanged,
-      notes: ['Debug trace shows Chronicle pipeline-selected context, not hidden model chain-of-thought.'],
+      notes: [
+        'Debug trace shows Chronicle pipeline-selected context, not hidden model chain-of-thought.',
+        ...(policyViolations.length > 0 ? [`Deterministic policy repair check triggered: ${policyViolations.join(' | ')}`] : []),
+      ],
     }),
   };
 }

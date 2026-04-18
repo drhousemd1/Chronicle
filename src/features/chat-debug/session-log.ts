@@ -12,6 +12,8 @@ function describeFinalPath(finalPath: string): string {
       return 'roleplay_v2 -> validator revised the draft';
     case 'roleplay_v2_writer_draft':
       return 'roleplay_v2 -> writer draft used as final';
+    case 'roleplay_v2_policy_repaired':
+      return 'roleplay_v2 -> deterministic policy repair pass applied';
     case 'roleplay_v2_direct_fallback':
       return 'roleplay_v2 -> direct fallback';
     case 'direct':
@@ -61,12 +63,15 @@ export function formatChatDebugTraceForSessionLog(
   lines.push('**Planner**');
   lines.push('');
   lines.push(`- Focus character: ${trace.planner.plan.focusCharacter || 'none'}`);
+  lines.push(`- Allowed speakers: ${joinOrFallback(trace.planner.plan.allowedSpeakers, '(none)')}`);
+  lines.push(`- Max speaker blocks: ${trace.planner.plan.maxSpeakerBlocks}`);
   lines.push(`- Immediate beat: ${trace.planner.plan.immediateBeat || '(none)'}`);
   lines.push(`- Direct questions to answer: ${joinOrFallback(trace.planner.plan.directQuestionsToAnswer, '(none)')}`);
   lines.push(`- Mentioned AI characters: ${joinOrFallback(trace.planner.plan.mentionedAiCharacters, '(none)')}`);
   lines.push(`- Must include: ${joinOrFallback(trace.planner.plan.mustInclude, '(none)')}`);
   lines.push(`- Must avoid: ${joinOrFallback(trace.planner.plan.mustAvoid, '(none)')}`);
   lines.push(`- Continuity notes: ${joinOrFallback(trace.planner.plan.continuityNotes, '(none)')}`);
+  lines.push(`- Scene-state facts: ${joinOrFallback(trace.planner.plan.sceneStateFacts, '(none)')}`);
   lines.push(`- Formatting notes: ${joinOrFallback(trace.planner.plan.formattingNotes, '(none)')}`);
   lines.push(`- Planner failure reason: ${trace.planner.failureReason || 'none'}`);
   lines.push('');

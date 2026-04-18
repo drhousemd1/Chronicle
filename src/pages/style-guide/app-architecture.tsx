@@ -1110,7 +1110,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       {
         id: "chat-debug-trace-contract",
         title: "Turn Debug Trace Contract",
-        summary: "Defines the structured trace payload for pipeline path, selected excerpts, planner output, writer draft preview, validator outcome, and final fallback notes for a single assistant turn.",
+        summary: "Defines the structured trace payload for pipeline path, selected excerpts, planner output, speaker-policy limits, scene-state facts, writer draft preview, validator outcome, and final fallback notes for a single assistant turn.",
         badgeLabel: "CODE LOGIC",
         badgeClass: "code-logic",
         details: [
@@ -1120,6 +1120,9 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
               "ChatDebugTrace",
               "StoredChatDebugTrace",
               "supporting excerpt scoring",
+              "allowedSpeakers",
+              "maxSpeakerBlocks",
+              "sceneStateFacts",
               "planner / validator trace payloads",
             ],
             kind: "plain",
@@ -1183,7 +1186,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       {
         id: "chat-debug-session-log-formatting",
         title: "Session Log Debug Formatter",
-        summary: "Formats the captured debug trace into readable session-log sections so admins can inspect the selected context, planner decision, validator result, and fallback path for each AI turn.",
+        summary: "Formats the captured debug trace into readable session-log sections so admins can inspect planner speaker limits, scene-state facts, validator result, policy-repair outcomes, and fallback path for each AI turn.",
         badgeLabel: "CODE LOGIC",
         badgeClass: "code-logic",
         details: [
@@ -1318,13 +1321,22 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       {
         id: "chat-edge-roleplay-v2",
         title: "roleplay_v2 Planner / Writer / Validator Pipeline",
-        summary: "Runs Chronicle chat through a continuity planner, constrained writer, and validator/reviser so the final response is grounded in the latest canon instead of a single-pass raw draft.",
+        summary: "Runs Chronicle chat through a continuity planner, constrained writer, validator/reviser, and final structural policy check so the final response stays grounded in the latest canon instead of a single-pass raw draft.",
         badgeLabel: "API CALL",
         badgeClass: "api-call",
         details: [
           {
             label: "Defines",
-            values: ["recent-history window", "supporting-history selection", "planner pass", "writer pass", "validator/reviser pass"],
+            values: [
+              "recent-history window",
+              "supporting-history selection",
+              "planner pass",
+              "allowed speaker plan",
+              "scene-state fact plan",
+              "writer pass",
+              "validator/reviser pass",
+              "deterministic policy repair check",
+            ],
             kind: "plain",
           },
           {
@@ -1334,7 +1346,10 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
           },
           {
             label: "Requires",
-            values: ["the latest user turn remains highest priority and supporting history never overrides the current canon branch"],
+            values: [
+              "the latest user turn remains highest priority and supporting history never overrides the current canon branch",
+              "speaker tags, scene-state continuity, and repaired output all stay aligned with the planner contract before the final text is emitted",
+            ],
             kind: "plain",
           },
         ],
@@ -1342,13 +1357,19 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       {
         id: "chat-edge-debug-trace-emission",
         title: "Admin Debug Trace Emission",
-        summary: "Builds a structured admin-only trace describing selected supporting excerpts, planner output, validator behavior, normalization changes, and direct-fallback reasons, then emits it alongside the normal chat response payload.",
+        summary: "Builds a structured admin-only trace describing selected supporting excerpts, planner output, speaker/state limits, validator behavior, policy-repair outcomes, normalization changes, and direct-fallback reasons, then emits it alongside the normal chat response payload.",
         badgeLabel: "CODE LOGIC",
         badgeClass: "code-logic",
         details: [
           {
             label: "Defines",
-            values: ["chronicle_debug_trace payload", "direct fallback trace builder", "roleplay_v2 trace summaries", "SSE/JSON trace injection"],
+            values: [
+              "chronicle_debug_trace payload",
+              "direct fallback trace builder",
+              "roleplay_v2 trace summaries",
+              "policy repair notes",
+              "SSE/JSON trace injection",
+            ],
             kind: "plain",
           },
           {
