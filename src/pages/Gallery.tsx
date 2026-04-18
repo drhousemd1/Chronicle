@@ -3,9 +3,10 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { GalleryHub } from '@/components/chronicle/GalleryHub';
+import { GalleryNsfwAgeModal } from '@/components/chronicle/GalleryNsfwAgeModal';
 import { GalleryNsfwToggle } from '@/components/chronicle/GalleryNsfwToggle';
 import { useAuth } from '@/hooks/use-auth';
-import { useGalleryNsfwPreference } from '@/hooks/use-gallery-nsfw-preference';
+import { useGalleryNsfwAccess } from '@/hooks/use-gallery-nsfw-preference';
 import { cn } from '@/lib/utils';
 import type { SortOption } from '@/services/gallery-data';
 
@@ -13,7 +14,14 @@ const Gallery: React.FC = () => {
   const { user, loading: authLoading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [sortBy, setSortBy] = useState<SortOption>('all');
-  const [showNsfw, setShowNsfw] = useGalleryNsfwPreference();
+  const {
+    showNsfw,
+    onToggleChange,
+    requestShowNsfw,
+    confirmOpen,
+    closeConfirm,
+    confirmShowNsfw,
+  } = useGalleryNsfwAccess();
 
   // Redirect to home if not authenticated (auth modal will handle login)
   useEffect(() => {
@@ -82,15 +90,31 @@ const Gallery: React.FC = () => {
           </div>
           <GalleryNsfwToggle
             checked={showNsfw}
-            onCheckedChange={setShowNsfw}
+            onCheckedChange={onToggleChange}
           />
         </div>
       </header>
 
       {/* Main Content */}
       <main className="flex-1">
-        <GalleryHub onPlay={handlePlay} sortBy={sortBy} onSortChange={setSortBy} showNsfw={showNsfw} />
+        <GalleryHub
+          onPlay={handlePlay}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+          showNsfw={showNsfw}
+          onRequestShowNsfw={requestShowNsfw}
+        />
       </main>
+
+      <GalleryNsfwAgeModal
+        open={confirmOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeConfirm();
+          }
+        }}
+        onConfirm={confirmShowNsfw}
+      />
     </div>
   );
 };

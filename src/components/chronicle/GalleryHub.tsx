@@ -31,6 +31,7 @@ interface GalleryHubProps {
   onSortChange: (sort: SortOption) => void;
   onAuthRequired?: () => void;
   showNsfw?: boolean;
+  onRequestShowNsfw?: (onApproved?: () => void) => void;
 }
 
 const PAGE_SIZE = 20;
@@ -50,6 +51,7 @@ export const GalleryHub = React.forwardRef<HTMLDivElement, GalleryHubProps>(({
   onSortChange,
   onAuthRequired,
   showNsfw = false,
+  onRequestShowNsfw,
 }, ref) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -335,16 +337,12 @@ export const GalleryHub = React.forwardRef<HTMLDivElement, GalleryHubProps>(({
     }
   };
 
-  const handlePlay = async (published: PublishedScenario) => {
-    if (!user) {
-      onAuthRequired?.();
-      return;
-    }
+  const playScenario = useCallback((published: PublishedScenario) => {
     incrementPlayCount(published.id).catch(console.error);
     onPlay(published.scenario_id, published.id);
-  };
+  }, [onPlay]);
 
-  const handleViewDetails = (published: PublishedScenario) => {
+  const openScenarioDetails = useCallback((published: PublishedScenario) => {
     setSelectedPublished(published);
     setDetailModalOpen(true);
     // Record view with 24-hour deduplication
@@ -355,6 +353,33 @@ export const GalleryHub = React.forwardRef<HTMLDivElement, GalleryHubProps>(({
         view_count: s.view_count + 1,
       }));
     }
+  }, [user, updateScenarioInCache]);
+
+  const handlePlay = async (published: PublishedScenario) => {
+    if (!user) {
+      onAuthRequired?.();
+      return;
+    }
+
+    if (!showNsfw && published.contentThemes?.storyType === 'NSFW') {
+      onRequestShowNsfw?.(() => {
+        playScenario(published);
+      });
+      return;
+    }
+
+    playScenario(published);
+  };
+
+  const handleViewDetails = (published: PublishedScenario) => {
+    if (!showNsfw && published.contentThemes?.storyType === 'NSFW') {
+      onRequestShowNsfw?.(() => {
+        openScenarioDetails(published);
+      });
+      return;
+    }
+
+    openScenarioDetails(published);
   };
 
   const handleUnpublish = async () => {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 const GALLERY_NSFW_PREFERENCE_KEY = 'chronicle.gallery.showNsfw';
 const GALLERY_NSFW_AGE_CONFIRMED_KEY = 'chronicle.gallery.nsfwAgeConfirmed';
@@ -45,4 +45,57 @@ export function useGalleryNsfwAgeConfirmation() {
   }, [hasConfirmedNsfw]);
 
   return [hasConfirmedNsfw, setHasConfirmedNsfw] as const;
+}
+
+export function useGalleryNsfwAccess() {
+  const [showNsfw, setShowNsfw] = useGalleryNsfwPreference();
+  const [hasConfirmedNsfw, setHasConfirmedNsfw] = useGalleryNsfwAgeConfirmation();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const pendingApprovalActionRef = useRef<(() => void) | null>(null);
+
+  const closeConfirm = useCallback(() => {
+    pendingApprovalActionRef.current = null;
+    setConfirmOpen(false);
+  }, []);
+
+  const requestShowNsfw = useCallback((onApproved?: () => void) => {
+    if (hasConfirmedNsfw) {
+      setShowNsfw(true);
+      onApproved?.();
+      return;
+    }
+
+    pendingApprovalActionRef.current = onApproved ?? null;
+    setConfirmOpen(true);
+  }, [hasConfirmedNsfw, setShowNsfw]);
+
+  const handleToggleChange = useCallback((nextChecked: boolean) => {
+    if (!nextChecked) {
+      pendingApprovalActionRef.current = null;
+      setConfirmOpen(false);
+      setShowNsfw(false);
+      return;
+    }
+
+    requestShowNsfw();
+  }, [requestShowNsfw, setShowNsfw]);
+
+  const confirmShowNsfw = useCallback(() => {
+    setHasConfirmedNsfw(true);
+    setShowNsfw(true);
+
+    const pendingApprovalAction = pendingApprovalActionRef.current;
+    pendingApprovalActionRef.current = null;
+    setConfirmOpen(false);
+    pendingApprovalAction?.();
+  }, [setHasConfirmedNsfw, setShowNsfw]);
+
+  return {
+    showNsfw,
+    onToggleChange: handleToggleChange,
+    requestShowNsfw,
+    confirmOpen,
+    closeConfirm,
+    confirmShowNsfw,
+  };
 }
