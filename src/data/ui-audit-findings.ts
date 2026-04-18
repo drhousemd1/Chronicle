@@ -4774,6 +4774,48 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260418-002",
+      title: "Complete Phase 1 shell slice 9 by extracting Index background workspace state and actions",
+      summary: "App Shell · Moved hub and image-library background selection/upload/overlay behavior out of `Index.tsx` into `useIndexBackgroundWorkspace.ts` so the page file no longer directly owns the background workspace subsystem",
+      severity: "refactor" as const,
+      status: "completed" as const,
+      problem: "After the shell, bootstrap, authenticated-data, dialog-state, persistence/transfer, scenario/session lifecycle, and character workspace extractions, `src/pages/Index.tsx` was still directly carrying the entire background workspace subsystem. That included the hub background list, selected hub background, selected image-library background, upload flow, delete flow, overlay updates, and background URL derivation. Keeping those responsibilities in the page file meant `Index.tsx` was still mixing shell orchestration with a separate media/background management concern.",
+      plan: "Make one more safe Phase 1 cut around background workspace ownership instead of leaving the background subsystem inline. Move background upload/select/delete/overlay behavior and selected-background derivation into a dedicated hook, preserve the same modal wiring and authenticated-data hydration path, and avoid touching unrelated scenario or gallery logic in the same pass.",
+      changes: "Completed the background workspace extraction pass:\n• Added `src/hooks/use-index-background-workspace.ts` as the new owner of hub/image-library background state, background upload flow, background selection, delete behavior, overlay updates, and selected-background URL derivation.\n• Rewired `Index.tsx` to consume the extracted background workspace state/actions instead of directly owning that subsystem inline.\n• Preserved the existing authenticated-data bootstrap shape by continuing to pass the returned setters into `useIndexAuthenticatedData`, so the startup load path still hydrates background state the same way.\n• Preserved the existing hub and image-library rendering behavior, including the selected hub overlay styling and the shared `BackgroundPickerModal` flows.\n• Re-ran `npm run ship-check` after the extraction and confirmed typecheck, lint, and production build all still pass.",
+      filesAffected: [
+        "src/data/ui-audit-findings.ts",
+        "src/hooks/use-index-background-workspace.ts",
+        "src/pages/Index.tsx"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["app-shell", "refactor", "index", "backgrounds", "image-library", "media", "phase-1", "quality-hub"],
+      comments: [],
+      createdAt: "2026-04-18T06:45:00.000Z",
+      updatedAt: "2026-04-18T06:45:00.000Z",
+    },
+    {
+      id: "cl-20260418-001",
+      title: "Complete Phase 1 shell slice 8 by extracting Index character workspace and editor actions",
+      summary: "App Shell · Moved character create/import/update/delete flows, AI fill/generate handlers, library-save behavior, and library filtering out of `Index.tsx` into `useIndexCharacterWorkspace.ts` so the page file no longer directly owns the character editor action layer",
+      severity: "refactor" as const,
+      status: "completed" as const,
+      problem: "After the shell, bootstrap, authenticated-data, dialog-state, persistence/transfer, and scenario/session lifecycle extractions, `src/pages/Index.tsx` was still directly carrying a full character workspace/editor action layer. That included creating characters, importing them from the library, updating/deleting them, saving them to the library, AI fill/generate flows, add-section behavior, selected-character library status, and library search filtering. Keeping all of that in the page file meant `Index.tsx` was still mixing shell orchestration with a substantial character-editor subsystem.",
+      plan: "Make the next cut around character workspace ownership instead of leaving character actions stranded in the shell file. Move the character editor/library action set into a dedicated hook, preserve the existing top-bar behavior and AI prompt flow, and keep the remaining shell-adjacent utility logic in `Index.tsx` for a later decision rather than combining too many responsibility cuts at once.",
+      changes: "Completed the character workspace/editor extraction pass:\n• Added `src/hooks/use-index-character-workspace.ts` as the new owner of character create/import/update/delete behavior, save-to-library handling, AI fill/generate flows, add-section behavior, selected-character library status, and library search filtering.\n• Rewired `Index.tsx` to consume the extracted character workspace actions instead of directly owning those handlers inline.\n• Preserved the current shell/top-bar integration by continuing to pass the same character-editor controls into `AppShellTopBar`, but those controls now come from the new hook instead of local page functions.\n• Preserved the existing AI prompt modal flow by keeping prompt-mode selection in the dialog layer while routing the actual AI fill/generate execution through the extracted hook.\n• Re-ran `npm run ship-check` after the extraction and confirmed typecheck, lint, and production build all still pass.",
+      filesAffected: [
+        "src/data/ui-audit-findings.ts",
+        "src/hooks/use-index-character-workspace.ts",
+        "src/pages/Index.tsx"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["app-shell", "refactor", "index", "characters", "library", "ai-assist", "phase-1", "quality-hub"],
+      comments: [],
+      createdAt: "2026-04-18T06:27:00.000Z",
+      updatedAt: "2026-04-18T06:27:00.000Z",
+    },
+    {
       id: "cl-20260417-007",
       title: "Complete Phase 1 shell slice 7 by extracting Index scenario and session lifecycle flows",
       summary: "App Shell · Moved scenario create/play/edit/remix/delete and session resume/history management out of `Index.tsx` into `useIndexScenarioLifecycle.ts` so the page file no longer directly owns the main scenario/session transition layer",
