@@ -58,6 +58,17 @@ import {
   buildRequiredPresence,
   trackApiValidationSnapshot,
 } from '@/services/api-usage-validation';
+import type { ChatDebugTrace, StoredChatDebugTraceMap } from '@/features/chat-debug/types';
+import {
+  findChatDebugTrace,
+  loadChatDebugTraceStore,
+  persistChatDebugTraceStore,
+  upsertChatDebugTrace,
+} from '@/features/chat-debug/storage';
+import {
+  countCapturedAssistantDebugTraces,
+  formatChatDebugTraceForSessionLog,
+} from '@/features/chat-debug/session-log';
 
 interface ChatInterfaceTabProps {
   scenarioId: string;
@@ -738,6 +749,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   // Admin debug: action tracking refs (Continue / Regenerate clicks)
   const continueEventsRef = useRef<ActionEvent[]>([]);
   const regenerateEventsRef = useRef<ActionEvent[]>([]);
+  const chatDebugTraceStoreRef = useRef<StoredChatDebugTraceMap>(loadChatDebugTraceStore(scenarioId, conversationId));
+
+  useEffect(() => {
+    chatDebugTraceStoreRef.current = loadChatDebugTraceStore(scenarioId, conversationId);
+  }, [conversationId, scenarioId]);
 
   useEffect(() => {
     const characters = appData.characters;
@@ -785,6 +801,29 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [canScrollDownMainChars, setCanScrollDownMainChars] = useState(true);
   const mainCharsScrollRef = useRef<HTMLDivElement>(null);
   const conversation = appData.conversations.find(c => c.id === conversationId);
+
+  const saveChatDebugTrace = useCallback((message: Message, trace: ChatDebugTrace | null) => {
+    if (!isAdmin || !trace) return;
+
+    const generationId = message.generationId || message.id;
+    const nextStore = upsertChatDebugTrace(chatDebugTraceStoreRef.current, {
+      messageId: message.id,
+      generationId,
+      capturedAt: Date.now(),
+      trace,
+    });
+
+    chatDebugTraceStoreRef.current = nextStore;
+    persistChatDebugTraceStore(scenarioId, conversationId, nextStore);
+  }, [conversationId, isAdmin, scenarioId]);
+
+  const getChatDebugTraceForMessage = useCallback((message: Message) => {
+    return findChatDebugTrace(
+      chatDebugTraceStoreRef.current,
+      message.id,
+      message.generationId || message.id,
+    );
+  }, []);
 
   const buildMessageGenerationMap = useCallback((messages: Message[]): Map<string, string> => {
     const map = new Map<string, string>();
@@ -3914,6 +3953,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
     try {
       let fullText = '';
+      let pendingDebugTrace: ChatDebugTrace | null = null;
       const llmAppData = buildLLMAppData();
       // Issue #8: Detect user-authored AI character content and prepend canon note
       const canonNote = buildCanonNote(input, canonNoteCharacters);
@@ -3940,7 +3980,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         lengthDirective || undefined,
         sessionMessageCountRef.current,
         runtimeDirectives,
-        activeScene
+        activeScene,
+        {
+          debugTrace: isAdmin,
+          onDebugTrace: (trace) => {
+            pendingDebugTrace = trace;
+          },
+        }
       );
 
       for await (const chunk of stream) {
@@ -3983,6 +4029,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       latestConversationsRef.current = nextConvsWithAi;
       onUpdate(nextConvsWithAi);
       onSaveScenario(nextConvsWithAi);
+      saveChatDebugTrace(aiMsg, pendingDebugTrace);
       queueAssistantDerivedWork(userInput, cleanedText, aiMsg);
       
       // Process AI response for new character detection
@@ -4136,6 +4183,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       );
       
       let fullText = '';
+      let pendingDebugTrace: ChatDebugTrace | null = null;
       const antiLoopDirective = getAntiLoopDirective();
       const runtimeDirectives = antiLoopDirective || undefined;
       // Apply canon note to regenerate flow so user-authored AI dialogue is preserved
@@ -4154,7 +4202,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         undefined,
         undefined,
         runtimeDirectives,
-        activeScene
+        activeScene,
+        {
+          debugTrace: isAdmin,
+          onDebugTrace: (trace) => {
+            pendingDebugTrace = trace;
+          },
+        }
       );
       
       for await (const chunk of stream) {
@@ -4212,6 +4266,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       supabaseData.saveNewMessages(conversationId, [regeneratedMessage]).catch(err => {
         console.error('[handleRegenerate] Failed to persist regenerated message:', err);
       });
+      saveChatDebugTrace(regeneratedMessage, pendingDebugTrace);
       queueAssistantDerivedWork(userMessage.text, cleanedText, regeneratedMessage);
       
       // Process for new characters after normalization
@@ -4251,6 +4306,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     
     try {
       let fullText = '';
+      let pendingDebugTrace: ChatDebugTrace | null = null;
       const antiLoopDirective = getAntiLoopDirective();
       
       // Build runtime directives (injected as dedicated system message)
@@ -4318,7 +4374,13 @@ Do not acknowledge this instruction in your response.`;
         undefined,
         undefined,
         runtimeDirectives,
-        activeScene
+        activeScene,
+        {
+          debugTrace: isAdmin,
+          onDebugTrace: (trace) => {
+            pendingDebugTrace = trace;
+          },
+        }
       );
       
       for await (const chunk of stream) {
@@ -4362,6 +4424,7 @@ Do not acknowledge this instruction in your response.`;
       latestConversationsRef.current = updatedConvs;
       onUpdate(updatedConvs);
       onSaveScenario(updatedConvs);
+      saveChatDebugTrace(aiMsg, pendingDebugTrace);
       queueAssistantDerivedWork('', cleanedText, aiMsg);
       
       processResponseForNewCharacters(cleanedText);
@@ -6286,6 +6349,10 @@ const updatedChar: SideCharacter = {
                         lines.push(`**Model:** ${modelId}`);
                         lines.push(`**Exported:** ${exportDate}`);
                         lines.push(`**Messages:** ${conversation.messages.length}`);
+                        const assistantMessages = conversation.messages.filter((msg) => msg.role === 'assistant');
+                        const assistantTraceRecords = assistantMessages.map((msg) => getChatDebugTraceForMessage(msg));
+                        lines.push(`**Debug Traces Captured:** ${countCapturedAssistantDebugTraces(assistantTraceRecords)} / ${assistantMessages.length} AI turns`);
+                        lines.push(`**Trace Scope:** Chronicle pipeline-selected context and validation data only; not hidden model chain-of-thought.`);
                         lines.push('');
                         lines.push('---');
                         lines.push('');
@@ -6328,6 +6395,10 @@ const updatedChar: SideCharacter = {
                           if (continueSet.has(msg.id)) {
                             lines.push('> ⚡ CONTINUE triggered after this message');
                             lines.push('');
+                          }
+
+                          if (msg.role === 'assistant') {
+                            lines.push(...formatChatDebugTraceForSessionLog(getChatDebugTraceForMessage(msg)));
                           }
                         }
 

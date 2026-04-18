@@ -29,7 +29,7 @@
 ## 1. Page Overview
 
 - **Route**: `tab === "world"` in `Index.tsx`
-- **Primary source file**: `WorldTab.tsx` (~1270 lines)
+- **Primary source file**: `src/features/story-builder/StoryBuilderScreen.tsx` (~1041 lines after the first decomposition pass)
 - **Purpose**: Full scenario editing interface — world-building, story arcs, scenes, art style selection, content themes, and publishing to the community gallery.
 - **Sidebar position**: 6th item ("Scenario Builder") — activates for both `world` and `characters` tabs.
 - **Entry points**:
@@ -37,6 +37,7 @@
   - Clicking "Edit" on a scenario card in Your Stories
   - Clicking the back arrow from the Character Builder tab
 - **Sub-views**: None — single scrolling page with collapsible sections.
+- **Wrapper file**: `src/components/chronicle/WorldTab.tsx` is now just a thin handoff into `StoryBuilderScreen.tsx`; it is no longer the real ownership surface for the builder runtime.
 
 ---
 
@@ -167,6 +168,21 @@ When the user clicks "Publish to Gallery", `validateForPublish()` runs and highl
 ### State Management
 Direct `useState` in `Index.tsx`: `activeData`, `activeId`, `activeCoverImage`, `activeCoverPosition`. No React Query.
 
+### Story Builder Media Ownership
+
+The first Story Builder decomposition pass moved the cover-image + scene-gallery workflow out of the main screen body.
+
+- **Media controller hook**: `src/features/story-builder/hooks/use-story-builder-media.ts`
+  - Owns cover upload/select/generate/reposition/delete behavior
+  - Owns scene upload/select/generate/edit/delete behavior
+  - Owns scene aspect-ratio metadata and media-modal open/close state
+- **Extracted UI sections**:
+  - `src/features/story-builder/components/StoryCardSection.tsx`
+  - `src/features/story-builder/components/SceneGallerySection.tsx`
+  - `src/features/story-builder/components/StoryBuilderMediaModals.tsx`
+  - `src/features/story-builder/components/StoryBuilderFieldLabel.tsx`
+- **Why this matters**: `StoryBuilderScreen.tsx` no longer directly owns the entire media subsystem inline. The screen still coordinates the builder, but cover/scene media behavior is now grouped under one dedicated hook + component set.
+
 ### Art Styles
 Fetched from `art_styles` table via `ArtStylesContext`. Each style has: `id`, `displayName`, `thumbnailUrl`, `backendPrompt`, `backendPromptMasculine`, `backendPromptAndrogynous`.
 
@@ -207,11 +223,13 @@ Fetched from `art_styles` table via `ArtStylesContext`. Each style has: `id`, `d
 Index.tsx
   > header (back arrow + "Scenario Builder" + Save / Save and Close buttons)
   > WorldTab                          ← uses publish-validation.ts
+    > StoryBuilderScreen              ← real builder owner
     > aside (Character Roster sidebar)
       > CharacterButton (per character)
       > AddCharacterPlaceholder
     > main scrollable area
-      > Story Card section
+      > StoryCardSection
+        > StoryBuilderFieldLabel
         > Cover image preview + CoverImageActionButtons
         > Scenario Name input + Brief Description textarea
       > World Core section
@@ -223,7 +241,7 @@ Index.tsx
       > Opening Dialog section
         > HintBox, textarea, Starting Day counter, Time of Day icons
         > Mode dropdown (Manual/Automatic), Time Interval dropdown (5/10/15/30/60 min)
-      > Scene Gallery section
+      > SceneGallerySection
         > SceneGalleryActionButtons (Upload/Library/Generate)
         > Scene image tile grid
       > Art Style Preference section
@@ -238,9 +256,11 @@ Index.tsx
       > Share Your Story section
         > "Publish to Gallery" button
         > Publish error summary panel (conditional)
-    > SceneTagEditorModal
-    > CoverImageGenerationModal
-    > SceneImageGenerationModal
+    > StoryBuilderMediaModals
+      > SceneTagEditorModal
+      > CoverImageGenerationModal
+      > SceneImageGenerationModal
+      > DeleteConfirmDialog (cover + scene delete)
     > ShareStoryModal
 ```
 
@@ -261,10 +281,11 @@ Index.tsx
 | `onNavigateToCharacters()` | Switches to Characters tab |
 | `onSelectCharacter(id)` | Navigates to Characters tab with a specific character pre-selected |
 | `handleEnhanceField(fieldName)` | AI enhancement for World Core fields via `world-ai.ts` |
-| `handleCoverUpload` | File input → resize (1024×1536, quality 0.85) → upload to storage → set URL |
-| `handleAddScene` | File input → resize (1024×768, quality 0.7) → upload → create Scene object |
-| `handleDeleteScene` | Opens styled `DeleteConfirmDialog` → on confirm, removes scene from state |
-| `handleDeleteCover` | Opens styled `DeleteConfirmDialog` → on confirm, clears cover image from state |
+| `useStoryBuilderMedia()` | Centralized media controller hook for cover image + scene gallery state/actions |
+| `handleCoverUpload` | `useStoryBuilderMedia()` file input → resize (1024×1536, quality 0.85) → upload to storage → set URL |
+| `handleAddScene` | `useStoryBuilderMedia()` file input → resize (1024×768, quality 0.7) → upload → create Scene object |
+| `handleDeleteScene` | `useStoryBuilderMedia()` opens styled `DeleteConfirmDialog` → on confirm, removes scene from state |
+| `handleDeleteCover` | `useStoryBuilderMedia()` opens styled `DeleteConfirmDialog` → on confirm, clears cover image from state |
 | `publishErrors` state | Set by "Publish" click via `validateForPublish()`, then live-updated by `useEffect` on every input change until all errors resolve |
 | `hasError` prop | Boolean passed to `StoryGoalsSection` and `ContentThemesSection` — derived from `publishErrors.storyArc` / `publishErrors.tags` / `publishErrors.storyType` presence |
 

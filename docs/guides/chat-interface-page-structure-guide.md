@@ -27,8 +27,8 @@
 | Field | Detail |
 |-------|--------|
 | **Tab Key** | `chat` |
-| **Source File** | `src/components/chronicle/ChatInterfaceTab.tsx` (~6023 lines) |
-| **Purpose** | The core roleplay/chat experience. Renders conversation messages, handles LLM streaming, manages character state tracking, side character discovery, scene images, and memory system. |
+| **Source File** | `src/components/chronicle/ChatInterfaceTab.tsx` (~6553 lines) |
+| **Purpose** | The core roleplay/chat experience. Renders conversation messages, handles LLM streaming, manages character state tracking, side character discovery, scene images, memory system, and admin-only turn debug trace exports. |
 | **Entry Point** | Activated when user clicks "Resume" on a conversation or starts a new session from Your Stories |
 | **User Role** | Authenticated users only |
 
@@ -60,6 +60,7 @@ The character column is intentionally kept as a fixed session sidebar and does *
 | Settings gear | Icon button | `Settings` | `ChatInterfaceTab.tsx` | Opens chat settings panel |
 | Image button | Icon button | `ImageIcon` | `ChatInterfaceTab.tsx` | Scene image generation |
 | Memory button | Icon button | `Brain` | `ChatInterfaceTab.tsx` | Opens memories modal |
+| Download Session Log | Button | Download Session Log | `ChatInterfaceTab.tsx` | Admin-only export inside chat settings; includes turn debug trace sections when captured |
 
 ---
 
@@ -75,6 +76,7 @@ The character column is intentionally kept as a fixed session sidebar and does *
 | Time change | `handleTimeChange` | Updates `current_time_of_day` on conversation |
 | Day advance | `handleDayAdvance` | Increments `current_day` on conversation |
 | Load older messages | `onLoadOlderMessages` | Lazy-loads paginated older messages |
+| Download session log | inline admin button handler in settings panel | Exports conversation transcript plus structured per-turn debug trace blocks for captured assistant turns |
 
 ---
 
@@ -173,6 +175,26 @@ Service: `src/services/side-character-generator.ts`
 | `side_characters` | AI-discovered side characters |
 | `memories` | Extracted memory events |
 | `scenes` | Generated scene images |
+
+### 6f. Admin Turn Debug Trace
+
+- **Purpose**: Capture a structured trace of Chronicle's `roleplay_v2` pipeline for each assistant turn so bad dialogue can be debugged without injecting hidden text into the visible chat.
+- **Frontend storage**: `src/features/chat-debug/storage.ts`
+  - Stores traces in `window.sessionStorage`
+  - Keyed by scenario ID + conversation ID + `messageId:generationId`
+  - Failures are intentionally soft so debug storage can never break chat
+- **Shared trace contract**: `src/features/chat-debug/types.ts`
+  - Defines `ChatDebugTrace`, `StoredChatDebugTrace`, planner trace shape, validator trace shape, and supporting-excerpt scoring metadata
+- **Export formatter**: `src/features/chat-debug/session-log.ts`
+  - Formats captured traces into markdown blocks appended to the admin session-log export
+  - Includes pipeline path, selected excerpts, planner outcome, validator outcome, normalization flag, and fallback notes
+- **Request bridge**: `generateRoleplayResponseStream()` in `src/services/llm.ts`
+  - Sends `debugTrace: true` only for admins
+  - Intercepts `chronicle_debug_trace` packets from the response stream and keeps them separate from user-visible text chunks
+- **Backend source**: `supabase/functions/chat/index.ts`
+  - Builds structured trace payloads for `roleplay_v2` and direct-fallback paths
+  - Emits the trace alongside the normal SSE/JSON chat response
+- **Important limitation**: This is Chronicle-selected context/debug data only. It is **not** the model's private chain-of-thought.
 
 ---
 

@@ -1,45 +1,33 @@
 
-import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { World, OpeningDialog, CodexEntry, Character, Scene, TimeOfDay, WorldCore, ContentThemes, defaultContentThemes, LocationEntry, WorldCustomSection, WorldCustomItem, WorldCustomSectionType, StoryGoal } from '@/types';
+import React, { useEffect, useState } from 'react';
+import { World, OpeningDialog, CodexEntry, Character, Scene, TimeOfDay, WorldCore, ContentThemes } from '@/types';
 import { validateForPublish, hasPublishErrors, PublishValidationErrors } from '@/utils/publish-validation';
 import { EnhanceableWorldFields } from '@/services/world-ai';
 import { AutoResizeTextarea } from '@/components/chronicle/AutoResizeTextarea';
-import { Button, Card } from '@/components/chronicle/UI';
+import { Button } from '@/components/chronicle/UI';
 import { Icons } from '@/constants';
-import { uid, now, resizeImage, uuid, clamp, compressAndUpload } from '@/utils';
+import { uid, now } from '@/utils';
 import { useAuth } from '@/hooks/use-auth';
-import { uploadSceneImage, uploadCoverImage, dataUrlToBlob } from '@/services/supabase-data';
-import { supabase } from '@/integrations/supabase/client';
 
-import { Sunrise, Sun, Sunset, Moon, ChevronUp, ChevronDown, Sparkles, Share2, Trash2, Plus, X, Info, Lock, BrainCog, Move, Pencil } from 'lucide-react';
+import { Sunrise, Sun, Sunset, Moon, ChevronUp, ChevronDown, Share2, Trash2, Plus, X, Info, Lock, BrainCog, Sparkles } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { StoryGoalsSection } from '@/components/chronicle/StoryGoalsSection';
 import { useArtStyles } from '@/contexts/ArtStylesContext';
 import { cn } from '@/lib/utils';
-import { SceneTagEditorModal } from '@/components/chronicle/SceneTagEditorModal';
-import { CoverImageGenerationModal } from '@/components/chronicle/CoverImageGenerationModal';
-import { SceneImageGenerationModal } from '@/components/chronicle/SceneImageGenerationModal';
-import { CoverImageActionButtons } from '@/components/chronicle/CoverImageActionButtons';
-import { SceneGalleryActionButtons } from '@/components/chronicle/SceneGalleryActionButtons';
 import { ShareScenarioModal } from '@/components/chronicle/ShareStoryModal';
 import { ContentThemesSection } from '@/components/chronicle/ContentThemesSection';
 import { aiEnhanceWorldField } from '@/services/world-ai';
 import { EnhanceModeModal, EnhanceMode } from '@/components/chronicle/EnhanceModeModal';
 import { CharacterCreationModal } from '@/components/chronicle/CharacterCreationModal';
 import { useModelSettings } from '@/contexts/ModelSettingsContext';
-import { DeleteConfirmDialog } from '@/components/chronicle/DeleteConfirmDialog';
-import { getClosestRatio, AspectRatioIcon } from '@/components/chronicle/AspectRatioUtils';
 import { CustomContentTypeModal } from '@/components/chronicle/CustomContentTypeModal';
 import { TabFieldNavigator } from '@/components/chronicle/TabFieldNavigator';
+import { SceneGallerySection } from '@/features/story-builder/components/SceneGallerySection';
+import { StoryBuilderFieldLabel as FieldLabel } from '@/features/story-builder/components/StoryBuilderFieldLabel';
+import { StoryBuilderMediaModals } from '@/features/story-builder/components/StoryBuilderMediaModals';
+import { StoryCardSection } from '@/features/story-builder/components/StoryCardSection';
+import { useStoryBuilderMedia } from '@/features/story-builder/hooks/use-story-builder-media';
 import { StoryRosterSidebar } from '@/features/story-builder/sidebar/StoryRosterSidebar';
-import { trackAiUsageEvent } from '@/services/usage-tracking';
-import { buildRequiredPresence, trackApiValidationSnapshot } from '@/services/api-usage-validation';
 import { toast } from 'sonner';
 
 export interface StoryBuilderScreenProps {
@@ -64,17 +52,6 @@ export interface StoryBuilderScreenProps {
   onSelectCharacter: (id: string) => void;
   storyNameError?: boolean;
 }
-
-const HintBox: React.FC<{ hints: string[] }> = ({ hints }) => (
-  <div className="bg-zinc-900 rounded-xl p-4 space-y-2 shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
-    {hints.map((hint, index) => (
-      <p key={index} className="text-sm text-zinc-400 leading-relaxed flex items-start gap-2">
-        <span className="text-zinc-500 mt-0.5">◆</span>
-        <span>{hint}</span>
-      </p>
-    ))}
-  </div>
-);
 
 export const StoryBuilderScreen: React.FC<StoryBuilderScreenProps> = ({ 
   scenarioId,
@@ -101,30 +78,27 @@ export const StoryBuilderScreen: React.FC<StoryBuilderScreenProps> = ({
   const { user } = useAuth();
   const { modelId } = useModelSettings();
   const { styles: AVATAR_STYLES, getStyleById } = useArtStyles();
-  const [isUploading, setIsUploading] = useState(false);
-  const [isUploadingCover, setIsUploadingCover] = useState(false);
-  const [isRepositioningCover, setIsRepositioningCover] = useState(false);
-  const [coverDragStart, setCoverDragStart] = useState<{ x: number; y: number; pos: { x: number; y: number } } | null>(null);
-  const [editingScene, setEditingScene] = useState<Scene | null>(null);
-  const [showCoverGenModal, setShowCoverGenModal] = useState(false);
-  const [isGeneratingCover, setIsGeneratingCover] = useState(false);
-  const [showSceneGenModal, setShowSceneGenModal] = useState(false);
-  const [isGeneratingScene, setIsGeneratingScene] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [enhancingField, setEnhancingField] = useState<string | null>(null);
   const [enhanceModeTarget, setEnhanceModeTarget] = useState<EnhanceableWorldFields | null>(null);
-  const [pendingDeleteCover, setPendingDeleteCover] = useState(false);
-  const [pendingDeleteSceneId, setPendingDeleteSceneId] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const coverFileInputRef = useRef<HTMLInputElement>(null);
-  const coverContainerRef = useRef<HTMLDivElement>(null);
-  const [sceneAspectRatios, setSceneAspectRatios] = useState<Record<string, { label: string; orientation: 'portrait' | 'landscape' | 'square' }>>({});
   const [isCharacterCreationOpen, setIsCharacterCreationOpen] = useState(false);
   const [showContentTypeModal, setShowContentTypeModal] = useState(false);
   const [publishErrors, setPublishErrors] = useState<PublishValidationErrors>({});
   const [expandedRosterTileId, setExpandedRosterTileId] = useState<string | null>(null);
   const [mainCharsCollapsed, setMainCharsCollapsed] = useState(false);
   const [sideCharsCollapsed, setSideCharsCollapsed] = useState(false);
+  const media = useStoryBuilderMedia({
+    scenarioId,
+    userId: user?.id,
+    scenes,
+    coverImagePosition,
+    scenarioTitle: world.core.scenarioName,
+    storyPremise: world.core.storyPremise,
+    getStyleById,
+    onUpdateCoverImage,
+    onUpdateCoverPosition,
+    onUpdateScenes,
+  });
 
   // Reset expanded roster tile if character is removed
   useEffect(() => {
@@ -163,29 +137,6 @@ export const StoryBuilderScreen: React.FC<StoryBuilderScreenProps> = ({
     setPublishErrors(updated);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [world, characters, openingDialog, contentThemes, coverImage]);
-
-  // Detect aspect ratios for scene images
-  useEffect(() => {
-    if (!scenes.length) { setSceneAspectRatios({}); return; }
-    const pending = new Map<string, { label: string; orientation: 'portrait' | 'landscape' | 'square' }>();
-    let cancelled = false;
-    let loaded = 0;
-    scenes.forEach((scene) => {
-      const el = new window.Image();
-      el.crossOrigin = 'anonymous';
-      el.onload = () => {
-        if (cancelled) return;
-        pending.set(scene.id, getClosestRatio(el.naturalWidth, el.naturalHeight));
-        loaded++;
-        if (loaded === scenes.length) {
-          setSceneAspectRatios(Object.fromEntries(pending));
-        }
-      };
-      el.onerror = () => { loaded++; };
-      el.src = scene.url;
-    });
-    return () => { cancelled = true; };
-  }, [scenes]);
 
   const updateCore = (patch: any) => {
     onUpdateWorld({ core: { ...world.core, ...patch } });
@@ -237,212 +188,9 @@ export const StoryBuilderScreen: React.FC<StoryBuilderScreenProps> = ({
     handleEnhanceField(fieldName, mode);
   };
 
-  // Reusable field label with AI enhance button (dark theme)
-  const FieldLabel: React.FC<{
-    label: string;
-    fieldName: EnhanceableWorldFields;
-  }> = ({ label, fieldName }) => {
-    const isLoading = enhancingField === fieldName;
-    return (
-      <div className="flex items-center gap-2 mb-1">
-        <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-          {label}
-        </label>
-        <button
-          type="button"
-          tabIndex={-1}
-          onClick={() => setEnhanceModeTarget(fieldName)}
-          disabled={isLoading || enhancingField !== null}
-          title="Enhance with AI"
-          className={cn(
-            "relative flex items-center justify-center flex-shrink-0 rounded-lg p-[6px] overflow-hidden transition-all text-cyan-200",
-            isLoading
-              ? "animate-pulse cursor-wait"
-              : enhancingField !== null
-              ? "opacity-50 cursor-not-allowed"
-              : "hover:brightness-125"
-          )}
-          style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.40)' }}
-        >
-          <span aria-hidden className="absolute inset-0 rounded-lg pointer-events-none" style={{ background: 'linear-gradient(90deg, rgba(255,255,255,0.34) 0%, rgba(34,184,200,0.62) 18%, rgba(255,255,255,0.22) 44%, rgba(109,94,247,0.64) 78%, rgba(255,255,255,0.28) 100%)' }} />
-          <span aria-hidden className="absolute rounded-[6px] pointer-events-none" style={{ inset: '1.5px', background: 'linear-gradient(90deg, rgba(34,184,200,0.22), rgba(109,94,247,0.22)), #2B2D33' }} />
-          <Sparkles size={13} className="relative z-10" style={{ filter: 'drop-shadow(0 0 6px rgba(34,184,200,0.50))' }} />
-        </button>
-      </div>
-    );
-  };
-
   const handleUpdateEntry = (id: string, patch: Partial<CodexEntry>) => {
     const next = world.entries.map(e => e.id === id ? { ...e, ...patch, updatedAt: now() } : e);
     onUpdateWorld({ entries: next });
-  };
-
-  // Cover image handlers
-  const handleCoverMouseDown = (e: React.MouseEvent) => {
-    if (!isRepositioningCover) return;
-    e.preventDefault();
-    setCoverDragStart({
-      x: e.clientX,
-      y: e.clientY,
-      pos: coverImagePosition || { x: 50, y: 50 }
-    });
-  };
-
-  const handleCoverMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!coverDragStart || !coverContainerRef.current) return;
-    
-    const rect = coverContainerRef.current.getBoundingClientRect();
-    const deltaX = ((e.clientX - coverDragStart.x) / rect.width) * 100;
-    const deltaY = ((e.clientY - coverDragStart.y) / rect.height) * 100;
-
-    onUpdateCoverPosition({
-      x: clamp(coverDragStart.pos.x - deltaX, 0, 100),
-      y: clamp(coverDragStart.pos.y - deltaY, 0, 100)
-    });
-  }, [coverDragStart, onUpdateCoverPosition]);
-
-  const handleCoverMouseUp = () => {
-    setCoverDragStart(null);
-  };
-
-  const handleCoverTouchStart = (e: React.TouchEvent) => {
-    if (!isRepositioningCover) return;
-    e.preventDefault();
-    const touch = e.touches[0];
-    setCoverDragStart({
-      x: touch.clientX,
-      y: touch.clientY,
-      pos: coverImagePosition || { x: 50, y: 50 }
-    });
-  };
-
-  const handleCoverTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!coverDragStart || !coverContainerRef.current) return;
-    e.preventDefault();
-    const touch = e.touches[0];
-    const rect = coverContainerRef.current.getBoundingClientRect();
-    const deltaX = ((touch.clientX - coverDragStart.x) / rect.width) * 100;
-    const deltaY = ((touch.clientY - coverDragStart.y) / rect.height) * 100;
-    onUpdateCoverPosition({
-      x: clamp(coverDragStart.pos.x - deltaX, 0, 100),
-      y: clamp(coverDragStart.pos.y - deltaY, 0, 100)
-    });
-  }, [coverDragStart, onUpdateCoverPosition]);
-
-  const handleCoverTouchEnd = () => {
-    setCoverDragStart(null);
-  };
-
-  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-    
-    setIsUploadingCover(true);
-    try {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        try {
-          const dataUrl = reader.result as string;
-          const optimized = await resizeImage(dataUrl, 1024, 1536, 0.85);
-          const blob = dataUrlToBlob(optimized);
-          if (!blob) throw new Error('Failed to process image');
-          
-          const filename = `cover-${uuid()}-${Date.now()}.jpg`;
-          const publicUrl = await uploadCoverImage(user.id, blob, filename);
-          
-          onUpdateCoverImage(publicUrl);
-          onUpdateCoverPosition({ x: 50, y: 50 });
-          setIsRepositioningCover(true);
-        } catch (error) {
-          console.error('Cover upload failed:', error);
-        } finally {
-          setIsUploadingCover(false);
-        }
-      };
-      reader.readAsDataURL(file);
-    } catch (error) {
-      console.error('Cover upload failed:', error);
-      console.error('Cover upload failed:', error);
-      setIsUploadingCover(false);
-    }
-    e.target.value = '';
-  };
-
-  const handleDeleteCover = () => {
-    setIsRepositioningCover(false);
-    setCoverDragStart(null);
-    setPendingDeleteCover(true);
-  };
-
-  const confirmDeleteCover = () => {
-    onUpdateCoverImage('');
-    onUpdateCoverPosition({ x: 50, y: 50 });
-    setIsRepositioningCover(false);
-    setCoverDragStart(null);
-    setPendingDeleteCover(false);
-  };
-
-  const handleAddScene = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    if (!user) {
-      console.error('Please sign in to upload scenes');
-      return;
-    }
-
-    setIsUploading(true);
-    try {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        try {
-          const dataUrl = reader.result as string;
-          const optimized = await resizeImage(dataUrl, 1024, 768, 0.7);
-          
-          // Convert to blob and upload to Supabase Storage
-          const blob = dataUrlToBlob(optimized);
-          if (!blob) throw new Error('Failed to process image');
-          
-          const filename = `scene-${uuid()}-${Date.now()}.jpg`; // Use UUID for unique filename
-          const publicUrl = await uploadSceneImage(user.id, blob, filename);
-          
-          const newScene: Scene = {
-            id: uuid(), // Use UUID for Supabase
-            url: publicUrl,
-            tags: [],
-            createdAt: now()
-          };
-          onUpdateScenes([newScene, ...scenes]);
-          setEditingScene(newScene); // Open editor immediately for new scenes
-        } catch (error) {
-          console.error('Scene upload failed:', error);
-        } finally {
-          setIsUploading(false);
-        }
-      };
-      reader.readAsDataURL(file);
-    } catch (error) {
-      console.error('Scene upload failed:', error);
-      console.error('Scene upload failed:', error);
-      setIsUploading(false);
-    }
-    e.target.value = '';
-  };
-
-  const handleSaveScene = (id: string, title: string, tags: string[]) => {
-    const updatedScenes = scenes.map(s => s.id === id ? { ...s, title, tags } : s);
-    onUpdateScenes(updatedScenes);
-  };
-
-  const handleDeleteScene = (id: string) => {
-    setPendingDeleteSceneId(id);
-  };
-
-  const confirmDeleteScene = () => {
-    if (pendingDeleteSceneId) {
-      onUpdateScenes(scenes.filter(s => s.id !== pendingDeleteSceneId));
-      setPendingDeleteSceneId(null);
-    }
   };
 
   const noAICharacterError = publishErrors.noAICharacter;
@@ -475,152 +223,21 @@ export const StoryBuilderScreen: React.FC<StoryBuilderScreenProps> = ({
             <p className="text-sm font-medium text-slate-500 mt-1">Configure the foundation of your interactive narrative.</p>
           </div>
 
-          {/* Cover Image Section - Dark Theme */}
-          <section>
-            <div className="w-full bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
-              {/* Section Header - Steel Blue */}
-              <div className="relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center gap-3 shadow-lg">
-                <div className="absolute inset-0 z-0 bg-gradient-to-tr from-white/10 to-transparent opacity-40" style={{ height: '60%' }} />
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white relative z-[1]"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                <h2 className="text-white text-xl font-bold tracking-[-0.015em] relative z-[1]">Story Card</h2>
-              </div>
-              
-              {/* Content */}
-              <div className="p-5">
-                <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
-                      <div className="flex flex-col md:flex-row gap-8">
-                    {/* Preview Container - Portrait aspect ratio for story cards */}
-                    <div data-publish-error={!!publishErrors.coverImage || undefined}>
-                    <div 
-                      ref={coverContainerRef}
-                      onMouseDown={handleCoverMouseDown}
-                      onMouseMove={handleCoverMouseMove}
-                      onMouseUp={handleCoverMouseUp}
-                      onMouseLeave={handleCoverMouseUp}
-                      onTouchStart={handleCoverTouchStart}
-                      onTouchMove={handleCoverTouchMove}
-                      onTouchEnd={handleCoverTouchEnd}
-                      style={isRepositioningCover ? { touchAction: 'none' } : undefined}
-                      className={cn(
-                        "relative w-full md:w-48 aspect-[2/3] rounded-2xl overflow-hidden transition-all duration-200",
-                        isRepositioningCover 
-                          ? 'ring-4 ring-blue-500 cursor-move shadow-xl shadow-blue-500/20' 
-                          : publishErrors.coverImage
-                            ? 'border-2 border-red-500 ring-2 ring-red-500'
-                            : coverImage
-                              ? 'border-2 border-zinc-500 shadow-lg'
-                              : 'shadow-lg'
-                      )}
-                    >
-                      {coverImage ? (
-                        <>
-                          <img 
-                            src={coverImage}
-                            alt="Cover"
-                            style={{ objectPosition: `${coverImagePosition.x}% ${coverImagePosition.y}%` }}
-                            className="w-full h-full object-cover pointer-events-none select-none"
-                            draggable={false}
-                          />
-                          {isRepositioningCover && (
-                            <div className="absolute inset-0 z-[18] touch-none cursor-move pointer-events-auto">
-                              <button
-                                type="button"
-                                className="absolute left-2 top-2 rounded-md bg-black/55 border border-white/20 px-2 py-1 text-[9px] font-bold text-white hover:bg-black/70 pointer-events-auto z-20"
-                                onMouseDown={(e) => e.stopPropagation()}
-                                onTouchStart={(e) => e.stopPropagation()}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setCoverDragStart(null);
-                                  setIsRepositioningCover(false);
-                                }}
-                              >
-                                Done
-                              </button>
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <div className="w-full h-full bg-[#1c1c1f] flex flex-col items-center justify-center gap-3 rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-500"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                          <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">No Cover</span>
-                        </div>
-                      )}
-                      {coverImage && (
-                        <div className="absolute top-2 right-2 z-30">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <button
-                                type="button"
-                                className="p-1.5 rounded-lg transition-colors bg-black/30 hover:bg-black/50 text-white/70 hover:text-white"
-                                aria-label="Cover image options"
-                                title="Cover image options"
-                              >
-                                <Pencil className="w-4 h-4" />
-                              </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => setIsRepositioningCover(true)}>
-                                <Move className="w-4 h-4 mr-2" />
-                                Reposition image
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={handleDeleteCover}
-                                className="text-red-400 focus:text-red-400"
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Delete image
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      )}
-                    </div>
-                    {publishErrors.coverImage && (
-                      <p className="text-sm text-red-500 font-medium mt-2">{publishErrors.coverImage}</p>
-                    )}
-                    </div>
-                    
-                    {/* Right column: buttons + fields */}
-                    <div className="flex flex-col gap-4 flex-1">
-                      <CoverImageActionButtons
-                        onUploadFromDevice={() => coverFileInputRef.current?.click()}
-                        onSelectFromLibrary={(imageUrl) => {
-                          onUpdateCoverImage(imageUrl);
-                          onUpdateCoverPosition({ x: 50, y: 50 });
-                          setIsRepositioningCover(true);
-                        }}
-                        onGenerateClick={() => setShowCoverGenModal(true)}
-                        disabled={isUploadingCover || isGeneratingCover}
-                        isUploading={isUploadingCover}
-                        isGenerating={isGeneratingCover}
-                      />
-                      
-                      <div data-publish-error={!!publishErrors.storyTitle || undefined}>
-                        <FieldLabel label="Story Name" fieldName="scenarioName" />
-                         <AutoResizeTextarea value={world.core.scenarioName} onChange={(v) => updateCore({ scenarioName: v })} placeholder="e.g. Chronicles of Eldoria" className={`px-3 py-2 text-sm bg-[#1c1c1f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${(storyNameError && !world.core.scenarioName?.trim()) || publishErrors.storyTitle ? 'border border-red-500 ring-2 ring-red-500' : 'border border-black/35'}`} />
-                        {((storyNameError && !world.core.scenarioName?.trim()) || publishErrors.storyTitle) && (
-                          <p className="text-sm text-red-500 mt-1">{publishErrors.storyTitle || 'Story name is required'}</p>
-                        )}
-                      </div>
-                      <div data-publish-error={!!publishErrors.briefDescription || undefined}>
-                        <FieldLabel label="Brief Description" fieldName="briefDescription" />
-                        <AutoResizeTextarea value={world.core.briefDescription || ''} onChange={(v) => updateCore({ briefDescription: v })} rows={2} placeholder="A short summary that appears on your story card (1-2 sentences)..." className={`px-3 py-2 text-sm bg-[#1c1c1f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${publishErrors.briefDescription ? 'border border-red-500 ring-2 ring-red-500' : 'border border-black/35'}`} />
-                        {publishErrors.briefDescription && <p className="text-sm text-red-500 font-medium mt-1">{publishErrors.briefDescription}</p>}
-                      </div>
-                      
-                      <input 
-                        type="file" 
-                        ref={coverFileInputRef} 
-                        className="hidden" 
-                        accept="image/*" 
-                        onChange={handleCoverUpload} 
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
+          <StoryCardSection
+            scenarioName={world.core.scenarioName}
+            briefDescription={world.core.briefDescription || ''}
+            enhancingField={enhancingField}
+            storyNameError={storyNameError}
+            storyTitleError={publishErrors.storyTitle}
+            briefDescriptionError={publishErrors.briefDescription}
+            coverImage={coverImage}
+            coverImagePosition={coverImagePosition}
+            media={media}
+            onScenarioNameChange={(value) => updateCore({ scenarioName: value })}
+            onBriefDescriptionChange={(value) => updateCore({ briefDescription: value })}
+            onEnhanceScenarioName={() => setEnhanceModeTarget('scenarioName')}
+            onEnhanceBriefDescription={() => setEnhanceModeTarget('briefDescription')}
+          />
 
           {/* World Core Section - Dark Theme */}
           <section>
@@ -634,7 +251,12 @@ export const StoryBuilderScreen: React.FC<StoryBuilderScreenProps> = ({
                 <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
                   <div className="grid grid-cols-1 gap-8">
                     <div data-publish-error={!!publishErrors.storyPremise || undefined}>
-                      <FieldLabel label="Story Premise" fieldName="storyPremise" />
+                      <FieldLabel
+                        label="Story Premise"
+                        onEnhance={() => setEnhanceModeTarget('storyPremise')}
+                        isLoading={enhancingField === 'storyPremise'}
+                        isDisabled={enhancingField !== null && enhancingField !== 'storyPremise'}
+                      />
                       <AutoResizeTextarea value={world.core.storyPremise || ''} onChange={(v) => updateCore({ storyPremise: v })} rows={8} placeholder="What's the central situation or conflict? What's at stake? Describe the overall narrative the AI should understand..." className={`px-3 py-2 text-sm bg-[#1c1c1f] text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${publishErrors.storyPremise ? 'border border-red-500 ring-2 ring-red-500' : 'border border-black/35'}`} />
                       {publishErrors.storyPremise && <p className="text-sm text-red-500 mt-1">{publishErrors.storyPremise}</p>}
                     </div>
@@ -1129,131 +751,7 @@ className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
             </div>
           </section>
 
-          {/* Scene Gallery Section - Dark Theme */}
-          <section>
-            <div className="w-full bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
-              <div className="relative overflow-hidden bg-gradient-to-b from-[#5a7292] to-[#4a5f7f] border-t border-white/20 px-5 py-3 flex items-center gap-3 shadow-lg">
-                <div className="absolute inset-0 z-0 bg-gradient-to-tr from-white/10 to-transparent opacity-40" style={{ height: '60%' }} />
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white relative z-[1]"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                <h2 className="text-white text-xl font-bold tracking-[-0.015em] relative z-[1]">Scene Gallery</h2>
-              </div>
-              <div className="p-5">
-                <div className="p-5 pb-6 bg-[#2e2e33] rounded-2xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
-                {/* Header row: label + tooltip on left, buttons on right */}
-                <div className="mb-1 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-                  <div className="flex items-center gap-2">
-                    <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Scene Gallery Photos</label>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="w-3.5 h-3.5 text-blue-500 cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-[300px] text-xs font-semibold leading-relaxed normal-case tracking-normal">
-                        <ul className="space-y-1 list-disc list-outside pl-4 font-semibold">
-                          <li>Upload images to be used for different scenes.</li>
-                          <li>Add "tags" for each image.</li>
-                          <li>Background adapts based on tags mentioned in dialog.</li>
-                          <li>Recommend: 1280×896, 4:3 landscape.</li>
-                        </ul>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <div className="w-full lg:w-auto">
-                    <SceneGalleryActionButtons
-                      onUploadFromDevice={() => fileInputRef.current?.click()}
-                      onSelectFromLibrary={(imageUrl) => {
-                        const newScene: Scene = {
-                          id: uuid(),
-                          url: imageUrl,
-                          tags: [],
-                          createdAt: now()
-                        };
-                        onUpdateScenes([newScene, ...scenes]);
-                        setEditingScene(newScene);
-                      }}
-                      onGenerateClick={() => setShowSceneGenModal(true)}
-                      disabled={isUploading || isGeneratingScene}
-                      isUploading={isUploading}
-                      isGenerating={isGeneratingScene}
-                    />
-                  </div>
-                </div>
-                  <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAddScene} />
-                  <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {scenes.map(scene => {
-                      const sceneTags = scene.tags ?? ((scene as any).tag ? [(scene as any).tag] : []);
-                      
-                      return (
-                        <div key={scene.id} className="group relative rounded-xl overflow-hidden bg-zinc-800 cursor-pointer shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]" onClick={() => setEditingScene({ ...scene, tags: sceneTags })}>
-                          {/* Image with zoom hover */}
-                          <div className="aspect-video overflow-hidden">
-                            <img 
-                              src={scene.url} 
-                              alt={scene.title || 'Scene'} 
-                              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-                            />
-                          </div>
-                          
-                          {/* Footer bar */}
-                          <div className="bg-zinc-700 px-3 py-2 flex items-center justify-between">
-                            <span className="text-xs text-white/80 font-medium truncate">{scene.title || 'Untitled scene'}</span>
-                            {sceneAspectRatios[scene.id] ? (
-                              <span className="flex items-center gap-1 flex-shrink-0 ml-2">
-                                <AspectRatioIcon orientation={sceneAspectRatios[scene.id].orientation} />
-                                <span className="text-[10px] text-zinc-400">{sceneAspectRatios[scene.id].label}</span>
-                              </span>
-                            ) : (
-                              <span className="text-[10px] text-zinc-400 flex-shrink-0 ml-2">…</span>
-                            )}
-                          </div>
-                          
-                          {/* Delete button */}
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); handleDeleteScene(scene.id); }}
-                            className="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-600"
-                          >
-                            <Icons.Trash />
-                          </button>
-                          
-                          {/* Starting Scene star */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const updatedScenes = scenes.map(s => ({
-                                ...s,
-                                isStartingScene: s.id === scene.id ? !s.isStartingScene : false
-                              }));
-                              onUpdateScenes(updatedScenes);
-                            }}
-                            className={`absolute top-2 left-2 p-1.5 rounded-lg transition-all ${
-                              scene.isStartingScene 
-                                ? 'bg-amber-500 text-white opacity-100 shadow-lg shadow-amber-500/30' 
-                                : 'bg-black/50 text-white/70 opacity-0 group-hover:opacity-100 hover:bg-black/70'
-                            }`}
-                            title={scene.isStartingScene ? "Starting scene" : "Set as starting scene"}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill={scene.isStartingScene ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                            </svg>
-                          </button>
-                          {scene.isStartingScene && (
-                            <div className="absolute top-2 left-10 bg-amber-500 text-white text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md shadow-lg">
-                              Start
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                    {scenes.length === 0 && (
-                      <div className="col-span-full py-12 text-center text-zinc-500 rounded-2xl bg-[#1c1c1f] shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
-                         <p className="text-xs font-bold uppercase tracking-widest">No scenes uploaded</p>
-                         <p className="text-sm mt-1 text-zinc-500">Upload images to enable dynamic backgrounds in chat.</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
+          <SceneGallerySection scenes={scenes} media={media} />
 
           {/* Art Style Preference Section - Dark Theme */}
           <section>
@@ -1352,7 +850,12 @@ className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
                       
                        {/* User's custom AI rules - editable */}
                       <div className="mt-4">
-                        <FieldLabel label="Custom Rules (Optional)" fieldName="dialogFormatting" />
+                        <FieldLabel
+                          label="Custom Rules (Optional)"
+                          onEnhance={() => setEnhanceModeTarget('dialogFormatting')}
+                          isLoading={enhancingField === 'dialogFormatting'}
+                          isDisabled={enhancingField !== null && enhancingField !== 'dialogFormatting'}
+                        />
                         <AutoResizeTextarea 
                           value={world.core.dialogFormatting} 
                           onChange={(v) => updateCore({ dialogFormatting: v })} 
@@ -1485,109 +988,9 @@ className="px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white plac
         </div>
       </TabFieldNavigator>
       
-      {/* Scene Tag Editor Modal */}
-      <SceneTagEditorModal
-        isOpen={!!editingScene}
-        onClose={() => setEditingScene(null)}
-        scene={editingScene}
-        onSave={handleSaveScene}
-      />
-      
-      {/* Cover Image Generation Modal */}
-      <CoverImageGenerationModal
-        isOpen={showCoverGenModal}
-        onClose={() => setShowCoverGenModal(false)}
-        onGenerated={async (imageUrl) => {
-          try {
-            const compressedUrl = await compressAndUpload(imageUrl, 'covers', user?.id || 'anon', 1024, 1536, 0.85);
-            onUpdateCoverImage(compressedUrl);
-          } catch {
-            // Fallback to original URL if compression fails
-            onUpdateCoverImage(imageUrl);
-          }
-          onUpdateCoverPosition({ x: 50, y: 50 });
-          setIsRepositioningCover(true);
-          setShowCoverGenModal(false);
-          
-        }}
+      <StoryBuilderMediaModals
+        media={media}
         scenarioTitle={world.core.scenarioName}
-      />
-      
-      {/* Scene Image Generation Modal */}
-      <SceneImageGenerationModal
-        isOpen={showSceneGenModal}
-        onClose={() => setShowSceneGenModal(false)}
-        onGenerate={async (prompt, styleId) => {
-          if (!user) {
-            console.error('Please sign in to generate scenes');
-            return;
-          }
-          
-          setIsGeneratingScene(true);
-          try {
-            const style = getStyleById(styleId);
-            const artStylePrompt = style?.backendPrompt || '';
-
-            void trackApiValidationSnapshot({
-              eventKey: 'validation.single.scene_image',
-              eventSource: 'story-builder.scene-modal',
-              apiCallGroup: 'single_call',
-              parentRowId: 'summary.single.scene_image',
-              detailPresence: buildRequiredPresence([
-                ['single.scene_image.prompt_or_messages', prompt],
-                ['single.scene_image.characters_or_context', artStylePrompt || world.core.storyPremise || world.core.scenarioName],
-              ]),
-              diagnostics: {
-                scenarioId,
-              },
-            });
-            
-            const { data, error } = await supabase.functions.invoke('generate-cover-image', {
-              body: {
-                prompt: `Scene: ${prompt}. Landscape composition, 4:3 aspect ratio, widescreen environment background.`,
-                artStylePrompt,
-                scenarioTitle: world.core.scenarioName
-              }
-            });
-            
-            if (error) throw error;
-            
-            if (data?.imageUrl) {
-              void trackAiUsageEvent({
-                eventType: 'scene_image_generated',
-                eventSource: 'story-builder-scene-modal',
-                metadata: {
-                  scenarioId,
-                },
-              });
-
-              // Compress before saving
-              let finalUrl = data.imageUrl;
-              try {
-                finalUrl = await compressAndUpload(data.imageUrl, 'scenes', user!.id, 1024, 768, 0.85);
-              } catch { /* use original */ }
-              // Create new scene with the compressed image
-              const newScene: Scene = {
-                id: uuid(),
-                url: finalUrl,
-                tags: [],
-                createdAt: now()
-              };
-              onUpdateScenes([newScene, ...scenes]);
-              setEditingScene(newScene);
-              setShowSceneGenModal(false);
-              
-            } else {
-              throw new Error('No image URL returned');
-            }
-          } catch (err) {
-            console.error('Scene generation failed:', err);
-            console.error('Failed to generate scene:', err);
-          } finally {
-            setIsGeneratingScene(false);
-          }
-        }}
-        isGenerating={isGeneratingScene}
         selectedArtStyle={selectedArtStyle}
       />
       
@@ -1602,22 +1005,6 @@ className="px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white plac
         />
       )}
       
-      {/* Delete Confirm Dialogs */}
-      <DeleteConfirmDialog
-        open={pendingDeleteCover}
-        onOpenChange={setPendingDeleteCover}
-        onConfirm={confirmDeleteCover}
-        title="Remove cover image?"
-        message="This will remove the cover image from your scenario."
-      />
-      <DeleteConfirmDialog
-        open={!!pendingDeleteSceneId}
-        onOpenChange={(open) => { if (!open) setPendingDeleteSceneId(null); }}
-        onConfirm={confirmDeleteScene}
-        title="Remove scene image?"
-        message="This will remove the scene image from your gallery."
-      />
-
       {/* Enhance Mode Selector Modal */}
       <EnhanceModeModal
         open={enhanceModeTarget !== null}

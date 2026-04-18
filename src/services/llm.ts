@@ -6,6 +6,7 @@ import {
   buildCall1ValidationPresence,
   trackApiValidationSnapshot,
 } from "@/services/api-usage-validation";
+import type { ChatDebugTrace } from "@/features/chat-debug/types";
 
 /**
  * Detect if a user message contains dialogue/actions written for AI-controlled characters.
@@ -50,6 +51,11 @@ The user wants a DIFFERENT VERSION of this response. Guidelines:
 13. Keep the same immediate timeline. Do NOT jump backward, skip ahead, or rewrite the scene's causal logic.
 14. Keep actions physically sensible and spatially coherent. Characters may only react to what they can currently see, hear, reach, or reasonably infer.
 15. If an AI-controlled character was directly asked a question and they can answer it now, answer it in this same response instead of ignoring it.`;
+
+export type GenerateRoleplayResponseStreamOptions = {
+  debugTrace?: boolean;
+  onDebugTrace?: (trace: ChatDebugTrace) => void;
+};
 
 // Dynamic dialog formatting rules based on POV setting
 function getCriticalDialogRules(narrativePov: 'first' | 'third' = 'third'): string {
@@ -995,7 +1001,8 @@ export async function* generateRoleplayResponseStream(
   lengthDirective?: string,
   sessionMessageCount?: number,
   runtimeDirectives?: string,
-  activeScene?: Scene | null
+  activeScene?: Scene | null,
+  options?: GenerateRoleplayResponseStreamOptions,
 ): AsyncGenerator<string, void, unknown> {
   const conversation = appData.conversations.find(c => c.id === conversationId);
   if (!conversation) throw new Error("Conversation not found");
@@ -1140,6 +1147,7 @@ export async function* generateRoleplayResponseStream(
       stream: true,
       max_tokens: maxTokens,
       pipeline: 'roleplay_v2',
+      debugTrace: options?.debugTrace === true,
       roleplayContext: {
         conversationId,
         currentDay: currentDay ?? null,
@@ -1190,10 +1198,19 @@ export async function* generateRoleplayResponseStream(
       if (!line.startsWith("data: ")) continue;
 
       const jsonStr = line.slice(6).trim();
-      if (jsonStr === "[DONE]") break;
+      if (jsonStr === "[DONE]") {
+        textBuffer = "";
+        break;
+      }
 
       try {
         const parsed = JSON.parse(jsonStr);
+        const debugTrace = parsed?.chronicle_debug_trace as ChatDebugTrace | undefined;
+        if (debugTrace) {
+          options?.onDebugTrace?.(debugTrace);
+          continue;
+        }
+
         const content = parsed.choices?.[0]?.delta?.content as string | undefined;
         if (content) {
           outputChars += content.length;
@@ -1217,6 +1234,11 @@ export async function* generateRoleplayResponseStream(
       if (jsonStr === "[DONE]") continue;
       try {
         const parsed = JSON.parse(jsonStr);
+        const debugTrace = parsed?.chronicle_debug_trace as ChatDebugTrace | undefined;
+        if (debugTrace) {
+          options?.onDebugTrace?.(debugTrace);
+          continue;
+        }
         const content = parsed.choices?.[0]?.delta?.content as string | undefined;
         if (content) {
           outputChars += content.length;

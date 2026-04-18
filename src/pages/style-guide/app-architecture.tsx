@@ -197,7 +197,7 @@ const REFACTOR_TRIAGE_OVERRIDES: Record<string, RefactorTriageOverride> = {
   },
   "/src/features/story-builder/StoryBuilderScreen.tsx": {
     fileNote:
-      "Refactor target: split the story-builder shell into layout/sidebar ownership, section render configuration, media/modals, and AI-enhance orchestration. The screen currently carries too much UI, workflow, and persistence-adjacent behavior in one place.",
+      "Refactor target: the first media/modals slice is now extracted into dedicated Story Builder components plus `use-story-builder-media`. The remaining high-value cuts are section render configuration, custom-world editing flows, and AI-enhance orchestration so the screen stops acting like the control center for every builder concern.",
   },
   "/src/features/character-builder/CharacterBuilderScreen.tsx": {
     fileNote:
@@ -286,6 +286,15 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
             kind: "folder",
             path: "/src/features/character-editor-modal",
             children: [{ kind: "file", path: "/src/features/character-editor-modal/CharacterEditorModalScreen.tsx" }],
+          },
+          {
+            kind: "folder",
+            path: "/src/features/chat-debug",
+            children: [
+              { kind: "file", path: "/src/features/chat-debug/types.ts" },
+              { kind: "file", path: "/src/features/chat-debug/storage.ts" },
+              { kind: "file", path: "/src/features/chat-debug/session-log.ts" },
+            ],
           },
         ],
       },
@@ -1059,6 +1068,147 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
           },
         ],
       },
+      {
+        id: "chat-interface-admin-debug-trace",
+        title: "Admin Turn Debug Trace Export",
+        summary: "Captures the structured planner/writer/validator trace for each assistant turn, keeps it in browser session scope, and appends it to admin-downloaded session logs without changing normal chat output.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          {
+            label: "Uses",
+            values: [
+              "/src/features/chat-debug/types.ts",
+              "/src/features/chat-debug/storage.ts",
+              "/src/features/chat-debug/session-log.ts",
+              "/src/services/llm.ts",
+            ],
+            kind: "files",
+          },
+          {
+            label: "Access",
+            values: ["admin-only chat observability layer scoped to the active browser session"],
+            kind: "plain",
+          },
+          {
+            label: "Mutates",
+            values: ["per-conversation sessionStorage trace cache", "downloaded session-log debug sections"],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["debug capture stays optional and never blocks send, continue, or regenerate when trace data is absent"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/features/chat-debug/types.ts": {
+    description: "Shared admin-only chat observability contract defining the structured turn-debug trace shape passed between the frontend and the roleplay_v2 backend.",
+    rows: [
+      {
+        id: "chat-debug-trace-contract",
+        title: "Turn Debug Trace Contract",
+        summary: "Defines the structured trace payload for pipeline path, selected excerpts, planner output, writer draft preview, validator outcome, and final fallback notes for a single assistant turn.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          {
+            label: "Defines",
+            values: [
+              "ChatDebugTrace",
+              "StoredChatDebugTrace",
+              "supporting excerpt scoring",
+              "planner / validator trace payloads",
+            ],
+            kind: "plain",
+          },
+          {
+            label: "Used By",
+            values: [
+              "/src/components/chronicle/ChatInterfaceTab.tsx",
+              "/src/services/llm.ts",
+              "/src/features/chat-debug/storage.ts",
+              "/src/features/chat-debug/session-log.ts",
+            ],
+            kind: "files",
+          },
+          {
+            label: "Requires",
+            values: ["frontend trace typing stays aligned with the chat edge function's emitted debug payload shape"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/features/chat-debug/storage.ts": {
+    description: "Browser-session storage helper for admin-only turn-debug traces, keyed by scenario, conversation, message, and generation.",
+    rows: [
+      {
+        id: "chat-debug-session-storage",
+        title: "Debug Trace Session Cache",
+        summary: "Loads, persists, and upserts per-turn debug trace records in browser sessionStorage so admin exports can find the correct trace for the current conversation branch.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          {
+            label: "Uses",
+            values: ["/src/features/chat-debug/types.ts"],
+            kind: "files",
+          },
+          {
+            label: "Used By",
+            values: ["/src/components/chronicle/ChatInterfaceTab.tsx"],
+            kind: "files",
+          },
+          {
+            label: "Access",
+            values: ["browser sessionStorage only; never durable backend persistence"],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["storage failures stay soft so missing sessionStorage access never breaks the chat runtime"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/features/chat-debug/session-log.ts": {
+    description: "Admin export formatter that converts stored turn-debug traces into markdown blocks appended to the downloaded Chronicle session log.",
+    rows: [
+      {
+        id: "chat-debug-session-log-formatting",
+        title: "Session Log Debug Formatter",
+        summary: "Formats the captured debug trace into readable session-log sections so admins can inspect the selected context, planner decision, validator result, and fallback path for each AI turn.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          {
+            label: "Uses",
+            values: ["/src/features/chat-debug/types.ts"],
+            kind: "files",
+          },
+          {
+            label: "Used By",
+            values: ["/src/components/chronicle/ChatInterfaceTab.tsx"],
+            kind: "files",
+          },
+          {
+            label: "Access",
+            values: ["admin-only export/readback layer for downloaded session logs"],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["trace output stays explanatory without pretending to expose hidden model chain-of-thought"],
+            kind: "plain",
+          },
+        ],
+      },
     ],
   },
   "/src/services/llm.ts": {
@@ -1112,6 +1262,30 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
           },
         ],
       },
+      {
+        id: "llm-debug-trace-bridge",
+        title: "Debug Trace Bridge",
+        summary: "Opts into admin debug traces on the chat request, intercepts the structured trace payload from the response stream, and hands it back to the UI separately from user-visible text chunks.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          {
+            label: "Uses",
+            values: ["/src/features/chat-debug/types.ts", "/src/components/chronicle/ChatInterfaceTab.tsx"],
+            kind: "files",
+          },
+          {
+            label: "Calls",
+            values: ["/supabase/functions/chat/index.ts"],
+            kind: "files",
+          },
+          {
+            label: "Requires",
+            values: ["debug trace packets are handled out-of-band so they never leak into the rendered assistant message body"],
+            kind: "plain",
+          },
+        ],
+      },
     ],
   },
   "/supabase/functions/chat/index.ts": {
@@ -1161,6 +1335,35 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
           {
             label: "Requires",
             values: ["the latest user turn remains highest priority and supporting history never overrides the current canon branch"],
+            kind: "plain",
+          },
+        ],
+      },
+      {
+        id: "chat-edge-debug-trace-emission",
+        title: "Admin Debug Trace Emission",
+        summary: "Builds a structured admin-only trace describing selected supporting excerpts, planner output, validator behavior, normalization changes, and direct-fallback reasons, then emits it alongside the normal chat response payload.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          {
+            label: "Defines",
+            values: ["chronicle_debug_trace payload", "direct fallback trace builder", "roleplay_v2 trace summaries", "SSE/JSON trace injection"],
+            kind: "plain",
+          },
+          {
+            label: "Used By",
+            values: ["/src/services/llm.ts", "/src/components/chronicle/ChatInterfaceTab.tsx"],
+            kind: "files",
+          },
+          {
+            label: "Access",
+            values: ["server-side admin observability payload piggybacked on the normal chat response contract"],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["trace output stays descriptive about Chronicle's pipeline choices without claiming to reveal hidden model reasoning"],
             kind: "plain",
           },
         ],
