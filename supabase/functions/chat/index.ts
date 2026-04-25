@@ -372,6 +372,7 @@ function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undef
       'Do not stall with consent, confirmation, or waiting loops.',
       'Do not output separator lines, code fences, or wrapper tags.',
       'Do not put a speaker tag inside an already tagged character bubble.',
+      'Do not open with the same weather, time-of-day, or visibility recap used in recent turns.',
     ],
     continuityNotes: [
       'Latest user turn has priority over older excerpts.',
@@ -383,6 +384,9 @@ function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undef
       'Default to one tagged AI speaker; use a second only when they meaningfully contribute.',
       'Keep the response readable and responsive to the chat length setting.',
       'Use natural character voice instead of checklist language.',
+      'Use roleplay formatting: visible action/narration in *asterisks*, spoken dialogue in straight double quotes, and private thoughts only in (parentheses).',
+      'Do not put one AI character spoken dialogue inside another AI character speaker block.',
+      'Do not write bare unquoted internal monologue or mechanically repeat scene-state phrases.',
     ],
   };
 }
@@ -927,6 +931,11 @@ Writer contract:
 - Avoid mustAvoid items.
 - Keep older excerpts subordinate to the latest user turn.
 - Write in the selected character's real voice, not as a checklist.
+- Use the app's roleplay format: CharacterName: *visible action/narration.* "spoken dialogue"
+- Never put one character's quoted dialogue inside another character's tagged block; give the speaking AI character their own tag or make it a silent visible reaction.
+- Do not write bare prose or loose internal monologue after a speaker tag; wrap action in *asterisks*, wrap rare private thought in (parentheses), or omit it.
+- Treat sceneStateFacts as constraints, not phrases to repeat every turn.
+- Do not reuse the same environmental opening from recent assistant turns; show a new physical effect if the scene condition still matters.
 - Do not output markdown separator lines such as --- or ***.`,
   };
 

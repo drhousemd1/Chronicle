@@ -4774,6 +4774,28 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260425-008",
+      title: "Tighten chat roleplay formatting discipline",
+      summary: "Chat Runtime - Roleplay prompts now explicitly require action narration in asterisks, spoken dialogue in quotes, private thoughts only in parentheses, and scene facts as constraints instead of repeated wording",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "Standalone QA of the Lost chat showed the pipeline was mechanically repeating weather/time phrases and producing loose unquoted internal-thought fragments after speaker tags. Test input also made clear that roleplay format needs to be enforced as actual chat styling, not generic prose.",
+      plan: "Strengthen the runtime prompt and planner/writer contract so the model uses Chronicle's intended roleplay format consistently while preserving the existing speaker-count and anti-loop behavior.",
+      changes: "Updated `src/services/llm.ts`:\n- Added a mandatory roleplay-format discipline block beside the strict formatting rules.\n- Requires visible action/narration to be wrapped in asterisks.\n- Requires spoken dialogue to use double quotes.\n- Requires private thoughts to be parenthesized only when truly needed.\n- Forbids bare prose and loose internal monologue after speaker tags.\n- Forbids placing one AI character's spoken dialogue inside another AI character's tagged block.\n- Tells the model to treat weather/time/visibility as constraints instead of repeating the same phrases every turn.\n- Strengthened anti-repetition rules so consecutive AI responses do not open with the same weather, time-of-day, or visibility recap.\n\nUpdated `src/components/chronicle/ChatInterfaceTab.tsx`:\n- Added a dynamic anti-environment-recap directive when recent AI replies repeatedly open with weather, visibility, or time-of-day framing.\n- Calibrated the ping-pong detector so three speaker beats can remain valid, while sustained four-plus alternating blocks trigger a corrective directive.\n\nUpdated `supabase/functions/chat/index.ts`:\n- Mirrored the same formatting and anti-checklist guidance in the local planner fallback and writer contract so the edge-function pipeline does not dilute the client-side instruction.\n- Added writer-plan avoidance for reused environmental openings and cross-speaker dialogue inside the wrong speaker block.",
+      filesAffected: [
+        "src/services/llm.ts",
+        "src/components/chronicle/ChatInterfaceTab.tsx",
+        "supabase/functions/chat/index.ts",
+        "src/data/ui-audit-findings.ts"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["chat-runtime", "roleplay-format", "prompt", "qa", "dialogue", "planner-writer"],
+      comments: [],
+      createdAt: "2026-04-25T10:36:00.000Z",
+      updatedAt: "2026-04-25T10:36:00.000Z",
+    },
+    {
       id: "cl-20260425-007",
       title: "Add a timeout guard for stalled chat response requests",
       summary: "Chat Runtime - Call 1 now aborts the chat edge-function fetch after 90 seconds and shows a clear retry message instead of leaving users waiting forever",

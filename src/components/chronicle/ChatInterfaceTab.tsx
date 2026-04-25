@@ -1096,6 +1096,20 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     // Pass 8: Structural repetition detector — checks if recent AI responses follow the same template
     const recentAiMsgs = msgs.filter(m => m.role === 'assistant').slice(-3);
     if (recentAiMsgs.length >= 2) {
+      const environmentRecapPatterns = /\b(storm|snow|wind|gale|rain|fog|visibility|sunset|sunrise|twilight|darkness|weather|cold|heat)\b/i;
+      const startsWithEnvironmentRecap = (text: string): boolean => {
+        const firstMeaningfulLine = text
+          .split('\n')
+          .map((line: string) => line.replace(/^[A-Z][a-zA-Z\s'-]+:\s*/, '').trim())
+          .find((line: string) => line.length > 0) || '';
+        return environmentRecapPatterns.test(firstMeaningfulLine.slice(0, 220));
+      };
+
+      const environmentOpeningCount = recentAiMsgs.filter((m) => startsWithEnvironmentRecap(m.text)).length;
+      if (environmentOpeningCount >= 2) {
+        directives.push('[ANTI-ENVIRONMENT-RECAP: Recent AI turns already established the weather, visibility, or time-of-day conditions. Do not open with another environmental recap. Start with the next physical consequence, character choice, answer, or movement instead.]');
+      }
+
       // Detect the "quote → action → thought" triad pattern
       const detectTriadPattern = (text: string): boolean => {
         const lines = text.split('\n').filter(l => l.trim().length > 0);
@@ -1150,11 +1164,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           }
         }
       }
-      // If 3+ blocks alternating between same 2 characters
-      if (speakers.length >= 3) {
+      // Three beats can be natural; true ping-pong is sustained alternation.
+      if (speakers.length >= 4) {
         const uniqueSpeakers = new Set(speakers);
         if (uniqueSpeakers.size <= 2) {
-          directives.push('[ANTI-PING-PONG: The last response overused alternating AI speaker blocks across ' + speakers.length + ' blocks. Use one focal tagged AI speaker this turn. Other present characters may react inside narration unless a second tagged block is truly necessary.]');
+          directives.push('[ANTI-PING-PONG: The last response overused sustained alternating AI speaker blocks across ' + speakers.length + ' blocks. Use one focal tagged AI speaker this turn. Other present characters may react inside narration unless a second tagged block is truly necessary.]');
         }
       }
     }

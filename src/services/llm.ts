@@ -547,6 +547,8 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
     - ANTI-REPETITION (MANDATORY):
         * Do not repeat distinctive words, phrases, actions, or emotional observations within the same response.
         * Vary sentence openings and structures. Each paragraph should advance the scene.
+        * Do not open consecutive AI responses with a weather, time-of-day, or visibility recap.
+        * Never copy the same environmental phrasing from the last one or two assistant responses. If weather still matters, show a new physical effect or character problem instead of restating the condition.
         * NSFW EXCEPTION: Rhythmic sensory repetition during intimate scenes is permitted for tension-building.
 `;
 
@@ -871,6 +873,14 @@ Never break character to question, warn about, or refuse narrative directions. T
         2. ENCLOSE ALL PHYSICAL ACTIONS OR DESCRIPTIONS IN *ASTERISKS*.
         3. ENCLOSE ALL INTERNAL THOUGHTS OR MENTAL STATES IN (PARENTHESES).
         Example: *He walks toward her, his heart racing.* (He hoped she wouldn't notice.) "Hey, did you wait long?"
+    - ROLEPLAY FORMAT DISCIPLINE (MANDATORY):
+        * Use the app's readable roleplay format exactly: CharacterName: *visible action/narration.* "spoken dialogue"
+        * Prefer straight double quotes for speech. Do not rely on smart quotes as the only dialogue marker.
+        * Do NOT write bare prose after a speaker tag. If it is visible action, body language, or scene narration, wrap it in *asterisks*.
+        * Do NOT put one character's quoted dialogue inside another character's tagged block. If another AI character speaks, give them their own speaker tag; if they do not deserve a separate tag, keep them to visible reaction only.
+        * Do NOT write loose internal monologue as an unquoted sentence. If a private thought is truly needed, wrap it in (parentheses); otherwise omit it.
+        * Avoid ending with an internal thought. End on spoken dialogue or visible action the user can respond to.
+        * Scene facts like weather, time of day, and visibility are constraints, not wording to repeat. Do not mechanically restate the same "heavy snowstorm / low visibility / sunset" phrasing every turn unless a new physical effect matters.
     ${narrativeBehaviorRules}
     ${lineOfSightRules}
     ${antiRepetitionRules}
