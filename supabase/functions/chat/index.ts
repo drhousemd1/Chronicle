@@ -707,6 +707,59 @@ function streamTextAsSSE(
   return new Response(stream, { headers });
 }
 
+async function readXAIStreamContent(body: ReadableStream<Uint8Array> | null): Promise<string> {
+  if (!body) return '';
+
+  const decoder = new TextDecoder();
+  const reader = body.getReader();
+  let buffer = '';
+  let content = '';
+
+  const consumeFrame = (frame: string) => {
+    for (const rawLine of frame.split('\n')) {
+      const line = rawLine.trim();
+      if (!line.startsWith('data:')) continue;
+      const data = line.slice(5).trim();
+      if (!data || data === '[DONE]') continue;
+      try {
+        const parsed = JSON.parse(data);
+        const delta = parsed?.choices?.[0]?.delta?.content;
+        if (typeof delta === 'string') content += delta;
+      } catch {
+        // Ignore malformed stream metadata and keep consuming later frames.
+      }
+    }
+  };
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const frames = buffer.split(/\r?\n\r?\n/);
+      buffer = frames.pop() ?? '';
+      frames.forEach(consumeFrame);
+    }
+    buffer += decoder.decode();
+    if (buffer.trim()) consumeFrame(buffer);
+  } finally {
+    reader.releaseLock();
+  }
+
+  return content;
+}
+
+async function streamSanitizedXAICompletion(
+  body: ReadableStream<Uint8Array> | null,
+  modelId: string,
+  headers: HeadersInit,
+  debugTrace: RoleplayDebugTrace | null = null,
+): Promise<Response> {
+  const rawText = await readXAIStreamContent(body);
+  const normalizedText = normalizeFinalText(rawText);
+  return streamTextAsSSE(normalizedText, modelId, headers, debugTrace);
+}
+
 function jsonResponseAsCompletion(
   text: string,
   modelId: string,
@@ -1082,7 +1135,7 @@ async function handleDirect(
 
   if (result.ok) {
     if (stream) {
-      return prependDebugTraceToSSE(result.response.body, {
+      return await streamSanitizedXAICompletion(result.response.body, modelId, {
         ...responseHeadersBase,
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
@@ -1111,7 +1164,7 @@ async function handleDirect(
     timedDebugTrace = withDebugTiming(timedDebugTrace, { fallbackMs: elapsedMs(fallbackStartedAt) });
     if (retry.ok) {
       if (stream) {
-        return prependDebugTraceToSSE(retry.response.body, {
+        return await streamSanitizedXAICompletion(retry.response.body, modelId, {
           ...responseHeadersBase,
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-cache",
