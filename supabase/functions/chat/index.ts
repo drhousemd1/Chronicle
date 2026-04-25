@@ -129,6 +129,8 @@ const DEBUG_CHAT_LOGS = Deno.env.get("DEBUG_CHAT_LOGS") === "true";
 const RECENT_HISTORY_WINDOW = 16;
 const SUPPORTING_HISTORY_WINDOW = 8;
 
+const USE_MODEL_PLANNER = Deno.env.get("CHAT_USE_MODEL_PLANNER") === "true";
+
 const TEMP_DIRECT = 0.55;
 const TEMP_PLANNER = 0.15;
 const TEMP_WRITER = 0.3;
@@ -293,6 +295,96 @@ function extractSpeakerBlockNames(text: string): string[] {
   }
 
   return names;
+}
+
+function uniqueNonEmpty(values: Array<string | null | undefined>): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const raw of values) {
+    const value = String(raw ?? '').trim();
+    if (!value) continue;
+    const key = value.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(value);
+  }
+  return result;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function findMentionedAiCharacters(text: string, aiCharacterNames: string[]): string[] {
+  return aiCharacterNames.filter((name) => {
+    if (!name.trim()) return false;
+    return new RegExp(`(^|[^\\p{L}\\p{N}_])${escapeRegExp(name)}([^\\p{L}\\p{N}_]|$)`, 'iu').test(text);
+  });
+}
+
+function extractQuestionSentences(text: string, maxItems = 3): string[] {
+  const matches = (text || '').match(/[^.!?\n]*\?+/g) ?? [];
+  return matches
+    .map((sentence) => sentence.replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+    .slice(0, maxItems);
+}
+
+function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undefined, lastUser: string): PlannerPlan {
+  const aiNames = uniqueNonEmpty(ctx?.aiCharacterNames ?? []);
+  const previousAssistant = [...messages].reverse().find((message) => message.role === 'assistant')?.content ?? '';
+  const previousSpeakers = extractSpeakerBlockNames(previousAssistant).filter((name) => (
+    aiNames.some((aiName) => aiName.toLowerCase() === name.toLowerCase())
+  ));
+  const mentionedAiCharacters = findMentionedAiCharacters(lastUser, aiNames);
+  const groupCue = /\b(you both|both of you|everyone|everybody|together|we|us|all of us|your mom|your daughter|group|stay together)\b/i.test(lastUser);
+  const focusCharacter = mentionedAiCharacters[0] || previousSpeakers[0] || aiNames[0] || null;
+  const secondaryCandidates = groupCue || mentionedAiCharacters.length > 1
+    ? uniqueNonEmpty([...mentionedAiCharacters.slice(1), ...previousSpeakers, ...aiNames]).filter((name) => name !== focusCharacter)
+    : [];
+  const allowedSpeakers = uniqueNonEmpty([focusCharacter, ...mentionedAiCharacters, ...secondaryCandidates]).slice(0, 2);
+  const directQuestionsToAnswer = uniqueNonEmpty([
+    ...extractQuestionSentences(lastUser),
+    ...extractQuestionSentences(previousAssistant).map((question) => `Carry forward or acknowledge prior AI question: ${question}`),
+  ]).slice(0, 4);
+  const sceneStateFacts = uniqueNonEmpty([
+    ctx?.activeSceneTitle ? `Current scene: ${ctx.activeSceneTitle}` : null,
+    ctx?.currentDay != null ? `Current day: ${ctx.currentDay}` : null,
+    ctx?.currentTimeOfDay ? `Current time of day: ${ctx.currentTimeOfDay}` : null,
+    ctx?.activeSceneTags?.length ? `Scene tags: ${ctx.activeSceneTags.join(', ')}` : null,
+  ]);
+
+  return {
+    focusCharacter,
+    allowedSpeakers,
+    maxSpeakerBlocks: Math.max(1, Math.min(2, allowedSpeakers.length || 1)),
+    directQuestionsToAnswer,
+    mentionedAiCharacters,
+    immediateBeat: 'Respond to the latest user action, make one concrete next beat, and keep the scene moving without a major jump unless the story clearly calls for it.',
+    mustInclude: [
+      'Treat user-written AI-character dialogue/action as canon, not as an instruction to ignore.',
+      'If the latest turn names or directs an AI character, answer or acknowledge that direction in the next response.',
+    ],
+    mustAvoid: [
+      'Do not speak for user-controlled characters.',
+      'Do not force every present AI character to speak.',
+      'Do not add filler second-speaker dialogue.',
+      'Do not stall with consent, confirmation, or waiting loops.',
+      'Do not output separator lines, code fences, or wrapper tags.',
+      'Do not put a speaker tag inside an already tagged character bubble.',
+    ],
+    continuityNotes: [
+      'Latest user turn has priority over older excerpts.',
+      'Preserve the current physical scene state and line of sight.',
+      'Use prior memory as continuity support, not as a reason to repeat resolved beats.',
+    ],
+    sceneStateFacts,
+    formattingNotes: [
+      'Default to one tagged AI speaker; use a second only when they meaningfully contribute.',
+      'Keep the response readable and responsive to the chat length setting.',
+      'Use natural character voice instead of checklist language.',
+    ],
+  };
 }
 
 function analyzePolicyViolations(text: string, plan: PlannerPlan): string[] {
@@ -719,44 +811,46 @@ ${ctxLines ? `Context:\n${ctxLines}\n` : ''}`,
     { role: 'user', content: `Latest user turn (verbatim):\n${lastUser}\n\nReturn the JSON plan now.` },
   ];
 
-  let plan: PlannerPlan = FALLBACK_PLAN;
+  let plan: PlannerPlan = buildLocalPlannerPlan(messages, ctx, lastUser);
   let plannerUsedFallback = false;
   let plannerFailureReason: string | null = null;
   const plannerStartedAt = performance.now();
-  const plannerCall = await callXAIForJson(plannerInput, modelId, 1024, TEMP_PLANNER);
-  plannerMs = elapsedMs(plannerStartedAt);
-  if (plannerCall.ok) {
-    const parsed = extractJsonObject(plannerCall.content);
-    if (parsed && typeof parsed === 'object') {
-      const p = parsed as Partial<PlannerPlan>;
-      plan = {
-        focusCharacter: typeof p.focusCharacter === 'string' ? p.focusCharacter : null,
-        allowedSpeakers: Array.isArray(p.allowedSpeakers) ? p.allowedSpeakers.map(String).filter(Boolean) : [],
-        maxSpeakerBlocks: typeof p.maxSpeakerBlocks === 'number' && Number.isFinite(p.maxSpeakerBlocks)
-          ? Math.max(1, Math.min(2, Math.round(p.maxSpeakerBlocks)))
-          : 1,
-        directQuestionsToAnswer: Array.isArray(p.directQuestionsToAnswer) ? p.directQuestionsToAnswer.map(String) : [],
-        mentionedAiCharacters: Array.isArray(p.mentionedAiCharacters) ? p.mentionedAiCharacters.map(String) : [],
-        immediateBeat: typeof p.immediateBeat === 'string' ? p.immediateBeat : '',
-        mustInclude: Array.isArray(p.mustInclude) ? p.mustInclude.map(String) : [],
-        mustAvoid: Array.isArray(p.mustAvoid) ? p.mustAvoid.map(String) : [],
-        continuityNotes: Array.isArray(p.continuityNotes) ? p.continuityNotes.map(String) : [],
-        sceneStateFacts: Array.isArray(p.sceneStateFacts) ? p.sceneStateFacts.map(String) : [],
-        formattingNotes: Array.isArray(p.formattingNotes) ? p.formattingNotes.map(String) : [],
-      };
-      if (!plan.allowedSpeakers.length && plan.focusCharacter) {
-        plan.allowedSpeakers = [plan.focusCharacter];
+  if (USE_MODEL_PLANNER) {
+    const plannerCall = await callXAIForJson(plannerInput, modelId, 1024, TEMP_PLANNER);
+    if (plannerCall.ok) {
+      const parsed = extractJsonObject(plannerCall.content);
+      if (parsed && typeof parsed === 'object') {
+        const p = parsed as Partial<PlannerPlan>;
+        plan = {
+          focusCharacter: typeof p.focusCharacter === 'string' ? p.focusCharacter : null,
+          allowedSpeakers: Array.isArray(p.allowedSpeakers) ? p.allowedSpeakers.map(String).filter(Boolean) : [],
+          maxSpeakerBlocks: typeof p.maxSpeakerBlocks === 'number' && Number.isFinite(p.maxSpeakerBlocks)
+            ? Math.max(1, Math.min(2, Math.round(p.maxSpeakerBlocks)))
+            : 1,
+          directQuestionsToAnswer: Array.isArray(p.directQuestionsToAnswer) ? p.directQuestionsToAnswer.map(String) : [],
+          mentionedAiCharacters: Array.isArray(p.mentionedAiCharacters) ? p.mentionedAiCharacters.map(String) : [],
+          immediateBeat: typeof p.immediateBeat === 'string' ? p.immediateBeat : '',
+          mustInclude: Array.isArray(p.mustInclude) ? p.mustInclude.map(String) : [],
+          mustAvoid: Array.isArray(p.mustAvoid) ? p.mustAvoid.map(String) : [],
+          continuityNotes: Array.isArray(p.continuityNotes) ? p.continuityNotes.map(String) : [],
+          sceneStateFacts: Array.isArray(p.sceneStateFacts) ? p.sceneStateFacts.map(String) : [],
+          formattingNotes: Array.isArray(p.formattingNotes) ? p.formattingNotes.map(String) : [],
+        };
+        if (!plan.allowedSpeakers.length && plan.focusCharacter) {
+          plan.allowedSpeakers = [plan.focusCharacter];
+        }
+      } else {
+        plannerUsedFallback = true;
+        plannerFailureReason = 'planner_json_parse_failed';
+        warnLog('[chat] planner JSON parse failed -- using local planner plan');
       }
     } else {
       plannerUsedFallback = true;
-      plannerFailureReason = 'planner_json_parse_failed';
-      warnLog('[chat] planner JSON parse failed -- using fallback plan');
+      plannerFailureReason = plannerCall.reason;
+      warnLog(`[chat] planner call failed (${plannerCall.reason}) -- using local planner plan`);
     }
-  } else {
-    plannerUsedFallback = true;
-    plannerFailureReason = plannerCall.reason;
-    warnLog(`[chat] planner call failed (${plannerCall.reason}) -- using fallback plan`);
   }
+  plannerMs = elapsedMs(plannerStartedAt);
   if (!plan.allowedSpeakers.length) {
     const fallbackSpeaker = plan.focusCharacter || plan.mentionedAiCharacters[0] || ctx?.aiCharacterNames?.[0] || null;
     if (fallbackSpeaker) {
@@ -964,6 +1058,7 @@ Writer contract:
       timing: currentTiming(),
       notes: [
         'Debug trace shows Chronicle pipeline-selected context, not hidden model chain-of-thought.',
+        ...(!USE_MODEL_PLANNER ? ['Planner was built locally to avoid an extra model round trip.'] : []),
         ...(policyViolations.length > 0 ? [`Deterministic policy repair check triggered: ${policyViolations.join(' | ')}`] : []),
       ],
     }),
