@@ -61,6 +61,15 @@ type SupportingExcerptDetail = {
   score: number;
 };
 
+type RoleplayDebugTiming = {
+  totalMs: number | null;
+  plannerMs: number | null;
+  writerMs: number | null;
+  normalizationMs: number | null;
+  directMs: number | null;
+  fallbackMs: number | null;
+};
+
 type RoleplayDebugTrace = {
   version: 1;
   pipeline: 'roleplay_v2' | 'direct';
@@ -103,6 +112,7 @@ type RoleplayDebugTrace = {
   normalization: {
     changed: boolean;
   };
+  timing: RoleplayDebugTiming;
   notes: string[];
 };
 
@@ -150,6 +160,33 @@ function debugLog(message: string) {
 
 function warnLog(message: string) {
   if (DEBUG_CHAT_LOGS) console.warn(message);
+}
+
+function elapsedMs(startedAt: number): number {
+  return Math.max(0, Math.round(performance.now() - startedAt));
+}
+
+function buildDebugTiming(timing?: Partial<RoleplayDebugTiming> | null): RoleplayDebugTiming {
+  return {
+    totalMs: timing?.totalMs ?? null,
+    plannerMs: timing?.plannerMs ?? null,
+    writerMs: timing?.writerMs ?? null,
+    normalizationMs: timing?.normalizationMs ?? null,
+    directMs: timing?.directMs ?? null,
+    fallbackMs: timing?.fallbackMs ?? null,
+  };
+}
+
+function withDebugTiming(
+  debugTrace: RoleplayDebugTrace | null,
+  timing: Partial<RoleplayDebugTiming>,
+): RoleplayDebugTrace | null {
+  if (!debugTrace) return null;
+  const nextTiming = buildDebugTiming({ ...debugTrace.timing, ...timing });
+  if (debugTrace.pipeline === 'direct' && nextTiming.totalMs === null) {
+    nextTiming.totalMs = nextTiming.fallbackMs ?? nextTiming.directMs;
+  }
+  return { ...debugTrace, timing: nextTiming };
 }
 
 // ============================================================================
@@ -312,6 +349,7 @@ function buildRoleplayDebugTrace(args: {
   validatorFailureReason?: string | null;
   validatorRevisedText?: string;
   normalizationChanged: boolean;
+  timing?: Partial<RoleplayDebugTiming> | null;
   notes?: string[];
 }): RoleplayDebugTrace {
   return {
@@ -348,6 +386,7 @@ function buildRoleplayDebugTrace(args: {
     normalization: {
       changed: args.normalizationChanged,
     },
+    timing: buildDebugTiming(args.timing),
     notes: args.notes ?? [],
   };
 }
@@ -611,6 +650,17 @@ async function runRoleplayV2(
   | { ok: true; finalText: string; debugTrace: RoleplayDebugTrace }
   | { ok: false; reason: string; debugTrace: RoleplayDebugTrace }
 > {
+  const totalStartedAt = performance.now();
+  let plannerMs: number | null = null;
+  let writerMs: number | null = null;
+  let normalizationMs: number | null = null;
+  const currentTiming = (): RoleplayDebugTiming => buildDebugTiming({
+    totalMs: elapsedMs(totalStartedAt),
+    plannerMs,
+    writerMs,
+    normalizationMs,
+  });
+
   // ---- 1) Planner ---------------------------------------------------------
   const lastUser = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
   const recent = messages.slice(-RECENT_HISTORY_WINDOW);
@@ -672,7 +722,9 @@ ${ctxLines ? `Context:\n${ctxLines}\n` : ''}`,
   let plan: PlannerPlan = FALLBACK_PLAN;
   let plannerUsedFallback = false;
   let plannerFailureReason: string | null = null;
+  const plannerStartedAt = performance.now();
   const plannerCall = await callXAIForJson(plannerInput, modelId, 1024, TEMP_PLANNER);
+  plannerMs = elapsedMs(plannerStartedAt);
   if (plannerCall.ok) {
     const parsed = extractJsonObject(plannerCall.content);
     if (parsed && typeof parsed === 'object') {
@@ -743,8 +795,10 @@ Writer contract:
   for (const m of recent) writerInput.push(m);
   if (!injected) writerInput.push(writerPlanInjection);
 
+  const writerStartedAt = performance.now();
   const writerCall = await callXAI(writerInput, modelId, false, maxTokens, TEMP_WRITER);
   if (!writerCall.ok) {
+    writerMs = elapsedMs(writerStartedAt);
     return {
       ok: false,
       reason: `writer_status_${writerCall.status}`,
@@ -765,6 +819,7 @@ Writer contract:
         validatorUsedRevision: false,
         validatorUsedWriterDraftFallback: false,
         normalizationChanged: false,
+        timing: currentTiming(),
         notes: ['Writer call failed, so roleplay_v2 fell back to direct mode.'],
       }),
     };
@@ -773,7 +828,9 @@ Writer contract:
   try {
     const data = await writerCall.response.json();
     writerDraft = data?.choices?.[0]?.message?.content ?? '';
+    writerMs = elapsedMs(writerStartedAt);
   } catch {
+    writerMs = elapsedMs(writerStartedAt);
     return {
       ok: false,
       reason: 'writer_parse_failed',
@@ -794,6 +851,7 @@ Writer contract:
         validatorUsedRevision: false,
         validatorUsedWriterDraftFallback: false,
         normalizationChanged: false,
+        timing: currentTiming(),
         notes: ['Writer response could not be parsed, so roleplay_v2 fell back to direct mode.'],
       }),
     };
@@ -819,6 +877,7 @@ Writer contract:
         validatorUsedRevision: false,
         validatorUsedWriterDraftFallback: false,
         normalizationChanged: false,
+        timing: currentTiming(),
         notes: ['Writer returned empty text, so roleplay_v2 fell back to direct mode.'],
       }),
     };
@@ -834,6 +893,7 @@ Writer contract:
   const validatorRevisedText = '';
 
   // ---- 3) Deterministic cleanup -------------------------------------------
+  const normalizationStartedAt = performance.now();
   const preNormalizedText = finalText;
   try {
     finalText = normalizeFinalText(finalText);
@@ -849,6 +909,7 @@ Writer contract:
   if (normalizationChanged) {
     finalPath = 'roleplay_v2_deterministic_cleanup';
   }
+  normalizationMs = elapsedMs(normalizationStartedAt);
 
   if (!finalText.trim()) {
     return {
@@ -873,6 +934,7 @@ Writer contract:
         validatorFailureReason,
         validatorRevisedText,
         normalizationChanged,
+        timing: currentTiming(),
         notes: ['Final text was empty after normalization, so roleplay_v2 fell back to direct mode.'],
       }),
     };
@@ -899,6 +961,7 @@ Writer contract:
       validatorFailureReason,
       validatorRevisedText,
       normalizationChanged,
+      timing: currentTiming(),
       notes: [
         'Debug trace shows Chronicle pipeline-selected context, not hidden model chain-of-thought.',
         ...(policyViolations.length > 0 ? [`Deterministic policy repair check triggered: ${policyViolations.join(' | ')}`] : []),
@@ -918,7 +981,9 @@ async function handleDirect(
   responseHeadersBase: Record<string, string>,
   debugTrace: RoleplayDebugTrace | null = null,
 ): Promise<Response> {
+  const directStartedAt = performance.now();
   const result = await callXAI(messages, modelId, stream, maxTokens, TEMP_DIRECT);
+  let timedDebugTrace = withDebugTiming(debugTrace, { directMs: elapsedMs(directStartedAt) });
 
   if (result.ok) {
     if (stream) {
@@ -927,11 +992,11 @@ async function handleDirect(
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
         "Connection": "keep-alive",
-      }, debugTrace);
+      }, timedDebugTrace);
     }
     const data = await result.response.json();
-    if (debugTrace) {
-      data.chronicle_debug_trace = debugTrace;
+    if (timedDebugTrace) {
+      data.chronicle_debug_trace = timedDebugTrace;
     }
     return new Response(JSON.stringify(data), {
       headers: { ...responseHeadersBase, "Content-Type": "application/json" },
@@ -946,7 +1011,9 @@ async function handleDirect(
       { role: 'system' as const, content: CONTENT_REDIRECT_DIRECTIVE },
       messages[messages.length - 1],
     ];
+    const fallbackStartedAt = performance.now();
     const retry = await callXAI(redirectMessages, modelId, stream, maxTokens, TEMP_DIRECT);
+    timedDebugTrace = withDebugTiming(timedDebugTrace, { fallbackMs: elapsedMs(fallbackStartedAt) });
     if (retry.ok) {
       if (stream) {
         return prependDebugTraceToSSE(retry.response.body, {
@@ -954,11 +1021,11 @@ async function handleDirect(
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-cache",
           "Connection": "keep-alive",
-        }, debugTrace);
+        }, timedDebugTrace);
       }
       const data = await retry.response.json();
-      if (debugTrace) {
-        data.chronicle_debug_trace = debugTrace;
+      if (timedDebugTrace) {
+        data.chronicle_debug_trace = timedDebugTrace;
       }
       return new Response(JSON.stringify(data), {
         headers: { ...responseHeadersBase, "Content-Type": "application/json" },

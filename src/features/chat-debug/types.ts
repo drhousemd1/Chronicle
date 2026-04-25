@@ -30,6 +30,15 @@ export type ChatDebugValidatorTrace = {
   revisedPreview: string;
 };
 
+export type ChatDebugTiming = {
+  totalMs: number | null;
+  plannerMs: number | null;
+  writerMs: number | null;
+  normalizationMs: number | null;
+  directMs: number | null;
+  fallbackMs: number | null;
+};
+
 export type ChatDebugTrace = {
   version: 1;
   pipeline: 'roleplay_v2' | 'direct';
@@ -60,6 +69,7 @@ export type ChatDebugTrace = {
   normalization: {
     changed: boolean;
   };
+  timing?: ChatDebugTiming;
   notes: string[];
 };
 

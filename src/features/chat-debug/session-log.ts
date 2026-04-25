@@ -4,6 +4,12 @@ function joinOrFallback(values: string[], fallback: string): string {
   return values.length ? values.join('; ') : fallback;
 }
 
+function formatDurationMs(value: number | null | undefined): string {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 'n/a';
+  if (value < 1000) return `${Math.round(value)}ms`;
+  return `${(value / 1000).toFixed(value < 10_000 ? 1 : 0)}s`;
+}
+
 function describeFinalPath(finalPath: string): string {
   switch (finalPath) {
     case 'roleplay_v2_validated':
@@ -44,6 +50,18 @@ export function formatChatDebugTraceForSessionLog(
   lines.push(`- Pipeline: ${trace.pipeline}`);
   lines.push(`- Final path: ${describeFinalPath(trace.finalPath)}`);
   lines.push(`- Fallback reason: ${trace.fallbackReason || 'none'}`);
+  if (trace.timing) {
+    lines.push(`- Total response time: ${formatDurationMs(trace.timing.totalMs)}`);
+    lines.push(`- Planner time: ${formatDurationMs(trace.timing.plannerMs)}`);
+    lines.push(`- Writer time: ${formatDurationMs(trace.timing.writerMs)}`);
+    lines.push(`- Cleanup time: ${formatDurationMs(trace.timing.normalizationMs)}`);
+    if (trace.timing.directMs !== null) {
+      lines.push(`- Direct fallback time: ${formatDurationMs(trace.timing.directMs)}`);
+    }
+    if (trace.timing.fallbackMs !== null) {
+      lines.push(`- Safety retry time: ${formatDurationMs(trace.timing.fallbackMs)}`);
+    }
+  }
   lines.push(`- Latest user turn basis: ${trace.latestUserTurnPreview || '(none captured)'}`);
   lines.push(`- Recent window count: ${trace.recentWindowCount}`);
   lines.push(`- Supporting excerpts selected: ${trace.supportingExcerpts.length}`);
