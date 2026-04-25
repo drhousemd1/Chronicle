@@ -57,6 +57,8 @@ export type GenerateRoleplayResponseStreamOptions = {
   onDebugTrace?: (trace: ChatDebugTrace) => void;
 };
 
+const CHAT_RESPONSE_TIMEOUT_MS = 90_000;
+
 // Dynamic dialog formatting rules based on POV setting
 function getCriticalDialogRules(narrativePov: 'first' | 'third' = 'third'): string {
   const povRules = narrativePov === 'first' 
@@ -1134,32 +1136,54 @@ export async function* generateRoleplayResponseStream(
     .filter((character) => character.controlledBy === 'User')
     .map((character) => character.name);
 
-  // Call the chat edge function
-  const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${accessToken}`,
-      'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-    },
-    body: JSON.stringify({
-      messages,
-      modelId,
-      stream: true,
-      max_tokens: maxTokens,
-      pipeline: 'roleplay_v2',
-      debugTrace: options?.debugTrace === true,
-      roleplayContext: {
-        conversationId,
-        currentDay: currentDay ?? null,
-        currentTimeOfDay: currentTimeOfDay ?? null,
-        activeSceneTitle: activeScene?.title || null,
-        activeSceneTags: activeScene?.tags || [],
-        aiCharacterNames,
-        userCharacterNames,
+  const requestController = new AbortController();
+  const requestTimeout = window.setTimeout(() => {
+    requestController.abort();
+  }, CHAT_RESPONSE_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    // Call the chat edge function. The timeout covers the long pre-stream wait while
+    // roleplay_v2 finishes planning/writing before headers are returned.
+    response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`, {
+      method: 'POST',
+      signal: requestController.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+        'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
       },
-    })
-  });
+      body: JSON.stringify({
+        messages,
+        modelId,
+        stream: true,
+        max_tokens: maxTokens,
+        pipeline: 'roleplay_v2',
+        debugTrace: options?.debugTrace === true,
+        roleplayContext: {
+          conversationId,
+          currentDay: currentDay ?? null,
+          currentTimeOfDay: currentTimeOfDay ?? null,
+          activeSceneTitle: activeScene?.title || null,
+          activeSceneTags: activeScene?.tags || [],
+          aiCharacterNames,
+          userCharacterNames,
+        },
+      })
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      emitCall1Trace("error_timeout", { timeoutMs: CHAT_RESPONSE_TIMEOUT_MS });
+      yield "The AI response timed out. Please try sending again, or use Continue once the scene is ready.";
+      return;
+    }
+
+    emitCall1Trace("error_network", { error: error instanceof Error ? error.message : String(error) });
+    yield "Network error while contacting the AI service. Please try again.";
+    return;
+  } finally {
+    window.clearTimeout(requestTimeout);
+  }
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));

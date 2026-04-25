@@ -4774,6 +4774,26 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260425-007",
+      title: "Add a timeout guard for stalled chat response requests",
+      summary: "Chat Runtime - Call 1 now aborts the chat edge-function fetch after 90 seconds and shows a clear retry message instead of leaving users waiting forever",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "Local dev QA showed the current frontend correctly displays the typing bubble, but a backend chat request can still hang past normal turn length. Without a client timeout, the UI can remain in the waiting state indefinitely and make the chat feel frozen.",
+      plan: "Wrap the roleplay chat fetch in an AbortController timeout so a stuck pre-stream backend request fails visibly and safely.",
+      changes: "Updated `src/services/llm.ts`:\n- Added `CHAT_RESPONSE_TIMEOUT_MS` set to 90 seconds.\n- Wrapped the `/functions/v1/chat` request in an `AbortController`.\n- Emits an `error_timeout` Call 1 trace when the timeout fires.\n- Yields a visible retry-oriented message to the chat instead of leaving the typing indicator running forever.\n- Added a separate network-error fallback for non-timeout fetch failures.\n- Kept the existing stream parser and roleplay request payload unchanged.",
+      filesAffected: [
+        "src/services/llm.ts",
+        "src/data/ui-audit-findings.ts"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["chat-runtime", "timeout", "latency", "typing-indicator", "call-1", "qa"],
+      comments: [],
+      createdAt: "2026-04-25T09:52:00.000Z",
+      updatedAt: "2026-04-25T09:52:00.000Z",
+    },
+    {
       id: "cl-20260425-006",
       title: "Require changelog entries for micro-patches and documentation changes",
       summary: "Project Process - New thread instructions and active-work rules now explicitly require Quality Hub Change Log updates before push for any code, document, prompt, dashboard, or tooling change",
