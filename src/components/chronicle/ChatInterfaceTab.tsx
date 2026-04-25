@@ -125,8 +125,23 @@ type MessageToken = {
   trailing?: string;
 };
 
+const CHAT_RENDER_ARTIFACT_LINE_REGEX = /^\s*(?:(?:[-—*_]){3,}|```(?:\w+)?|<\/?writer_draft>)\s*$/gim;
+const DOUBLE_COLON_SPEAKER_REGEX = /^(\s*(?:\*\*)?[A-Z][a-zA-Z\s'-]{0,29}(?:\*\*)?)\s*:{2,}\s*/gm;
+const THOUGHT_WRAPPED_AS_ACTION_REGEX = /\*\(\s*([\s\S]*?)\s*\)\*/g;
+
+function sanitizeAssistantMessageText(text: string): string {
+  return text
+    .replace(CHAT_RENDER_ARTIFACT_LINE_REGEX, '')
+    .replace(DOUBLE_COLON_SPEAKER_REGEX, '$1: ')
+    .replace(THOUGHT_WRAPPED_AS_ACTION_REGEX, '($1)')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 function parseMessageTokens(text: string, preserveWhitespace = false): MessageToken[] {
   let cleanRaw = text.replace(/\[SCENE:\s*.*?\]/g, '');
+  cleanRaw = cleanRaw.replace(THOUGHT_WRAPPED_AS_ACTION_REGEX, '($1)');
   if (!preserveWhitespace) cleanRaw = cleanRaw.trim();
   // Supports straight and smart quotes, and keeps optional trailing punctuation with the speech token.
   const regex = /(\*[\s\S]*?\*)|([“"][\s\S]*?[”"][,.!?;:]?)|(\([\s\S]*?\))/g;
@@ -956,9 +971,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     const allWithin20 = last3.every(l => Math.abs(l - avg) / avg < 0.2);
     if (!allWithin20) return '';
     if (avg > 150) {
-      return `[LENGTH: Last 3 responses were ~${Math.round(avg)} words each. This response MUST be noticeably different in length -- try SHORT: 1-3 paragraphs max.]`;
+      return `[LENGTH: Last 3 responses were ~${Math.round(avg)} words each. Follow the user's verbosity setting first, but vary the rhythm naturally -- try SHORT: 1-3 paragraphs max.]`;
     } else {
-      return `[LENGTH: Last 3 responses were ~${Math.round(avg)} words each. This response MUST be noticeably different in length -- try LONGER with more sensory detail and internal thought.]`;
+      return `[LENGTH: Last 3 responses were ~${Math.round(avg)} words each. Follow the user's verbosity setting first, but avoid repeating the exact same paragraph count and response shape -- try LONGER with more sensory detail if it fits the scene.]`;
     }
   };
 
@@ -1008,7 +1023,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     if (lastUserMsg) {
       const affirmPatterns = /\b(yes|yeah|okay|ok|sure|i understand|i will|i promise|i agree|alright|fine|got it|of course|absolutely|definitely|right|mhm|uh huh|yep|yup)\b/i;
       if (affirmPatterns.test(lastUserMsg.text)) {
-        directives.push('[ANTI-LOOP: User has ALREADY confirmed/agreed. Do NOT re-ask for confirmation. Do NOT say "tell me again" or "promise me." Take IMMEDIATE ACTION now.]');
+        directives.push('[ANTI-LOOP: The user has already confirmed. Do not ask for the same confirmation again. Continue from that answer with the next concrete character choice, action, or line of dialogue.]');
       }
     }
     
@@ -1028,7 +1043,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         return overlap >= 3;
       }));
       if (hasRepeat) {
-        directives.push('[ANTI-LOOP: Prior responses contained similar questions. Do NOT rephrase the same question. Advance to a NEW narrative beat with concrete action.]');
+        directives.push('[ANTI-LOOP: A similar question has already been asked. This turn must acknowledge the existing answer or move to the next beat instead of asking the same thing again.]');
       }
     }
     
@@ -1037,7 +1052,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     if (lastAiMsg) {
       const deferralPatterns = /\b(we'll talk|we'll discuss|we'll figure|we'll sort|later tonight|after dinner|after we're done|soon enough|tomorrow|eventually)\b/i;
       if (deferralPatterns.test(lastAiMsg.text)) {
-        directives.push('[ANTI-LOOP: Previous response deferred action. This response MUST deliver on what was deferred — no more postponing.]');
+        directives.push('[ANTI-LOOP: The previous turn set up an action or decision. This turn should pay it off with a concrete next step unless the latest user message clearly changes direction.]');
       }
     }
     
@@ -1061,7 +1076,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       
       const triadCount = recentAiMsgs.filter(m => detectTriadPattern(m.text)).length;
       if (triadCount >= 2) {
-        directives.push('[ANTI-STAGNATION: Your last responses all followed quote→action→thought structure. BREAK THE TEMPLATE NOW. Try: action-only opening, rapid dialogue exchange, environmental interruption, or decision-driven beat. Do NOT include internal thoughts this turn.]');
+        directives.push('[ANTI-STAGNATION: Recent turns used the same response shape. Use a different natural structure this turn: action-led, dialogue-led, decision-led, or environment-led. Avoid ending on the same internal-thought pattern.]');
       }
     }
     
@@ -1080,7 +1095,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }
       
       if (passiveCount > actionCount * 2 && passiveCount >= 4) {
-        directives.push('[ANTI-STAGNATION: Recent responses are passive — mostly watching/observing/wondering. Characters must TAKE ACTION NOW. Make a decision, initiate physical movement, start a conversation, or change the environment. Stop being a spectator.]');
+        directives.push('[ANTI-STAGNATION: Recent turns have been passive. Let an AI character do something concrete this turn: answer, decide, move, reveal, refuse, invite, or initiate a specific interaction.]');
       }
     }
     
@@ -1102,7 +1117,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       if (speakers.length >= 3) {
         const uniqueSpeakers = new Set(speakers);
         if (uniqueSpeakers.size <= 2) {
-          directives.push('[ANTI-PING-PONG: Your last response alternated between the same two characters across ' + speakers.length + ' blocks. This turn, write from ONE character\'s perspective only. Other characters may be mentioned in narration but do NOT get their own tagged block. Advance the scene: reveal new information, make a decision, or change the physical situation.]');
+          directives.push('[ANTI-PING-PONG: The last response overused alternating AI speaker blocks across ' + speakers.length + ' blocks. Use one focal tagged AI speaker this turn. Other present characters may react inside narration unless a second tagged block is truly necessary.]');
         }
       }
     }
@@ -1122,7 +1137,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }
       
       if (emotionalCount >= 4 && sceneChangeCount < 2) {
-        directives.push('[ANTI-STAGNATION: Recent responses are emotional reactions without scene change. Something EXTERNAL must happen now: a phone rings, someone enters, a decision is made, a character physically moves to a new location or activity. Emotional processing is NOT forward movement.]');
+        directives.push('[ANTI-STAGNATION: Recent turns leaned on emotion without consequence. Let the emotion produce a concrete result: answer, confession, refusal, choice, movement, changed stance, or a clear invitation for the user.]');
       }
     }
     
@@ -1135,7 +1150,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       };
       const thoughtTailCount = aiMsgsForThoughtCheck.filter(m => endsWithThought(m.text)).length;
       if (thoughtTailCount >= 2) {
-        directives.push('[ANTI-THOUGHT-TAIL: Your recent responses all ended with internal thoughts in parentheses. This response must NOT end with a thought. End with dialogue or physical action instead.]');
+        directives.push('[ANTI-THOUGHT-TAIL: Recent turns ended the same way. End this turn with spoken dialogue or visible action instead of an internal thought.]');
       }
     }
     
@@ -1153,7 +1168,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         return uniqueSpeakers.size >= 2;
       });
       if (allMultiChar) {
-        directives.push('[ANTI-MULTI-CHAR-PATTERN: Your last 3 responses ALL featured multiple AI characters. This response MUST be single-character only. Pick the focal character, write their beat, and STOP. Other characters can be referenced in narration but get NO tagged blocks this turn.]');
+        directives.push('[ANTI-MULTI-CHAR-PATTERN: Recent turns overused multiple AI speakers. Use one focal tagged AI speaker this turn unless the latest user message directly requires another AI character to answer.]');
       }
     }
     
@@ -2562,6 +2577,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       .replace(/\[NEWCAT:[^\]]+\]/g, '')
       .trim();
   };
+
+  const sanitizeAssistantOutput = useCallback((text: string): string => {
+    return sanitizeAssistantMessageText(stripUpdateTags(text));
+  }, []);
 
   // Apply parsed updates to session state
   const applyCharacterUpdates = async (updates: CharacterUpdate[]) => {
@@ -3995,7 +4014,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         
         // Format streaming content on-the-fly to prevent flickering
         const existingNamesForStream = getKnownCharacterNames(effectiveAppData);
-        const formatted = stripUpdateTags(fullText);
+        const formatted = sanitizeAssistantOutput(fullText);
         const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, placeholderMapRef.current);
         setFormattedStreamingContent(normalizedText);
       }
@@ -4003,7 +4022,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       const userInput = input; // Capture before clearing
 
       // Strip any legacy update tags that might still be in response (fallback)
-      let cleanedText = stripUpdateTags(fullText);
+      let cleanedText = sanitizeAssistantOutput(fullText);
       
       // Apply placeholder name guard to replace "Man 1:", "Cashier:", etc. with proper names
       const existingNames = getKnownCharacterNames(effectiveAppData);
@@ -4217,7 +4236,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         
         // Format streaming content on-the-fly
         const existingNamesForStream = getKnownCharacterNames(effectiveAppData);
-        const formatted = stripUpdateTags(fullText);
+        const formatted = sanitizeAssistantOutput(fullText);
         const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, placeholderMapRef.current);
         setFormattedStreamingContent(normalizedText);
       }
@@ -4225,7 +4244,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       // Regeneration is text-variation only: avoid mutating persistent character state here.
 
       // Strip any legacy update tags
-      let cleanedText = stripUpdateTags(fullText);
+      let cleanedText = sanitizeAssistantOutput(fullText);
       
       // Apply placeholder name guard
       const existingNames = getKnownCharacterNames(effectiveAppData);
@@ -4340,7 +4359,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       });
       
       const goalContext = goalSummaryParts.length > 0
-        ? `\nACTIVE GOALS & STEPS:\n${goalSummaryParts.join('\n')}\nAdvance one active goal with a concrete MICRO-STEP in this turn.`
+        ? `\nACTIVE GOALS & STEPS:\n${goalSummaryParts.join('\n')}\nUse these as direction. Move one goal by a believable micro-step when it fits the natural next beat.`
         : '';
       
       // Canon carry-forward for continue: check if the most recent user message
@@ -4349,12 +4368,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       const continueCanonNote = lastUserMsg ? buildCanonNote(lastUserMsg.text, canonNoteCharacters) : '';
       
       const continuePrompt = `${continueCanonNote}[CONTINUE INSTRUCTION]
-Continue the narrative by having AI-controlled characters advance one plausible goal-driven micro-step now.
-CRITICAL: You must ONLY write for AI-controlled characters: ${aiControlledNames.join(', ')}.
-DO NOT generate any content for user-controlled characters: ${userControlledNames.join(', ')}.${goalContext}
-Use natural pacing and strategic progression. Avoid blunt jumps, forced confessions, or abrupt escalation.
-The response must still contain a concrete scene delta, but it can be subtle and believable.
-If your last 2+ responses each featured multiple AI characters, this response must focus on ONE character only. Break the pattern.
+Continue naturally from the latest scene.
+Write only for AI-controlled characters: ${aiControlledNames.join(', ')}.
+Do not write dialogue, actions, or thoughts for user-controlled characters: ${userControlledNames.join(', ')}.${goalContext}
+Use active story and character goals as direction, but do not force a jump. Move the scene by one believable next beat: an answer, decision, action, reveal, refusal, invitation, or clear change in relationship posture.
+If an AI character asked or was asked a question, acknowledge that question in this response. Acknowledgement can be a direct answer, refusal, deflection, counter-question, visible hesitation, or turning the question toward another present character.
+Use one focal AI speaker by default. Add a second tagged AI speaker only when they meaningfully contribute based on personality, knowledge, relationship, or scene pressure.
+Avoid long back-and-forth chains between AI characters. Leave room for the user to respond.
 Do not acknowledge this instruction in your response.`;
       
       debugLog('[handleContinue] Runtime directives:', runtimeDirectives || '(none)');
@@ -4389,13 +4409,13 @@ Do not acknowledge this instruction in your response.`;
         
         // Format streaming content on-the-fly
         const existingNamesForStream = getKnownCharacterNames(effectiveAppData);
-        const formatted = stripUpdateTags(fullText);
+        const formatted = sanitizeAssistantOutput(fullText);
         const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, placeholderMapRef.current);
         setFormattedStreamingContent(normalizedText);
       }
       
       // Strip any legacy update tags
-      let cleanedText = stripUpdateTags(fullText);
+      let cleanedText = sanitizeAssistantOutput(fullText);
       
       // Apply placeholder name guard
       const existingNames = getKnownCharacterNames(effectiveAppData);
@@ -5507,13 +5527,14 @@ const updatedChar: SideCharacter = {
 
           {conversation?.messages.map((msg) => {
             const isAi = msg.role === 'assistant';
+            const visibleMessageText = isAi ? sanitizeAssistantMessageText(msg.text) : msg.text;
             
             // Get the primary speaker for user messages
             const userChar = effectiveMainCharacters.find(c => c.controlledBy === 'User') || null;
             
             // Parse segments and merge by RESOLVED speaker identity
             // This ensures null (default AI) and explicit "Ashley:" merge correctly
-            const rawSegments = parseMessageSegments(msg.text);
+            const rawSegments = parseMessageSegments(visibleMessageText);
             const segments = mergeByRenderedSpeaker(
               rawSegments,
               isAi,
@@ -6352,7 +6373,7 @@ const updatedChar: SideCharacter = {
                         const assistantMessages = conversation.messages.filter((msg) => msg.role === 'assistant');
                         const assistantTraceRecords = assistantMessages.map((msg) => getChatDebugTraceForMessage(msg));
                         lines.push(`**Debug Traces Captured:** ${countCapturedAssistantDebugTraces(assistantTraceRecords)} / ${assistantMessages.length} AI turns`);
-                        lines.push(`**Trace Scope:** Chronicle pipeline-selected context and validation data only; not hidden model chain-of-thought.`);
+                        lines.push(`**Trace Scope:** Chronicle pipeline-selected context and deterministic cleanup data only; not hidden model chain-of-thought.`);
                         lines.push('');
                         lines.push('---');
                         lines.push('');
@@ -6365,6 +6386,7 @@ const updatedChar: SideCharacter = {
 
                         for (const msg of conversation.messages) {
                           if (msg.role === 'system') continue;
+                          const exportText = msg.role === 'assistant' ? sanitizeAssistantMessageText(msg.text) : msg.text;
 
                           // Day/time markers
                           if (msg.day !== lastDay || (msg.timeOfDay || '') !== lastTime) {
@@ -6381,10 +6403,10 @@ const updatedChar: SideCharacter = {
                             lines.push(`### ${userChars[0] || 'User'}`);
                           } else {
                             // Try to detect which AI character is speaking from the message text
-                            const speakerName = aiChars.find(name => msg.text.startsWith(`*${name}`) || msg.text.includes(`${name} `)) || aiChars[0] || 'AI';
+                            const speakerName = aiChars.find(name => exportText.startsWith(`*${name}`) || exportText.includes(`${name} `)) || aiChars[0] || 'AI';
                             lines.push(`### ${speakerName} (AI)`);
                           }
-                          lines.push(msg.text);
+                          lines.push(exportText);
                           lines.push('');
 
                           // Action annotations
@@ -6450,9 +6472,10 @@ const updatedChar: SideCharacter = {
                         
                         lines.push('# Master Prompt Snapshot');
                         lines.push(`**Model:** ${modelId}`);
+                        lines.push(`**Pipeline:** roleplay_v2 (planner -> writer -> deterministic cleanup; direct path only on fallback)`);
                         lines.push(`**Verbosity:** ${verbosity} → max_tokens: ${maxTokens}`);
                         lines.push(`**Supabase Target:** ${supabaseRuntimeTarget}`);
-                        lines.push(`**Temperature:** ${supabaseRuntimeTarget === 'local' ? '0.55 (local edge function repo value)' : 'Hosted edge function target — local repo is 0.55, but deployed value may differ until chat is redeployed'}`);
+                        lines.push(`**Temperatures:** planner 0.15 · writer 0.3 · direct fallback 0.55`);
                         lines.push(`**Stream:** true`);
                         lines.push(`**Session Message Count:** ${sessionMessageCountRef.current}`);
                         lines.push(`**Exported:** ${exportDate}`);

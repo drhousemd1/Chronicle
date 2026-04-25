@@ -376,20 +376,20 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
 
   // CAST remains AI-controlled for generation permissions; user + side character context
   // is still included below as read-only reference so all authored data is available.
-  const aiCharacters = appData.characters.filter(c => c.controlledBy === 'AI');
-  const userCharacterNames = appData.characters
-    .filter(c => c.controlledBy === 'User')
-    .map(c => c.name);
-  const userCharacters = appData.characters.filter(c => c.controlledBy === 'User');
   const sideCharacters = appData.sideCharacters || [];
+  const allPlayableCharacters = [...appData.characters, ...sideCharacters];
+  const aiCharacters = allPlayableCharacters.filter(c => c.controlledBy === 'AI');
+  const userCharacters = allPlayableCharacters.filter(c => c.controlledBy === 'User');
+  const userCharacterNames = userCharacters.map(c => c.name);
 
   const characterContext = aiCharacters.map(buildCharacterProfile).join('\n\n');
   const userCharacterContext = userCharacters.length > 0
     ? userCharacters.map(buildCharacterProfile).join('\n\n')
     : '';
-  const sideCharacterContext = sideCharacters.length > 0
-    ? sideCharacters.map(buildCharacterProfile).join('\n\n')
-    : '';
+  const sideCharacterContext = sideCharacters
+    .filter((character) => !aiCharacters.includes(character) && !userCharacters.includes(character))
+    .map(buildCharacterProfile)
+    .join('\n\n');
 
   const codexContext = appData.world.entries.map(e => `CODEX [${e.title}]: ${e.body}`).join('\n');
   
@@ -1126,10 +1126,11 @@ export async function* generateRoleplayResponseStream(
   const verbosity = appData.uiSettings?.responseVerbosity || 'balanced';
   const maxTokensByVerbosity: Record<string, number> = { concise: 1024, balanced: 2048, detailed: 3072 };
   const maxTokens = maxTokensByVerbosity[verbosity] || 2048;
-  const aiCharacterNames = appData.characters
+  const allPlayableCharacters = [...appData.characters, ...(appData.sideCharacters || [])];
+  const aiCharacterNames = allPlayableCharacters
     .filter((character) => character.controlledBy === 'AI')
     .map((character) => character.name);
-  const userCharacterNames = appData.characters
+  const userCharacterNames = allPlayableCharacters
     .filter((character) => character.controlledBy === 'User')
     .map((character) => character.name);
 
@@ -1153,6 +1154,7 @@ export async function* generateRoleplayResponseStream(
         currentDay: currentDay ?? null,
         currentTimeOfDay: currentTimeOfDay ?? null,
         activeSceneTitle: activeScene?.title || null,
+        activeSceneTags: activeScene?.tags || [],
         aiCharacterNames,
         userCharacterNames,
       },

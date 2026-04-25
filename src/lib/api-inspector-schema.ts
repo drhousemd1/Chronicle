@@ -36,6 +36,9 @@ export interface ApiMapItem {
   tagType: ApiMapTagType;
   icon: string;
   purpose: string;
+  whyItExists?: string;
+  problemSolved?: string;
+  settingsGate?: string;
   dataSource?: string;
   fileRefs: ApiMapFileRef[];
   codeSource?: string;

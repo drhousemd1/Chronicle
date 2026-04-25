@@ -1,6 +1,6 @@
 import { Dispatch, SetStateAction, useEffect } from "react";
 import { TabKey } from "@/types";
-import { checkIsAdmin } from "@/services/app-settings";
+import { checkIsAdmin, writeCachedAdminState } from "@/services/app-settings";
 import {
   fetchActiveApiUsageTestSession,
   type ApiUsageTestSession,
@@ -116,6 +116,7 @@ export function useIndexShellBootstrap({
 
   useEffect(() => {
     if (!userId) {
+      writeCachedAdminState(false);
       setIsAdminState(false);
       return;
     }
@@ -123,7 +124,10 @@ export function useIndexShellBootstrap({
     let cancelled = false;
     void checkIsAdmin(userId)
       .then((value) => {
-        if (!cancelled) setIsAdminState(value);
+        if (!cancelled) {
+          writeCachedAdminState(value);
+          setIsAdminState(value);
+        }
       })
       .catch((error) => {
         if (!cancelled && import.meta.env.DEV) {

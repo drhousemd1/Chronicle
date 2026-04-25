@@ -1,5 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
+const ADMIN_STATE_CACHE_KEY = "chronicle.admin-state.v1";
+
 export interface SharedKeyStatus {
   xaiShared: boolean;
   xaiConfigured: boolean;
@@ -27,6 +29,20 @@ export async function checkIsAdmin(userId: string | undefined): Promise<boolean>
     return data === true;
   } catch {
     return false;
+  }
+}
+
+export function readCachedAdminState(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.localStorage.getItem(ADMIN_STATE_CACHE_KEY) === 'true';
+}
+
+export function writeCachedAdminState(isAdmin: boolean): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(ADMIN_STATE_CACHE_KEY, isAdmin ? 'true' : 'false');
+  } catch {
+    // Never let admin-state caching break the app shell.
   }
 }
 

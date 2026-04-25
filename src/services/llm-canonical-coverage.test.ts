@@ -148,4 +148,60 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('- Scene Title: Balcony Summit');
     expect(prompt).toContain('- Active Scene Tag: palace');
   });
+
+  it('treats side-character control assignments as real prompt exclusions/reference context', () => {
+    const appData = createDefaultScenarioData();
+    const [aiCharacter, userCharacter] = getHardcodedTestCharacters();
+
+    aiCharacter.name = 'Sarah';
+    aiCharacter.controlledBy = 'AI';
+    userCharacter.name = 'James';
+    userCharacter.controlledBy = 'User';
+
+    appData.characters = [aiCharacter, userCharacter];
+    appData.sideCharacters = [
+      {
+        id: uid('side'),
+        name: 'Ashley',
+        nicknames: '',
+        age: '19',
+        sexType: 'Female',
+        sexualOrientation: '',
+        location: 'Cabin',
+        currentMood: 'Anxious',
+        controlledBy: 'User',
+        characterRole: 'Side',
+        roleDescription: 'Sarah’s daughter.',
+        physicalAppearance: { ...aiCharacter.physicalAppearance },
+        currentlyWearing: { ...aiCharacter.currentlyWearing },
+        preferredClothing: { ...aiCharacter.preferredClothing },
+        background: {
+          relationshipStatus: '',
+          residence: '',
+          educationLevel: '',
+        },
+        personality: {
+          traits: ['guarded'],
+          miscellaneous: '',
+          secrets: '',
+          fears: '',
+          kinksFantasies: '',
+          desires: '',
+        },
+        sections: [],
+        avatarDataUrl: '',
+        firstMentionedIn: uid('conversation'),
+        extractedTraits: [],
+        createdAt: now(),
+        updatedAt: now(),
+      },
+    ];
+
+    const prompt = getSystemInstruction(appData, 1, 'night', [], true, null);
+
+    expect(prompt).toContain('DO NOT GENERATE FOR: James, Ashley');
+    expect(prompt).toContain('USER CHARACTER REFERENCE (READ-ONLY CONTEXT):');
+    expect(prompt).toContain('CHARACTER: Ashley');
+    expect(prompt).toContain('CONTROL: User');
+  });
 });

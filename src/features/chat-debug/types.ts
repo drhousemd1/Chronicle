@@ -40,6 +40,7 @@ export type ChatDebugTrace = {
     currentDay: number | null;
     currentTimeOfDay: string | null;
     activeSceneTitle: string | null;
+    activeSceneTags: string[];
     aiCharacterNames: string[];
     userCharacterNames: string[];
   };

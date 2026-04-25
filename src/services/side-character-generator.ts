@@ -139,7 +139,7 @@ export function parseMessageSegments(text: string): MessageSegment[] {
   if (!cleanText) return [];
 
   const normalizedText = cleanText.replace(
-    /([.!?]["”']?\s+)(?:\*\*)?([A-Z][a-zA-Z\s'-]{0,29})(?:\*\*)?:\s*/g,
+    /([.!?]["”']?\s+)(?:\*\*)?([A-Z][a-zA-Z\s'-]{0,29})(?:\*\*)?\s*:+\s*/g,
     (fullMatch, prefix, possibleName) => (
       isLikelySpeakerTagName(possibleName)
         ? `${prefix}\n\n${possibleName}: `
@@ -158,7 +158,7 @@ export function parseMessageSegments(text: string): MessageSegment[] {
   // - Name: capital letter, 1-30 chars, allows hyphens/apostrophes/spaces
   // - Optional markdown bold (**) after name
   // - Colon followed by optional whitespace
-  const tagRegex = /^\s*(?:\*\*)?([A-Z][a-zA-Z\s'-]{0,29})(?:\*\*)?:\s*/;
+  const tagRegex = /^\s*(?:\*\*)?([A-Z][a-zA-Z\s'-]{0,29})(?:\*\*)?\s*:+\s*/;
   
   for (const paragraph of paragraphs) {
     const trimmed = paragraph.trim();

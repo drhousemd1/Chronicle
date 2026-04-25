@@ -4,7 +4,7 @@
 //
 // Supports two pipelines:
 //   - 'direct'      (default, legacy behavior, unchanged contract)
-//   - 'roleplay_v2' (planner -> writer -> validator -> normalize)
+//   - 'roleplay_v2' (planner -> writer -> deterministic cleanup)
 // ============================================================================
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -22,6 +22,7 @@ type RoleplayContext = {
   currentDay?: number;
   currentTimeOfDay?: string;
   activeSceneTitle?: string;
+  activeSceneTags?: string[];
   aiCharacterNames?: string[];
   userCharacterNames?: string[];
 };
@@ -52,12 +53,6 @@ type PlannerPlan = {
   formattingNotes: string[];
 };
 
-type ValidatorResult = {
-  approved: boolean;
-  issues: string[];
-  revisedResponse: string;
-};
-
 type SupportingExcerptDetail = {
   role: Message['role'];
   content: string;
@@ -76,6 +71,7 @@ type RoleplayDebugTrace = {
     currentDay: number | null;
     currentTimeOfDay: string | null;
     activeSceneTitle: string | null;
+    activeSceneTags: string[];
     aiCharacterNames: string[];
     userCharacterNames: string[];
   };
@@ -126,8 +122,6 @@ const SUPPORTING_HISTORY_WINDOW = 8;
 const TEMP_DIRECT = 0.55;
 const TEMP_PLANNER = 0.15;
 const TEMP_WRITER = 0.3;
-const TEMP_VALIDATOR = 0.1;
-const TEMP_REPAIR = 0.1;
 
 const BANNED_TROPE_REPLACEMENTS: Record<string, string> = {
   tsundere: 'sharp-edged',
@@ -160,8 +154,7 @@ function warnLog(message: string) {
 
 // ============================================================================
 // xAI call (shared) — `temperature` is now an explicit parameter so each pass
-// can use its own value. Direct path keeps 0.55, planner 0.15, writer 0.4,
-// validator 0.1.
+// can use its own value. Direct path keeps 0.55, planner 0.15, writer 0.3.
 // ============================================================================
 async function callXAI(
   messages: Message[],
@@ -206,24 +199,6 @@ async function callXAI(
 // Helpers for non-streaming JSON extraction (planner + validator)
 // ============================================================================
 async function callXAIForJson(
-  messages: Message[],
-  modelId: string,
-  maxTokens: number,
-  temperature: number,
-): Promise<{ ok: true; content: string } | { ok: false; reason: string }> {
-  const result = await callXAI(messages, modelId, false, maxTokens, temperature);
-  if (!result.ok) return { ok: false, reason: `status_${result.status}` };
-  try {
-    const data = await result.response.json();
-    const content: string = data?.choices?.[0]?.message?.content ?? '';
-    if (!content) return { ok: false, reason: 'empty_content' };
-    return { ok: true, content };
-  } catch (e) {
-    return { ok: false, reason: `parse_${(e as Error).message}` };
-  }
-}
-
-async function callXAIForText(
   messages: Message[],
   modelId: string,
   maxTokens: number,
@@ -286,7 +261,7 @@ function extractSpeakerBlockNames(text: string): string[] {
 function analyzePolicyViolations(text: string, plan: PlannerPlan): string[] {
   const issues: string[] = [];
 
-  if (/^\s*(?:-{3,}|\*{3,}|```(?:\w+)?|<\/?writer_draft>)\s*$/gim.test(text)) {
+  if (/^\s*(?:(?:[-—*_]){3,}|```(?:\w+)?|<\/?writer_draft>)\s*$/gim.test(text)) {
     issues.push('Remove leaked separator or wrapper lines such as ---, ***, code fences, or <writer_draft> tags.');
   }
 
@@ -306,51 +281,13 @@ function analyzePolicyViolations(text: string, plan: PlannerPlan): string[] {
   return issues;
 }
 
-async function repairResponseForPolicyViolations(
-  text: string,
-  plan: PlannerPlan,
-  issues: string[],
-  modelId: string,
-  maxTokens: number,
-): Promise<{ ok: true; content: string } | { ok: false; reason: string }> {
-  const repairSystem: Message = {
-    role: 'system',
-    content: `You are the FINAL POLICY REPAIR pass for a roleplay writing pipeline.
-
-Output ONLY the corrected roleplay response text. No JSON. No commentary. No code fences.
-
-Hard requirements:
-- Keep the same scene meaning and momentum unless a listed violation forces a correction.
-- Use ONLY allowed speaker tags from the plan.
-- Stay within the max speaker block count from the plan.
-- Remove any leaked separator lines, wrapper tags, or formatting artifacts.
-- Preserve current scene-state facts; do not replay resolved beats as if they are happening again.
-- Use natural idiomatic English.
-
-Plan:
-${JSON.stringify(plan, null, 2)}
-
-Violations to repair:
-${issues.map((issue) => `- ${issue}`).join('\n')}`,
-  };
-
-  return await callXAIForText(
-    [
-      repairSystem,
-      { role: 'user', content: `Repair this response:\n<draft>\n${text}\n</draft>` },
-    ],
-    modelId,
-    maxTokens,
-    TEMP_REPAIR,
-  );
-}
-
 function buildRoleplayContextSummary(ctx: RoleplayContext | undefined): RoleplayDebugTrace['roleplayContext'] {
   return {
     conversationId: ctx?.conversationId ?? null,
     currentDay: ctx?.currentDay ?? null,
     currentTimeOfDay: ctx?.currentTimeOfDay ?? null,
     activeSceneTitle: ctx?.activeSceneTitle ?? null,
+    activeSceneTags: [...(ctx?.activeSceneTags ?? [])],
     aiCharacterNames: [...(ctx?.aiCharacterNames ?? [])],
     userCharacterNames: [...(ctx?.userCharacterNames ?? [])],
   };
@@ -471,7 +408,14 @@ function selectSupportingExcerptDetails(
       ...(ctx?.userCharacterNames ?? []),
     ].map((n) => n.toLowerCase()).filter(Boolean),
   );
-  const sceneTag = (ctx?.activeSceneTitle ?? '').toLowerCase();
+  const sceneTerms = new Set(
+    [
+      ctx?.activeSceneTitle ?? '',
+      ...(ctx?.activeSceneTags ?? []),
+    ]
+      .map((value) => value.toLowerCase())
+      .filter(Boolean),
+  );
 
   const scored = olderPool.map((m, idx) => {
     const lower = m.content.toLowerCase();
@@ -482,7 +426,9 @@ function selectSupportingExcerptDetails(
     for (const name of charNames) {
       if (name && lower.includes(name)) score += 2;
     }
-    if (sceneTag && lower.includes(sceneTag)) score += 2;
+    for (const sceneTerm of sceneTerms) {
+      if (sceneTerm && lower.includes(sceneTerm)) score += 2;
+    }
     if (/\?/.test(m.content)) score += 1; // unresolved question-like
     return { idx, score, msg: m };
   });
@@ -541,7 +487,11 @@ function normalizeFinalText(text: string): string {
     out = out.replace(new RegExp(`\\b${bad}\\b`, 'gi'), replacement);
   }
   // Remove leaked validator / markdown wrapper artifacts if they appear as standalone lines.
-  out = out.replace(/^\s*(?:-{3,}|\*{3,}|```(?:\w+)?|<\/?writer_draft>)\s*$/gim, '');
+  out = out.replace(/^\s*(?:(?:[-—*_]){3,}|```(?:\w+)?|<\/?writer_draft>)\s*$/gim, '');
+  // Normalize malformed speaker tags like "Sarah::" so the UI doesn't show a stray extra colon.
+  out = out.replace(/^(\s*(?:\*\*)?[A-Z][a-zA-Z\s'-]{0,29}(?:\*\*)?)\s*:{2,}\s*/gm, '$1: ');
+  // Normalize miswrapped thoughts like "*(She thought...)*" back to "(She thought...)".
+  out = out.replace(/\*\(\s*([\s\S]*?)\s*\)\*/g, '($1)');
   // Collapse multiple em dashes in a row to a single one
   out = out.replace(/(?:\s*—\s*){2,}/g, ' — ');
   // Whitespace cleanup
@@ -672,6 +622,7 @@ async function runRoleplayV2(
     ctx?.currentDay != null ? `Day: ${ctx.currentDay}` : '',
     ctx?.currentTimeOfDay ? `Time: ${ctx.currentTimeOfDay}` : '',
     ctx?.activeSceneTitle ? `Scene: ${ctx.activeSceneTitle}` : '',
+    ctx?.activeSceneTags?.length ? `Scene tags: ${ctx.activeSceneTags.join(', ')}` : '',
     ctx?.aiCharacterNames?.length ? `AI characters: ${ctx.aiCharacterNames.join(', ')}` : '',
     ctx?.userCharacterNames?.length ? `User characters: ${ctx.userCharacterNames.join(', ')}` : '',
   ].filter(Boolean).join('\n');
@@ -696,14 +647,14 @@ Required JSON shape (use these EXACT field names):
 }
 
 Rules:
-- focusCharacter: the AI character whose POV/voice should drive the response, or null if narration.
-- allowedSpeakers: AI character names allowed to receive tagged paragraphs this turn. Usually exactly one name.
-- maxSpeakerBlocks: default 1. Use 2 only if a second AI character's reaction genuinely changes the scene.
-- directQuestionsToAnswer: literal questions from the latest user turn that the response MUST answer.
+- focusCharacter: the AI character whose voice, action, or emotional position should drive this turn, or null if narration.
+- allowedSpeakers: AI character names allowed to receive tagged paragraphs this turn. Usually one name. Add a second only when that character meaningfully contributes through knowledge, personality, relationship pressure, direct address, or a necessary answer.
+- maxSpeakerBlocks: default 1. Use 2 only when a second AI character's contribution matters. Keep it 1 when the second character would only add filler or repeat the focal speaker.
+- directQuestionsToAnswer: literal or obvious questions from the latest user turn, plus unanswered direct questions from the immediately previous AI turn when the user has now responded.
 - mentionedAiCharacters: AI characters explicitly referenced or implied by the latest turn.
-- immediateBeat: one concise sentence describing the next concrete in-scene action.
+- immediateBeat: one concise sentence describing the next meaningful beat. This can be an answer, decision, action, reveal, refusal, invitation, or changed relationship posture. It does not need to be a major scene jump.
 - mustInclude: short bullet phrases (facts, callbacks, named objects) the writer must respect.
-- mustAvoid: anti-patterns (off-screen perception, contradictions, invented props, trope labels, repeated resolved beats, mixed-up group references, robotic wording).
+- mustAvoid: anti-patterns for this turn, especially off-screen perception, contradictions, invented props, trope labels, repeated resolved beats, robotic wording, needless second-speaker filler, and repeated confirmation loops.
 - continuityNotes: facts from earlier turns the writer must preserve.
 - sceneStateFacts: current physical-state facts that remain true right now. Treat these like a state machine snapshot.
 - formattingNotes: tone/length/format hints (e.g. "two paragraphs, no bullet lists").
@@ -764,23 +715,20 @@ ${ctxLines ? `Context:\n${ctxLines}\n` : ''}`,
   // ---- 2) Writer ----------------------------------------------------------
   const writerPlanInjection: Message = {
     role: 'system',
-    content: `[ROLEPLAY PLAN — HIGH PRIORITY]
+    content: `[ROLEPLAY PLAN - HIGH PRIORITY]
 ${JSON.stringify(plan, null, 2)}
 
-Writer rules:
-- Honor mustInclude and mustAvoid strictly.
-- Treat sceneStateFacts as current truth. Do not reset or replay resolved beats.
-- Answer every entry in directQuestionsToAnswer.
-- Stay in-scene; no out-of-character commentary.
-- No trope labels (tsundere, yandere, deredere, kuudere).
-- Do not invent objects, locations, or resources not established.
-- Do not describe what off-screen characters perceive.
-- Use ≤1 em dash per response.
-- Use ONLY these speaker tags for tagged paragraphs: ${plan.allowedSpeakers.length ? plan.allowedSpeakers.join(', ') : '(focus character only)'}.
-- Use at most ${plan.maxSpeakerBlocks} speaker-tagged block(s) in the whole response.
-- If a second speaker block is used, it must materially change the scene; no ping-pong reactions.
-- Do NOT output markdown separator lines such as --- or ***.
-- Supporting older excerpts may inform facts but must NEVER override the latest user turn.`,
+Writer contract:
+- Execute the plan naturally; do not mention the plan.
+- Use only these speaker tags for tagged paragraphs: ${plan.allowedSpeakers.length ? plan.allowedSpeakers.join(', ') : '(focus character only)'}.
+- Use at most ${plan.maxSpeakerBlocks} speaker-tagged block(s).
+- Answer or acknowledge every directQuestionsToAnswer item.
+- Treat sceneStateFacts as current truth.
+- Include mustInclude facts without dumping them mechanically.
+- Avoid mustAvoid items.
+- Keep older excerpts subordinate to the latest user turn.
+- Write in the selected character's real voice, not as a checklist.
+- Do not output markdown separator lines such as --- or ***.`,
   };
 
   // Preserve original system messages already in `messages`, then inject the plan after them.
@@ -876,82 +824,16 @@ Writer rules:
     };
   }
 
-  // ---- 3) Validator -------------------------------------------------------
-  const validatorSystem: Message = {
-    role: 'system',
-    content: `You are the VALIDATOR for a roleplay writing pipeline. Output ONLY a single JSON object — no prose, no code fences.
-
-Required JSON shape (EXACT field names):
-{
-  "approved": boolean,
-  "issues": string[],
-  "revisedResponse": string
-}
-
-If the writer draft has no violations, set approved=true and copy the draft verbatim into revisedResponse.
-If there are violations, set approved=false, list them in issues, and put the corrected text in revisedResponse.
-
-Check for: contradictions with prior canon, repeated beats, invented objects/resources, off-screen perception, trope labels (tsundere/yandere/deredere/kuudere), robotic phrasing, malformed formatting, more than one em dash, ignoring directQuestionsToAnswer or mustInclude, violating mustAvoid.
-Also check specifically for:
-- violating sceneStateFacts by replaying already-resolved beats or regressing object state
-- speaker-tag violations (using names outside allowedSpeakers or exceeding maxSpeakerBlocks)
-- mixed-up addressee/group logic ("girls" when a male is present, impossible commands, contradictory physical instructions)
-- leaked separator lines or wrapper artifacts such as --- or <writer_draft>
-- responses that ignore a directly answerable question from an on-screen AI character
-
-Never include wrapper tags, separator lines, or meta labels in revisedResponse.
-
-Plan (for reference):
-${JSON.stringify(plan)}`,
-  };
-  const validatorInput: Message[] = [
-    validatorSystem,
-    { role: 'user', content: `Writer draft:\n<writer_draft>\n${writerDraft}\n</writer_draft>\n\nReturn the JSON validation result now.` },
-  ];
-
   let finalText = writerDraft;
   let finalPath = 'roleplay_v2_writer_draft';
   let validatorApproved: boolean | null = null;
   let validatorIssues: string[] = [];
-  let validatorUsedRevision = false;
-  let validatorUsedWriterDraftFallback = false;
+  const validatorUsedRevision = false;
+  const validatorUsedWriterDraftFallback = false;
   let validatorFailureReason: string | null = null;
-  let validatorRevisedText = '';
-  const validatorCall = await callXAIForJson(validatorInput, modelId, 2048, TEMP_VALIDATOR);
-  if (validatorCall.ok) {
-    const parsed = extractJsonObject(validatorCall.content);
-    if (parsed && typeof parsed === 'object') {
-      const v = parsed as Partial<ValidatorResult>;
-      const approved = v.approved === true;
-      const issues = Array.isArray(v.issues) ? v.issues.map(String) : [];
-      const revised = typeof v.revisedResponse === 'string' ? v.revisedResponse : '';
-      validatorApproved = approved;
-      validatorIssues = issues;
-      validatorRevisedText = revised;
-      if (approved) {
-        finalText = writerDraft;
-        finalPath = 'roleplay_v2_validated';
-      } else if (revised.trim()) {
-        finalText = revised;
-        finalPath = 'roleplay_v2_validator_revised';
-        validatorUsedRevision = true;
-      } else {
-        validatorUsedWriterDraftFallback = true;
-        validatorFailureReason = 'validator_empty_revised_response';
-        warnLog('[chat] validator returned approved=false but no revisedResponse -- using writer draft');
-      }
-    } else {
-      validatorUsedWriterDraftFallback = true;
-      validatorFailureReason = 'validator_json_parse_failed';
-      warnLog('[chat] validator JSON parse failed -- using writer draft');
-    }
-  } else {
-    validatorUsedWriterDraftFallback = true;
-    validatorFailureReason = validatorCall.reason;
-    warnLog(`[chat] validator call failed (${validatorCall.reason}) -- using writer draft`);
-  }
+  const validatorRevisedText = '';
 
-  // ---- 4) Normalize -------------------------------------------------------
+  // ---- 3) Deterministic cleanup -------------------------------------------
   const preNormalizedText = finalText;
   try {
     finalText = normalizeFinalText(finalText);
@@ -959,28 +841,13 @@ ${JSON.stringify(plan)}`,
     validatorFailureReason = validatorFailureReason ?? `normalization_error:${(e as Error).message}`;
     warnLog(`[chat] normalization error -- using pre-normalized text: ${(e as Error).message}`);
   }
-  let normalizationChanged = finalText !== preNormalizedText;
+  const normalizationChanged = finalText !== preNormalizedText;
 
   const policyViolations = analyzePolicyViolations(finalText, plan);
-  if (policyViolations.length > 0) {
-    const repairCall = await repairResponseForPolicyViolations(finalText, plan, policyViolations, modelId, maxTokens);
-    if (repairCall.ok && repairCall.content.trim()) {
-      try {
-        const repairedNormalized = normalizeFinalText(repairCall.content);
-        if (repairedNormalized.trim()) {
-          finalText = repairedNormalized;
-          normalizationChanged = normalizationChanged || finalText !== preNormalizedText;
-          finalPath = 'roleplay_v2_policy_repaired';
-          validatorUsedRevision = true;
-          validatorIssues = [...validatorIssues, ...policyViolations];
-          validatorRevisedText = finalText;
-        }
-      } catch (e) {
-        validatorFailureReason = validatorFailureReason ?? `repair_normalization_error:${(e as Error).message}`;
-      }
-    } else {
-      validatorFailureReason = validatorFailureReason ?? `policy_repair_failed:${repairCall.reason}`;
-    }
+  validatorApproved = policyViolations.length === 0;
+  validatorIssues = policyViolations;
+  if (normalizationChanged) {
+    finalPath = 'roleplay_v2_deterministic_cleanup';
   }
 
   if (!finalText.trim()) {

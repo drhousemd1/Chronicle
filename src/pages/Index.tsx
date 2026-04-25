@@ -38,6 +38,7 @@ import {
   stopApiUsageTestSession,
   type ApiUsageTestSession,
 } from "@/services/api-usage-test-session";
+import { readCachedAdminState } from "@/services/app-settings";
 
 const loadCharactersTabModule = () => import("@/features/character-builder/CharacterBuilderScreen");
 const loadWorldTabModule = () => import("@/features/story-builder/StoryBuilderScreen");
@@ -153,7 +154,7 @@ const IndexContent = () => {
   const imageLibraryExitFolderRef = React.useRef<(() => void) | null>(null);
   const [imageLibrarySearchQuery, setImageLibrarySearchQuery] = useState('');
   const [adminActiveTool, setAdminActiveTool] = useState<string>('hub');
-  const [isAdminState, setIsAdminState] = useState(false);
+  const [isAdminState, setIsAdminState] = useState(() => readCachedAdminState());
   const [activeApiUsageTestSession, setActiveApiUsageTestSession] = useState<ApiUsageTestSession | null>(null);
   const [isApiUsageToggleBusy, setIsApiUsageToggleBusy] = useState(false);
   const [apiUsageToggleError, setApiUsageToggleError] = useState<string | null>(null);

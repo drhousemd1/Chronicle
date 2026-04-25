@@ -953,6 +953,7 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
             "tagType": "core-prompt",
             "icon": "📝",
             "purpose": "Controls how long the AI's responses are. Also sets the max_tokens limit: Concise = 1024, Balanced = 2048, Detailed = 3072.",
+            "settingsGate": "Settings-driven prompt block. The injected rules and token ceiling change with the user's selected verbosity mode.",
             "fileRefs": [
               {
                 "path": "src/services/llm.ts",
@@ -966,6 +967,7 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
             "tagType": "core-prompt",
             "icon": "📝",
             "purpose": "When turned on, the AI must follow real-world consequences: injuries don't heal instantly, skills depend on experience, and actions have lasting effects.",
+            "settingsGate": "Settings-driven prompt block. This only contributes instructions when Realism Mode is enabled.",
             "fileRefs": [
               {
                 "path": "src/services/llm.ts",
@@ -1043,6 +1045,7 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
             "tagType": "code-logic",
             "icon": "🔧",
             "purpose": "If xAI's content filter blocks the request (returns a 403 error), the app automatically adds a redirect instruction and tries again. If the retry also fails, the user sees a \"too spicy\" error message.",
+            "settingsGate": "Failure-only fallback. This lane runs only after a 403 content-filter block, not on successful first-pass requests.",
             "fileRefs": [
               {
                 "path": "supabase/functions/chat/index.ts",

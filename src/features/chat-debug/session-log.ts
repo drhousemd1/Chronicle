@@ -12,6 +12,8 @@ function describeFinalPath(finalPath: string): string {
       return 'roleplay_v2 -> validator revised the draft';
     case 'roleplay_v2_writer_draft':
       return 'roleplay_v2 -> writer draft used as final';
+    case 'roleplay_v2_deterministic_cleanup':
+      return 'roleplay_v2 -> writer draft with deterministic cleanup';
     case 'roleplay_v2_policy_repaired':
       return 'roleplay_v2 -> deterministic policy repair pass applied';
     case 'roleplay_v2_direct_fallback':
@@ -46,8 +48,8 @@ export function formatChatDebugTraceForSessionLog(
   lines.push(`- Recent window count: ${trace.recentWindowCount}`);
   lines.push(`- Supporting excerpts selected: ${trace.supportingExcerpts.length}`);
   lines.push(`- Planner fallback used: ${trace.planner.usedFallback ? 'yes' : 'no'}`);
-  lines.push(`- Validator approved: ${trace.validator.approved === null ? 'n/a' : trace.validator.approved ? 'yes' : 'no'}`);
-  lines.push(`- Validator used revision: ${trace.validator.usedRevision ? 'yes' : 'no'}`);
+  lines.push(`- Quality check passed: ${trace.validator.approved === null ? 'n/a' : trace.validator.approved ? 'yes' : 'no'}`);
+  lines.push(`- Legacy validator revision used: ${trace.validator.usedRevision ? 'yes' : 'no'}`);
   lines.push(`- Normalization changed output: ${trace.normalization.changed ? 'yes' : 'no'}`);
   lines.push('');
 
@@ -56,6 +58,7 @@ export function formatChatDebugTraceForSessionLog(
   lines.push(`- Conversation: ${trace.roleplayContext.conversationId || '(unknown)'}`);
   lines.push(`- Day / Time: ${trace.roleplayContext.currentDay ?? '?'} / ${trace.roleplayContext.currentTimeOfDay || '?'}`);
   lines.push(`- Active Scene: ${trace.roleplayContext.activeSceneTitle || '(none)'}`);
+  lines.push(`- Active Scene Tags: ${joinOrFallback(trace.roleplayContext.activeSceneTags, '(none)')}`);
   lines.push(`- AI characters: ${joinOrFallback(trace.roleplayContext.aiCharacterNames, '(none)')}`);
   lines.push(`- User characters: ${joinOrFallback(trace.roleplayContext.userCharacterNames, '(none)')}`);
   lines.push('');
@@ -87,13 +90,13 @@ export function formatChatDebugTraceForSessionLog(
   }
   lines.push('');
 
-  lines.push('**Writer / Validator**');
+  lines.push('**Writer / Quality Check**');
   lines.push('');
   lines.push(`- Writer temperature: ${trace.writer.temperature}`);
   lines.push(`- Writer draft preview: ${trace.writer.draftPreview || '(empty)'}`);
-  lines.push(`- Validator issues: ${joinOrFallback(trace.validator.issues, '(none)')}`);
-  lines.push(`- Validator failure reason: ${trace.validator.failureReason || 'none'}`);
-  lines.push(`- Revised preview: ${trace.validator.revisedPreview || '(none)'}`);
+  lines.push(`- Quality-check issues: ${joinOrFallback(trace.validator.issues, '(none)')}`);
+  lines.push(`- Quality-check failure reason: ${trace.validator.failureReason || 'none'}`);
+  lines.push(`- Legacy revised preview: ${trace.validator.revisedPreview || '(none)'}`);
   lines.push('');
 
   if (trace.notes.length > 0) {
