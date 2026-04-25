@@ -5682,7 +5682,7 @@ const updatedChar: SideCharacter = {
                       ? (inlineEditSegments.length > 0 ? inlineEditSegments : segments)
                       : regeneratingMessageId === msg.id && formattedStreamingContent
                         ? mergeByRenderedSpeaker(
-                            parseMessageSegments(formattedStreamingContent),
+                            parseMessageSegments(sanitizeAssistantMessageText(formattedStreamingContent)),
                             isAi,
                             effectiveAppData,
                             userChar,
@@ -5804,7 +5804,7 @@ const updatedChar: SideCharacter = {
             // Parse formatted streaming content into segments for multi-speaker rendering (only for NEW messages, not regeneration)
             // Using formattedStreamingContent to prevent flickering from system tags and placeholder names
             const userChar = effectiveMainCharacters.find(c => c.controlledBy === 'User') || null;
-            const rawSegments = parseMessageSegments(formattedStreamingContent);
+            const rawSegments = parseMessageSegments(sanitizeAssistantMessageText(formattedStreamingContent));
             const segments = mergeByRenderedSpeaker(rawSegments, true, effectiveAppData, userChar, resolveCanonicalSpeakerName);
             
             return (

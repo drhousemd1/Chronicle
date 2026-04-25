@@ -22,6 +22,9 @@ import { uuid, now } from '@/utils';
 // CHARACTER NAME REGISTRY
 // =============================================
 
+const MESSAGE_RENDER_ARTIFACT_LINE_REGEX = /^\s*(?:(?:[-—*_]){3,}|```(?:\w+)?|<\/?writer_draft>)\s*$/gim;
+const DOUBLE_COLON_SPEAKER_REGEX = /^(\s*(?:\*\*)?[A-Z][a-zA-Z\s'-]{0,29}(?:\*\*)?)\s*:{2,}\s*/gm;
+
 /**
  * Get all known character names and nicknames (both main and side characters)
  * Used to prevent duplicate character creation
@@ -134,6 +137,10 @@ export function parseMessageSegments(text: string): MessageSegment[] {
     .replace(/\[UPDATE:[^\]]*\]/g, '')
     .replace(/\[ADDROW:[^\]]*\]/g, '')
     .replace(/\[NEWCAT:[^\]]*\]/g, '')
+    .replace(MESSAGE_RENDER_ARTIFACT_LINE_REGEX, '')
+    .replace(DOUBLE_COLON_SPEAKER_REGEX, '$1: ')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
   
   if (!cleanText) return [];
