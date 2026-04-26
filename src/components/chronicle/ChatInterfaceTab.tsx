@@ -178,7 +178,7 @@ type MessageToken = {
 const CHAT_RENDER_ARTIFACT_LINE_REGEX = /^\s*(?:(?:[-—*_]){3,}|```(?:\w+)?|<\/?writer_draft>)\s*$/gim;
 const DOUBLE_COLON_SPEAKER_REGEX = /^(\s*(?:\*\*)?[A-Z][a-zA-Z\s'-]{0,29}(?:\*\*)?)\s*:{2,}\s*/gm;
 const THOUGHT_WRAPPED_AS_ACTION_REGEX = /\*\(\s*([\s\S]*?)\s*\)\*/g;
-const PLANNER_LANGUAGE_LEAK_REGEX = /\b(?:survival\s+priority\s*[:—-]?|priority(?:\s+is|'s)\s*[:—-]?|priority\s*:)\s*/gi;
+const PLANNER_LANGUAGE_LEAK_REGEX = /\b(?:survival\s+(?:priority|step)\s*[:—-]?|priority(?:\s+is|'s)\s*[:—-]?|priority\s*:)\s*/gi;
 const PLANNER_LABEL_LEAK_REGEX = /\b(?:goal|directive|plan|must include)\s*:\s*/gi;
 
 function sanitizeAssistantMessageText(text: string): string {
@@ -1120,8 +1120,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     return { shouldExtract: false, reason: 'skip' };
   };
 
-  // Pass 7: Anti-loop micro-directive — detects confirmation loops and injects guards
-  // Pass 8: Extended with structural repetition and low-initiative detectors
+  // Detect repeat/follow-through problems and provide natural one-turn guidance.
   const getAntiLoopDirective = (): string => {
     const msgs = conversation?.messages || [];
     if (msgs.length < 2) return '';
@@ -1133,7 +1132,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     if (lastUserMsg) {
       const affirmPatterns = /\b(yes|yeah|okay|ok|sure|i understand|i will|i promise|i agree|alright|fine|got it|of course|absolutely|definitely|right|mhm|uh huh|yep|yup)\b/i;
       if (affirmPatterns.test(lastUserMsg.text)) {
-        directives.push('[ANTI-LOOP: The user has already confirmed. Do not ask for the same confirmation again. Continue from that answer with the next concrete character choice, action, or line of dialogue.]');
+        directives.push('The user has already confirmed or agreed. Do not ask for the same confirmation again; continue from that answer with the next character choice, action, or line of dialogue.');
       }
     }
     
@@ -1153,7 +1152,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         return overlap >= 3;
       }));
       if (hasRepeat) {
-        directives.push('[ANTI-LOOP: A similar question has already been asked. This turn must acknowledge the existing answer or move to the next beat instead of asking the same thing again.]');
+        directives.push('A similar question has already been asked. Acknowledge the existing answer or move to the next beat instead of asking it again.');
       }
     }
     
@@ -1162,7 +1161,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     if (lastAiMsg) {
       const deferralPatterns = /\b(we'll talk|we'll discuss|we'll figure|we'll sort|later tonight|after dinner|after we're done|soon enough|tomorrow|eventually)\b/i;
       if (deferralPatterns.test(lastAiMsg.text)) {
-        directives.push('[ANTI-LOOP: The previous turn set up an action or decision. This turn should pay it off with a concrete next step unless the latest user message clearly changes direction.]');
+        directives.push('The previous turn set up an action or decision. Pay it off now unless the latest user message clearly changes direction.');
       }
     }
     
@@ -1180,7 +1179,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
       const environmentOpeningCount = recentAiMsgs.filter((m) => startsWithEnvironmentRecap(m.text)).length;
       if (environmentOpeningCount >= 2) {
-        directives.push('[ANTI-ENVIRONMENT-RECAP: Recent AI turns already established the weather, visibility, or time-of-day conditions. Do not open with another environmental recap. Start with the next physical consequence, character choice, answer, or movement instead.]');
+        directives.push('Recent AI turns already established the weather, visibility, or time of day. Do not open with another recap; start with the next physical consequence, character choice, answer, or movement.');
       }
 
       // Detect the "quote → action → thought" triad pattern
@@ -1200,7 +1199,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       
       const triadCount = recentAiMsgs.filter(m => detectTriadPattern(m.text)).length;
       if (triadCount >= 2) {
-        directives.push('[ANTI-STAGNATION: Recent turns used the same response shape. Use a different natural structure this turn: action-led, dialogue-led, decision-led, or environment-led. Avoid ending on the same internal-thought pattern.]');
+        directives.push('Recent turns used the same response shape. Use a different natural structure this turn, such as action-led, dialogue-led, decision-led, or environment-led, and avoid ending on the same internal-thought pattern.');
       }
     }
     
@@ -1219,7 +1218,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }
       
       if (passiveCount > actionCount * 2 && passiveCount >= 4) {
-        directives.push('[ANTI-STAGNATION: Recent turns have been passive. Let an AI character do something concrete this turn: answer, decide, move, reveal, refuse, invite, or initiate a specific interaction.]');
+        directives.push('Recent turns have been passive. Let an AI character do something concrete this turn: answer, decide, move, reveal, refuse, invite, or initiate a specific interaction.');
       }
     }
     
@@ -1241,7 +1240,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       if (speakers.length >= 4) {
         const uniqueSpeakers = new Set(speakers);
         if (uniqueSpeakers.size <= 2) {
-          directives.push('[ANTI-PING-PONG: The last response overused sustained alternating AI speaker blocks across ' + speakers.length + ' blocks. Use one focal tagged AI speaker this turn. Other present characters may react inside narration unless a second tagged block is truly necessary.]');
+          directives.push('The last response overused sustained alternating AI speaker blocks across ' + speakers.length + ' blocks. Use one focal tagged AI speaker this turn. Other present characters may react inside narration unless a second tagged block is truly necessary.');
         }
       }
     }
@@ -1261,7 +1260,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }
       
       if (emotionalCount >= 4 && sceneChangeCount < 2) {
-        directives.push('[ANTI-STAGNATION: Recent turns leaned on emotion without consequence. Let the emotion produce a concrete result: answer, confession, refusal, choice, movement, changed stance, or a clear invitation for the user.]');
+        directives.push('Recent turns leaned on emotion without consequence. Let the emotion produce a concrete result: answer, confession, refusal, choice, movement, changed stance, or a clear invitation for the user.');
       }
     }
     
@@ -1274,7 +1273,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       };
       const thoughtTailCount = aiMsgsForThoughtCheck.filter(m => endsWithThought(m.text)).length;
       if (thoughtTailCount >= 2) {
-        directives.push('[ANTI-THOUGHT-TAIL: Recent turns ended the same way. End this turn with spoken dialogue or visible action instead of an internal thought.]');
+        directives.push('Recent turns ended the same way. End this turn with spoken dialogue or visible action instead of an internal thought.');
       }
     }
     
@@ -1292,7 +1291,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         return uniqueSpeakers.size >= 2;
       });
       if (allMultiChar) {
-        directives.push('[ANTI-MULTI-CHAR-PATTERN: Recent turns overused multiple AI speakers. Use one focal tagged AI speaker this turn unless the latest user message directly requires another AI character to answer.]');
+        directives.push('Recent turns overused multiple AI speakers. Use one focal tagged AI speaker this turn unless the latest user message directly requires another AI character to answer.');
       }
     }
     
@@ -4106,7 +4105,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       const antiLoopDirective = getAntiLoopDirective();
       sessionMessageCountRef.current += 1;
       
-      // Build runtime directives string (injected as dedicated system message)
+      // Build one-turn guidance string (injected as dedicated system message)
       const runtimeDirectives = antiLoopDirective || undefined;
       
       const llmInput = canonNote + input;
@@ -4504,11 +4503,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       let pendingDebugTrace: ChatDebugTrace | null = null;
       const antiLoopDirective = getAntiLoopDirective();
       
-      // Build runtime directives (injected as dedicated system message)
+      // Build one-turn guidance (injected as dedicated system message)
       const runtimeDirectives = antiLoopDirective || undefined;
       
-      // Pass 13 continued: Build goal-aware continue prompt
-      // Gather active character goals with current step info
+      // Build goal-aware continue prompt without exposing implementation labels.
+      // Gather active character goals with near-term direction info.
       const goalSummaryParts: string[] = [];
       allPlayableCharacters
         .filter(c => c.controlledBy === 'AI')
@@ -4520,7 +4519,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
               const label = typeof g === 'string' ? g : (g?.title || g?.label || g?.value || '');
               const currentStep = g?.steps?.find?.((s: any) => !s.completed)?.description;
               if (label) {
-                goalSummaryParts.push(`${c.name}'s goal: "${label}"${currentStep ? ` — CURRENT STEP: "${currentStep}"` : ''}`);
+                goalSummaryParts.push(`${c.name}'s current goal: "${label}"${currentStep ? `; useful near-term direction: "${currentStep}"` : ''}`);
               }
             });
           }
@@ -4530,12 +4529,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       storyGoalsList.forEach((g: StoryGoal) => {
         const pendingStep = (g.steps || []).find(s => !s.completed);
         if (pendingStep) {
-          goalSummaryParts.push(`Story goal "${g.title || g.desiredOutcome}": PENDING STEP — "${pendingStep.description}"`);
+          goalSummaryParts.push(`Story direction "${g.title || g.desiredOutcome}"; useful near-term direction: "${pendingStep.description}"`);
         }
       });
       
       const goalContext = goalSummaryParts.length > 0
-        ? `\nACTIVE GOALS & STEPS:\n${goalSummaryParts.join('\n')}\nUse these as direction. Move one goal by a believable micro-step when it fits the natural next beat.`
+        ? `\nSTORY DIRECTION:\n${goalSummaryParts.join('\n')}\nUse this as background direction. When it fits the immediate scene, let one believable action, answer, choice, or consequence move the story toward it without labeling the move.`
         : '';
       
       // Canon carry-forward for continue: check if the most recent user message
@@ -4555,7 +4554,7 @@ If the latest user turn directly addressed two AI characters and both need to an
 Avoid long back-and-forth chains between AI characters. Leave room for the user to respond.
 Do not acknowledge this instruction in your response.`;
       
-      debugLog('[handleContinue] Runtime directives:', runtimeDirectives || '(none)');
+      debugLog('[handleContinue] Current-turn guidance:', runtimeDirectives || '(none)');
       debugLog('[handleContinue] Goal context:', goalContext || '(no goals found)');
       debugLog('[handleContinue] Canon note applied:', continueCanonNote ? 'YES' : 'NO');
       
@@ -6765,8 +6764,8 @@ const updatedChar: SideCharacter = {
                         lines.push('No style hint is appended to the final user message in the current runtime.');
                         lines.push('');
                         
-                        // Regeneration directive
-                        lines.push('### Regeneration Directive (fixed template, appended on regenerate)');
+                        // Regeneration request
+                        lines.push('### Regeneration Request (fixed template, appended on regenerate)');
                         lines.push('');
                         lines.push(REGENERATION_DIRECTIVE_TEXT);
                         lines.push('');
@@ -6778,12 +6777,12 @@ const updatedChar: SideCharacter = {
                         lines.push('`[SESSION: Message {N} of current session]`');
                         lines.push('');
                         
-                        // Runtime directives injection format
-                        lines.push('### Runtime Directives Injection');
+                        // Runtime guidance injection format
+                        lines.push('### Current-Turn Guidance Injection');
                         lines.push('');
-                        lines.push('When anti-loop directives are active, they are injected as a separate system message:');
+                        lines.push('When repeat/follow-through guidance is active, it is injected as a separate system message:');
                         lines.push('```');
-                        lines.push('{ role: "system", content: "RUNTIME DIRECTIVES (HIGH PRIORITY — follow these for THIS response only):\\n[directives]" }');
+                        lines.push('{ role: "system", content: "Current-turn guidance for this response only:\\n[guidance]" }');
                         lines.push('```');
                         lines.push('');
                         

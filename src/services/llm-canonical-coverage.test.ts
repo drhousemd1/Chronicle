@@ -204,4 +204,40 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('CHARACTER: Ashley');
     expect(prompt).toContain('CONTROL: User');
   });
+
+  it('keeps mechanical planning labels out of the writer-facing system prompt', () => {
+    const appData = createDefaultScenarioData();
+    const [aiCharacter, userCharacter] = getHardcodedTestCharacters();
+
+    aiCharacter.name = 'Sarah';
+    aiCharacter.controlledBy = 'AI';
+    userCharacter.name = 'James';
+    userCharacter.controlledBy = 'User';
+    appData.characters = [aiCharacter, userCharacter];
+    appData.world.core.storyGoals = [
+      {
+        id: uid('sgoal'),
+        title: 'Survive the storm',
+        desiredOutcome: 'Reach shelter and keep everyone alive.',
+        currentStatus: 'Searching for warmth.',
+        flexibility: 'rigid',
+        steps: [{ id: uid('sstep'), description: 'Make the shelter safe enough to rest', completed: false }],
+        createdAt: now(),
+        updatedAt: now(),
+      },
+    ];
+
+    const prompt = getSystemInstruction(appData, 1, 'sunset', [], true, null);
+
+    expect(prompt).toContain('Milestones:');
+    expect(prompt).toContain('Guidance:');
+    expect(prompt).not.toContain('ACTIVE GOALS & STEPS');
+    expect(prompt).not.toContain('PENDING STEP');
+    expect(prompt).not.toContain('CURRENT STEP');
+    expect(prompt).not.toContain('TURN PROGRESSION CONTRACT');
+    expect(prompt).not.toContain('CONCRETE SCENE DELTA');
+    expect(prompt).not.toContain('DIRECTIVE:');
+    expect(prompt).not.toContain('Survival priority');
+    expect(prompt).not.toContain('Priority is');
+  });
 });

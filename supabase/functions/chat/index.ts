@@ -377,7 +377,7 @@ function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undef
       "Do not narrate one AI character's meaningful compliance, refusal, movement, answer, or decision inside another AI character speaker block.",
       'Do not ignore a directly addressed AI character by having another character merely observe their fear, silence, or body language.',
       'Do not invent narration labels, beat labels, or sentence-fragment headings with colons; every paragraph-start colon label must be an exact cast character name.',
-      'Do not expose internal goal, priority, directive, planner, or checklist labels or shorthand such as "Survival priority:", "Priority is heat", "Priority\'s heat", "Goal:", "Plan:", or "Must include:" in story prose.',
+      'Do not expose internal reasoning labels or checklist shorthand in story prose.',
       'Do not open with the same weather, time-of-day, or visibility recap used in recent turns.',
     ],
     continuityNotes: [
@@ -394,7 +394,7 @@ function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undef
       'Do not put one AI character spoken dialogue inside another AI character speaker block.',
       'Tiny visible reactions can stay in the focal block; meaningful second-character actions or answers need their own short speaker block within the speaker cap.',
       'Keep all visible scanning, movement, and environmental description inside *asterisks* instead of bare prose or colon subheadings.',
-      'Keep goals and priorities internal; render them as natural choices, actions, or subtext instead of visible planner/checklist labels or "priority is..." shorthand.',
+      'Keep goals and priorities internal; render them as natural choices, actions, or subtext instead of visible labels.',
       'Do not write bare unquoted internal monologue or mechanically repeat scene-state phrases.',
     ],
   };
@@ -636,6 +636,9 @@ function normalizeFinalText(text: string): string {
   out = out.replace(/^(\s*(?:\*\*)?[A-Z][a-zA-Z\s'-]{0,29}(?:\*\*)?)\s*:{2,}\s*/gm, '$1: ');
   // Normalize miswrapped thoughts like "*(She thought...)*" back to "(She thought...)".
   out = out.replace(/\*\(\s*([\s\S]*?)\s*\)\*/g, '($1)');
+  // Remove leaked internal-planning lead-ins without deleting the surrounding prose.
+  out = out.replace(/\b(?:survival\s+(?:priority|step)\s*[:—-]?|priority(?:\s+is|'s)\s*[:—-]?|priority\s*:)\s*/gi, '');
+  out = out.replace(/\b(?:goal|directive|plan|must include)\s*:\s*/gi, '');
   // Collapse multiple em dashes in a row to a single one
   out = out.replace(/(?:\s*—\s*){2,}/g, ' — ');
   // Whitespace cleanup
@@ -925,27 +928,46 @@ ${ctxLines ? `Context:\n${ctxLines}\n` : ''}`,
   }
 
   // ---- 2) Writer ----------------------------------------------------------
+  const formatGuidanceList = (items: string[], fallback: string, maxItems = 5) => {
+    const cleaned = uniqueNonEmpty(items)
+      .filter((item) => !/\b(?:survival\s+(?:priority|step)|priority(?:\s+is|'s)|must include|must avoid|planner|writer contract|directive:|plan:)\b/i.test(item))
+      .slice(0, maxItems);
+    return cleaned.length ? cleaned.map((item) => `- ${item}`).join('\n') : `- ${fallback}`;
+  };
+
+  const speakerTags = plan.allowedSpeakers.length ? plan.allowedSpeakers.join(', ') : '(focus character only)';
+  const immediateBeat = plan.immediateBeat?.trim() || 'Respond naturally to the latest user turn and move the scene by one believable beat.';
+
   const writerPlanInjection: Message = {
     role: 'system',
-    content: `[ROLEPLAY PLAN - HIGH PRIORITY]
-${JSON.stringify(plan, null, 2)}
+    content: `Private writing guidance for this next reply only. Use it to write finished roleplay; never mention this guidance in the story.
 
-Writer contract:
-- Execute the plan naturally; do not mention the plan.
-- Use only these speaker tags for tagged paragraphs: ${plan.allowedSpeakers.length ? plan.allowedSpeakers.join(', ') : '(focus character only)'}.
-- Use at most ${plan.maxSpeakerBlocks} speaker-tagged block(s).
-- Answer or acknowledge every directQuestionsToAnswer item.
-- Treat sceneStateFacts as current truth.
-- Include mustInclude facts without dumping them mechanically.
-- Avoid mustAvoid items.
+Focus speaker: ${plan.focusCharacter || speakerTags}
+Allowed speaker tags: ${speakerTags}
+Speaker limit: at most ${Math.max(1, Math.min(2, plan.maxSpeakerBlocks || 1))} tagged block(s)
+Immediate beat: ${immediateBeat}
+
+Questions or prompts to address:
+${formatGuidanceList(plan.directQuestionsToAnswer, 'No direct question needs special handling.')}
+
+Continuity to preserve:
+${formatGuidanceList([...plan.sceneStateFacts, ...plan.continuityNotes], 'Use the latest visible scene state and preserve cause and effect.', 7)}
+
+Helpful facts to weave in naturally:
+${formatGuidanceList(plan.mustInclude, 'No extra facts need special handling.')}
+
+Avoid this turn:
+${formatGuidanceList(plan.mustAvoid, 'Do not speak for user-controlled characters, do not force extra speakers, and do not repeat resolved beats.', 7)}
+
+Style and format:
 - Keep older excerpts subordinate to the latest user turn.
 - Do not narrate user-controlled characters completing requested actions. AI characters may command or prepare, but the user must author the user character's actual execution.
 - Write in the selected character's real voice, not as a checklist.
 - Use the app's roleplay format: CharacterName: *visible action/narration.* "spoken dialogue"
 - Never put one character's quoted dialogue inside another character's tagged block; give the speaking AI character their own tag or make it a silent visible reaction.
 - Do not write bare prose or loose internal monologue after a speaker tag; wrap action in *asterisks*, wrap rare private thought in (parentheses), or omit it.
-- Treat sceneStateFacts as constraints, not phrases to repeat every turn.
-- Treat goals, priorities, directives, and planning notes as internal reasoning; never output visible labels or shorthand like "Survival priority:", "Priority is heat", "Priority's heat", "Goal:", "Directive:", "Plan:", or "Must include:".
+- Treat scene facts as constraints, not phrases to repeat every turn.
+- Render goals and priorities as natural choices, actions, dialogue, or subtext. Do not output labels for internal reasoning.
 - Do not reuse the same environmental opening from recent assistant turns; show a new physical effect if the scene condition still matters.
 - Do not output markdown separator lines such as --- or ***.`,
   };

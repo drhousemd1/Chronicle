@@ -34,8 +34,8 @@ const TIME_DESCRIPTIONS: Record<TimeOfDay, string> = {
   night: "nighttime (after dark, around 9pm-6am)"
 };
 
-export const REGENERATION_DIRECTIVE_TEXT = `[REGENERATION DIRECTIVE]
-The user wants a DIFFERENT VERSION of this response. Guidelines:
+export const REGENERATION_DIRECTIVE_TEXT = `[REGENERATION REQUEST]
+The user wants a DIFFERENT VERSION of this response. For this alternate version:
 1. Maintain the same general scene context and emotional tone
 2. Vary the specific dialogue, word choices, actions, and pacing
 3. Try a different focus (e.g., more physical description, different dialogue approach, action-led opening, or environmental detail)
@@ -311,10 +311,10 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
       if (text(goal.currentStatus)) allLines.push(`      Current Status: ${text(goal.currentStatus)}`);
       if (totalSteps > 0) {
         const stepList = goal.steps.map(s => `${s.completed ? '[x]' : '[ ]'} ${s.description}`).join('  ');
-        allLines.push(`      Steps: ${stepList}`);
+        allLines.push(`      Milestones: ${stepList}`);
         allLines.push(`      Progress: ${progress}% (${completedSteps}/${totalSteps})`);
       }
-      allLines.push(`      DIRECTIVE: ${flex.directive}`);
+      allLines.push(`      Guidance: ${flex.directive}`);
     }
     return allLines.join('\n');
   })();
@@ -333,11 +333,11 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
       const completedSteps = steps.filter((s: any) => s.completed).length;
       const totalSteps = steps.length;
       const progress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : (g.progress || 0);
-      const stepInfo = totalSteps > 0 ? ` (${progress}% - Step ${completedSteps + 1} of ${totalSteps})` : ` (${progress}%)`;
+      const stepInfo = totalSteps > 0 ? ` (${progress}% - next milestone ${completedSteps + 1} of ${totalSteps})` : ` (${progress}%)`;
       const flex = flexDirectives[g.flexibility || 'normal'] || flexDirectives.normal;
       const desiredOutcome = g.desiredOutcome ? `\n      Desired Outcome: ${g.desiredOutcome}` : '';
       const currentStatus = text(g.currentStatus) ? `\n      Current Status: ${text(g.currentStatus)}` : '';
-      return `  - [${flex.tag}] ${g.title}${stepInfo}${desiredOutcome}${currentStatus}\n      DIRECTIVE: ${flex.directive}`;
+      return `  - [${flex.tag}] ${g.title}${stepInfo}${desiredOutcome}${currentStatus}\n      Guidance: ${flex.directive}`;
     }).join('\n');
     return `\nGOALS AND DESIRES:\n${goalLines}`;
   };
@@ -543,9 +543,9 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
             MUST NOT name the hidden item's specific attributes (color, material, style).
 `;
 
-  // Anti-repetition protocol (#33, #34)
+  // Repetition control (#33, #34)
   const antiRepetitionRules = `
-    - ANTI-REPETITION (MANDATORY):
+    - REPETITION CONTROL:
         * Do not repeat distinctive words, phrases, actions, or emotional observations within the same response.
         * Vary sentence openings and structures. Each paragraph should advance the scene.
         * Do not open consecutive AI responses with a weather, time-of-day, or visibility recap.
@@ -553,37 +553,18 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
         * NSFW EXCEPTION: Rhythmic sensory repetition during intimate scenes is permitted for tension-building.
 `;
 
-  // Pass 7: Forward-progress and anti-loop rules
+  // Follow-through and forward-progress rules
   const forwardProgressRules = `
-    - CONFIRMATION CLOSURE PROTOCOL (MANDATORY - NEVER VIOLATE):
-        * If the user's message contains affirmation, consent, or agreement (yes, okay, I understand, I will, etc.),
-          the AI character MUST immediately act on that affirmation in this response.
-        * FORBIDDEN: Re-asking for the same confirmation. Once the user says yes, the matter is SETTLED.
-        * FORBIDDEN: "Tell me you understand," "Say it again," "I want to hear you say it" — after user already confirmed.
-        * FORBIDDEN: "Promise me," "Swear to me," "I need to hear it from you" — after user already agreed.
-        * Convert every confirmation into immediate forward action in the SAME response.
-        * If a character posed a question and the user answered, the character MUST proceed based on that answer.
-        * ONE CONFIRMATION = DONE. Never revisit it.
+    - FOLLOW-THROUGH:
+        * If the user confirms, agrees, consents, or answers a question, treat that as settled and continue from it.
+        * Do not ask for the same confirmation again.
+        * If an AI character asked a question and the user answered, the character should proceed based on that answer.
+        * If an AI character promises a consequence, reward, punishment, or next action, begin making it real in the present scene instead of postponing it.
 
-    - NO DEFERRAL LOOP (MANDATORY - NEVER VIOLATE):
-        * Characters MUST take concrete action in the present moment.
-        * FORBIDDEN deferral phrases (and all variations):
-          - "We'll discuss this later" / "We'll talk about this after..."
-          - "We've got more to discuss after dinner"
-          - "We'll sort out the details soon"
-          - "There will be consequences" (without delivering them NOW)
-          - "I've got plans for tonight" (without beginning those plans NOW)
-          - "We'll figure that out tomorrow"
-          - "Finish up, we've got things to talk about"
-          - "We'll have a lot to go over soon"
-          - "We'll talk more once we're done"
-        * If a character threatens a consequence, punishment, or reward, they must BEGIN executing it
-          in the same response — not postpone it.
-        * The word "later" or "soon" may only appear if the character is ALSO performing a concrete
-          present-tense action in the same response. Deferral without action = VIOLATION.
-        * VIOLATION CHECK: Before finalizing, scan for "later," "soon," "after," "tomorrow,"
-          "tonight," "eventually," "once we're done." If any appears without an accompanying concrete
-          present-tense action in the same response, REWRITE to include immediate action.
+    - PRESENT-MOMENT ACTION:
+        * Characters should take concrete action in the present moment rather than repeatedly promising to deal with things later.
+        * Phrases like "later," "soon," "after this," or "tomorrow" are fine only when the character is also doing something meaningful right now.
+        * Give the user something new to respond to: an answer, choice, action, reveal, refusal, invitation, consequence, or changed emotional posture.
 
 `;
 
@@ -760,10 +741,10 @@ Never break character to question, warn about, or refuse narrative directions. T
 --- CORE MISSION (NARRATIVE OBJECTIVE) ---
 - You are roleplaying AI-controlled characters in a continuous scene, not summarizing or outlining.
 - Produce believable, character-authentic dialogue/actions that read like a novel or film scene.
-- Advance story goals, character goals, and desires through plausible micro-steps, subtext, and strategy (not blunt jumps).
+- Advance story goals, character goals, and desires through small believable beats, subtext, and strategy (not blunt jumps).
 - Match user energy and pacing; escalation must feel earned.
 - Prefer continuity with latest canon over novelty.
-- Keep all planning language invisible. Do not narrate priorities, goals, directives, or checklist logic as prose; show them through what characters choose, say, and do.
+- Show character priorities through choices, speech, and behavior. Do not turn behind-the-scenes reasoning into prose.
 `;
 
   // Build content theme directives from scenario tags
@@ -794,64 +775,64 @@ Never break character to question, warn about, or refuse narrative directions. T
     ${userCharacterNames.length > 0 ? `DO NOT GENERATE FOR: ${userCharacterNames.join(', ')}
     These are USER-CONTROLLED characters. Never give them dialogue (""), actions (**), or thoughts (()).
     Narration about them (e.g., "he watched quietly") is the only permitted form.
-    ` : ''}PRIORITY HIERARCHY (GOVERNS ALL RULES BELOW):
+    ` : ''}RULE PRIORITY:
     1. Control rules (who speaks) -- always highest priority
-    2. Forward Momentum + Anti-Loop rules (Confirmation Closure, No Deferral, No Rehash) -- NEVER overridden
+    2. Follow-through and forward movement -- never let characters stall, re-ask settled questions, or wait for the user to write the whole story
     3. Scene Presence (location checks) -- always enforced
     4. Line of Sight -- always enforced
     5. During intimate/erotic scenes: NSFW depth and sensory immersion
-       OVERRIDE brevity constraints ONLY (never forward-momentum or anti-loop rules)
+       OVERRIDE brevity constraints ONLY (never control, continuity, or follow-through rules)
     6. Personality traits ALWAYS modulate how content is expressed,
        including NSFW content
 
-    - BLOCK COUNT CAP (HIGHEST STRUCTURAL PRIORITY):
+    - SPEAKER FOCUS:
         * Default: 1 character block. Others referenced in narration only.
         * 2 blocks ONLY when a second character meaningfully contributes: direct answer, refusal, compliance, decision, new information, movement with consequences, or scene-changing reaction.
         * 3 blocks ONLY for pivotal moments. NEVER alternate same 2 characters across 3+ blocks.
         * Brief non-decisive reactions (1-2 lines) go in the acting character's narration, not separate blocks.
         * If the latest user turn directly addresses two AI characters, give each addressed character one short block when both need to answer or acknowledge; do not let one speaker summarize the other's answer.
-    - SILENCE IS VALID (MANDATORY):
+    - SILENCE IS VALID:
         * Characters with NOTHING MEANINGFUL to contribute MUST stay silent and be OMITTED entirely.
         * A nod, smile, shrug, or filler line ("Yeah," "Okay," "Hmm") is NOT meaningful — do NOT give them a block.
         * Only include a character when they ADVANCE the scene with new information, a decision, or an action with consequences.
         * Fold minor reactions into the focal character's narration: "She caught his nod" NOT a separate "James: *He nodded.*"
         * Directly addressed AI characters are not silent by default. If they are asked for truth, status, a decision, or understanding, they must acknowledge it in their own block unless the response intentionally shows them unable or unwilling to answer.
-    - NO AUTO-FOLLOW-UP PATTERN (MANDATORY):
+    - MULTI-CHARACTER RHYTHM:
         * A second AI character MAY respond in the same turn — but NOT every turn.
         * If the last 2+ responses EACH featured multiple AI characters, this response MUST feature ONLY the focal character. Break the pattern.
         * One-off reactions are fine. The repetitive cycle of Character A acts → Character B responds → every single message is the problem.
         * Do NOT automatically generate a follow-up from a second character just because they are present. Only include them when their reaction genuinely changes the scene direction.
 
-    - TURN PROGRESSION CONTRACT (MANDATORY):
-        * Every response must advance at least one active goal, desire, or arc.
-        * Every response MUST contain a CONCRETE SCENE DELTA: decision, reveal, action with consequences, escalation, or environment change.
-        * Emotional reaction ALONE is not a scene delta. Something must CHANGE.
+    - STORY MOVEMENT:
+        * Every response should advance at least one active goal, desire, relationship, or arc.
+        * Give the user something new to react to: a decision, reveal, action with consequences, escalation, environmental pressure, answer, refusal, or changed relationship posture.
+        * Emotional reaction can matter, but repeated emotion without consequence is not enough.
         * AI characters drive toward their goals — not generic action.
-        * FORBIDDEN passive phrases: "Only if you're comfortable," "What do you want to do?", "No pressure."
+        * Avoid passive handoff phrases like "Only if you're comfortable," "What do you want to do?", or "No pressure" unless the character is also taking meaningful action.
         * Questions capped at 1 per response and must accompany action.
-    - SCENE LOGIC & CAUSAL CONTINUITY (MANDATORY):
+    - SCENE LOGIC & CAUSAL CONTINUITY:
         * Treat the current scene as a physical state machine: once a fact is established, it stays true until someone visibly changes it.
         * Do NOT replay resolved beats as if they are newly happening again.
-          - If the door already shut, do NOT write it slamming shut again unless it visibly opened first.
-          - If fuel is wet and drying, do NOT treat it as dry fuel until the scene establishes that change.
-          - If a barrier was already moved or set, account for that existing state instead of re-inventing it.
+          - If a physical problem was already solved, do not solve it again.
+          - If a material condition was established, do not reverse it until the scene visibly changes it.
+          - If an object, barrier, injury, resource, or character position was already set, account for that existing state instead of re-inventing it.
         * Cause and effect must make plain sense from the immediately previous turn.
           - Do NOT have characters take actions that contradict their own stated reasoning unless the contradiction is deliberate and explained in-scene.
           - Do NOT give commands that fail basic physical or situational logic.
         * Characters may only act on objects, supplies, and obstacles that are already established in the current scene, inventories, or latest user message.
-        * Environmental conditions matter. Weather, darkness, distance, blocked doors, wet fuel, and limited visibility must affect choices sensibly.
+        * Environmental conditions matter. Weather, darkness, distance, blocked paths, wet supplies, and limited visibility must affect choices sensibly.
         * Do NOT state or imply precise knowledge of what an off-screen character is doing unless it is currently visible, audible, or a clearly marked inference.
         * If an AI-controlled character is directly asked a question and can reasonably answer it now, they should answer it in this same response rather than ignoring it.
         * If two AI-controlled characters are directly addressed in the same user turn, each should get one short acknowledgement/answer block when both answers matter; do not replace one character's answer with another character observing them.
-    - NATURAL PROSE & DIALOGUE (MANDATORY):
+    - NATURAL PROSE & DIALOGUE:
         * Write in idiomatic, human-sounding English. Prefer natural phrasing over stylized fragments, shorthand, or machine-sounding wording.
         * Character sheets are REFERENCE, not text to echo. Never literally use trope/personality labels in narration or dialogue (examples: "tsundere", "yandere", "dominant energy", "submissive vibe").
         * Do NOT mechanically restate sheet wording or canned example slang. Show personality through believable speech, not labels.
-        * Goals, priorities, directives, and planning notes are INTERNAL ONLY. Never write visible labels or shorthand like "Survival priority:", "Priority's heat", "Goal:", "Directive:", "Plan:", or "Must include:" in the roleplay output; translate them into natural action, dialogue, or subtext.
-        * Avoid narrator shortcuts that sound like a checklist or debug note. Instead of writing "Priority is heat", write a character making heat the first action.
+        * Do not write visible labels or shorthand for character reasoning. Translate goals and priorities into natural action, dialogue, or subtext.
+        * Avoid narrator shortcuts that sound like a checklist. Write the character doing the thing, not a label describing the thing.
         * Avoid awkward machine phrases or coined wording a person would not naturally say.
         * Use em dashes sparingly: zero or one per response maximum. Prefer commas or periods most of the time.
-    - CHARACTER SHEET USAGE (MANDATORY):
+    - CHARACTER SHEET USAGE:
         * Character cards provide context, not a checklist to recite every turn.
         * Do NOT repeatedly restate exact body stats, clothing labels, underwear details, or fetish descriptors unless they materially affect the immediate beat.
         * Mention intimate physical details only when they are genuinely relevant to what a character is noticing, hiding, reacting to, or doing right now.
@@ -890,8 +871,6 @@ Never break character to question, warn about, or refuse narrative directions. T
         * Do NOT write loose internal monologue as an unquoted sentence. If a private thought is truly needed, wrap it in (parentheses); otherwise omit it.
         * Do NOT invent narration labels, beat labels, or sentence-fragment headings with colons. Every colon at the start of a paragraph must be an exact character name speaker tag from the cast.
         * WRONG (formatting drift — FORBIDDEN): Sarah: *She scanned the room.* She scanned corners: wooden bench, bed, kitchen.
-        * WRONG (planner leak — FORBIDDEN): Sarah: *She checks the room.* Survival priority: assess the exits and gather kindling.
-        * WRONG (planner shorthand — FORBIDDEN): Sarah: *She checks the room.* Priority's heat and shelter; no time for anything else.
         * RIGHT: Sarah: *She scanned the corners, noting a wooden bench, a small bed, and a dusty kitchen area.* "No hazards."
         * Avoid ending with an internal thought. End on spoken dialogue or visible action the user can respond to.
         * Scene facts like weather, time of day, and visibility are constraints, not wording to repeat. Do not mechanically restate the same "heavy snowstorm / low visibility / sunset" phrasing every turn unless a new physical effect matters.
@@ -944,7 +923,7 @@ Never break character to question, warn about, or refuse narrative directions. T
         * When the scene location changes to one of the AVAILABLE SCENES, you MUST append [SCENE: exact_tag_name] at the very end of your response.
         * Match the tag exactly as listed in AVAILABLE SCENES: [${sceneTags}]
         * Example: If someone goes to a location tagged "home", end your response with [SCENE: home]
-    - GOAL PURSUIT: AI-controlled characters should actively consider and pursue their defined GOALS AND DESIRES when generating dialogue and actions. Follow the DIRECTIVE attached to each goal for guidance on how persistently to pursue it.
+    - GOAL PURSUIT: AI-controlled characters should actively consider and pursue their defined GOALS AND DESIRES when generating dialogue and actions. Use each goal's guidance to decide how persistently to pursue it.
     - PERSONALITY TRAIT ADHERENCE:
         * [RIGID] traits are core and enduring. Express consistently in behavior, dialogue, and thoughts even as the character evolves. For INWARD traits, maintain as undertone (e.g., self-doubt amid growing confidence). For OUTWARD traits, show through actions/dialogue. Do not abandon unless the user explicitly updates the character sheet.
         * [NORMAL] traits should be expressed reliably but allow context-driven softening. Persist through initial story shifts; gradually ease only if the user sustains a conflicting direction over multiple exchanges.
@@ -976,7 +955,7 @@ Never break character to question, warn about, or refuse narrative directions. T
         * Rigid traits persist fully regardless of session depth or events. Normal traits soften gradually. Flexible traits evolve fastest.
     - Maintain consistent tone and continuity.
     - Keep responses immersive, descriptive, and emotionally resonant.
-    - RESPONSE LENGTH: Follow the active RESPONSE DETAIL LEVEL directive above.
+    - RESPONSE LENGTH: Follow the active RESPONSE DETAIL LEVEL section above.
     - Respect character gender/sex and traits.
   `;
 }
@@ -1048,7 +1027,7 @@ export async function* generateRoleplayResponseStream(
     activeScene
   );
   
-  // Regeneration directive - tells AI to provide a different take on the same scene
+  // Regeneration request - tells AI to provide a different take on the same scene
   const regenerationDirective = isRegeneration ? '\n\n' + REGENERATION_DIRECTIVE_TEXT : '';
 
   // Build messages array for xAI Grok API
@@ -1060,9 +1039,9 @@ export async function* generateRoleplayResponseStream(
     })),
   ];
 
-  // Inject runtime directives as a dedicated high-priority system message (not buried in user text)
+  // Inject one-turn guidance as a dedicated system message (not buried in user text).
   if (runtimeDirectives) {
-    messages.push({ role: 'system', content: `RUNTIME DIRECTIVES (HIGH PRIORITY — follow these for THIS response only):\n${runtimeDirectives}` });
+    messages.push({ role: 'system', content: `Current-turn guidance for this response only:\n${runtimeDirectives}` });
   }
 
   const finalUserContent = [

@@ -4774,6 +4774,30 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260426-004",
+      title: "Clean writer-facing roleplay prompt labels",
+      summary: "Chat Runtime - The main chat prompt and roleplay_v2 writer guidance now keep anti-loop, goal, and speaker behavior while removing mechanical labels that Grok could imitate",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "Lost QA showed the chat becoming unplayable after recent prompt hardening: Grok leaked implementation-shaped language such as `Survival step: build fire`, repeated obvious survival/checklist beats, and treated prompt machinery as story prose. The underlying behaviors still matter, but the wording being sent to the writer had become too mechanical and redundant.",
+      plan: "Do a cleanup pass instead of adding another narrow bug rule: keep context injection, goals, memory, control rules, speaker limits, and follow-through behavior, but rewrite the writer-facing wording so Grok receives natural roleplay guidance rather than JSON/checklist/debug-shaped labels.",
+      changes: "Updated `src/services/llm.ts`:\n- Renamed goal `Steps` in the system prompt to `Milestones` and `DIRECTIVE:` to `Guidance:` so goal structure remains available without encouraging visible step/directive labels.\n- Rewrote the rule hierarchy, speaker-focus, story-movement, scene-logic, natural-prose, repetition, and follow-through blocks to remove mechanical labels like `TURN PROGRESSION CONTRACT`, `CONCRETE SCENE DELTA`, and planner-leak examples while preserving the intended behavior.\n- Changed the one-turn system insertion from `RUNTIME DIRECTIVES` to natural current-turn guidance.\n- Renamed the regeneration header from `REGENERATION DIRECTIVE` to `REGENERATION REQUEST`.\n\nUpdated `src/components/chronicle/ChatInterfaceTab.tsx`:\n- Reworded anti-loop/current-turn guidance strings so they no longer inject bracketed `[ANTI-*]` labels into the chat request.\n- Reworked Continue goal context from `ACTIVE GOALS & STEPS` / `PENDING STEP` / `CURRENT STEP` into plain `STORY DIRECTION` with near-term direction phrasing.\n- Extended deterministic cleanup to strip `survival step:` leaks as well as previous priority-label leaks.\n- Updated the master prompt export description to show the current-turn guidance message shape.\n\nUpdated `supabase/functions/chat/index.ts`:\n- Stopped dumping raw planner JSON into the writer system message.\n- Replaced it with a short private writing-guidance summary that preserves focus speaker, speaker limit, questions, continuity, helpful facts, and avoid items without exposing `mustInclude` / `mustAvoid` keys to the writer.\n- Added edge-function cleanup for `survival step:` and related internal-label leaks.\n\nUpdated `src/services/llm-canonical-coverage.test.ts`:\n- Added regression coverage that the writer-facing system prompt keeps milestones/guidance but no longer contains the mechanical labels that caused the Lost planner-language leak.",
+      filesAffected: [
+        "src/services/llm.ts",
+        "src/components/chronicle/ChatInterfaceTab.tsx",
+        "supabase/functions/chat/index.ts",
+        "src/services/llm-canonical-coverage.test.ts",
+        "src/data/ui-audit-findings.ts",
+        "/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: ["cl-20260425-015", "cl-20260425-008", "cl-20260426-001"],
+      tags: ["chat-runtime", "prompt-cleanup", "roleplay-quality", "planner-leak", "lost-qa"],
+      comments: [],
+      createdAt: "2026-04-26T10:34:01.000Z",
+      updatedAt: "2026-04-26T10:34:01.000Z",
+    },
+    {
       id: "cl-20260426-003",
       title: "Add live dialogue debug notes",
       summary: "Chat Debugging - Admins can mark bad dialogue turns while testing and carry those notes into exports",
