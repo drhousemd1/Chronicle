@@ -882,6 +882,9 @@ Never break character to question, warn about, or refuse narrative directions. T
         * Do NOT write bare prose after a speaker tag. If it is visible action, body language, or scene narration, wrap it in *asterisks*.
         * Do NOT put one character's quoted dialogue, meaningful choice, movement, compliance, or refusal inside another character's tagged block. If another AI character speaks, answers, obeys/refuses an instruction, changes position, or makes a meaningful choice, give them their own short speaker tag within the speaker cap; if they do not deserve a separate tag, keep them to a tiny non-decisive visible reaction only.
         * Do NOT write loose internal monologue as an unquoted sentence. If a private thought is truly needed, wrap it in (parentheses); otherwise omit it.
+        * Do NOT invent narration labels, beat labels, or sentence-fragment headings with colons. Every colon at the start of a paragraph must be an exact character name speaker tag from the cast.
+        * WRONG (formatting drift — FORBIDDEN): Sarah: *She scanned the room.* She scanned corners: wooden bench, bed, kitchen.
+        * RIGHT: Sarah: *She scanned the corners, noting a wooden bench, a small bed, and a dusty kitchen area.* "No hazards."
         * Avoid ending with an internal thought. End on spoken dialogue or visible action the user can respond to.
         * Scene facts like weather, time of day, and visibility are constraints, not wording to repeat. Do not mechanically restate the same "heavy snowstorm / low visibility / sunset" phrasing every turn unless a new physical effect matters.
     ${narrativeBehaviorRules}

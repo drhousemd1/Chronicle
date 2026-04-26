@@ -23,4 +23,19 @@ describe("parseMessageSegments", () => {
       },
     ]);
   });
+
+  it("does not treat pronoun-led action fragments as speaker tags", () => {
+    const segments = parseMessageSegments("Sarah: *She checks the hearth.*\n\nShe scanned corners: wooden bench, small bed, dusty kitchen.");
+
+    expect(segments).toEqual([
+      {
+        speakerName: "Sarah",
+        content: "*She checks the hearth.*",
+      },
+      {
+        speakerName: null,
+        content: "She scanned corners: wooden bench, small bed, dusty kitchen.",
+      },
+    ]);
+  });
 });

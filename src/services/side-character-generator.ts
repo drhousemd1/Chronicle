@@ -114,11 +114,39 @@ const SPEAKER_TAG_RESERVED_WORDS = new Set([
   'narrator',
 ]);
 
+const SPEAKER_TAG_FORBIDDEN_FIRST_WORDS = new Set([
+  'a',
+  'an',
+  'the',
+  'he',
+  'she',
+  'they',
+  'it',
+  'we',
+  'you',
+  'i',
+  'his',
+  'her',
+  'their',
+  'its',
+  'our',
+  'your',
+  'this',
+  'that',
+  'these',
+  'those',
+  'there',
+  'here',
+]);
+
 function isLikelySpeakerTagName(name: string): boolean {
-  const normalized = name.trim().toLowerCase();
+  const trimmed = name.trim();
+  const normalized = trimmed.toLowerCase();
   if (!normalized) return false;
   if (SPEAKER_TAG_RESERVED_WORDS.has(normalized)) return false;
-  return /^[a-z][a-z\s'-]{0,29}$/i.test(name.trim());
+  const firstWord = normalized.split(/\s+/)[0];
+  if (SPEAKER_TAG_FORBIDDEN_FIRST_WORDS.has(firstWord)) return false;
+  return /^[a-z][a-z\s'-]{0,29}$/i.test(trimmed);
 }
 
 /**

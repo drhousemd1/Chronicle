@@ -4774,6 +4774,29 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260425-012",
+      title: "Block fake colon labels in roleplay output",
+      summary: "Chat Runtime - Formatting guidance and speaker parsing now guard against narration fragments like 'She scanned corners:' being treated as speaker tags or side characters",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "Lost QA produced a Sarah response with a fake colon subheading for room scanning, which broke the required action formatting and caused the UI to treat the phrase as a side-character style speaker label.",
+      plan: "Fix the root prompt issue and add a parser guard: actions and environmental scanning must stay inside asterisks, every paragraph-start colon label must be an exact cast speaker name, and pronoun-led labels are rejected as speaker tags so UI rendering does not amplify a model formatting slip.",
+      changes: "Updated `src/services/llm.ts`:\n- Added explicit roleplay formatting guidance forbidding narration labels, beat labels, and sentence-fragment headings with colons.\n- Added a wrong/right example showing room scanning inside asterisks instead of a fake colon heading.\n\nUpdated `supabase/functions/chat/index.ts`:\n- Mirrored the no-colon-subheading rule in planner `mustAvoid` and writer `formattingNotes`.\n- Reinforced that scanning, movement, and environmental description stay inside asterisks.\n\nUpdated `src/services/side-character-generator.ts`:\n- Added parser-side rejection for pronoun/determiner-led speaker labels like `She scanned corners:` so they do not render as bogus side characters.\n\nUpdated `/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md`:\n- Logged the Lost cabin formatting finding and the action-formatting decision.",
+      filesAffected: [
+        "src/services/llm.ts",
+        "supabase/functions/chat/index.ts",
+        "src/services/side-character-generator.ts",
+        "src/data/ui-audit-findings.ts",
+        "/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["chat-runtime", "roleplay-format", "speaker-parser", "side-characters", "lost-qa"],
+      comments: [],
+      createdAt: "2026-04-26T03:20:45.000Z",
+      updatedAt: "2026-04-26T03:20:45.000Z",
+    },
+    {
       id: "cl-20260425-011",
       title: "Prioritize directly addressed AI characters",
       summary: "Chat Runtime - Roleplay guidance now keeps the anti-ping-pong speaker cap while requiring directly addressed AI characters to acknowledge when their answer matters",
