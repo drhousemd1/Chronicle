@@ -4774,6 +4774,28 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260425-013",
+      title: "Reject dialogue phrases as speaker labels",
+      summary: "Chat Rendering - Speaker parsing now rejects phrase-like colon labels such as 'Fingers and toes:' while preserving title-cased multi-word character names",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "Lost QA showed a user dialogue phrase with a colon being split into a fake speaker label, rendering `Fingers and toes:` as if it were a character instead of dialogue text.",
+      plan: "Tighten speaker-tag validation so colon labels with conjunctions or connector words are treated as normal content, while legitimate title-cased multi-word names like `Mary Jane:` remain valid speaker tags.",
+      changes: "Updated `src/services/side-character-generator.ts`:\n- Added forbidden connector words for speaker labels, including `and`, `or`, `of`, `to`, and related phrase words.\n- Added a title-case requirement for multi-word speaker labels so phrase fragments do not look like character names.\n\nUpdated `src/services/side-character-generator.test.ts`:\n- Added regression coverage for `James: \"Fingers and toes: numb, burning, or normal?\"` staying inside James's segment.\n- Added coverage that valid title-cased multi-word names such as `Mary Jane:` still parse correctly.\n\nUpdated `/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md`:\n- Logged the dialogue-colon parser finding in plain English.",
+      filesAffected: [
+        "src/services/side-character-generator.ts",
+        "src/services/side-character-generator.test.ts",
+        "src/data/ui-audit-findings.ts",
+        "/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["chat-rendering", "speaker-parser", "dialogue-format", "lost-qa"],
+      comments: [],
+      createdAt: "2026-04-26T03:32:21.000Z",
+      updatedAt: "2026-04-26T03:32:21.000Z",
+    },
+    {
       id: "cl-20260425-012",
       title: "Block fake colon labels in roleplay output",
       summary: "Chat Runtime - Formatting guidance and speaker parsing now guard against narration fragments like 'She scanned corners:' being treated as speaker tags or side characters",

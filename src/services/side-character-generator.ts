@@ -139,13 +139,38 @@ const SPEAKER_TAG_FORBIDDEN_FIRST_WORDS = new Set([
   'here',
 ]);
 
+const SPEAKER_TAG_FORBIDDEN_WORDS = new Set([
+  'and',
+  'or',
+  'but',
+  'nor',
+  'so',
+  'yet',
+  'for',
+  'to',
+  'of',
+  'in',
+  'on',
+  'at',
+  'by',
+  'with',
+  'from',
+  'into',
+  'onto',
+  'through',
+]);
+
 function isLikelySpeakerTagName(name: string): boolean {
   const trimmed = name.trim();
   const normalized = trimmed.toLowerCase();
   if (!normalized) return false;
   if (SPEAKER_TAG_RESERVED_WORDS.has(normalized)) return false;
-  const firstWord = normalized.split(/\s+/)[0];
+  const words = trimmed.split(/\s+/);
+  const normalizedWords = words.map((word) => word.toLowerCase());
+  const firstWord = normalizedWords[0];
   if (SPEAKER_TAG_FORBIDDEN_FIRST_WORDS.has(firstWord)) return false;
+  if (normalizedWords.some((word) => SPEAKER_TAG_FORBIDDEN_WORDS.has(word))) return false;
+  if (words.length > 1 && !words.every((word) => /^[A-Z][a-zA-Z'-]*$/.test(word))) return false;
   return /^[a-z][a-z\s'-]{0,29}$/i.test(trimmed);
 }
 

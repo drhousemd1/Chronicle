@@ -38,4 +38,26 @@ describe("parseMessageSegments", () => {
       },
     ]);
   });
+
+  it("does not treat dialogue fragments with conjunctions as speaker tags", () => {
+    const segments = parseMessageSegments('James: "Fingers and toes: numb, burning, or normal?"');
+
+    expect(segments).toEqual([
+      {
+        speakerName: "James",
+        content: '"Fingers and toes: numb, burning, or normal?"',
+      },
+    ]);
+  });
+
+  it("still allows title-cased multi-word character names", () => {
+    const segments = parseMessageSegments("Mary Jane: \"Stay close.\"");
+
+    expect(segments).toEqual([
+      {
+        speakerName: "Mary Jane",
+        content: '"Stay close."',
+      },
+    ]);
+  });
 });
