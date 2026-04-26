@@ -4,6 +4,26 @@ function joinOrFallback(values: string[], fallback: string): string {
   return values.length ? values.join('; ') : fallback;
 }
 
+function formatCharacterSceneStates(
+  states: NonNullable<ChatDebugTrace['roleplayContext']['characterSceneStates']>,
+): string {
+  const rows = states
+    .filter((state) => state.name?.trim())
+    .map((state) => {
+      const parts = [
+        state.controlledBy ? `control=${state.controlledBy}` : '',
+        state.characterRole ? `role=${state.characterRole}` : '',
+        state.location ? `location=${state.location}` : '',
+        state.scenePosition ? `scene position=${state.scenePosition}` : '',
+        state.currentMood ? `mood=${state.currentMood}` : '',
+      ].filter(Boolean);
+
+      return `${state.name}: ${parts.length ? parts.join('; ') : 'no stored scene state'}`;
+    });
+
+  return rows.length ? rows.join('; ') : '(none)';
+}
+
 function formatDurationMs(value: number | null | undefined): string {
   if (typeof value !== 'number' || !Number.isFinite(value)) return 'n/a';
   if (value < 1000) return `${Math.round(value)}ms`;
@@ -79,6 +99,7 @@ export function formatChatDebugTraceForSessionLog(
   lines.push(`- Active Scene Tags: ${joinOrFallback(trace.roleplayContext.activeSceneTags, '(none)')}`);
   lines.push(`- AI characters: ${joinOrFallback(trace.roleplayContext.aiCharacterNames, '(none)')}`);
   lines.push(`- User characters: ${joinOrFallback(trace.roleplayContext.userCharacterNames, '(none)')}`);
+  lines.push(`- Character scene states: ${formatCharacterSceneStates(trace.roleplayContext.characterSceneStates ?? [])}`);
   lines.push('');
 
   lines.push('**Planner**');

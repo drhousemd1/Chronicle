@@ -17,6 +17,15 @@ type Message = {
   content: string;
 };
 
+type CharacterSceneState = {
+  name: string;
+  controlledBy?: string;
+  characterRole?: string;
+  location?: string;
+  scenePosition?: string;
+  currentMood?: string;
+};
+
 type RoleplayContext = {
   conversationId?: string;
   currentDay?: number;
@@ -25,6 +34,7 @@ type RoleplayContext = {
   activeSceneTags?: string[];
   aiCharacterNames?: string[];
   userCharacterNames?: string[];
+  characterSceneStates?: CharacterSceneState[];
 };
 
 type ChatRequest = {
@@ -83,6 +93,7 @@ type RoleplayDebugTrace = {
     activeSceneTags: string[];
     aiCharacterNames: string[];
     userCharacterNames: string[];
+    characterSceneStates: CharacterSceneState[];
   };
   latestUserTurnPreview: string;
   recentWindowCount: number;
@@ -330,8 +341,27 @@ function extractQuestionSentences(text: string, maxItems = 3): string[] {
     .slice(0, maxItems);
 }
 
+function formatCharacterSceneState(state: CharacterSceneState): string {
+  const parts = [
+    state.controlledBy ? `control=${state.controlledBy}` : null,
+    state.characterRole ? `role=${state.characterRole}` : null,
+    state.location ? `location=${state.location}` : null,
+    state.scenePosition ? `scene position=${state.scenePosition}` : null,
+    state.currentMood ? `mood=${state.currentMood}` : null,
+  ].filter(Boolean);
+  return `${state.name}: ${parts.length ? parts.join('; ') : 'no stored scene state'}`;
+}
+
+function formatCharacterSceneStates(states: CharacterSceneState[] | undefined): string[] {
+  return (states ?? [])
+    .filter((state) => state?.name?.trim())
+    .map(formatCharacterSceneState);
+}
+
 function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undefined, lastUser: string): PlannerPlan {
   const aiNames = uniqueNonEmpty(ctx?.aiCharacterNames ?? []);
+  const userNames = uniqueNonEmpty(ctx?.userCharacterNames ?? []);
+  const characterSceneStates = formatCharacterSceneStates(ctx?.characterSceneStates);
   const previousAssistant = [...messages].reverse().find((message) => message.role === 'assistant')?.content ?? '';
   const previousSpeakers = extractSpeakerBlockNames(previousAssistant).filter((name) => (
     aiNames.some((aiName) => aiName.toLowerCase() === name.toLowerCase())
@@ -352,6 +382,7 @@ function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undef
     ctx?.currentDay != null ? `Current day: ${ctx.currentDay}` : null,
     ctx?.currentTimeOfDay ? `Current time of day: ${ctx.currentTimeOfDay}` : null,
     ctx?.activeSceneTags?.length ? `Scene tags: ${ctx.activeSceneTags.join(', ')}` : null,
+    ...characterSceneStates,
   ]);
 
   return {
@@ -369,6 +400,7 @@ function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undef
     mustAvoid: [
       'Do not speak for user-controlled characters.',
       'Do not complete an action for a user-controlled character after an AI character gives them a command; stop before the user character acts unless the latest user turn already wrote that action.',
+      userNames.length ? `Do not resolve doors, exits, barriers, vehicles, beds, restraints, danger, or shelter as if these user-controlled characters moved unless the latest user turn wrote that movement: ${userNames.join(', ')}.` : null,
       'Do not force every present AI character to speak.',
       'Do not add filler second-speaker dialogue.',
       'Do not stall with consent, confirmation, or waiting loops.',
@@ -379,10 +411,11 @@ function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undef
       'Do not invent narration labels, beat labels, or sentence-fragment headings with colons; every paragraph-start colon label must be an exact cast character name.',
       'Do not expose internal reasoning labels or checklist shorthand in story prose.',
       'Do not open with the same weather, time-of-day, or visibility recap used in recent turns.',
-    ],
+    ].filter((item): item is string => Boolean(item)),
     continuityNotes: [
       'Latest user turn has priority over older excerpts.',
       'Preserve the current physical scene state and line of sight.',
+      'Preserve user-controlled character micro-position. Broad location labels do not override the latest doorway/inside/outside/nearby/stuck/blocked status.',
       'Use prior memory as continuity support, not as a reason to repeat resolved beats.',
     ],
     sceneStateFacts,
@@ -432,6 +465,7 @@ function buildRoleplayContextSummary(ctx: RoleplayContext | undefined): Roleplay
     activeSceneTags: [...(ctx?.activeSceneTags ?? [])],
     aiCharacterNames: [...(ctx?.aiCharacterNames ?? [])],
     userCharacterNames: [...(ctx?.userCharacterNames ?? [])],
+    characterSceneStates: [...(ctx?.characterSceneStates ?? [])],
   };
 }
 
@@ -836,6 +870,7 @@ async function runRoleplayV2(
     ctx?.activeSceneTags?.length ? `Scene tags: ${ctx.activeSceneTags.join(', ')}` : '',
     ctx?.aiCharacterNames?.length ? `AI characters: ${ctx.aiCharacterNames.join(', ')}` : '',
     ctx?.userCharacterNames?.length ? `User characters: ${ctx.userCharacterNames.join(', ')}` : '',
+    ctx?.characterSceneStates?.length ? `Character scene states:\n${formatCharacterSceneStates(ctx.characterSceneStates).join('\n')}` : '',
   ].filter(Boolean).join('\n');
 
   const plannerSystem: Message = {
@@ -867,7 +902,7 @@ Rules:
 - mustInclude: short bullet phrases (facts, callbacks, named objects) the writer must respect.
 - mustAvoid: anti-patterns for this turn, especially off-screen perception, contradictions, invented props, trope labels, repeated resolved beats, robotic wording, needless second-speaker filler, and repeated confirmation loops.
 - continuityNotes: facts from earlier turns the writer must preserve.
-- sceneStateFacts: current physical-state facts that remain true right now. Treat these like a state machine snapshot.
+- sceneStateFacts: current physical-state facts that remain true right now. Treat these like a state machine snapshot. Include character scene positions, especially user-controlled character inside/outside/near/behind/stuck/blocked status when relevant.
 - formattingNotes: tone/length/format hints (e.g. "two paragraphs, no bullet lists").
 
 ${ctxLines ? `Context:\n${ctxLines}\n` : ''}`,
@@ -961,6 +996,7 @@ ${formatGuidanceList(plan.mustAvoid, 'Do not speak for user-controlled character
 
 Style and format:
 - Keep older excerpts subordinate to the latest user turn.
+- Preserve user-controlled character scene position. Do not close, secure, leave through, lock, or resolve a threshold/barrier/shelter/vehicle/bed/restraint/danger transition as if a user-controlled character moved unless the latest user turn wrote that movement.
 - Do not narrate user-controlled characters completing requested actions. AI characters may command or prepare, but the user must author the user character's actual execution.
 - Write in the selected character's real voice, not as a checklist.
 - Use the app's roleplay format: CharacterName: *visible action/narration.* "spoken dialogue"

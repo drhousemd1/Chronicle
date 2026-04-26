@@ -1077,6 +1077,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const getExtractionDecision = (userText: string, aiText: string): { shouldExtract: boolean; reason: string } => {
     const combined = `${userText}\n${aiText}`;
     const locationChangePattern = /\b(enters?|entered|entering|leaves?|left|leaving|go(?:es|ing|ne)? to|arrives?|arrived|arriving|moves?|moved|moving to|heads?|headed|heading to|walks? into)\b/i;
+    const scenePositionPattern = /\b(inside|outside|door(?:way)?|threshold|entrance|exit|gap|squeez(?:e|es|ed|ing)|stuck|blocked|behind|ahead|near|beside|through|in front of|next to|under|over|against|pinned|trapped)\b/i;
     const clothingChangePattern = /\b(puts? on|takes? off|took off|removes?|removed|removing|unzips?|unzipped|zips? up|pulls? down|pulled down|lifts?|lifted|strips?|stripped|changes? into|undresses?)\b/i;
     const relationshipShiftPattern = /\b(i love you|we(?:'re| are) (dating|together|exclusive)|be my (boyfriend|girlfriend|partner)|broke up|break up|it'?s over|my ex|your ex|engaged|marry me|confess(?:ed)? feelings?|admit(?:ted)? feelings?)\b/i;
     const relationshipDynamicPattern = /\b(flirt(?:ed|ing)?|jealous|jealousy|possessive|possessiveness|caught feelings|admit(?:ted)? attraction|confess(?:ed)? attraction)\b/i;
@@ -1085,6 +1086,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
     if (locationChangePattern.test(combined)) {
       return { shouldExtract: true, reason: 'hard_event:location' };
+    }
+    if (scenePositionPattern.test(combined)) {
+      return { shouldExtract: true, reason: 'hard_event:scene_position' };
     }
     if (clothingChangePattern.test(combined)) {
       return { shouldExtract: true, reason: 'hard_event:clothing' };
@@ -2925,7 +2929,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   }
 
   const isAllowedExtractionField = (field: string): boolean => {
-    if (field === 'location' || field === 'currentMood' || field === 'nicknames') return true;
+    if (field === 'location' || field === 'scenePosition' || field === 'currentMood' || field === 'nicknames') return true;
     if (field.startsWith('goals.')) return true;
     if (field.startsWith('sections.')) return true;
     if (!field.includes('.')) return false;
@@ -3137,6 +3141,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           currentlyWearing: effective.currentlyWearing,
           preferredClothing: effective.preferredClothing,
           location: effective.location,
+          scenePosition: effective.scenePosition || '',
           currentMood: effective.currentMood,
           goals: (effective.goals || []).map(g => ({
             title: g.title,
@@ -3180,6 +3185,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         currentlyWearing: sc.currentlyWearing,
         preferredClothing: sc.preferredClothing,
         location: sc.location,
+        scenePosition: sc.scenePosition || '',
         currentMood: sc.currentMood,
         background: sc.background,
         personality: sc.personality,
@@ -3315,6 +3321,16 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     return forbiddenPattern.test(limited) ? '' : limited;
   };
 
+  const sanitizeScenePositionValue = (raw: string): string => {
+    const cleaned = raw
+      .replace(/[*"()[\]{}]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!cleaned) return '';
+
+    return cleaned.split(/\s+/).slice(0, 18).join(' ');
+  };
+
   const cloneData = <T,>(value: T): T => {
     if (typeof structuredClone === 'function') return structuredClone(value);
     return JSON.parse(JSON.stringify(value));
@@ -3359,6 +3375,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     nicknames: character.nicknames,
     previousNames: cloneData(character.previousNames || []),
     location: character.location,
+    scenePosition: character.scenePosition,
     currentMood: character.currentMood,
     physicalAppearance: cloneData(character.physicalAppearance || defaultPhysicalAppearance),
     currentlyWearing: cloneData(character.currentlyWearing || defaultCurrentlyWearing),
@@ -3383,6 +3400,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     sexType: character.sexType,
     sexualOrientation: character.sexualOrientation,
     location: character.location,
+    scenePosition: character.scenePosition,
     currentMood: character.currentMood,
     controlledBy: character.controlledBy,
     characterRole: character.characterRole,
@@ -3608,6 +3626,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       if (field === 'currentMood') {
         const sanitizedMood = sanitizeMoodValue(value);
         if (sanitizedMood) nextState.currentMood = sanitizedMood;
+      } else if (field === 'scenePosition') {
+        const sanitizedScenePosition = sanitizeScenePositionValue(value);
+        if (sanitizedScenePosition) nextState.scenePosition = sanitizedScenePosition;
       } else {
         (nextState as any)[field] = value;
       }
@@ -3738,6 +3759,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         const sanitizedMood = sanitizeMoodValue(value);
         if (sanitizedMood) {
           nextState.currentMood = sanitizedMood;
+        }
+        continue;
+      }
+
+      if (field === 'scenePosition') {
+        const sanitizedScenePosition = sanitizeScenePositionValue(value);
+        if (sanitizedScenePosition) {
+          nextState.scenePosition = sanitizedScenePosition;
         }
         continue;
       }

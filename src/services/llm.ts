@@ -226,6 +226,7 @@ export function getSystemInstruction(
     const nicknameInfo = text(c?.nicknames) ? `\nNICKNAMES: ${text(c.nicknames)}` : '';
     const orientationInfo = text(c?.sexualOrientation) ? `\nSEXUAL ORIENTATION: ${text(c.sexualOrientation)}` : '';
     const locationInfo = text(c?.location) ? `\nLOCATION: ${text(c.location)}` : '';
+    const scenePositionInfo = text(c?.scenePosition) ? `\nSCENE POSITION: ${text(c.scenePosition)}` : '';
     const moodInfo = text(c?.currentMood) ? `\nMOOD: ${text(c.currentMood)}` : '';
     const goalsInfo = characterGoalsContext(c);
     const personalityInfo = formatPersonalityContext(c);
@@ -255,7 +256,7 @@ export function getSystemInstruction(
 
     return `CHARACTER: ${text(c?.name) || 'Unnamed'} (${text(c?.sexType) || 'Unknown'})${ageInfo}${nicknameInfo}${orientationInfo}
 ROLE: ${text(c?.characterRole) || 'Unknown'}
-CONTROL: ${text(c?.controlledBy) || 'Unknown'}${roleDescriptionInfo}${locationInfo}${moodInfo}${personalityInfo}${personalityFallbackInfo}${goalsInfo}
+CONTROL: ${text(c?.controlledBy) || 'Unknown'}${roleDescriptionInfo}${locationInfo}${scenePositionInfo}${moodInfo}${personalityInfo}${personalityFallbackInfo}${goalsInfo}
 TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', physicalRows)}${formatSectionBlock('CURRENTLY WEARING', wearingRows)}${formatSectionBlock('PREFERRED CLOTHING', preferredRows)}${formatSectionBlock('BACKGROUND', backgroundRows)}${formatSectionBlock('TONE', toneRows)}${formatSectionBlock('KEY LIFE EVENTS', keyLifeRows)}${formatSectionBlock('RELATIONSHIPS', relationshipRows)}${formatSectionBlock('SECRETS', secretRows)}${formatSectionBlock('FEARS', fearRows)}${customTraits}`;
   };
 
@@ -393,6 +394,23 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
     .filter((character) => !aiCharacters.includes(character) && !userCharacters.includes(character))
     .map(buildCharacterProfile)
     .join('\n\n');
+
+  const characterSceneStateContext = (() => {
+    const rows = allPlayableCharacters
+      .map((c: any) => {
+        const name = text(c?.name);
+        if (!name) return '';
+        const control = text(c?.controlledBy) || 'Unknown';
+        const role = text(c?.characterRole) || 'Unknown';
+        const location = text(c?.location) || 'not set';
+        const scenePosition = text(c?.scenePosition) || 'not set';
+        const mood = text(c?.currentMood) || 'not set';
+        return `- ${name} [${control}; ${role}] location=${location}; scene position=${scenePosition}; mood=${mood}`;
+      })
+      .filter(Boolean)
+      .join('\n');
+    return rows ? `\nCURRENT CHARACTER SCENE STATE:\n${rows}` : '';
+  })();
 
   const codexContext = appData.world.entries.map(e => `CODEX [${e.title}]: ${e.body}`).join('\n');
   
@@ -766,6 +784,7 @@ Never break character to question, warn about, or refuse narrative directions. T
     ${characterContext}${userCharacterNames.length > 0 ? `\n    USER-CONTROLLED (DO NOT GENERATE FOR): ${userCharacterNames.join(', ')}` : ''}
     ${userCharacterContext ? `\n\n    USER CHARACTER REFERENCE (READ-ONLY CONTEXT):\n    ${userCharacterContext}` : ''}
     ${sideCharacterContext ? `\n\n    SIDE CHARACTER REFERENCE:\n    ${sideCharacterContext}` : ''}
+    ${characterSceneStateContext}
     
     AVAILABLE SCENES: [${sceneTags}]
     ${activeSceneContext}
@@ -812,6 +831,9 @@ Never break character to question, warn about, or refuse narrative directions. T
         * Questions capped at 1 per response and must accompany action.
     - SCENE LOGIC & CAUSAL CONTINUITY:
         * Treat the current scene as a physical state machine: once a fact is established, it stays true until someone visibly changes it.
+        * LOCATION is the broad place. SCENE POSITION and the latest turn are the immediate physical truth.
+          - If LOCATION says "cabin" but SCENE POSITION or the latest turn says a character is outside the cabin door, treat them as outside until the user or an AI-controlled character visibly changes that.
+          - Latest user-authored physical placement overrides older card or memory state.
         * Do NOT replay resolved beats as if they are newly happening again.
           - If a physical problem was already solved, do not solve it again.
           - If a material condition was established, do not reverse it until the scene visibly changes it.
@@ -822,6 +844,11 @@ Never break character to question, warn about, or refuse narrative directions. T
         * Characters may only act on objects, supplies, and obstacles that are already established in the current scene, inventories, or latest user message.
         * Environmental conditions matter. Weather, darkness, distance, blocked paths, wet supplies, and limited visibility must affect choices sensibly.
         * Do NOT state or imply precise knowledge of what an off-screen character is doing unless it is currently visible, audible, or a clearly marked inference.
+        * USER CHARACTER POSITION LOCK:
+          - Track where user-controlled characters physically are before resolving doors, thresholds, vehicles, beds, restraints, exits, barriers, danger, or shelter.
+          - AI characters may call to, guide, warn, grab, brace, wait for, or react around a user-controlled character.
+          - Do NOT close, secure, leave through, enter past, block, lock, escape, or otherwise resolve a physical transition in a way that assumes a user-controlled character moved unless the user already wrote that movement.
+          - If a user-controlled character is still outside, behind, stuck, mid-action, or not yet through a threshold, the AI response must account for that instead of treating them as already safe or inside.
         * If an AI-controlled character is directly asked a question and can reasonably answer it now, they should answer it in this same response rather than ignoring it.
         * If two AI-controlled characters are directly addressed in the same user turn, each should get one short acknowledgement/answer block when both answers matter; do not replace one character's answer with another character observing them.
     - NATURAL PROSE & DIALOGUE:
@@ -1144,6 +1171,14 @@ export async function* generateRoleplayResponseStream(
   const userCharacterNames = allPlayableCharacters
     .filter((character) => character.controlledBy === 'User')
     .map((character) => character.name);
+  const characterSceneStates = allPlayableCharacters.map((character) => ({
+    name: character.name,
+    controlledBy: character.controlledBy,
+    characterRole: character.characterRole,
+    location: character.location || '',
+    scenePosition: character.scenePosition || '',
+    currentMood: character.currentMood || '',
+  }));
 
   const requestController = new AbortController();
   const requestTimeout = window.setTimeout(() => {
@@ -1177,6 +1212,7 @@ export async function* generateRoleplayResponseStream(
           activeSceneTags: activeScene?.tags || [],
           aiCharacterNames,
           userCharacterNames,
+          characterSceneStates,
         },
       })
     });

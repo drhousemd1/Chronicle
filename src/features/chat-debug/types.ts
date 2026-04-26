@@ -39,6 +39,15 @@ export type ChatDebugTiming = {
   fallbackMs: number | null;
 };
 
+export type ChatDebugCharacterSceneState = {
+  name: string;
+  controlledBy?: string;
+  characterRole?: string;
+  location?: string;
+  scenePosition?: string;
+  currentMood?: string;
+};
+
 export type ChatDebugTrace = {
   version: 1;
   pipeline: 'roleplay_v2' | 'direct';
@@ -52,6 +61,7 @@ export type ChatDebugTrace = {
     activeSceneTags: string[];
     aiCharacterNames: string[];
     userCharacterNames: string[];
+    characterSceneStates?: ChatDebugCharacterSceneState[];
   };
   latestUserTurnPreview: string;
   recentWindowCount: number;

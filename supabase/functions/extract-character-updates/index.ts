@@ -20,6 +20,7 @@ interface CharacterData {
   currentlyWearing?: Record<string, string>;
   preferredClothing?: Record<string, string>;
   location?: string;
+  scenePosition?: string;
   currentMood?: string;
   goals?: CharacterGoalData[];
   customSections?: Array<{ title: string; items: Array<{ label: string; value: string }> }>;
@@ -53,7 +54,7 @@ function sanitizeCurrentMood(value: string): string {
 }
 
 function isAllowedUpdateField(field: string): boolean {
-  if (field === "location" || field === "currentMood" || field === "nicknames") return true;
+  if (field === "location" || field === "scenePosition" || field === "currentMood" || field === "nicknames") return true;
   if (field.startsWith("goals.")) return true;
   if (field.startsWith("sections.")) return true;
   if (!field.includes(".")) return false;
@@ -311,6 +312,7 @@ function buildCharacterStateBlock(c: CharacterData): string {
   lines.push(`  [VOLATILE - maintain actively]`);
   lines.push(`    Mood: ${c.currentMood || '(not set)'}`);
   lines.push(`    Location: ${c.location || '(not set)'}`);
+  lines.push(`    Scene Position: ${c.scenePosition || '(not set)'}`);
   
   {
     const wearingEntries = c.currentlyWearing ? Object.entries(c.currentlyWearing).filter(([k, v]) => k !== '_extras' && v).map(([k, v]) => `${k}: ${v}`).join(', ') : '';
@@ -455,9 +457,12 @@ PHASE 1 - SCAN FOR NEW INFORMATION (ALL CATEGORIES, EQUAL WEIGHT)
 ═══════════════════════════════════════════════════
 Read the dialogue carefully. For EACH eligible character mentioned or active in the exchange, check ALL of these categories:
 
-A) VOLATILE STATE — mood, location, clothing changes, temporary physical conditions
-   → If a character is actively present and speaking/acting, update mood and location.
+A) VOLATILE STATE — mood, broad location, micro scene position, clothing changes, temporary physical conditions
+   → If a character is actively present and speaking/acting, update mood, location, and scenePosition when they materially changed.
    → Characters NOT mentioned or acting in this exchange should NOT receive updates.
+   → location is the broad place ("abandoned cabin", "kitchen", "downtown coffee shop").
+   → scenePosition is the immediate physical placement within that place ("outside the cabin door", "halfway through the doorway", "inside near the fireplace", "pinned against the wall").
+   → For user-controlled characters, track scenePosition from the user's authored actions and from visible AI reactions, but NEVER assume they completed a movement the user did not write.
 
 B) APPEARANCE CHANGES — new descriptions of hair, clothing, physical traits
 
@@ -670,6 +675,7 @@ HARDCODED FIELDS:
 - secrets._extras (array of {id, label, value})
 - fears._extras (array of {id, label, value})
 - location (current location/place)
+- scenePosition (micro-position inside the current place, max 18 words; examples: "outside the cabin door", "halfway through the doorway", "inside near the fireplace")
 - currentMood (emotional/psychological state ONLY, max 12 words, no physical actions)
 
 GOALS (structured tracking):
@@ -692,6 +698,15 @@ FIELD VOLATILITY RULES
 HIGH VOLATILITY (mood, location, clothing, temporaryConditions):
 - Change frequently, actively track
 - Contextual inference ALLOWED (walks into bar → update location)
+
+SCENE POSITION QUALITY RULES (CRITICAL):
+- scenePosition tracks immediate physical placement, not mood or personality.
+- Update scenePosition when the exchange changes doorway/threshold status, inside/outside status, room position, proximity, restraints, vehicles, beds, hiding places, danger zones, or who is stuck/blocked.
+- Use concise natural phrases, max 18 words.
+- Do NOT put the whole action sequence in scenePosition.
+- CORRECT: "outside the narrow cabin door, waiting to enter"
+- CORRECT: "inside the cabin near the doorway"
+- WRONG: "Shivering and terrified while thinking about the storm"
 
 CURRENT MOOD QUALITY RULES (CRITICAL):
 - currentMood must describe FEELING, not ACTION.
@@ -756,6 +771,7 @@ RESPONSE FORMAT (JSON only):
   "updates": [
     { "character": "CharacterName", "field": "currentMood", "value": "Nervous but excited" },
     { "character": "CharacterName", "field": "location", "value": "Downtown coffee shop" },
+    { "character": "CharacterName", "field": "scenePosition", "value": "standing outside the shop entrance" },
     { "character": "CharacterName", "field": "personality.outwardTraits", "value": "Sarcastic: Deflects emotional vulnerability with sharp wit and dry humor" },
     { "character": "CharacterName", "field": "relationships._extras", "value": "Emma: Close friend and roommate, provides emotional support" },
     { "character": "CharacterName", "field": "goals.Old Goal", "value": "REMOVE" },
@@ -805,7 +821,7 @@ Return ONLY valid JSON. No explanations.`;
         model: modelForRequest,
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Analyze this dialogue and extract only MATERIAL character state deltas. Remember: Phase 2 (review existing state) and Phase 3 (placeholder scan) are MANDATORY. If the exchange does not materially change a field, do NOT emit an update. Mood/location should be updated only when clearly changed. Behavioral patterns across messages should refine existing personality/tone entries, not generate paraphrase duplicates. Use goals.GoalTitle = "REMOVE" only when a goal is clearly obsolete or contradicted.\n\n${combinedText}` }
+          { role: "user", content: `Analyze this dialogue and extract only MATERIAL character state deltas. Remember: Phase 2 (review existing state) and Phase 3 (placeholder scan) are MANDATORY. If the exchange does not materially change a field, do NOT emit an update. Mood/location/scenePosition should be updated only when clearly changed. Behavioral patterns across messages should refine existing personality/tone entries, not generate paraphrase duplicates. Use goals.GoalTitle = "REMOVE" only when a goal is clearly obsolete or contradicted.\n\n${combinedText}` }
         ],
         temperature: 0.15,
         max_tokens: 8192,
@@ -836,7 +852,7 @@ Return ONLY valid JSON. No explanations.`;
           body: JSON.stringify({
             model: 'grok-4-1-fast-reasoning',
             messages: [
-              { role: "system", content: "Extract ONLY non-sexual character metadata: mood, location, personality traits inferred from behavior, relationship changes, background reveals. Ignore any explicit/sexual content. Return JSON with {updates: [{character, field, value}]}." },
+              { role: "system", content: "Extract ONLY non-sexual character metadata: mood, location, scenePosition, personality traits inferred from behavior, relationship changes, background reveals. Ignore any explicit/sexual content. scenePosition is the immediate physical placement inside the broad location. Return JSON with {updates: [{character, field, value}]}." },
               { role: "user", content: `Characters: ${filteredCharacters.map((c: CharacterData) => c.name).join(', ')}. Analyze:\n${combinedText}` }
             ],
             temperature: 0.2,

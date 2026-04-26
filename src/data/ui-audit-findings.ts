@@ -4774,6 +4774,32 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260426-006",
+      title: "Add scene-position continuity to roleplay state",
+      summary: "Chat Debugging - Broad location now stays separate from exact scene position so characters stop treating doorway, inside/outside, and barrier states as vague background",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "Lost QA showed the model could remember a broad place like `cabin` while still losing the exact physical truth of the turn: who was outside, who was through a doorway, who was stuck, and whether the user-controlled character had actually moved. That let responses resolve doors, shelter, and safety as if James had moved even when the user had not written that movement.",
+      plan: "Keep the existing broad `location` field, add a lightweight `scenePosition` field for immediate physical placement, pass that same state into API Call 1, and let API Call 2 update it from material turn evidence. Avoid a database migration by storing it in the existing snapshot JSON path.",
+      changes: "Updated `src/types.ts`:\n- Added optional `scenePosition` to main and side character objects.\n\nUpdated `src/services/llm.ts`:\n- Added scene-position lines to character profiles.\n- Added a compact current character scene-state block to the master prompt.\n- Passed `characterSceneStates` into the roleplay edge function.\n- Added writer-facing continuity rules that distinguish broad location from exact scene position.\n\nUpdated `supabase/functions/chat/index.ts`:\n- Added `characterSceneStates` to roleplay context and debug traces.\n- Fed those states into the planner context and local fallback planner.\n- Added user-character position-lock guidance for doors, thresholds, barriers, vehicles, beds, restraints, danger, and shelter.\n\nUpdated `supabase/functions/extract-character-updates/index.ts` and `src/components/chronicle/ChatInterfaceTab.tsx`:\n- Let the extractor read and write `scenePosition`.\n- Added a safe sanitizer and snapshot application path.\n- Triggered extraction when a turn changes doorway/inside/outside/proximity/blocking position.\n\nUpdated `src/features/chat-debug/types.ts` and `src/features/chat-debug/session-log.ts`:\n- Included character scene states in debug session logs so future QA can see what the roleplay pipeline believed about each character's exact placement.",
+      filesAffected: [
+        "src/types.ts",
+        "src/services/llm.ts",
+        "src/components/chronicle/ChatInterfaceTab.tsx",
+        "supabase/functions/chat/index.ts",
+        "supabase/functions/extract-character-updates/index.ts",
+        "src/features/chat-debug/types.ts",
+        "src/features/chat-debug/session-log.ts",
+        "src/data/ui-audit-findings.ts"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: ["cl-20260426-004", "cl-20260426-005"],
+      tags: ["chat-debugging", "roleplay-runtime", "scene-position", "character-state", "prompt-assembly", "extract-character-updates"],
+      comments: [],
+      createdAt: "2026-04-26T11:28:37.000Z",
+      updatedAt: "2026-04-26T11:28:37.000Z",
+    },
+    {
       id: "cl-20260426-005",
       title: "Consolidate chat session export into one styled HTML log",
       summary: "Chat Debugging - The admin session export is now a single static HTML transcript with avatars, split speaker blocks, and saved dialogue debug notes",

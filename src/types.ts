@@ -231,6 +231,7 @@ export type Character = {
   sexType: string;
   sexualOrientation: string;
   location: string;
+  scenePosition?: string;
   currentMood: string;
   controlledBy: CharacterControl;
   characterRole: CharacterRole;
@@ -337,6 +338,7 @@ export type SideCharacter = {
   sexType: string;
   sexualOrientation: string;
   location: string;
+  scenePosition?: string;
   currentMood: string;
   controlledBy: CharacterControl;   // Can be changed by user during session
   characterRole: CharacterRole;     // Can be promoted to Main by user
