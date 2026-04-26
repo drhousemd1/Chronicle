@@ -60,15 +60,10 @@ import {
 } from '@/services/api-usage-validation';
 import type { ChatDebugTrace, StoredChatDebugTraceMap } from '@/features/chat-debug/types';
 import {
-  findChatDebugTrace,
   loadChatDebugTraceStore,
   persistChatDebugTraceStore,
   upsertChatDebugTrace,
 } from '@/features/chat-debug/storage';
-import {
-  countCapturedAssistantDebugTraces,
-  formatChatDebugTraceForSessionLog,
-} from '@/features/chat-debug/session-log';
 import {
   buildChatReviewHtml,
   slugifyReviewExportFilePart,
@@ -941,14 +936,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     chatDebugTraceStoreRef.current = nextStore;
     persistChatDebugTraceStore(scenarioId, conversationId, nextStore);
   }, [conversationId, isAdmin, scenarioId]);
-
-  const getChatDebugTraceForMessage = useCallback((message: Message) => {
-    return findChatDebugTrace(
-      chatDebugTraceStoreRef.current,
-      message.id,
-      message.generationId || message.id,
-    );
-  }, []);
 
   const buildMessageGenerationMap = useCallback((messages: Message[]): Map<string, string> => {
     const map = new Map<string, string>();
@@ -6566,105 +6553,8 @@ const updatedChar: SideCharacter = {
                     <button
                       onClick={() => {
                         if (!conversation) return;
-                        const allChars = [
-                          ...effectiveAppData.characters.map(c => ({ name: c.name, control: c.controlledBy })),
-                          ...effectiveAppData.sideCharacters.map(c => ({ name: c.name, control: c.controlledBy }))
-                        ];
-                        const userChars = allChars.filter(c => c.control === 'User').map(c => c.name);
-                        const aiChars = allChars.filter(c => c.control === 'AI').map(c => c.name);
-
-                        const lines: string[] = [];
                         const scenarioTitle = appData.world?.core?.scenarioName || 'Untitled';
                         const convTitle = conversation.title || 'Untitled Conversation';
-                        const exportDate = new Date().toISOString().slice(0, 16).replace('T', ' ');
-
-                        lines.push(`# Session Log — ${scenarioTitle}`);
-                        lines.push(`**Conversation:** ${convTitle}`);
-                        lines.push(`**Characters:** ${userChars.map(n => `${n} (User)`).join(', ')}${userChars.length && aiChars.length ? ', ' : ''}${aiChars.map(n => `${n} (AI)`).join(', ')}`);
-                        lines.push(`**Model:** ${modelId}`);
-                        lines.push(`**Exported:** ${exportDate}`);
-                        lines.push(`**Messages:** ${conversation.messages.length}`);
-                        const assistantMessages = conversation.messages.filter((msg) => msg.role === 'assistant');
-                        const assistantTraceRecords = assistantMessages.map((msg) => getChatDebugTraceForMessage(msg));
-                        lines.push(`**Debug Traces Captured:** ${countCapturedAssistantDebugTraces(assistantTraceRecords)} / ${assistantMessages.length} AI turns`);
-                        lines.push(`**Trace Scope:** Chronicle pipeline-selected context and deterministic cleanup data only; not hidden model chain-of-thought.`);
-                        lines.push('');
-                        lines.push('---');
-                        lines.push('');
-
-                        const continueSet = new Set(continueEventsRef.current.map(e => e.messageId));
-                        const regenSet = new Set(regenerateEventsRef.current.map(e => e.messageId));
-
-                        let lastDay: number | undefined;
-                        let lastTime: string | undefined;
-
-                        for (const msg of conversation.messages) {
-                          if (msg.role === 'system') continue;
-                          const exportText = msg.role === 'assistant' ? sanitizeAssistantMessageText(msg.text) : msg.text;
-
-                          // Day/time markers
-                          if (msg.day !== lastDay || (msg.timeOfDay || '') !== lastTime) {
-                            if (msg.day !== undefined || msg.timeOfDay) {
-                              lines.push(`#### Day ${msg.day ?? '?'} — ${msg.timeOfDay ? msg.timeOfDay.charAt(0).toUpperCase() + msg.timeOfDay.slice(1) : '?'}`);
-                              lines.push('');
-                            }
-                            lastDay = msg.day;
-                            lastTime = msg.timeOfDay || '';
-                          }
-
-                          // Speaker attribution
-                          if (msg.role === 'user') {
-                            lines.push(`### ${userChars[0] || 'User'}`);
-                          } else {
-                            // Try to detect which AI character is speaking from the message text
-                            const speakerName = aiChars.find(name => exportText.startsWith(`*${name}`) || exportText.includes(`${name} `)) || aiChars[0] || 'AI';
-                            lines.push(`### ${speakerName} (AI)`);
-                          }
-                          lines.push(exportText);
-                          lines.push('');
-
-                          const dialogDebugComment = dialogDebugComments[msg.id];
-                          if (dialogDebugComment?.note) {
-                            lines.push('#### Dialogue Debug Note');
-                            lines.push('');
-                            lines.push(dialogDebugComment.note);
-                            lines.push('');
-                          }
-
-                          // Action annotations
-                          if (regenSet.has(msg.id)) {
-                            lines.push('> 🔄 REGENERATE triggered on this message');
-                            lines.push('');
-                          }
-                          if (continueSet.has(msg.id)) {
-                            lines.push('> ⚡ CONTINUE triggered after this message');
-                            lines.push('');
-                          }
-
-                          if (msg.role === 'assistant') {
-                            lines.push(...formatChatDebugTraceForSessionLog(getChatDebugTraceForMessage(msg)));
-                          }
-                        }
-
-                        // Download
-                        const blob = new Blob([lines.join('\n')], { type: 'text/markdown' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `session-log-${convTitle.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}-${Date.now()}.md`;
-                        a.click();
-                        URL.revokeObjectURL(url);
-                      }}
-                      className="w-full flex items-center justify-center gap-2 bg-[#3c3e47] hover:bg-[#4a4c55] rounded-[10px] p-[12px_14px] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] text-[13px] font-semibold text-[#eaedf1] transition-colors"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                      Download Session Log
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        if (!conversation) return;
-                        const scenarioTitle = appData.world?.core?.scenarioName || 'Untitled';
                         const exportedAt = new Date();
                         const html = buildChatReviewHtml({
                           appData: effectiveAppData,
@@ -6674,7 +6564,6 @@ const updatedChar: SideCharacter = {
                           exportedAt,
                           continueMessageIds: continueEventsRef.current.map(e => e.messageId),
                           regenerateMessageIds: regenerateEventsRef.current.map(e => e.messageId),
-                          getTraceForMessage: getChatDebugTraceForMessage,
                           sanitizeAssistantText: sanitizeAssistantMessageText,
                           messageComments: dialogDebugComments,
                         });
@@ -6682,14 +6571,14 @@ const updatedChar: SideCharacter = {
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement('a');
                         a.href = url;
-                        a.download = `chat-review-${slugifyReviewExportFilePart(scenarioTitle)}-${exportedAt.getTime()}.html`;
+                        a.download = `session-log-${slugifyReviewExportFilePart(convTitle || scenarioTitle)}-${exportedAt.getTime()}.html`;
                         a.click();
                         URL.revokeObjectURL(url);
                       }}
                       className="w-full flex items-center justify-center gap-2 bg-[#3c3e47] hover:bg-[#4a4c55] rounded-[10px] p-[12px_14px] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] text-[13px] font-semibold text-[#eaedf1] transition-colors"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-                      Download Review HTML
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                      Download Session Log
                     </button>
 
                     <button

@@ -59,7 +59,7 @@ Ashley: *Ashley keeps moving her fingers.* "I can feel my thumb."`,
 };
 
 describe('buildChatReviewHtml', () => {
-  it('exports a styled annotation document with speaker cards and download controls', () => {
+  it('exports a styled static session log with split speaker cards and live comments', () => {
     const html = buildChatReviewHtml({
       appData,
       conversation,
@@ -68,7 +68,6 @@ describe('buildChatReviewHtml', () => {
       exportedAt: new Date('2026-04-26T12:00:00.000Z'),
       continueMessageIds: [],
       regenerateMessageIds: ['message-ai-1'],
-      getTraceForMessage: () => null,
       sanitizeAssistantText: (text) => text,
       messageComments: {
         'message-ai-1': {
@@ -80,13 +79,13 @@ describe('buildChatReviewHtml', () => {
       },
     });
 
-    expect(html).toContain('Chronicle chat review export');
-    expect(html).toContain('Download annotation JSON');
-    expect(html).toContain('Download annotated HTML');
+    expect(html).toContain('Chronicle session log');
+    expect(html).not.toContain('Download annotation JSON');
+    expect(html).not.toContain('Download annotated HTML');
     expect(html).toContain('James');
     expect(html).toContain('Sarah');
     expect(html).toContain('Ashley');
-    expect(html).toContain('What went wrong?');
+    expect(html).not.toContain('What went wrong?');
     expect(html).toContain('Live tester note');
     expect(html).toContain('Sarah sounded too mechanical.');
     expect(html).toContain('data-review-id="message-ai-1-1"');

@@ -4774,6 +4774,28 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260426-005",
+      title: "Consolidate chat session export into one styled HTML log",
+      summary: "Chat Debugging - The admin session export is now a single static HTML transcript with avatars, split speaker blocks, and saved dialogue debug notes",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "The chat debugging exports had drifted into two competing paths: a markdown session log that collapsed multi-speaker AI turns under one guessed speaker, and a separate interactive review HTML file with annotation controls the user did not want. This made exports harder to use and caused Ashley/Sarah turns to be represented incorrectly in the markdown log.",
+      plan: "Make the existing Session Log button produce the useful styled HTML transcript directly, remove the separate Review HTML button and interactive annotation controls, and keep the output focused on the readable conversation plus any live tester comments.",
+      changes: "Updated `src/components/chronicle/ChatInterfaceTab.tsx`:\n- Replaced the markdown session-log download with a single HTML session-log download.\n- Removed the separate `Download Review HTML` button.\n- Kept the Dialogue Debug Notes toggle/comment flow unchanged.\n\nUpdated `src/features/chat-debug/review-export.ts`:\n- Converted the review export into a static session transcript: avatars, split speaker cards, styled roleplay text, generated images, Continue/Regenerate badges, raw-message details, and saved live tester notes.\n- Removed interactive annotation checkboxes, severity fields, textareas, annotation JSON download, annotated HTML download, and embedded script.\n- Removed debug trace output from the user-facing transcript.\n- Shows message-level tester comments once per split message instead of repeating the same note under every speaker segment.\n\nUpdated `src/features/chat-debug/review-export.test.ts`:\n- Adjusted coverage to verify the static HTML session log keeps James/Sarah/Ashley split cards and live tester notes while omitting the removed interactive controls.",
+      filesAffected: [
+        "src/components/chronicle/ChatInterfaceTab.tsx",
+        "src/features/chat-debug/review-export.ts",
+        "src/features/chat-debug/review-export.test.ts",
+        "src/data/ui-audit-findings.ts"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: ["cl-20260426-002", "cl-20260426-003"],
+      tags: ["chat-debugging", "session-export", "dialogue-qa", "html-export", "admin-tools"],
+      comments: [],
+      createdAt: "2026-04-26T10:45:48.000Z",
+      updatedAt: "2026-04-26T10:45:48.000Z",
+    },
+    {
       id: "cl-20260426-004",
       title: "Clean writer-facing roleplay prompt labels",
       summary: "Chat Runtime - The main chat prompt and roleplay_v2 writer guidance now keep anti-loop, goal, and speaker behavior while removing mechanical labels that Grok could imitate",
