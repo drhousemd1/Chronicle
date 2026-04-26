@@ -4425,6 +4425,7 @@ Do not write dialogue, actions, or thoughts for user-controlled characters: ${us
 Use active story and character goals as direction, but do not force a jump. Move the scene by one believable next beat: an answer, decision, action, reveal, refusal, invitation, or clear change in relationship posture.
 If an AI character asked or was asked a question, acknowledge that question in this response. Acknowledgement can be a direct answer, refusal, deflection, counter-question, visible hesitation, or turning the question toward another present character.
 Use one focal AI speaker by default. Add a second tagged AI speaker only when they meaningfully contribute based on personality, knowledge, relationship, or scene pressure.
+If the latest user turn directly addressed two AI characters and both need to answer or acknowledge, give each one short tagged block instead of letting one character narrate the other's answer.
 Avoid long back-and-forth chains between AI characters. Leave room for the user to respond.
 Do not acknowledge this instruction in your response.`;
       

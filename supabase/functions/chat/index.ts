@@ -364,6 +364,7 @@ function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undef
     mustInclude: [
       'Treat user-written AI-character dialogue/action as canon, not as an instruction to ignore.',
       'If the latest turn names or directs an AI character, answer or acknowledge that direction in the next response.',
+      'If the latest turn directly addresses two AI characters and both answers matter, give each addressed character one short block rather than letting one speak for or narrate the other.',
     ],
     mustAvoid: [
       'Do not speak for user-controlled characters.',
@@ -373,6 +374,7 @@ function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undef
       'Do not output separator lines, code fences, or wrapper tags.',
       'Do not put a speaker tag inside an already tagged character bubble.',
       "Do not narrate one AI character's meaningful compliance, refusal, movement, answer, or decision inside another AI character speaker block.",
+      'Do not ignore a directly addressed AI character by having another character merely observe their fear, silence, or body language.',
       'Do not open with the same weather, time-of-day, or visibility recap used in recent turns.',
     ],
     continuityNotes: [

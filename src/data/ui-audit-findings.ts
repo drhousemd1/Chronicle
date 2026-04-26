@@ -4774,6 +4774,29 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260425-011",
+      title: "Prioritize directly addressed AI characters",
+      summary: "Chat Runtime - Roleplay guidance now keeps the anti-ping-pong speaker cap while requiring directly addressed AI characters to acknowledge when their answer matters",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "Lost QA showed James directly addressing Ashley and Sarah in the same turn, but the AI only produced a Sarah block and narrated Ashley's fear instead of letting Ashley answer or acknowledge the direct status check.",
+      plan: "Clarify the hierarchy: one focal speaker remains the default, but when the latest user turn directly addresses two AI characters and both answers matter, each addressed character should get one short tagged block. Tiny non-decisive reactions can still fold into narration, but direct answers, status checks, understanding, refusal, or compliance cannot be replaced by another character observing them.",
+      changes: "Updated `src/services/llm.ts`:\n- Changed the block-count cap from scene-changing only to meaningful contribution, including direct answer, refusal, compliance, decision, new information, or consequential movement.\n- Added explicit handling for latest-turn direct address of two AI characters.\n- Clarified that directly addressed AI characters are not silent by default when asked for truth, status, a decision, or understanding.\n\nUpdated `src/components/chronicle/ChatInterfaceTab.tsx`:\n- Added the same direct-address rule to Continue mode so the behavior does not regress during non-user turns.\n\nUpdated `supabase/functions/chat/index.ts`:\n- Added planner must-include and must-avoid rules so the edge-function writer does not let one AI character narrate away another AI character's direct answer.\n\nUpdated `/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md`:\n- Logged the Lost QA finding and the behavioral decision in plain English.",
+      filesAffected: [
+        "src/services/llm.ts",
+        "src/components/chronicle/ChatInterfaceTab.tsx",
+        "supabase/functions/chat/index.ts",
+        "src/data/ui-audit-findings.ts",
+        "/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["chat-runtime", "direct-address", "multi-character", "speaker-ownership", "lost-qa"],
+      comments: [],
+      createdAt: "2026-04-26T02:57:08.000Z",
+      updatedAt: "2026-04-26T02:57:08.000Z",
+    },
+    {
       id: "cl-20260425-010",
       title: "Keep second-character actions out of wrong speaker blocks",
       summary: "Chat Runtime - Roleplay instructions now separate tiny folded reactions from meaningful second-character action or compliance so multi-character replies preserve UI speaker ownership",
