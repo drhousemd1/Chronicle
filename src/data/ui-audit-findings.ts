@@ -4774,6 +4774,28 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260425-014",
+      title: "Keep AI service errors out of story canon",
+      summary: "Chat Runtime - Network, timeout, content-filter, HTTP, and missing-stream failures now throw UI errors instead of streaming text that gets saved as character dialogue",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "Lost QA hit a transient AI service/network failure and the text `Network error while contacting the AI service. Please try again.` was streamed and saved as a Sarah story message, which would contaminate canon, memory extraction, and side-character detection.",
+      plan: "Treat transport/service failures as errors, not assistant output. Preserve the user's submitted message on send failure, show the failure through UI alerting, and prevent fake assistant messages from being appended or processed downstream.",
+      changes: "Updated `src/services/llm.ts`:\n- Converted timeout, network, content-filter, HTTP, and missing-stream fallback yields into thrown errors.\n- Prevents error copy from entering the normal streamed response path.\n\nUpdated `src/components/chronicle/ChatInterfaceTab.tsx`:\n- On send failure, persists the user message without appending a fake assistant message.\n- Shows the actual error message through the existing alert path.\n- Added explicit alert handling for regenerate and Continue failures so failed retries do not silently leave stale UI state.\n\nUpdated `/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md`:\n- Logged the Lost network-error canon contamination finding and the intended behavior.",
+      filesAffected: [
+        "src/services/llm.ts",
+        "src/components/chronicle/ChatInterfaceTab.tsx",
+        "src/data/ui-audit-findings.ts",
+        "/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["chat-runtime", "error-handling", "canon-safety", "network", "lost-qa"],
+      comments: [],
+      createdAt: "2026-04-26T04:53:50.000Z",
+      updatedAt: "2026-04-26T04:53:50.000Z",
+    },
+    {
       id: "cl-20260425-013",
       title: "Reject dialogue phrases as speaker labels",
       summary: "Chat Rendering - Speaker parsing now rejects phrase-like colon labels such as 'Fingers and toes:' while preserving title-cased multi-word character names",

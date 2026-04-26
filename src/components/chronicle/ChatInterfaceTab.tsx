@@ -4106,7 +4106,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       processResponseForNewCharacters(cleanedText);
     } catch (err) {
       console.error(err);
-      alert("Dialogue stream failed. Check your connection or model settings.");
+      onSaveScenario(nextConvsWithUser);
+      const message = err instanceof Error ? err.message : "Dialogue stream failed. Check your connection or model settings.";
+      alert(message);
     } finally {
       setIsStreaming(false);
       setStreamingContent('');
@@ -4343,6 +4345,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       processResponseForNewCharacters(cleanedText);
     } catch (err) {
       console.error(err);
+      const message = err instanceof Error ? err.message : "Regeneration failed. Check your connection or model settings.";
+      alert(message);
     } finally {
       setRegeneratingMessageId(null);
       setIsRegenerating(false);
@@ -4503,6 +4507,8 @@ Do not acknowledge this instruction in your response.`;
       
     } catch (err) {
       console.error(err);
+      const message = err instanceof Error ? err.message : "Continue failed. Check your connection or model settings.";
+      alert(message);
     } finally {
       setIsStreaming(false);
       setStreamingContent('');

@@ -1196,13 +1196,11 @@ export async function* generateRoleplayResponseStream(
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
       emitCall1Trace("error_timeout", { timeoutMs: CHAT_RESPONSE_TIMEOUT_MS });
-      yield "The AI response timed out. Please try sending again, or use Continue once the scene is ready.";
-      return;
+      throw new Error("The AI response timed out. Please try sending again, or use Continue once the scene is ready.");
     }
 
     emitCall1Trace("error_network", { error: error instanceof Error ? error.message : String(error) });
-    yield "Network error while contacting the AI service. Please try again.";
-    return;
+    throw new Error("Network error while contacting the AI service. Please try again.");
   } finally {
     window.clearTimeout(requestTimeout);
   }
@@ -1211,18 +1209,15 @@ export async function* generateRoleplayResponseStream(
     const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
     if (response.status === 422 && errorData.error_type === 'content_filtered') {
       emitCall1Trace("error_content_filtered");
-      yield "It seems your story got a bit too spicy for the model. Change up the story and try again.";
-      return;
+      throw new Error("It seems your story got a bit too spicy for the model. Change up the story and try again.");
     }
     emitCall1Trace("error_http", { httpStatus: response.status, error: errorData.error || "Unknown error" });
-    yield `⚠️ ${errorData.error || 'Failed to connect to AI service'}`;
-    return;
+    throw new Error(errorData.error || 'Failed to connect to AI service');
   }
 
   if (!response.body) {
     emitCall1Trace("error_no_stream_body");
-    yield "⚠️ No response stream available";
-    return;
+    throw new Error("No response stream available");
   }
 
   const reader = response.body.getReader();
