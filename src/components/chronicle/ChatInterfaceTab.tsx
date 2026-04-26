@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 import { uid, now, uuid } from '@/utils';
 import { generateRoleplayResponseStream, getSystemInstruction, REGENERATION_DIRECTIVE_TEXT, buildCanonNote } from '../../services/llm';
-import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2, StepForward, Settings, Image as ImageIcon, Brain, Check, X, Info, Play, Pause, Move, Palette } from 'lucide-react';
+import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2, StepForward, Settings, Image as ImageIcon, Brain, Check, X, Info, Play, Pause, Move, Palette, MessageSquare } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import {
   DropdownMenu,
@@ -69,6 +69,10 @@ import {
   countCapturedAssistantDebugTraces,
   formatChatDebugTraceForSessionLog,
 } from '@/features/chat-debug/session-log';
+import {
+  buildChatReviewHtml,
+  slugifyReviewExportFilePart,
+} from '@/features/chat-debug/review-export';
 
 interface ChatInterfaceTabProps {
   scenarioId: string;
@@ -102,7 +106,53 @@ interface ChatInterfaceTabProps {
 }
 
 type ActionEvent = { messageId: string; timestamp: number };
+type DialogDebugComment = {
+  messageId: string;
+  note: string;
+  createdAt: number;
+  updatedAt: number;
+};
+
 const TIME_SEQUENCE: TimeOfDay[] = ['sunrise', 'day', 'sunset', 'night'];
+const DIALOG_DEBUG_ENABLED_STORAGE_KEY = 'chronicle_dialog_debug_enabled_v1';
+
+function buildDialogDebugCommentsStorageKey(scenarioId: string, conversationId: string): string {
+  return `chronicle_dialog_debug_comments_v1:${scenarioId}:${conversationId}`;
+}
+
+function loadDialogDebugComments(scenarioId: string, conversationId: string): Record<string, DialogDebugComment> {
+  try {
+    const raw = window.localStorage.getItem(buildDialogDebugCommentsStorageKey(scenarioId, conversationId));
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return {};
+    return Object.fromEntries(
+      Object.entries(parsed as Record<string, DialogDebugComment>).filter(([, comment]) => (
+        comment
+        && typeof comment.messageId === 'string'
+        && typeof comment.note === 'string'
+        && comment.note.trim().length > 0
+      ))
+    );
+  } catch {
+    return {};
+  }
+}
+
+function saveDialogDebugComments(
+  scenarioId: string,
+  conversationId: string,
+  comments: Record<string, DialogDebugComment>
+) {
+  try {
+    window.localStorage.setItem(
+      buildDialogDebugCommentsStorageKey(scenarioId, conversationId),
+      JSON.stringify(comments)
+    );
+  } catch {
+    // Debug notes are local convenience data; storage failure should never break chat.
+  }
+}
 let isDebugLogging = false;
 const debugLog = (...args: unknown[]) => {
   if (!import.meta.env.DEV || isDebugLogging) {
@@ -806,10 +856,29 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const continueEventsRef = useRef<ActionEvent[]>([]);
   const regenerateEventsRef = useRef<ActionEvent[]>([]);
   const chatDebugTraceStoreRef = useRef<StoredChatDebugTraceMap>(loadChatDebugTraceStore(scenarioId, conversationId));
+  const [dialogDebugEnabled, setDialogDebugEnabled] = useState(false);
+  const [dialogDebugComments, setDialogDebugComments] = useState<Record<string, DialogDebugComment>>({});
+  const [activeDialogDebugMessage, setActiveDialogDebugMessage] = useState<Message | null>(null);
+  const [dialogDebugDraft, setDialogDebugDraft] = useState('');
 
   useEffect(() => {
     chatDebugTraceStoreRef.current = loadChatDebugTraceStore(scenarioId, conversationId);
   }, [conversationId, scenarioId]);
+
+  useEffect(() => {
+    if (!isAdmin) {
+      setDialogDebugEnabled(false);
+      setDialogDebugComments({});
+      return;
+    }
+
+    try {
+      setDialogDebugEnabled(window.localStorage.getItem(DIALOG_DEBUG_ENABLED_STORAGE_KEY) === 'true');
+    } catch {
+      setDialogDebugEnabled(false);
+    }
+    setDialogDebugComments(loadDialogDebugComments(scenarioId, conversationId));
+  }, [conversationId, isAdmin, scenarioId]);
 
   useEffect(() => {
     const characters = appData.characters;
@@ -4124,7 +4193,55 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     await navigator.clipboard.writeText(text);
   };
 
+  const handleDialogDebugToggle = (enabled: boolean) => {
+    setDialogDebugEnabled(enabled);
+    try {
+      window.localStorage.setItem(DIALOG_DEBUG_ENABLED_STORAGE_KEY, enabled ? 'true' : 'false');
+    } catch {
+      // Local debug toggle should not affect chat if browser storage is unavailable.
+    }
+  };
+
+  const openDialogDebugComment = (message: Message) => {
+    setActiveDialogDebugMessage(message);
+    setDialogDebugDraft(dialogDebugComments[message.id]?.note || '');
+  };
+
+  const closeDialogDebugComment = () => {
+    setActiveDialogDebugMessage(null);
+    setDialogDebugDraft('');
+  };
+
+  const handleDialogDebugCommentSave = () => {
+    if (!activeDialogDebugMessage) return;
+    const note = dialogDebugDraft.trim();
+    const existing = dialogDebugComments[activeDialogDebugMessage.id];
+    const nextComments = { ...dialogDebugComments };
+
+    if (note) {
+      nextComments[activeDialogDebugMessage.id] = {
+        messageId: activeDialogDebugMessage.id,
+        note,
+        createdAt: existing?.createdAt || Date.now(),
+        updatedAt: Date.now(),
+      };
+    } else {
+      delete nextComments[activeDialogDebugMessage.id];
+    }
+
+    setDialogDebugComments(nextComments);
+    saveDialogDebugComments(scenarioId, conversationId, nextComments);
+    closeDialogDebugComment();
+  };
+
   const handleDeleteMessage = (messageId: string) => {
+    if (dialogDebugComments[messageId]) {
+      const nextComments = { ...dialogDebugComments };
+      delete nextComments[messageId];
+      setDialogDebugComments(nextComments);
+      saveDialogDebugComments(scenarioId, conversationId, nextComments);
+    }
+
     const updatedConvs = appData.conversations.map(c =>
       c.id === conversationId
         ? { ...c, messages: c.messages.filter(m => m.id !== messageId), updatedAt: now() }
@@ -5672,6 +5789,22 @@ const updatedChar: SideCharacter = {
                           </button>
                         )}
                       
+                        {isAdmin && dialogDebugEnabled && (
+                          <button
+                            onClick={() => openDialogDebugComment(msg)}
+                            className={cn(
+                              "p-2 rounded-lg hover:bg-ghost-white transition-colors",
+                              dialogDebugComments[msg.id]?.note
+                                ? "text-emerald-300 hover:text-emerald-200"
+                                : "text-slate-400 hover:text-white"
+                            )}
+                            aria-label="Add dialogue debug note"
+                            title={dialogDebugComments[msg.id]?.note ? "Edit dialogue debug note" : "Add dialogue debug note"}
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                          </button>
+                        )}
+
                         {/* Three-dot menu - all messages */}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -6420,6 +6553,17 @@ const updatedChar: SideCharacter = {
                     <p className="text-[12px] font-black text-[#a1a1aa] uppercase tracking-[0.12em] mb-1">Admin</p>
                     <p className="text-[12px] text-[#a1a1aa] mb-2.5">Debug tools for conversation analysis</p>
                     <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between gap-2 bg-[#3c3e47] rounded-[10px] p-[12px_14px] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
+                      <div>
+                        <div className="text-[13px] font-semibold text-[#eaedf1]">Dialogue Debug Notes</div>
+                        <div className="text-[12px] text-[#a1a1aa] mt-0.5">Show comment buttons on chat bubbles for local QA notes</div>
+                      </div>
+                      <LabeledToggle
+                        checked={dialogDebugEnabled}
+                        onCheckedChange={handleDialogDebugToggle}
+                      />
+                    </div>
+
                     <button
                       onClick={() => {
                         if (!conversation) return;
@@ -6480,6 +6624,14 @@ const updatedChar: SideCharacter = {
                           lines.push(exportText);
                           lines.push('');
 
+                          const dialogDebugComment = dialogDebugComments[msg.id];
+                          if (dialogDebugComment?.note) {
+                            lines.push('#### Dialogue Debug Note');
+                            lines.push('');
+                            lines.push(dialogDebugComment.note);
+                            lines.push('');
+                          }
+
                           // Action annotations
                           if (regenSet.has(msg.id)) {
                             lines.push('> 🔄 REGENERATE triggered on this message');
@@ -6508,6 +6660,37 @@ const updatedChar: SideCharacter = {
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                       Download Session Log
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        if (!conversation) return;
+                        const scenarioTitle = appData.world?.core?.scenarioName || 'Untitled';
+                        const exportedAt = new Date();
+                        const html = buildChatReviewHtml({
+                          appData: effectiveAppData,
+                          conversation,
+                          scenarioTitle,
+                          modelId,
+                          exportedAt,
+                          continueMessageIds: continueEventsRef.current.map(e => e.messageId),
+                          regenerateMessageIds: regenerateEventsRef.current.map(e => e.messageId),
+                          getTraceForMessage: getChatDebugTraceForMessage,
+                          sanitizeAssistantText: sanitizeAssistantMessageText,
+                          messageComments: dialogDebugComments,
+                        });
+                        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `chat-review-${slugifyReviewExportFilePart(scenarioTitle)}-${exportedAt.getTime()}.html`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      }}
+                      className="w-full flex items-center justify-center gap-2 bg-[#3c3e47] hover:bg-[#4a4c55] rounded-[10px] p-[12px_14px] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] text-[13px] font-semibold text-[#eaedf1] transition-colors"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                      Download Review HTML
                     </button>
 
                     <button
@@ -6628,7 +6811,72 @@ const updatedChar: SideCharacter = {
           </div>
         </DialogContentBare>
       </Dialog>
-      
+
+      <Dialog
+        open={!!activeDialogDebugMessage}
+        onOpenChange={(open) => {
+          if (!open) closeDialogDebugComment();
+        }}
+      >
+        <DialogContent className="max-w-xl bg-[#1f222b] border border-[#3a4152] text-zinc-100">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold tracking-tight">Dialogue Debug Note</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+              <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#78dcca] mb-2">
+                Message preview
+              </p>
+              <p className="max-h-32 overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed text-zinc-300">
+                {activeDialogDebugMessage
+                  ? (activeDialogDebugMessage.role === 'assistant'
+                    ? sanitizeAssistantMessageText(activeDialogDebugMessage.text)
+                    : activeDialogDebugMessage.text
+                  ).slice(0, 900)
+                  : ''}
+              </p>
+            </div>
+            <label className="block">
+              <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-zinc-400">
+                What is wrong with this bubble?
+              </span>
+              <textarea
+                value={dialogDebugDraft}
+                onChange={(event) => setDialogDebugDraft(event.target.value)}
+                placeholder="Example: Sarah answered a question meant for Ashley, or the response sounded mechanical here."
+                className="mt-2 min-h-[150px] w-full resize-y rounded-xl border border-white/10 bg-[#111318] p-3 text-sm leading-relaxed text-zinc-100 outline-none focus:border-[#78dcca]/70"
+              />
+            </label>
+            <p className="text-xs text-zinc-500">
+              Saved locally for review exports only. This is not sent to the AI and does not alter story canon.
+            </p>
+          </div>
+          <DialogFooter className="gap-2">
+            <button
+              type="button"
+              onClick={() => setDialogDebugDraft('')}
+              className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-zinc-300 hover:bg-white/10"
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              onClick={closeDialogDebugComment}
+              className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-zinc-300 hover:bg-white/10"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleDialogDebugCommentSave}
+              className="rounded-lg bg-[#5f789d] px-4 py-2 text-sm font-bold text-white shadow-[0_8px_24px_rgba(0,0,0,0.35)] hover:bg-[#6f8fbf]"
+            >
+              Save Note
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Character Confirmation Dialog */}
       <DeleteConfirmDialog
         open={isDeleteDialogOpen}
