@@ -368,6 +368,7 @@ function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undef
     ],
     mustAvoid: [
       'Do not speak for user-controlled characters.',
+      'Do not complete an action for a user-controlled character after an AI character gives them a command; stop before the user character acts unless the latest user turn already wrote that action.',
       'Do not force every present AI character to speak.',
       'Do not add filler second-speaker dialogue.',
       'Do not stall with consent, confirmation, or waiting loops.',
@@ -938,6 +939,7 @@ Writer contract:
 - Include mustInclude facts without dumping them mechanically.
 - Avoid mustAvoid items.
 - Keep older excerpts subordinate to the latest user turn.
+- Do not narrate user-controlled characters completing requested actions. AI characters may command or prepare, but the user must author the user character's actual execution.
 - Write in the selected character's real voice, not as a checklist.
 - Use the app's roleplay format: CharacterName: *visible action/narration.* "spoken dialogue"
 - Never put one character's quoted dialogue inside another character's tagged block; give the speaking AI character their own tag or make it a silent visible reaction.

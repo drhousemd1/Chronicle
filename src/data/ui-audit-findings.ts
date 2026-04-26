@@ -4774,6 +4774,29 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260426-001",
+      title: "Stop AI from completing user character actions",
+      summary: "Chat Runtime - AI characters can command or prepare, but they should not narrate a user-controlled character executing the requested action",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "Lost QA showed Sarah correctly telling James to ram the frozen cabin latch, but the response then skipped ahead as if James had already rammed it and the door opened. That completes an action for James even though James is user-controlled.",
+      plan: "Keep forward momentum without stealing user control: AI characters may command, warn, brace, guide, or act themselves, but they must stop before narrating a user-controlled character's execution unless the user already wrote that action.",
+      changes: "Updated `src/services/llm.ts`:\n- Added explicit control-rule wording that AI should not complete a user-controlled character's requested action.\n- Added a concrete Sarah/James latch example explaining the correct boundary.\n\nUpdated `supabase/functions/chat/index.ts`:\n- Added the same action-completion guard to the planner `mustAvoid` list and writer contract.\n\nUpdated `src/components/chronicle/ChatInterfaceTab.tsx`:\n- Added the guard to Continue mode so non-user turns do not complete user-character actions either.\n\nUpdated `/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md`:\n- Logged the Lost cabin door QA finding in plain English.",
+      filesAffected: [
+        "src/services/llm.ts",
+        "supabase/functions/chat/index.ts",
+        "src/components/chronicle/ChatInterfaceTab.tsx",
+        "src/data/ui-audit-findings.ts",
+        "/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["chat-runtime", "user-control", "roleplay-quality", "lost-qa"],
+      comments: [],
+      createdAt: "2026-04-26T06:11:09.000Z",
+      updatedAt: "2026-04-26T06:11:09.000Z",
+    },
+    {
       id: "cl-20260425-015",
       title: "Keep roleplay priority labels internal",
       summary: "Chat Runtime - Prompt rules now prevent visible planner or goal labels like 'Survival priority:' from leaking into story prose",

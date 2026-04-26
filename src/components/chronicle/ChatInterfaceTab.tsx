@@ -4430,6 +4430,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 Continue naturally from the latest scene.
 Write only for AI-controlled characters: ${aiControlledNames.join(', ')}.
 Do not write dialogue, actions, or thoughts for user-controlled characters: ${userControlledNames.join(', ')}.${goalContext}
+Do not complete an action for a user-controlled character after an AI character gives them an instruction. The AI may command, prepare, or act itself, but the user must author the user-controlled character's execution.
 Use active story and character goals as direction, but do not force a jump. Move the scene by one believable next beat: an answer, decision, action, reveal, refusal, invitation, or clear change in relationship posture.
 If an AI character asked or was asked a question, acknowledge that question in this response. Acknowledgement can be a direct answer, refusal, deflection, counter-question, visible hesitation, or turning the question toward another present character.
 Use one focal AI speaker by default. Add a second tagged AI speaker only when they meaningfully contribute based on personality, knowledge, relationship, or scene pressure.

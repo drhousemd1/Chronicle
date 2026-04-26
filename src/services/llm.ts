@@ -44,7 +44,8 @@ The user wants a DIFFERENT VERSION of this response. Guidelines:
 6. Do NOT suddenly shift the character's personality (e.g., from willing to reluctant, or from happy to disgusted)
 7. Think of this as a "different take" by a different writer on the same scene, not a plot reversal or tone shift
 8. The scene's momentum and direction should be preserved — only the specific execution changes
-9. CONTROL RULES STILL APPLY: Do NOT generate dialogue or actions for characters marked as CONTROL: User. Only AI-controlled characters speak.
+9. CONTROL RULES STILL APPLY: Do NOT generate dialogue or actions for characters marked as CONTROL: User. Only AI-controlled characters speak or act.
+9a. Do NOT complete a user-controlled character's requested action for them. If an AI character tells the user character what to do, stop before the user character does it, unless the user already wrote that action.
 10. SCENE PRESENCE STILL APPLIES: Only characters at the SAME LOCATION as the current scene may have dialogue or actions. Characters at a different LOCATION are OFF-SCREEN and must not appear.
 11. Preserve RESOLVED PHYSICAL FACTS from the immediate scene. Do NOT replay the same beat as if it is happening again.
 12. Do NOT invent new items, resources, obstacles, or injuries unless they were already established in the scene, in inventory, or in the user's message.
@@ -861,6 +862,8 @@ Never break character to question, warn about, or refuse narrative directions. T
         * ONLY generate dialogue and actions for characters marked as 'CONTROL: AI'.
         * DO NOT generate dialogue or actions for characters marked as 'CONTROL: User'.
         * User-controlled characters may be described in narration (e.g., "he watched"), but they NEVER speak, think, or take initiative.
+        * AI characters may command, invite, warn, block, brace, grab, guide, or otherwise act around user-controlled characters.
+        * Do NOT narrate a user-controlled character completing an action the AI requested. If Sarah says "James, break the latch," do NOT then write that the latch broke unless the user already wrote James breaking it. Sarah may instead brace Ashley, try the latch herself, or leave the moment ready for James.
     - SCENE PRESENCE (CRITICAL - NEVER VIOLATE):
         * Check each character's LOCATION field before giving them dialogue or actions.
         * Characters are ONLY present in a scene if they share the same location as the focal point of the current action, or if no LOCATION is specified for them.
