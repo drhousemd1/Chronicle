@@ -128,12 +128,16 @@ type MessageToken = {
 const CHAT_RENDER_ARTIFACT_LINE_REGEX = /^\s*(?:(?:[-—*_]){3,}|```(?:\w+)?|<\/?writer_draft>)\s*$/gim;
 const DOUBLE_COLON_SPEAKER_REGEX = /^(\s*(?:\*\*)?[A-Z][a-zA-Z\s'-]{0,29}(?:\*\*)?)\s*:{2,}\s*/gm;
 const THOUGHT_WRAPPED_AS_ACTION_REGEX = /\*\(\s*([\s\S]*?)\s*\)\*/g;
+const PLANNER_LANGUAGE_LEAK_REGEX = /\b(?:survival\s+priority\s*[:—-]?|priority(?:\s+is|'s)\s*[:—-]?|priority\s*:)\s*/gi;
+const PLANNER_LABEL_LEAK_REGEX = /\b(?:goal|directive|plan|must include)\s*:\s*/gi;
 
 function sanitizeAssistantMessageText(text: string): string {
   return text
     .replace(CHAT_RENDER_ARTIFACT_LINE_REGEX, '')
     .replace(DOUBLE_COLON_SPEAKER_REGEX, '$1: ')
     .replace(THOUGHT_WRAPPED_AS_ACTION_REGEX, '($1)')
+    .replace(PLANNER_LANGUAGE_LEAK_REGEX, '')
+    .replace(PLANNER_LABEL_LEAK_REGEX, '')
     .replace(/[ \t]+\n/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
