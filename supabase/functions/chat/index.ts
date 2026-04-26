@@ -376,7 +376,7 @@ function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undef
       "Do not narrate one AI character's meaningful compliance, refusal, movement, answer, or decision inside another AI character speaker block.",
       'Do not ignore a directly addressed AI character by having another character merely observe their fear, silence, or body language.',
       'Do not invent narration labels, beat labels, or sentence-fragment headings with colons; every paragraph-start colon label must be an exact cast character name.',
-      'Do not expose internal goal, priority, directive, planner, or checklist labels such as "Survival priority:", "Goal:", "Plan:", or "Must include:" in story prose.',
+      'Do not expose internal goal, priority, directive, planner, or checklist labels or shorthand such as "Survival priority:", "Priority is heat", "Priority\'s heat", "Goal:", "Plan:", or "Must include:" in story prose.',
       'Do not open with the same weather, time-of-day, or visibility recap used in recent turns.',
     ],
     continuityNotes: [
@@ -393,7 +393,7 @@ function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undef
       'Do not put one AI character spoken dialogue inside another AI character speaker block.',
       'Tiny visible reactions can stay in the focal block; meaningful second-character actions or answers need their own short speaker block within the speaker cap.',
       'Keep all visible scanning, movement, and environmental description inside *asterisks* instead of bare prose or colon subheadings.',
-      'Keep goals and priorities internal; render them as natural choices, actions, or subtext instead of visible planner/checklist labels.',
+      'Keep goals and priorities internal; render them as natural choices, actions, or subtext instead of visible planner/checklist labels or "priority is..." shorthand.',
       'Do not write bare unquoted internal monologue or mechanically repeat scene-state phrases.',
     ],
   };
@@ -943,7 +943,7 @@ Writer contract:
 - Never put one character's quoted dialogue inside another character's tagged block; give the speaking AI character their own tag or make it a silent visible reaction.
 - Do not write bare prose or loose internal monologue after a speaker tag; wrap action in *asterisks*, wrap rare private thought in (parentheses), or omit it.
 - Treat sceneStateFacts as constraints, not phrases to repeat every turn.
-- Treat goals, priorities, directives, and planning notes as internal reasoning; never output visible labels like "Survival priority:", "Goal:", "Directive:", "Plan:", or "Must include:".
+- Treat goals, priorities, directives, and planning notes as internal reasoning; never output visible labels or shorthand like "Survival priority:", "Priority is heat", "Priority's heat", "Goal:", "Directive:", "Plan:", or "Must include:".
 - Do not reuse the same environmental opening from recent assistant turns; show a new physical effect if the scene condition still matters.
 - Do not output markdown separator lines such as --- or ***.`,
   };
