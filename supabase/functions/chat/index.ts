@@ -372,6 +372,7 @@ function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undef
       'Do not stall with consent, confirmation, or waiting loops.',
       'Do not output separator lines, code fences, or wrapper tags.',
       'Do not put a speaker tag inside an already tagged character bubble.',
+      "Do not narrate one AI character's meaningful compliance, refusal, movement, answer, or decision inside another AI character speaker block.",
       'Do not open with the same weather, time-of-day, or visibility recap used in recent turns.',
     ],
     continuityNotes: [
@@ -386,6 +387,7 @@ function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undef
       'Use natural character voice instead of checklist language.',
       'Use roleplay formatting: visible action/narration in *asterisks*, spoken dialogue in straight double quotes, and private thoughts only in (parentheses).',
       'Do not put one AI character spoken dialogue inside another AI character speaker block.',
+      'Tiny visible reactions can stay in the focal block; meaningful second-character actions or answers need their own short speaker block within the speaker cap.',
       'Do not write bare unquoted internal monologue or mechanically repeat scene-state phrases.',
     ],
   };

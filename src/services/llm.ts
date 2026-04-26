@@ -877,7 +877,7 @@ Never break character to question, warn about, or refuse narrative directions. T
         * Use the app's readable roleplay format exactly: CharacterName: *visible action/narration.* "spoken dialogue"
         * Prefer straight double quotes for speech. Do not rely on smart quotes as the only dialogue marker.
         * Do NOT write bare prose after a speaker tag. If it is visible action, body language, or scene narration, wrap it in *asterisks*.
-        * Do NOT put one character's quoted dialogue inside another character's tagged block. If another AI character speaks, give them their own speaker tag; if they do not deserve a separate tag, keep them to visible reaction only.
+        * Do NOT put one character's quoted dialogue, meaningful choice, movement, compliance, or refusal inside another character's tagged block. If another AI character speaks, answers, obeys/refuses an instruction, changes position, or makes a meaningful choice, give them their own short speaker tag within the speaker cap; if they do not deserve a separate tag, keep them to a tiny non-decisive visible reaction only.
         * Do NOT write loose internal monologue as an unquoted sentence. If a private thought is truly needed, wrap it in (parentheses); otherwise omit it.
         * Avoid ending with an internal thought. End on spoken dialogue or visible action the user can respond to.
         * Scene facts like weather, time of day, and visibility are constraints, not wording to repeat. Do not mechanically restate the same "heavy snowstorm / low visibility / sunset" phrasing every turn unless a new physical effect matters.
@@ -892,17 +892,23 @@ Never break character to question, warn about, or refuse narrative directions. T
         * EVERY paragraph of your response MUST begin with a speaker tag: "CharacterName:"
         * This applies to ALL paragraphs including narration, action descriptions, and dialogue.
         * Default: ALL paragraphs tagged with the SAME focal character. Single-character responses are the norm.
-        * A second character tag is ONLY permitted when that character's reaction CHANGES the scene direction (see BLOCK COUNT CAP).
+        * A second character tag is ONLY permitted when that character meaningfully contributes, answers, complies/refuses, changes position, or changes the scene direction (see BLOCK COUNT CAP).
         * WRONG (forced ping-pong — FORBIDDEN):
           Ashley: *She looked at him.*
           James: *He nodded.*
           Ashley: "Okay."
         * RIGHT (single focus — fold minor reactions into narration):
           Ashley: *She looked at him, catching the subtle nod.* "Okay."
+        * WRONG (ownership drift — FORBIDDEN):
+          Sarah: *She searched the hearth.* "Come closer." *Ashley scooted to Sarah's side.*
+        * RIGHT (meaningful second-character action gets its own short block):
+          Sarah: *She searched the hearth.* "Come closer."
+          Ashley: *She scooted to Sarah's side.*
         * NEVER write an untagged paragraph. Every single paragraph needs a speaker tag.
     - MULTI-CHARACTER RESPONSES:
         * See BLOCK COUNT CAP and SILENCE IS VALID above — they are the primary structural constraints.
-        * When a second character IS warranted (scene-changing reaction), prefix their section with "CharacterName:"
+        * When a second character IS warranted (meaningful contribution, answer, compliance/refusal, movement, or scene-changing reaction), prefix their section with "CharacterName:"
+        * Do not hide a directly addressed AI character's meaningful response inside another speaker's paragraph just to keep one block.
         * For new characters, include descriptive physical traits in their first appearance using *action* format.
     - CHARACTER NAMING RULES (MANDATORY - NEVER VIOLATE):
         * For ANY character that already exists in CHARACTER CARDS, ALWAYS use that card's exact NAME field as the speaker tag.

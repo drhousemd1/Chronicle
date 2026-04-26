@@ -4774,6 +4774,27 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260425-010",
+      title: "Keep second-character actions out of wrong speaker blocks",
+      summary: "Chat Runtime - Roleplay instructions now separate tiny folded reactions from meaningful second-character action or compliance so multi-character replies preserve UI speaker ownership",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "Lost QA showed a Continue response using Sarah's speaker block to narrate Ashley's completed compliance/action. That kept the block count low, but blurred speaker ownership and made the chat bubble imply Sarah controlled Ashley's action.",
+      plan: "Tighten the runtime and edge-function writer contract without reopening ping-pong: tiny non-decisive reactions can stay in focal narration, but meaningful answers, compliance/refusal, movement, or choices by another AI character must use their own short speaker block within the existing speaker cap or wait for a later turn.",
+      changes: "Updated `src/services/llm.ts`:\n- Expanded roleplay format discipline to forbid placing another AI character's meaningful choice, movement, compliance, or refusal inside the focal speaker block.\n- Clarified paragraph-tagging examples so meaningful second-character action gets its own short tagged block while minor reactions can still fold into focal narration.\n- Updated multi-character guidance so directly addressed AI characters with meaningful responses are not hidden inside another speaker paragraph.\n\nUpdated `supabase/functions/chat/index.ts`:\n- Mirrored the speaker-ownership rule in planner `mustAvoid` and writer `formattingNotes` so the edge-function fallback does not dilute the runtime prompt.\n\nUpdated `src/data/ui-audit-findings.ts`:\n- Added this changelog entry for the Lost QA speaker-ownership fix.",
+      filesAffected: [
+        "src/services/llm.ts",
+        "supabase/functions/chat/index.ts",
+        "src/data/ui-audit-findings.ts"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["chat-runtime", "roleplay-format", "speaker-ownership", "continue", "qa"],
+      comments: [],
+      createdAt: "2026-04-26T02:46:14.000Z",
+      updatedAt: "2026-04-26T02:46:14.000Z",
+    },
+    {
       id: "cl-20260425-009",
       title: "Document master prompt rework north star and QA loop",
       summary: "Prompt Debugging - The master prompt rework workbook now starts with the runtime goals, rapid QA workflow, and Codex roleplay testing standard to reduce drift during long-running chat-behavior work",
