@@ -4774,6 +4774,28 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260425-015",
+      title: "Keep roleplay priority labels internal",
+      summary: "Chat Runtime - Prompt rules now prevent visible planner or goal labels like 'Survival priority:' from leaking into story prose",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "Lost QA showed a structurally correct Sarah response that still exposed prompt/planner wording by writing `Survival priority:` inside the visible story text. That makes the output feel mechanical even when the behavior is otherwise aligned.",
+      plan: "Keep goals, priorities, directives, and planner/checklist notes as internal reasoning only. Instruct the runtime to translate them into natural action, dialogue, or subtext instead of visible labels.",
+      changes: "Updated `src/services/llm.ts`:\n- Added a Natural Prose rule that goals, priorities, directives, and planning notes are internal only.\n- Added a wrong example specifically forbidding visible planner leaks like `Survival priority:`.\n\nUpdated `supabase/functions/chat/index.ts`:\n- Added the same internal-only priority/goal rule to local planner `mustAvoid`, formatting notes, and writer contract injection.\n\nUpdated `/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md`:\n- Logged the Lost cabin planner-language leak finding and the intended correction.",
+      filesAffected: [
+        "src/services/llm.ts",
+        "supabase/functions/chat/index.ts",
+        "src/data/ui-audit-findings.ts",
+        "/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["chat-runtime", "prompting", "roleplay-quality", "planner-leak", "lost-qa"],
+      comments: [],
+      createdAt: "2026-04-26T05:08:07.000Z",
+      updatedAt: "2026-04-26T05:08:07.000Z",
+    },
+    {
       id: "cl-20260425-014",
       title: "Keep AI service errors out of story canon",
       summary: "Chat Runtime - Network, timeout, content-filter, HTTP, and missing-stream failures now throw UI errors instead of streaming text that gets saved as character dialogue",
