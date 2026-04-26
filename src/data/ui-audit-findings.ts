@@ -4774,6 +4774,26 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260425-009",
+      title: "Document master prompt rework north star and QA loop",
+      summary: "Prompt Debugging - The master prompt rework workbook now starts with the runtime goals, rapid QA workflow, and Codex roleplay testing standard to reduce drift during long-running chat-behavior work",
+      severity: "patch" as const,
+      status: "completed" as const,
+      problem: "The chat/runtime prompt cleanup will take many iterations, which creates drift risk: Codex can over-focus on isolated bugs, overbuild unrelated tooling, or test with weak roleplay inputs that do not stress the actual behavior the app needs to handle.",
+      plan: "Add a clear north-star section at the top of the master prompt rework document so every future pass starts by re-reading the goals, scope boundaries, testing expectations, and operating loop.",
+      changes: "Updated `/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md`:\n- Added a north-star section describing the goal of improving prompt adherence and dialogue quality while reducing bloat without losing critical safeguards.\n- Added explicit non-goals to prevent drift into unrelated dashboards, API Inspector work, or generic prompt-cleanup advice.\n- Added the working Lovable preview QA loop with Plan-mode Lovable chat as advisory only.\n- Added a Codex roleplay testing standard requiring realistic, detailed, stress-test roleplay inputs instead of weak placeholder messages.",
+      filesAffected: [
+        "/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md",
+        "src/data/ui-audit-findings.ts"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["prompt-debugging", "workflow", "roleplay-qa", "documentation", "north-star"],
+      comments: [],
+      createdAt: "2026-04-26T01:17:54.000Z",
+      updatedAt: "2026-04-26T01:17:54.000Z",
+    },
+    {
       id: "cl-20260425-008",
       title: "Tighten chat roleplay formatting discipline",
       summary: "Chat Runtime - Roleplay prompts now explicitly require action narration in asterisks, spoken dialogue in quotes, private thoughts only in parentheses, and scene facts as constraints instead of repeated wording",
