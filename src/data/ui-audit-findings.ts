@@ -4960,6 +4960,28 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
       updatedAt: "2026-04-26T05:08:07.000Z",
     },
     {
+      id: "cl-20260430-001",
+      title: "Re-scope always-sent roleplay pressure and add dialogue plausibility final check",
+      summary: "Chat Runtime - Stage 1 of the prompt rework now separates line-level dialogue craft from turn-level scene movement in the always-sent prompt and backend writer contract",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "Roleplay dialogue was staying continuous but still sounding clipped, tactical, and unnatural because the always-sent prompt kept pressuring individual lines to carry scene movement, while the backend writer contract lacked any arbitration layer explaining how line-level phrasing should coexist with turn-level structure.",
+      plan: "Apply the safest first-pass refactor only to the always-sent foundation: add rule scoping/arbitration, move scene-progress pressure from line-level to turn-level wording, consolidate natural-speech guidance into a final dialogue plausibility check, and mirror the same model in the backend writer contract before touching any user-facing settings branches.",
+      changes: "Updated `src/services/llm.ts`:\n- Added a rule-scoping/arbitration block explaining hard constraints vs turn-level obligations vs scene-level continuity vs line-level craft.\n- Rewrote story-movement and present-moment-action wording so the turn as a whole must advance instead of every individual line.\n- Softened repetition guidance so reactive or hesitant lines can exist without the turn feeling stalled.\n- Renamed the natural-language section to `NATURAL VOICE USAGE` and moved the actual human-speech test into a new final `DIALOGUE PLAUSIBILITY` block near the end of the always-sent prompt.\n\nUpdated `supabase/functions/chat/index.ts`:\n- Reframed the local planner `immediateBeat` around a believable next beat for the turn as a whole.\n- Added matching rule-scoping guidance to the writer injection.\n- Added a final dialogue plausibility check so writer output is screened for slogan/checklist/tactical phrasing before returning.\n\nUpdated `/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md`:\n- Logged the Stage 1 rule-scoping/arbitration decision and documented that settings-driven branches were intentionally left untouched for the next pass.",
+      filesAffected: [
+        "src/services/llm.ts",
+        "supabase/functions/chat/index.ts",
+        "src/data/ui-audit-findings.ts",
+        "/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["chat-runtime", "prompt-architecture", "dialogue-quality", "planner-writer", "stage-1", "qa"],
+      comments: [],
+      createdAt: "2026-04-30T22:20:00.000Z",
+      updatedAt: "2026-04-30T22:20:00.000Z",
+    },
+    {
       id: "cl-20260425-014",
       title: "Keep AI service errors out of story canon",
       summary: "Chat Runtime - Network, timeout, content-filter, HTTP, and missing-stream failures now throw UI errors instead of streaming text that gets saved as character dialogue",

@@ -391,7 +391,7 @@ function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undef
     maxSpeakerBlocks: Math.max(1, Math.min(2, allowedSpeakers.length || 1)),
     directQuestionsToAnswer,
     mentionedAiCharacters,
-    immediateBeat: 'Respond to the latest user action, make one concrete next beat, and keep the scene moving without a major jump unless the story clearly calls for it.',
+    immediateBeat: 'Respond naturally to the latest user action and let the turn as a whole move by one believable next beat without a major jump unless the story clearly calls for it.',
     mustInclude: [
       'Treat user-written AI-character dialogue/action as canon, not as an instruction to ignore.',
       'If the latest turn names or directs an AI character, answer or acknowledge that direction in the next response.',
@@ -982,6 +982,12 @@ Allowed speaker tags: ${speakerTags}
 Speaker limit: at most ${Math.max(1, Math.min(2, plan.maxSpeakerBlocks || 1))} tagged block(s)
 Immediate beat: ${immediateBeat}
 
+Rule scoping for this turn:
+- Hard constraints are non-negotiable: speaker ownership, scene state, user-character position lock, line of sight, and required formatting.
+- Turn-level obligations apply to the response as a whole: answer what matters, follow through, and move the scene by one believable beat.
+- Line-level craft applies to each utterance: make it sound spoken, in-character, emotionally plausible, and natural.
+- Not every line needs to do structural work. One line may carry the beat; other lines may react, hesitate, hedge, or add texture as long as the turn as a whole advances.
+
 Questions or prompts to address:
 ${formatGuidanceList(plan.directQuestionsToAnswer, 'No direct question needs special handling.')}
 
@@ -1005,6 +1011,7 @@ Style and format:
 - Treat scene facts as constraints, not phrases to repeat every turn.
 - Render goals and priorities as natural choices, actions, dialogue, or subtext. Do not output labels for internal reasoning.
 - Do not reuse the same environmental opening from recent assistant turns; show a new physical effect if the scene condition still matters.
+- Final dialogue plausibility check: if a line sounds like a slogan, checklist item, tactical prompt, or written narration instead of something a real person would say out loud, rewrite it simpler and more naturally.
 - Do not output markdown separator lines such as --- or ***.`,
   };
 

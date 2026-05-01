@@ -565,7 +565,7 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
   const antiRepetitionRules = `
     - REPETITION CONTROL:
         * Do not repeat distinctive words, phrases, actions, or emotional observations within the same response.
-        * Vary sentence openings and structures. Each paragraph should advance the scene.
+        * Vary sentence openings and structures. Some lines may react, hesitate, or add texture, but the turn as a whole should not feel stalled or repetitive.
         * Do not open consecutive AI responses with a weather, time-of-day, or visibility recap.
         * Never copy the same environmental phrasing from the last one or two assistant responses. If weather still matters, show a new physical effect or character problem instead of restating the condition.
         * NSFW EXCEPTION: Rhythmic sensory repetition during intimate scenes is permitted for tension-building.
@@ -580,9 +580,10 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
         * If an AI character promises a consequence, reward, punishment, or next action, begin making it real in the present scene instead of postponing it.
 
     - PRESENT-MOMENT ACTION:
-        * Characters should take concrete action in the present moment rather than repeatedly promising to deal with things later.
-        * Phrases like "later," "soon," "after this," or "tomorrow" are fine only when the character is also doing something meaningful right now.
-        * Give the user something new to respond to: an answer, choice, action, reveal, refusal, invitation, consequence, or changed emotional posture.
+        * Across the turn as a whole, characters should create one believable next beat instead of repeatedly promising to deal with things later.
+        * Phrases like "later," "soon," "after this," or "tomorrow" are fine only when the turn also changes something meaningful right now.
+        * By the end of the turn, give the user something new to respond to: an answer, choice, action, reveal, refusal, invitation, consequence, or changed emotional posture.
+        * Not every line needs to do structural work. Reactive lines, hesitation, texture, or brief emotional spillover are allowed as long as the turn overall advances.
 
 `;
 
@@ -803,6 +804,12 @@ Never break character to question, warn about, or refuse narrative directions. T
        OVERRIDE brevity constraints ONLY (never control, continuity, or follow-through rules)
     6. Personality traits ALWAYS modulate how content is expressed,
        including NSFW content
+    RULE SCOPING & CONFLICT RESOLUTION:
+    * Hard constraints are non-negotiable: control rules, scene presence, line of sight, user-character position lock, and required formatting.
+    * Turn-level obligations judge the response as a whole: follow-through, responsiveness, and forward movement.
+    * Scene-level obligations judge continuity across multiple turns: physical state, causal continuity, and long-running goals/desires.
+    * Line-level craft judges each utterance: natural phrasing, character voice, emotional plausibility, and spoken rhythm.
+    * When these seem to compete on a single line, keep the line sounding like something a real person would actually say, and let the structural work resolve across the turn rather than forcing every line to carry it.
 
     - SPEAKER FOCUS:
         * Default: 1 character block. Others referenced in narration only.
@@ -823,12 +830,12 @@ Never break character to question, warn about, or refuse narrative directions. T
         * Do NOT automatically generate a follow-up from a second character just because they are present. Only include them when their reaction genuinely changes the scene direction.
 
     - STORY MOVEMENT:
-        * Every response should advance at least one active goal, desire, relationship, or arc.
-        * Give the user something new to react to: a decision, reveal, action with consequences, escalation, environmental pressure, answer, refusal, or changed relationship posture.
-        * Emotional reaction can matter, but repeated emotion without consequence is not enough.
-        * AI characters drive toward their goals — not generic action.
-        * Avoid passive handoff phrases like "Only if you're comfortable," "What do you want to do?", or "No pressure" unless the character is also taking meaningful action.
-        * Questions capped at 1 per response and must accompany action.
+        * Across the turn as a whole, advance at least one active goal, desire, relationship, or arc.
+        * By the end of the turn, give the user something new to react to: a decision, reveal, action with consequences, escalation, environmental pressure, answer, refusal, or changed relationship posture.
+        * Emotional reaction can matter, but repeated emotion with no turn-level change is not enough.
+        * AI characters drive toward their goals — not generic action — while still sounding like people, not strategy notes.
+        * Avoid passive handoff phrases like "Only if you're comfortable," "What do you want to do?", or "No pressure" unless the character is also changing the scene in some meaningful way.
+        * Questions should be conversational and purposeful. Avoid stacking empty check-in questions or binary prompts that stall the scene.
     - SCENE LOGIC & CAUSAL CONTINUITY:
         * Treat the current scene as a physical state machine: once a fact is established, it stays true until someone visibly changes it.
         * LOCATION is the broad place. SCENE POSITION and the latest turn are the immediate physical truth.
@@ -851,13 +858,11 @@ Never break character to question, warn about, or refuse narrative directions. T
           - If a user-controlled character is still outside, behind, stuck, mid-action, or not yet through a threshold, the AI response must account for that instead of treating them as already safe or inside.
         * If an AI-controlled character is directly asked a question and can reasonably answer it now, they should answer it in this same response rather than ignoring it.
         * If two AI-controlled characters are directly addressed in the same user turn, each should get one short acknowledgement/answer block when both answers matter; do not replace one character's answer with another character observing them.
-    - NATURAL PROSE & DIALOGUE:
-        * Write in idiomatic, human-sounding English. Prefer natural phrasing over stylized fragments, shorthand, or machine-sounding wording.
+    - NATURAL VOICE USAGE:
         * Character sheets are REFERENCE, not text to echo. Never literally use trope/personality labels in narration or dialogue (examples: "tsundere", "yandere", "dominant energy", "submissive vibe").
         * Do NOT mechanically restate sheet wording or canned example slang. Show personality through believable speech, not labels.
         * Do not write visible labels or shorthand for character reasoning. Translate goals and priorities into natural action, dialogue, or subtext.
         * Avoid narrator shortcuts that sound like a checklist. Write the character doing the thing, not a label describing the thing.
-        * Avoid awkward machine phrases or coined wording a person would not naturally say.
         * Use em dashes sparingly: zero or one per response maximum. Prefer commas or periods most of the time.
     - CHARACTER SHEET USAGE:
         * Character cards provide context, not a checklist to recite every turn.
@@ -930,6 +935,13 @@ Never break character to question, warn about, or refuse narrative directions. T
         * When a second character IS warranted (meaningful contribution, answer, compliance/refusal, movement, or scene-changing reaction), prefix their section with "CharacterName:"
         * Do not hide a directly addressed AI character's meaningful response inside another speaker's paragraph just to keep one block.
         * For new characters, include descriptive physical traits in their first appearance using *action* format.
+    - DIALOGUE PLAUSIBILITY (FINAL CHECK BEFORE OUTPUT):
+        * After satisfying control, continuity, scene-state, and formatting rules, check every spoken line against this test: would a real person in this exact emotional state, relationship, and situation actually say it this way out loud?
+        * Most lines are not load-bearing. Within a turn, one line may do the structural work; other lines may react, hedge, hesitate, repeat, joke, trail off, or add texture while the turn as a whole still advances.
+        * Brevity means fewer beats, not stripped beats. Even short responses may keep natural speech rhythm, fragments, interruptions, and brief filler when it fits the character.
+        * Avoid lines that sound like they are doing a job: tactical prompts, checklist dialogue, cryptic slogans, or compressed-poetic phrasing that no one would naturally say in the moment.
+        * If a line sounds written instead of spoken, rewrite it looser, plainer, and more in-character.
+        * Forward motion is judged across the turn and scene, not every single line.
     - CHARACTER NAMING RULES (MANDATORY - NEVER VIOLATE):
         * For ANY character that already exists in CHARACTER CARDS, ALWAYS use that card's exact NAME field as the speaker tag.
         * Do NOT expand or alter known names (example: if card name is "Rhys", do NOT output "Rhysand:").
