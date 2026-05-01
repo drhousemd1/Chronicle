@@ -1,5 +1,29 @@
 export type ChatDebugSelectionReason = 'bridge' | 'scored';
 
+export const CHAT_DEBUG_ISSUE_TAGS = [
+  'Scene Logic',
+  'Character Control',
+  'Speaker Flow',
+  'Follow-Through',
+  'Repetition',
+  'Dialogue Quality',
+  'Formatting',
+  'Prompt Leakage',
+  'Memory / State',
+  'Context Use',
+  'Other',
+] as const;
+
+export type ChatDebugIssueTag = (typeof CHAT_DEBUG_ISSUE_TAGS)[number];
+
+export type DialogDebugComment = {
+  messageId: string;
+  note: string;
+  tags: ChatDebugIssueTag[];
+  createdAt: number;
+  updatedAt: number;
+};
+
 export type ChatDebugTraceExcerpt = {
   role: 'system' | 'user' | 'assistant';
   preview: string;

@@ -1,5 +1,10 @@
 import type { Character, Conversation, Message, ScenarioData, SideCharacter, TimeOfDay } from '@/types';
 import { parseMessageSegments, type MessageSegment } from '@/services/side-character-generator';
+import {
+  CHAT_DEBUG_ISSUE_TAGS,
+  type ChatDebugIssueTag,
+  type DialogDebugComment,
+} from './types';
 
 type ReviewExportCharacter = {
   name: string;
@@ -31,10 +36,11 @@ type ReviewExportSegment = {
 };
 
 export type ChatReviewLiveComment = {
-  messageId: string;
-  note: string;
-  createdAt: number;
-  updatedAt: number;
+  messageId: DialogDebugComment['messageId'];
+  note: DialogDebugComment['note'];
+  tags: DialogDebugComment['tags'];
+  createdAt: DialogDebugComment['createdAt'];
+  updatedAt: DialogDebugComment['updatedAt'];
 };
 
 export type ChatReviewExportInput = {
@@ -194,6 +200,36 @@ function avatarHtml(segment: ReviewExportSegment): string {
   return `<span>${escapeHtml(initialsForName(segment.speakerName))}</span>`;
 }
 
+function uniqueIssueTags(tags: ChatDebugIssueTag[] | undefined): ChatDebugIssueTag[] {
+  const seen = new Set<ChatDebugIssueTag>();
+  const ordered: ChatDebugIssueTag[] = [];
+
+  for (const tag of CHAT_DEBUG_ISSUE_TAGS) {
+    if (tags?.includes(tag) && !seen.has(tag)) {
+      seen.add(tag);
+      ordered.push(tag);
+    }
+  }
+
+  return ordered;
+}
+
+function buildIssueTagCounts(
+  comments: Record<string, ChatReviewLiveComment> | undefined,
+): Array<{ tag: ChatDebugIssueTag; count: number }> {
+  const counts = new Map<ChatDebugIssueTag, number>();
+
+  for (const comment of Object.values(comments || {})) {
+    for (const tag of uniqueIssueTags(comment.tags)) {
+      counts.set(tag, (counts.get(tag) || 0) + 1);
+    }
+  }
+
+  return CHAT_DEBUG_ISSUE_TAGS
+    .map((tag) => ({ tag, count: counts.get(tag) || 0 }))
+    .filter((entry) => entry.count > 0);
+}
+
 function buildSegments(input: ChatReviewExportInput): ReviewExportSegment[] {
   const characters = getCharacters(input.appData);
   const continueSet = new Set(input.continueMessageIds);
@@ -252,8 +288,12 @@ function renderSegmentCard(segment: ReviewExportSegment, index: number): string 
   ].filter(Boolean).join(' ');
 
   const rawBlock = `<details class="raw-details"><summary>Raw saved message text</summary><pre>${escapeHtml(segment.rawMessageText)}</pre></details>`;
-  const liveCommentBlock = segment.liveComment?.note
-    ? `<section class="live-comment"><div>Live tester note</div><p>${escapeHtml(segment.liveComment.note)}</p></section>`
+  const selectedTags = uniqueIssueTags(segment.liveComment?.tags);
+  const liveCommentTags = selectedTags.length
+    ? `<div class="comment-tag-row">${selectedTags.map((tag) => `<span class="comment-tag">${escapeHtml(tag)}</span>`).join('')}</div>`
+    : '';
+  const liveCommentBlock = segment.liveComment?.note || selectedTags.length
+    ? `<section class="live-comment"><div>Live tester note</div>${liveCommentTags}${segment.liveComment?.note ? `<p>${escapeHtml(segment.liveComment.note)}</p>` : '<p>No written note. Tags only.</p>'}</section>`
     : '';
   const imageBlock = segment.imageUrl
     ? `<img class="scene-image" src="${escapeAttribute(segment.imageUrl)}" alt="Generated scene image" loading="lazy" />`
@@ -297,6 +337,30 @@ function renderCharacterSummary(characters: ReviewExportCharacter[]): string {
       </div>
     </div>
   `).join('');
+}
+
+function renderIssueSummary(
+  comments: Record<string, ChatReviewLiveComment> | undefined,
+): string {
+  const issueCounts = buildIssueTagCounts(comments);
+  if (!issueCounts.length) return '';
+
+  return `
+    <section class="issue-summary">
+      <div class="issue-summary-header">
+        <div class="eyebrow">Issue summary</div>
+        <p>Counted from the tags saved on dialogue debug notes in this transcript.</p>
+      </div>
+      <div class="issue-summary-grid">
+        ${issueCounts.map((entry) => `
+          <div class="issue-summary-card">
+            <strong>${escapeHtml(entry.tag)}</strong>
+            <span>${entry.count} tagged ${entry.count === 1 ? 'note' : 'notes'}</span>
+          </div>
+        `).join('')}
+      </div>
+    </section>
+  `;
 }
 
 function reviewStyles(): string {
@@ -410,6 +474,56 @@ function reviewStyles(): string {
       margin-bottom: 5px;
     }
     .live-comment p { margin: 0; color: #d7f7ef; white-space: pre-wrap; }
+    .comment-tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 0 0 10px;
+    }
+    .comment-tag {
+      border: 1px solid rgba(120,220,202,0.24);
+      border-radius: 999px;
+      background: rgba(120,220,202,0.12);
+      color: #d7f7ef;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      padding: 4px 9px;
+    }
+    .issue-summary {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: rgba(255,255,255,0.04);
+      box-shadow: 0 20px 56px rgba(0,0,0,0.18);
+      padding: 18px;
+      margin: 0 0 20px;
+    }
+    .issue-summary-header p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .issue-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .issue-summary-card {
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.035);
+      padding: 12px;
+    }
+    .issue-summary-card strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 3px;
+    }
+    .issue-summary-card span {
+      color: var(--muted);
+      font-size: 12px;
+    }
     details { margin-top: 12px; border: 1px solid rgba(255,255,255,0.10); border-radius: 14px; background: rgba(0,0,0,0.18); }
     summary { cursor: pointer; color: var(--muted); font-weight: 800; padding: 10px 12px; }
     pre { white-space: pre-wrap; margin: 0; padding: 12px; color: #cbd5e1; overflow-wrap: anywhere; }
@@ -427,6 +541,7 @@ export function buildChatReviewHtml(input: ChatReviewExportInput): string {
   const segments = buildSegments(input);
   const exportedAt = formatExportDate(input.exportedAt);
   const cards = segments.map((segment, index) => renderSegmentCard(segment, index)).join('\n');
+  const issueSummary = renderIssueSummary(input.messageComments);
 
   return `<!doctype html>
 <html lang="en">
@@ -451,6 +566,7 @@ export function buildChatReviewHtml(input: ChatReviewExportInput): string {
       <div class="character-grid">${renderCharacterSummary(characters)}</div>
     </section>
 
+    ${issueSummary}
     ${cards}
 
     <p class="footer-note">Dialogue debug notes are local testing notes only. They are not sent to the roleplay model and are not story canon.</p>

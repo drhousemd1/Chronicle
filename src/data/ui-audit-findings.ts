@@ -4774,6 +4774,30 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260430-001",
+      title: "Add issue tags to live dialogue debug notes",
+      summary: "Chat Debugging - The live note modal now supports multi-select issue tags and the exported session log rolls those tags up into a quick issue summary",
+      severity: "feature" as const,
+      status: "completed" as const,
+      problem: "The live dialogue debug notes were already a good lightweight QA tool, but they depended entirely on free-text comments. That made it harder to quickly see which failure patterns were dominating a playthrough, especially once multiple issues could appear inside the same response.",
+      plan: "Keep the existing local-only note workflow intact, but add multi-select issue tags so the tester can classify a bad turn without slowing down. Carry those tags into the exported HTML session log and show a simple summary block at the top so the debugging patterns are visible at a glance.",
+      changes: "Updated `src/features/chat-debug/types.ts`:\n- Added the shared issue-tag list and moved dialogue debug comment typing into the chat-debug module.\n\nUpdated `src/components/chronicle/ChatInterfaceTab.tsx`:\n- Extended local comment storage/loading to preserve issue tags.\n- Added multi-select issue tagging in the existing note modal using the current dropdown-menu system.\n- Kept the workflow local-only so notes and tags never touch roleplay requests or canon data.\n\nUpdated `src/features/chat-debug/review-export.ts` and `src/features/chat-debug/review-export.test.ts`:\n- Rendered selected issue tags beside each saved note.\n- Added a top-of-export issue summary so repeated failure categories are easy to spot across one transcript.\n\nUpdated `/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md`:\n- Aligned the top-level debugging workflow with the current tester-led process: user playthrough -> tagged notes -> export -> Codex analysis/fixes.",
+      filesAffected: [
+        "src/features/chat-debug/types.ts",
+        "src/components/chronicle/ChatInterfaceTab.tsx",
+        "src/features/chat-debug/review-export.ts",
+        "src/features/chat-debug/review-export.test.ts",
+        "src/data/ui-audit-findings.ts",
+        "/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: ["cl-20260426-003", "cl-20260426-005", "cl-20260425-009"],
+      tags: ["chat-debugging", "dialogue-qa", "issue-tagging", "session-export", "workflow"],
+      comments: [],
+      createdAt: "2026-05-01T01:34:12.000Z",
+      updatedAt: "2026-05-01T01:34:12.000Z",
+    },
+    {
       id: "cl-20260426-006",
       title: "Add scene-position continuity to roleplay state",
       summary: "Chat Debugging - Broad location now stays separate from exact scene position so characters stop treating doorway, inside/outside, and barrier states as vague background",

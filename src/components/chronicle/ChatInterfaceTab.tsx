@@ -10,7 +10,10 @@ import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, 
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -58,7 +61,13 @@ import {
   buildRequiredPresence,
   trackApiValidationSnapshot,
 } from '@/services/api-usage-validation';
-import type { ChatDebugTrace, StoredChatDebugTraceMap } from '@/features/chat-debug/types';
+import {
+  CHAT_DEBUG_ISSUE_TAGS,
+  type ChatDebugIssueTag,
+  type ChatDebugTrace,
+  type DialogDebugComment,
+  type StoredChatDebugTraceMap,
+} from '@/features/chat-debug/types';
 import {
   loadChatDebugTraceStore,
   persistChatDebugTraceStore,
@@ -101,18 +110,22 @@ interface ChatInterfaceTabProps {
 }
 
 type ActionEvent = { messageId: string; timestamp: number };
-type DialogDebugComment = {
-  messageId: string;
-  note: string;
-  createdAt: number;
-  updatedAt: number;
-};
 
 const TIME_SEQUENCE: TimeOfDay[] = ['sunrise', 'day', 'sunset', 'night'];
 const DIALOG_DEBUG_ENABLED_STORAGE_KEY = 'chronicle_dialog_debug_enabled_v1';
 
 function buildDialogDebugCommentsStorageKey(scenarioId: string, conversationId: string): string {
   return `chronicle_dialog_debug_comments_v1:${scenarioId}:${conversationId}`;
+}
+
+function isChatDebugIssueTag(value: unknown): value is ChatDebugIssueTag {
+  return typeof value === 'string' && CHAT_DEBUG_ISSUE_TAGS.includes(value as ChatDebugIssueTag);
+}
+
+function normalizeDialogDebugTags(tags: unknown): ChatDebugIssueTag[] {
+  if (!Array.isArray(tags)) return [];
+  const selected = new Set(tags.filter(isChatDebugIssueTag));
+  return CHAT_DEBUG_ISSUE_TAGS.filter((tag) => selected.has(tag));
 }
 
 function loadDialogDebugComments(scenarioId: string, conversationId: string): Record<string, DialogDebugComment> {
@@ -126,8 +139,18 @@ function loadDialogDebugComments(scenarioId: string, conversationId: string): Re
         comment
         && typeof comment.messageId === 'string'
         && typeof comment.note === 'string'
-        && comment.note.trim().length > 0
+        && (
+          comment.note.trim().length > 0
+          || normalizeDialogDebugTags(comment.tags).length > 0
+        )
       ))
+      .map(([messageId, comment]) => [
+        messageId,
+        {
+          ...comment,
+          tags: normalizeDialogDebugTags(comment.tags),
+        },
+      ])
     );
   } catch {
     return {};
@@ -855,6 +878,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [dialogDebugComments, setDialogDebugComments] = useState<Record<string, DialogDebugComment>>({});
   const [activeDialogDebugMessage, setActiveDialogDebugMessage] = useState<Message | null>(null);
   const [dialogDebugDraft, setDialogDebugDraft] = useState('');
+  const [dialogDebugTagDraft, setDialogDebugTagDraft] = useState<ChatDebugIssueTag[]>([]);
 
   useEffect(() => {
     chatDebugTraceStoreRef.current = loadChatDebugTraceStore(scenarioId, conversationId);
@@ -4218,25 +4242,38 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   };
 
   const openDialogDebugComment = (message: Message) => {
+    const existing = dialogDebugComments[message.id];
     setActiveDialogDebugMessage(message);
-    setDialogDebugDraft(dialogDebugComments[message.id]?.note || '');
+    setDialogDebugDraft(existing?.note || '');
+    setDialogDebugTagDraft(existing?.tags || []);
   };
 
   const closeDialogDebugComment = () => {
     setActiveDialogDebugMessage(null);
     setDialogDebugDraft('');
+    setDialogDebugTagDraft([]);
+  };
+
+  const toggleDialogDebugTag = (tag: ChatDebugIssueTag) => {
+    setDialogDebugTagDraft((current) => (
+      current.includes(tag)
+        ? current.filter((value) => value !== tag)
+        : normalizeDialogDebugTags([...current, tag])
+    ));
   };
 
   const handleDialogDebugCommentSave = () => {
     if (!activeDialogDebugMessage) return;
     const note = dialogDebugDraft.trim();
+    const tags = normalizeDialogDebugTags(dialogDebugTagDraft);
     const existing = dialogDebugComments[activeDialogDebugMessage.id];
     const nextComments = { ...dialogDebugComments };
 
-    if (note) {
+    if (note || tags.length > 0) {
       nextComments[activeDialogDebugMessage.id] = {
         messageId: activeDialogDebugMessage.id,
         note,
+        tags,
         createdAt: existing?.createdAt || Date.now(),
         updatedAt: Date.now(),
       };
@@ -5809,12 +5846,12 @@ const updatedChar: SideCharacter = {
                             onClick={() => openDialogDebugComment(msg)}
                             className={cn(
                               "p-2 rounded-lg hover:bg-ghost-white transition-colors",
-                              dialogDebugComments[msg.id]?.note
+                              dialogDebugComments[msg.id]
                                 ? "text-emerald-300 hover:text-emerald-200"
                                 : "text-slate-400 hover:text-white"
                             )}
                             aria-label="Add dialogue debug note"
-                            title={dialogDebugComments[msg.id]?.note ? "Edit dialogue debug note" : "Add dialogue debug note"}
+                            title={dialogDebugComments[msg.id] ? "Edit dialogue debug note" : "Add dialogue debug note"}
                           >
                             <MessageSquare className="w-4 h-4" />
                           </button>
@@ -6753,6 +6790,56 @@ const updatedChar: SideCharacter = {
                   : ''}
               </p>
             </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-zinc-400">
+                  Issue tags
+                </span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-zinc-200 hover:bg-white/10"
+                    >
+                      {dialogDebugTagDraft.length > 0
+                        ? `${dialogDebugTagDraft.length} tag${dialogDebugTagDraft.length === 1 ? '' : 's'} selected`
+                        : 'Choose issue tags'}
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-64">
+                    <DropdownMenuLabel>Issue categories</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {CHAT_DEBUG_ISSUE_TAGS.map((tag) => (
+                      <DropdownMenuCheckboxItem
+                        key={tag}
+                        checked={dialogDebugTagDraft.includes(tag)}
+                        onSelect={(event) => event.preventDefault()}
+                        onCheckedChange={() => toggleDialogDebugTag(tag)}
+                      >
+                        {tag}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              {dialogDebugTagDraft.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {dialogDebugTagDraft.map((tag) => (
+                    <Badge
+                      key={tag}
+                      variant="outline"
+                      className="cursor-pointer border-[#78dcca]/30 bg-[#78dcca]/10 px-2.5 py-1 text-[11px] font-bold text-[#d8fff7] hover:bg-[#78dcca]/16"
+                      onClick={() => toggleDialogDebugTag(tag)}
+                    >
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-zinc-500">
+                Select as many issue types as fit this message. These tags stay local and show up in the exported session log.
+              </p>
+            </div>
             <label className="block">
               <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-zinc-400">
                 What is wrong with this bubble?
@@ -6771,7 +6858,10 @@ const updatedChar: SideCharacter = {
           <DialogFooter className="gap-2">
             <button
               type="button"
-              onClick={() => setDialogDebugDraft('')}
+              onClick={() => {
+                setDialogDebugDraft('');
+                setDialogDebugTagDraft([]);
+              }}
               className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-zinc-300 hover:bg-white/10"
             >
               Clear

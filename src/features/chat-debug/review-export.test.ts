@@ -73,6 +73,7 @@ describe('buildChatReviewHtml', () => {
         'message-ai-1': {
           messageId: 'message-ai-1',
           note: 'Ashley answered correctly, but Sarah sounded too mechanical.',
+          tags: ['Dialogue Quality', 'Speaker Flow'],
           createdAt: 1,
           updatedAt: 2,
         },
@@ -88,6 +89,9 @@ describe('buildChatReviewHtml', () => {
     expect(html).not.toContain('What went wrong?');
     expect(html).toContain('Live tester note');
     expect(html).toContain('Sarah sounded too mechanical.');
+    expect(html).toContain('Issue summary');
+    expect(html).toContain('Dialogue Quality');
+    expect(html).toContain('Speaker Flow');
     expect(html).toContain('data-review-id="message-ai-1-1"');
     expect(html).toContain('Regenerated');
   });
