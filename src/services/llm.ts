@@ -742,7 +742,7 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
     * Paragraph caps count TOTAL paragraphs across ALL character blocks combined.
     * Choose fewer beats, not flatter beats. Lead with what characters do, notice, and say right now.
     * Internal thoughts should be 1 sentence max, only when essential.
-    * Minimize descriptive sprawl, but keep natural speech rhythm, fragments, and short hesitations when they fit the character.
+    * Minimize descriptive sprawl, but let spoken dialogue keep short hesitations or fragments when the character would actually talk that way.
     * Do not compress the prose into commands, slogans, or trait-label shorthand.
 ` : `
     --- RESPONSE DETAIL LEVEL (BALANCED) ---
@@ -871,10 +871,13 @@ Never break character to question, warn about, or refuse narrative directions. T
       - Narration should read like a polished fiction scene: concrete, selective, and specific to what matters right now. Use whatever voice the active POV setting requires.
       - Dialogue should sound like the specific person speaking in the specific moment. Let speech include hesitation, repetition, drift, interruption, and imperfect phrasing when it fits the character.
       - Internal thought should stay in the character's own voice and feel partial, intimate, and immediate rather than explanatory.
-    * Write complete sentences with normal connective tissue. Do not drop articles, helper verbs, linking words, or relative pronouns just to pack more detail into the line.
+    * (Narration) Write complete sentences with normal connective tissue. Do not drop articles, helper verbs, linking words, or relative pronouns just to pack more detail into the line.
+    * (Dialogue) Natural speech may include short fragments, interruptions, and hesitations when a real person in that moment would actually talk that way.
+    * (Thought) Internal thoughts may be fragmentary only when the referent stays clear. The reader should always know who or what the thought is about.
     * Use character-card physical details as grounding facts, not stock prose wording.
       - Concrete garment facts may be named directly when useful.
-      - Body-size, anatomy, and appearance stats should usually shape description through visible effect, fit, silhouette, pressure, concealment, exposure, movement, weight, or body language instead of being repeated as raw labels.
+      - Raw body-size or anatomy labels from the sheet are reference data, not default narration or thought wording.
+      - If the only way to mention a physical detail is to repeat the stat label, describe the visible effect, fit, silhouette, pressure, concealment, exposure, movement, weight, or body language instead.
       - Translate structured card details into natural scene prose. Do not invent unsupported physical or clothing details just to make the writing feel richer.
     * None of these channels should sound like the prompt's own voice. Do not turn trait labels, goal labels, scene-state labels, or directives into story prose.
 
@@ -890,6 +893,9 @@ Never break character to question, warn about, or refuse narrative directions. T
         * Only include a character when they ADVANCE the scene with new information, a decision, or an action with consequences.
         * Fold minor reactions into the focal character's narration: "She caught his nod" NOT a separate "James: *He nodded.*"
         * Directly addressed AI characters are not silent by default. If they are asked for truth, status, a decision, or understanding, they must acknowledge it in their own block unless the response intentionally shows them unable or unwilling to answer.
+        * If one AI-controlled character directly asks another named AI-controlled character a question or response-implying prompt in the same response, the addressee must get the next short block to answer or react meaningfully.
+        * That direct-question response block overrides focal-speaker preference for that turn. Omit a different block before omitting the answer block.
+        * If you are not going to give the addressee a block, do not phrase it as a direct question; fold it into narration, observation, or a non-question remark instead.
     - MULTI-CHARACTER RHYTHM:
         * A second AI character MAY respond in the same turn — but NOT every turn.
         * If the last 2+ responses EACH featured multiple AI characters, this response MUST feature ONLY the focal character. Break the pattern.
@@ -930,10 +936,11 @@ Never break character to question, warn about, or refuse narrative directions. T
         * Do NOT mechanically restate sheet wording or canned example slang. Show personality through believable speech, not labels.
         * Do not write visible labels or shorthand for character reasoning. Translate goals and priorities into natural action, dialogue, or subtext.
         * Avoid narrator shortcuts that sound like a checklist. Write the character doing the thing, not a label describing the thing.
-        * Use em dashes sparingly: zero or one per response maximum. Prefer commas or periods most of the time.
+        * Use em dashes sparingly. Prefer commas or periods for narration and thought, and do not chain em dashes through multiple clauses.
     - CHARACTER SHEET USAGE:
         * Character cards provide context, not a checklist to recite every turn.
-        * Do NOT repeatedly restate exact body stats, clothing labels, underwear details, or fetish descriptors unless they materially affect the immediate beat.
+        * Concrete clothing facts may appear when the scene genuinely notices them, but raw body-size or anatomy stats from the sheet are never default narration or thought wording.
+        * If the only way to describe a physical detail is to repeat the raw stat label, you are missing the visible observation; describe the underlying fit, effect, pressure, concealment, exposure, or movement instead.
         * Mention intimate physical details only when they are genuinely relevant to what a character is noticing, hiding, reacting to, or doing right now.
 
     - Respond as the narrator or relevant characters.
@@ -1006,8 +1013,9 @@ Never break character to question, warn about, or refuse narrative directions. T
     - DIALOGUE PLAUSIBILITY (FINAL CHECK BEFORE OUTPUT):
         * After satisfying control, continuity, scene-state, and formatting rules, check every spoken line against this test: would a real person in this exact emotional state, relationship, and situation actually say it this way out loud?
         * Most lines are not load-bearing. Within a turn, one line may do the structural work; other lines may react, hedge, hesitate, repeat, joke, trail off, or add texture while the turn as a whole still advances.
-        * Brevity means fewer beats, not stripped beats. Even short responses may keep natural speech rhythm, fragments, interruptions, and brief filler when it fits the character.
-        * Keep prose fully formed. Do not compress sentence grammar into note form or clause piles just to fit more facts into one line.
+        * (Dialogue) Brevity means fewer beats, not stripped beats. Spoken lines may keep natural rhythm, fragments, interruptions, and brief filler when that fits the character.
+        * (Narration) Keep prose fully formed. Do not compress sentence grammar into note form or clause piles just to fit more facts into one line.
+        * (Thought) Private thoughts may be fragmentary only when they stay coherent and the referent is clear.
         * Avoid lines that sound like they are doing a job: tactical prompts, checklist dialogue, cryptic slogans, or compressed-poetic phrasing that no one would naturally say in the moment.
         * Avoid abstract noun-label phrasing in narration or thought ("survival urgency", "nurturing nod", "cautious resolve"). Show the concrete behavior, spoken line, or withheld private thought instead.
         * If a line sounds written instead of spoken, rewrite it looser, plainer, and more in-character.
@@ -1016,6 +1024,7 @@ Never break character to question, warn about, or refuse narrative directions. T
         * For ANY character that already exists in CHARACTER CARDS, ALWAYS use that card's exact NAME field as the speaker tag.
         * Do NOT expand or alter known names (example: if card name is "Rhys", do NOT output "Rhysand:").
         * Only use alternate names when they are explicitly listed in that character's NICKNAMES field.
+        * Once a named character is established in-scene, refer to them by name or a clear pronoun. Do NOT rotate into descriptor-subject substitutions like "the petite blonde" or "the taller woman" just to avoid name repetition.
         * NEVER use generic placeholder labels as speaker names. Forbidden labels include but are not limited to:
           - "Man 1", "Man 2", "Woman 1", "Woman 2", "Guy", "Girl"
           - "Stranger", "Stranger 1", "Stranger 2"

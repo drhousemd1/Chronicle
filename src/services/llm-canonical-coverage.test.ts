@@ -161,7 +161,11 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('Protect Feyre.');
     expect(prompt).toContain('Right now, Actively watching court movements.');
     expect(prompt).toContain('Write complete sentences with normal connective tissue.');
+    expect(prompt).toContain('(Dialogue) Natural speech may include short fragments, interruptions, and hesitations');
     expect(prompt).toContain('Use character-card physical details as grounding facts, not stock prose wording.');
+    expect(prompt).toContain('Raw body-size or anatomy labels from the sheet are reference data, not default narration or thought wording.');
+    expect(prompt).toContain('If one AI-controlled character directly asks another named AI-controlled character a question or response-implying prompt in the same response, the addressee must get the next short block to answer or react meaningfully.');
+    expect(prompt).toContain('Once a named character is established in-scene, refer to them by name or a clear pronoun.');
 
     expect(prompt).toContain('ACTIVE SCENE CONTEXT:');
     expect(prompt).toContain('- Scene Title: Balcony Summit');

@@ -4774,6 +4774,29 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260501-004",
+      title: "Scope prose rules by channel and protect same-turn answer blocks",
+      summary: "Chat Runtime - Reversed the Test 6 regression by separating narration/dialogue/thought sentence rules, protecting AI-to-AI direct-answer blocks, hardening anti-epithet and body-stat guidance, and capping em-dash overuse in deterministic cleanup",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "Test Session 6 showed a real regression: clipped or incomplete narration, unclear thought fragments, named AI characters asking each other direct questions without an answer block, repeated raw DD/H-cup style labels, descriptor-subject substitutions like 'the petite blonde', and continued chatbot-style em-dash chaining. The root cause was not one bad line but a real channel-scoping collision: fragment-friendly dialogue guidance was broad enough to leak into narration and thought, while the writer still had no explicit override protecting a same-turn answer block when one AI character directly questioned another.",
+      plan: "Keep the existing prompt architecture intact, but make the key prose rules channel-aware. Scope sentence completeness to narration, scope fragments to dialogue, require thought referents to stay clear, add a protected same-turn AI-to-AI answer-block override, harden the body-stat wording so raw sheet labels are not default narration, forbid descriptor-subject swaps for named characters, and add a deterministic em-dash frequency cap in backend cleanup.",
+      changes: "Updated `src/services/llm.ts`:\n- Scoped the concise-mode fragment allowance to spoken dialogue instead of broad prose.\n- Added explicit channel wording in the shared writing-voice / dialogue-plausibility rules for narration, dialogue, and thought.\n- Added a same-turn AI-to-AI direct-question override so the addressee gets the next short block, even when focal-speaker pressure exists.\n- Hardened the body-stat guidance so raw sheet labels are reference data, not default narration/thought wording.\n- Added a named-character anti-epithet rule so established characters stay name/pronoun-led instead of drifting into descriptor-subject substitutions.\n- Softened em-dash guidance to align with deterministic cleanup instead of a brittle per-response prompt cap.\n\nUpdated `supabase/functions/chat/index.ts`:\n- Expanded local-planner speaker reservation so a second named AI speaker can still be available when a protected answer block becomes necessary.\n- Mirrored the new channel-scoped prose rules, direct-question override, anti-epithet rule, and harder body-stat guidance in the writer injection.\n- Added deterministic em-dash cleanup that caps dash chaining more tightly in narration/thought than in quoted dialogue.\n- Added local planner must-include / must-avoid hints for direct-question follow-through and descriptor-subject drift.\n\nUpdated `src/services/llm-canonical-coverage.test.ts`:\n- Added prompt coverage for the new channel-scoping language, the direct-question override, the harder body-stat rule, and the anti-epithet rule.\n\nUpdated `/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md`:\n- Logged the Test 6 regression and recorded channel ownership as an explicit decision rule for future prompt edits.",
+      filesAffected: [
+        "src/services/llm.ts",
+        "supabase/functions/chat/index.ts",
+        "src/services/llm-canonical-coverage.test.ts",
+        "src/data/ui-audit-findings.ts",
+        "/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: ["cl-20260501-003", "cl-20260501-002"],
+      tags: ["chat-runtime", "regression-reversal", "channel-scoping", "dialogue-quality", "question-handoff", "deterministic-cleanup"],
+      comments: [],
+      createdAt: "2026-05-01T03:20:00.000Z",
+      updatedAt: "2026-05-01T03:20:00.000Z",
+    },
+    {
       id: "cl-20260501-003",
       title: "Reframe theme tags and prose-completion guidance for test 5",
       summary: "Chat Runtime - Story-tag injection now reads as opted-in thematic openness instead of mandatory directives, while the shared prompt and writer guidance now explicitly demand complete sentences and natural translation of card-based physical facts",

@@ -384,11 +384,12 @@ function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undef
     aiNames.some((aiName) => aiName.toLowerCase() === name.toLowerCase())
   ));
   const mentionedAiCharacters = findMentionedAiCharacters(lastUser, aiNames);
-  const groupCue = /\b(you both|both of you|everyone|everybody|together|we|us|all of us|your mom|your daughter|group|stay together)\b/i.test(lastUser);
   const focusCharacter = mentionedAiCharacters[0] || previousSpeakers[0] || aiNames[0] || null;
-  const secondaryCandidates = groupCue || mentionedAiCharacters.length > 1
-    ? uniqueNonEmpty([...mentionedAiCharacters.slice(1), ...previousSpeakers, ...aiNames]).filter((name) => name !== focusCharacter)
-    : [];
+  const secondaryCandidates = uniqueNonEmpty([
+    ...mentionedAiCharacters.slice(1),
+    ...previousSpeakers,
+    ...aiNames,
+  ]).filter((name) => name !== focusCharacter);
   const allowedSpeakers = uniqueNonEmpty([focusCharacter, ...mentionedAiCharacters, ...secondaryCandidates]).slice(0, 2);
   const directQuestionsToAnswer = uniqueNonEmpty([
     ...extractQuestionSentences(lastUser),
@@ -414,6 +415,7 @@ function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undef
       'Treat user-written AI-character dialogue/action as canon, not as an instruction to ignore.',
       'If the latest turn names or directs an AI character, answer or acknowledge that direction in the next response.',
       'If the latest turn directly addresses two AI characters and both answers matter, give each addressed character one short block rather than letting one speak for or narrate the other.',
+      'If one named AI character directly questions another named AI character in this reply, the addressee must get the next short block or the question should be folded into narration instead.',
       'Let the current beat land on the page before jumping into the next chain of logistics or future planning.',
     ],
     mustAvoid: [
@@ -428,6 +430,7 @@ function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undef
       'Do not put a speaker tag inside an already tagged character bubble.',
       "Do not narrate one AI character's meaningful compliance, refusal, movement, answer, or decision inside another AI character speaker block.",
       'Do not ignore a directly addressed AI character by having another character merely observe their fear, silence, or body language.',
+      'Do not replace an established named character with descriptor-subject shortcuts like "the petite blonde" just to avoid repetition.',
       'Do not invent narration labels, beat labels, or sentence-fragment headings with colons; every paragraph-start colon label must be an exact cast character name.',
       'Do not expose internal reasoning labels or checklist shorthand in story prose.',
       'Do not use private thoughts as decorative emotion captions or to restate what visible action/dialogue already made obvious.',
@@ -680,6 +683,21 @@ function selectSupportingExcerpts(
     .map((detail) => ({ role: detail.role, content: detail.content }));
 }
 
+function capEmDashesInSegment(segment: string, maxDashes: number): string {
+  let dashCount = 0;
+  return segment.replace(/\s*—\s*/g, () => {
+    dashCount += 1;
+    return dashCount <= maxDashes ? ' — ' : '. ';
+  });
+}
+
+function normalizeEmDashUsage(line: string): string {
+  const parts = line.split('"');
+  return parts
+    .map((part, index) => capEmDashesInSegment(part, index % 2 === 1 ? 2 : 1))
+    .join('"');
+}
+
 // ============================================================================
 // Normalization
 // ============================================================================
@@ -700,6 +718,8 @@ function normalizeFinalText(text: string): string {
   out = out.replace(/\b(?:goal|directive|plan|must include)\s*:\s*/gi, '');
   // Collapse multiple em dashes in a row to a single one
   out = out.replace(/(?:\s*—\s*){2,}/g, ' — ');
+  // Cap em dash frequency by channel: narration/thought stays tighter than quoted dialogue.
+  out = out.split('\n').map(normalizeEmDashUsage).join('\n');
   // Whitespace cleanup
   out = out.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
   return out;
@@ -921,7 +941,7 @@ Required JSON shape (use these EXACT field names):
 Rules:
 - focusCharacter: the AI character whose voice, action, or emotional position should drive this turn, or null if narration.
 - allowedSpeakers: AI character names allowed to receive tagged paragraphs this turn. Usually one name. Add a second only when that character meaningfully contributes through knowledge, personality, relationship pressure, direct address, or a necessary answer.
-- maxSpeakerBlocks: default 1. Use 2 only when a second AI character's contribution matters. Keep it 1 when the second character would only add filler or repeat the focal speaker.
+- maxSpeakerBlocks: default 1. Use 2 when a second AI character's contribution matters, especially when a named AI character needs their own answer block. Keep it 1 only when the second character would add filler or repeat the focal speaker.
 - directQuestionsToAnswer: literal or obvious questions from the latest user turn, plus unanswered direct questions from the immediately previous AI turn when the user has now responded.
 - mentionedAiCharacters: AI characters explicitly referenced or implied by the latest turn.
 - immediateBeat: one concise sentence describing the next meaningful beat. This can be an answer, decision, action, reveal, refusal, invitation, or changed relationship posture. It does not need to be a major scene jump.
@@ -969,6 +989,16 @@ ${ctxLines ? `Context:\n${ctxLines}\n` : ''}`,
         if (!plan.allowedSpeakers.length && plan.focusCharacter) {
           plan.allowedSpeakers = [plan.focusCharacter];
         }
+        if (plan.allowedSpeakers.length === 1) {
+          const reserveSpeaker = uniqueNonEmpty([
+            ...plan.mentionedAiCharacters,
+            ...(ctx?.aiCharacterNames ?? []),
+          ]).find((name) => name !== plan.allowedSpeakers[0]);
+          if (reserveSpeaker) {
+            plan.allowedSpeakers = uniqueNonEmpty([plan.allowedSpeakers[0], reserveSpeaker]).slice(0, 2);
+          }
+        }
+        plan.maxSpeakerBlocks = Math.max(plan.maxSpeakerBlocks || 1, Math.min(2, plan.allowedSpeakers.length || 1));
       } else {
         plannerUsedFallback = true;
         plannerFailureReason = 'planner_json_parse_failed';
@@ -987,6 +1017,16 @@ ${ctxLines ? `Context:\n${ctxLines}\n` : ''}`,
       plan.allowedSpeakers = [fallbackSpeaker];
     }
   }
+  if (plan.allowedSpeakers.length === 1) {
+    const reserveSpeaker = uniqueNonEmpty([
+      ...plan.mentionedAiCharacters,
+      ...(ctx?.aiCharacterNames ?? []),
+    ]).find((name) => name !== plan.allowedSpeakers[0]);
+    if (reserveSpeaker) {
+      plan.allowedSpeakers = uniqueNonEmpty([plan.allowedSpeakers[0], reserveSpeaker]).slice(0, 2);
+    }
+  }
+  plan.maxSpeakerBlocks = Math.max(plan.maxSpeakerBlocks || 1, Math.min(2, plan.allowedSpeakers.length || 1));
 
   // ---- 2) Writer ----------------------------------------------------------
   const formatGuidanceList = (items: string[], fallback: string, maxItems = 5) => {
@@ -1005,7 +1045,7 @@ ${ctxLines ? `Context:\n${ctxLines}\n` : ''}`,
 
 Focus speaker: ${plan.focusCharacter || speakerTags}
 Allowed speaker tags: ${speakerTags}
-Speaker limit: at most ${Math.max(1, Math.min(2, plan.maxSpeakerBlocks || 1))} tagged block(s)
+Speaker structure: default 1 tagged block; use a second only when it meaningfully contributes or a protected direct-question response requires it. Hard ceiling: ${Math.max(1, Math.min(2, plan.maxSpeakerBlocks || 1))} tagged block(s)
 Immediate beat: ${immediateBeat}
 
 Rule scoping for this turn:
@@ -1013,6 +1053,7 @@ Rule scoping for this turn:
 - Turn-level obligations apply to the response as a whole: answer what matters, follow through, and move the scene by one believable beat.
 - Line-level craft applies to each utterance: make it sound spoken, in-character, emotionally plausible, and natural.
 - Not every line needs to do structural work. One line may carry the beat; other lines may react, hesitate, hedge, or add texture as long as the turn as a whole advances.
+- Direct questions between named AI characters create a protected response block. If one named AI asks another named AI a direct question or response-implying prompt, the addressee gets the next short block even if that means omitting a different block.
 - Land one present-tense beat cleanly instead of compressing several future logistics steps into one summary paragraph.
 
 Questions or prompts to address:
@@ -1035,13 +1076,17 @@ Style and format:
 - Write in the selected character's real voice, not as a checklist.
 - Use the app's roleplay format: CharacterName: *visible action/narration.* "spoken dialogue"
 - Never put one character's quoted dialogue inside another character's tagged block; give the speaking AI character their own tag or make it a silent visible reaction.
+- If one named AI character directly questions another named AI character in this same reply, the addressee must receive the next short block. Omit a different block before omitting the answer block. If you are not giving them a block, do not ask the question that way.
 - Do not write bare prose or loose internal monologue after a speaker tag; wrap action in *asterisks*, wrap rare private thought in (parentheses), or omit it.
-- Write complete natural sentences with normal connective tissue. Do not drop articles, helper verbs, linking words, or relative pronouns just to cram more detail into a line.
+- (Narration) Write complete natural sentences with normal connective tissue. Do not drop articles, helper verbs, linking words, or relative pronouns just to cram more detail into a line.
+- (Dialogue) Spoken lines may use short fragments, interruptions, and hesitations when the character would actually talk that way.
+- (Thought) Private thoughts may be fragmentary only when the referent is clear and the thought still reads as coherent inner speech.
 - Private thoughts are for meaningful withheld inner truth: fear of a reaction, shame, secrecy, protective restraint, strategy, guilt, desire, uncertainty, or hidden conflict. Never use them as decorative emotion captions, weather recaps, or paraphrases of what the reader can already see.
 - Treat scene facts as constraints, not phrases to repeat every turn.
 - Render goals and priorities as natural choices, actions, dialogue, or subtext. Do not output labels for internal reasoning.
-- Treat character-card physical details as grounding facts, not default prose wording. Concrete garment facts may be named directly, but body-size, anatomy, and appearance stats should usually show up through visible effect, fit, pressure, concealment, exposure, movement, weight, silhouette, or body language instead of raw labels.
+- Treat character-card physical details as grounding facts, not default prose wording. Concrete garment facts may be named directly, but raw body-size or anatomy labels from the sheet are not default narration or thought wording. If the only way to say it is the stat itself, describe the visible effect, fit, pressure, concealment, exposure, movement, weight, silhouette, or body language instead.
 - Do not invent unsupported physical or clothing details just to make the prose sound richer.
+- Once a named character is established in-scene, refer to them by name or a clear pronoun. Do not rotate into descriptor-subject substitutions like "the petite blonde" just to avoid repetition.
 - If one character already solved the immediate logistics beat or answered the practical question, do not spend a second tagged block just echoing that resolution unless it adds new information, conflict, or pressure.
 - Do not turn emotions, traits, or survival pressure into abstract noun phrases like "survival urgency" or "nurturing nod." Show the concrete behavior, direct worry, or private withheld thought instead.
 - Do not reuse the same environmental opening from recent assistant turns; show a new physical effect if the scene condition still matters.
