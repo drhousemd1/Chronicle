@@ -370,6 +370,7 @@ function buildPositionLockFacts(states: CharacterSceneState[] | undefined): stri
     .flatMap((state) => [
       `${state.name} is still ${state.scenePosition}. That transition is unresolved until the user explicitly moves them.`,
       `Do not close, secure, leave, or fully resolve the current doorway, barrier, shelter, vehicle, or escape path as if ${state.name} already crossed it.`,
+      `Keep ${state.name}'s unresolved position visible on the page until the user changes it. Other characters may react to the barrier, but may not narrate ${state.name} as already through it.`,
     ]);
 }
 
@@ -413,6 +414,7 @@ function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undef
       'Treat user-written AI-character dialogue/action as canon, not as an instruction to ignore.',
       'If the latest turn names or directs an AI character, answer or acknowledge that direction in the next response.',
       'If the latest turn directly addresses two AI characters and both answers matter, give each addressed character one short block rather than letting one speak for or narrate the other.',
+      'Let the current beat land on the page before jumping into the next chain of logistics or future planning.',
     ],
     mustAvoid: [
       'Do not speak for user-controlled characters.',
@@ -420,6 +422,7 @@ function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undef
       userNames.length ? `Do not resolve doors, exits, barriers, vehicles, beds, restraints, danger, or shelter as if these user-controlled characters moved unless the latest user turn wrote that movement: ${userNames.join(', ')}.` : null,
       'Do not force every present AI character to speak.',
       'Do not add filler second-speaker dialogue.',
+      'Do not give a second speaker block just to restate a logistical point or solved problem that another character already handled.',
       'Do not stall with consent, confirmation, or waiting loops.',
       'Do not output separator lines, code fences, or wrapper tags.',
       'Do not put a speaker tag inside an already tagged character bubble.',
@@ -427,6 +430,7 @@ function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undef
       'Do not ignore a directly addressed AI character by having another character merely observe their fear, silence, or body language.',
       'Do not invent narration labels, beat labels, or sentence-fragment headings with colons; every paragraph-start colon label must be an exact cast character name.',
       'Do not expose internal reasoning labels or checklist shorthand in story prose.',
+      'Do not use private thoughts as decorative emotion captions or to restate what visible action/dialogue already made obvious.',
       'Do not open with the same weather, time-of-day, or visibility recap used in recent turns.',
     ].filter((item): item is string => Boolean(item)),
     continuityNotes: [
@@ -442,8 +446,11 @@ function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undef
       'Keep the response readable and responsive to the chat length setting.',
       'Use natural character voice instead of checklist language.',
       'Use roleplay formatting: visible action/narration in *asterisks*, spoken dialogue in straight double quotes, and private thoughts only in (parentheses).',
+      'Private thoughts should reveal meaningful withheld inner truth, not obvious emotional captions.',
       'Do not put one AI character spoken dialogue inside another AI character speaker block.',
       'Tiny visible reactions can stay in the focal block; meaningful second-character actions or answers need their own short speaker block within the speaker cap.',
+      'If one character already handled the practical/logistics beat, another character should not burn a second block merely to echo it.',
+      'Land the current beat before pivoting into a new mini-plan or instruction chain.',
       'Keep all visible scanning, movement, and environmental description inside *asterisks* instead of bare prose or colon subheadings.',
       'Keep goals and priorities internal; render them as natural choices, actions, or subtext instead of visible labels.',
       'Do not write bare unquoted internal monologue or mechanically repeat scene-state phrases.',
@@ -1006,6 +1013,7 @@ Rule scoping for this turn:
 - Turn-level obligations apply to the response as a whole: answer what matters, follow through, and move the scene by one believable beat.
 - Line-level craft applies to each utterance: make it sound spoken, in-character, emotionally plausible, and natural.
 - Not every line needs to do structural work. One line may carry the beat; other lines may react, hesitate, hedge, or add texture as long as the turn as a whole advances.
+- Land one present-tense beat cleanly instead of compressing several future logistics steps into one summary paragraph.
 
 Questions or prompts to address:
 ${formatGuidanceList(plan.directQuestionsToAnswer, 'No direct question needs special handling.')}
@@ -1022,13 +1030,17 @@ ${formatGuidanceList(plan.mustAvoid, 'Do not speak for user-controlled character
 Style and format:
 - Keep older excerpts subordinate to the latest user turn.
 - Preserve user-controlled character scene position. Do not close, secure, leave through, lock, or resolve a threshold/barrier/shelter/vehicle/bed/restraint/danger transition as if a user-controlled character moved unless the latest user turn wrote that movement.
+- If a user-controlled character is still outside, blocked, or mid-threshold, other characters may shout, reach, brace, prepare, or invite, but may not narrate that person as already inside or already safe.
 - Do not narrate user-controlled characters completing requested actions. AI characters may command or prepare, but the user must author the user character's actual execution.
 - Write in the selected character's real voice, not as a checklist.
 - Use the app's roleplay format: CharacterName: *visible action/narration.* "spoken dialogue"
 - Never put one character's quoted dialogue inside another character's tagged block; give the speaking AI character their own tag or make it a silent visible reaction.
 - Do not write bare prose or loose internal monologue after a speaker tag; wrap action in *asterisks*, wrap rare private thought in (parentheses), or omit it.
+- Private thoughts are for meaningful withheld inner truth: fear of a reaction, shame, secrecy, protective restraint, strategy, guilt, desire, uncertainty, or hidden conflict. Never use them as decorative emotion captions, weather recaps, or paraphrases of what the reader can already see.
 - Treat scene facts as constraints, not phrases to repeat every turn.
 - Render goals and priorities as natural choices, actions, dialogue, or subtext. Do not output labels for internal reasoning.
+- If one character already solved the immediate logistics beat or answered the practical question, do not spend a second tagged block just echoing that resolution unless it adds new information, conflict, or pressure.
+- Do not turn emotions, traits, or survival pressure into abstract noun phrases like "survival urgency" or "nurturing nod." Show the concrete behavior, direct worry, or private withheld thought instead.
 - Do not reuse the same environmental opening from recent assistant turns; show a new physical effect if the scene condition still matters.
 - Final dialogue plausibility check: if a line sounds like a slogan, checklist item, tactical prompt, or written narration instead of something a real person would say out loud, rewrite it simpler and more naturally.
 - Do not output markdown separator lines such as --- or ***.`,

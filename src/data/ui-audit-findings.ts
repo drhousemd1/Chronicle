@@ -4774,6 +4774,29 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260501-002",
+      title: "Reduce roleplay over-steering and tighten thought/threshold guidance",
+      summary: "Chat Runtime - Disabled paragraph-shape nudges, narrowed runtime anti-loop directives to objective continuity reminders, and rewrote thought/turn-composition guidance around meaningful private cognition and unresolved threshold states",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "Test Session 4 showed that the previous prompt cleanup was not enough on its own. The dialogue was still coming out tactical, summary-shaped, and strangely label-like, with useless internal thoughts, redundant second-speaker logistics, and user-position continuity that still felt easier to flatten than it should. The strongest remaining offender was the late runtime steering layer: paragraph-shape nudges, structure policing, emotion-result pushing, and other corrective hints were still teaching the writer to solve a task instead of living the scene.",
+      plan: "Leave the feature architecture intact, but remove the late runtime nudges that were over-shaping sentence-level prose. Keep only a narrow anti-loop layer for objective continuity problems, rewrite thought rules around meaningful withheld inner truth, and strengthen planner/writer guidance so unresolved thresholds remain explicit, redundant speaker add-ons are discouraged, and the current beat lands before the response jumps into future logistics.",
+      changes: "Updated `src/components/chronicle/ChatInterfaceTab.tsx`:\n- Disabled the live paragraph-shape `LENGTH` directive so response-detail settings control size without an extra runtime nudge trying to force shorter/longer beat shapes.\n- Reduced `getAntiLoopDirective()` to objective continuity reminders only: repeated confirmation, repeated question stems, deferred-action follow-through, and true ping-pong detection.\n- Removed broader corrective nudges for repetitive structure, passive observation, emotional consequence forcing, thought-tail endings, cross-turn multi-speaker overuse, and paragraph-shape variation.\n\nUpdated `src/services/llm.ts`:\n- Reframed `STRUCTURE VARIETY` from a hard novelty command into lighter anti-mechanical guidance.\n- Rewrote `INTERNAL THOUGHTS` so thoughts must reveal meaningful private inner truth the character is withholding, rather than acting as filler captions or abstract labels.\n- Added stronger warnings against abstract noun-label phrasing such as `survival urgency` and strengthened the prompt's expectation that scenes stay lived-in rather than summary-like.\n- Upgraded the physical continuity language so threshold/doorway locks are framed as binding scene facts, not background flavor.\n\nUpdated `supabase/functions/chat/index.ts`:\n- Strengthened derived position-lock facts so unresolved user-controlled threshold states stay visibly unresolved until the user moves them.\n- Tightened local planner fallback guidance and writer instructions so second-speaker blocks must add new information, conflict, or pressure instead of echoing solved logistics.\n- Added explicit writer guidance to let the current beat land before jumping into a new mini-plan, and to treat private thoughts as meaningful withheld cognition rather than decorative emotion captions.\n\nUpdated `/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md`:\n- Added quick-ledger notes for this pass, documented that fake self-rewrite assumptions and giant banned-phrase lists are off the table, and refreshed the runtime-directive / live-prompt excerpts so they match the code again.",
+      filesAffected: [
+        "src/components/chronicle/ChatInterfaceTab.tsx",
+        "src/services/llm.ts",
+        "supabase/functions/chat/index.ts",
+        "src/data/ui-audit-findings.ts",
+        "/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: ["cl-20260430-002", "cl-20260412-005", "cl-20260501-001"],
+      tags: ["chat-runtime", "dialogue-quality", "anti-loop", "internal-thoughts", "scene-position", "prompt-steering", "roleplay"],
+      comments: [],
+      createdAt: "2026-05-01T23:10:00.000Z",
+      updatedAt: "2026-05-01T23:10:00.000Z",
+    },
+    {
       id: "cl-20260501-001",
       title: "Add quick prompt-change ledger to master rework workbook",
       summary: "Prompt Debugging - The master prompt rework workbook now starts with a compact issue-to-change ledger plus current decision notes so prompt work can be resumed without rereading the full changelog first",

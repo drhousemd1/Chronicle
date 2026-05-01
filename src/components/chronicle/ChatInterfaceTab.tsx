@@ -1085,17 +1085,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
   // Issue #7: Compute length directive based on recent response pattern
   const getLengthDirective = (): string => {
-    const lengths = responseLengthsRef.current;
-    if (lengths.length < 3) return '';
-    const last3 = lengths.slice(-3);
-    const avg = last3.reduce((a, b) => a + b, 0) / 3;
-    const allWithin20 = last3.every(l => Math.abs(l - avg) / avg < 0.2);
-    if (!allWithin20) return '';
-    if (avg > 150) {
-      return `[LENGTH: Last 3 responses were ~${Math.round(avg)} words each. Follow the user's verbosity setting first, but vary the rhythm naturally -- try SHORT: 1-3 paragraphs max.]`;
-    } else {
-      return `[LENGTH: Last 3 responses were ~${Math.round(avg)} words each. Follow the user's verbosity setting first, but avoid repeating the exact same paragraph count and response shape -- try LONGER with more sensory detail if it fits the scene.]`;
-    }
+    // Disabled for live roleplay. Paragraph-shape nudges were encouraging
+    // tactical/summary writing instead of letting the user's response-detail
+    // setting control length on its own.
+    return '';
   };
 
   const getExtractionDecision = (userText: string, aiText: string): { shouldExtract: boolean; reason: string } => {
@@ -1135,7 +1128,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     return { shouldExtract: false, reason: 'skip' };
   };
 
-  // Detect repeat/follow-through problems and provide natural one-turn guidance.
+  // Detect objective repeat/follow-through problems and provide narrow one-turn guidance.
   const getAntiLoopDirective = (): string => {
     const msgs = conversation?.messages || [];
     if (msgs.length < 2) return '';
@@ -1180,64 +1173,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }
     }
     
-    // Pass 8: Structural repetition detector — checks if recent AI responses follow the same template
-    const recentAiMsgs = msgs.filter(m => m.role === 'assistant').slice(-3);
-    if (recentAiMsgs.length >= 2) {
-      const environmentRecapPatterns = /\b(storm|snow|wind|gale|rain|fog|visibility|sunset|sunrise|twilight|darkness|weather|cold|heat)\b/i;
-      const startsWithEnvironmentRecap = (text: string): boolean => {
-        const firstMeaningfulLine = text
-          .split('\n')
-          .map((line: string) => line.replace(/^[A-Z][a-zA-Z\s'-]+:\s*/, '').trim())
-          .find((line: string) => line.length > 0) || '';
-        return environmentRecapPatterns.test(firstMeaningfulLine.slice(0, 220));
-      };
-
-      const environmentOpeningCount = recentAiMsgs.filter((m) => startsWithEnvironmentRecap(m.text)).length;
-      if (environmentOpeningCount >= 2) {
-        directives.push('Recent AI turns already established the weather, visibility, or time of day. Do not open with another recap; start with the next physical consequence, character choice, answer, or movement.');
-      }
-
-      // Detect the "quote → action → thought" triad pattern
-      const detectTriadPattern = (text: string): boolean => {
-        const lines = text.split('\n').filter(l => l.trim().length > 0);
-        if (lines.length < 2) return false;
-        
-        let hasQuote = false, hasAction = false, hasThought = false;
-        for (const line of lines) {
-          const trimmed = line.replace(/^\w+:\s*/, ''); // strip speaker tag
-          if (trimmed.match(/^"/)) hasQuote = true;
-          if (trimmed.match(/^\*/)) hasAction = true;
-          if (trimmed.match(/^\(/)) hasThought = true;
-        }
-        return hasQuote && hasAction && hasThought;
-      };
-      
-      const triadCount = recentAiMsgs.filter(m => detectTriadPattern(m.text)).length;
-      if (triadCount >= 2) {
-        directives.push('Recent turns used the same response shape. Use a different natural structure this turn, such as action-led, dialogue-led, decision-led, or environment-led, and avoid ending on the same internal-thought pattern.');
-      }
-    }
-    
-    // Pass 8: Low-initiative detector — checks if AI is just mirroring/reacting without driving
-    if (recentAiMsgs.length >= 2) {
-      const passivePatterns = /\b(watched|observed|waited|wondered|considered|thought about|looked at|noticed|studied|gazed|stared)\b/gi;
-      const actionPatterns = /\b(grabbed|pulled|pushed|stood|walked|moved|reached|opened|closed|decided|turned|kissed|touched|picked up|put down|ran|jumped|threw|took|handed|stepped|leaned|sat down|knelt|whispered|shouted|slammed|knocked)\b/gi;
-      
-      let passiveCount = 0;
-      let actionCount = 0;
-      for (const m of recentAiMsgs.slice(-2)) {
-        const pMatches = m.text.match(passivePatterns);
-        const aMatches = m.text.match(actionPatterns);
-        passiveCount += pMatches ? pMatches.length : 0;
-        actionCount += aMatches ? aMatches.length : 0;
-      }
-      
-      if (passiveCount > actionCount * 2 && passiveCount >= 4) {
-        directives.push('Recent turns have been passive. Let an AI character do something concrete this turn: answer, decide, move, reveal, refuse, invite, or initiate a specific interaction.');
-      }
-    }
-    
-    // Pass 12: Ping-pong detector — detects alternating character blocks in last AI response
+    // Ping-pong detector — detects sustained alternating character blocks in last AI response
     if (lastAiMsg) {
       const lines = lastAiMsg.text.split('\n').filter((l: string) => l.trim().length > 0);
       const speakerPattern = /^([A-Z][a-zA-Z\s'-]+):/;
@@ -1259,58 +1195,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         }
       }
     }
-    
-    // Pass 12: Emotional-loop detector — detects stasis reactions without scene change
-    if (recentAiMsgs.length >= 2) {
-      const emotionalStasisPatterns = /\b(sobbed|trembled|murmured|whispered|shuddered|whimpered|sniffled|choked|sighed|swallowed hard|blinked back tears|tears streamed|voice cracked|breath hitched|lip quivered|heart ached|chest tightened)\b/gi;
-      const sceneChangePatterns = /\b(stood up|walked|left|entered|opened|closed|picked up|put down|grabbed|pulled|pushed|decided|turned to leave|moved to|stepped outside|drove|ran|called|texted|knocked|rang|arrived|phone buzzed|door opened|interrupted)\b/gi;
-      
-      let emotionalCount = 0;
-      let sceneChangeCount = 0;
-      for (const m of recentAiMsgs.slice(-2)) {
-        const eMatches = m.text.match(emotionalStasisPatterns);
-        const sMatches = m.text.match(sceneChangePatterns);
-        emotionalCount += eMatches ? eMatches.length : 0;
-        sceneChangeCount += sMatches ? sMatches.length : 0;
-      }
-      
-      if (emotionalCount >= 4 && sceneChangeCount < 2) {
-        directives.push('Recent turns leaned on emotion without consequence. Let the emotion produce a concrete result: answer, confession, refusal, choice, movement, changed stance, or a clear invitation for the user.');
-      }
-    }
-    
-    // Pass 13: Thought-tail detector — checks if recent AI responses end with parenthetical thoughts
-    const aiMsgsForThoughtCheck = msgs.filter(m => m.role === 'assistant').slice(-3);
-    if (aiMsgsForThoughtCheck.length >= 2) {
-      const endsWithThought = (text: string): boolean => {
-        const trimmed = text.trimEnd();
-        return /\([^)]{5,}\)\s*$/.test(trimmed);
-      };
-      const thoughtTailCount = aiMsgsForThoughtCheck.filter(m => endsWithThought(m.text)).length;
-      if (thoughtTailCount >= 2) {
-        directives.push('Recent turns ended the same way. End this turn with spoken dialogue or visible action instead of an internal thought.');
-      }
-    }
-    
-    // Pass 13c: Cross-message multi-character pattern detector
-    const last3AiMsgs = msgs.filter(m => m.role === 'assistant').slice(-3);
-    if (last3AiMsgs.length >= 3) {
-      const speakerPattern = /^([A-Z][a-zA-Z\s'-]+):/m;
-      const allMultiChar = last3AiMsgs.every(m => {
-        const lines = m.text.split('\n').filter((l: string) => l.trim().length > 0);
-        const uniqueSpeakers = new Set<string>();
-        for (const line of lines) {
-          const match = line.match(speakerPattern);
-          if (match) uniqueSpeakers.add(match[1].trim());
-        }
-        return uniqueSpeakers.size >= 2;
-      });
-      if (allMultiChar) {
-        directives.push('Recent turns overused multiple AI speakers. Use one focal tagged AI speaker this turn unless the latest user message directly requires another AI character to answer.');
-      }
-    }
-    
-    return directives.join(' ');
+
+    return directives.slice(0, 3).join(' ');
   };
 
   

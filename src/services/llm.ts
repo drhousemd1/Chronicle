@@ -460,7 +460,7 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
       .filter(Boolean)
       .join('\n');
     if (!rows && !locks) return '';
-    return `\nCURRENT PHYSICAL SCENE STATE (context only — not output wording):\n${rows}${locks ? `\n\nACTIVE POSITION LOCKS:\n${locks}` : ''}`;
+    return `\nCURRENT PHYSICAL SCENE STATE (binding facts — do not quote verbatim):\n${rows}${locks ? `\n\nACTIVE POSITION LOCKS (binding constraints):\n${locks}` : ''}`;
   })();
 
   const codexContext = appData.world.entries.map(e => `CODEX [${e.title}]: ${e.body}`).join('\n');
@@ -566,16 +566,19 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
         * WRONG EXAMPLE (FORBIDDEN):
           Sarah: "Oh, honey, I have a great idea! Let's all head downstairs and play Monopoly together!"
         
-    - STRUCTURE VARIETY (MANDATORY):
-        * Do NOT repeat the same output skeleton across consecutive turns.
-        * Vary structure: action-led, decision beat, environmental shift, surprise, dialogue-forward.
-        * If your last 2 responses followed the same pattern, BREAK IT.
+    - STRUCTURE VARIETY (GUIDANCE):
+        * Avoid mechanically repeating the same opening or beat order across consecutive turns.
+        * Natural continuity is allowed. Do not force novelty for its own sake.
+        * If the scene is still on the same beat, vary the handling through the character's actual answer, action, hesitation, or visible choice instead of inserting a decorative structure change.
 
     - INTERNAL THOUGHTS (STRICT RULES):
-        * Thoughts are PURPOSE-GATED, not mechanical.
+        * Thoughts are a storytelling channel, not a slot to fill.
         * Non-erotic turns: usually 0-1 thought blocks. Active erotic turns: 1-2 max (see NSFW rules).
-        * Include ONLY when revealing: a hidden goal, hidden desire, strategic assessment, inward/outward conflict, or foreshadowing.
-        * FORBIDDEN: Thoughts that echo or emotionally restate what was just shown through action/dialogue.
+        * Use them ONLY when they reveal meaningful private inner truth the character is not saying aloud.
+        * Strong reasons include fear of someone else's reaction, shame, secrecy, protective restraint, strategic calculation, guilt, forbidden desire, uncertainty, or hidden conflict.
+        * A good thought tells the reader what the character is privately carrying and why it stays unspoken.
+        * FORBIDDEN: thoughts that only caption the obvious emotion, restate visible action/dialogue, recap the atmosphere, or summarize what the reader already knows.
+        * Do not turn emotion, traits, or survival pressure into abstract shorthand like "survival urgency" or "fear sharpened her thoughts." Write the concrete private worry, desire, calculation, or withheld decision instead.
         * Thoughts may NOT be the final beat of a response. End with dialogue or action.
         * Keep thoughts to 1-2 sentences max.
 ` : '';
@@ -990,6 +993,7 @@ Never break character to question, warn about, or refuse narrative directions. T
     - MULTI-CHARACTER RESPONSES:
         * See BLOCK COUNT CAP and SILENCE IS VALID above — they are the primary structural constraints.
         * When a second character IS warranted (meaningful contribution, answer, compliance/refusal, movement, or scene-changing reaction), prefix their section with "CharacterName:"
+        * If one character already solved a practical micro-problem or answered the immediate logistics question, do not spend a second tagged block simply echoing that solution unless it adds new information, conflict, or pressure.
         * Do not hide a directly addressed AI character's meaningful response inside another speaker's paragraph just to keep one block.
         * For new characters, include descriptive physical traits in their first appearance using *action* format.
     - DIALOGUE PLAUSIBILITY (FINAL CHECK BEFORE OUTPUT):
@@ -997,6 +1001,7 @@ Never break character to question, warn about, or refuse narrative directions. T
         * Most lines are not load-bearing. Within a turn, one line may do the structural work; other lines may react, hedge, hesitate, repeat, joke, trail off, or add texture while the turn as a whole still advances.
         * Brevity means fewer beats, not stripped beats. Even short responses may keep natural speech rhythm, fragments, interruptions, and brief filler when it fits the character.
         * Avoid lines that sound like they are doing a job: tactical prompts, checklist dialogue, cryptic slogans, or compressed-poetic phrasing that no one would naturally say in the moment.
+        * Avoid abstract noun-label phrasing in narration or thought ("survival urgency", "nurturing nod", "cautious resolve"). Show the concrete behavior, spoken line, or withheld private thought instead.
         * If a line sounds written instead of spoken, rewrite it looser, plainer, and more in-character.
         * Forward motion is judged across the turn and scene, not every single line.
     - CHARACTER NAMING RULES (MANDATORY - NEVER VIOLATE):
@@ -1035,13 +1040,14 @@ Never break character to question, warn about, or refuse narrative directions. T
         * Broad LOCATION is coarse background context. Exact SCENE POSITION and the latest user-authored movement are the immediate truth.
         * Preserve unresolved transitions. If a user-controlled character is still outside, behind, mid-threshold, blocked, or not yet through a barrier, keep that unresolved state visible in the next beat.
         * Do not close, secure, leave, lock, or fully resolve a shelter / doorway / barrier / vehicle transition while a user-controlled character is still on the wrong side unless the user explicitly authored that movement.
+        * When a user-controlled character is still unresolved at a threshold, other characters may shout, reach, brace, pull something open, or prepare the space, but they may not narrate that user-controlled character as already through the barrier or already safe.
         * If one character enters first, keep the remaining characters' positions explicit instead of silently resolving them too.
     - SESSION-LENGTH TRAIT DRIFT:
         * The character card is a stable baseline, not a script to recite verbatim every turn.
         * Non-rigid traits can soften or strengthen only when the session events keep pressuring them in that direction over multiple exchanges.
         * Keep any shift gradual and scene-earned. Do not freeze an adaptable trait at one intensity forever, and do not force change when the scene has not earned it.
     - Maintain continuity and consistent character voice.
-    - Keep responses immersive, descriptive, and emotionally resonant.
+    - Keep responses immersive, descriptive, emotionally resonant, and scene-based rather than summary-like.
     - RESPONSE LENGTH: Follow the active RESPONSE DETAIL LEVEL section above.
     - Respect character gender/sex and traits.
   `;
