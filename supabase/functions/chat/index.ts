@@ -683,19 +683,8 @@ function selectSupportingExcerpts(
     .map((detail) => ({ role: detail.role, content: detail.content }));
 }
 
-function capEmDashesInSegment(segment: string, maxDashes: number): string {
-  let dashCount = 0;
-  return segment.replace(/\s*—\s*/g, () => {
-    dashCount += 1;
-    return dashCount <= maxDashes ? ' — ' : '. ';
-  });
-}
-
 function normalizeEmDashUsage(line: string): string {
-  const parts = line.split('"');
-  return parts
-    .map((part, index) => capEmDashesInSegment(part, index % 2 === 1 ? 2 : 1))
-    .join('"');
+  return line.replace(/\s*—\s*/g, '... ');
 }
 
 // ============================================================================
@@ -716,9 +705,7 @@ function normalizeFinalText(text: string): string {
   // Remove leaked internal-planning lead-ins without deleting the surrounding prose.
   out = out.replace(/\b(?:survival\s+(?:priority|step)\s*[:—-]?|priority(?:\s+is|'s)\s*[:—-]?|priority\s*:)\s*/gi, '');
   out = out.replace(/\b(?:goal|directive|plan|must include)\s*:\s*/gi, '');
-  // Collapse multiple em dashes in a row to a single one
-  out = out.replace(/(?:\s*—\s*){2,}/g, ' — ');
-  // Cap em dash frequency by channel: narration/thought stays tighter than quoted dialogue.
+  // Deterministically replace em dashes with ellipses so display/save does not depend on Grok changing the habit.
   out = out.split('\n').map(normalizeEmDashUsage).join('\n');
   // Whitespace cleanup
   out = out.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();

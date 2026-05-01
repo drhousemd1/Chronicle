@@ -199,6 +199,10 @@ const THOUGHT_WRAPPED_AS_ACTION_REGEX = /\*\(\s*([\s\S]*?)\s*\)\*/g;
 const PLANNER_LANGUAGE_LEAK_REGEX = /\b(?:survival\s+(?:priority|step)\s*[:—-]?|priority(?:\s+is|'s)\s*[:—-]?|priority\s*:)\s*/gi;
 const PLANNER_LABEL_LEAK_REGEX = /\b(?:goal|directive|plan|must include)\s*:\s*/gi;
 
+function normalizeEmDashUsage(text: string): string {
+  return text.replace(/\s*—\s*/g, '... ');
+}
+
 function sanitizeAssistantMessageText(text: string): string {
   return text
     .replace(CHAT_RENDER_ARTIFACT_LINE_REGEX, '')
@@ -206,6 +210,7 @@ function sanitizeAssistantMessageText(text: string): string {
     .replace(THOUGHT_WRAPPED_AS_ACTION_REGEX, '($1)')
     .replace(PLANNER_LANGUAGE_LEAK_REGEX, '')
     .replace(PLANNER_LABEL_LEAK_REGEX, '')
+    .split('\n').map(normalizeEmDashUsage).join('\n')
     .replace(/[ \t]+\n/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();

@@ -4774,6 +4774,28 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260501-005",
+      title: "Replace em dashes with ellipses in both backend and frontend cleanup",
+      summary: "Chat Runtime - The first post-Test-6 run still displayed em dashes because the prior fix only capped frequency and the frontend sanitizer did not mirror the cleanup, so both layers now deterministically rewrite them to ellipses before display/save",
+      severity: "patch" as const,
+      status: "completed" as const,
+      problem: "Immediately after shipping the Test 6 regression-reversal pass, the first live retry still showed em dashes in narration, thought, and dialogue. The prior backend cleanup only capped dash frequency instead of actually removing them, and the frontend streaming sanitizer did not apply any em-dash normalization at all. That left a gap where 'light' dash usage still survived both the streamed display and the saved final message.",
+      plan: "Treat em-dash cleanup as deterministic formatting, not gentle prompt nudging. Replace em dashes with ellipses during backend normalization and mirror the same replacement in the frontend assistant-message sanitizer so streamed text and persisted text stay aligned.",
+      changes: "Updated `supabase/functions/chat/index.ts`:\n- Replaced the em-dash frequency-cap logic with deterministic replacement to `... `.\n- Backend normalization now rewrites em dashes before the final text is streamed/saved.\n\nUpdated `src/components/chronicle/ChatInterfaceTab.tsx`:\n- Added the same deterministic em-dash-to-ellipsis normalization to `sanitizeAssistantMessageText()` so the user no longer sees dashes during streaming even before the final backend-normalized text is saved.\n\nUpdated `/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md`:\n- Added a quick-ledger note clarifying that the earlier dash cap was too soft and the cleanup now deterministically rewrites em dashes to ellipses in both layers.",
+      filesAffected: [
+        "supabase/functions/chat/index.ts",
+        "src/components/chronicle/ChatInterfaceTab.tsx",
+        "src/data/ui-audit-findings.ts",
+        "/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: ["cl-20260501-004"],
+      tags: ["chat-runtime", "deterministic-cleanup", "frontend-sanitizer", "formatting"],
+      comments: [],
+      createdAt: "2026-05-01T03:28:00.000Z",
+      updatedAt: "2026-05-01T03:28:00.000Z",
+    },
+    {
       id: "cl-20260501-004",
       title: "Scope prose rules by channel and protect same-turn answer blocks",
       summary: "Chat Runtime - Reversed the Test 6 regression by separating narration/dialogue/thought sentence rules, protecting AI-to-AI direct-answer blocks, hardening anti-epithet and body-stat guidance, and capping em-dash overuse in deterministic cleanup",
