@@ -105,6 +105,14 @@ describe('llm canonical prompt coverage', () => {
         updatedAt: now(),
       },
     ];
+    appData.contentThemes = {
+      characterTypes: [],
+      storyType: 'NSFW',
+      genres: ['Romance'],
+      origin: [],
+      triggerWarnings: ['BDSM'],
+      customTags: ['forbidden attraction'],
+    };
 
     appData.scenes = [
       {
@@ -131,6 +139,13 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('STORY PRESSURES AND DIRECTIONS');
     expect(prompt).toContain('Secure lasting peace.');
     expect(prompt).toContain('Right now, Negotiations stalled by mistrust.');
+    expect(prompt).toContain('--- STORY THEMES THE WRITERS HAVE OPTED INTO ---');
+    expect(prompt).toContain('Treat these as content permission, background emphasis, and thematic direction -- not as a checklist to force into every response.');
+    expect(prompt).toContain('CORE INVITED CONTENT / BOUNDARIES:');
+    expect(prompt).toContain('WELCOMED THEMES TO LEAN INTO WHEN NATURAL:');
+    expect(prompt).toContain('ADDITIONAL USER-REQUESTED THEMES:');
+    expect(prompt).not.toContain('MANDATORY CONTENT DIRECTIVES');
+    expect(prompt).not.toContain('[Trigger Warnings]');
 
     expect(prompt).toContain('CHARACTER: Tamlin');
     expect(prompt).toContain('AGE: 27');
@@ -145,6 +160,8 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('Control dynamics and slow-burn teasing.');
     expect(prompt).toContain('Protect Feyre.');
     expect(prompt).toContain('Right now, Actively watching court movements.');
+    expect(prompt).toContain('Write complete sentences with normal connective tissue.');
+    expect(prompt).toContain('Use character-card physical details as grounding facts, not stock prose wording.');
 
     expect(prompt).toContain('ACTIVE SCENE CONTEXT:');
     expect(prompt).toContain('- Scene Title: Balcony Summit');

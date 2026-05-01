@@ -1036,9 +1036,12 @@ Style and format:
 - Use the app's roleplay format: CharacterName: *visible action/narration.* "spoken dialogue"
 - Never put one character's quoted dialogue inside another character's tagged block; give the speaking AI character their own tag or make it a silent visible reaction.
 - Do not write bare prose or loose internal monologue after a speaker tag; wrap action in *asterisks*, wrap rare private thought in (parentheses), or omit it.
+- Write complete natural sentences with normal connective tissue. Do not drop articles, helper verbs, linking words, or relative pronouns just to cram more detail into a line.
 - Private thoughts are for meaningful withheld inner truth: fear of a reaction, shame, secrecy, protective restraint, strategy, guilt, desire, uncertainty, or hidden conflict. Never use them as decorative emotion captions, weather recaps, or paraphrases of what the reader can already see.
 - Treat scene facts as constraints, not phrases to repeat every turn.
 - Render goals and priorities as natural choices, actions, dialogue, or subtext. Do not output labels for internal reasoning.
+- Treat character-card physical details as grounding facts, not default prose wording. Concrete garment facts may be named directly, but body-size, anatomy, and appearance stats should usually show up through visible effect, fit, pressure, concealment, exposure, movement, weight, silhouette, or body language instead of raw labels.
+- Do not invent unsupported physical or clothing details just to make the prose sound richer.
 - If one character already solved the immediate logistics beat or answered the practical question, do not spend a second tagged block just echoing that resolution unless it adds new information, conflict, or pressure.
 - Do not turn emotions, traits, or survival pressure into abstract noun phrases like "survival urgency" or "nurturing nod." Show the concrete behavior, direct worry, or private withheld thought instead.
 - Do not reuse the same environmental opening from recent assistant turns; show a new physical effect if the scene condition still matters.

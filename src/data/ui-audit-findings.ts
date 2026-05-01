@@ -4774,6 +4774,30 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260501-003",
+      title: "Reframe theme tags and prose-completion guidance for test 5",
+      summary: "Chat Runtime - Story-tag injection now reads as opted-in thematic openness instead of mandatory directives, while the shared prompt and writer guidance now explicitly demand complete sentences and natural translation of card-based physical facts",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "Test Session 5 showed a different cluster of failures than the earlier planner-language leaks: clipped prose missing connective tissue, sexual/anatomical metadata being repeated too literally, and story-tag guidance still sounding like backend directives instead of user-selected thematic openness. The writing problem was no longer just \"stop bad phrases\"; the model still needed clearer positive guidance about complete sentences, how to use card facts, and what detailed mode should spend its extra space on.",
+      plan: "Keep the character-card data model and settings architecture intact, but change the model-facing phrasing. Reframe story tags as themes the writers opted into, add explicit sentence-completeness and card-data grounding rules, and rewrite detailed mode so it dwells inside one beat instead of packing more facts into each clause.",
+      changes: "Updated `src/constants/tag-injection-registry.ts`:\n- Reframed the backend tag block from `CONTENT THEME DIRECTIVES` / `MANDATORY CONTENT DIRECTIVES` into a softer `STORY THEMES THE WRITERS HAVE OPTED INTO` structure.\n- Removed rendered `[Trigger Warnings]` category labels from the model-facing lines.\n- Reworded custom tags so they read as welcomed story elements instead of imperative instructions.\n\nUpdated `src/services/llm.ts`:\n- Rewrote the detailed response-detail branch so extra length slows time within one active beat instead of cramming more parallel facts into the same sentence.\n- Added an explicit sentence-completeness rule requiring normal connective tissue rather than compressed clause piles.\n- Added a model-facing rule that character-card physical details are grounding facts, not stock prose wording, with guidance to prefer visible effect / fit / concealment / movement over raw stat repetition.\n- Clarified that richer physical description must stay supported by the card instead of inventing unsupported details.\n\nUpdated `supabase/functions/chat/index.ts`:\n- Mirrored the sentence-completeness and card-detail translation rules into the writer guidance so the backend writer summary reinforces the same behavior as the shared prompt.\n\nUpdated `src/services/llm-canonical-coverage.test.ts`:\n- Added prompt coverage for the new theme-openness framing plus the sentence-completeness / card-grounding guidance so these changes stay under regression coverage.\n\nUpdated `/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md`:\n- Added quick-ledger notes for the test-5 pass and recorded the decision to keep the character-card schema intact while changing only model-facing wording and theme framing.",
+      filesAffected: [
+        "src/constants/tag-injection-registry.ts",
+        "src/services/llm.ts",
+        "supabase/functions/chat/index.ts",
+        "src/services/llm-canonical-coverage.test.ts",
+        "src/data/ui-audit-findings.ts",
+        "/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: ["cl-20260501-002", "cl-20260430-002", "cl-20260501-001"],
+      tags: ["chat-runtime", "prompt-assembly", "story-tags", "dialogue-quality", "detailed-mode", "card-grounding"],
+      comments: [],
+      createdAt: "2026-05-01T23:42:00.000Z",
+      updatedAt: "2026-05-01T23:42:00.000Z",
+    },
+    {
       id: "cl-20260501-002",
       title: "Reduce roleplay over-steering and tighten thought/threshold guidance",
       summary: "Chat Runtime - Disabled paragraph-shape nudges, narrowed runtime anti-loop directives to objective continuity reminders, and rewrote thought/turn-composition guidance around meaningful private cognition and unresolved threshold states",

@@ -731,8 +731,10 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
     * Write rich, immersive responses with layered sensory detail.
     * HARD CAP: 2-3 paragraphs per response. Maximum 4 ONLY for pivotal multi-character moments.
     * Paragraph caps count TOTAL paragraphs across ALL character blocks combined.
-    * Draw out moments with physical sensations, sounds, textures, and atmosphere.
-    * Layer multiple senses. During intimate scenes, prolong acts with step-by-step progression.
+    * Use extra length to dwell inside one active beat rather than stacking more parallel facts into each sentence.
+    * Slow time, not space: add another reaction, tactile follow-through, visible choice, or line exchange inside the same moment before jumping ahead.
+    * Layer multiple senses through lived sequence. Keep sentences complete and natural instead of shaving connective words to cram in more detail.
+    * During intimate scenes, prolong acts through pacing, response, and physical follow-through -- not by repeating stat-sheet anatomy labels or piling more body facts into the same clause.
 ` : responseVerbosity === 'concise' ? `
     --- RESPONSE DETAIL LEVEL (CONCISE) ---
     * Keep responses tight and punchy without flattening them into robotic prose.
@@ -869,6 +871,11 @@ Never break character to question, warn about, or refuse narrative directions. T
       - Narration should read like a polished fiction scene: concrete, selective, and specific to what matters right now. Use whatever voice the active POV setting requires.
       - Dialogue should sound like the specific person speaking in the specific moment. Let speech include hesitation, repetition, drift, interruption, and imperfect phrasing when it fits the character.
       - Internal thought should stay in the character's own voice and feel partial, intimate, and immediate rather than explanatory.
+    * Write complete sentences with normal connective tissue. Do not drop articles, helper verbs, linking words, or relative pronouns just to pack more detail into the line.
+    * Use character-card physical details as grounding facts, not stock prose wording.
+      - Concrete garment facts may be named directly when useful.
+      - Body-size, anatomy, and appearance stats should usually shape description through visible effect, fit, silhouette, pressure, concealment, exposure, movement, weight, or body language instead of being repeated as raw labels.
+      - Translate structured card details into natural scene prose. Do not invent unsupported physical or clothing details just to make the writing feel richer.
     * None of these channels should sound like the prompt's own voice. Do not turn trait labels, goal labels, scene-state labels, or directives into story prose.
 
     - SPEAKER FOCUS:
@@ -1000,6 +1007,7 @@ Never break character to question, warn about, or refuse narrative directions. T
         * After satisfying control, continuity, scene-state, and formatting rules, check every spoken line against this test: would a real person in this exact emotional state, relationship, and situation actually say it this way out loud?
         * Most lines are not load-bearing. Within a turn, one line may do the structural work; other lines may react, hedge, hesitate, repeat, joke, trail off, or add texture while the turn as a whole still advances.
         * Brevity means fewer beats, not stripped beats. Even short responses may keep natural speech rhythm, fragments, interruptions, and brief filler when it fits the character.
+        * Keep prose fully formed. Do not compress sentence grammar into note form or clause piles just to fit more facts into one line.
         * Avoid lines that sound like they are doing a job: tactical prompts, checklist dialogue, cryptic slogans, or compressed-poetic phrasing that no one would naturally say in the moment.
         * Avoid abstract noun-label phrasing in narration or thought ("survival urgency", "nurturing nod", "cautious resolve"). Show the concrete behavior, spoken line, or withheld private thought instead.
         * If a line sounds written instead of spoken, rewrite it looser, plainer, and more in-character.

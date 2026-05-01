@@ -1,11 +1,11 @@
 // Tag Injection Registry
-// Maps content theme tags to behavioral directives injected into the LLM system prompt.
+// Maps story/theme tags to model-facing guidance injected into the LLM system prompt.
 // Each tag has a category, strength tier, and injection text.
 //
 // Strength Tiers:
-//   - 'strong'   → MANDATORY CONTENT DIRECTIVES (must be followed)
-//   - 'moderate' → EMPHASIZED THEMES (actively woven into narrative)
-//   - 'subtle'   → NARRATIVE FLAVOR (light influence on tone/style)
+//   - 'strong'   → core invited content or major boundaries
+//   - 'moderate' → welcomed themes to lean into when the scene supports them
+//   - 'subtle'   → light flavor/background influence
 
 export type InjectionStrength = 'strong' | 'moderate' | 'subtle';
 
@@ -158,7 +158,7 @@ export function buildContentThemeDirectives(contentThemes: {
     const entry = getTagInjection(tag);
     if (!entry) continue;
 
-    const line = `• [${entry.category}] ${entry.tag}: ${entry.injection}`;
+    const line = `• ${entry.tag}: ${entry.injection}`;
     switch (entry.strength) {
       case 'strong': strong.push(line); break;
       case 'moderate': moderate.push(line); break;
@@ -169,11 +169,11 @@ export function buildContentThemeDirectives(contentThemes: {
   // Custom tags get generic treatment
   for (const tag of (contentThemes.customTags || [])) {
     if (tag.trim()) {
-      custom.push(`• ${tag.trim()}: Incorporate "${tag.trim()}" as a thematic element in the narrative where it fits naturally.`);
+      custom.push(`• ${tag.trim()}: Treat this as a welcomed story element when it fits naturally in the scene.`);
     }
   }
 
-  // Build the block only if there are directives
+  // Build the block only if there is model-facing guidance to inject
   if (strong.length === 0 && moderate.length === 0 && subtle.length === 0 && custom.length === 0) {
     return '';
   }
@@ -181,21 +181,23 @@ export function buildContentThemeDirectives(contentThemes: {
   const sections: string[] = [];
 
   if (strong.length > 0) {
-    sections.push(`    MANDATORY CONTENT DIRECTIVES (You MUST follow these):\n${strong.join('\n')}`);
+    sections.push(`    CORE INVITED CONTENT / BOUNDARIES:\n${strong.join('\n')}`);
   }
   if (moderate.length > 0) {
-    sections.push(`    EMPHASIZED THEMES (Actively weave these into the narrative):\n${moderate.join('\n')}`);
+    sections.push(`    WELCOMED THEMES TO LEAN INTO WHEN NATURAL:\n${moderate.join('\n')}`);
   }
   if (subtle.length > 0) {
-    sections.push(`    NARRATIVE FLAVOR (Light influence on tone and character portrayal):\n${subtle.join('\n')}`);
+    sections.push(`    LIGHT STORY FLAVOR:\n${subtle.join('\n')}`);
   }
   if (custom.length > 0) {
-    sections.push(`    ADDITIONAL THEMES:\n${custom.join('\n')}`);
+    sections.push(`    ADDITIONAL USER-REQUESTED THEMES:\n${custom.join('\n')}`);
   }
 
   return `
-    --- CONTENT THEME DIRECTIVES ---
-    The following content directives have been set by the scenario creator. They define the tonal, thematic, and behavioral boundaries for this narrative.
+    --- STORY THEMES THE WRITERS HAVE OPTED INTO ---
+    The scenario creator used story tags to show what this story is open to, what it should stay aware of, and which themes matter most here.
+    Treat these as content permission, background emphasis, and thematic direction -- not as a checklist to force into every response.
+    Some lines set hard boundaries (for example SFW/NSFW). Others mark themes the story can naturally lean into when the scene supports them.
 
 ${sections.join('\n\n')}
   `;
