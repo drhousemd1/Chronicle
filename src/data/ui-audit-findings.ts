@@ -4774,6 +4774,48 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260501-001",
+      title: "Add quick prompt-change ledger to master rework workbook",
+      summary: "Prompt Debugging - The master prompt rework workbook now starts with a compact issue-to-change ledger plus current decision notes so prompt work can be resumed without rereading the full changelog first",
+      severity: "patch" as const,
+      status: "completed" as const,
+      problem: "The Quality Hub changelog had the full history and reasoning, but the master prompt workbook still required a long read before it became obvious which runtime bugs had already been addressed, which direction recent fixes took, and which architectural decisions were already made. That made it easier to circle back to the same debates during long prompt-debugging stretches.",
+      plan: "Keep the detailed changelog as the authoritative record, but add a compact top-of-workbook summary that mirrors the most important API/prompt/runtime changes in one-liners and records the current 'do not drift here' decisions so future prompt passes can reorient quickly.",
+      changes: "Updated `/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md`:\n- Added a top-level `Quick change ledger` that summarizes the major API-call, prompt, scene-state, and debug-workflow fixes in one-line issue -> change format.\n- Added `Current decision notes` to capture active guardrails such as keeping the existing settings architecture, not creating a second location system, and not spinning POV into its own workstream.\n\nUpdated `src/data/ui-audit-findings.ts`:\n- Logged this documentation/workflow refinement so the repo changelog and local workbook stay aligned.",
+      filesAffected: [
+        "src/data/ui-audit-findings.ts",
+        "/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: ["cl-20260430-002", "cl-20260426-006", "cl-20260430-001"],
+      tags: ["prompt-debugging", "documentation", "workflow", "change-ledger", "decision-log"],
+      comments: [],
+      createdAt: "2026-05-01T05:02:00.000Z",
+      updatedAt: "2026-05-01T05:02:00.000Z",
+    },
+    {
+      id: "cl-20260430-002",
+      title: "Rewrite model-facing roleplay context and strengthen position locks",
+      summary: "Chat Runtime - Roleplay prompt assembly now translates goals and traits into plain behavioral guidance, removes separate tone enforcement, and strengthens existing scene-position continuity for unresolved thresholds and barriers",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "The recent Lost transcript failures showed two connected problems. First, the model-facing prompt was still leaking internal UI and system vocabulary such as raw flexibility labels, influence brackets, `Guidance:` phrasing, and machine-like scene-state syntax. Second, even after adding `scenePosition`, unresolved user-character doorway and threshold states were still easy for the model to flatten into a cleaner scene resolution than the story actually supported.",
+      plan: "Keep the existing feature architecture intact, but rewrite the translation layer so the model sees plain behavioral context instead of internal labels. At the same time, keep the existing `scenePosition` field and strengthen how it is surfaced and reinforced so unresolved user-character movement states remain binding until the user explicitly changes them.",
+      changes: "Updated `src/services/llm.ts`:\n- Replaced raw goal formatting such as bracketed flexibility labels and `Guidance:` sections with plain-language story and character motivation descriptions.\n- Replaced trait bracket formatting such as `Rigid, 100%, Primary Influence` with descriptive behavioral guidance for outward, inward, and standard traits.\n- Reworked the current scene-state block into natural factual context plus `ACTIVE POSITION LOCKS` for unresolved user-character transitions.\n- Added a small positive `WRITING VOICE` anchor to give the model a clearer target for narration, dialogue, and internal thought.\n- Softened shared forward-movement and verbosity wording so shorter responses stay shorter without becoming tactical or robotic.\n- Removed the separate always-sent `TONE ENFORCEMENT` block and replaced that reinforcement budget with `PHYSICAL CONTINUITY REINFORCEMENT`.\n\nUpdated `supabase/functions/chat/index.ts`:\n- Rewrote planner-facing character scene states into natural factual lines instead of `location=...; scene position=...` syntax.\n- Added derived position-lock facts for user-controlled characters whose scene positions still indicate unresolved thresholds, barriers, or outside/inside transitions.\n- Fed those position-lock facts into planner context, fallback planning, and writer continuity guidance so unresolved movement states stay binding.\n\nUpdated `/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md`:\n- Logged this translation-cleanup pass, clarified which settings-driven branches were intentionally preserved, and marked older verbatim prompt excerpts as historical snapshots when they no longer match the live prompt.",
+      filesAffected: [
+        "src/services/llm.ts",
+        "supabase/functions/chat/index.ts",
+        "src/data/ui-audit-findings.ts",
+        "/Users/thomashall/Desktop/Chronicle/Projects/Chat Dialog Debugging/Master Prompt Rework/Master Prompt Rework with Chat GPT Codex.md"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: ["cl-20260426-006", "cl-20260426-005", "cl-20260430-001"],
+      tags: ["chat-runtime", "prompt-assembly", "scene-position", "dialogue-quality", "translation-layer", "roleplay"],
+      comments: [],
+      createdAt: "2026-05-01T04:05:00.000Z",
+      updatedAt: "2026-05-01T04:05:00.000Z",
+    },
+    {
       id: "cl-20260430-001",
       title: "Add issue tags to live dialogue debug notes",
       summary: "Chat Debugging - The live note modal now supports multi-select issue tags and the exported session log rolls those tags up into a quick issue summary",

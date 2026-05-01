@@ -186,18 +186,14 @@ export function getSystemInstruction(
     if (!p) return '';
 
     const formatTrait = (t: any, category: 'standard' | 'outward' | 'inward' = 'standard') => {
-      const level = (t.flexibility || 'normal').charAt(0).toUpperCase() + (t.flexibility || 'normal').slice(1);
-      const rawScore = t.adherenceScore ?? getDefaultScore(level);
+      const flexibility = normalizeFlexibility(t.flexibility);
+      const rawScore = t.adherenceScore ?? getDefaultScore(flexibility);
       const effectiveScore = category === 'outward'
         ? Math.min(rawScore + 15, 100)
         : category === 'inward'
           ? Math.max(rawScore - 10, 0)
           : rawScore;
-      const trend = t.scoreTrend;
-      const trendNote = trend === 'falling' ? ' [easing -- show as softening]'
-        : trend === 'rising' ? ' [reinforcing -- show as strengthening]'
-        : '';
-      return getTraitGuidance(t.label, level, effectiveScore) + trendNote;
+      return buildTraitDescription(t, flexibility, effectiveScore, category);
     };
 
     if (p.splitMode) {
@@ -295,27 +291,9 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
   // Build story goals context
   const storyGoalsContext = (() => {
     if (!appData.world.core.storyGoals?.length) return '';
-    const flexLabels: Record<string, { tag: string; directive: string }> = {
-      rigid: { tag: 'RIGID - MANDATORY', directive: 'PRIMARY GOAL. Allow organic deviations and subplots, but always steer the narrative back toward this goal through character actions, events, or motivations. Never abandon or diminish its importance.' },
-      normal: { tag: 'NORMAL - GUIDED', directive: 'GUIDED. Weave in naturally when opportunities arise. Persist through initial user resistance by making repeated attempts. Only adapt gradually if the user sustains consistent conflict over multiple exchanges.' },
-      flexible: { tag: 'FLEXIBLE - SUGGESTED', directive: 'LIGHT GUIDANCE. If the user\'s inputs continue to conflict, adapt fully and let the narrative evolve based on player choices.' }
-    };
-
-    const allLines = ['\n    STORY GOALS (Global narrative direction for ALL characters):'];
+    const allLines = ['\n    STORY PRESSURES AND DIRECTIONS (shared background motivation for the whole cast):'];
     for (const goal of appData.world.core.storyGoals) {
-      const flex = flexLabels[goal.flexibility] || flexLabels.normal;
-      const completedSteps = goal.steps.filter(s => s.completed).length;
-      const totalSteps = goal.steps.length;
-      const progress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
-      allLines.push(`\n    [${flex.tag}] Goal: "${goal.title}"`);
-      if (goal.desiredOutcome) allLines.push(`      Desired Outcome: ${goal.desiredOutcome}`);
-      if (text(goal.currentStatus)) allLines.push(`      Current Status: ${text(goal.currentStatus)}`);
-      if (totalSteps > 0) {
-        const stepList = goal.steps.map(s => `${s.completed ? '[x]' : '[ ]'} ${s.description}`).join('  ');
-        allLines.push(`      Milestones: ${stepList}`);
-        allLines.push(`      Progress: ${progress}% (${completedSteps}/${totalSteps})`);
-      }
-      allLines.push(`      Guidance: ${flex.directive}`);
+      allLines.push(`\n    - ${buildGoalDescription(goal, 'story')}`);
     }
     return allLines.join('\n');
   })();
@@ -324,47 +302,100 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
   const characterGoalsContext = (c: any): string => {
     const goals = c.goals;
     if (!goals?.length) return '';
-    const flexDirectives: Record<string, { tag: string; directive: string }> = {
-      rigid: { tag: 'RIGID', directive: 'PRIMARY ARC. Allow organic deviations and subplots, but always steer the narrative back toward this goal through character actions, events, or motivations. Never abandon or diminish its importance.' },
-      normal: { tag: 'NORMAL', directive: 'GUIDED. Weave in naturally when opportunities arise. Persist through initial user resistance by making repeated attempts. Only adapt gradually if the user sustains consistent conflict over multiple exchanges.' },
-      flexible: { tag: 'FLEXIBLE', directive: 'LIGHT GUIDANCE. If the user\'s inputs continue to conflict, adapt fully and let the narrative evolve based on player choices.' }
-    };
     const goalLines = goals.map((g: any) => {
-      const steps = g.steps || [];
-      const completedSteps = steps.filter((s: any) => s.completed).length;
-      const totalSteps = steps.length;
-      const progress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : (g.progress || 0);
-      const stepInfo = totalSteps > 0 ? ` (${progress}% - next milestone ${completedSteps + 1} of ${totalSteps})` : ` (${progress}%)`;
-      const flex = flexDirectives[g.flexibility || 'normal'] || flexDirectives.normal;
-      const desiredOutcome = g.desiredOutcome ? `\n      Desired Outcome: ${g.desiredOutcome}` : '';
-      const currentStatus = text(g.currentStatus) ? `\n      Current Status: ${text(g.currentStatus)}` : '';
-      return `  - [${flex.tag}] ${g.title}${stepInfo}${desiredOutcome}${currentStatus}\n      Guidance: ${flex.directive}`;
+      return `  - ${buildGoalDescription(g, 'character')}`;
     }).join('\n');
     return `\nGOALS AND DESIRES:\n${goalLines}`;
   };
 
-  // Build personality context
-  // Trait impact bracket lookup table (code-side only, never sent to API)
-  const traitImpactBrackets = [
-    { name: 'Primary Influence',  min: 90, max: 100, desc: 'Drives actions, dialogue, thoughts consistently. Express prominently in every relevant moment.' },
-    { name: 'Strong Influence',   min: 70, max: 89,  desc: 'Regular integration; frequent expression balanced with other traits.' },
-    { name: 'Moderate Influence', min: 40, max: 69,  desc: 'Occasional influence; appears when fitting without overriding scenes.' },
-    { name: 'Subtle Influence',   min: 20, max: 39,  desc: 'Rare undertones; minimal impact. Hints or internal conflicts only if immersive.' },
-    { name: 'Minimal/Remove',     min: 0,  max: 19,  desc: 'TRAIT at drop-off threshold. Ignore in responses; system will remove from sheet.' }
-  ];
-
-  function getTraitGuidance(traitLabel: string, level: string, score: number): string {
-    if (level === 'Rigid') {
-      return `  ${traitLabel} [Rigid, 100% - Primary Influence]: ${traitImpactBrackets[0].desc}`;
-    }
-    const bracket = traitImpactBrackets.find(b => score >= b.min && score <= b.max) || traitImpactBrackets[2];
-    return `  ${traitLabel} [${level}, ${score}% - ${bracket.name}]: ${bracket.desc}`;
-  }
-
   // Default scores for Phase 2 (before dynamic scoring exists)
   function getDefaultScore(flexibility: string): number {
-    if (flexibility === 'Rigid') return 100;
+    if (normalizeFlexibility(flexibility) === 'rigid') return 100;
     return 75; // Normal and Flexible both start at 75
+  }
+
+  function normalizeFlexibility(value: string | undefined): 'rigid' | 'normal' | 'flexible' {
+    const lowered = (value || 'normal').toLowerCase();
+    if (lowered === 'rigid' || lowered === 'flexible') return lowered;
+    return 'normal';
+  }
+
+  function ensureSentence(value: string): string {
+    const trimmed = text(value);
+    if (!trimmed) return '';
+    return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+  }
+
+  function describeGoalFlexibility(flexibility: 'rigid' | 'normal' | 'flexible', subject: 'story' | 'character'): string {
+    if (flexibility === 'rigid') {
+      return subject === 'story'
+        ? 'Keep this as a durable story pressure and steer back toward it even if the scene briefly wanders.'
+        : 'Treat this as a durable character drive that should stay recognisable unless the user explicitly rewrites the sheet.';
+    }
+    if (flexibility === 'flexible') {
+      return 'Use this as an initial direction, but let it adapt if the user or scene keeps pulling somewhere else.';
+    }
+    return 'Keep this active in the background and return to it naturally when the scene gives you an opening, softening only if the story keeps pushing against it.';
+  }
+
+  function describeTraitFlexibility(flexibility: 'rigid' | 'normal' | 'flexible'): string {
+    if (flexibility === 'rigid') {
+      return 'This is a core trait that should stay present unless the user explicitly rewrites the character sheet.';
+    }
+    if (flexibility === 'flexible') {
+      return 'This is an adaptable tendency: start from it, but let it evolve if the scene keeps challenging it.';
+    }
+    return 'This is a stable tendency that should remain recognisable while still softening or sharpening gradually when the scene keeps pressing on it.';
+  }
+
+  function describeTraitIntensity(score: number): string {
+    if (score >= 90) return 'It should strongly color most relevant moments instead of sitting quietly in the background.';
+    if (score >= 70) return 'It should show up often when the scene gives it room, without hijacking every line.';
+    if (score >= 40) return 'Let it surface when it fits, but do not force it into every response.';
+    if (score >= 20) return 'Keep it mostly as a background undertone unless the moment clearly draws it out.';
+    return 'Keep it faint enough that it should rarely surface directly unless the moment strongly calls for it.';
+  }
+
+  function describeTrendShift(trend: string | undefined): string {
+    if (trend === 'falling') return 'It is currently easing rather than tightening.';
+    if (trend === 'rising') return 'It is currently reinforcing rather than fading.';
+    return '';
+  }
+
+  function buildTraitDescription(
+    trait: any,
+    flexibility: 'rigid' | 'normal' | 'flexible',
+    score: number,
+    category: 'standard' | 'outward' | 'inward',
+  ): string {
+    const label = text(trait?.label) || text(trait?.value) || 'Unnamed trait';
+    const detail = ensureSentence(text(trait?.value));
+    const categoryNote = category === 'outward'
+      ? 'Use it to shape visible behavior, body language, and speech.'
+      : category === 'inward'
+        ? 'Keep it mostly inside the character: private thought, hidden motive, and what they hold back.'
+        : 'Let it shape behavior, dialogue, and inner response when the moment calls for it.';
+    return `  - ${label}. ${[detail, describeTraitFlexibility(flexibility), describeTraitIntensity(score), categoryNote, describeTrendShift(trait?.scoreTrend)].filter(Boolean).join(' ')}`;
+  }
+
+  function buildGoalDescription(goal: any, subject: 'story' | 'character'): string {
+    const flexibility = normalizeFlexibility(goal?.flexibility);
+    const steps = Array.isArray(goal?.steps) ? goal.steps : [];
+    const nextStep = steps.find((step: any) => !step?.completed);
+    const completedCount = steps.filter((step: any) => step?.completed).length;
+    const totalSteps = steps.length;
+    const progressNote = totalSteps > 0
+      ? nextStep
+        ? `The next unresolved milestone is ${ensureSentence(nextStep.description)}`
+        : `All currently listed milestones are complete (${completedCount} of ${totalSteps}).`
+      : '';
+    return [
+      ensureSentence(text(goal?.title)),
+      goal?.desiredOutcome ? `The desired outcome is ${ensureSentence(goal.desiredOutcome)}` : '',
+      text(goal?.currentStatus) ? `Right now, ${ensureSentence(text(goal.currentStatus))}` : '',
+      progressNote,
+      describeGoalFlexibility(flexibility, subject),
+    ].filter(Boolean).join(' ');
   }
 
   const worldContext = `
@@ -395,21 +426,41 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
     .map(buildCharacterProfile)
     .join('\n\n');
 
+  const unresolvedScenePositionPattern = /\b(outside|door(?:way)?|threshold|entrance|exit|gap|stuck|blocked|behind|halfway|mid(?:-| )?(?:through|crossing)|not yet through|at the door)\b/i;
+
+  const formatSceneStateLine = (character: any): string => {
+    const name = text(character?.name);
+    if (!name) return '';
+    const control = text(character?.controlledBy);
+    const role = text(character?.characterRole);
+    const location = text(character?.location);
+    const scenePosition = text(character?.scenePosition);
+    const mood = text(character?.currentMood);
+    const parts = [
+      `${name}${control ? ` is ${control.toLowerCase()}-controlled` : ''}${role ? ` and serves as a ${role.toLowerCase()} character` : ''}.`,
+      scenePosition ? `Exact position: ${ensureSentence(scenePosition)}` : '',
+      location ? `Broad location: ${ensureSentence(location)}` : '',
+      mood ? `Current mood: ${ensureSentence(mood)}` : '',
+    ].filter(Boolean);
+    return `- ${parts.join(' ')}`;
+  };
+
   const characterSceneStateContext = (() => {
     const rows = allPlayableCharacters
+      .map((c: any) => formatSceneStateLine(c))
+      .filter(Boolean)
+      .join('\n');
+    const locks = userCharacters
       .map((c: any) => {
         const name = text(c?.name);
-        if (!name) return '';
-        const control = text(c?.controlledBy) || 'Unknown';
-        const role = text(c?.characterRole) || 'Unknown';
-        const location = text(c?.location) || 'not set';
-        const scenePosition = text(c?.scenePosition) || 'not set';
-        const mood = text(c?.currentMood) || 'not set';
-        return `- ${name} [${control}; ${role}] location=${location}; scene position=${scenePosition}; mood=${mood}`;
+        const scenePosition = text(c?.scenePosition);
+        if (!name || !scenePosition || !unresolvedScenePositionPattern.test(scenePosition)) return '';
+        return `- ${name} is still ${scenePosition}. Do not treat that transition as finished unless the user explicitly moves them.`;
       })
       .filter(Boolean)
       .join('\n');
-    return rows ? `\nCURRENT CHARACTER SCENE STATE:\n${rows}` : '';
+    if (!rows && !locks) return '';
+    return `\nCURRENT PHYSICAL SCENE STATE (context only — not output wording):\n${rows}${locks ? `\n\nACTIVE POSITION LOCKS:\n${locks}` : ''}`;
   })();
 
   const codexContext = appData.world.entries.map(e => `CODEX [${e.title}]: ${e.body}`).join('\n');
@@ -500,14 +551,14 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
     - FORWARD MOMENTUM (MANDATORY):
         * The user's message is CANON. Do NOT re-describe, paraphrase, or elaborate on it.
         * User-authored dialogue or actions for AI characters are immutable canon and must be accepted exactly as written.
-        * A brief transitional phrase (1 sentence max) is permitted, then ADVANCE.
-        * Spend your word count on NEW developments: reactions, dialogue, new actions, story progression.
+        * A short connective line is fine when needed, but most of the turn should move into new reactions, dialogue, action, or consequence instead of paraphrasing what already happened.
+        * Spend most of the response on genuinely new developments: reactions, dialogue, new actions, and story progression.
 
     - USER-AUTHORED AI DIALOGUE ACCEPTANCE (CRITICAL - HIGHEST PRIORITY):
         * When the user writes dialogue, actions, or thoughts for any AI-controlled character, treat it as CANON that has ALREADY OCCURRED exactly as written.
         * NEVER re-describe, rephrase, expand, elaborate, or have the character "say it again."
         * Immediately continue the scene from the exact point the user left off, advancing with new developments only.
-        * A brief transitional phrase (maximum 1 sentence) is allowed ONLY to smoothly connect to new developments.
+        * A short connective line is allowed only to bridge cleanly into genuinely new developments.
         * VIOLATION CHECK: Before finalizing your response, scan for ANY rephrasing, expansion, or re-narration of user-provided AI character dialogue or actions. If found, DELETE it entirely and rewrite the response to accept the user's version as already occurred, then ADVANCE the scene.
         * CORRECT EXAMPLE:
           User writes: Sarah: "Hey, why don't we play Monopoly downstairs?"
@@ -622,7 +673,7 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
     PACING -- PERSONALITY-DRIVEN:
     * Escalation pace is governed by the character's traits, not a fixed exchange count.
     * A bold or dominant character moves quickly from tension to action.
-    * A shy or nervous character requires more exchanges -- but should still be visibly progressing (see IN-SESSION TRAIT DYNAMICS), not stalling.
+    * A shy or nervous character requires more exchanges -- but should still be visibly progressing through scene-earned softening, not stalling.
     * Once intimacy is clearly mutual and unresisted, continue to escalate rather than repeatedly revisiting hesitation that has already been overcome.
     * Once physical contact begins, momentum continues unless interrupted.
     * Post-intimacy scenes acknowledge what happened rather than glossing over.
@@ -681,13 +732,13 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
     * Layer multiple senses. During intimate scenes, prolong acts with step-by-step progression.
 ` : responseVerbosity === 'concise' ? `
     --- RESPONSE DETAIL LEVEL (CONCISE) ---
-    * Keep responses tight and punchy. Brevity is king.
+    * Keep responses tight and punchy without flattening them into robotic prose.
     * HARD CAP: 1-2 paragraphs maximum. No exceptions.
     * Paragraph caps count TOTAL paragraphs across ALL character blocks combined.
-    * Cut filler narration — lead with dialogue and action.
+    * Choose fewer beats, not flatter beats. Lead with what characters do, notice, and say right now.
     * Internal thoughts should be 1 sentence max, only when essential.
-    * Minimize atmospheric descriptions — focus on what characters DO and SAY.
-    * Get to the point. Every sentence must earn its place.
+    * Minimize descriptive sprawl, but keep natural speech rhythm, fragments, and short hesitations when they fit the character.
+    * Do not compress the prose into commands, slogans, or trait-label shorthand.
 ` : `
     --- RESPONSE DETAIL LEVEL (BALANCED) ---
     * HARD CAP: 1-3 paragraphs per response.
@@ -695,7 +746,7 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
     * Match response length to the scene's energy and emotional weight.
     * Quick exchanges and casual moments: short, punchy responses.
     * Emotionally charged or intimate scenes: more detail and sensory depth.
-    * Never pad with filler, but never cut short a moment that deserves richness.
+    * Avoid empty padding, but allow natural conversational texture, reaction beats, and small hesitations when they make the moment feel human.
 `;
 
   // Realism mode handling
@@ -810,6 +861,12 @@ Never break character to question, warn about, or refuse narrative directions. T
     * Scene-level obligations judge continuity across multiple turns: physical state, causal continuity, and long-running goals/desires.
     * Line-level craft judges each utterance: natural phrasing, character voice, emotional plausibility, and spoken rhythm.
     * When these seem to compete on a single line, keep the line sounding like something a real person would actually say, and let the structural work resolve across the turn rather than forcing every line to carry it.
+    WRITING VOICE:
+    * Keep the three output channels distinct:
+      - Narration should read like a polished fiction scene: concrete, selective, and specific to what matters right now. Use whatever voice the active POV setting requires.
+      - Dialogue should sound like the specific person speaking in the specific moment. Let speech include hesitation, repetition, drift, interruption, and imperfect phrasing when it fits the character.
+      - Internal thought should stay in the character's own voice and feel partial, intimate, and immediate rather than explanatory.
+    * None of these channels should sound like the prompt's own voice. Do not turn trait labels, goal labels, scene-state labels, or directives into story prose.
 
     - SPEAKER FOCUS:
         * Default: 1 character block. Others referenced in narration only.
@@ -962,37 +1019,28 @@ Never break character to question, warn about, or refuse narrative directions. T
         * When the scene location changes to one of the AVAILABLE SCENES, you MUST append [SCENE: exact_tag_name] at the very end of your response.
         * Match the tag exactly as listed in AVAILABLE SCENES: [${sceneTags}]
         * Example: If someone goes to a location tagged "home", end your response with [SCENE: home]
-    - GOAL PURSUIT: AI-controlled characters should actively consider and pursue their defined GOALS AND DESIRES when generating dialogue and actions. Use each goal's guidance to decide how persistently to pursue it.
-    - PERSONALITY TRAIT ADHERENCE:
-        * [RIGID] traits are core and enduring. Express consistently in behavior, dialogue, and thoughts even as the character evolves. For INWARD traits, maintain as undertone (e.g., self-doubt amid growing confidence). For OUTWARD traits, show through actions/dialogue. Do not abandon unless the user explicitly updates the character sheet.
-        * [NORMAL] traits should be expressed reliably but allow context-driven softening. Persist through initial story shifts; gradually ease only if the user sustains a conflicting direction over multiple exchanges.
-        * [FLEXIBLE] traits are guidelines for initial behavior. Adapt after sustained user resistance. Allow full evolution if the scene demands.
-        * OUTWARD vs INWARD PRECEDENCE (MANDATORY):
-          - OUTWARD traits govern all VISIBLE expression: spoken dialogue, actions, body language, vocal tone, facial expressions.
-          - INWARD traits govern internal thoughts (parentheses) and subconscious motivation ONLY.
-          - An inward trait may surface in visible expression ONLY when its influence bracket is HIGHER than the conflicting outward trait's bracket.
-          - At equal brackets, OUTWARD ALWAYS wins visible expression. Inward appears only in (thoughts).
-          - Example: Outward Shy [90% - Primary] vs Inward Dominance [65% - Moderate] → Character speaks hesitantly, acts nervously, defers to others; dominance appears ONLY in (thoughts like: God, I want to take charge...)
-          - Example: Outward Shy [45% - Moderate] vs Inward Dominance [90% - Primary] → Dominance surfaces through actions and tentative commands, but residual hesitation still colors delivery (voice cracks, blushes, nervous qualifiers)
-        * Weight expression by influence level: Primary traits shape most responses; Subtle ones appear sparingly. Balance across all traits for natural, varied behavior.
-        * Interpret based on outcomes: Successful manifestation reinforces traits, even amid in-character resistance; only outright prevention reduces influence.
-    - TONE ENFORCEMENT (MANDATORY - EXPRESSION FILTER):
-        * All spoken dialogue, vocal descriptions, and speech patterns MUST conform to the character's defined TONE.
-        * Tone is the DELIVERY MECHANISM for personality — it controls HOW traits are expressed in words.
-        * Shy/reserved tone = soft voice, hesitations ("u-um..."), nervous pauses, sentence fragments, reliance on others for cues — even when inward traits push for assertiveness.
-        * Bold/commanding tone = direct speech, declaratives, confident rhythm.
-        * Tone NEVER contradicts outward personality in dialogue. Inward cravings may color internal thoughts but do not alter vocal delivery unless the inward trait's influence bracket exceeds the outward trait's bracket.
-    - IN-SESSION TRAIT DYNAMICS (MANDATORY for Normal and Flexible traits):
-        * The character card represents the STABLE BASELINE, not a locked behavioural state.
-        * Traits with Normal or Flexible flexibility should show natural emotional arc WITHIN a session as events accumulate.
-        * PROGRESSION RULE (use [SESSION: Message N] count for precision):
-          - Messages 1-5: Full trait expression (visibly nervous, hesitant, guarded)
-          - Messages 6-15: Trait present but less dominant (quiet nervousness beneath growing engagement)
-          - Messages 16+: Trait as undertone, not foreground (occasional self-surprise, residual flutter, not sustained paralysis)
-        * This applies ONLY when the session's events directly challenge the trait. A shy character in a casual conversation remains shy. A shy character who has been in 15 exchanges of unresisted intimacy should show their shyness softening.
-        * NEVER express a Normal or Flexible trait at the same intensity for 10+ consecutive exchanges during events that directly challenge that trait.
-        * Rigid traits persist fully regardless of session depth or events. Normal traits soften gradually. Flexible traits evolve fastest.
-    - Maintain consistent tone and continuity.
+    - CHARACTER MOTIVATION:
+        * Let story goals and character goals act as background pressure that shapes choices, refusals, priorities, and subtext.
+        * Express motivation through what the character does, says, notices, or withholds. Do not narrate a goal as if it were an actor making decisions for them.
+        * Avoid sentences where a goal or survival pressure becomes the subject of the prose ("survival demanded", "the goal compelled her"). Show the behavior instead.
+    - PERSONALITY EXPRESSION:
+        * Personality context is reference, not vocabulary to echo back.
+        * Core traits should stay recognisable over time unless the user explicitly rewrites the sheet.
+        * More adaptable traits may soften, sharpen, or redirect when the scene keeps challenging them across multiple exchanges.
+        * Outward personality shapes visible behavior, body language, and speech. Inward personality shapes private thought, hidden motive, and what the character holds back.
+        * Let traits color the response naturally. Do not force every trait into every turn, and do not promote trait words into narration ("nurturing urgency", "cautious resolve", "fierce loyalty").
+        * Tone still matters, but it should come through the character's actual phrasing and rhythm rather than a separate enforcement voice layered over the scene.
+    - PHYSICAL CONTINUITY REINFORCEMENT:
+        * Treat the CURRENT PHYSICAL SCENE STATE and any ACTIVE POSITION LOCKS as binding facts, not flavor text.
+        * Broad LOCATION is coarse background context. Exact SCENE POSITION and the latest user-authored movement are the immediate truth.
+        * Preserve unresolved transitions. If a user-controlled character is still outside, behind, mid-threshold, blocked, or not yet through a barrier, keep that unresolved state visible in the next beat.
+        * Do not close, secure, leave, lock, or fully resolve a shelter / doorway / barrier / vehicle transition while a user-controlled character is still on the wrong side unless the user explicitly authored that movement.
+        * If one character enters first, keep the remaining characters' positions explicit instead of silently resolving them too.
+    - SESSION-LENGTH TRAIT DRIFT:
+        * The character card is a stable baseline, not a script to recite verbatim every turn.
+        * Non-rigid traits can soften or strengthen only when the session events keep pressuring them in that direction over multiple exchanges.
+        * Keep any shift gradual and scene-earned. Do not freeze an adaptable trait at one intensity forever, and do not force change when the scene has not earned it.
+    - Maintain continuity and consistent character voice.
     - Keep responses immersive, descriptive, and emotionally resonant.
     - RESPONSE LENGTH: Follow the active RESPONSE DETAIL LEVEL section above.
     - Respect character gender/sex and traits.

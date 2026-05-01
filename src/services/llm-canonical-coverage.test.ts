@@ -128,8 +128,9 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('Treaty: One breach means war.');
     expect(prompt).toContain('Moonlit dread with restrained courtly etiquette.');
 
-    expect(prompt).toContain('Goal: "Secure lasting peace"');
-    expect(prompt).toContain('Current Status: Negotiations stalled by mistrust.');
+    expect(prompt).toContain('STORY PRESSURES AND DIRECTIONS');
+    expect(prompt).toContain('Secure lasting peace.');
+    expect(prompt).toContain('Right now, Negotiations stalled by mistrust.');
 
     expect(prompt).toContain('CHARACTER: Tamlin');
     expect(prompt).toContain('AGE: 27');
@@ -142,7 +143,8 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('Casual: Simple linen shirt');
     expect(prompt).toContain('CUSTOM TRAITS / CUSTOM CONTENT:');
     expect(prompt).toContain('Control dynamics and slow-burn teasing.');
-    expect(prompt).toContain('Current Status: Actively watching court movements.');
+    expect(prompt).toContain('Protect Feyre.');
+    expect(prompt).toContain('Right now, Actively watching court movements.');
 
     expect(prompt).toContain('ACTIVE SCENE CONTEXT:');
     expect(prompt).toContain('- Scene Title: Balcony Summit');
@@ -229,14 +231,15 @@ describe('llm canonical prompt coverage', () => {
 
     const prompt = getSystemInstruction(appData, 1, 'sunset', [], true, null);
 
-    expect(prompt).toContain('Milestones:');
-    expect(prompt).toContain('Guidance:');
+    expect(prompt).toContain('Survive the storm.');
+    expect(prompt).toContain('The next unresolved milestone is Make the shelter safe enough to rest.');
     expect(prompt).not.toContain('ACTIVE GOALS & STEPS');
     expect(prompt).not.toContain('PENDING STEP');
     expect(prompt).not.toContain('CURRENT STEP');
     expect(prompt).not.toContain('TURN PROGRESSION CONTRACT');
     expect(prompt).not.toContain('CONCRETE SCENE DELTA');
     expect(prompt).not.toContain('DIRECTIVE:');
+    expect(prompt).not.toContain('Guidance:');
     expect(prompt).not.toContain('Survival priority');
     expect(prompt).not.toContain('Priority is');
   });

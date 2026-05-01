@@ -343,13 +343,12 @@ function extractQuestionSentences(text: string, maxItems = 3): string[] {
 
 function formatCharacterSceneState(state: CharacterSceneState): string {
   const parts = [
-    state.controlledBy ? `control=${state.controlledBy}` : null,
-    state.characterRole ? `role=${state.characterRole}` : null,
-    state.location ? `location=${state.location}` : null,
-    state.scenePosition ? `scene position=${state.scenePosition}` : null,
-    state.currentMood ? `mood=${state.currentMood}` : null,
+    `${state.name}${state.controlledBy ? ` is ${state.controlledBy.toLowerCase()}-controlled` : ''}${state.characterRole ? ` and serves as a ${state.characterRole.toLowerCase()} character` : ''}.`,
+    state.scenePosition ? `Exact position: ${ensureSentence(state.scenePosition)}` : '',
+    state.location ? `Broad location: ${ensureSentence(state.location)}` : '',
+    state.currentMood ? `Current mood: ${ensureSentence(state.currentMood)}` : '',
   ].filter(Boolean);
-  return `${state.name}: ${parts.length ? parts.join('; ') : 'no stored scene state'}`;
+  return parts.join(' ');
 }
 
 function formatCharacterSceneStates(states: CharacterSceneState[] | undefined): string[] {
@@ -358,10 +357,27 @@ function formatCharacterSceneStates(states: CharacterSceneState[] | undefined): 
     .map(formatCharacterSceneState);
 }
 
+const unresolvedScenePositionPattern = /\b(outside|door(?:way)?|threshold|entrance|exit|gap|stuck|blocked|behind|halfway|mid(?:-| )?(?:through|crossing)|not yet through|at the door)\b/i;
+
+function buildPositionLockFacts(states: CharacterSceneState[] | undefined): string[] {
+  return (states ?? [])
+    .filter((state) => (
+      state?.name?.trim()
+      && state.controlledBy === 'User'
+      && state.scenePosition?.trim()
+      && unresolvedScenePositionPattern.test(state.scenePosition)
+    ))
+    .flatMap((state) => [
+      `${state.name} is still ${state.scenePosition}. That transition is unresolved until the user explicitly moves them.`,
+      `Do not close, secure, leave, or fully resolve the current doorway, barrier, shelter, vehicle, or escape path as if ${state.name} already crossed it.`,
+    ]);
+}
+
 function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undefined, lastUser: string): PlannerPlan {
   const aiNames = uniqueNonEmpty(ctx?.aiCharacterNames ?? []);
   const userNames = uniqueNonEmpty(ctx?.userCharacterNames ?? []);
   const characterSceneStates = formatCharacterSceneStates(ctx?.characterSceneStates);
+  const positionLockFacts = buildPositionLockFacts(ctx?.characterSceneStates);
   const previousAssistant = [...messages].reverse().find((message) => message.role === 'assistant')?.content ?? '';
   const previousSpeakers = extractSpeakerBlockNames(previousAssistant).filter((name) => (
     aiNames.some((aiName) => aiName.toLowerCase() === name.toLowerCase())
@@ -383,6 +399,7 @@ function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undef
     ctx?.currentTimeOfDay ? `Current time of day: ${ctx.currentTimeOfDay}` : null,
     ctx?.activeSceneTags?.length ? `Scene tags: ${ctx.activeSceneTags.join(', ')}` : null,
     ...characterSceneStates,
+    ...positionLockFacts,
   ]);
 
   return {
@@ -416,6 +433,7 @@ function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undef
       'Latest user turn has priority over older excerpts.',
       'Preserve the current physical scene state and line of sight.',
       'Preserve user-controlled character micro-position. Broad location labels do not override the latest doorway/inside/outside/nearby/stuck/blocked status.',
+      'Treat any unresolved doorway or threshold state as binding until the user explicitly moves through it.',
       'Use prior memory as continuity support, not as a reason to repeat resolved beats.',
     ],
     sceneStateFacts,
@@ -870,7 +888,8 @@ async function runRoleplayV2(
     ctx?.activeSceneTags?.length ? `Scene tags: ${ctx.activeSceneTags.join(', ')}` : '',
     ctx?.aiCharacterNames?.length ? `AI characters: ${ctx.aiCharacterNames.join(', ')}` : '',
     ctx?.userCharacterNames?.length ? `User characters: ${ctx.userCharacterNames.join(', ')}` : '',
-    ctx?.characterSceneStates?.length ? `Character scene states:\n${formatCharacterSceneStates(ctx.characterSceneStates).join('\n')}` : '',
+    ctx?.characterSceneStates?.length ? `Character scene states (context only, not output wording):\n${formatCharacterSceneStates(ctx.characterSceneStates).join('\n')}` : '',
+    buildPositionLockFacts(ctx?.characterSceneStates).length ? `Active position locks:\n${buildPositionLockFacts(ctx.characterSceneStates).join('\n')}` : '',
   ].filter(Boolean).join('\n');
 
   const plannerSystem: Message = {
