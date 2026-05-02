@@ -178,7 +178,10 @@ export function buildCall1ValidationPresence(input: {
   if (Array.isArray(world?.storyGoals) && world.storyGoals.length > 0) {
     const goalSample = world.storyGoals.find((goal) => normalizeText(goal.title) || normalizeText(goal.desiredOutcome));
     detail["call1.story.story_goals"] =
-      normalizedIncludes(systemInstruction, "STORY GOALS") &&
+      (
+        normalizedIncludes(systemInstruction, "STORY GOALS") ||
+        normalizedIncludes(systemInstruction, "STORY BACKGROUND CONTEXT:")
+      ) &&
       (goalSample
         ? normalizedIncludes(systemInstruction, goalSample.title || goalSample.desiredOutcome || "")
         : true);
@@ -246,7 +249,8 @@ export function buildCall1ValidationPresence(input: {
   if (aiCharacters.some((character) => hasGoalData(character))) {
     detail["call1.cast.character_goals"] =
       normalizedIncludes(systemInstruction, "CHARACTER GOALS:") ||
-      normalizedIncludes(systemInstruction, "GOALS AND DESIRES:");
+      normalizedIncludes(systemInstruction, "GOALS AND DESIRES:") ||
+      normalizedIncludes(systemInstruction, "ONGOING CHARACTER CONTEXT:");
   }
 
   if (aiCharacters.some((character) => hasCustomSectionData(character))) {

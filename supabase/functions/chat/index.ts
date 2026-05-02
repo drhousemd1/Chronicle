@@ -368,9 +368,9 @@ function buildPositionLockFacts(states: CharacterSceneState[] | undefined): stri
       && unresolvedScenePositionPattern.test(state.scenePosition)
     ))
     .flatMap((state) => [
-      `${state.name} is still ${state.scenePosition}. That transition is unresolved until the user explicitly moves them.`,
-      `Do not close, secure, leave, or fully resolve the current doorway, barrier, shelter, vehicle, or escape path as if ${state.name} already crossed it.`,
-      `Keep ${state.name}'s unresolved position visible on the page until the user changes it. Other characters may react to the barrier, but may not narrate ${state.name} as already through it.`,
+      `${state.name} is still ${state.scenePosition}. Keep that unfinished crossing visible until the user explicitly moves them.`,
+      `Do not close the door, leave the shelter, pull away the vehicle, or otherwise finish the current crossing as if ${state.name} already made it through.`,
+      `Keep ${state.name}'s current position visible on the page until the user changes it. Other characters may react to the doorway or barrier, but may not narrate ${state.name} as already through it.`,
     ]);
 }
 
@@ -438,9 +438,9 @@ function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undef
     ].filter((item): item is string => Boolean(item)),
     continuityNotes: [
       'Latest user turn has priority over older excerpts.',
-      'Preserve the current physical scene state and line of sight.',
+      'Keep the current physical reality and line of sight intact.',
       'Preserve user-controlled character micro-position. Broad location labels do not override the latest doorway/inside/outside/nearby/stuck/blocked status.',
-      'Treat any unresolved doorway or threshold state as binding until the user explicitly moves through it.',
+      'If someone is still stuck at a doorway, gate, or barrier, keep that unfinished crossing visible until the user explicitly moves through it.',
       'Use prior memory as continuity support, not as a reason to repeat resolved beats.',
     ],
     sceneStateFacts,
@@ -935,7 +935,7 @@ Rules:
 - mustInclude: short bullet phrases (facts, callbacks, named objects) the writer must respect.
 - mustAvoid: anti-patterns for this turn, especially off-screen perception, contradictions, invented props, trope labels, repeated resolved beats, robotic wording, needless second-speaker filler, and repeated confirmation loops.
 - continuityNotes: facts from earlier turns the writer must preserve.
-- sceneStateFacts: current physical-state facts that remain true right now. Treat these like a state machine snapshot. Include character scene positions, especially user-controlled character inside/outside/near/behind/stuck/blocked status when relevant.
+- sceneStateFacts: current physical facts that remain true right now. Include where each character is, especially whether a user-controlled character is inside, outside, blocked, halfway through, or otherwise not yet through.
 - formattingNotes: tone/length/format hints (e.g. "two paragraphs, no bullet lists").
 
 ${ctxLines ? `Context:\n${ctxLines}\n` : ''}`,
@@ -1028,54 +1028,56 @@ ${ctxLines ? `Context:\n${ctxLines}\n` : ''}`,
 
   const writerPlanInjection: Message = {
     role: 'system',
-    content: `Private writing guidance for this next reply only. Use it to write finished roleplay; never mention this guidance in the story.
+    content: `Private writing guidance for this next reply only. Stay anchored to it while writing finished roleplay, and never mention this guidance in the story.
 
-Focus speaker: ${plan.focusCharacter || speakerTags}
-Allowed speaker tags: ${speakerTags}
-Speaker structure: default 1 tagged block; use a second only when it meaningfully contributes or a protected direct-question response requires it. Hard ceiling: ${Math.max(1, Math.min(2, plan.maxSpeakerBlocks || 1))} tagged block(s)
-Immediate beat: ${immediateBeat}
+Primary speaker: ${plan.focusCharacter || speakerTags}
+Available speaker tags this turn: ${speakerTags}
+Block shape: stay with 1 tagged block unless a second one clearly matters or a protected direct-question response requires it. Hard ceiling: ${Math.max(1, Math.min(2, plan.maxSpeakerBlocks || 1))} tagged block(s)
+Beat to land now: ${immediateBeat}
 
-Rule scoping for this turn:
-- Hard constraints are non-negotiable: speaker ownership, scene state, user-character position lock, line of sight, and required formatting.
-- Turn-level obligations apply to the response as a whole: answer what matters, follow through, and move the scene by one believable beat.
-- Line-level craft applies to each utterance: make it sound spoken, in-character, emotionally plausible, and natural.
-- Not every line needs to do structural work. One line may carry the beat; other lines may react, hesitate, hedge, or add texture as long as the turn as a whole advances.
-- Direct questions between named AI characters create a protected response block. If one named AI asks another named AI a direct question or response-implying prompt, the addressee gets the next short block even if that means omitting a different block.
-- Land one present-tense beat cleanly instead of compressing several future logistics steps into one summary paragraph.
+Keep these priorities straight:
+- Speaker ownership, current physical reality, user-character movement protection, line of sight, and required formatting stay absolute.
+- Answer what matters, follow through, and move the scene by one believable present-tense beat.
+- Let one line carry the practical work if needed; the surrounding lines may simply react, notice, or add texture as long as the turn as a whole advances.
+- If one named AI character directly asks another named AI character a question or response-implying prompt in this same reply, the addressee gets the next short block even if a different block has to be cut.
+- Land one beat cleanly in the moment instead of compressing several future logistics steps into one summary paragraph.
+- Write in clear, complete, natural English. Keep narration, dialogue, and thought fully phrased and coherent instead of clipped, broken, or half-finished.
 
-Questions or prompts to address:
+What needs an answer right now:
 ${formatGuidanceList(plan.directQuestionsToAnswer, 'No direct question needs special handling.')}
 
-Continuity to preserve:
-${formatGuidanceList([...plan.sceneStateFacts, ...plan.continuityNotes], 'Use the latest visible scene state and preserve cause and effect.', 7)}
+Physical truth to keep steady:
+${formatGuidanceList([...plan.sceneStateFacts, ...plan.continuityNotes], 'Use the latest visible physical facts and preserve cause and effect.', 7)}
 
-Helpful facts to weave in naturally:
+Useful facts already on the table:
 ${formatGuidanceList(plan.mustInclude, 'No extra facts need special handling.')}
 
-Avoid this turn:
+Do not do this in the reply:
 ${formatGuidanceList(plan.mustAvoid, 'Do not speak for user-controlled characters, do not force extra speakers, and do not repeat resolved beats.', 7)}
 
-Style and format:
+While writing:
 - Keep older excerpts subordinate to the latest user turn.
-- Preserve user-controlled character scene position. Do not close, secure, leave through, lock, or resolve a threshold/barrier/shelter/vehicle/bed/restraint/danger transition as if a user-controlled character moved unless the latest user turn wrote that movement.
-- If a user-controlled character is still outside, blocked, or mid-threshold, other characters may shout, reach, brace, prepare, or invite, but may not narrate that person as already inside or already safe.
+- Keep user-controlled characters exactly where the latest turn leaves them. If someone is still outside, at a doorway, blocked, halfway through, or mid-action, other characters may reach, call, brace, wait, or help, but may not act as if that person is already through or already safe unless the latest user turn shows that movement.
+- If a user-controlled character is still at a doorway, gate, vehicle opening, barrier, or other unfinished crossing, other characters may shout, reach, brace, prepare, or invite, but may not narrate that person as already inside or already safe.
 - Do not narrate user-controlled characters completing requested actions. AI characters may command or prepare, but the user must author the user character's actual execution.
-- Write in the selected character's real voice, not as a checklist.
+- If two AI-controlled characters are sharing one unfinished doorway, threshold, crossing, brace, pull, or other cooperative physical action, keep the sequence in strict micro-order. Do not jump one person to the finished state while the other is still mid-action. If chronology is cleaner with a short second tagged block, use it instead of over-packing the whole exchange into one block.
+- Write in the selected character's real voice, not in checklist or planner language.
 - Use the app's roleplay format: CharacterName: *visible action/narration.* "spoken dialogue"
 - Never put one character's quoted dialogue inside another character's tagged block; give the speaking AI character their own tag or make it a silent visible reaction.
 - If one named AI character directly questions another named AI character in this same reply, the addressee must receive the next short block. Omit a different block before omitting the answer block. If you are not giving them a block, do not ask the question that way.
 - Do not write bare prose or loose internal monologue after a speaker tag; wrap action in *asterisks*, wrap rare private thought in (parentheses), or omit it.
 - (Narration) Write complete natural sentences with normal connective tissue. Do not drop articles, helper verbs, linking words, or relative pronouns just to cram more detail into a line.
-- (Dialogue) Spoken lines may use short fragments, interruptions, and hesitations when the character would actually talk that way.
-- (Thought) Private thoughts may be fragmentary only when the referent is clear and the thought still reads as coherent inner speech.
+- (Dialogue) Write complete natural spoken sentences. Avoid clipped fragments, broken phrasing, or half-finished lines as a default style.
+- (Thought) Private thoughts should read as complete, coherent inner speech with a clear referent.
+- (Narration/Thought) Within a single response, time only moves forward. If a character is still mid-action, the surrounding narration and thought must stay in that unfinished moment until the action completes. Do not mention a future-completed feeling, result, or location and then jump back to the unfinished action.
 - Private thoughts are for meaningful withheld inner truth: fear of a reaction, shame, secrecy, protective restraint, strategy, guilt, desire, uncertainty, or hidden conflict. Never use them as decorative emotion captions, weather recaps, or paraphrases of what the reader can already see.
-- Treat scene facts as constraints, not phrases to repeat every turn.
-- Render goals and priorities as natural choices, actions, dialogue, or subtext. Do not output labels for internal reasoning.
-- Treat character-card physical details as grounding facts, not default prose wording. Concrete garment facts may be named directly, but raw body-size or anatomy labels from the sheet are not default narration or thought wording. If the only way to say it is the stat itself, describe the visible effect, fit, pressure, concealment, exposure, movement, weight, silhouette, or body language instead.
+- Use the latest visible facts as the current reality, not as phrases to repeat every turn.
+- Treat sheets, goals, tags, scene labels, and setup themes as reference context, not visible story vocabulary. Render them as natural choices, actions, dialogue, subtext, or bodily experience instead of labels or shorthand prose.
+- Treat character-card physical details as grounding facts, not default prose wording. Concrete garment facts may be named directly, but measurement-style body fields from the sheet are not default narration or thought wording. If the only way to say it is the raw schema value, describe the visible effect, fit, pressure, concealment, exposure, movement, weight, silhouette, or body language instead.
 - Do not invent unsupported physical or clothing details just to make the prose sound richer.
 - Once a named character is established in-scene, refer to them by name or a clear pronoun. Do not rotate into descriptor-subject substitutions like "the petite blonde" just to avoid repetition.
 - If one character already solved the immediate logistics beat or answered the practical question, do not spend a second tagged block just echoing that resolution unless it adds new information, conflict, or pressure.
-- Do not turn emotions, traits, or survival pressure into abstract noun phrases like "survival urgency" or "nurturing nod." Show the concrete behavior, direct worry, or private withheld thought instead.
+- Do not turn emotions, traits, goals, themes, or motivations into abstract noun phrases or acting forces. Show the concrete behavior, direct worry, bodily sensation, pressure, avoidance, or private withheld thought instead.
 - Do not reuse the same environmental opening from recent assistant turns; show a new physical effect if the scene condition still matters.
 - Final dialogue plausibility check: if a line sounds like a slogan, checklist item, tactical prompt, or written narration instead of something a real person would say out loud, rewrite it simpler and more naturally.
 - Do not output markdown separator lines such as --- or ***.`,

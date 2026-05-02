@@ -136,9 +136,11 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('Treaty: One breach means war.');
     expect(prompt).toContain('Moonlit dread with restrained courtly etiquette.');
 
-    expect(prompt).toContain('STORY PRESSURES AND DIRECTIONS');
+    expect(prompt).toContain('STORY BACKGROUND CONTEXT');
     expect(prompt).toContain('Secure lasting peace.');
-    expect(prompt).toContain('Right now, Negotiations stalled by mistrust.');
+    expect(prompt).toContain('Longer view: Both courts ratify treaty without bloodshed.');
+    expect(prompt).toContain('Current state: Negotiations stalled by mistrust.');
+    expect(prompt).toContain('Next open step: Hold midnight summit.');
     expect(prompt).toContain('--- STORY THEMES THE WRITERS HAVE OPTED INTO ---');
     expect(prompt).toContain('Treat these as content permission, background emphasis, and thematic direction -- not as a checklist to force into every response.');
     expect(prompt).toContain('CORE INVITED CONTENT / BOUNDARIES:');
@@ -158,14 +160,23 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('Casual: Simple linen shirt');
     expect(prompt).toContain('CUSTOM TRAITS / CUSTOM CONTENT:');
     expect(prompt).toContain('Control dynamics and slow-burn teasing.');
+    expect(prompt).toContain('ONGOING CHARACTER CONTEXT:');
     expect(prompt).toContain('Protect Feyre.');
-    expect(prompt).toContain('Right now, Actively watching court movements.');
-    expect(prompt).toContain('Write complete sentences with normal connective tissue.');
-    expect(prompt).toContain('(Dialogue) Natural speech may include short fragments, interruptions, and hesitations');
+    expect(prompt).toContain('Longer view: Keep her away from political threats.');
+    expect(prompt).toContain('Current state: Actively watching court movements.');
+    expect(prompt).toContain('STRICT WRITING CONTRACT:');
+    expect(prompt).toContain('Use complete sentences in narration, dialogue, and thought.');
+    expect(prompt).toContain('(Dialogue) Write complete natural spoken sentences.');
+    expect(prompt).toContain('Character sheets, goal context, tags, scene labels, and setup themes are reference context, not story vocabulary.');
+    expect(prompt).not.toContain('Natural speech may include short fragments');
+    expect(prompt).not.toContain('Spoken lines may use short fragments');
     expect(prompt).toContain('Use character-card physical details as grounding facts, not stock prose wording.');
-    expect(prompt).toContain('Raw body-size or anatomy labels from the sheet are reference data, not default narration or thought wording.');
+    expect(prompt).toContain('Measurement-style body fields from the sheet are reference data, not default narration or thought wording.');
+    expect(prompt).toContain('Within a single response, narration and thought move forward in time only.');
+    expect(prompt).toContain('If two AI-controlled characters are sharing one unfinished physical action, keep the sequence in strict micro-order.');
     expect(prompt).toContain('If one AI-controlled character directly asks another named AI-controlled character a question or response-implying prompt in the same response, the addressee must get the next short block to answer or react meaningfully.');
     expect(prompt).toContain('Once a named character is established in-scene, refer to them by name or a clear pronoun.');
+    expect(prompt).toContain('Cooperative physical action is the narrow exception: if two AI-controlled characters are in one unfinished shared action and a short second tagged block keeps chronology or causality cleaner, use it instead of forcing the whole exchange into one over-packed block.');
 
     expect(prompt).toContain('ACTIVE SCENE CONTEXT:');
     expect(prompt).toContain('- Scene Title: Balcony Summit');
@@ -253,7 +264,9 @@ describe('llm canonical prompt coverage', () => {
     const prompt = getSystemInstruction(appData, 1, 'sunset', [], true, null);
 
     expect(prompt).toContain('Survive the storm.');
-    expect(prompt).toContain('The next unresolved milestone is Make the shelter safe enough to rest.');
+    expect(prompt).toContain('Longer view: Reach shelter and keep everyone alive.');
+    expect(prompt).toContain('Current state: Searching for warmth.');
+    expect(prompt).toContain('Next open step: Make the shelter safe enough to rest.');
     expect(prompt).not.toContain('ACTIVE GOALS & STEPS');
     expect(prompt).not.toContain('PENDING STEP');
     expect(prompt).not.toContain('CURRENT STEP');
@@ -263,5 +276,7 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).not.toContain('Guidance:');
     expect(prompt).not.toContain('Survival priority');
     expect(prompt).not.toContain('Priority is');
+    expect(prompt).not.toContain('The desired outcome is');
+    expect(prompt).not.toContain('Right now,');
   });
 });

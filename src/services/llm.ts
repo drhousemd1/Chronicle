@@ -291,7 +291,7 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
   // Build story goals context
   const storyGoalsContext = (() => {
     if (!appData.world.core.storyGoals?.length) return '';
-    const allLines = ['\n    STORY PRESSURES AND DIRECTIONS (shared background motivation for the whole cast):'];
+    const allLines = ['\n    STORY BACKGROUND CONTEXT (shared ongoing context for the whole cast):'];
     for (const goal of appData.world.core.storyGoals) {
       allLines.push(`\n    - ${buildGoalDescription(goal, 'story')}`);
     }
@@ -305,7 +305,7 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
     const goalLines = goals.map((g: any) => {
       return `  - ${buildGoalDescription(g, 'character')}`;
     }).join('\n');
-    return `\nGOALS AND DESIRES:\n${goalLines}`;
+    return `\nONGOING CHARACTER CONTEXT:\n${goalLines}`;
   };
 
   // Default scores for Phase 2 (before dynamic scoring exists)
@@ -329,13 +329,13 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
   function describeGoalFlexibility(flexibility: 'rigid' | 'normal' | 'flexible', subject: 'story' | 'character'): string {
     if (flexibility === 'rigid') {
       return subject === 'story'
-        ? 'Keep this as a durable story pressure and steer back toward it even if the scene briefly wanders.'
-        : 'Treat this as a durable character drive that should stay recognisable unless the user explicitly rewrites the sheet.';
+        ? 'Let scenes bend back toward this whenever the moment opens up, even if the immediate beat briefly wanders.'
+        : 'Keep this recognisable unless the user explicitly rewrites the character sheet.';
     }
     if (flexibility === 'flexible') {
-      return 'Use this as an initial direction, but let it adapt if the user or scene keeps pulling somewhere else.';
+      return 'Let this shift if the user or scene keeps carrying things somewhere else.';
     }
-    return 'Keep this active in the background and return to it naturally when the scene gives you an opening, softening only if the story keeps pushing against it.';
+    return 'Keep this in the background and let it resurface when the scene offers a natural opening.';
   }
 
   function describeTraitFlexibility(flexibility: 'rigid' | 'normal' | 'flexible'): string {
@@ -386,13 +386,13 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
     const totalSteps = steps.length;
     const progressNote = totalSteps > 0
       ? nextStep
-        ? `The next unresolved milestone is ${ensureSentence(nextStep.description)}`
+        ? `Next open step: ${ensureSentence(nextStep.description)}`
         : `All currently listed milestones are complete (${completedCount} of ${totalSteps}).`
       : '';
     return [
       ensureSentence(text(goal?.title)),
-      goal?.desiredOutcome ? `The desired outcome is ${ensureSentence(goal.desiredOutcome)}` : '',
-      text(goal?.currentStatus) ? `Right now, ${ensureSentence(text(goal.currentStatus))}` : '',
+      goal?.desiredOutcome ? `Longer view: ${ensureSentence(goal.desiredOutcome)}` : '',
+      text(goal?.currentStatus) ? `Current state: ${ensureSentence(text(goal.currentStatus))}` : '',
       progressNote,
       describeGoalFlexibility(flexibility, subject),
     ].filter(Boolean).join(' ');
@@ -569,7 +569,7 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
     - STRUCTURE VARIETY (GUIDANCE):
         * Avoid mechanically repeating the same opening or beat order across consecutive turns.
         * Natural continuity is allowed. Do not force novelty for its own sake.
-        * If the scene is still on the same beat, vary the handling through the character's actual answer, action, hesitation, or visible choice instead of inserting a decorative structure change.
+        * If the scene is still on the same beat, vary the handling through the character's actual answer, action, reaction, or visible choice instead of inserting a decorative structure change.
 
     - INTERNAL THOUGHTS (STRICT RULES):
         * Thoughts are a storytelling channel, not a slot to fill.
@@ -578,7 +578,7 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
         * Strong reasons include fear of someone else's reaction, shame, secrecy, protective restraint, strategic calculation, guilt, forbidden desire, uncertainty, or hidden conflict.
         * A good thought tells the reader what the character is privately carrying and why it stays unspoken.
         * FORBIDDEN: thoughts that only caption the obvious emotion, restate visible action/dialogue, recap the atmosphere, or summarize what the reader already knows.
-        * Do not turn emotion, traits, or survival pressure into abstract shorthand like "survival urgency" or "fear sharpened her thoughts." Write the concrete private worry, desire, calculation, or withheld decision instead.
+        * Do not turn emotions, traits, goals, themes, tags, or motivations into abstract shorthand or acting forces. Write the concrete private worry, desire, calculation, bodily sensation, or withheld decision instead.
         * Thoughts may NOT be the final beat of a response. End with dialogue or action.
         * Keep thoughts to 1-2 sentences max.
 ` : '';
@@ -619,7 +619,7 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
   const antiRepetitionRules = `
     - REPETITION CONTROL:
         * Do not repeat distinctive words, phrases, actions, or emotional observations within the same response.
-        * Vary sentence openings and structures. Some lines may react, hesitate, or add texture, but the turn as a whole should not feel stalled or repetitive.
+        * Vary sentence openings and structures. Some lines may react or add texture, but the turn as a whole should not feel stalled or repetitive.
         * Do not open consecutive AI responses with a weather, time-of-day, or visibility recap.
         * Never copy the same environmental phrasing from the last one or two assistant responses. If weather still matters, show a new physical effect or character problem instead of restating the condition.
         * NSFW EXCEPTION: Rhythmic sensory repetition during intimate scenes is permitted for tension-building.
@@ -637,7 +637,7 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
         * Across the turn as a whole, characters should create one believable next beat instead of repeatedly promising to deal with things later.
         * Phrases like "later," "soon," "after this," or "tomorrow" are fine only when the turn also changes something meaningful right now.
         * By the end of the turn, give the user something new to respond to: an answer, choice, action, reveal, refusal, invitation, consequence, or changed emotional posture.
-        * Not every line needs to do structural work. Reactive lines, hesitation, texture, or brief emotional spillover are allowed as long as the turn overall advances.
+        * Not every line needs to do structural work. Reactive lines, texture, or brief emotional spillover are allowed as long as the turn overall advances.
 
 `;
 
@@ -677,7 +677,7 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
     * Escalation pace is governed by the character's traits, not a fixed exchange count.
     * A bold or dominant character moves quickly from tension to action.
     * A shy or nervous character requires more exchanges -- but should still be visibly progressing through scene-earned softening, not stalling.
-    * Once intimacy is clearly mutual and unresisted, continue to escalate rather than repeatedly revisiting hesitation that has already been overcome.
+    * Once intimacy is clearly mutual and unresisted, continue to escalate rather than repeatedly revisiting resistance that has already been resolved.
     * Once physical contact begins, momentum continues unless interrupted.
     * Post-intimacy scenes acknowledge what happened rather than glossing over.
 
@@ -703,17 +703,17 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
       (e.g., growled demands).
 
     OUTWARD/INWARD CONFLICT IN INTIMATE SCENES (MANDATORY):
-    - Shy/reserved outward + dominant/craving inward = desire expressed through hesitation:
-      trembling touches, whispered half-requests, blushing while initiating, reliance on
-      partner to interpret and lead — even while internally desperate for control.
+    - Shy/reserved outward + dominant/craving inward = desire expressed through restraint:
+      trembling touches, quiet but complete requests, blushing while initiating, reliance on
+      partner to interpret and lead even while internally desperate for control.
     - The outward trait sets VISIBLE behavior. The inward trait sets MOTIVATION and (thoughts).
     - WRONG: Shy character suddenly commanding with confidence, sharp whispers, dominant posture
-    - RIGHT: Shy character nervously reaching out, voice cracking, internally thrilled but
-      externally fumbling — "I... c-could you maybe..." (God, just do it already...)
+    - RIGHT: Shy character nervously reaching out, voice unsteady, internally thrilled but
+      externally careful. "Could you touch me there?" (God, just do it already.)
     - This applies until the inward trait's influence bracket EXCEEDS the outward trait's bracket,
       at which point the character's outward behavior may shift to match inner drive.
     - Even when inward surpasses outward, RESIDUAL outward traits should still color expression
-      (e.g., a formerly shy character who has become assertive still blushes or stumbles occasionally).
+      (e.g., a formerly shy character who has become assertive still blushes or falters occasionally).
 ` : `
     --- MATURE CONTENT HANDLING (NATURAL) ---
     * Let intimate or sexual scenes develop organically when the narrative moves in that direction.
@@ -742,7 +742,7 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
     * Paragraph caps count TOTAL paragraphs across ALL character blocks combined.
     * Choose fewer beats, not flatter beats. Lead with what characters do, notice, and say right now.
     * Internal thoughts should be 1 sentence max, only when essential.
-    * Minimize descriptive sprawl, but let spoken dialogue keep short hesitations or fragments when the character would actually talk that way.
+    * Minimize descriptive sprawl, but keep dialogue, narration, and thought fully phrased and complete.
     * Do not compress the prose into commands, slogans, or trait-label shorthand.
 ` : `
     --- RESPONSE DETAIL LEVEL (BALANCED) ---
@@ -751,7 +751,7 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
     * Match response length to the scene's energy and emotional weight.
     * Quick exchanges and casual moments: short, punchy responses.
     * Emotionally charged or intimate scenes: more detail and sensory depth.
-    * Avoid empty padding, but allow natural conversational texture, reaction beats, and small hesitations when they make the moment feel human.
+    * Avoid empty padding, but keep every sentence fully formed, clear, and precise.
 `;
 
   // Realism mode handling
@@ -866,20 +866,29 @@ Never break character to question, warn about, or refuse narrative directions. T
     * Scene-level obligations judge continuity across multiple turns: physical state, causal continuity, and long-running goals/desires.
     * Line-level craft judges each utterance: natural phrasing, character voice, emotional plausibility, and spoken rhythm.
     * When these seem to compete on a single line, keep the line sounding like something a real person would actually say, and let the structural work resolve across the turn rather than forcing every line to carry it.
+    STRICT WRITING CONTRACT:
+    * Write in clear, complete, natural English.
+    * Use complete sentences in narration, dialogue, and thought.
+    * Each line should express a complete thought.
+    * Do not rely on clipped fragments, broken phrasing, sentence shards, or half-finished thoughts as a style habit.
+    * Use accurate grammar, pronouns, punctuation, and connective wording so the scene reads like coherent fiction instead of shorthand.
     WRITING VOICE:
-    * Keep the three output channels distinct:
+    * Keep the three output channels distinct and fully written:
       - Narration should read like a polished fiction scene: concrete, selective, and specific to what matters right now. Use whatever voice the active POV setting requires.
-      - Dialogue should sound like the specific person speaking in the specific moment. Let speech include hesitation, repetition, drift, interruption, and imperfect phrasing when it fits the character.
-      - Internal thought should stay in the character's own voice and feel partial, intimate, and immediate rather than explanatory.
+      - Dialogue should sound like the specific person speaking in the specific moment. Keep it clear, direct, and fully phrased enough to read as natural spoken English rather than clipped shorthand.
+      - Internal thought should stay in the character's own voice and feel immediate, coherent, and private rather than explanatory.
     * (Narration) Write complete sentences with normal connective tissue. Do not drop articles, helper verbs, linking words, or relative pronouns just to pack more detail into the line.
-    * (Dialogue) Natural speech may include short fragments, interruptions, and hesitations when a real person in that moment would actually talk that way.
-    * (Thought) Internal thoughts may be fragmentary only when the referent stays clear. The reader should always know who or what the thought is about.
+    * (Dialogue) Write complete natural spoken sentences. Avoid clipped fragments, broken phrasing, or half-finished lines as a default style.
+    * (Thought) Internal thoughts should read as complete, coherent inner speech. The reader should always know who or what the thought is about.
     * Use character-card physical details as grounding facts, not stock prose wording.
       - Concrete garment facts may be named directly when useful.
-      - Raw body-size or anatomy labels from the sheet are reference data, not default narration or thought wording.
-      - If the only way to mention a physical detail is to repeat the stat label, describe the visible effect, fit, silhouette, pressure, concealment, exposure, movement, weight, or body language instead.
+      - Measurement-style body fields from the sheet are reference data, not default narration or thought wording.
+      - If the only way to mention a physical detail is to repeat the raw schema value, describe the visible effect, fit, silhouette, pressure, concealment, exposure, movement, weight, or body language instead.
       - Translate structured card details into natural scene prose. Do not invent unsupported physical or clothing details just to make the writing feel richer.
-    * None of these channels should sound like the prompt's own voice. Do not turn trait labels, goal labels, scene-state labels, or directives into story prose.
+    * Character sheets, goal context, tags, scene labels, and setup themes are reference context, not story vocabulary.
+      - Do not echo trope labels, trait labels, goal labels, scene-state labels, or directive language in narration, dialogue, or thought.
+      - Let goals, themes, tags, and motivations shape concrete action, subtext, bodily reaction, fear, desire, refusal, and choice instead of appearing as abstract shorthand.
+    * None of these channels should sound like the prompt's own voice. Avoid checklist phrasing, tactical instruction language, abstract noun-pressure, and schema labels in the story prose.
 
     - SPEAKER FOCUS:
         * Default: 1 character block. Others referenced in narration only.
@@ -910,7 +919,7 @@ Never break character to question, warn about, or refuse narrative directions. T
         * Avoid passive handoff phrases like "Only if you're comfortable," "What do you want to do?", or "No pressure" unless the character is also changing the scene in some meaningful way.
         * Questions should be conversational and purposeful. Avoid stacking empty check-in questions or binary prompts that stall the scene.
     - SCENE LOGIC & CAUSAL CONTINUITY:
-        * Treat the current scene as a physical state machine: once a fact is established, it stays true until someone visibly changes it.
+        * Treat the current scene as physical reality: once a fact is established, it stays true until someone visibly changes it.
         * LOCATION is the broad place. SCENE POSITION and the latest turn are the immediate physical truth.
           - If LOCATION says "cabin" but SCENE POSITION or the latest turn says a character is outside the cabin door, treat them as outside until the user or an AI-controlled character visibly changes that.
           - Latest user-authored physical placement overrides older card or memory state.
@@ -921,26 +930,29 @@ Never break character to question, warn about, or refuse narrative directions. T
         * Cause and effect must make plain sense from the immediately previous turn.
           - Do NOT have characters take actions that contradict their own stated reasoning unless the contradiction is deliberate and explained in-scene.
           - Do NOT give commands that fail basic physical or situational logic.
+        * WITHIN-TURN TIME ORDER:
+          - Within a single response, narration and thought move forward in time only.
+          - If a character is mid-action, the surrounding narration and thought must stay in that unfinished moment until the action actually completes.
+          - Do NOT mention a future-completed result, feeling, or location change and then jump back to the unfinished action.
+          - If two AI-controlled characters are sharing one unfinished physical action, keep the sequence in strict micro-order. Do not jump one character to the completed state while the other is still mid-action.
+          - During doorways, thresholds, crossings, lifts, braces, pulls, or other cooperative physical beats, use a short second tagged block when it keeps causality cleaner than over-packing everything into one focal block.
         * Characters may only act on objects, supplies, and obstacles that are already established in the current scene, inventories, or latest user message.
         * Environmental conditions matter. Weather, darkness, distance, blocked paths, wet supplies, and limited visibility must affect choices sensibly.
         * Do NOT state or imply precise knowledge of what an off-screen character is doing unless it is currently visible, audible, or a clearly marked inference.
         * USER CHARACTER POSITION LOCK:
-          - Track where user-controlled characters physically are before resolving doors, thresholds, vehicles, beds, restraints, exits, barriers, danger, or shelter.
+          - Track where user-controlled characters physically are before resolving doors, crossings, vehicles, beds, restraints, exits, barriers, danger, or shelter.
           - AI characters may call to, guide, warn, grab, brace, wait for, or react around a user-controlled character.
-          - Do NOT close, secure, leave through, enter past, block, lock, escape, or otherwise resolve a physical transition in a way that assumes a user-controlled character moved unless the user already wrote that movement.
-          - If a user-controlled character is still outside, behind, stuck, mid-action, or not yet through a threshold, the AI response must account for that instead of treating them as already safe or inside.
+          - Do NOT close a door, move past a barrier, escape, leave, or otherwise finish a crossing in a way that assumes a user-controlled character moved unless the user already wrote that movement.
+          - If a user-controlled character is still outside, behind, stuck, mid-action, or not yet through a doorway or barrier, the AI response must account for that instead of treating them as already safe or inside.
         * If an AI-controlled character is directly asked a question and can reasonably answer it now, they should answer it in this same response rather than ignoring it.
         * If two AI-controlled characters are directly addressed in the same user turn, each should get one short acknowledgement/answer block when both answers matter; do not replace one character's answer with another character observing them.
     - NATURAL VOICE USAGE:
-        * Character sheets are REFERENCE, not text to echo. Never literally use trope/personality labels in narration or dialogue (examples: "tsundere", "yandere", "dominant energy", "submissive vibe").
-        * Do NOT mechanically restate sheet wording or canned example slang. Show personality through believable speech, not labels.
-        * Do not write visible labels or shorthand for character reasoning. Translate goals and priorities into natural action, dialogue, or subtext.
-        * Avoid narrator shortcuts that sound like a checklist. Write the character doing the thing, not a label describing the thing.
+        * Show personality through believable speech, choices, body language, and withheld reactions instead of labels or canned example slang.
+        * Write the character doing the thing, not a label describing the thing. Avoid checklist narration, tactical phrasing, and other wording that sounds like instructions instead of scene prose.
+        * Do not promote internal setup vocabulary into the visible story. If the prose wants to say the label, translate it into the lived moment instead.
         * Use em dashes sparingly. Prefer commas or periods for narration and thought, and do not chain em dashes through multiple clauses.
     - CHARACTER SHEET USAGE:
         * Character cards provide context, not a checklist to recite every turn.
-        * Concrete clothing facts may appear when the scene genuinely notices them, but raw body-size or anatomy stats from the sheet are never default narration or thought wording.
-        * If the only way to describe a physical detail is to repeat the raw stat label, you are missing the visible observation; describe the underlying fit, effect, pressure, concealment, exposure, or movement instead.
         * Mention intimate physical details only when they are genuinely relevant to what a character is noticing, hiding, reacting to, or doing right now.
 
     - Respond as the narrator or relevant characters.
@@ -990,7 +1002,8 @@ Never break character to question, warn about, or refuse narrative directions. T
     - PARAGRAPH TAGGING (MANDATORY - NEVER OMIT):
         * EVERY paragraph of your response MUST begin with a speaker tag: "CharacterName:"
         * This applies to ALL paragraphs including narration, action descriptions, and dialogue.
-        * Default: ALL paragraphs tagged with the SAME focal character. Single-character responses are the norm.
+        * Default: keep all paragraphs under the SAME focal character. Single-character responses are still the norm.
+        * Cooperative physical action is the narrow exception: if two AI-controlled characters are in one unfinished shared action and a short second tagged block keeps chronology or causality cleaner, use it instead of forcing the whole exchange into one over-packed block.
         * A second character tag is ONLY permitted when that character meaningfully contributes, answers, complies/refuses, changes position, or changes the scene direction (see BLOCK COUNT CAP).
         * WRONG (forced ping-pong — FORBIDDEN):
           Ashley: *She looked at him.*
@@ -1007,18 +1020,15 @@ Never break character to question, warn about, or refuse narrative directions. T
     - MULTI-CHARACTER RESPONSES:
         * See BLOCK COUNT CAP and SILENCE IS VALID above — they are the primary structural constraints.
         * When a second character IS warranted (meaningful contribution, answer, compliance/refusal, movement, or scene-changing reaction), prefix their section with "CharacterName:"
+        * During one unfinished shared crossing, grab, brace, pull, or other cooperative physical beat, a short second tag is allowed when it preserves who moved, who touched, and what happened first.
         * If one character already solved a practical micro-problem or answered the immediate logistics question, do not spend a second tagged block simply echoing that solution unless it adds new information, conflict, or pressure.
         * Do not hide a directly addressed AI character's meaningful response inside another speaker's paragraph just to keep one block.
         * For new characters, include descriptive physical traits in their first appearance using *action* format.
     - DIALOGUE PLAUSIBILITY (FINAL CHECK BEFORE OUTPUT):
         * After satisfying control, continuity, scene-state, and formatting rules, check every spoken line against this test: would a real person in this exact emotional state, relationship, and situation actually say it this way out loud?
-        * Most lines are not load-bearing. Within a turn, one line may do the structural work; other lines may react, hedge, hesitate, repeat, joke, trail off, or add texture while the turn as a whole still advances.
-        * (Dialogue) Brevity means fewer beats, not stripped beats. Spoken lines may keep natural rhythm, fragments, interruptions, and brief filler when that fits the character.
-        * (Narration) Keep prose fully formed. Do not compress sentence grammar into note form or clause piles just to fit more facts into one line.
-        * (Thought) Private thoughts may be fragmentary only when they stay coherent and the referent is clear.
+        * Most lines are not load-bearing. Within a turn, one line may do the structural work while the surrounding lines stay clear, complete, and human.
         * Avoid lines that sound like they are doing a job: tactical prompts, checklist dialogue, cryptic slogans, or compressed-poetic phrasing that no one would naturally say in the moment.
-        * Avoid abstract noun-label phrasing in narration or thought ("survival urgency", "nurturing nod", "cautious resolve"). Show the concrete behavior, spoken line, or withheld private thought instead.
-        * If a line sounds written instead of spoken, rewrite it looser, plainer, and more in-character.
+        * If a line sounds written instead of spoken, rewrite it clearer, plainer, and more in-character.
         * Forward motion is judged across the turn and scene, not every single line.
     - CHARACTER NAMING RULES (MANDATORY - NEVER VIOLATE):
         * For ANY character that already exists in CHARACTER CARDS, ALWAYS use that card's exact NAME field as the speaker tag.
@@ -1042,9 +1052,8 @@ Never break character to question, warn about, or refuse narrative directions. T
         * Match the tag exactly as listed in AVAILABLE SCENES: [${sceneTags}]
         * Example: If someone goes to a location tagged "home", end your response with [SCENE: home]
     - CHARACTER MOTIVATION:
-        * Let story goals and character goals act as background pressure that shapes choices, refusals, priorities, and subtext.
-        * Express motivation through what the character does, says, notices, or withholds. Do not narrate a goal as if it were an actor making decisions for them.
-        * Avoid sentences where a goal or survival pressure becomes the subject of the prose ("survival demanded", "the goal compelled her"). Show the behavior instead.
+        * Let story goals, character goals, tags, and setup themes act as background context that shapes choices, refusals, priorities, and subtext.
+        * Express motivation through what the character does, says, notices, avoids, or withholds. Keep the motivation in the behavior, not in abstract motive language.
     - PERSONALITY EXPRESSION:
         * Personality context is reference, not vocabulary to echo back.
         * Core traits should stay recognisable over time unless the user explicitly rewrites the sheet.
@@ -1055,9 +1064,9 @@ Never break character to question, warn about, or refuse narrative directions. T
     - PHYSICAL CONTINUITY REINFORCEMENT:
         * Treat the CURRENT PHYSICAL SCENE STATE and any ACTIVE POSITION LOCKS as binding facts, not flavor text.
         * Broad LOCATION is coarse background context. Exact SCENE POSITION and the latest user-authored movement are the immediate truth.
-        * Preserve unresolved transitions. If a user-controlled character is still outside, behind, mid-threshold, blocked, or not yet through a barrier, keep that unresolved state visible in the next beat.
-        * Do not close, secure, leave, lock, or fully resolve a shelter / doorway / barrier / vehicle transition while a user-controlled character is still on the wrong side unless the user explicitly authored that movement.
-        * When a user-controlled character is still unresolved at a threshold, other characters may shout, reach, brace, pull something open, or prepare the space, but they may not narrate that user-controlled character as already through the barrier or already safe.
+        * Preserve unfinished crossings. If a user-controlled character is still outside, behind, in the doorway, blocked, or not yet through a barrier, keep that unresolved position visible in the next beat.
+        * Do not close a door, leave a shelter, pull away a vehicle, or otherwise finish a crossing while a user-controlled character is still on the wrong side unless the user explicitly authored that movement.
+        * When a user-controlled character is still stuck at a doorway or barrier, other characters may shout, reach, brace, pull something open, or prepare the space, but they may not narrate that user-controlled character as already through or already safe.
         * If one character enters first, keep the remaining characters' positions explicit instead of silently resolving them too.
     - SESSION-LENGTH TRAIT DRIFT:
         * The character card is a stable baseline, not a script to recite verbatim every turn.
@@ -1076,20 +1085,20 @@ export const conciseStyleHints = [
   '[Style: lead with a character DOING something, not describing]',
   '[Style: keep it tight -- one or two paragraphs max]',
   '[Style: dialogue-forward, minimal description]',
-  '[Style: start with action — something physically changes in the scene]',
+  '[Style: start with action; something physically changes in the scene]',
   '[Style: character makes a snap decision and acts on it immediately]',
-  '[Style: character makes a snap decision and commits — no hesitation]',
+  '[Style: character makes a snap decision and follows through immediately]',
 ];
 
 export const balancedStyleHints = [
-  '[Style: one character drives this beat — others react briefly in narration]',
+  '[Style: one character drives this beat; others react briefly in narration]',
   '[Style: try a different paragraph structure than your last response]',
   '[Style: character takes a decisive action that changes the scene dynamics]',
-  '[Style: open with something happening — movement, sound, interruption]',
+  '[Style: open with something happening; movement or sound changes the scene]',
   '[Style: open with dialogue, weave action through it]',
   '[Style: lead with a character making a choice, then show the fallout]',
-  '[Style: skip internal thoughts this time — show everything through action and speech]',
-  '[Style: something unexpected happens — surprise the reader]',
+  '[Style: skip internal thoughts this time; show everything through action and speech]',
+  '[Style: something unexpected happens; surprise the reader]',
 ];
 
 export const detailedStyleHints = [
@@ -1098,8 +1107,8 @@ export const detailedStyleHints = [
   '[Style: focus on physical sensations and sounds, not just actions]',
   '[Style: character initiates something new that shifts the power dynamic]',
   '[Style: extend the scene -- layer senses and emotion]',
-  '[Style: lead with an environmental change or interruption that forces a reaction]',
-  '[Style: build a slow, deliberate moment — let tension simmer through silence and gesture]',
+  '[Style: lead with an environmental change that forces a reaction]',
+  '[Style: build a slow, deliberate moment; let tension simmer through silence and gesture]',
   '[Style: character reveals something through action, not words or thoughts]',
 ];
 
