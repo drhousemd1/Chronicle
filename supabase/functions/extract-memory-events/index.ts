@@ -101,7 +101,7 @@ Return ONLY a JSON array. Example: ["James confessed his love", "Ashley revealed
 Empty array is acceptable: []`;
 
     // GROK ONLY -- call xAI API directly
-    const effectiveModel = modelId || "grok-4-1-fast-reasoning";
+    const effectiveModel = modelId || "grok-4.20-0309-reasoning";
     const response = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
       headers: {

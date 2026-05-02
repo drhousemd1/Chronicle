@@ -16,7 +16,7 @@ import { useArtStyles } from '@/contexts/ArtStylesContext';
 import { cn } from '@/lib/utils';
 import { ShareScenarioModal } from '@/components/chronicle/ShareStoryModal';
 import { ContentThemesSection } from '@/components/chronicle/ContentThemesSection';
-import { aiEnhanceWorldField } from '@/services/world-ai';
+import { aiEnhanceWorldField, parseWorldGenerateBothResponse, WORLD_GENERATE_BOTH_PREFIX, WorldEnhanceContext } from '@/services/world-ai';
 import { EnhanceModeModal, EnhanceMode } from '@/components/chronicle/EnhanceModeModal';
 import { CharacterCreationModal } from '@/components/chronicle/CharacterCreationModal';
 import { useModelSettings } from '@/contexts/ModelSettingsContext';
@@ -142,6 +142,14 @@ export const StoryBuilderScreen: React.FC<StoryBuilderScreenProps> = ({
     onUpdateWorld({ core: { ...world.core, ...patch } });
   };
 
+  const buildWorldEnhanceContext = (): WorldEnhanceContext => ({
+    worldCore: world.core,
+    openingDialog,
+    characters,
+    entries: world.entries,
+    contentThemes,
+  });
+
   const resolveWorldEnhanceField = (fieldKey: string): EnhanceableWorldFields => {
     if (fieldKey.startsWith('story_outcome_')) return 'storyGoalOutcome';
     if (fieldKey.startsWith('story_step_')) return 'storyGoalStep';
@@ -167,8 +175,9 @@ export const StoryBuilderScreen: React.FC<StoryBuilderScreenProps> = ({
       const enhanced = await aiEnhanceWorldField(
         fieldName,
         currentValue,
-        world.core,
+        buildWorldEnhanceContext(),
         modelId,
+        undefined,
         mode
       );
       updateCore({ [fieldName]: enhanced });
@@ -372,15 +381,26 @@ className="flex-1 px-3 py-2 text-xs font-bold bg-[#1c1c1f] border border-black/3
                                         const fieldKey = `world_custom_${item.id}`;
                                         if (enhancingField) return;
                                         setEnhancingField(fieldKey);
+                                        const customLabel = item.label
+                                          ? `${item.label}${section.title ? ` (${section.title})` : ''}`
+                                          : `${WORLD_GENERATE_BOTH_PREFIX}${section.title ? `custom world field for ${section.title}` : 'custom world field'}`;
                                         aiEnhanceWorldField(
                                           resolveWorldEnhanceField(fieldKey),
                                           item.value,
-                                          { ...world.core, briefDescription: `Context for "${section.title}" section, field "${item.label}": ${world.core.briefDescription || ''}` },
-                                          modelId
+                                          buildWorldEnhanceContext(),
+                                          modelId,
+                                          customLabel
                                         ).then(enhanced => {
                                           const sections = [...(world.core.customWorldSections || [])];
                                           const items = [...sections[sIdx].items];
-                                          items[iIdx] = { ...items[iIdx], value: enhanced };
+                                          if (item.label) {
+                                            items[iIdx] = { ...items[iIdx], value: enhanced };
+                                          } else {
+                                            const parsed = parseWorldGenerateBothResponse(enhanced);
+                                            items[iIdx] = parsed
+                                              ? { ...items[iIdx], label: parsed.label, value: parsed.value }
+                                              : { ...items[iIdx], value: enhanced };
+                                          }
                                           sections[sIdx] = { ...sections[sIdx], items };
                                           updateCore({ customWorldSections: sections });
                                         }).catch(err => {
@@ -551,8 +571,9 @@ className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-whi
               aiEnhanceWorldField(
                 resolveWorldEnhanceField(fieldKey),
                 getCurrentValue(),
-                { ...world.core, briefDescription: `Context for "${customLabel}": ${world.core.briefDescription || ''}` },
-                modelId
+                buildWorldEnhanceContext(),
+                modelId,
+                customLabel
               ).then(enhanced => {
                 setValue(enhanced);
               }).catch(err => {

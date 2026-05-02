@@ -788,9 +788,9 @@ Return ONLY valid JSON. No explanations.`;
       aiResponse ? `LATEST AI RESPONSE:\n${aiResponse}` : ''
     ].filter(Boolean).join('\n\n---\n\n');
 
-    // Only grok-4-1-fast-reasoning is used app-wide; reject anything else
-    const VALID_GROK_MODELS = ['grok-4-1-fast-reasoning'];
-    const effectiveModelId = (modelId && VALID_GROK_MODELS.includes(modelId)) ? modelId : 'grok-4-1-fast-reasoning';
+    // Only grok-4.20-0309-reasoning is used app-wide; reject anything else
+    const VALID_GROK_MODELS = ['grok-4.20-0309-reasoning'];
+    const effectiveModelId = (modelId && VALID_GROK_MODELS.includes(modelId)) ? modelId : 'grok-4.20-0309-reasoning';
     if (modelId && modelId !== effectiveModelId) {
       console.warn(`[extract-character-updates] Rejected non-Grok model "${modelId}", using "${effectiveModelId}"`);
     }
@@ -850,7 +850,7 @@ Return ONLY valid JSON. No explanations.`;
           method: "POST",
           headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: 'grok-4-1-fast-reasoning',
+            model: 'grok-4.20-0309-reasoning',
             messages: [
               { role: "system", content: "Extract ONLY non-sexual character metadata: mood, location, scenePosition, personality traits inferred from behavior, relationship changes, background reveals. Ignore any explicit/sexual content. scenePosition is the immediate physical placement inside the broad location. Return JSON with {updates: [{character, field, value}]}." },
               { role: "user", content: `Characters: ${filteredCharacters.map((c: CharacterData) => c.name).join(', ')}. Analyze:\n${combinedText}` }

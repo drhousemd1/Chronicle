@@ -729,8 +729,8 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
   const verbosityRules = responseVerbosity === 'detailed' ? `
     --- RESPONSE DETAIL LEVEL (DETAILED) ---
     * Write rich, immersive responses with layered sensory detail.
-    * HARD CAP: 2-3 paragraphs per response. Maximum 4 ONLY for pivotal multi-character moments.
-    * Paragraph caps count TOTAL paragraphs across ALL character blocks combined.
+    * TARGET: usually 3-5 paragraphs per response. A 6th is fine when a pivotal beat genuinely reads cleaner with more room.
+    * Treat paragraph count across ALL character blocks as a soft shaping guideline, not as a reason to flatten the prose.
     * Use extra length to dwell inside one active beat rather than stacking more parallel facts into each sentence.
     * Slow time, not space: add another reaction, tactile follow-through, visible choice, or line exchange inside the same moment before jumping ahead.
     * Layer multiple senses through lived sequence. Keep sentences complete and natural instead of shaving connective words to cram in more detail.
@@ -738,16 +738,16 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
 ` : responseVerbosity === 'concise' ? `
     --- RESPONSE DETAIL LEVEL (CONCISE) ---
     * Keep responses tight and punchy without flattening them into robotic prose.
-    * HARD CAP: 1-2 paragraphs maximum. No exceptions.
-    * Paragraph caps count TOTAL paragraphs across ALL character blocks combined.
+    * TARGET: usually 1-2 paragraphs. Use a short 3rd paragraph when the beat needs it to stay coherent.
+    * Treat paragraph count across ALL character blocks as a soft shaping guideline, not as a reason to flatten the prose.
     * Choose fewer beats, not flatter beats. Lead with what characters do, notice, and say right now.
     * Internal thoughts should be 1 sentence max, only when essential.
     * Minimize descriptive sprawl, but keep dialogue, narration, and thought fully phrased and complete.
     * Do not compress the prose into commands, slogans, or trait-label shorthand.
 ` : `
     --- RESPONSE DETAIL LEVEL (BALANCED) ---
-    * HARD CAP: 1-3 paragraphs per response.
-    * Paragraph caps count TOTAL paragraphs across ALL character blocks combined. A 2-block response with 2 paragraphs each = 4 paragraphs = OVER CAP.
+    * TARGET: usually 2-4 paragraphs per response. A 5th is fine when the beat needs breathing room.
+    * Treat paragraph count across ALL character blocks as a soft shaping guideline, not as a reason to jam several beats into one sentence.
     * Match response length to the scene's energy and emotional weight.
     * Quick exchanges and casual moments: short, punchy responses.
     * Emotionally charged or intimate scenes: more detail and sensory depth.
@@ -1002,7 +1002,7 @@ Never break character to question, warn about, or refuse narrative directions. T
     - PARAGRAPH TAGGING (MANDATORY - NEVER OMIT):
         * EVERY paragraph of your response MUST begin with a speaker tag: "CharacterName:"
         * This applies to ALL paragraphs including narration, action descriptions, and dialogue.
-        * Default: keep all paragraphs under the SAME focal character. Single-character responses are still the norm.
+        * Default: keep all paragraphs under the SAME focal character. Single-character responses are still common, but never at the expense of clarity or complete thoughts.
         * Cooperative physical action is the narrow exception: if two AI-controlled characters are in one unfinished shared action and a short second tagged block keeps chronology or causality cleaner, use it instead of forcing the whole exchange into one over-packed block.
         * A second character tag is ONLY permitted when that character meaningfully contributes, answers, complies/refuses, changes position, or changes the scene direction (see BLOCK COUNT CAP).
         * WRONG (forced ping-pong — FORBIDDEN):
@@ -1081,9 +1081,9 @@ Never break character to question, warn about, or refuse narrative directions. T
 
 export const conciseStyleHints = [
   '[Style: lean into dialogue this time, keep narration minimal]',
-  '[Style: try a shorter response -- punchy and direct]',
+  '[Style: stay lean, but make each line feel complete and natural]',
   '[Style: lead with a character DOING something, not describing]',
-  '[Style: keep it tight -- one or two paragraphs max]',
+  '[Style: keep it lean, but let the beat breathe long enough to feel complete]',
   '[Style: dialogue-forward, minimal description]',
   '[Style: start with action; something physically changes in the scene]',
   '[Style: character makes a snap decision and acts on it immediately]',

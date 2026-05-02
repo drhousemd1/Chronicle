@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { uid, now } from "@/utils";
 import { trackAiUsageEvent } from "@/services/usage-tracking";
 import { buildRequiredPresence, trackApiValidationSnapshot } from "@/services/api-usage-validation";
+import { buildContentThemeDirectives } from "@/constants/tag-injection-registry";
 
 const aiDebugLog = (...args: unknown[]) => {
   if (import.meta.env.DEV) {
@@ -65,7 +66,13 @@ function buildFullContext(appData: ScenarioData, targetCharacterId: string): str
     if (ct.genres?.length) themeParts.push(`Genres: ${ct.genres.join(', ')}`);
     if (ct.characterTypes?.length) themeParts.push(`Character Types: ${ct.characterTypes.join(', ')}`);
     if (ct.origin?.length) themeParts.push(`Origin: ${ct.origin.join(', ')}`);
-    if (themeParts.length) parts.push(themeParts.join('; '));
+    if (ct.triggerWarnings?.length) themeParts.push(`Trigger Warnings: ${ct.triggerWarnings.join(', ')}`);
+    if (ct.customTags?.length) themeParts.push(`Custom Tags: ${ct.customTags.join(', ')}`);
+    if (themeParts.length) parts.push(`Selected Story Tags: ${themeParts.join('; ')}`);
+    const contentThemeDirectives = buildContentThemeDirectives(ct).trim();
+    if (contentThemeDirectives) {
+      parts.push(`Prompt Guidance Derived From Selected Tags:\n${contentThemeDirectives}`);
+    }
   }
 
   // Custom world sections
@@ -86,6 +93,34 @@ function buildFullContext(appData: ScenarioData, targetCharacterId: string): str
     parts.push(`Story Goals:\n${goalLines}`);
   }
 
+  if (appData.story.openingDialog.text?.trim()) {
+    const timingBits: string[] = [];
+    if (appData.story.openingDialog.startingDay) timingBits.push(`Day ${appData.story.openingDialog.startingDay}`);
+    if (appData.story.openingDialog.startingTimeOfDay) timingBits.push(appData.story.openingDialog.startingTimeOfDay);
+    if (appData.story.openingDialog.timeProgressionMode) timingBits.push(`${appData.story.openingDialog.timeProgressionMode} time progression`);
+    if (appData.story.openingDialog.timeProgressionMode === 'automatic' && appData.story.openingDialog.timeProgressionInterval) {
+      timingBits.push(`${appData.story.openingDialog.timeProgressionInterval}-minute interval`);
+    }
+    const timingSummary = timingBits.length ? ` (${timingBits.join(', ')})` : '';
+    parts.push(`Opening Dialog${timingSummary}:\n${appData.story.openingDialog.text}`);
+  }
+
+  if (appData.world.entries?.length) {
+    const entryLines = appData.world.entries
+      .filter((entry) => (entry.title || '').trim() || (entry.body || '').trim())
+      .map((entry) => `  - ${entry.title || 'Untitled Entry'}: ${entry.body || '(body empty)'}`)
+      .join('\n');
+    if (entryLines) parts.push(`Additional Lore Entries:\n${entryLines}`);
+  }
+
+  if (appData.scenes?.length) {
+    const sceneLines = appData.scenes
+      .filter((scene) => (scene.title || '').trim() || scene.tags.length > 0)
+      .map((scene) => `  - ${scene.title || 'Untitled Scene'}${scene.tags.length ? ` [tags: ${scene.tags.join(', ')}]` : ''}`)
+      .join('\n');
+    if (sceneLines) parts.push(`Scene References:\n${sceneLines}`);
+  }
+
   // Other characters (comprehensive summaries)
   const otherChars = appData.characters.filter(c => c.id !== targetCharacterId);
   if (otherChars.length > 0) {
@@ -97,13 +132,14 @@ function buildFullContext(appData: ScenarioData, targetCharacterId: string): str
       if (c.sexType) bits.push(c.sexType);
       if (c.tags) bits.push(`tags: ${c.tags}`);
       if (c.location) bits.push(`at: ${c.location}`);
+      if (c.currentMood) bits.push(`mood: ${c.currentMood}`);
       // Key personality summary
       const pers = c.personality;
       if (pers) {
         const traits = (pers.splitMode
           ? [...(pers.outwardTraits || []), ...(pers.inwardTraits || [])]
           : (pers.traits || [])
-        ).filter(t => t.value).map(t => t.value).slice(0, 3);
+        ).filter(t => t.label || t.value).map(t => t.label || t.value).slice(0, 3);
         if (traits.length) bits.push(`personality: ${traits.join(', ')}`);
       }
       // Relationship extras
@@ -163,7 +199,9 @@ function buildCharacterSelfContext(character: Character): string {
     const paItems = Object.entries(pa)
       .filter(([k, v]) => k !== '_extras' && v)
       .map(([k, v]) => `${k}: ${v}`);
-    const paExtras = (pa._extras || []).filter(e => e.label && e.value).map(e => `${e.label}: ${e.value}`);
+    const paExtras = (pa._extras || [])
+      .filter(e => e.label || e.value)
+      .map(e => `${e.label || 'Unnamed detail'}: ${e.value || '(description empty)'}`);
     const allPa = [...paItems, ...paExtras];
     if (allPa.length) parts.push(`Physical Appearance: ${allPa.join(', ')}`);
   }
@@ -172,7 +210,9 @@ function buildCharacterSelfContext(character: Character): string {
   const cw = character.currentlyWearing;
   if (cw) {
     const cwItems = Object.entries(cw).filter(([k, v]) => k !== '_extras' && v).map(([k, v]) => `${k}: ${v}`);
-    const cwExtras = (cw._extras || []).filter(e => e.label && e.value).map(e => `${e.label}: ${e.value}`);
+    const cwExtras = (cw._extras || [])
+      .filter(e => e.label || e.value)
+      .map(e => `${e.label || 'Unnamed detail'}: ${e.value || '(description empty)'}`);
     const allCw = [...cwItems, ...cwExtras];
     if (allCw.length) parts.push(`Currently Wearing: ${allCw.join(', ')}`);
   }
@@ -181,7 +221,9 @@ function buildCharacterSelfContext(character: Character): string {
   const pc = character.preferredClothing;
   if (pc) {
     const pcItems = Object.entries(pc).filter(([k, v]) => k !== '_extras' && v).map(([k, v]) => `${k}: ${v}`);
-    const pcExtras = (pc._extras || []).filter(e => e.label && e.value).map(e => `${e.label}: ${e.value}`);
+    const pcExtras = (pc._extras || [])
+      .filter(e => e.label || e.value)
+      .map(e => `${e.label || 'Unnamed detail'}: ${e.value || '(description empty)'}`);
     const allPc = [...pcItems, ...pcExtras];
     if (allPc.length) parts.push(`Preferred Clothing: ${allPc.join(', ')}`);
   }
@@ -190,7 +232,9 @@ function buildCharacterSelfContext(character: Character): string {
   const bg = character.background;
   if (bg) {
     const bgItems = Object.entries(bg).filter(([k, v]) => k !== '_extras' && v).map(([k, v]) => `${k}: ${v}`);
-    const bgExtras = (bg._extras || []).filter(e => e.label && e.value).map(e => `${e.label}: ${e.value}`);
+    const bgExtras = (bg._extras || [])
+      .filter(e => e.label || e.value)
+      .map(e => `${e.label || 'Unnamed detail'}: ${e.value || '(description empty)'}`);
     const allBg = [...bgItems, ...bgExtras];
     if (allBg.length) parts.push(`Background: ${allBg.join(', ')}`);
   }
@@ -200,10 +244,10 @@ function buildCharacterSelfContext(character: Character): string {
   if (pers) {
     const traits = (pers.splitMode
       ? [
-          ...(pers.outwardTraits || []).filter(t => t.value).map(t => `(outward) ${t.label}: ${t.value}`),
-          ...(pers.inwardTraits || []).filter(t => t.value).map(t => `(inward) ${t.label}: ${t.value}`)
+          ...(pers.outwardTraits || []).filter(t => t.label || t.value).map(t => `(outward) ${t.label || 'Unnamed trait'}: ${t.value || '(description empty)'}`),
+          ...(pers.inwardTraits || []).filter(t => t.label || t.value).map(t => `(inward) ${t.label || 'Unnamed trait'}: ${t.value || '(description empty)'}`)
         ]
-      : (pers.traits || []).filter(t => t.value).map(t => `${t.label}: ${t.value}`)
+      : (pers.traits || []).filter(t => t.label || t.value).map(t => `${t.label || 'Unnamed trait'}: ${t.value || '(description empty)'}`)
     );
     if (traits.length) parts.push(`Personality: ${traits.join('; ')}`);
   }
@@ -218,9 +262,9 @@ function buildCharacterSelfContext(character: Character): string {
   ] as const;
   for (const { key, label } of extrasSections) {
     const sec = character[key];
-    const filled = sec?._extras?.filter(e => e.label && e.value);
+    const filled = sec?._extras?.filter(e => e.label || e.value);
     if (filled?.length) {
-      parts.push(`${label}: ${filled.map(e => `${e.label}: ${e.value}`).join('; ')}`);
+      parts.push(`${label}: ${filled.map(e => `${e.label || 'Unnamed detail'}: ${e.value || '(description empty)'}`).join('; ')}`);
     }
   }
 
@@ -429,7 +473,11 @@ function buildCharacterFieldPrompt(
   const fieldConfig = CHARACTER_FIELD_PROMPTS[resolvedFieldName] || CHARACTER_FIELD_PROMPTS.custom;
   const isGenerateBoth = customLabel?.startsWith(GENERATE_BOTH_PREFIX);
   const sectionHint = isGenerateBoth ? customLabel!.slice(GENERATE_BOTH_PREFIX.length) : '';
-  const label = isGenerateBoth ? sectionHint : (customLabel || fieldConfig.label);
+  const rowSubject = !isGenerateBoth && customLabel && customLabel.trim() !== fieldConfig.label ? customLabel.trim() : '';
+  const label = isGenerateBoth ? sectionHint : fieldConfig.label;
+  const subjectSection = rowSubject
+    ? `SPECIFIC SUBJECT TO EXPAND:\n${rowSubject}\n\n`
+    : '';
 
   const currentValueSection = currentValue.trim()
     ? `CURRENT VALUE (enhance while preserving intent):\n${currentValue}\n\n`
@@ -488,6 +536,7 @@ DESCRIPTION: <your description here>`;
 
 Expand the following character detail into 3-5 short tags separated by semicolons.
 Focus on visual or key attributes only. No sentences, no explanations, no narrative rationale.
+If a specific subject is provided below, every tag must reinforce THAT exact subject. Do not rename it or switch to a different concept.
 
 WORLD & SCENARIO CONTEXT:
 ${fullContext}
@@ -495,7 +544,8 @@ ${fullContext}
 THIS CHARACTER'S EXISTING DATA:
 ${selfContext || 'No data filled yet.'}
 
-${currentValueSection}FIELD: ${label}
+${subjectSection}${currentValueSection}FIELD TYPE: ${label}
+${rowSubject ? 'Treat the specific subject above as binding context for the output.\n' : ''}INSTRUCTION: ${fieldConfig.instruction}
 
 Output format: Tag1; Tag2; Tag3; Tag4
 Return ONLY the semicolon-separated tags. Nothing else.`;
@@ -510,6 +560,7 @@ RULES:
 4. Format: State the fact, then its implication if relevant
 5. ${currentValue.trim() ? 'Preserve the existing content\'s intent while enhancing it' : 'Generate appropriate content from available context'}
 6. Stay consistent with all existing character data and world context below
+7. If a specific subject or row label is provided below, expand THAT exact subject. Do not rename it, contradict it, or drift to a different concept.
 
 WORLD & SCENARIO CONTEXT:
 ${fullContext}
@@ -517,7 +568,7 @@ ${fullContext}
 THIS CHARACTER'S EXISTING DATA:
 ${selfContext || 'No data filled yet.'}
 
-${currentValueSection}FIELD: ${label}
+${subjectSection}${currentValueSection}FIELD TYPE: ${label}
 INSTRUCTION: ${fieldConfig.instruction}
 
 Return ONLY the enhanced text. No explanations, no prefixes, no markdown formatting.`;
@@ -1580,3 +1631,9 @@ export async function aiGenerateCharacter(
     return {};
   }
 }
+
+export const __testables = {
+  buildFullContext,
+  buildCharacterSelfContext,
+  buildCharacterFieldPrompt,
+};

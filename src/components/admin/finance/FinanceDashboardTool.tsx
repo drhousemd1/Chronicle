@@ -2945,15 +2945,16 @@ function ReportsPage() {
 
 // ─── models Chronicle actively uses (highlighted green) ───────
 const CHRONICLE_MODELS = new Set([
-  "grok-4-1-fast-reasoning",
+  "grok-4.20-0309-reasoning",
   "grok-imagine-image",
 ]);
 
 // ─── fallback data from docs.x.ai/developers/models.md ────────
 const FALLBACK_MODELS = [
-  { model:"grok-4.20-0309-reasoning",     type:"Language", input:"$2.00", cachedInput:"$0.20", output:"$6.00", context:"2,000,000", rateLimit:"4M TPM / 607 RPM" },
-  { model:"grok-4.20-0309-non-reasoning", type:"Language", input:"$2.00", cachedInput:"$0.20", output:"$6.00", context:"2,000,000", rateLimit:"4M TPM / 607 RPM" },
-  { model:"grok-4.20-multi-agent-0309",   type:"Language", input:"$2.00", cachedInput:"$0.20", output:"$6.00", context:"2,000,000", rateLimit:"4M TPM / 607 RPM" },
+  { model:"grok-4.3",                     type:"Language", input:"$1.25", cachedInput:"$0.20", output:"$2.50", context:"1,000,000", rateLimit:"10M TPM / 1800 RPM" },
+  { model:"grok-4.20-0309-reasoning",     type:"Language", input:"$1.25", cachedInput:"$0.20", output:"$2.50", context:"2,000,000", rateLimit:"10M TPM / 1800 RPM" },
+  { model:"grok-4.20-0309-non-reasoning", type:"Language", input:"$1.25", cachedInput:"$0.20", output:"$2.50", context:"2,000,000", rateLimit:"10M TPM / 1800 RPM" },
+  { model:"grok-4.20-multi-agent-0309",   type:"Language", input:"$1.25", cachedInput:"$0.20", output:"$2.50", context:"2,000,000", rateLimit:"10M TPM / 1800 RPM" },
   { model:"grok-4-1-fast-reasoning",      type:"Language", input:"$0.20", cachedInput:"$0.05", output:"$0.50", context:"2,000,000", rateLimit:"4M TPM / 607 RPM" },
   { model:"grok-4-1-fast-non-reasoning",  type:"Language", input:"$0.20", cachedInput:"$0.05", output:"$0.50", context:"2,000,000", rateLimit:"4M TPM / 607 RPM" },
   { model:"grok-imagine-image",           type:"Image",    input:"—",     cachedInput:"—",     output:"$0.02/img", context:"—",         rateLimit:"300 RPM" },

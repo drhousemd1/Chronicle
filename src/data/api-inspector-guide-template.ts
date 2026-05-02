@@ -1547,7 +1547,7 @@ src/services/supabase-data.ts (memory CRUD operations)</div>
  </div>
 
  <div class="meta-chips">
- <div class="meta-chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
+ <div class="meta-chip">Model <strong>grok-4.20-0309-reasoning</strong></div>
  <div class="meta-chip">Temp <strong>0.9</strong></div>
  <div class="meta-chip">Stream <strong>true</strong></div>
  <div class="meta-chip">Route <strong>llm.ts → /functions/v1/chat → api.x.ai/v1/chat/completions</strong></div>
@@ -1799,7 +1799,7 @@ HOW TO USE THIS DOCUMENT:
    - The user message is assembled in Phase 1 (counter + directive + text +
      regen + style hint)
    - Temperature is 0.9 for roleplay
-   - Model is grok-4-1-fast-reasoning
+   - Model is grok-4.20-0309-reasoning
    - The app routes through a Supabase Edge Function to xAI's API
 
 8. DO NOT:
@@ -2789,7 +2789,7 @@ src/services/supabase-data.ts (memory CRUD operations)</div>
  </div>
 
  <div class="meta-chips">
- <div class="meta-chip">Model <strong>grok-4-1-fast-reasoning</strong></div>
+ <div class="meta-chip">Model <strong>grok-4.20-0309-reasoning</strong></div>
  <div class="meta-chip">Temp <strong>0.9</strong></div>
  <div class="meta-chip">Stream <strong>true</strong></div>
  <div class="meta-chip">Route <strong>llm.ts → /functions/v1/chat → api.x.ai/v1/chat/completions</strong></div>

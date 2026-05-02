@@ -3199,7 +3199,7 @@ export const databaseSchemaInventory = {
           "name": "selected_model",
           "type": "text",
           "nullable": true,
-          "default": "'grok-4-1-fast-reasoning'"
+          "default": "'grok-4.20-0309-reasoning'"
         },
         {
           "name": "selected_art_style",

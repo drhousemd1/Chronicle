@@ -22,15 +22,15 @@
 | Function | Path | Purpose | AI Model Used |
 |----------|------|---------|---------------|
 | `chat` | `supabase/functions/chat/index.ts` | Main LLM chat endpoint — streams roleplay responses | User-selected model |
-| `extract-character-updates` | `supabase/functions/extract-character-updates/index.ts` | Extracts character state changes from conversation (throttled: fires every 5th message) | `grok-4-1-fast-reasoning` (default), `grok-3-mini` (403 safe-mode retry) |
-| `extract-memory-events` | `supabase/functions/extract-memory-events/index.ts` | Extracts memory-worthy events from messages | `grok-4-1-fast-reasoning` |
-| `evaluate-goal-progress` | `supabase/functions/evaluate-goal-progress/index.ts` | Evaluates story goal progress | `grok-4-1-fast-reasoning` |
+| `extract-character-updates` | `supabase/functions/extract-character-updates/index.ts` | Extracts character state changes from conversation (throttled: fires every 5th message) | `grok-4.20-0309-reasoning` (default), `grok-3-mini` (403 safe-mode retry) |
+| `extract-memory-events` | `supabase/functions/extract-memory-events/index.ts` | Extracts memory-worthy events from messages | `grok-4.20-0309-reasoning` |
+| `evaluate-goal-progress` | `supabase/functions/evaluate-goal-progress/index.ts` | Evaluates story goal progress | `grok-4.20-0309-reasoning` |
 | `generate-cover-image` | `supabase/functions/generate-cover-image/index.ts` | Generates scenario cover images | Image generation model |
 | `generate-scene-image` | `supabase/functions/generate-scene-image/index.ts` | Generates in-chat scene images | Image generation model |
 | `generate-side-character` | `supabase/functions/generate-side-character/index.ts` | AI-generates side character profiles | AI model |
 | `generate-side-character-avatar` | `supabase/functions/generate-side-character-avatar/index.ts` | Generates avatars for side characters | Image generation model |
 | `check-shared-keys` | `supabase/functions/check-shared-keys/index.ts` | Validates shared API keys | N/A |
-| `compress-day-memories` | `supabase/functions/compress-day-memories/index.ts` | Compresses completed-day bullet memories into a 2-3 sentence synopsis | `grok-4-1-fast-reasoning` |
+| `compress-day-memories` | `supabase/functions/compress-day-memories/index.ts` | Compresses completed-day bullet memories into a 2-3 sentence synopsis | `grok-4.20-0309-reasoning` |
 | `sync-guide-to-github` | `supabase/functions/sync-guide-to-github/index.ts` | Syncs guide documents to GitHub repo | N/A |
 | `migrate-base64-images` | `supabase/functions/migrate-base64-images/index.ts` | Migrates legacy base64 images to storage | N/A |
 

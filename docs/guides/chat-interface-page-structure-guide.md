@@ -144,7 +144,7 @@ Primary function: `generateRoleplayResponseStream()` in `src/services/llm.ts` (~
 ### 6b. Character State Tracking
 
 After each AI response, the system can extract character updates:
-- Edge Function: `extract-character-updates` (model: `grok-4-1-fast-reasoning`)
+- Edge Function: `extract-character-updates` (model: `grok-4.20-0309-reasoning`)
 - Service: `src/services/character-ai.ts`
 - **Throttled**: Extraction only fires every 5th AI response (controlled by `extractionCountRef` in `ChatInterfaceTab.tsx`, reset on conversation switch)
 - Tracks: physical appearance, clothing, mood, location, relationships, personality changes

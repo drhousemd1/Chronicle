@@ -1,6 +1,6 @@
 // ============================================================================
 // GROK ONLY -- Avatar generation uses xAI Grok exclusively.
-// Text prompt optimization: grok-4-1-fast-reasoning. Image generation: grok-imagine-image.
+// Text prompt optimization: grok-4.20-0309-reasoning. Image generation: grok-imagine-image.
 // Do NOT add Gemini or OpenAI.
 // ============================================================================
 
@@ -47,7 +47,7 @@ Write a focused prompt under ${maxLength} characters:`;
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: 'grok-4-1-fast-reasoning', // GROK ONLY
+      model: 'grok-4.20-0309-reasoning', // GROK ONLY
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }

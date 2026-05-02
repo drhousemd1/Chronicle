@@ -172,7 +172,7 @@ async function callAnalysisLLM(prompt: string, modelId: string): Promise<string>
     throw new Error("XAI_API_KEY not configured");
   }
 
-  const textModel = modelId || 'grok-4-1-fast-reasoning';
+  const textModel = modelId || 'grok-4.20-0309-reasoning';
   
   const response = await fetch("https://api.x.ai/v1/chat/completions", {
     method: "POST",
@@ -298,7 +298,7 @@ serve(async (req) => {
     }
 
     // GROK ONLY -- always use xAI
-    const effectiveTextModel = modelId || 'grok-4-1-fast-reasoning';
+    const effectiveTextModel = modelId || 'grok-4.20-0309-reasoning';
     
     console.log(`[generate-scene-image] Text model: ${effectiveTextModel} (xAI only)`);
     console.log(`[generate-scene-image] Image model: grok-imagine-image (xAI only)`);

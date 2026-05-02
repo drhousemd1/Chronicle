@@ -100,7 +100,7 @@ Set "completed" to true ONLY when the step's objective has been clearly achieved
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "grok-4-1-fast-reasoning",
+        model: "grok-4.20-0309-reasoning",
         messages: [
           { role: "system", content: "You are a precise story goal classifier. Respond only in valid JSON." },
           { role: "user", content: classificationPrompt },

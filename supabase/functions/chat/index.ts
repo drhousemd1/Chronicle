@@ -445,7 +445,7 @@ function buildLocalPlannerPlan(messages: Message[], ctx: RoleplayContext | undef
     ],
     sceneStateFacts,
     formattingNotes: [
-      'Default to one tagged AI speaker; use a second only when they meaningfully contribute.',
+      'Default to one tagged AI speaker, but do not force one-block compression when a second short block makes the beat clearer.',
       'Keep the response readable and responsive to the chat length setting.',
       'Use natural character voice instead of checklist language.',
       'Use roleplay formatting: visible action/narration in *asterisks*, spoken dialogue in straight double quotes, and private thoughts only in (parentheses).',
@@ -928,7 +928,7 @@ Required JSON shape (use these EXACT field names):
 Rules:
 - focusCharacter: the AI character whose voice, action, or emotional position should drive this turn, or null if narration.
 - allowedSpeakers: AI character names allowed to receive tagged paragraphs this turn. Usually one name. Add a second only when that character meaningfully contributes through knowledge, personality, relationship pressure, direct address, or a necessary answer.
-- maxSpeakerBlocks: default 1. Use 2 when a second AI character's contribution matters, especially when a named AI character needs their own answer block. Keep it 1 only when the second character would add filler or repeat the focal speaker.
+- maxSpeakerBlocks: default 1. Use 2 when a second AI character's contribution matters, especially when a named AI character needs their own answer block. Keep it 1 only when the second character would add filler or repeat the focal speaker, not when the extra block is what keeps the beat readable.
 - directQuestionsToAnswer: literal or obvious questions from the latest user turn, plus unanswered direct questions from the immediately previous AI turn when the user has now responded.
 - mentionedAiCharacters: AI characters explicitly referenced or implied by the latest turn.
 - immediateBeat: one concise sentence describing the next meaningful beat. This can be an answer, decision, action, reveal, refusal, invitation, or changed relationship posture. It does not need to be a major scene jump.
@@ -1032,15 +1032,16 @@ ${ctxLines ? `Context:\n${ctxLines}\n` : ''}`,
 
 Primary speaker: ${plan.focusCharacter || speakerTags}
 Available speaker tags this turn: ${speakerTags}
-Block shape: stay with 1 tagged block unless a second one clearly matters or a protected direct-question response requires it. Hard ceiling: ${Math.max(1, Math.min(2, plan.maxSpeakerBlocks || 1))} tagged block(s)
+Block shape: start from 1 tagged block, but use a second when the beat reads cleaner that way or a protected direct-question response requires it. Ceiling: ${Math.max(1, Math.min(2, plan.maxSpeakerBlocks || 1))} tagged block(s)
 Beat to land now: ${immediateBeat}
 
 Keep these priorities straight:
 - Speaker ownership, current physical reality, user-character movement protection, line of sight, and required formatting stay absolute.
 - Answer what matters, follow through, and move the scene by one believable present-tense beat.
-- Let one line carry the practical work if needed; the surrounding lines may simply react, notice, or add texture as long as the turn as a whole advances.
+- Give the practical move enough setup or follow-through to sound human. Do not flatten the whole beat into a single utility line just to stay short.
 - If one named AI character directly asks another named AI character a question or response-implying prompt in this same reply, the addressee gets the next short block even if a different block has to be cut.
 - Land one beat cleanly in the moment instead of compressing several future logistics steps into one summary paragraph.
+- If a beat reads choppy, give it the extra sentence or brief follow-through it needs to feel complete.
 - Write in clear, complete, natural English. Keep narration, dialogue, and thought fully phrased and coherent instead of clipped, broken, or half-finished.
 
 What needs an answer right now:
@@ -1392,8 +1393,8 @@ serve(async (req) => {
       roleplayContext,
     } = body;
 
-    const VALID_GROK_MODELS = ['grok-4-1-fast-reasoning'];
-    const modelId = VALID_GROK_MODELS.includes(body.modelId) ? body.modelId : 'grok-4-1-fast-reasoning';
+    const VALID_GROK_MODELS = ['grok-4.20-0309-reasoning'];
+    const modelId = VALID_GROK_MODELS.includes(body.modelId) ? body.modelId : 'grok-4.20-0309-reasoning';
     if (body.modelId !== modelId) {
       warnLog(`[chat] Rejected non-Grok model "${body.modelId}", using "${modelId}"`);
     }

@@ -73,7 +73,7 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
       description: "Concrete implementation facts traced directly from Chronicle code.",
       rows: [
         { label: "Primary chat endpoint", value: "https://api.x.ai/v1/chat/completions" },
-        { label: "Primary chat model", value: "grok-4-1-fast-reasoning" },
+        { label: "Primary chat model", value: "grok-4.20-0309-reasoning" },
         { label: "Scene/Cover/Avatar image model", value: "grok-imagine-image" },
         { label: "Chronicle frontend chat gateway", value: "Supabase edge function: /functions/v1/chat" },
         { label: "Fallback behavior", value: "403 content safety retries with explicit CONTENT_REDIRECT_DIRECTIVE in chat edge function" },
@@ -570,7 +570,7 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               tagType: "validation-check",
               icon: "✓",
               purpose:
-                "Rejects missing/invalid auth token and forces model usage to `grok-4-1-fast-reasoning` when unsupported models are requested.",
+                "Rejects missing/invalid auth token and forces model usage to `grok-4.20-0309-reasoning` when unsupported models are requested.",
               whyItExists:
                 "The edge relay has to enforce auth and supported-model policy before any provider call is made.",
               problemSolved:
