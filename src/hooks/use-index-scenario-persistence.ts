@@ -37,6 +37,9 @@ interface UseIndexScenarioPersistenceArgs {
   userId?: string;
   setActiveId: Dispatch<SetStateAction<string | null>>;
   setActiveData: Dispatch<SetStateAction<ScenarioData | null>>;
+  setActiveCoverImage: Dispatch<SetStateAction<string>>;
+  setActiveCoverPosition: Dispatch<SetStateAction<{ x: number; y: number }>>;
+  setActiveContentThemes: Dispatch<SetStateAction<ContentThemes>>;
   setSelectedCharacterId: Dispatch<SetStateAction<string | null>>;
   setPlayingConversationId: Dispatch<SetStateAction<string | null>>;
   setTab: Dispatch<SetStateAction<AppShellTab>>;
@@ -157,6 +160,9 @@ export function useIndexScenarioPersistence({
   userId,
   setActiveId,
   setActiveData,
+  setActiveCoverImage,
+  setActiveCoverPosition,
+  setActiveContentThemes,
   setSelectedCharacterId,
   setPlayingConversationId,
   setTab,
@@ -323,19 +329,31 @@ export function useIndexScenarioPersistence({
         const baseName = toTransferBaseName(activeData.world.core.scenarioName);
         if (format === "markdown") {
           downloadTransferFile(
-            exportScenarioToText(activeData),
+            exportScenarioToText(activeData, {
+              coverImage: activeCoverImage,
+              coverImagePosition: activeCoverPosition,
+              contentThemes: activeContentThemes,
+            }),
             `${baseName}.chronicle.md`,
             "text/markdown;charset=utf-8",
           );
         } else if (format === "json") {
           downloadTransferFile(
-            exportScenarioToJson(activeData),
+            exportScenarioToJson(activeData, {
+              coverImage: activeCoverImage,
+              coverImagePosition: activeCoverPosition,
+              contentThemes: activeContentThemes,
+            }),
             `${baseName}.chronicle.json`,
             "application/json;charset=utf-8",
           );
         } else {
           downloadTransferFile(
-            exportScenarioToWordDocument(activeData),
+            exportScenarioToWordDocument(activeData, {
+              coverImage: activeCoverImage,
+              coverImagePosition: activeCoverPosition,
+              contentThemes: activeContentThemes,
+            }),
             `${baseName}.chronicle.rtf`,
             "text/rtf;charset=utf-8",
           );
@@ -353,7 +371,13 @@ export function useIndexScenarioPersistence({
         });
       }
     },
-    [activeData, setStoryTransferNotice],
+    [
+      activeContentThemes,
+      activeCoverImage,
+      activeCoverPosition,
+      activeData,
+      setStoryTransferNotice,
+    ],
   );
 
   const handleOpenStoryExport = useCallback(() => {
@@ -419,6 +443,21 @@ export function useIndexScenarioPersistence({
           storyImportMode,
         );
         setActiveData(result.data);
+        if (storyImportMode === 'rewrite') {
+          setActiveCoverImage(result.editorState?.coverImage ?? '');
+          setActiveCoverPosition(result.editorState?.coverImagePosition ?? { x: 50, y: 50 });
+          setActiveContentThemes(result.data.contentThemes ?? defaultContentThemes);
+        } else {
+          if (typeof result.editorState?.coverImage === 'string' && !activeCoverImage) {
+            setActiveCoverImage(result.editorState.coverImage);
+          }
+          if (result.editorState?.coverImagePosition && !activeCoverImage) {
+            setActiveCoverPosition(result.editorState.coverImagePosition);
+          }
+          if (result.data.contentThemes) {
+            setActiveContentThemes(result.data.contentThemes);
+          }
+        }
 
         const {
           updatedStoryFields,
@@ -453,7 +492,11 @@ export function useIndexScenarioPersistence({
     },
     [
       activeData,
+      activeCoverImage,
       setActiveData,
+      setActiveContentThemes,
+      setActiveCoverImage,
+      setActiveCoverPosition,
       setStoryTransferNotice,
       setStoryTransferWarningDetails,
       storyImportMode,

@@ -2,6 +2,7 @@ import {
   Character,
   CharacterBackground,
   CharacterControl,
+  ContentThemes,
   CharacterExtraRow,
   CharacterGoal,
   CharacterRole,
@@ -13,10 +14,12 @@ import {
   OpeningDialog,
   PersonalityTrait,
   PreferredClothing,
+  Scene,
   ScenarioData,
   TimeOfDay,
   WorldCustomItem,
   WorldCustomSection,
+  defaultContentThemes,
   defaultCharacterBackground,
   defaultCharacterFears,
   defaultCharacterKeyLifeEvents,
@@ -27,11 +30,28 @@ import {
   defaultPhysicalAppearance,
   defaultPreferredClothing,
 } from '@/types';
+import { getTagInjection } from '@/constants/tag-injection-registry';
 import { now, uid, uuid } from '@/utils';
 import TurndownService from 'turndown';
 
 const MACHINE_START = '--- BEGIN CHRONICLE MACHINE DATA v1 ---';
 const MACHINE_END = '--- END CHRONICLE MACHINE DATA ---';
+
+export type StoryTransferEditorState = {
+  coverImage?: string;
+  coverImagePosition?: { x: number; y: number };
+  contentThemes?: ContentThemes;
+};
+
+export type StoryTransferExportOptions = StoryTransferEditorState;
+
+type StoryTransferPackageV2 = {
+  packageType: 'chronicle-story-transfer';
+  packageVersion: 2;
+  exportedAt: string;
+  scenario: ScenarioData;
+  editorState?: StoryTransferEditorState;
+};
 
 type TransferRow = {
   label: string;
@@ -48,6 +68,7 @@ type TransferCustomSection = {
 type TransferGoal = {
   title: string;
   desiredOutcome?: string;
+  currentStatus?: string;
   flexibility?: GoalFlexibility;
   steps: Array<{ description: string; completed: boolean }>;
 };
@@ -66,10 +87,14 @@ type TransferCharacter = {
   sexType?: string;
   sexualOrientation?: string;
   location?: string;
+  scenePosition?: string;
   currentMood?: string;
   controlledBy?: CharacterControl;
   characterRole?: CharacterRole;
   roleDescription?: string;
+  tags?: string;
+  avatarDataUrl?: string;
+  avatarPosition?: { x: number; y: number };
   physicalAppearance?: Partial<Character['physicalAppearance']>;
   physicalAppearanceExtras?: TransferRow[];
   currentlyWearing?: Partial<CurrentlyWearing>;
@@ -100,13 +125,29 @@ type TransferPayloadV1 = {
       structuredLocations?: TransferRow[];
       storyGoals?: TransferGoal[];
       dialogFormatting?: string;
+      codexEntries?: Array<{ title: string; body: string }>;
       customSections?: TransferCustomSection[];
     };
+    contentThemes?: ContentThemes;
+    builderAssets?: {
+      coverImage?: string;
+      coverImagePosition?: { x: number; y: number };
+      selectedArtStyle?: string;
+      scenes?: Array<{
+        title?: string;
+        url?: string;
+        tags?: string[];
+        isStartingScene?: boolean;
+      }>;
+    };
+    uiSettings?: ScenarioData['uiSettings'];
     openingDialog: {
       enabled?: boolean;
       text?: string;
       startingDay?: number;
       startingTimeOfDay?: TimeOfDay;
+      timeProgressionMode?: 'manual' | 'automatic';
+      timeProgressionInterval?: number;
     };
   };
   characters: TransferCharacter[];
@@ -123,6 +164,7 @@ export type StoryTransferSummary = {
 
 export type StoryTransferResult = {
   data: ScenarioData;
+  editorState?: StoryTransferEditorState;
   summary: StoryTransferSummary;
   warnings: string[];
 };
@@ -166,6 +208,27 @@ const pushField = (lines: string[], label: string, value?: string, indentLevel =
   }
   lines.push(`${indent}- ${label}: """`);
   text.split('\n').forEach((line) => lines.push(`${indent}  ${line}`));
+  lines.push(`${indent}  """`);
+};
+
+const pushRowField = (lines: string[], label: string, value?: string, indentLevel = 0, fallbackLabel = 'Field') => {
+  const resolvedLabel = clean(label) || fallbackLabel;
+  const resolvedValue = typeof value === 'string' ? value.replace(/\r/g, '') : '';
+  if (!hasText(resolvedLabel) && !hasText(resolvedValue)) return;
+
+  const indent = '  '.repeat(indentLevel);
+  if (!hasText(resolvedValue)) {
+    lines.push(`${indent}- ${resolvedLabel}:`);
+    return;
+  }
+
+  if (!resolvedValue.includes('\n')) {
+    lines.push(`${indent}- ${resolvedLabel}: ${resolvedValue}`);
+    return;
+  }
+
+  lines.push(`${indent}- ${resolvedLabel}: """`);
+  resolvedValue.split('\n').forEach((line) => lines.push(`${indent}  ${line}`));
   lines.push(`${indent}  """`);
 };
 
@@ -255,6 +318,217 @@ const createBlankCharacter = (name?: string): Character => {
   };
 };
 
+const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
+
+const cloneContentThemes = (themes?: ContentThemes): ContentThemes | undefined => {
+  if (!themes) return undefined;
+  return {
+    characterTypes: [...(themes.characterTypes || [])],
+    storyType: themes.storyType ?? null,
+    genres: [...(themes.genres || [])],
+    origin: [...(themes.origin || [])],
+    triggerWarnings: [...(themes.triggerWarnings || [])],
+    customTags: [...(themes.customTags || [])],
+  };
+};
+
+const buildScenarioForTransfer = (
+  data: ScenarioData,
+  options?: StoryTransferExportOptions
+): ScenarioData => {
+  const scenario = clone(data);
+  const themes = cloneContentThemes(options?.contentThemes ?? data.contentThemes);
+  if (themes) scenario.contentThemes = themes;
+  return scenario;
+};
+
+const buildTransferPackage = (
+  data: ScenarioData,
+  options?: StoryTransferExportOptions
+): StoryTransferPackageV2 => {
+  const scenario = buildScenarioForTransfer(data, options);
+  const editorState: StoryTransferEditorState = {};
+
+  if (typeof options?.coverImage === 'string') editorState.coverImage = options.coverImage;
+  if (options?.coverImagePosition) editorState.coverImagePosition = { ...options.coverImagePosition };
+  if (scenario.contentThemes) editorState.contentThemes = cloneContentThemes(scenario.contentThemes);
+
+  return {
+    packageType: 'chronicle-story-transfer',
+    packageVersion: 2,
+    exportedAt: new Date().toISOString(),
+    scenario,
+    editorState: Object.keys(editorState).length > 0 ? editorState : undefined,
+  };
+};
+
+const buildMachinePayloadBlock = (packagePayload: StoryTransferPackageV2): string => {
+  return `${MACHINE_START}\n${JSON.stringify(packagePayload, null, 2)}\n${MACHINE_END}`;
+};
+
+const appendMachinePayloadToText = (humanReadable: string, packagePayload: StoryTransferPackageV2): string => {
+  return `${humanReadable.trimEnd()}\n\n${buildMachinePayloadBlock(packagePayload)}\n`;
+};
+
+const appendMachinePayloadToRtf = (rtfDocument: string, packagePayload: StoryTransferPackageV2): string => {
+  const hiddenPayload = buildMachinePayloadBlock(packagePayload)
+    .split('\n')
+    .map((line) => `\\pard\\v\\fs1 ${escapeRtf(line)}\\v0\\par`)
+    .join('');
+
+  return rtfDocument.endsWith('}')
+    ? `${rtfDocument.slice(0, -1)}${hiddenPayload}}`
+    : `${rtfDocument}${hiddenPayload}`;
+};
+
+const stringifyPosition = (position?: { x: number; y: number }): string => {
+  if (!position) return '';
+  return `${position.x}% x, ${position.y}% y`;
+};
+
+const splitCommaSeparated = (value: string | undefined | null): string[] => {
+  return (value || '')
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+};
+
+const mergeUniqueStrings = (current: string[], incoming: string[]): string[] => {
+  const merged = [...current];
+  incoming.forEach((item) => {
+    if (!merged.some((existing) => normalize(existing) === normalize(item))) {
+      merged.push(item);
+    }
+  });
+  return merged;
+};
+
+const mergeTagString = (current: string, incoming: string | undefined, mode: StoryImportMode): string => {
+  if (!hasText(incoming)) return current;
+  const incomingTags = splitCommaSeparated(incoming);
+  if (incomingTags.length === 0) return current;
+  if (mode === 'rewrite' || !hasText(current)) return incomingTags.join(', ');
+  return mergeUniqueStrings(splitCommaSeparated(current), incomingTags).join(', ');
+};
+
+const mergeContentThemes = (
+  current: ContentThemes | undefined,
+  incoming: ContentThemes | undefined,
+  mode: StoryImportMode
+): ContentThemes | undefined => {
+  if (!incoming) return current;
+  if (mode === 'rewrite' || !current) return cloneContentThemes(incoming);
+
+  return {
+    characterTypes: mergeUniqueStrings(current.characterTypes || [], incoming.characterTypes || []),
+    storyType: current.storyType ?? incoming.storyType ?? null,
+    genres: mergeUniqueStrings(current.genres || [], incoming.genres || []),
+    origin: mergeUniqueStrings(current.origin || [], incoming.origin || []),
+    triggerWarnings: mergeUniqueStrings(current.triggerWarnings || [], incoming.triggerWarnings || []),
+    customTags: mergeUniqueStrings(current.customTags || [], incoming.customTags || []),
+  };
+};
+
+const mergeCodexEntries = (
+  existing: ScenarioData['world']['entries'],
+  incoming: ScenarioData['world']['entries'],
+  mode: StoryImportMode
+): ScenarioData['world']['entries'] => {
+  if (!incoming || incoming.length === 0) return existing;
+  if (mode === 'rewrite') return clone(incoming);
+
+  const merged = [...(existing || [])];
+  incoming.forEach((entry) => {
+    const title = clean(entry.title);
+    if (!hasText(title) && !hasText(entry.body)) return;
+    const idx = merged.findIndex((item) => normalize(item.title) === normalize(title));
+    if (idx === -1) {
+      merged.push({
+        id: entry.id || uuid(),
+        title: title || 'Imported Entry',
+        body: clean(entry.body),
+        createdAt: entry.createdAt || now(),
+        updatedAt: entry.updatedAt || now(),
+      });
+      return;
+    }
+    merged[idx] = {
+      ...merged[idx],
+      body: mergeText(merged[idx].body || '', entry.body || '', mode),
+      updatedAt: now(),
+    };
+  });
+  return merged;
+};
+
+const mergeSceneTags = (current: string[] = [], incoming: string[] = []): string[] => {
+  return mergeUniqueStrings(current, incoming);
+};
+
+const mergeScenes = (
+  existing: ScenarioData['scenes'],
+  incoming: ScenarioData['scenes'],
+  mode: StoryImportMode
+): ScenarioData['scenes'] => {
+  if (!incoming || incoming.length === 0) return existing;
+  if (mode === 'rewrite') return clone(incoming);
+
+  const merged = [...(existing || [])];
+  incoming.forEach((scene) => {
+    if (!hasText(scene.url) && !hasText(scene.title)) return;
+    const idx = merged.findIndex(
+      (item) =>
+        (hasText(scene.url) && normalize(item.url) === normalize(scene.url)) ||
+        (hasText(scene.title) && normalize(item.title || '') === normalize(scene.title || ''))
+    );
+    if (idx === -1) {
+      merged.push({
+        id: scene.id || uuid(),
+        url: clean(scene.url),
+        title: clean(scene.title || ''),
+        tags: [...(scene.tags || [])],
+        isStartingScene: !!scene.isStartingScene,
+        createdAt: scene.createdAt || now(),
+      });
+      return;
+    }
+    merged[idx] = {
+      ...merged[idx],
+      title: mergeScalarText(merged[idx].title || '', scene.title || '', mode),
+      url: merged[idx].url || clean(scene.url),
+      tags: mergeSceneTags(merged[idx].tags || [], scene.tags || []),
+      isStartingScene: merged[idx].isStartingScene || scene.isStartingScene,
+    };
+  });
+  return merged;
+};
+
+const getContentThemeDirectiveRows = (themes?: ContentThemes): TransferRow[] => {
+  if (!themes) return [];
+
+  const selectedTags: string[] = [
+    ...(themes.storyType ? [themes.storyType] : []),
+    ...(themes.characterTypes || []),
+    ...(themes.genres || []),
+    ...(themes.origin || []),
+    ...(themes.triggerWarnings || []),
+    ...(themes.customTags || []),
+  ];
+
+  return selectedTags
+    .map((tag) => {
+      const entry = getTagInjection(tag);
+      if (entry) {
+        return { label: entry.tag, value: entry.injection };
+      }
+      return {
+        label: tag,
+        value: 'Treat this as a welcomed story element when it fits naturally in the scene.',
+      };
+    })
+    .filter((row) => hasText(row.label) || hasText(row.value));
+};
+
 const toTransferPayload = (data: ScenarioData): TransferPayloadV1 => ({
   version: 1,
   storyBuilder: {
@@ -271,6 +545,7 @@ const toTransferPayload = (data: ScenarioData): TransferPayloadV1 => ({
       storyGoals: (data.world.core.storyGoals || []).map((goal) => ({
         title: goal.title || '',
         desiredOutcome: goal.desiredOutcome || '',
+        currentStatus: goal.currentStatus || '',
         flexibility: goal.flexibility || 'normal',
         steps: (goal.steps || []).map((step) => ({
           description: step.description || '',
@@ -278,6 +553,10 @@ const toTransferPayload = (data: ScenarioData): TransferPayloadV1 => ({
         })),
       })),
       dialogFormatting: data.world.core.dialogFormatting || '',
+      codexEntries: (data.world.entries || []).map((entry) => ({
+        title: entry.title || '',
+        body: entry.body || '',
+      })),
       customSections: (data.world.core.customWorldSections || []).map((section) => ({
         title: section.title || 'Custom Content',
         type: section.type || 'structured',
@@ -285,11 +564,24 @@ const toTransferPayload = (data: ScenarioData): TransferPayloadV1 => ({
         freeformValue: section.freeformValue || '',
       })),
     },
+    contentThemes: cloneContentThemes(data.contentThemes),
+    builderAssets: {
+      selectedArtStyle: data.selectedArtStyle || '',
+      scenes: (data.scenes || []).map((scene) => ({
+        title: scene.title || '',
+        url: scene.url || '',
+        tags: [...(scene.tags || [])],
+        isStartingScene: !!scene.isStartingScene,
+      })),
+    },
+    uiSettings: data.uiSettings ? clone(data.uiSettings) : undefined,
     openingDialog: {
       enabled: data.story.openingDialog.enabled,
       text: data.story.openingDialog.text || '',
       startingDay: data.story.openingDialog.startingDay,
       startingTimeOfDay: data.story.openingDialog.startingTimeOfDay,
+      timeProgressionMode: data.story.openingDialog.timeProgressionMode,
+      timeProgressionInterval: data.story.openingDialog.timeProgressionInterval,
     },
   },
   characters: (data.characters || []).map((character) => ({
@@ -299,10 +591,14 @@ const toTransferPayload = (data: ScenarioData): TransferPayloadV1 => ({
     sexType: character.sexType || '',
     sexualOrientation: character.sexualOrientation || '',
     location: character.location || '',
+    scenePosition: character.scenePosition || '',
     currentMood: character.currentMood || '',
     controlledBy: character.controlledBy,
     characterRole: character.characterRole,
     roleDescription: character.roleDescription || '',
+    tags: character.tags || '',
+    avatarDataUrl: character.avatarDataUrl || '',
+    avatarPosition: character.avatarPosition ? { ...character.avatarPosition } : undefined,
     physicalAppearance: { ...character.physicalAppearance },
     physicalAppearanceExtras: rowsFromExtras(character.physicalAppearance?._extras),
     currentlyWearing: { ...character.currentlyWearing },
@@ -327,6 +623,7 @@ const toTransferPayload = (data: ScenarioData): TransferPayloadV1 => ({
     goals: (character.goals || []).map((goal) => ({
       title: goal.title || '',
       desiredOutcome: goal.desiredOutcome || '',
+      currentStatus: goal.currentStatus || '',
       flexibility: goal.flexibility || 'normal',
       steps: (goal.steps || []).map((step) => ({ description: step.description || '', completed: !!step.completed })),
     })),
@@ -351,13 +648,34 @@ const buildHumanReadable = (payload: TransferPayloadV1): string => {
   pushHeading(lines, 'World Core', 0);
   pushField(lines, 'Story Premise', payload.storyBuilder.worldCore.storyPremise, 1);
   pushField(lines, 'Dialog Formatting', payload.storyBuilder.worldCore.dialogFormatting, 1);
+  if ((payload.storyBuilder.worldCore.structuredLocations || []).length > 0) {
+    pushHeading(lines, 'Structured Locations', 1);
+    (payload.storyBuilder.worldCore.structuredLocations || []).forEach((row) => pushRowField(lines, row.label || 'Location', row.value, 2, 'Location'));
+  }
+  if ((payload.storyBuilder.worldCore.storyGoals || []).length > 0) {
+    pushHeading(lines, 'Story Goals', 1);
+    (payload.storyBuilder.worldCore.storyGoals || []).forEach((goal) => {
+      pushField(lines, 'Goal', goal.title, 2);
+      pushField(lines, 'Desired Outcome', goal.desiredOutcome || '', 2);
+      pushField(lines, 'Current Status', goal.currentStatus || '', 2);
+      if (goal.flexibility) lines.push(`    - Flexibility: ${goal.flexibility}`);
+      goal.steps.forEach((step) => lines.push(`    - Step: [${step.completed ? 'x' : ' '}] ${step.description}`));
+    });
+  }
+  if ((payload.storyBuilder.worldCore.codexEntries || []).length > 0) {
+    pushHeading(lines, 'World Codex', 1);
+    (payload.storyBuilder.worldCore.codexEntries || []).forEach((entry) => {
+      pushField(lines, 'Entry', entry.title, 2);
+      pushField(lines, 'Details', entry.body, 2);
+    });
+  }
   (payload.storyBuilder.worldCore.customSections || []).forEach((section) => {
     pushHeading(lines, safeTitle(section.title, 'Custom Content'), 1);
     if (section.type === 'freeform') {
       if (hasText(section.freeformValue)) pushField(lines, 'Content', section.freeformValue, 2);
       return;
     }
-    section.items.forEach((item) => pushField(lines, item.label || 'Field', item.value, 2));
+    section.items.forEach((item) => pushRowField(lines, item.label || 'Field', item.value, 2));
   });
   lines.push('');
   pushHeading(lines, 'Opening Dialog', 0);
@@ -371,6 +689,60 @@ const buildHumanReadable = (payload: TransferPayloadV1): string => {
   if (payload.storyBuilder.openingDialog.startingTimeOfDay) {
     lines.push(`  - Starting Time Of Day: ${payload.storyBuilder.openingDialog.startingTimeOfDay}`);
   }
+  if (payload.storyBuilder.openingDialog.timeProgressionMode) {
+    lines.push(`  - Time Progression Mode: ${payload.storyBuilder.openingDialog.timeProgressionMode}`);
+  }
+  if (typeof payload.storyBuilder.openingDialog.timeProgressionInterval === 'number') {
+    lines.push(`  - Time Progression Interval: ${payload.storyBuilder.openingDialog.timeProgressionInterval}`);
+  }
+  if (payload.storyBuilder.builderAssets?.selectedArtStyle || hasText(payload.storyBuilder.builderAssets?.coverImage)) {
+    lines.push('');
+    pushHeading(lines, 'Builder Assets', 0);
+    pushField(lines, 'Selected Art Style', payload.storyBuilder.builderAssets?.selectedArtStyle, 1);
+    pushField(lines, 'Cover Image', payload.storyBuilder.builderAssets?.coverImage, 1);
+    pushField(lines, 'Cover Image Position', stringifyPosition(payload.storyBuilder.builderAssets?.coverImagePosition), 1);
+  }
+  if ((payload.storyBuilder.builderAssets?.scenes || []).length > 0) {
+    pushHeading(lines, 'Scene Gallery', 0);
+    (payload.storyBuilder.builderAssets?.scenes || []).forEach((scene) => {
+      pushField(lines, 'Scene Title', scene.title || '', 1);
+      pushField(lines, 'Scene URL', scene.url || '', 1);
+      pushField(lines, 'Scene Tags', (scene.tags || []).join(', '), 1);
+      if (scene.isStartingScene) lines.push('  - Starting Scene: true');
+    });
+  }
+  if (payload.storyBuilder.contentThemes) {
+    const themes = payload.storyBuilder.contentThemes;
+    lines.push('');
+    pushHeading(lines, 'Content Themes', 0);
+    pushField(lines, 'Story Type', themes.storyType || '', 1);
+    pushField(lines, 'Character Types', (themes.characterTypes || []).join(', '), 1);
+    pushField(lines, 'Genres', (themes.genres || []).join(', '), 1);
+    pushField(lines, 'Origin', (themes.origin || []).join(', '), 1);
+    pushField(lines, 'Trigger Warnings', (themes.triggerWarnings || []).join(', '), 1);
+    pushField(lines, 'Custom Tags', (themes.customTags || []).join(', '), 1);
+
+    const directiveRows = getContentThemeDirectiveRows(themes);
+    if (directiveRows.length > 0) {
+      pushHeading(lines, 'Injected Tag Guidance', 1);
+      directiveRows.forEach((row) => pushRowField(lines, row.label, row.value, 2));
+    }
+  }
+  if (payload.storyBuilder.uiSettings) {
+    lines.push('');
+    pushHeading(lines, 'UI Settings', 0);
+    Object.entries(payload.storyBuilder.uiSettings).forEach(([key, value]) => {
+      if (typeof value === 'undefined') return;
+      const label = key
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/^./, (char) => char.toUpperCase());
+      if (typeof value === 'boolean') {
+        lines.push(`  - ${label}: ${value ? 'true' : 'false'}`);
+      } else {
+        pushField(lines, label, String(value), 1);
+      }
+    });
+  }
   lines.push('\n# Characters');
   payload.characters.forEach((character) => {
     lines.push('');
@@ -382,14 +754,21 @@ const buildHumanReadable = (payload: TransferPayloadV1): string => {
     pushField(lines, 'Sex / Identity', character.sexType, 1);
     pushField(lines, 'Sexual Orientation', character.sexualOrientation, 1);
     pushField(lines, 'Location', character.location, 1);
+    pushField(lines, 'Scene Position', character.scenePosition, 1);
     pushField(lines, 'Current Mood', character.currentMood, 1);
     if (character.controlledBy) lines.push(`  - Controlled By: ${character.controlledBy}`);
     if (character.characterRole) lines.push(`  - Character Role: ${character.characterRole}`);
     pushField(lines, 'Role Description', character.roleDescription, 1);
+    pushField(lines, 'Tags', character.tags, 1);
+    pushField(lines, 'Avatar Image', character.avatarDataUrl, 1);
+    pushField(lines, 'Avatar Position', stringifyPosition(character.avatarPosition), 1);
 
-    const writeSection = (title: string, rows: TransferRow[]) => {
+    const writeSection = (title: string, rows: TransferRow[], preserveLabelOnly = false) => {
       pushHeading(lines, title, 0);
-      rows.forEach((row) => pushField(lines, row.label || 'Field', row.value, 1));
+      rows.forEach((row) => {
+        if (preserveLabelOnly) pushRowField(lines, row.label || 'Field', row.value, 1);
+        else pushField(lines, row.label || 'Field', row.value, 1);
+      });
     };
 
     writeSection('Physical Appearance', [
@@ -404,33 +783,33 @@ const buildHumanReadable = (payload: TransferPayloadV1): string => {
       { label: 'Makeup', value: character.physicalAppearance?.makeup || '' },
       { label: 'Body Markings', value: character.physicalAppearance?.bodyMarkings || '' },
       { label: 'Temporary Conditions', value: character.physicalAppearance?.temporaryConditions || '' },
-      ...(character.physicalAppearanceExtras || []),
     ]);
+    (character.physicalAppearanceExtras || []).forEach((row) => pushRowField(lines, row.label || 'Field', row.value, 1));
     writeSection('Currently Wearing', [
       { label: 'Top', value: character.currentlyWearing?.top || '' },
       { label: 'Bottom', value: character.currentlyWearing?.bottom || '' },
       { label: 'Undergarments', value: character.currentlyWearing?.undergarments || '' },
       { label: 'Miscellaneous', value: character.currentlyWearing?.miscellaneous || '' },
-      ...(character.currentlyWearingExtras || []),
     ]);
+    (character.currentlyWearingExtras || []).forEach((row) => pushRowField(lines, row.label || 'Field', row.value, 1));
     writeSection('Preferred Clothing', [
       { label: 'Casual', value: character.preferredClothing?.casual || '' },
       { label: 'Work', value: character.preferredClothing?.work || '' },
       { label: 'Sleep', value: character.preferredClothing?.sleep || '' },
       { label: 'Undergarments', value: character.preferredClothing?.undergarments || '' },
       { label: 'Miscellaneous', value: character.preferredClothing?.miscellaneous || '' },
-      ...(character.preferredClothingExtras || []),
     ]);
+    (character.preferredClothingExtras || []).forEach((row) => pushRowField(lines, row.label || 'Field', row.value, 1));
 
     pushHeading(lines, 'Personality', 0);
     if (character.personality) {
       lines.push(`  - Split Mode: ${character.personality.splitMode ? 'true' : 'false'}`);
-      character.personality.traits.forEach((row) => pushField(lines, row.label || 'Trait', row.value, 1));
-      character.personality.outwardTraits.forEach((row) => pushField(lines, `Outward ${row.label || 'Trait'}`, row.value, 1));
-      character.personality.inwardTraits.forEach((row) => pushField(lines, `Inward ${row.label || 'Trait'}`, row.value, 1));
+      character.personality.traits.forEach((row) => pushRowField(lines, row.label || 'Trait', row.value, 1, 'Trait'));
+      character.personality.outwardTraits.forEach((row) => pushRowField(lines, `Outward ${row.label || 'Trait'}`, row.value, 1, 'Outward Trait'));
+      character.personality.inwardTraits.forEach((row) => pushRowField(lines, `Inward ${row.label || 'Trait'}`, row.value, 1, 'Inward Trait'));
     }
 
-    writeSection('Tone', character.toneRows || []);
+    writeSection('Tone', character.toneRows || [], true);
     writeSection('Background', [
       { label: 'Job Occupation', value: character.background?.jobOccupation || '' },
       { label: 'Education Level', value: character.background?.educationLevel || '' },
@@ -438,17 +817,18 @@ const buildHumanReadable = (payload: TransferPayloadV1): string => {
       { label: 'Hobbies', value: character.background?.hobbies || '' },
       { label: 'Financial Status', value: character.background?.financialStatus || '' },
       { label: 'Motivation', value: character.background?.motivation || '' },
-      ...(character.backgroundExtras || []),
     ]);
-    writeSection('Key Life Events', character.keyLifeEventRows || []);
-    writeSection('Relationships', character.relationshipRows || []);
-    writeSection('Secrets', character.secretRows || []);
-    writeSection('Fears', character.fearRows || []);
+    (character.backgroundExtras || []).forEach((row) => pushRowField(lines, row.label || 'Field', row.value, 1));
+    writeSection('Key Life Events', character.keyLifeEventRows || [], true);
+    writeSection('Relationships', character.relationshipRows || [], true);
+    writeSection('Secrets', character.secretRows || [], true);
+    writeSection('Fears', character.fearRows || [], true);
 
     pushHeading(lines, 'Character Goals', 0);
     (character.goals || []).forEach((goal) => {
       pushField(lines, 'Goal', goal.title, 1);
       pushField(lines, 'Desired Outcome', goal.desiredOutcome || '', 1);
+      pushField(lines, 'Current Status', goal.currentStatus || '', 1);
       if (goal.flexibility) lines.push(`  - Flexibility: ${goal.flexibility}`);
       goal.steps.forEach((step) => lines.push(`  - Step: [${step.completed ? 'x' : ' '}] ${step.description}`));
     });
@@ -458,7 +838,7 @@ const buildHumanReadable = (payload: TransferPayloadV1): string => {
       if (section.type === 'freeform') {
         pushField(lines, 'Content', section.freeformValue || '', 1);
       } else {
-        section.items.forEach((row) => pushField(lines, row.label || 'Field', row.value, 1));
+        section.items.forEach((row) => pushRowField(lines, row.label || 'Field', row.value, 1));
       }
     });
   });
@@ -466,14 +846,26 @@ const buildHumanReadable = (payload: TransferPayloadV1): string => {
   return lines.join('\n');
 };
 
-export const exportScenarioToText = (data: ScenarioData): string => {
-  const payload = toTransferPayload(data);
+export const exportScenarioToText = (
+  data: ScenarioData,
+  options?: StoryTransferExportOptions
+): string => {
+  const packagePayload = buildTransferPackage(data, options);
+  const payload = toTransferPayload(packagePayload.scenario);
+  payload.storyBuilder.builderAssets = {
+    ...(payload.storyBuilder.builderAssets || {}),
+    coverImage: packagePayload.editorState?.coverImage,
+    coverImagePosition: packagePayload.editorState?.coverImagePosition,
+  };
   const humanReadable = buildHumanReadable(payload);
-  return `${humanReadable}\n`;
+  return appendMachinePayloadToText(humanReadable, packagePayload);
 };
 
-export const exportScenarioToJson = (data: ScenarioData): string => {
-  return `${JSON.stringify(toTransferPayload(data), null, 2)}\n`;
+export const exportScenarioToJson = (
+  data: ScenarioData,
+  options?: StoryTransferExportOptions
+): string => {
+  return `${JSON.stringify(buildTransferPackage(data, options), null, 2)}\n`;
 };
 
 const escapeRtf = (value: string): string =>
@@ -498,6 +890,17 @@ const pushRtfField = (lines: string[], label: string, value?: string, indent = 1
   lines.push(rtfBullet(`${label}: ${value}`, indent));
 };
 
+const pushRtfRowField = (lines: string[], label: string, value?: string, indent = 1080, fallbackLabel = 'Field') => {
+  const resolvedLabel = clean(label) || fallbackLabel;
+  const resolvedValue = clean(value);
+  if (!hasText(resolvedLabel) && !hasText(resolvedValue)) return;
+  if (!hasText(resolvedValue)) {
+    lines.push(rtfBullet(`${resolvedLabel}:`, indent));
+    return;
+  }
+  lines.push(rtfBullet(`${resolvedLabel}: ${resolvedValue}`, indent));
+};
+
 const buildWordRtf = (payload: TransferPayloadV1): string => {
   const lines: string[] = [];
   lines.push(rtfHeading('Chronicle Story Builder Export', 1));
@@ -510,12 +913,33 @@ const buildWordRtf = (payload: TransferPayloadV1): string => {
   lines.push(rtfHeading('World Core', 2));
   pushRtfField(lines, 'Story Premise', payload.storyBuilder.worldCore.storyPremise);
   pushRtfField(lines, 'Dialog Formatting', payload.storyBuilder.worldCore.dialogFormatting);
+  if ((payload.storyBuilder.worldCore.structuredLocations || []).length > 0) {
+    lines.push(rtfHeading('Structured Locations', 2));
+    (payload.storyBuilder.worldCore.structuredLocations || []).forEach((row) => pushRtfRowField(lines, row.label || 'Location', row.value, 1080, 'Location'));
+  }
+  if ((payload.storyBuilder.worldCore.storyGoals || []).length > 0) {
+    lines.push(rtfHeading('Story Goals', 2));
+    (payload.storyBuilder.worldCore.storyGoals || []).forEach((goal) => {
+      pushRtfField(lines, 'Goal', goal.title);
+      pushRtfField(lines, 'Desired Outcome', goal.desiredOutcome || '');
+      pushRtfField(lines, 'Current Status', goal.currentStatus || '');
+      if (goal.flexibility) lines.push(rtfBullet(`Flexibility: ${goal.flexibility}`, 1080));
+      goal.steps.forEach((step) => lines.push(rtfBullet(`Step: [${step.completed ? 'x' : ' '}] ${step.description}`, 1080)));
+    });
+  }
+  if ((payload.storyBuilder.worldCore.codexEntries || []).length > 0) {
+    lines.push(rtfHeading('World Codex', 2));
+    (payload.storyBuilder.worldCore.codexEntries || []).forEach((entry) => {
+      pushRtfField(lines, 'Entry', entry.title);
+      pushRtfField(lines, 'Details', entry.body);
+    });
+  }
   (payload.storyBuilder.worldCore.customSections || []).forEach((section) => {
     lines.push(rtfHeading(safeTitle(section.title, 'Custom Content'), 2));
     if (section.type === 'freeform') {
       pushRtfField(lines, 'Content', section.freeformValue || '');
     } else {
-      section.items.forEach((item) => pushRtfField(lines, item.label || 'Field', item.value));
+      section.items.forEach((item) => pushRtfRowField(lines, item.label || 'Field', item.value));
     }
   });
 
@@ -530,6 +954,57 @@ const buildWordRtf = (payload: TransferPayloadV1): string => {
   if (payload.storyBuilder.openingDialog.startingTimeOfDay) {
     lines.push(rtfBullet(`Starting Time Of Day: ${payload.storyBuilder.openingDialog.startingTimeOfDay}`, 1080));
   }
+  if (payload.storyBuilder.openingDialog.timeProgressionMode) {
+    lines.push(rtfBullet(`Time Progression Mode: ${payload.storyBuilder.openingDialog.timeProgressionMode}`, 1080));
+  }
+  if (typeof payload.storyBuilder.openingDialog.timeProgressionInterval === 'number') {
+    lines.push(rtfBullet(`Time Progression Interval: ${payload.storyBuilder.openingDialog.timeProgressionInterval}`, 1080));
+  }
+  if (payload.storyBuilder.builderAssets?.selectedArtStyle || hasText(payload.storyBuilder.builderAssets?.coverImage)) {
+    lines.push(rtfHeading('Builder Assets', 2));
+    pushRtfField(lines, 'Selected Art Style', payload.storyBuilder.builderAssets?.selectedArtStyle);
+    pushRtfField(lines, 'Cover Image', payload.storyBuilder.builderAssets?.coverImage);
+    pushRtfField(lines, 'Cover Image Position', stringifyPosition(payload.storyBuilder.builderAssets?.coverImagePosition));
+  }
+  if ((payload.storyBuilder.builderAssets?.scenes || []).length > 0) {
+    lines.push(rtfHeading('Scene Gallery', 2));
+    (payload.storyBuilder.builderAssets?.scenes || []).forEach((scene) => {
+      pushRtfField(lines, 'Scene Title', scene.title || '');
+      pushRtfField(lines, 'Scene URL', scene.url || '');
+      pushRtfField(lines, 'Scene Tags', (scene.tags || []).join(', '));
+      if (scene.isStartingScene) lines.push(rtfBullet('Starting Scene: true', 1080));
+    });
+  }
+  if (payload.storyBuilder.contentThemes) {
+    const themes = payload.storyBuilder.contentThemes;
+    lines.push(rtfHeading('Content Themes', 2));
+    pushRtfField(lines, 'Story Type', themes.storyType || '');
+    pushRtfField(lines, 'Character Types', (themes.characterTypes || []).join(', '));
+    pushRtfField(lines, 'Genres', (themes.genres || []).join(', '));
+    pushRtfField(lines, 'Origin', (themes.origin || []).join(', '));
+    pushRtfField(lines, 'Trigger Warnings', (themes.triggerWarnings || []).join(', '));
+    pushRtfField(lines, 'Custom Tags', (themes.customTags || []).join(', '));
+
+    const directiveRows = getContentThemeDirectiveRows(themes);
+    if (directiveRows.length > 0) {
+      lines.push(rtfHeading('Injected Tag Guidance', 2));
+      directiveRows.forEach((row) => pushRtfRowField(lines, row.label, row.value));
+    }
+  }
+  if (payload.storyBuilder.uiSettings) {
+    lines.push(rtfHeading('UI Settings', 2));
+    Object.entries(payload.storyBuilder.uiSettings).forEach(([key, value]) => {
+      if (typeof value === 'undefined') return;
+      const label = key
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/^./, (char) => char.toUpperCase());
+      if (typeof value === 'boolean') {
+        lines.push(rtfBullet(`${label}: ${value ? 'true' : 'false'}`, 1080));
+      } else {
+        pushRtfField(lines, label, String(value));
+      }
+    });
+  }
 
   lines.push(rtfHeading('Characters', 1));
   payload.characters.forEach((character) => {
@@ -541,14 +1016,21 @@ const buildWordRtf = (payload: TransferPayloadV1): string => {
     pushRtfField(lines, 'Sex / Identity', character.sexType);
     pushRtfField(lines, 'Sexual Orientation', character.sexualOrientation);
     pushRtfField(lines, 'Location', character.location);
+    pushRtfField(lines, 'Scene Position', character.scenePosition);
     pushRtfField(lines, 'Current Mood', character.currentMood);
     if (character.controlledBy) lines.push(rtfBullet(`Controlled By: ${character.controlledBy}`, 1080));
     if (character.characterRole) lines.push(rtfBullet(`Character Role: ${character.characterRole}`, 1080));
     pushRtfField(lines, 'Role Description', character.roleDescription);
+    pushRtfField(lines, 'Tags', character.tags);
+    pushRtfField(lines, 'Avatar Image', character.avatarDataUrl);
+    pushRtfField(lines, 'Avatar Position', stringifyPosition(character.avatarPosition));
 
-    const writeSection = (title: string, rows: TransferRow[]) => {
+    const writeSection = (title: string, rows: TransferRow[], preserveLabelOnly = false) => {
       lines.push(rtfHeading(title, 2));
-      rows.forEach((row) => pushRtfField(lines, row.label || 'Field', row.value));
+      rows.forEach((row) => {
+        if (preserveLabelOnly) pushRtfRowField(lines, row.label || 'Field', row.value);
+        else pushRtfField(lines, row.label || 'Field', row.value);
+      });
     };
 
     writeSection('Physical Appearance', [
@@ -563,32 +1045,32 @@ const buildWordRtf = (payload: TransferPayloadV1): string => {
       { label: 'Makeup', value: character.physicalAppearance?.makeup || '' },
       { label: 'Body Markings', value: character.physicalAppearance?.bodyMarkings || '' },
       { label: 'Temporary Conditions', value: character.physicalAppearance?.temporaryConditions || '' },
-      ...(character.physicalAppearanceExtras || []),
     ]);
+    (character.physicalAppearanceExtras || []).forEach((row) => pushRtfRowField(lines, row.label || 'Field', row.value));
     writeSection('Currently Wearing', [
       { label: 'Top', value: character.currentlyWearing?.top || '' },
       { label: 'Bottom', value: character.currentlyWearing?.bottom || '' },
       { label: 'Undergarments', value: character.currentlyWearing?.undergarments || '' },
       { label: 'Miscellaneous', value: character.currentlyWearing?.miscellaneous || '' },
-      ...(character.currentlyWearingExtras || []),
     ]);
+    (character.currentlyWearingExtras || []).forEach((row) => pushRtfRowField(lines, row.label || 'Field', row.value));
     writeSection('Preferred Clothing', [
       { label: 'Casual', value: character.preferredClothing?.casual || '' },
       { label: 'Work', value: character.preferredClothing?.work || '' },
       { label: 'Sleep', value: character.preferredClothing?.sleep || '' },
       { label: 'Undergarments', value: character.preferredClothing?.undergarments || '' },
       { label: 'Miscellaneous', value: character.preferredClothing?.miscellaneous || '' },
-      ...(character.preferredClothingExtras || []),
     ]);
+    (character.preferredClothingExtras || []).forEach((row) => pushRtfRowField(lines, row.label || 'Field', row.value));
     lines.push(rtfHeading('Personality', 2));
     if (character.personality) {
       lines.push(rtfBullet(`Split Mode: ${character.personality.splitMode ? 'true' : 'false'}`, 1080));
-      character.personality.traits.forEach((row) => pushRtfField(lines, row.label || 'Trait', row.value));
-      character.personality.outwardTraits.forEach((row) => pushRtfField(lines, `Outward ${row.label || 'Trait'}`, row.value));
-      character.personality.inwardTraits.forEach((row) => pushRtfField(lines, `Inward ${row.label || 'Trait'}`, row.value));
+      character.personality.traits.forEach((row) => pushRtfRowField(lines, row.label || 'Trait', row.value, 1080, 'Trait'));
+      character.personality.outwardTraits.forEach((row) => pushRtfRowField(lines, `Outward ${row.label || 'Trait'}`, row.value, 1080, 'Outward Trait'));
+      character.personality.inwardTraits.forEach((row) => pushRtfRowField(lines, `Inward ${row.label || 'Trait'}`, row.value, 1080, 'Inward Trait'));
     }
 
-    writeSection('Tone', character.toneRows || []);
+    writeSection('Tone', character.toneRows || [], true);
     writeSection('Background', [
       { label: 'Job Occupation', value: character.background?.jobOccupation || '' },
       { label: 'Education Level', value: character.background?.educationLevel || '' },
@@ -596,16 +1078,17 @@ const buildWordRtf = (payload: TransferPayloadV1): string => {
       { label: 'Hobbies', value: character.background?.hobbies || '' },
       { label: 'Financial Status', value: character.background?.financialStatus || '' },
       { label: 'Motivation', value: character.background?.motivation || '' },
-      ...(character.backgroundExtras || []),
     ]);
-    writeSection('Key Life Events', character.keyLifeEventRows || []);
-    writeSection('Relationships', character.relationshipRows || []);
-    writeSection('Secrets', character.secretRows || []);
-    writeSection('Fears', character.fearRows || []);
+    (character.backgroundExtras || []).forEach((row) => pushRtfRowField(lines, row.label || 'Field', row.value));
+    writeSection('Key Life Events', character.keyLifeEventRows || [], true);
+    writeSection('Relationships', character.relationshipRows || [], true);
+    writeSection('Secrets', character.secretRows || [], true);
+    writeSection('Fears', character.fearRows || [], true);
     lines.push(rtfHeading('Character Goals', 2));
     (character.goals || []).forEach((goal) => {
       pushRtfField(lines, 'Goal', goal.title);
       pushRtfField(lines, 'Desired Outcome', goal.desiredOutcome || '');
+      pushRtfField(lines, 'Current Status', goal.currentStatus || '');
       if (goal.flexibility) lines.push(rtfBullet(`Flexibility: ${goal.flexibility}`, 1080));
       goal.steps.forEach((step) => lines.push(rtfBullet(`Step: [${step.completed ? 'x' : ' '}] ${step.description}`, 1080)));
     });
@@ -615,7 +1098,7 @@ const buildWordRtf = (payload: TransferPayloadV1): string => {
       if (section.type === 'freeform') {
         pushRtfField(lines, 'Content', section.freeformValue || '');
       } else {
-        section.items.forEach((row) => pushRtfField(lines, row.label || 'Field', row.value));
+        section.items.forEach((row) => pushRtfRowField(lines, row.label || 'Field', row.value));
       }
     });
   });
@@ -623,36 +1106,62 @@ const buildWordRtf = (payload: TransferPayloadV1): string => {
   return `{\\rtf1\\ansi\\deff0{\\fonttbl{\\f0 Calibri;}}\\viewkind4\\uc1 ${lines.join('')}}`;
 };
 
-export const exportScenarioToWordDocument = (data: ScenarioData): string => {
-  return buildWordRtf(toTransferPayload(data));
+export const exportScenarioToWordDocument = (
+  data: ScenarioData,
+  options?: StoryTransferExportOptions
+): string => {
+  const packagePayload = buildTransferPackage(data, options);
+  const payload = toTransferPayload(packagePayload.scenario);
+  payload.storyBuilder.builderAssets = {
+    ...(payload.storyBuilder.builderAssets || {}),
+    coverImage: packagePayload.editorState?.coverImage,
+    coverImagePosition: packagePayload.editorState?.coverImagePosition,
+  };
+  return appendMachinePayloadToRtf(buildWordRtf(payload), packagePayload);
 };
 
 const getHeadingText = (line: string): string | null => {
-  const markdownMatch = line.match(/^#{1,6}\s+(.+)$/);
+  const markdownMatch = line.match(/^\s*#{1,6}\s+(.+)$/);
   if (markdownMatch) return markdownMatch[1].trim();
-  const bracketMatch = line.match(/^\[(.+)\]$/);
+  const bracketMatch = line.match(/^\s*\[(.+)\]$/);
   if (bracketMatch) return bracketMatch[1].trim();
-  const bulletMatch = line.match(/^[-*•●▪◦]+\s+(.+)$/);
+  const bulletMatch = line.match(/^\s*[-*•●▪◦]+\s+(.+)$/);
   if (bulletMatch) {
     const candidate = bulletMatch[1].trim();
     if (!candidate) return null;
     if (!candidate.includes(':')) return candidate;
     if (/^character\s*[:-]/i.test(candidate)) return candidate;
   }
-  const colonHeadingMatch = line.match(/^([^:]{2,140})\s*:\s*$/);
+  const colonHeadingMatch = line.match(/^(?!\s*[-*•●▪◦]\s)\s*([^:]{2,140})\s*:\s*$/);
   if (colonHeadingMatch) return colonHeadingMatch[1].trim();
   return null;
 };
 
-const extractMachinePayload = (text: string): TransferPayloadV1 | null => {
+const looksLikeTransferPackage = (value: unknown): value is StoryTransferPackageV2 => {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as StoryTransferPackageV2;
+  return (
+    candidate.packageType === 'chronicle-story-transfer' &&
+    candidate.packageVersion === 2 &&
+    !!candidate.scenario &&
+    typeof candidate.scenario === 'object'
+  );
+};
+
+const extractMachinePayload = (
+  text: string
+): { packagePayload?: StoryTransferPackageV2; legacyPayload?: TransferPayloadV1 } | null => {
   const start = text.indexOf(MACHINE_START);
   const end = text.indexOf(MACHINE_END);
   if (start === -1 || end === -1 || end <= start) return null;
   const jsonBlock = text.slice(start + MACHINE_START.length, end).trim();
   try {
-    const parsed = JSON.parse(jsonBlock) as TransferPayloadV1;
-    if (parsed && parsed.version === 1 && parsed.storyBuilder && Array.isArray(parsed.characters)) {
-      return parsed;
+    const parsed = JSON.parse(jsonBlock);
+    if (looksLikeTransferPackage(parsed)) {
+      return { packagePayload: parsed };
+    }
+    if (looksLikeTransferPayload(parsed)) {
+      return { legacyPayload: parsed };
     }
   } catch {
     return null;
@@ -742,7 +1251,7 @@ const parseTextToPayload = (text: string, warnings: string[]): { payload: Transf
 
   let skippedLines = 0;
   let mode: 'story' | 'characters' = 'story';
-  let storySection: 'storyCard' | 'worldCore' | 'openingDialog' | 'worldCustom' = 'worldCore';
+  let storySection: 'storyCard' | 'worldCore' | 'worldLocations' | 'storyGoals' | 'openingDialog' | 'worldCustom' = 'worldCore';
   let currentWorldCustom: TransferCustomSection | null = null;
   let currentCharacter: TransferCharacter | null = null;
   let currentCharacterSection = 'basics';
@@ -804,7 +1313,67 @@ const parseTextToPayload = (text: string, warnings: string[]): { payload: Transf
       const headingValue = heading.replace(/:\s*$/, '').trim();
       const normalized = normalize(headingValue);
 
-      const namedCharacterSection = parseNamedCharacterSectionHeading(headingValue);
+      if (normalized === 'characters') {
+        flushCharacter();
+        mode = 'characters';
+        continue;
+      }
+
+      if (mode === 'story') {
+        if (normalized === 'storybuilder' || normalized === 'chroniclestorybuilderexport') continue;
+        if (normalized === 'storycard') {
+          storySection = 'storyCard';
+          currentWorldCustom = null;
+          continue;
+        }
+        if (normalized === 'worldcore') {
+          storySection = 'worldCore';
+          currentWorldCustom = null;
+          currentGoal = null;
+          continue;
+        }
+        if (normalized === 'structuredlocations' || normalized === 'locations' || normalized === 'primarylocations') {
+          storySection = 'worldLocations';
+          currentWorldCustom = null;
+          currentGoal = null;
+          continue;
+        }
+        if (normalized === 'storygoals') {
+          storySection = 'storyGoals';
+          currentWorldCustom = null;
+          currentGoal = null;
+          continue;
+        }
+        if (normalized === 'openingdialog') {
+          storySection = 'openingDialog';
+          currentWorldCustom = null;
+          currentGoal = null;
+          continue;
+        }
+        if (normalized === 'scenario') {
+          storySection = 'worldCore';
+          currentWorldCustom = null;
+          currentGoal = null;
+          continue;
+        }
+        if (normalized === 'aiinstructions') {
+          storySection = 'worldCustom';
+          currentWorldCustom = getWorldCustom('AI Instructions');
+          currentGoal = null;
+          continue;
+        }
+        storySection = 'worldCustom';
+        currentWorldCustom = getWorldCustom(headingValue);
+        currentGoal = null;
+        continue;
+      }
+
+      const isStandaloneCharacterSectionHeading = /^(basics|background|appearance|physical appearance|personality|tone|currently wearing|preferred clothing|clothing preference|fears|relationships|secrets|key life events|character goals|goals|goals and desires|kinks|fantasies)$/i.test(headingValue);
+
+      const namedCharacterSection =
+        isStandaloneCharacterSectionHeading
+          ? null
+          : parseNamedCharacterSectionHeading(headingValue);
       if (namedCharacterSection?.name) {
         const characterName = namedCharacterSection.name;
         if (!currentCharacter || normalize(currentCharacter.name || '') !== normalize(characterName)) {
@@ -824,7 +1393,9 @@ const parseTextToPayload = (text: string, warnings: string[]): { payload: Transf
         continue;
       }
 
-      const characterHeading = headingValue.match(/^character\s*[:-]\s*(.+)$/i) || headingValue.match(/^character\s+(.+)$/i);
+      const characterHeading = isStandaloneCharacterSectionHeading
+        ? null
+        : headingValue.match(/^character\s*[:-]\s*(.+)$/i) || headingValue.match(/^character\s+(.+)$/i);
       if (characterHeading) {
         flushCharacter();
         mode = 'characters';
@@ -832,44 +1403,6 @@ const parseTextToPayload = (text: string, warnings: string[]): { payload: Transf
         currentCharacterSection = 'basics';
         currentCharacterCustom = null;
         currentGoal = null;
-        continue;
-      }
-
-      if (normalized === 'characters') {
-        flushCharacter();
-        mode = 'characters';
-        continue;
-      }
-
-      if (mode === 'story') {
-        if (normalized === 'storybuilder' || normalized === 'chroniclestorybuilderexport') continue;
-        if (normalized === 'storycard') {
-          storySection = 'storyCard';
-          currentWorldCustom = null;
-          continue;
-        }
-        if (normalized === 'worldcore') {
-          storySection = 'worldCore';
-          currentWorldCustom = null;
-          continue;
-        }
-        if (normalized === 'openingdialog') {
-          storySection = 'openingDialog';
-          currentWorldCustom = null;
-          continue;
-        }
-        if (normalized === 'scenario') {
-          storySection = 'worldCore';
-          currentWorldCustom = null;
-          continue;
-        }
-        if (normalized === 'aiinstructions') {
-          storySection = 'worldCustom';
-          currentWorldCustom = getWorldCustom('AI Instructions');
-          continue;
-        }
-        storySection = 'worldCustom';
-        currentWorldCustom = getWorldCustom(headingValue);
         continue;
       }
 
@@ -904,6 +1437,8 @@ const parseTextToPayload = (text: string, warnings: string[]): { payload: Transf
         } else {
           skippedLines += 1;
         }
+      } else if (mode === 'story' && storySection === 'storyGoals') {
+        skippedLines += 1;
       } else {
         skippedLines += 1;
       }
@@ -949,8 +1484,70 @@ const parseTextToPayload = (text: string, warnings: string[]): { payload: Transf
         } else if (normalizedKey === 'startingtimeofday') {
           const parsed = parseTimeOfDay(value);
           if (parsed) payload.storyBuilder.openingDialog.startingTimeOfDay = parsed;
+        } else if (normalizedKey === 'timeprogressionmode') {
+          const parsed = normalize(value);
+          if (parsed === 'manual' || parsed === 'automatic') {
+            payload.storyBuilder.openingDialog.timeProgressionMode = parsed;
+          }
+        } else if (normalizedKey === 'timeprogressioninterval') {
+          const parsed = Number(value);
+          if (Number.isFinite(parsed)) payload.storyBuilder.openingDialog.timeProgressionInterval = parsed;
         } else {
           currentWorldCustom = getWorldCustom('Imported Opening Dialog');
+          upsertTransferRow(currentWorldCustom.items, key, value);
+        }
+        continue;
+      }
+
+      if (storySection === 'worldLocations') {
+        const rows = payload.storyBuilder.worldCore.structuredLocations || [];
+        upsertTransferRow(rows, key, value);
+        payload.storyBuilder.worldCore.structuredLocations = rows;
+        continue;
+      }
+
+      if (storySection === 'storyGoals') {
+        if (!payload.storyBuilder.worldCore.storyGoals) payload.storyBuilder.worldCore.storyGoals = [];
+        if (normalizedKey === 'goal') {
+          currentGoal = {
+            title: clean(value) || 'Imported Story Goal',
+            desiredOutcome: '',
+            currentStatus: '',
+            flexibility: 'normal',
+            steps: [],
+          };
+          payload.storyBuilder.worldCore.storyGoals.push(currentGoal);
+        } else if (normalizedKey === 'desiredoutcome') {
+          if (!currentGoal) {
+            currentGoal = { title: 'Imported Story Goal', desiredOutcome: '', currentStatus: '', flexibility: 'normal', steps: [] };
+            payload.storyBuilder.worldCore.storyGoals.push(currentGoal);
+          }
+          currentGoal.desiredOutcome = value;
+        } else if (normalizedKey === 'currentstatus') {
+          if (!currentGoal) {
+            currentGoal = { title: 'Imported Story Goal', desiredOutcome: '', currentStatus: '', flexibility: 'normal', steps: [] };
+            payload.storyBuilder.worldCore.storyGoals.push(currentGoal);
+          }
+          currentGoal.currentStatus = value;
+        } else if (normalizedKey === 'flexibility') {
+          const flex = normalize(value);
+          if (!currentGoal) {
+            currentGoal = { title: 'Imported Story Goal', desiredOutcome: '', currentStatus: '', flexibility: 'normal', steps: [] };
+            payload.storyBuilder.worldCore.storyGoals.push(currentGoal);
+          }
+          if (flex === 'rigid' || flex === 'normal' || flex === 'flexible') currentGoal.flexibility = flex;
+        } else if (normalizedKey === 'step') {
+          const stepMatch = value.match(/^\[(x| )\]\s*(.+)$/i);
+          if (!currentGoal) {
+            currentGoal = { title: 'Imported Story Goal', desiredOutcome: '', currentStatus: '', flexibility: 'normal', steps: [] };
+            payload.storyBuilder.worldCore.storyGoals.push(currentGoal);
+          }
+          currentGoal.steps.push({
+            description: clean(stepMatch ? stepMatch[2] : value),
+            completed: !!stepMatch && stepMatch[1].toLowerCase() === 'x',
+          });
+        } else {
+          currentWorldCustom = getWorldCustom('Imported Story Goals');
           upsertTransferRow(currentWorldCustom.items, key, value);
         }
         continue;
@@ -1174,14 +1771,20 @@ const parseTextToPayload = (text: string, warnings: string[]): { payload: Transf
         character.goals.push(currentGoal);
       } else if (normalizedKey === 'desiredoutcome') {
         if (!currentGoal) {
-          currentGoal = { title: 'Imported Goal', desiredOutcome: '', flexibility: 'normal', steps: [] };
+          currentGoal = { title: 'Imported Goal', desiredOutcome: '', currentStatus: '', flexibility: 'normal', steps: [] };
           character.goals.push(currentGoal);
         }
         currentGoal.desiredOutcome = value;
+      } else if (normalizedKey === 'currentstatus') {
+        if (!currentGoal) {
+          currentGoal = { title: 'Imported Goal', desiredOutcome: '', currentStatus: '', flexibility: 'normal', steps: [] };
+          character.goals.push(currentGoal);
+        }
+        currentGoal.currentStatus = value;
       } else if (normalizedKey === 'flexibility') {
         const flex = normalize(value);
         if (!currentGoal) {
-          currentGoal = { title: 'Imported Goal', desiredOutcome: '', flexibility: 'normal', steps: [] };
+          currentGoal = { title: 'Imported Goal', desiredOutcome: '', currentStatus: '', flexibility: 'normal', steps: [] };
           character.goals.push(currentGoal);
         }
         if (flex === 'rigid' || flex === 'normal' || flex === 'flexible') {
@@ -1190,7 +1793,7 @@ const parseTextToPayload = (text: string, warnings: string[]): { payload: Transf
       } else if (normalizedKey === 'step') {
         const stepMatch = value.match(/^\[(x| )\]\s*(.+)$/i);
         if (!currentGoal) {
-          currentGoal = { title: 'Imported Goal', desiredOutcome: '', flexibility: 'normal', steps: [] };
+          currentGoal = { title: 'Imported Goal', desiredOutcome: '', currentStatus: '', flexibility: 'normal', steps: [] };
           character.goals.push(currentGoal);
         }
         currentGoal.steps.push({
@@ -1380,7 +1983,7 @@ const applyGoals = (
   if (!incomingGoals || incomingGoals.length === 0) return character.goals || [];
   const base = [...(character.goals || [])];
   incomingGoals.forEach((goal) => {
-    if (!hasText(goal.title) && !hasText(goal.desiredOutcome) && (goal.steps || []).length === 0) return;
+    if (!hasText(goal.title) && !hasText(goal.desiredOutcome) && !hasText(goal.currentStatus) && (goal.steps || []).length === 0) return;
     const title = clean(goal.title) || 'Imported Goal';
     const idx = base.findIndex((item) => normalize(item.title) === normalize(title));
     if (idx === -1) {
@@ -1388,7 +1991,7 @@ const applyGoals = (
         id: uid('goal'),
         title,
         desiredOutcome: clean(goal.desiredOutcome || ''),
-        currentStatus: '',
+        currentStatus: clean(goal.currentStatus || ''),
         progress: 0,
         flexibility: goal.flexibility || 'normal',
         steps: (goal.steps || []).map((step) => ({
@@ -1410,6 +2013,7 @@ const applyGoals = (
     base[idx] = {
       ...current,
       desiredOutcome: mergeText(current.desiredOutcome, goal.desiredOutcome, mode),
+      currentStatus: mergeText(current.currentStatus || '', goal.currentStatus, mode),
       flexibility: goal.flexibility || current.flexibility,
       steps: stepRows.map((step, stepIdx) => ({
         id: current.steps?.[stepIdx]?.id || uid('step'),
@@ -1430,7 +2034,7 @@ const applyStoryGoals = (
   if (!incomingGoals || incomingGoals.length === 0) return existingGoals;
   const base = [...(existingGoals || [])];
   incomingGoals.forEach((goal) => {
-    if (!hasText(goal.title) && !hasText(goal.desiredOutcome) && (goal.steps || []).length === 0) return;
+    if (!hasText(goal.title) && !hasText(goal.desiredOutcome) && !hasText(goal.currentStatus) && (goal.steps || []).length === 0) return;
     const title = clean(goal.title) || 'Imported Story Goal';
     const idx = base.findIndex((item) => normalize(item.title) === normalize(title));
     if (idx === -1) {
@@ -1438,7 +2042,7 @@ const applyStoryGoals = (
         id: uid('sgoal'),
         title,
         desiredOutcome: clean(goal.desiredOutcome || ''),
-        currentStatus: '',
+        currentStatus: clean(goal.currentStatus || ''),
         flexibility: goal.flexibility || 'normal',
         steps: (goal.steps || []).map((step) => ({
           id: uid('sgoal_step'),
@@ -1459,6 +2063,7 @@ const applyStoryGoals = (
     base[idx] = {
       ...current,
       desiredOutcome: mergeText(current.desiredOutcome, goal.desiredOutcome, mode),
+      currentStatus: mergeText(current.currentStatus || '', goal.currentStatus, mode),
       flexibility: goal.flexibility || current.flexibility,
       steps: stepRows.map((step, stepIdx) => ({
         id: current.steps?.[stepIdx]?.id || uid('sgoal_step'),
@@ -1530,6 +2135,44 @@ const mergePayloadIntoScenario = (
   next.world.core.briefDescription = updateStoryField(next.world.core.briefDescription, payload.storyBuilder.storyCard.briefDescription, 'narrative');
   next.world.core.storyPremise = updateStoryField(next.world.core.storyPremise, payload.storyBuilder.worldCore.storyPremise, 'narrative');
   next.world.core.dialogFormatting = updateStoryField(next.world.core.dialogFormatting, payload.storyBuilder.worldCore.dialogFormatting, 'narrative');
+  next.world.entries = mergeCodexEntries(
+    next.world.entries || [],
+    (payload.storyBuilder.worldCore.codexEntries || []).map((entry) => ({
+      id: uuid(),
+      title: clean(entry.title),
+      body: clean(entry.body),
+      createdAt: now(),
+      updatedAt: now(),
+    })),
+    mode
+  );
+  next.contentThemes = mergeContentThemes(next.contentThemes, payload.storyBuilder.contentThemes, mode);
+  if (payload.storyBuilder.builderAssets?.selectedArtStyle) {
+    next.selectedArtStyle = mergeScalarText(next.selectedArtStyle || '', payload.storyBuilder.builderAssets.selectedArtStyle, mode);
+  }
+  if (payload.storyBuilder.builderAssets?.scenes) {
+    next.scenes = mergeScenes(
+      next.scenes || [],
+      (payload.storyBuilder.builderAssets.scenes || []).map((scene) => ({
+        id: uuid(),
+        title: clean(scene.title || ''),
+        url: clean(scene.url || ''),
+        tags: [...(scene.tags || [])],
+        isStartingScene: !!scene.isStartingScene,
+        createdAt: now(),
+      })),
+      mode
+    );
+  }
+  if (payload.storyBuilder.uiSettings) {
+    next.uiSettings =
+      mode === 'rewrite' || !next.uiSettings
+        ? clone(payload.storyBuilder.uiSettings)
+        : {
+            ...clone(payload.storyBuilder.uiSettings),
+            ...next.uiSettings,
+          };
+  }
 
   const beforeLocations = JSON.stringify(next.world.core.structuredLocations || []);
   next.world.core.structuredLocations = mergeStructuredLocations(
@@ -1559,6 +2202,8 @@ const mergePayloadIntoScenario = (
   opening.text = mergeText(opening.text, payload.storyBuilder.openingDialog.text, mode);
   if (typeof payload.storyBuilder.openingDialog.startingDay === 'number') opening.startingDay = payload.storyBuilder.openingDialog.startingDay;
   if (payload.storyBuilder.openingDialog.startingTimeOfDay) opening.startingTimeOfDay = payload.storyBuilder.openingDialog.startingTimeOfDay;
+  if (payload.storyBuilder.openingDialog.timeProgressionMode) opening.timeProgressionMode = payload.storyBuilder.openingDialog.timeProgressionMode;
+  if (typeof payload.storyBuilder.openingDialog.timeProgressionInterval === 'number') opening.timeProgressionInterval = payload.storyBuilder.openingDialog.timeProgressionInterval;
   next.story.openingDialog = opening;
 
   payload.characters.forEach((incoming) => {
@@ -1582,8 +2227,17 @@ const mergePayloadIntoScenario = (
     character.sexType = mergeScalarText(character.sexType, incoming.sexType, mode);
     character.sexualOrientation = mergeScalarText(character.sexualOrientation, incoming.sexualOrientation, mode);
     character.location = mergeText(character.location, incoming.location, mode);
+    character.scenePosition = mergeScalarText(character.scenePosition || '', incoming.scenePosition || '', mode);
     character.currentMood = mergeText(character.currentMood, incoming.currentMood, mode);
     character.roleDescription = mergeText(character.roleDescription, incoming.roleDescription, mode);
+    character.tags = mergeTagString(character.tags || '', incoming.tags, mode);
+    character.avatarDataUrl = mergeScalarText(character.avatarDataUrl || '', incoming.avatarDataUrl || '', mode);
+    if (incoming.avatarPosition) {
+      character.avatarPosition =
+        mode === 'rewrite' || !character.avatarPosition
+          ? { ...incoming.avatarPosition }
+          : character.avatarPosition;
+    }
     if (incoming.controlledBy === 'AI' || incoming.controlledBy === 'User') character.controlledBy = incoming.controlledBy;
     if (incoming.characterRole === 'Main' || incoming.characterRole === 'Side') character.characterRole = incoming.characterRole;
 
@@ -1646,6 +2300,102 @@ const mergePayloadIntoScenario = (
   return { data: next, summary, warnings };
 };
 
+const mergeSideCharacters = (
+  existing: ScenarioData['sideCharacters'],
+  incoming: ScenarioData['sideCharacters'],
+  mode: StoryImportMode
+): ScenarioData['sideCharacters'] => {
+  if (!incoming || incoming.length === 0) return existing;
+  if (mode === 'rewrite') return clone(incoming);
+
+  const merged = [...(existing || [])];
+  incoming.forEach((character) => {
+    const idx = merged.findIndex(
+      (item) =>
+        item.id === character.id ||
+        (hasText(item.name) && hasText(character.name) && normalize(item.name) === normalize(character.name))
+    );
+    if (idx === -1) {
+      merged.push(clone(character));
+    }
+  });
+  return merged;
+};
+
+const mergeConversations = (
+  existing: ScenarioData['conversations'],
+  incoming: ScenarioData['conversations'],
+  mode: StoryImportMode
+): ScenarioData['conversations'] => {
+  if (!incoming || incoming.length === 0) return existing;
+  if (mode === 'rewrite') return clone(incoming);
+
+  const merged = [...(existing || [])];
+  incoming.forEach((conversation) => {
+    if (merged.some((item) => item.id === conversation.id)) return;
+    merged.push(clone(conversation));
+  });
+  return merged;
+};
+
+const buildTransferPackageFromScenario = (scenario: ScenarioData): StoryTransferPackageV2 => {
+  const normalizedScenario = buildScenarioForTransfer(scenario, {
+    contentThemes: scenario.contentThemes,
+  });
+
+  return {
+    packageType: 'chronicle-story-transfer',
+    packageVersion: 2,
+    exportedAt: new Date().toISOString(),
+    scenario: normalizedScenario,
+    editorState: normalizedScenario.contentThemes
+      ? { contentThemes: cloneContentThemes(normalizedScenario.contentThemes) }
+      : undefined,
+  };
+};
+
+const applyTransferPackageToScenario = (
+  base: ScenarioData,
+  packagePayload: StoryTransferPackageV2,
+  warnings: string[],
+  mode: StoryImportMode
+): StoryTransferResult => {
+  const importedScenario = buildScenarioForTransfer(packagePayload.scenario, {
+    contentThemes: packagePayload.editorState?.contentThemes ?? packagePayload.scenario.contentThemes,
+  });
+  const editorState = packagePayload.editorState ? clone(packagePayload.editorState) : undefined;
+  const transferWarnings: string[] = [];
+  const mergedResult = mergePayloadIntoScenario(base, toTransferPayload(importedScenario), 0, transferWarnings, mode);
+
+  if (mode === 'rewrite') {
+    return {
+      data: importedScenario,
+      editorState,
+      summary: mergedResult.summary,
+      warnings: [...warnings, ...transferWarnings],
+    };
+  }
+
+  const next = mergedResult.data;
+  if (importedScenario.selectedModel && !hasText(next.selectedModel || '')) {
+    next.selectedModel = importedScenario.selectedModel;
+  }
+  next.sideCharacters = mergeSideCharacters(next.sideCharacters || [], importedScenario.sideCharacters || [], mode);
+  next.conversations = mergeConversations(next.conversations || [], importedScenario.conversations || [], mode);
+  next.contentThemes = mergeContentThemes(
+    next.contentThemes,
+    importedScenario.contentThemes || editorState?.contentThemes || defaultContentThemes,
+    mode
+  );
+
+  return {
+    ...mergedResult,
+    data: next,
+    editorState,
+    warnings: [...warnings, ...transferWarnings],
+  };
+};
+
 export const importScenarioFromText = (
   text: string,
   base: ScenarioData,
@@ -1654,7 +2404,12 @@ export const importScenarioFromText = (
   const warnings: string[] = [];
   const machinePayload = extractMachinePayload(text);
   if (machinePayload) {
-    return mergePayloadIntoScenario(base, machinePayload, 0, warnings, mode);
+    if (machinePayload.packagePayload) {
+      return applyTransferPackageToScenario(base, machinePayload.packagePayload, warnings, mode);
+    }
+    if (machinePayload.legacyPayload) {
+      return mergePayloadIntoScenario(base, machinePayload.legacyPayload, 0, warnings, mode);
+    }
   }
 
   const heuristic = parseTextToPayload(text, warnings);
@@ -1736,11 +2491,14 @@ export const importScenarioFromAny = (
   if (isLikelyJson) {
     try {
       const parsed = JSON.parse(trimmed);
+      if (looksLikeTransferPackage(parsed)) {
+        return applyTransferPackageToScenario(base, parsed, warnings, mode);
+      }
       if (looksLikeTransferPayload(parsed)) {
         return mergePayloadIntoScenario(base, parsed, 0, warnings, mode);
       }
       if (looksLikeScenarioData(parsed)) {
-        return mergePayloadIntoScenario(base, toTransferPayload(parsed), 0, warnings, mode);
+        return applyTransferPackageToScenario(base, buildTransferPackageFromScenario(parsed), warnings, mode);
       }
       warnings.push('JSON file format was not recognized; falling back to text import.');
     } catch (error) {
