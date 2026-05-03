@@ -44,6 +44,7 @@ import { ScrollableSection } from './ScrollableSection';
 import { SidebarThemeModal } from './SidebarThemeModal';
 import { MemoriesModal } from './MemoriesModal';
 import { MemoryQuickSaveButton } from './MemoryQuickSaveButton';
+import { ChatSpellcheckTextarea } from './ChatSpellcheckTextarea';
 import {
   UserBackground,
   defaultCurrentlyWearing,
@@ -1133,79 +1134,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     return { shouldExtract: false, reason: 'skip' };
   };
 
-  // Detect objective repeat/follow-through problems and provide narrow one-turn guidance.
-  const getAntiLoopDirective = (): string => {
-    const msgs = conversation?.messages || [];
-    if (msgs.length < 2) return '';
-    
-    const directives: string[] = [];
-    
-    // Check if user's last message is an affirmation
-    const lastUserMsg = [...msgs].reverse().find(m => m.role === 'user');
-    if (lastUserMsg) {
-      const affirmPatterns = /\b(yes|yeah|okay|ok|sure|i understand|i will|i promise|i agree|alright|fine|got it|of course|absolutely|definitely|right|mhm|uh huh|yep|yup)\b/i;
-      if (affirmPatterns.test(lastUserMsg.text)) {
-        directives.push('The user has already confirmed or agreed. Do not ask for the same confirmation again; continue from that answer with the next character choice, action, or line of dialogue.');
-      }
-    }
-    
-    // Check if last 2 assistant messages repeat similar question stems
-    const lastAiMsgs = msgs.filter(m => m.role === 'assistant').slice(-2);
-    if (lastAiMsgs.length === 2) {
-      const extractQuestions = (text: string) => {
-        const matches = text.match(/"[^"]*\?"/g) || [];
-        return matches.map(q => q.toLowerCase().replace(/[^a-z\s]/g, '').trim()).filter(Boolean);
-      };
-      const q1 = extractQuestions(lastAiMsgs[0].text);
-      const q2 = extractQuestions(lastAiMsgs[1].text);
-      const hasRepeat = q1.some(a => q2.some(b => {
-        const words1 = new Set(a.split(/\s+/));
-        const words2 = new Set(b.split(/\s+/));
-        const overlap = ([...words1] as string[]).filter(w => words2.has(w) && w.length > 3).length;
-        return overlap >= 3;
-      }));
-      if (hasRepeat) {
-        directives.push('A similar question has already been asked. Acknowledge the existing answer or move to the next beat instead of asking it again.');
-      }
-    }
-    
-    // Check for deferral pattern in last assistant message
-    const lastAiMsg = [...msgs].reverse().find(m => m.role === 'assistant');
-    if (lastAiMsg) {
-      const deferralPatterns = /\b(we'll talk|we'll discuss|we'll figure|we'll sort|later tonight|after dinner|after we're done|soon enough|tomorrow|eventually)\b/i;
-      if (deferralPatterns.test(lastAiMsg.text)) {
-        directives.push('The previous turn set up an action or decision. Pay it off now unless the latest user message clearly changes direction.');
-      }
-    }
-    
-    // Ping-pong detector — detects sustained alternating character blocks in last AI response
-    if (lastAiMsg) {
-      const lines = lastAiMsg.text.split('\n').filter((l: string) => l.trim().length > 0);
-      const speakerPattern = /^([A-Z][a-zA-Z\s'-]+):/;
-      const speakers: string[] = [];
-      for (const line of lines) {
-        const match = line.match(speakerPattern);
-        if (match) {
-          const name = match[1].trim();
-          if (speakers.length === 0 || speakers[speakers.length - 1] !== name) {
-            speakers.push(name);
-          }
-        }
-      }
-      // Three beats can be natural; true ping-pong is sustained alternation.
-      if (speakers.length >= 4) {
-        const uniqueSpeakers = new Set(speakers);
-        if (uniqueSpeakers.size <= 2) {
-          directives.push('The last response overused sustained alternating AI speaker blocks across ' + speakers.length + ' blocks. Use one focal tagged AI speaker this turn. Other present characters may react inside narration unless a second tagged block is truly necessary.');
-        }
-      }
-    }
-
-    return directives.slice(0, 3).join(' ');
-  };
-
-  
-
   // Ref to always hold current sideCharacters - avoids stale closure in async callbacks
   const sideCharactersRef = useRef<SideCharacter[]>(appData.sideCharacters || []);
   useEffect(() => {
@@ -1975,6 +1903,37 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     allCharactersForDisplay.filter(c => c.characterRole === 'Side'),
     [allCharactersForDisplay]
   );
+  const chatSpellAllowlistEntries = useMemo(() => {
+    const entries: Array<string | null | undefined> = [
+      appData.world?.core?.scenarioName,
+    ];
+
+    for (const location of appData.world?.core?.structuredLocations || []) {
+      entries.push(location.label);
+    }
+
+    for (const scene of appData.scenes || []) {
+      entries.push(scene.title, ...(scene.tags || []));
+    }
+
+    for (const character of appData.characters) {
+      entries.push(
+        character.name,
+        character.nicknames,
+        character.location,
+      );
+    }
+
+    for (const sideCharacter of appData.sideCharacters || []) {
+      entries.push(
+        sideCharacter.name,
+        sideCharacter.nicknames,
+        sideCharacter.location,
+      );
+    }
+
+    return entries;
+  }, [appData.characters, appData.scenes, appData.sideCharacters, appData.world]);
   const isExpandedTileInMainCharacters = useMemo(() => {
     if (!expandedTileCharId) return false;
     return mainCharactersForDisplay.some(
@@ -3122,9 +3081,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         },
       });
       
-      // Build recent context (last 20 messages for pattern detection)
+      // Build recent context from only the freshest slice. Older durable truth should
+      // come from canonical state, not from re-reading a huge transcript every turn.
       const conversation = appData.conversations.find(c => c.id === conversationId);
-      const recentMessages = conversation?.messages.slice(-20) || [];
+      const recentMessages = conversation?.messages.slice(-10) || [];
       const errorPatterns = ['Invalid token', 'xAI/Grok error', 'Payment required', '⚠️'];
       const filteredMessages = recentMessages.filter(m => 
         !errorPatterns.some(pat => m.text.includes(pat))
@@ -4033,12 +3993,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       
       // Issue #7: Compute length directive and increment session counter
       const lengthDirective = getLengthDirective();
-      const antiLoopDirective = getAntiLoopDirective();
       sessionMessageCountRef.current += 1;
-      
-      // Build one-turn guidance string (injected as dedicated system message)
-      const runtimeDirectives = antiLoopDirective || undefined;
-      
+
       const llmInput = canonNote + input;
       const stream = generateRoleplayResponseStream(
         llmAppData,
@@ -4052,7 +4008,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         undefined,
         lengthDirective || undefined,
         sessionMessageCountRef.current,
-        runtimeDirectives,
         activeScene,
         {
           debugTrace: isAdmin,
@@ -4320,8 +4275,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       
       let fullText = '';
       let pendingDebugTrace: ChatDebugTrace | null = null;
-      const antiLoopDirective = getAntiLoopDirective();
-      const runtimeDirectives = antiLoopDirective || undefined;
       // Apply canon note to regenerate flow so user-authored AI dialogue is preserved
       const canonNote = buildCanonNote(userMessage.text, canonNoteCharacters);
       const regenInput = canonNote + userMessage.text;
@@ -4337,7 +4290,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         true,
         undefined,
         undefined,
-        runtimeDirectives,
         activeScene,
         {
           debugTrace: isAdmin,
@@ -4445,10 +4397,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     try {
       let fullText = '';
       let pendingDebugTrace: ChatDebugTrace | null = null;
-      const antiLoopDirective = getAntiLoopDirective();
-      
-      // Build one-turn guidance (injected as dedicated system message)
-      const runtimeDirectives = antiLoopDirective || undefined;
       
       // Build goal-aware continue prompt without exposing implementation labels.
       // Gather active character goals with near-term direction info.
@@ -4498,7 +4446,6 @@ If the latest user turn directly addressed two AI characters and both need to an
 Avoid long back-and-forth chains between AI characters. Leave room for the user to respond.
 Do not acknowledge this instruction in your response.`;
       
-      debugLog('[handleContinue] Current-turn guidance:', runtimeDirectives || '(none)');
       debugLog('[handleContinue] Goal context:', goalContext || '(no goals found)');
       debugLog('[handleContinue] Canon note applied:', continueCanonNote ? 'YES' : 'NO');
       
@@ -4514,7 +4461,6 @@ Do not acknowledge this instruction in your response.`;
         undefined,
         undefined,
         undefined,
-        runtimeDirectives,
         activeScene,
         {
           debugTrace: isAdmin,
@@ -6081,15 +6027,12 @@ const updatedChar: SideCharacter = {
             
             {/* Input Area */}
             <div className="rounded-2xl border border-white/[0.08] bg-[#2e2e33] p-2.5 shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
-              <textarea
+              <ChatSpellcheckTextarea
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={setInput}
                 placeholder="Describe your action or dialogue..."
-                rows={3}
-                spellCheck={true}
-                onKeyDown={(e: any) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }}}
-                className="block w-full resize-none overflow-hidden rounded-xl border border-white/[0.10] bg-[#3c3e47] px-4 py-3 text-sm leading-6 text-[#eaedf1] placeholder:text-[#8f95a3] outline-none transition-all focus:border-[#6e89ad] focus:ring-2 focus:ring-[#4a5f7f]/60"
-                ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; }}}
+                onSubmit={handleSend}
+                allowlistEntries={chatSpellAllowlistEntries}
               />
             </div>
           </div>
@@ -6556,10 +6499,6 @@ const updatedChar: SideCharacter = {
                         const maxTokensByVerbosity: Record<string, number> = { concise: 1024, balanced: 2048, detailed: 3072 };
                         const maxTokens = maxTokensByVerbosity[verbosity] || 2048;
                         
-                        // Anti-loop directive (current state)
-                        const antiLoopDirective = getAntiLoopDirective();
-                        
-                        
                         // Length directive (current state)
                         const lengthDirective = getLengthDirective();
                         const supabaseRuntimeTarget = /localhost|127\.0\.0\.1/i.test(import.meta.env.VITE_SUPABASE_URL || '')
@@ -6571,10 +6510,10 @@ const updatedChar: SideCharacter = {
                         
                         lines.push('# Master Prompt Snapshot');
                         lines.push(`**Model:** ${modelId}`);
-                        lines.push(`**Pipeline:** roleplay_v2 (planner -> writer -> deterministic cleanup; direct path only on fallback)`);
+                        lines.push(`**Pipeline:** direct roleplay generation (single chat call, streamed from the edge relay)`);
                         lines.push(`**Verbosity:** ${verbosity} → max_tokens: ${maxTokens}`);
                         lines.push(`**Supabase Target:** ${supabaseRuntimeTarget}`);
-                        lines.push(`**Temperatures:** planner 0.15 · writer 0.3 · direct fallback 0.55`);
+                        lines.push(`**Temperature:** direct chat 0.55`);
                         lines.push(`**Stream:** true`);
                         lines.push(`**Session Message Count:** ${sessionMessageCountRef.current}`);
                         lines.push(`**Exported:** ${exportDate}`);
@@ -6589,13 +6528,6 @@ const updatedChar: SideCharacter = {
                         lines.push('');
                         lines.push('## Runtime Parameters');
                         lines.push('');
-                        
-                        // Anti-loop directive
-                        lines.push('### Anti-Loop Directive (current)');
-                        lines.push('');
-                        lines.push(antiLoopDirective || 'None — no patterns detected');
-                        lines.push('');
-                        
                         
                         // Length directive
                         lines.push('### Length Directive (current)');
@@ -6621,15 +6553,6 @@ const updatedChar: SideCharacter = {
                         lines.push('');
                         lines.push('Prepended to every user message:');
                         lines.push('`[SESSION: Message {N} of current session]`');
-                        lines.push('');
-                        
-                        // Runtime guidance injection format
-                        lines.push('### Current-Turn Guidance Injection');
-                        lines.push('');
-                        lines.push('When repeat/follow-through guidance is active, it is injected as a separate system message:');
-                        lines.push('```');
-                        lines.push('{ role: "system", content: "Current-turn guidance for this response only:\\n[guidance]" }');
-                        lines.push('```');
                         lines.push('');
                         
                         // Download

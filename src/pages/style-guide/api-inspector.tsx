@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye } from "lucide-react";
-import { apiInspectorMapRegistry } from "@/data/api-inspector-map-registry";
 import settingsCogIcon from "@/assets/admin/settings-cog.png";
 import {
   phaseOneAuditGroups,
@@ -18,35 +17,18 @@ import {
   type ApiInspectorSection,
   type ApiInspectorTag,
 } from "@/data/api-inspector-live-map";
-import type {
-  ApiMapCrossRef,
-  ApiMapFileRef,
-  ApiMapItem,
-  ApiMapPhase,
-  ApiMapSection,
-  ApiMapSubItem,
-  ApiMapTagType,
-} from "@/lib/api-inspector-schema";
+import { apiInspectorLineMap } from "@/data/api-inspector-line-map";
 
 const HEADER_HEIGHT = 76;
 const ROOT_ID = "api-inspector-root";
-const API_CALL_1_REGISTRY_PHASE_IDS = [
-  "phase-user-sends-message",
-  "phase-system-prompt-assembly",
-  "phase-api-call-1-fires",
-  "phase-response-streaming-display",
-] as const;
-const API_CALL_2_REGISTRY_PHASE_IDS = ["phase-post-response-processing-api-call-2"] as const;
-const API_CALL_3_REGISTRY_PHASE_IDS = ["phase-image-generation-calls", "phase-ai-character-generation-calls"] as const;
-const LIVE_SECTION_ORDER = [
-  "admin-telemetry",
-  "data-and-storage",
-] as const;
+const LIVE_CHAT_SECTION_ID = "live-chat-roleplay-flow";
+const SUPPORTING_SECTION_ID = "supporting-roleplay-systems";
+const ADJACENT_SECTION_ID = "adjacent-one-off-ai-calls";
 
 const FOLDER_ICON_DATA_URI =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M3.5 7.5c0-1.1.9-2 2-2h4.2l1.6 1.7h7.2c1.1 0 2 .9 2 2v6.8c0 1.1-.9 2-2 2H5.5c-1.1 0-2-.9-2-2V7.5Z' fill='%239bd0ff'/%3E%3Cpath d='M3.5 8.6c0-.9.7-1.6 1.6-1.6h5.3c.4 0 .8.2 1.1.5l.9.9h6.4c.9 0 1.6.7 1.6 1.6v5.9c0 .9-.7 1.6-1.6 1.6H5.1c-.9 0-1.6-.7-1.6-1.6V8.6Z' fill='url(%23g)' stroke='rgba(255,255,255,0.32)' stroke-width='.6'/%3E%3Cdefs%3E%3ClinearGradient id='g' x1='12' y1='7' x2='12' y2='17.5' gradientUnits='userSpaceOnUse'%3E%3Cstop stop-color='%237da4d3'/%3E%3Cstop offset='1' stop-color='%235f85b3'/%3E%3C/linearGradient%3E%3C/defs%3E%3C/svg%3E";
 
-type RenderTag = ApiInspectorTag | ApiMapTagType | "api-call";
+type RenderTag = ApiInspectorTag | "validation-check" | "api-call";
 
 interface RenderFileRef {
   path: string;
@@ -874,6 +856,16 @@ body {
 
 .children > :last-child {
   border-left-color: transparent;
+}
+
+.children > :last-child::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 14px;
+  bottom: -12px;
+  width: 1px;
+  background: var(--bg);
 }
 
 .children > .tree-node {
@@ -1884,30 +1876,13 @@ function normalizeGroupDescription(description: string) {
   return description.replace(/^\s*[—-]\s*/, "").trim();
 }
 
-function toRenderFileRef(fileRef: ApiMapFileRef | ApiInspectorFileRef): RenderFileRef {
-  if ("locator" in fileRef) {
-    return {
-      path: fileRef.path,
-      note: fileRef.locator,
-    };
-  }
-
-  const mapFileRef = fileRef as ApiMapFileRef;
+function toRenderFileRef(fileRef: ApiInspectorFileRef): RenderFileRef {
+  const key = `${fileRef.path}|${fileRef.locator ?? ""}`;
   return {
-    path: mapFileRef.path,
-    lines: mapFileRef.lines,
-    note: mapFileRef.note,
+    path: fileRef.path,
+    lines: apiInspectorLineMap[key],
+    note: fileRef.locator,
   };
-}
-
-function buildRegistryDetails(itemId: string, subItems?: ApiMapSubItem[]) {
-  return (
-    subItems?.map((subItem) => ({
-      id: `${itemId}::${subItem.id}`,
-      label: subItem.title,
-      text: subItem.description,
-    })) ?? []
-  );
 }
 
 function buildContextDetails(
@@ -1941,58 +1916,6 @@ function buildContextDetails(
         ]
       : []),
   ];
-}
-
-function buildRegistryItem(item: ApiMapItem): RenderItem {
-  const primaryFileRef = item.fileRefs[0];
-  const ownerPath = primaryFileRef ? normalizeSourcePath(primaryFileRef.path) : "unknown";
-  return {
-    id: item.id,
-    title: item.title,
-    summary: item.purpose,
-    whyItExists: item.whyItExists,
-    problemSolved: item.problemSolved,
-    tag: item.tagType,
-    settingsGate: item.settingsGate,
-    ownerPath,
-    ownerFolderPath: getParentFolderPath(ownerPath),
-    ownerFileName: getFileName(ownerPath),
-    fileRefs: item.fileRefs.map(toRenderFileRef),
-    details: buildRegistryDetails(item.id, item.subItems),
-    dataSource: item.dataSource,
-    codeSource: item.codeSource,
-    codeSourceLabel: item.codeSourceLabel,
-    promptViewEnabled: item.promptViewEnabled,
-    crossRefs: item.crossRefs?.map((ref) => ({
-      badge: ref.badge,
-      targetId: ref.targetItemId,
-      label: ref.label,
-      tooltip: ref.tooltip,
-    })),
-  };
-}
-
-function buildRegistryGroup(scopeId: string, section: ApiMapSection): RenderGroup {
-  const items = section.items.map(buildRegistryItem);
-  const fallbackDescription = buildOwnerGroupDescription(section.title, items);
-  return {
-    id: `${scopeId}::${section.id}`,
-    title: section.title,
-    description: normalizeGroupDescription(section.description) || fallbackDescription,
-    defaultOpen: section.defaultOpen ?? true,
-    items,
-  };
-}
-
-function buildRegistryPhase(parentPhase: ApiMapPhase): RenderPhase {
-  const parentTitle = normalizePhaseTitle(parentPhase.title).replace(/^Phase\s+\d+\s*-\s*/i, "").trim();
-  return {
-    id: parentPhase.id,
-    title: normalizePhaseTitle(parentPhase.title),
-    subtitle: normalizeGroupDescription(parentPhase.subtitle),
-    defaultOpen: parentPhase.defaultOpen ?? true,
-    groups: parentPhase.sections.map((section) => buildRegistryGroup(parentPhase.id, section)),
-  };
 }
 
 function buildLiveDetails(itemId: string, item: ApiInspectorItem): RenderDetail[] {
@@ -2092,18 +2015,10 @@ function buildAuditItem(group: { id: string; title: string }, container: PhaseOn
   };
 }
 
-function buildAuditShell(): RenderShell {
-  return {
-    id: "phase-1-gap-map",
-    kicker: "Phase 1 Gap Map",
-    title: "Field-by-Field Prompt Coverage Audit",
-    subtitle:
-      "Code-truth audit of which Story Builder and Character Builder fields actually land in API Call 1, which are once-only, and which are handled outside the recurring prompt.",
-    navLabel: "Phase 1 Gap Map",
-    navSubtitle: "Story/character field coverage",
-    phases: phaseOneAuditGroups.map((group, index) => ({
+function buildAuditPhases(): RenderPhase[] {
+  return phaseOneAuditGroups.map((group, index) => ({
       id: `phase1-audit::${group.id}`,
-      title: `Audit ${index + 1} - ${group.title}`,
+      title: `Coverage Audit ${index + 1} - ${group.title}`,
       subtitle: group.description,
       defaultOpen: true,
       groups: [
@@ -2115,8 +2030,7 @@ function buildAuditShell(): RenderShell {
           items: group.containers.map((container) => buildAuditItem(group, container)),
         },
       ],
-    })),
-  };
+    }));
 }
 
 function getRequiredLiveSection(id: string): ApiInspectorSection {
@@ -2127,63 +2041,40 @@ function getRequiredLiveSection(id: string): ApiInspectorSection {
   return section;
 }
 
-function getRequiredRegistryPhase(id: string): ApiMapPhase {
-  const phase = apiInspectorMapRegistry.phases.find((entry) => entry.id === id);
-  if (!phase) {
-    throw new Error(`Missing API inspector registry phase: ${id}`);
-  }
-  return phase;
-}
-
 function buildInspectorModel(): InspectorModel {
   const shells: RenderShell[] = [];
 
-  const call1Meta = getRequiredLiveSection("api-call-1");
+  const liveChat = getRequiredLiveSection(LIVE_CHAT_SECTION_ID);
   shells.push({
-    id: call1Meta.id,
-    kicker: call1Meta.kicker,
-    title: call1Meta.title,
-    subtitle: call1Meta.description,
-    navLabel: call1Meta.navLabel,
-    navSubtitle: call1Meta.navSubtitle,
-    phases: API_CALL_1_REGISTRY_PHASE_IDS.map((phaseId) => buildRegistryPhase(getRequiredRegistryPhase(phaseId))),
+    id: liveChat.id,
+    kicker: liveChat.kicker,
+    title: liveChat.title,
+    subtitle: liveChat.description,
+    navLabel: liveChat.navLabel,
+    navSubtitle: liveChat.navSubtitle,
+    phases: liveChat.phases.map((phase) => buildLivePhase(liveChat.id, phase)),
   });
 
-  shells.push(buildAuditShell());
-
+  const supporting = getRequiredLiveSection(SUPPORTING_SECTION_ID);
   shells.push({
-    id: "api-call-2-shell",
-    kicker: "API Call 2",
-    title: "Post-Response Stateful Extraction",
-    subtitle:
-      "Memory writes, character-state extraction, stale-result protection, and post-turn continuity updates after the streamed assistant response lands.",
-    navLabel: "API Call 2",
-    navSubtitle: "Post-response processing",
-    phases: API_CALL_2_REGISTRY_PHASE_IDS.map((phaseId) => buildRegistryPhase(getRequiredRegistryPhase(phaseId))),
+    id: supporting.id,
+    kicker: supporting.kicker,
+    title: supporting.title,
+    subtitle: supporting.description,
+    navLabel: supporting.navLabel,
+    navSubtitle: supporting.navSubtitle,
+    phases: [...buildAuditPhases(), ...supporting.phases.map((phase) => buildLivePhase(supporting.id, phase))],
   });
 
+  const adjacent = getRequiredLiveSection(ADJACENT_SECTION_ID);
   shells.push({
-    id: "api-call-3-shell",
-    kicker: "API Call 3",
-    title: "Supporting Generation + Enhance Lanes",
-    subtitle:
-      "Image-generation and authoring-assist flows that sit outside the paid narrative request but still call shared chat/image backends.",
-    navLabel: "API Call 3",
-    navSubtitle: "Images + authoring assists",
-    phases: API_CALL_3_REGISTRY_PHASE_IDS.map((phaseId) => buildRegistryPhase(getRequiredRegistryPhase(phaseId))),
-  });
-
-  LIVE_SECTION_ORDER.forEach((sectionId) => {
-    const section = getRequiredLiveSection(sectionId);
-    shells.push({
-      id: section.id,
-      kicker: section.kicker,
-      title: section.title,
-      subtitle: section.description,
-      navLabel: section.navLabel,
-      navSubtitle: section.navSubtitle,
-      phases: section.phases.map((phase) => buildLivePhase(section.id, phase)),
-    });
+    id: adjacent.id,
+    kicker: adjacent.kicker,
+    title: adjacent.title,
+    subtitle: adjacent.description,
+    navLabel: adjacent.navLabel,
+    navSubtitle: adjacent.navSubtitle,
+    phases: adjacent.phases.map((phase) => buildLivePhase(adjacent.id, phase)),
   });
 
   const anchorLookup = new Map<string, AnchorContext>();
@@ -2241,7 +2132,7 @@ function Legend({ open }: { open: boolean }) {
     <div id="legend" className={`legend ${open ? "open" : ""}`.trim()}>
       <div className="legend-shell">
         <div className="legend-shell-header">
-          <h3 className="legend-shell-title">API Inspector Page Legend</h3>
+          <h3 className="legend-shell-title">Roleplay Pipeline Legend</h3>
         </div>
 
         <div className="legend-shell-body">
@@ -2252,17 +2143,16 @@ function Legend({ open }: { open: boolean }) {
 
               <div className="legend-definition-grid">
                 <div className="legend-definition-item">
-                  <span className="tag-dark api-call">API Call</span>
+                  <span className="tag-dark api-call">Shell Header</span>
                   <p className="legend-definition-copy">
-                    Top-level shell for one runtime family, such as the paid narrative request, post-turn extraction,
-                    image generation, or admin support lanes.
+                    Top-level container for one major roleplay lane, such as the live chat turn loop, supporting
+                    continuity systems, or adjacent chat-side AI tools.
                   </p>
                 </div>
                 <div className="legend-definition-item">
                   <span className="tag-dark code-logic">Phase Header</span>
                   <p className="legend-definition-copy">
-                    Large headline rows break each shell into ordered phases so you can follow the request chain from
-                    trigger to post-write behavior.
+                    Large headline rows break a shell into the key steps or system groups that matter for roleplay behavior.
                   </p>
                 </div>
                 <div className="legend-definition-item">
@@ -2309,16 +2199,16 @@ function Legend({ open }: { open: boolean }) {
                     <span>Settings Cog</span>
                   </div>
                   <p className="legend-signal-copy">
-                    Marks a conditional lane that only fires for a specific toggle, mode, button path, admin tool,
-                    provider setting, or optional follow-up chain.
+                    Marks a conditional lane that only fires for a specific toggle, mode, button path, provider setting,
+                    or optional follow-up chain.
                   </p>
                 </div>
 
                 <div className="legend-signal-item">
                   <div className="legend-signal-label">Cross Refs</div>
                   <p className="legend-signal-copy">
-                    Purple chips jump to the connected card when one phase creates something another phase later sends,
-                    consumes, retries, or persists.
+                    Purple chips jump to the connected card when one phase or support lane creates something another
+                    later sends, consumes, retries, or persists.
                   </p>
                 </div>
 
@@ -2819,7 +2709,7 @@ const ApiInspectorPage: React.FC = () => {
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <h1>API Inspector</h1>
+        <h1>Roleplay Pipeline</h1>
         <button
           className="legend-toggle-btn"
           type="button"
@@ -2832,7 +2722,7 @@ const ApiInspectorPage: React.FC = () => {
       </div>
 
       <div className="page-shell">
-        <aside className="nav-rail-shell" aria-label="API inspector navigation">
+        <aside className="nav-rail-shell" aria-label="Roleplay pipeline navigation">
           <div className="nav-rail-body" ref={navRailRef}>
             <button
               type="button"
@@ -2840,7 +2730,7 @@ const ApiInspectorPage: React.FC = () => {
               data-nav-id={ROOT_ID}
               onClick={() => jumpTo(ROOT_ID)}
             >
-              API Inspector
+              Roleplay Pipeline
             </button>
 
             <div className="nav-section-stack">
