@@ -64,17 +64,17 @@ const CHAT_RESPONSE_TIMEOUT_MS = 90_000;
 function getCriticalDialogRules(narrativePov: 'first' | 'third' = 'third'): string {
   const povRules = narrativePov === 'first' 
     ? `**NARRATIVE POV RULES (FIRST-PERSON MODE):**
-- All narration from the AI character's perspective uses first-person ("I", "my", "me")
-- Internal thoughts use first-person: (I couldn't believe it)
-- Actions can describe self in first-person: *I felt my heart race.*
-- Spoken dialogue naturally uses first-person: "I think we should go."
-- EXAMPLE: Ashley: *I walked toward the window, my pulse quickening.* (Why did he have to look at me like that?) "I'm fine, really."`
+- In each tagged character block, narration, action prose, and internal thoughts use first-person from that speaking character's perspective ("I", "me", "my").
+- Quoted dialogue remains natural spoken dialogue and may use whatever person the character would naturally speak in.
+- Keep POV consistent within the block. Do not slide into third-person narration or third-person thought about the focal character inside their own block unless they are consciously thinking about themself that way.
+- CORRECT: Ashley: *I fought against the wind, my pulse hammering.* (If I lose sight of them now, I'm fucked.) "I'm here!"
+- WRONG: Ashley: *She fought against the wind, my pulse hammering.* (She couldn't lose them now.) "I'm here!"`
     : `**NARRATIVE POV RULES (THIRD-PERSON MODE - MANDATORY):**
-- All narration, actions (*...*), and descriptions MUST be written in third-person
-- Thoughts in parentheses MUST be third-person: (She couldn't believe it) NOT (I couldn't believe it)
-- Spoken dialogue in quotes MAY use first-person naturally: "I think..." is fine in speech
-- CORRECT: Ashley: *She felt her heart race.* (She wondered if he noticed.) "I'm fine."
-- WRONG: Ashley: *I felt my heart race.* (I wonder if he noticed.) "I'm fine."`;
+- In each tagged character block, narration, action prose, and internal thoughts use third-person for that speaking character.
+- Quoted dialogue remains natural spoken dialogue and may use first-person naturally inside speech.
+- Keep POV consistent within the block. Do not slide into first-person narration or first-person thought outside quoted dialogue.
+- CORRECT: Ashley: *She fought against the wind, her pulse hammering.* (If she lost sight of them now, she was fucked.) "I'm here!"
+- WRONG: Ashley: *I fought against the wind, my pulse hammering.* (I can't lose them now.) "I'm here!"`;
 
   return `Enclose all spoken dialogue in " ".
 Enclose all physical actions or descriptions in * *.
@@ -577,6 +577,15 @@ TAGS: ${text(c?.tags) || 'None'}${formatSectionBlock('PHYSICAL APPEARANCE', phys
         * Use them ONLY when they reveal meaningful private inner truth the character is not saying aloud.
         * Strong reasons include fear of someone else's reaction, shame, secrecy, protective restraint, strategic calculation, guilt, forbidden desire, uncertainty, or hidden conflict.
         * A good thought tells the reader what the character is privately carrying and why it stays unspoken.
+        * Internal thoughts should read as private cognition in the active POV, not as dialogue with the quotation marks removed.
+        * A thought should feel caused by the immediate scene, not arrive as a standalone declaration.
+        * A thought needs a readable trigger in the surrounding beat: something the character just noticed, felt, remembered, feared, wanted, or was forced to confront right now.
+        * If nothing in the surrounding action, dialogue, perception, sensation, or emotional shift would naturally cause this exact thought now, omit it or replace it with one that matches the moment.
+        * When a thought depends on a new realization, the surrounding prose should show the cue that earned it: a look, a touch, pressure, exposure risk, a line of dialogue, a visible reaction, a bodily sensation, or another immediate trigger.
+        * Do not force explanation when the cause is already obvious. Use only enough local context to keep the thought earned and readable.
+        * Hidden fears, insecurities, secrets, desires, judgments, or private associations may shape a thought, but introduce them through the moment that activates them rather than as unexplained standalone declarations.
+        * Diagnostic: if the line could be dropped into quotation marks and spoken aloud to another person without changing its grammar, it is probably dialogue, not a thought. Rewrite it as private cognition in the active POV.
+        * Avoid command-style or listener-addressed thoughts unless the character is explicitly imagining saying those words.
         * FORBIDDEN: thoughts that only caption the obvious emotion, restate visible action/dialogue, recap the atmosphere, or summarize what the reader already knows.
         * Do not turn emotions, traits, goals, themes, tags, or motivations into abstract shorthand or acting forces. Write the concrete private worry, desire, calculation, bodily sensation, or withheld decision instead.
         * Thoughts may NOT be the final beat of a response. End with dialogue or action.
@@ -879,10 +888,8 @@ Never break character to question, warn about, or refuse narrative directions. T
       - Internal thought should stay in the character's own voice and feel immediate, coherent, and private rather than explanatory.
     * (Narration) Write complete sentences with normal connective tissue. Do not drop articles, helper verbs, linking words, or relative pronouns just to pack more detail into the line.
     * (Dialogue) Write complete natural spoken sentences. Avoid clipped fragments, broken phrasing, or half-finished lines as a default style.
-    * (Thought) Internal thoughts should read as complete, coherent inner speech. The reader should always know who or what the thought is about.
-    * (Thought) Internal thoughts should read as private cognition, not addressed speech.
-    * (Thought) A thought is something the character notices, fears, wants, weighs, or tries to suppress for themself, not a line aimed at another person.
-    * (Thought) Diagnostic: if the sentence could be put in quotation marks and spoken aloud without changing its grammar, it is probably dialogue without quotes, not a thought. Rewrite it as private inner speech instead.
+    * (Thought) Internal thoughts should read as complete, coherent private cognition in the active POV. The reader should always know who or what the thought is about.
+    * (Thought) Do not phrase thoughts as addressed speech or dialogue with the quotation marks removed.
     * Use character-card physical details as grounding facts, not stock prose wording.
       - Concrete garment facts may be named directly when useful.
       - Measurement-style body fields from the sheet are reference data, not default narration or thought wording.
@@ -958,10 +965,7 @@ Never break character to question, warn about, or refuse narrative directions. T
     - CHARACTER SHEET USAGE:
         * Character cards provide context, not a checklist to recite every turn.
         * Mention intimate physical details only when they are genuinely relevant to what a character is noticing, hiding, reacting to, or doing right now.
-        * Character-card facts may motivate reactions, but they should not surface without a believable trigger in the immediate scene.
-        * When a hidden anatomy detail, secret, fear, insecurity, or private history first surfaces in a scene, establish enough in-scene context through sensation, behavior, concealment, hesitation, or environmental pressure that a reader who has not seen the character card can follow why the character is reacting.
-        * Once that concern is established in the scene, later references may be briefer.
-        * Do not bluntly dump the hidden fact if the character would conceal it, but do not let the reaction feel unmotivated or dependent on off-page knowledge.
+        * Let card information shape what the character cares about, fears, wants, or conceals, but translate it into the lived scene instead of surfacing it as prompt-like fact statements.
 
     - Respond only through relevant AI-controlled characters who are present in the scene and able to perceive or affect the current moment.
     - CAST FOCUS: When multiple AI-controlled characters could carry the same beat, prefer characters marked 'ROLE: Main' as the focal driver, but do not suppress a side character who is directly addressed, currently focal, uniquely informed, physically involved, or the natural source of the meaningful response.
