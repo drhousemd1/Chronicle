@@ -17,6 +17,8 @@ import type {
   StoryGoalStepDerivation,
   TimeOfDay,
 } from '@/types';
+import type { DialogDebugComment } from '@/features/chat-debug/types';
+import { normalizeDialogDebugTags } from '@/features/chat-debug/types';
 import {
   asCharacterBackground,
   asCharacterPersonality,
@@ -33,6 +35,11 @@ import {
   supabase,
   toTimestamp,
 } from './shared';
+
+function buildDialogDebugCommentKey(messageId: string, generationId?: string | null): string {
+  const stableGenerationId = generationId || messageId;
+  return `${messageId}:${stableGenerationId}`;
+}
 
 export function dbToConversation(row: any, messages: any[]): Conversation {
   return {
@@ -304,6 +311,79 @@ export async function renameConversation(id: string, newTitle: string): Promise<
     .from('conversations')
     .update({ title: newTitle })
     .eq('id', id);
+
+  if (error) throw error;
+}
+
+function dbToDialogDebugComment(row: any): DialogDebugComment {
+  return {
+    messageId: row.message_id,
+    generationId: row.generation_id || row.message_id,
+    note: row.note || '',
+    tags: normalizeDialogDebugTags(row.tags),
+    createdAt: toTimestamp(row.created_at),
+    updatedAt: toTimestamp(row.updated_at),
+  };
+}
+
+export async function fetchConversationDialogDebugComments(
+  conversationId: string,
+): Promise<Record<string, DialogDebugComment>> {
+  const { data, error } = await supabase
+    .from('conversation_dialog_debug_comments')
+    .select('*')
+    .eq('conversation_id', conversationId)
+    .order('updated_at', { ascending: true });
+
+  if (error) throw error;
+
+  return Object.fromEntries(
+    (data || []).map((row) => {
+      const comment = dbToDialogDebugComment(row);
+      return [buildDialogDebugCommentKey(comment.messageId, comment.generationId), comment];
+    }),
+  );
+}
+
+export async function upsertConversationDialogDebugComments(
+  input: {
+    conversationId: string;
+    userId: string;
+    comments: DialogDebugComment[];
+  },
+): Promise<void> {
+  if (input.comments.length === 0) return;
+
+  const { error } = await supabase
+    .from('conversation_dialog_debug_comments')
+    .upsert(
+      input.comments.map((comment) => ({
+        conversation_id: input.conversationId,
+        user_id: input.userId,
+        message_id: comment.messageId,
+        generation_id: comment.generationId || comment.messageId,
+        note: comment.note,
+        tags: comment.tags,
+        created_at: new Date(comment.createdAt).toISOString(),
+      })),
+      { onConflict: 'conversation_id,message_id,generation_id' },
+    );
+
+  if (error) throw error;
+}
+
+export async function deleteConversationDialogDebugComment(
+  conversationId: string,
+  messageId: string,
+  generationId?: string | null,
+): Promise<void> {
+  const stableGenerationId = generationId || messageId;
+  const { error } = await supabase
+    .from('conversation_dialog_debug_comments')
+    .delete()
+    .eq('conversation_id', conversationId)
+    .eq('message_id', messageId)
+    .eq('generation_id', stableGenerationId);
 
   if (error) throw error;
 }

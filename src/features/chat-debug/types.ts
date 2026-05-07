@@ -16,8 +16,19 @@ export const CHAT_DEBUG_ISSUE_TAGS = [
 
 export type ChatDebugIssueTag = (typeof CHAT_DEBUG_ISSUE_TAGS)[number];
 
+export function isChatDebugIssueTag(value: unknown): value is ChatDebugIssueTag {
+  return typeof value === 'string' && CHAT_DEBUG_ISSUE_TAGS.includes(value as ChatDebugIssueTag);
+}
+
+export function normalizeDialogDebugTags(tags: unknown): ChatDebugIssueTag[] {
+  if (!Array.isArray(tags)) return [];
+  const selected = new Set(tags.filter(isChatDebugIssueTag));
+  return CHAT_DEBUG_ISSUE_TAGS.filter((tag) => selected.has(tag));
+}
+
 export type DialogDebugComment = {
   messageId: string;
+  generationId: string;
   note: string;
   tags: ChatDebugIssueTag[];
   createdAt: number;

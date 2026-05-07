@@ -4774,6 +4774,26 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260506-001",
+      title: "Add Alpha tier for pre-Stripe tester account tracking",
+      summary: "Finance User Management - New non-admin accounts now default to Alpha so early testers are visible without paid billing or admin access",
+      severity: "feature" as const,
+      status: "completed" as const,
+      problem: "Before Stripe is configured, new external tester accounts had no meaningful temporary tier in the Finance Dashboard. Non-admin users could fall back to Free, which made it harder to distinguish real alpha testers from future subscription tiers during pre-launch testing.",
+      plan: "Add a lightweight Alpha account tier inside Finance Dashboard user management only. Keep it non-billing, non-admin, manually editable, and compatible with the existing tier override storage in app_settings.",
+      changes: "Updated `src/components/admin/finance/FinanceDashboardTool.tsx`:\n- Added `alpha` to finance user-tier normalization, labels, badges, and default tier prices at $0.\n- Made non-admin profiles with no override/role default to Alpha instead of Free.\n- Added Alpha to the user tier Modify dropdown so admins can switch users back to Alpha after testing role changes.\n- Added Alpha to the Active Users breakdown tile while preserving Admin and Admin (CFO) access behavior.\n- Displayed Alpha accounts as `Alpha Testing (No Billing)` in the User Accounts table.",
+      filesAffected: [
+        "src/components/admin/finance/FinanceDashboardTool.tsx",
+        "src/data/ui-audit-findings.ts"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["finance-dashboard", "user-management", "alpha-testing", "tiers", "pre-stripe"],
+      comments: [],
+      createdAt: "2026-05-06T20:30:00.000Z",
+      updatedAt: "2026-05-06T20:30:00.000Z",
+    },
+    {
       id: "cl-20260502-001",
       title: "Refactor roleplay prompt hierarchy and de-tacticalize writer guidance",
       summary: "Chat Runtime - Reweighted the always-sent prompt so early writing/anti-leak rules stop losing to raw goal/card wording, and softened the writer-only guidance so it stops teaching planner/checklist language that can bleed into dialogue",

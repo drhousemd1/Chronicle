@@ -55,6 +55,22 @@ describe('chat spellcheck helpers', () => {
     'anxious',
     'tension',
     'protective',
+    'look',
+    'notice',
+    'grab',
+    'begin',
+    'approach',
+    'open',
+    'slam',
+    'place',
+    'breast',
+    'blush',
+    'nudge',
+    'okay',
+    'back',
+    'while',
+    'and',
+    'door',
   ]);
 
   it('treats allowlisted Chronicle names as valid words', () => {
@@ -101,5 +117,30 @@ describe('chat spellcheck helpers', () => {
   it('offers close spelling suggestions without changing punctuation policy', () => {
     const suggestions = getSpellingSuggestions('teh', dictionary, new Set<string>());
     expect(suggestions[0]).toBe('the');
+  });
+
+  it('accepts common inflected forms when the base word exists', () => {
+    const allowlist = new Set<string>();
+    expect(isCorrectWord('looked', dictionary, allowlist)).toBe(true);
+    expect(isCorrectWord('grabbing', dictionary, allowlist)).toBe(true);
+    expect(isCorrectWord('placed', dictionary, allowlist)).toBe(true);
+    expect(isCorrectWord('breasts', dictionary, allowlist)).toBe(true);
+  });
+
+  it('accepts common chat profanity and slang without treating them as typos', () => {
+    const allowlist = new Set<string>();
+    expect(isCorrectWord('fucking', dictionary, allowlist)).toBe(true);
+    expect(isCorrectWord('okay', dictionary, allowlist)).toBe(true);
+  });
+
+  it('does not over-flag normal scene prose that only uses common inflections', () => {
+    const allowlist = buildChatSpellAllowlist(['James', 'Ashley', 'Sarah']);
+    const misspellings = extractMisspelledRanges(
+      'James looked back, noticing Ashley while Sarah approached and began nudging the door open.',
+      dictionary,
+      allowlist,
+    );
+
+    expect(misspellings).toEqual([]);
   });
 });

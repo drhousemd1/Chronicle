@@ -2,6 +2,88 @@ const WORD_REGEX = /[A-Za-z]+(?:['’][A-Za-z]+)*/g;
 const MAX_SUGGESTION_DISTANCE = 2;
 const MAX_SUGGESTIONS = 5;
 const DICTIONARY_URL = '/spellcheck/en-words.txt';
+const BUILTIN_CHAT_WORDS = new Set([
+  'okay',
+  'ok',
+  'fuck',
+  'fucks',
+  'fucked',
+  'fucking',
+  'fucker',
+  'fuckers',
+  'motherfucker',
+  'motherfuckers',
+  'shit',
+  'shits',
+  'shitty',
+  'bullshit',
+  'damn',
+  'dammit',
+  'goddamn',
+  'goddammit',
+  'ass',
+  'asses',
+  'asshole',
+  'assholes',
+  'bitch',
+  'bitches',
+  'bastard',
+  'bastards',
+  'cock',
+  'cocks',
+  'dick',
+  'dicks',
+  'pussy',
+  'tits',
+  'tit',
+  'boob',
+  'boobs',
+  'breast',
+  'breasts',
+  'cum',
+  'cumming',
+  'wanna',
+  'gonna',
+  'gotta',
+  'kinda',
+  'lemme',
+]);
+
+const IRREGULAR_WORD_BASES: Record<string, string[]> = {
+  began: ['begin'],
+  begun: ['begin'],
+  gone: ['go'],
+  went: ['go'],
+  done: ['do'],
+  came: ['come'],
+  saw: ['see'],
+  seen: ['see'],
+  felt: ['feel'],
+  kept: ['keep'],
+  left: ['leave'],
+  lost: ['lose'],
+  found: ['find'],
+  thought: ['think'],
+  bought: ['buy'],
+  brought: ['bring'],
+  caught: ['catch'],
+  told: ['tell'],
+  sold: ['sell'],
+  made: ['make'],
+  took: ['take'],
+  taken: ['take'],
+  gave: ['give'],
+  given: ['give'],
+  knew: ['know'],
+  known: ['know'],
+  grew: ['grow'],
+  grown: ['grow'],
+  wrote: ['write'],
+  written: ['write'],
+  ran: ['run'],
+  spoken: ['speak'],
+  spoke: ['speak'],
+};
 
 export type SpellcheckDictionary = {
   words: Set<string>;
@@ -23,6 +105,89 @@ let dictionaryPromise: Promise<SpellcheckDictionary> | null = null;
 
 export function normalizeSpellToken(word: string): string {
   return word.trim().toLowerCase().replace(/’/g, "'");
+}
+
+function hasDictionaryWord(word: string, dictionary: SpellcheckDictionary): boolean {
+  return dictionary.words.has(word) || BUILTIN_CHAT_WORDS.has(word);
+}
+
+function buildMorphologyCandidates(normalized: string): Set<string> {
+  const candidates = new Set<string>();
+  const add = (value: string | undefined) => {
+    if (value && value.length >= 2) candidates.add(value);
+  };
+
+  add(normalized.replace(/'/g, ''));
+  if (normalized.endsWith("'s")) {
+    add(normalized.slice(0, -2));
+  }
+
+  for (const irregular of IRREGULAR_WORD_BASES[normalized] ?? []) {
+    add(irregular);
+  }
+
+  if (normalized.endsWith('ies') && normalized.length > 4) {
+    add(`${normalized.slice(0, -3)}y`);
+  }
+
+  if (normalized.endsWith('es') && normalized.length > 4) {
+    add(normalized.slice(0, -2));
+  }
+
+  if (normalized.endsWith('s') && normalized.length > 3) {
+    add(normalized.slice(0, -1));
+  }
+
+  if (normalized.endsWith('ied') && normalized.length > 4) {
+    add(`${normalized.slice(0, -3)}y`);
+  }
+
+  if (normalized.endsWith('ed') && normalized.length > 4) {
+    const stem = normalized.slice(0, -2);
+    add(stem);
+    add(`${stem}e`);
+    if (stem.length > 2 && stem.at(-1) === stem.at(-2)) {
+      add(stem.slice(0, -1));
+    }
+    if (stem.endsWith('e')) {
+      add(stem.slice(0, -1));
+    }
+  }
+
+  if (normalized.endsWith('ing') && normalized.length > 5) {
+    const stem = normalized.slice(0, -3);
+    add(stem);
+    add(`${stem}e`);
+    if (stem.length > 2 && stem.at(-1) === stem.at(-2)) {
+      add(stem.slice(0, -1));
+    }
+  }
+
+  if (normalized.endsWith('ly') && normalized.length > 4) {
+    const stem = normalized.slice(0, -2);
+    add(stem);
+    add(`${stem}e`);
+  }
+
+  if (normalized.endsWith('er') && normalized.length > 4) {
+    const stem = normalized.slice(0, -2);
+    add(stem);
+    add(`${stem}e`);
+    if (stem.length > 2 && stem.at(-1) === stem.at(-2)) {
+      add(stem.slice(0, -1));
+    }
+  }
+
+  if (normalized.endsWith('est') && normalized.length > 5) {
+    const stem = normalized.slice(0, -3);
+    add(stem);
+    add(`${stem}e`);
+    if (stem.length > 2 && stem.at(-1) === stem.at(-2)) {
+      add(stem.slice(0, -1));
+    }
+  }
+
+  return candidates;
 }
 
 function titleCaseWord(word: string): string {
@@ -172,7 +337,16 @@ export function isCorrectWord(
 ): boolean {
   const normalized = normalizeSpellToken(rawWord);
   if (shouldSkipSpellcheckToken(rawWord, allowlist)) return true;
-  return dictionary.words.has(normalized);
+  if (allowlist.has(normalized)) return true;
+  if (hasDictionaryWord(normalized, dictionary)) return true;
+
+  for (const candidate of buildMorphologyCandidates(normalized)) {
+    if (allowlist.has(candidate) || hasDictionaryWord(candidate, dictionary)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 export function extractMisspelledRanges(

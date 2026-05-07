@@ -64,12 +64,14 @@ import {
 } from '@/services/api-usage-validation';
 import {
   CHAT_DEBUG_ISSUE_TAGS,
+  normalizeDialogDebugTags,
   type ChatDebugIssueTag,
   type ChatDebugTrace,
   type DialogDebugComment,
   type StoredChatDebugTraceMap,
 } from '@/features/chat-debug/types';
 import {
+  buildDialogDebugCommentKey,
   loadChatDebugTraceStore,
   persistChatDebugTraceStore,
   upsertChatDebugTrace,
@@ -119,17 +121,72 @@ function buildDialogDebugCommentsStorageKey(scenarioId: string, conversationId: 
   return `chronicle_dialog_debug_comments_v1:${scenarioId}:${conversationId}`;
 }
 
-function isChatDebugIssueTag(value: unknown): value is ChatDebugIssueTag {
-  return typeof value === 'string' && CHAT_DEBUG_ISSUE_TAGS.includes(value as ChatDebugIssueTag);
+function buildConversationMessageGenerationMap(messages: Message[]): Map<string, string> {
+  return new Map(
+    messages.map((message) => [message.id, message.generationId || message.id]),
+  );
 }
 
-function normalizeDialogDebugTags(tags: unknown): ChatDebugIssueTag[] {
-  if (!Array.isArray(tags)) return [];
-  const selected = new Set(tags.filter(isChatDebugIssueTag));
-  return CHAT_DEBUG_ISSUE_TAGS.filter((tag) => selected.has(tag));
+function mergeDialogDebugComments(
+  ...sources: Array<Record<string, DialogDebugComment>>
+): Record<string, DialogDebugComment> {
+  const merged = new Map<string, DialogDebugComment>();
+
+  for (const source of sources) {
+    for (const [key, comment] of Object.entries(source)) {
+      const existing = merged.get(key);
+      if (!existing || comment.updatedAt >= existing.updatedAt) {
+        merged.set(key, comment);
+      }
+    }
+  }
+
+  return Object.fromEntries(merged.entries());
 }
 
-function loadDialogDebugComments(scenarioId: string, conversationId: string): Record<string, DialogDebugComment> {
+function stripDialogDebugCommentsForMessage(
+  comments: Record<string, DialogDebugComment>,
+  messageId: string,
+): Record<string, DialogDebugComment> {
+  return Object.fromEntries(
+    Object.entries(comments).filter(([, comment]) => comment.messageId !== messageId),
+  );
+}
+
+function dialogDebugCommentsEqual(
+  left: Record<string, DialogDebugComment>,
+  right: Record<string, DialogDebugComment>,
+): boolean {
+  const leftKeys = Object.keys(left).sort();
+  const rightKeys = Object.keys(right).sort();
+  if (leftKeys.length !== rightKeys.length) return false;
+  return leftKeys.every((key, index) => {
+    if (key !== rightKeys[index]) return false;
+    const leftComment = left[key];
+    const rightComment = right[key];
+    return JSON.stringify(leftComment) === JSON.stringify(rightComment);
+  });
+}
+
+function buildExportDialogDebugComments(
+  comments: Record<string, DialogDebugComment>,
+  messages: Message[],
+): Record<string, DialogDebugComment> {
+  return Object.fromEntries(
+    messages.flatMap((message) => {
+      const key = buildDialogDebugCommentKey(message.id, message.generationId);
+      const comment = comments[key];
+      return comment ? [[message.id, comment] as const] : [];
+    }),
+  );
+}
+
+function loadDialogDebugComments(
+  scenarioId: string,
+  conversationId: string,
+  messages: Message[],
+): Record<string, DialogDebugComment> {
+  const generationMap = buildConversationMessageGenerationMap(messages);
   try {
     const raw = window.localStorage.getItem(buildDialogDebugCommentsStorageKey(scenarioId, conversationId));
     if (!raw) return {};
@@ -145,13 +202,25 @@ function loadDialogDebugComments(scenarioId: string, conversationId: string): Re
           || normalizeDialogDebugTags(comment.tags).length > 0
         )
       ))
-      .map(([messageId, comment]) => [
-        messageId,
-        {
+      .map(([storedKey, comment]) => {
+        const messageId = typeof comment.messageId === 'string'
+          ? comment.messageId
+          : storedKey.split(':', 1)[0];
+        const generationId = typeof comment.generationId === 'string' && comment.generationId.trim().length > 0
+          ? comment.generationId
+          : generationMap.get(messageId) || messageId;
+        const normalized: DialogDebugComment = {
           ...comment,
+          messageId,
+          generationId,
           tags: normalizeDialogDebugTags(comment.tags),
-        },
-      ])
+          createdAt: typeof comment.createdAt === 'number' ? comment.createdAt : Date.now(),
+          updatedAt: typeof comment.updatedAt === 'number'
+            ? comment.updatedAt
+            : (typeof comment.createdAt === 'number' ? comment.createdAt : Date.now()),
+        };
+        return [buildDialogDebugCommentKey(messageId, generationId), normalized] as const;
+      })
     );
   } catch {
     return {};
@@ -897,13 +966,53 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       return;
     }
 
+    const currentConversation = appData.conversations.find((entry) => entry.id === conversationId);
+    const localComments = loadDialogDebugComments(
+      scenarioId,
+      conversationId,
+      currentConversation?.messages || [],
+    );
+
     try {
       setDialogDebugEnabled(window.localStorage.getItem(DIALOG_DEBUG_ENABLED_STORAGE_KEY) === 'true');
     } catch {
       setDialogDebugEnabled(false);
     }
-    setDialogDebugComments(loadDialogDebugComments(scenarioId, conversationId));
-  }, [conversationId, isAdmin, scenarioId]);
+    setDialogDebugComments(localComments);
+
+    if (!user?.id) {
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const remoteComments = await supabaseData.fetchConversationDialogDebugComments(conversationId);
+        if (cancelled) return;
+
+        const mergedComments = mergeDialogDebugComments(remoteComments, localComments);
+        setDialogDebugComments(mergedComments);
+
+        if (!dialogDebugCommentsEqual(localComments, mergedComments)) {
+          saveDialogDebugComments(scenarioId, conversationId, mergedComments);
+        }
+
+        if (!dialogDebugCommentsEqual(remoteComments, mergedComments)) {
+          await supabaseData.upsertConversationDialogDebugComments({
+            conversationId,
+            userId: user.id,
+            comments: Object.values(mergedComments),
+          });
+        }
+      } catch (error) {
+        console.error('[dialogDebugComments] Failed to load persisted playthrough notes:', error);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [appData.conversations, conversationId, isAdmin, scenarioId, user?.id]);
 
   useEffect(() => {
     const characters = appData.characters;
@@ -951,6 +1060,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [canScrollDownMainChars, setCanScrollDownMainChars] = useState(true);
   const mainCharsScrollRef = useRef<HTMLDivElement>(null);
   const conversation = appData.conversations.find(c => c.id === conversationId);
+  const exportDialogDebugComments = useMemo(
+    () => buildExportDialogDebugComments(dialogDebugComments, conversation?.messages || []),
+    [conversation?.messages, dialogDebugComments],
+  );
 
   const saveChatDebugTrace = useCallback((message: Message, trace: ChatDebugTrace | null) => {
     if (!isAdmin || !trace) return;
@@ -4088,7 +4201,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   };
 
   const openDialogDebugComment = (message: Message) => {
-    const existing = dialogDebugComments[message.id];
+    const existing = dialogDebugComments[buildDialogDebugCommentKey(message.id, message.generationId)];
     setActiveDialogDebugMessage(message);
     setDialogDebugDraft(existing?.note || '');
     setDialogDebugTagDraft(existing?.tags || []);
@@ -4112,30 +4225,49 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     if (!activeDialogDebugMessage) return;
     const note = dialogDebugDraft.trim();
     const tags = normalizeDialogDebugTags(dialogDebugTagDraft);
-    const existing = dialogDebugComments[activeDialogDebugMessage.id];
+    const generationId = activeDialogDebugMessage.generationId || activeDialogDebugMessage.id;
+    const commentKey = buildDialogDebugCommentKey(activeDialogDebugMessage.id, generationId);
+    const existing = dialogDebugComments[commentKey];
     const nextComments = { ...dialogDebugComments };
 
     if (note || tags.length > 0) {
-      nextComments[activeDialogDebugMessage.id] = {
+      nextComments[commentKey] = {
         messageId: activeDialogDebugMessage.id,
+        generationId,
         note,
         tags,
         createdAt: existing?.createdAt || Date.now(),
         updatedAt: Date.now(),
       };
     } else {
-      delete nextComments[activeDialogDebugMessage.id];
+      delete nextComments[commentKey];
     }
 
     setDialogDebugComments(nextComments);
     saveDialogDebugComments(scenarioId, conversationId, nextComments);
+    if (user?.id) {
+      const nextComment = nextComments[commentKey];
+      const persistenceTask = nextComment
+        ? supabaseData.upsertConversationDialogDebugComments({
+            conversationId,
+            userId: user.id,
+            comments: [nextComment],
+          })
+        : supabaseData.deleteConversationDialogDebugComment(
+            conversationId,
+            activeDialogDebugMessage.id,
+            generationId,
+          );
+      Promise.resolve(persistenceTask).catch((error) => {
+        console.error('[dialogDebugComments] Failed to persist playthrough note:', error);
+      });
+    }
     closeDialogDebugComment();
   };
 
   const handleDeleteMessage = (messageId: string) => {
-    if (dialogDebugComments[messageId]) {
-      const nextComments = { ...dialogDebugComments };
-      delete nextComments[messageId];
+    const nextComments = stripDialogDebugCommentsForMessage(dialogDebugComments, messageId);
+    if (!dialogDebugCommentsEqual(nextComments, dialogDebugComments)) {
       setDialogDebugComments(nextComments);
       saveDialogDebugComments(scenarioId, conversationId, nextComments);
     }
@@ -5683,12 +5815,12 @@ const updatedChar: SideCharacter = {
                             onClick={() => openDialogDebugComment(msg)}
                             className={cn(
                               "p-2 rounded-lg hover:bg-ghost-white transition-colors",
-                              dialogDebugComments[msg.id]
+                              dialogDebugComments[buildDialogDebugCommentKey(msg.id, msg.generationId)]
                                 ? "text-emerald-300 hover:text-emerald-200"
                                 : "text-slate-400 hover:text-white"
                             )}
                             aria-label="Add dialogue debug note"
-                            title={dialogDebugComments[msg.id] ? "Edit dialogue debug note" : "Add dialogue debug note"}
+                            title={dialogDebugComments[buildDialogDebugCommentKey(msg.id, msg.generationId)] ? "Edit dialogue debug note" : "Add dialogue debug note"}
                           >
                             <MessageSquare className="w-4 h-4" />
                           </button>
@@ -6442,7 +6574,7 @@ const updatedChar: SideCharacter = {
                     <div className="flex items-center justify-between gap-2 bg-[#3c3e47] rounded-[10px] p-[12px_14px] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
                       <div>
                         <div className="text-[13px] font-semibold text-[#eaedf1]">Dialogue Debug Notes</div>
-                        <div className="text-[12px] text-[#a1a1aa] mt-0.5">Show comment buttons on chat bubbles for local QA notes</div>
+                        <div className="text-[12px] text-[#a1a1aa] mt-0.5">Show comment buttons on chat bubbles for playthrough QA notes</div>
                       </div>
                       <LabeledToggle
                         checked={dialogDebugEnabled}
@@ -6465,7 +6597,7 @@ const updatedChar: SideCharacter = {
                           continueMessageIds: continueEventsRef.current.map(e => e.messageId),
                           regenerateMessageIds: regenerateEventsRef.current.map(e => e.messageId),
                           sanitizeAssistantText: sanitizeAssistantMessageText,
-                          messageComments: dialogDebugComments,
+                          messageComments: exportDialogDebugComments,
                         });
                         const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
                         const url = URL.createObjectURL(blob);
@@ -6586,23 +6718,23 @@ const updatedChar: SideCharacter = {
           if (!open) closeDialogDebugComment();
         }}
       >
-        <DialogContent className="max-w-xl bg-[#1f222b] border border-[#3a4152] text-zinc-100">
+        <DialogContent className="max-w-3xl max-h-[88vh] flex flex-col overflow-hidden bg-[#1f222b] border border-[#3a4152] text-zinc-100">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold tracking-tight">Dialogue Debug Note</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="flex-1 min-h-0 space-y-4 overflow-y-auto pr-1">
             <div className="rounded-xl border border-white/10 bg-black/20 p-3">
               <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#78dcca] mb-2">
                 Message preview
               </p>
-              <p className="max-h-32 overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed text-zinc-300">
+              <div className="max-h-[42vh] min-h-[240px] overflow-y-auto rounded-lg border border-white/5 bg-black/10 p-3 whitespace-pre-wrap text-sm leading-relaxed text-zinc-300">
                 {activeDialogDebugMessage
                   ? (activeDialogDebugMessage.role === 'assistant'
                     ? sanitizeAssistantMessageText(activeDialogDebugMessage.text)
                     : activeDialogDebugMessage.text
-                  ).slice(0, 900)
+                  )
                   : ''}
-              </p>
+              </div>
             </div>
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-3">
@@ -6666,7 +6798,7 @@ const updatedChar: SideCharacter = {
               />
             </label>
             <p className="text-xs text-zinc-500">
-              Saved locally for review exports only. This is not sent to the AI and does not alter story canon.
+              Saved to this playthrough for review exports only. This is not sent to the AI and does not alter story canon.
             </p>
           </div>
           <DialogFooter className="gap-2">

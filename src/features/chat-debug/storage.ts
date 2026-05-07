@@ -10,6 +10,11 @@ function buildStorageKey(scenarioId: string, conversationId: string): string {
   return `${STORAGE_PREFIX}:${scenarioId}:${conversationId}`;
 }
 
+export function buildDialogDebugCommentKey(messageId: string, generationId?: string | null): string {
+  const stableGenerationId = generationId || messageId;
+  return `${messageId}:${stableGenerationId}`;
+}
+
 export function buildChatDebugTraceKey(messageId: string, generationId?: string | null): string {
   const stableGenerationId = generationId || messageId;
   return `${messageId}:${stableGenerationId}`;

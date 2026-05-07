@@ -745,6 +745,57 @@ export type Database = {
           },
         ]
       }
+      conversation_dialog_debug_comments: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          generation_id: string
+          id: string
+          message_id: string
+          note: string
+          tags: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          generation_id: string
+          id?: string
+          message_id: string
+          note?: string
+          tags?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          generation_id?: string
+          id?: string
+          message_id?: string
+          note?: string
+          tags?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_dialog_debug_comments_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_dialog_debug_comments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creator_follows: {
         Row: {
           created_at: string | null

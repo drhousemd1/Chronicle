@@ -569,7 +569,7 @@ export function buildChatReviewHtml(input: ChatReviewExportInput): string {
     ${issueSummary}
     ${cards}
 
-    <p class="footer-note">Dialogue debug notes are local testing notes only. They are not sent to the roleplay model and are not story canon.</p>
+    <p class="footer-note">Dialogue debug notes are saved to this playthrough for testing only. They are not sent to the roleplay model and are not story canon.</p>
   </main>
 </body>
 </html>`;

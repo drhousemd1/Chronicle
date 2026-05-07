@@ -202,6 +202,7 @@ const tierMeta   = {
   Elite:{bg:"#fef3c7",color:"#92400e"},
   Premium:{bg:"#ede9fe",color:"#5b21b6"},
   Starter:{bg:"#dbeafe",color:"#1e40af"},
+  Alpha:{bg:"#e0f2fe",color:"#075985"},
   Free:{bg:"#f1f5f9",color:"#475569"},
   Admin:{bg:"#fee2e2",color:"#991b1b"},
   "Admin (CFO)":{bg:"#ffedd5",color:"#9a3412"},
@@ -212,9 +213,9 @@ const tierBadge  = (t: string) => <Badge label={t}  {...((tierMeta as Record<str
 const statusBadge= (s: string) => <Badge label={s}  {...((statusMeta as Record<string, {bg:string;color:string}>)[s] || statusMeta.cancelled)} />;
 
 const USER_TIER_OVERRIDES_KEY = "admin_user_tier_overrides_v1";
-const DEFAULT_TIER_PRICES = { free: 0, starter: 9.99, premium: 19.99, elite: 39.99, admin: 0 };
+const DEFAULT_TIER_PRICES = { alpha: 0, free: 0, starter: 9.99, premium: 19.99, elite: 39.99, admin: 0 };
 const USER_TIER_OPTIONS = [
-  { value: "free", label: "Free" },
+  { value: "alpha", label: "Alpha" },
   { value: "starter", label: "Starter" },
   { value: "premium", label: "Premium" },
   { value: "elite", label: "Elite" },
@@ -223,6 +224,7 @@ const USER_TIER_OPTIONS = [
 ];
 
 const tierLabelBySlug = {
+  alpha: "Alpha",
   free: "Free",
   starter: "Starter",
   premium: "Premium",
@@ -234,21 +236,23 @@ const tierLabelBySlug = {
 const isObject = (value: unknown) => typeof value === "object" && value !== null;
 
 const normalizeUserTierSlug = (value: unknown): string => {
-  if (typeof value !== "string") return "free";
+  if (typeof value !== "string") return "alpha";
   const normalized = value.trim().toLowerCase();
   if (normalized === "staff") return "admin_cfo";
+  if (normalized === "trial" || normalized === "tester" || normalized === "alpha_testing") return "alpha";
   if (normalized in tierLabelBySlug) return normalized;
-  return "free";
+  return "alpha";
 };
 
 const isAdminTierSlug = (tierSlug: string) => tierSlug === "admin" || tierSlug === "admin_cfo";
 
 const tierSlugFromRole = (role: string) => {
   if (role === "admin") return "admin";
-  return "free";
+  return "alpha";
 };
 
 const tierCostLabel = (tierSlug: string, tierPrices: Record<string, number>) => {
+  if (tierSlug === "alpha") return "Alpha Testing (No Billing)";
   if (tierSlug === "free") return "Free";
   if (isAdminTierSlug(tierSlug)) return "Internal (No Billing)";
   const price = tierPrices[tierSlug];
@@ -2322,7 +2326,7 @@ function UsersPage({ users, setUsers, tierPrices, usersLoading, onTierChange, on
   const [actionModal, setActionModal] = useState(null);
   const [pendingTierChange, setPendingTierChange] = useState(null);
   const [editingTierUserId, setEditingTierUserId] = useState(null);
-  const [editingTierSlug, setEditingTierSlug] = useState("free");
+  const [editingTierSlug, setEditingTierSlug] = useState("alpha");
 
   const usersById = useMemo(() => {
     const map = {};
@@ -2524,8 +2528,8 @@ function UsersPage({ users, setUsers, tierPrices, usersLoading, onTierChange, on
 
   const modalUser = actionModal ? usersWithSignals.find((u) => u.id === actionModal.id) : null;
   const pendingChangeDetails = pendingTierChange ? {
-    fromLabel: tierLabelBySlug[pendingTierChange.fromTierSlug] || "Free",
-    toLabel: tierLabelBySlug[pendingTierChange.toTierSlug] || "Free",
+    fromLabel: tierLabelBySlug[pendingTierChange.fromTierSlug] || "Alpha",
+    toLabel: tierLabelBySlug[pendingTierChange.toTierSlug] || "Alpha",
   } : null;
 
   const requestTierChange = (user, rawTierSlug) => {
@@ -2548,7 +2552,7 @@ function UsersPage({ users, setUsers, tierPrices, usersLoading, onTierChange, on
 
   const cancelTierEdit = () => {
     setEditingTierUserId(null);
-    setEditingTierSlug("free");
+    setEditingTierSlug("alpha");
   };
 
   const applyTierEdit = (user) => {
@@ -6096,7 +6100,7 @@ export default function ChronicleAdmin() {
       const liveUsers = (profilesRes.data || []).map((profile) => {
         const roleBasedTier = tierSlugFromRole(rolesByUserId[profile.id]);
         const tierSlug = normalizedOverrides[profile.id] || roleBasedTier;
-        const tierLabel = tierLabelBySlug[tierSlug] || "Free";
+        const tierLabel = tierLabelBySlug[tierSlug] || "Alpha";
         const fallbackName = `User ${profile.id.slice(0, 8)}`;
 
         return {
@@ -6130,7 +6134,7 @@ export default function ChronicleAdmin() {
 
   const handleTierChange = async (userId, rawTierSlug) => {
     const tierSlug = normalizeUserTierSlug(rawTierSlug);
-    const tierLabel = tierLabelBySlug[tierSlug] || "Free";
+    const tierLabel = tierLabelBySlug[tierSlug] || "Alpha";
     const shouldHaveAdminUi = isAdminTierSlug(tierSlug);
 
     setDashboardUsers((currentUsers) => currentUsers.map((user) => (
@@ -6180,7 +6184,7 @@ export default function ChronicleAdmin() {
   };
 
   const activeUserBreakdown = useMemo(() => {
-    const counts = { Starter:0, Premium:0, Elite:0, Admin:0, "Admin (CFO)":0 };
+    const counts = { Alpha:0, Starter:0, Premium:0, Elite:0, Admin:0, "Admin (CFO)":0 };
     dashboardUsers.forEach((user) => {
       if (user.status === "active" && user.tier in counts) {
         counts[user.tier] += 1;
@@ -6188,6 +6192,7 @@ export default function ChronicleAdmin() {
     });
 
     return [
+      { label:"Alpha", count:counts.Alpha },
       { label:"Starter", count:counts.Starter },
       { label:"Premium", count:counts.Premium },
       { label:"Elite",   count:counts.Elite },
