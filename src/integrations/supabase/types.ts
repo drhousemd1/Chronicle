@@ -695,6 +695,69 @@ export type Database = {
           },
         ]
       }
+      conversation_api_call_traces: {
+        Row: {
+          applied_changes: Json | null
+          call_type: string
+          conversation_id: string
+          created_at: string
+          error: string | null
+          id: string
+          parsed_output: Json | null
+          request_payload: Json | null
+          response_payload: Json | null
+          source_generation_id: string | null
+          source_message_id: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          applied_changes?: Json | null
+          call_type: string
+          conversation_id: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          parsed_output?: Json | null
+          request_payload?: Json | null
+          response_payload?: Json | null
+          source_generation_id?: string | null
+          source_message_id?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          applied_changes?: Json | null
+          call_type?: string
+          conversation_id?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          parsed_output?: Json | null
+          request_payload?: Json | null
+          response_payload?: Json | null
+          source_generation_id?: string | null
+          source_message_id?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_api_call_traces_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_api_call_traces_source_message_id_fkey"
+            columns: ["source_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_dialog_debug_comments: {
         Row: {
           conversation_id: string
@@ -740,6 +803,126 @@ export type Database = {
           {
             foreignKeyName: "conversation_dialog_debug_comments_message_id_fkey"
             columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_state_change_events: {
+        Row: {
+          call_type: string
+          change_summary: string | null
+          conversation_id: string
+          created_at: string
+          entity_id: string | null
+          entity_name: string | null
+          entity_type: string
+          field_path: string
+          id: string
+          next_value_preview: string | null
+          previous_value_preview: string | null
+          source_generation_id: string
+          source_message_id: string
+          story_day: number | null
+          time_of_day: string | null
+          user_id: string
+        }
+        Insert: {
+          call_type?: string
+          change_summary?: string | null
+          conversation_id: string
+          created_at?: string
+          entity_id?: string | null
+          entity_name?: string | null
+          entity_type: string
+          field_path: string
+          id?: string
+          next_value_preview?: string | null
+          previous_value_preview?: string | null
+          source_generation_id: string
+          source_message_id: string
+          story_day?: number | null
+          time_of_day?: string | null
+          user_id: string
+        }
+        Update: {
+          call_type?: string
+          change_summary?: string | null
+          conversation_id?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_name?: string | null
+          entity_type?: string
+          field_path?: string
+          id?: string
+          next_value_preview?: string | null
+          previous_value_preview?: string | null
+          source_generation_id?: string
+          source_message_id?: string
+          story_day?: number | null
+          time_of_day?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_state_change_events_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_state_change_events_source_message_id_fkey"
+            columns: ["source_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_world_state_snapshots: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          snapshot: Json
+          source_generation_id: string
+          source_message_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          snapshot?: Json
+          source_generation_id: string
+          source_message_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          snapshot?: Json
+          source_generation_id?: string
+          source_message_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_world_state_snapshots_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_world_state_snapshots_source_message_id_fkey"
+            columns: ["source_message_id"]
             isOneToOne: false
             referencedRelation: "messages"
             referencedColumns: ["id"]
