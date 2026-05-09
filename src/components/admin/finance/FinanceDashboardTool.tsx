@@ -185,9 +185,8 @@ const MOCK_USERS = [
 
 
 const MODEL_RATES = [
-  { model:"grok-3-fast",       input:"$0.20/M", output:"$0.50/M",   note:"Primary chat model"  },
-  { model:"grok-3-mini-fast",  input:"$0.10/M", output:"$0.30/M",   note:"Fallback / extraction"},
-  { model:"grok-2-image-1212", input:"—",        output:"$0.02/img", note:"Image generation"    },
+  { model:"grok-4.3",          input:"$1.25/M", output:"$2.50/M",   note:"Primary text model"  },
+  { model:"grok-imagine-image", input:"—",        output:"$0.02/img", note:"Image generation"    },
 ];
 
 // ─── helpers ──────────────────────────────────────────────────
@@ -340,16 +339,16 @@ const ChartTip = ({ active, payload, label, prefix="$" }: { active?: boolean; pa
 };
 
 const TIER_BREAKDOWN = [
-  { name:"Starter", price:9.99,  apiCost:0.827, users:24, color:"#1e40af", soft:"#dbeafe" },
-  { name:"Premium", price:19.99, apiCost:2.481, users:17, color:"#5b21b6", soft:"#ede9fe" },
-  { name:"Elite",   price:39.99, apiCost:6.598, users:6,  color:"#92400e", soft:"#fef3c7" },
+  { name:"Starter", price:9.99,  apiCost:4.002, users:24, color:"#1e40af", soft:"#dbeafe" },
+  { name:"Premium", price:19.99, apiCost:12.007, users:17, color:"#5b21b6", soft:"#ede9fe" },
+  { name:"Elite",   price:39.99, apiCost:29.885, users:6,  color:"#92400e", soft:"#fef3c7" },
   { name:"Admin",   price:0,     apiCost:0,     users:0,  color:"#dc2626", soft:"#fef2f2" },
 ];
 
 const PAID_TIER_SNAPSHOT_META = [
-  { slug:"starter", name:"Starter", color:"#1e40af", apiCost:0.827 },
-  { slug:"premium", name:"Premium", color:"#5b21b6", apiCost:2.481 },
-  { slug:"elite",   name:"Elite",   color:"#92400e", apiCost:6.598 },
+  { slug:"starter", name:"Starter", color:"#1e40af", apiCost:4.002 },
+  { slug:"premium", name:"Premium", color:"#5b21b6", apiCost:12.007 },
+  { slug:"elite",   name:"Elite",   color:"#92400e", apiCost:29.885 },
   { slug:"admin",   name:"Admin",   color:"#dc2626", apiCost:0 },
 ];
 
@@ -1574,9 +1573,9 @@ function FinancePage({ users = [], tierPrices = DEFAULT_TIER_PRICES }) {
   ), [prices, tierCounts, financeAdminApiCost]);
 
   const ECON = {
-    starter: { price:prices.starter, api:0.827, stripe:prices.starter*0.029+0.30  },
-    premium: { price:prices.premium, api:2.481, stripe:prices.premium*0.029+0.30 },
-    elite:   { price:prices.elite,   api:6.598, stripe:prices.elite*0.029+0.30   },
+    starter: { price:prices.starter, api:4.002, stripe:prices.starter*0.029+0.30  },
+    premium: { price:prices.premium, api:12.007, stripe:prices.premium*0.029+0.30 },
+    elite:   { price:prices.elite,   api:29.885, stripe:prices.elite*0.029+0.30   },
   };
   const HOSTING = 371;
   const netPer = t => ECON[t].price - ECON[t].api - ECON[t].stripe;
@@ -1923,9 +1922,9 @@ function FinancePage({ users = [], tierPrices = DEFAULT_TIER_PRICES }) {
             <tbody>
               {[
                 {tier:"Free Trial",price:"$0",    msg:"20",   img:"0",  api:"$0.04",stripe:"—",    keep:"—",     margin:"—",    ltv:"—"},
-                {tier:"Starter",   price:"$9.99", msg:"300",  img:"10", api:"$0.83",stripe:"$0.59",keep:"$8.57", margin:"85.8%",ltv:"$154"},
-                {tier:"Premium",   price:"$19.99",msg:"900",  img:"30", api:"$2.48",stripe:"$0.88",keep:"$16.63",margin:"83.2%",ltv:"$299"},
-                {tier:"Elite",     price:"$39.99",msg:"2,200",img:"100",api:"$6.60",stripe:"$1.46",keep:"$31.93",margin:"79.9%",ltv:"$575"},
+                {tier:"Starter",   price:"$9.99", msg:"300",  img:"10", api:"$4.00",stripe:"$0.59",keep:"$5.40", margin:"54.0%",ltv:"$97"},
+                {tier:"Premium",   price:"$19.99",msg:"900",  img:"30", api:"$12.01",stripe:"$0.88",keep:"$7.10",margin:"35.5%",ltv:"$128"},
+                {tier:"Elite",     price:"$39.99",msg:"2,200",img:"100",api:"$29.89",stripe:"$1.46",keep:"$8.65",margin:"21.6%",ltv:"$156"},
               ].map((r,i)=>(
                 <tr key={i} style={{ borderBottom:`1px solid ${D.divider}`, background:i%2===0?D.shell:"rgba(255,255,255,0.02)" }}>
                   <td style={{padding:"11px 14px"}}>{tierBadge(r.tier)}</td>
@@ -2949,14 +2948,13 @@ function ReportsPage() {
 
 // ─── models Chronicle actively uses (highlighted green) ───────
 const CHRONICLE_MODELS = new Set([
-  "grok-4.20-0309-reasoning",
+  "grok-4.3",
   "grok-imagine-image",
 ]);
 
 // ─── fallback data from docs.x.ai/developers/models.md ────────
 const FALLBACK_MODELS = [
   { model:"grok-4.3",                     type:"Language", input:"$1.25", cachedInput:"$0.20", output:"$2.50", context:"1,000,000", rateLimit:"10M TPM / 1800 RPM" },
-  { model:"grok-4.20-0309-reasoning",     type:"Language", input:"$1.25", cachedInput:"$0.20", output:"$2.50", context:"2,000,000", rateLimit:"10M TPM / 1800 RPM" },
   { model:"grok-4.20-0309-non-reasoning", type:"Language", input:"$1.25", cachedInput:"$0.20", output:"$2.50", context:"2,000,000", rateLimit:"10M TPM / 1800 RPM" },
   { model:"grok-4.20-multi-agent-0309",   type:"Language", input:"$1.25", cachedInput:"$0.20", output:"$2.50", context:"2,000,000", rateLimit:"10M TPM / 1800 RPM" },
   { model:"grok-4-1-fast-reasoning",      type:"Language", input:"$0.20", cachedInput:"$0.05", output:"$0.50", context:"2,000,000", rateLimit:"4M TPM / 607 RPM" },
@@ -4472,47 +4470,47 @@ const S1_REALITY = [
 const S2_COST_INPUTS = [
   { label:"Chat: input tokens per message",  value:"7,450",    unit:"tokens",    note:"System prompt + history + user msg" },
   { label:"Chat: output tokens per message", value:"500",      unit:"tokens",    note:"Avg AI response length" },
-  { label:"xAI input price",                 value:"$0.20",    unit:"/M tokens", note:"grok-4-1-fast-reasoning" },
-  { label:"xAI output price",                value:"$0.50",    unit:"/M tokens", note:"grok-4-1-fast-reasoning" },
+  { label:"xAI input price",                 value:"$1.25",    unit:"/M tokens", note:"grok-4.3" },
+  { label:"xAI output price",                value:"$2.50",    unit:"/M tokens", note:"grok-4.3" },
   { label:"Extraction: every Nth message",   value:"5",        unit:"messages",  note:"Throttled — 80% cost reduction vs every-msg" },
   { label:"Image generation cost",           value:"$0.02",    unit:"/image",    note:"grok-imagine-image" },
-  { label:"Cost per chat message (calc)",    value:"$0.00174", unit:"",          note:"Derived from token inputs/outputs above" },
-  { label:"Extraction cost amortized/msg",   value:"$0.00035", unit:"",          note:"Spread across every message" },
-  { label:"TOTAL cost per message",          value:"$0.00209", unit:"",          note:"Chat + extraction combined", highlight:true },
+  { label:"Cost per chat message (calc)",    value:"$0.01056", unit:"",          note:"Derived from token inputs/outputs above" },
+  { label:"Extraction cost amortized/msg",   value:"$0.00211", unit:"",          note:"Spread across every message" },
+  { label:"TOTAL cost per message",          value:"$0.01267", unit:"",          note:"Chat + extraction combined", highlight:true },
 ];
 const S2_PER_USER = [
-  { tier:"Free Trial", price:0,     msgLimit:20,   imgLimit:0,   msgCost:0.042, imgCost:0,   totalApi:0.042, grossProfit:-0.042, margin:"0%",   ltv:"—",   annualRev:"—"   },
-  { tier:"Starter",    price:9.99,  msgLimit:300,  imgLimit:10,  msgCost:0.627, imgCost:0.2, totalApi:0.827, grossProfit:9.163,  margin:"91.7%",ltv:"$165",annualRev:"$120"},
-  { tier:"Premium",    price:19.99, msgLimit:900,  imgLimit:30,  msgCost:1.881, imgCost:0.6, totalApi:2.481, grossProfit:17.509, margin:"87.6%",ltv:"$315",annualRev:"$240"},
-  { tier:"Elite",      price:39.99, msgLimit:2200, imgLimit:100, msgCost:4.598, imgCost:2.0, totalApi:6.598, grossProfit:33.392, margin:"83.5%",ltv:"$720",annualRev:"$480"},
+  { tier:"Free Trial", price:0,     msgLimit:20,   imgLimit:0,   msgCost:0.253, imgCost:0,   totalApi:0.253, grossProfit:-0.253, margin:"0%",   ltv:"—",   annualRev:"—"   },
+  { tier:"Starter",    price:9.99,  msgLimit:300,  imgLimit:10,  msgCost:3.802, imgCost:0.2, totalApi:4.002, grossProfit:5.988,  margin:"60.0%",ltv:"$165",annualRev:"$120"},
+  { tier:"Premium",    price:19.99, msgLimit:900,  imgLimit:30,  msgCost:11.407, imgCost:0.6, totalApi:12.007, grossProfit:7.983, margin:"39.9%",ltv:"$315",annualRev:"$240"},
+  { tier:"Elite",      price:39.99, msgLimit:2200, imgLimit:100, msgCost:27.885, imgCost:2.0, totalApi:29.885, grossProfit:10.105, margin:"25.3%",ltv:"$720",annualRev:"$480"},
 ];
 const S2_INFRA = [
-  { scale:"0–499 users",     cost:371,  starterCover:41,  premiumCover:22, eliteCover:12, note:"Supabase free tier + basic hosting. Covers launch phase.", current:true },
-  { scale:"500–4,999 users", cost:946,  starterCover:104, premiumCover:55, eliteCover:29, note:"Supabase Pro + modest hosting. Scales to a few thousand users.", current:false },
-  { scale:"5K–49,999 users", cost:4404, starterCover:481, premiumCover:252,eliteCover:132,note:"Supabase Team + CDN + increased compute. Meaningful scale.", current:false },
+  { scale:"0–499 users",     cost:371,  starterCover:62,  premiumCover:46, eliteCover:37,  note:"Supabase free tier + basic hosting. Covers launch phase.", current:true },
+  { scale:"500–4,999 users", cost:946,  starterCover:158, premiumCover:119,eliteCover:94,  note:"Supabase Pro + modest hosting. Scales to a few thousand users.", current:false },
+  { scale:"5K–49,999 users", cost:4404, starterCover:735, premiumCover:552,eliteCover:436, note:"Supabase Team + CDN + increased compute. Meaningful scale.", current:false },
 ];
 
 // ── Sheet 3: Break-Even Calculator ──────────────────────────
 const S3_BREAKEVEN = [
-  { users:1,    starterRev:0,      premiumRev:0,      eliteRev:39.99,   totalRev:39.99,   apiCost:6.598,   infraCost:371, ebitda:-337.608, margin:-8.44,  status:"Loss" },
-  { users:5,    starterRev:19.98,  premiumRev:19.99,  eliteRev:79.98,   totalRev:119.95,  apiCost:17.331,  infraCost:371, ebitda:-268.381, margin:-2.24,  status:"Loss" },
-  { users:10,   starterRev:49.95,  premiumRev:59.97,  eliteRev:79.98,   totalRev:189.9,   apiCost:24.774,  infraCost:371, ebitda:-205.874, margin:-1.08,  status:"Loss" },
-  { users:15,   starterRev:69.93,  premiumRev:99.95,  eliteRev:119.97,  totalRev:289.85,  apiCost:37.988,  infraCost:371, ebitda:-119.138, margin:-0.41,  status:"Near break-even" },
-  { users:20,   starterRev:99.9,   premiumRev:139.93, eliteRev:119.97,  totalRev:359.8,   apiCost:45.431,  infraCost:371, ebitda:-56.631,  margin:-0.16,  status:"Near break-even" },
-  { users:25,   starterRev:119.88, premiumRev:159.92, eliteRev:199.95,  totalRev:479.75,  apiCost:62.762,  infraCost:371, ebitda:45.988,   margin:0.096,  status:"✅ Profitable" },
-  { users:30,   starterRev:149.85, premiumRev:199.9,  eliteRev:199.95,  totalRev:549.7,   apiCost:70.205,  infraCost:371, ebitda:108.495,  margin:0.197,  status:"✅ Profitable" },
-  { users:40,   starterRev:199.8,  premiumRev:279.86, eliteRev:239.94,  totalRev:719.6,   apiCost:90.862,  infraCost:371, ebitda:257.738,  margin:0.358,  status:"✅ Profitable" },
-  { users:50,   starterRev:249.75, premiumRev:339.83, eliteRev:319.92,  totalRev:909.5,   apiCost:115.636, infraCost:371, ebitda:422.864,  margin:0.465,  status:"✅ Profitable" },
-  { users:75,   starterRev:369.63, premiumRev:519.74, eliteRev:479.88,  totalRev:1369.25, apiCost:174.281, infraCost:371, ebitda:823.969,  margin:0.602,  status:"✅ Strong profit" },
-  { users:100,  starterRev:499.5,  premiumRev:699.65, eliteRev:599.85,  totalRev:1799,    apiCost:227.155, infraCost:371, ebitda:1200.845, margin:0.668,  status:"✅ Strong profit" },
-  { users:150,  starterRev:749.25, premiumRev:1039.48,eliteRev:919.77,  totalRev:2708.5,  apiCost:342.791, infraCost:371, ebitda:1994.709, margin:0.736,  status:"✅ Strong profit" },
-  { users:200,  starterRev:999,    premiumRev:1399.3, eliteRev:1199.7,  totalRev:3598,    apiCost:454.31,  infraCost:371, ebitda:2772.69,  margin:0.771,  status:"✅ Strong profit" },
-  { users:300,  starterRev:1498.5, premiumRev:2098.95,eliteRev:1799.55, totalRev:5397,    apiCost:681.465, infraCost:371, ebitda:4344.535, margin:0.805,  status:"✅ Strong profit" },
-  { users:500,  starterRev:2497.5, premiumRev:3498.25,eliteRev:2999.25, totalRev:8995,    apiCost:1135.775,infraCost:371, ebitda:7488.225, margin:0.832,  status:"✅ Strong profit" },
-  { users:750,  starterRev:3746.25,premiumRev:5237.38,eliteRev:4518.87, totalRev:13502.5, apiCost:1705.721,infraCost:371, ebitda:11425.779,margin:0.846,  status:"✅ Strong profit" },
-  { users:1000, starterRev:4995,   premiumRev:6996.5, eliteRev:5998.5,  totalRev:17990,   apiCost:2271.55, infraCost:371, ebitda:15347.45, margin:0.853,  status:"✅ Strong profit" },
-  { users:2000, starterRev:9990,   premiumRev:13993,  eliteRev:11997,   totalRev:35980,   apiCost:4543.1,  infraCost:371, ebitda:31065.9,  margin:0.863,  status:"✅ Strong profit" },
-  { users:5000, starterRev:24975,  premiumRev:34982.5,eliteRev:29992.5, totalRev:89950,   apiCost:11357.75,infraCost:371, ebitda:78221.25, margin:0.870,  status:"✅ Strong profit" },
+  { users:1   , starterRev:0      , premiumRev:0       , eliteRev:39.99   , totalRev:39.99   , apiCost:29.885  , infraCost:371, ebitda:-360.895 , margin:-9.025 , status:"Loss" },
+  { users:5   , starterRev:19.98  , premiumRev:19.99   , eliteRev:79.98   , totalRev:119.95  , apiCost:79.781  , infraCost:371, ebitda:-330.831 , margin:-2.758 , status:"Loss" },
+  { users:10  , starterRev:49.95  , premiumRev:59.97   , eliteRev:79.98   , totalRev:189.9   , apiCost:115.801 , infraCost:371, ebitda:-296.901 , margin:-1.563 , status:"Loss" },
+  { users:15  , starterRev:69.93  , premiumRev:99.95   , eliteRev:119.97  , totalRev:289.85  , apiCost:177.704 , infraCost:371, ebitda:-258.854 , margin:-0.893 , status:"Loss" },
+  { users:20  , starterRev:99.9   , premiumRev:139.93  , eliteRev:119.97  , totalRev:359.8   , apiCost:213.724 , infraCost:371, ebitda:-224.924 , margin:-0.625 , status:"Loss" },
+  { users:25  , starterRev:119.88 , premiumRev:159.92  , eliteRev:199.95  , totalRev:479.75  , apiCost:293.505 , infraCost:371, ebitda:-184.755 , margin:-0.385 , status:"Loss" },
+  { users:30  , starterRev:149.85 , premiumRev:199.9   , eliteRev:199.95  , totalRev:549.7   , apiCost:329.525 , infraCost:371, ebitda:-150.825 , margin:-0.274 , status:"Loss" },
+  { users:40  , starterRev:199.8  , premiumRev:279.86  , eliteRev:239.94  , totalRev:719.6   , apiCost:427.448 , infraCost:371, ebitda:-78.848  , margin:-0.11  , status:"Near break-even" },
+  { users:50  , starterRev:249.75 , premiumRev:339.83  , eliteRev:319.92  , totalRev:909.5   , apiCost:543.249 , infraCost:371, ebitda:-4.749   , margin:-0.005 , status:"Near break-even" },
+  { users:75  , starterRev:369.63 , premiumRev:519.74  , eliteRev:479.88  , totalRev:1369.25 , apiCost:818.876 , infraCost:371, ebitda:179.374  , margin:0.131  , status:"✅ Profitable" },
+  { users:100 , starterRev:499.5  , premiumRev:699.65  , eliteRev:599.85  , totalRev:1799    , apiCost:1068.62 , infraCost:371, ebitda:359.38   , margin:0.2    , status:"✅ Profitable" },
+  { users:150 , starterRev:749.25 , premiumRev:1039.48 , eliteRev:919.77  , totalRev:2708.5  , apiCost:1611.869, infraCost:371, ebitda:725.631  , margin:0.268  , status:"✅ Profitable" },
+  { users:200 , starterRev:999    , premiumRev:1399.3  , eliteRev:1199.7  , totalRev:3598    , apiCost:2137.24 , infraCost:371, ebitda:1089.76  , margin:0.303  , status:"✅ Strong profit" },
+  { users:300 , starterRev:1498.5 , premiumRev:2098.95 , eliteRev:1799.55 , totalRev:5397    , apiCost:3205.86 , infraCost:371, ebitda:1820.14  , margin:0.337  , status:"✅ Strong profit" },
+  { users:500 , starterRev:2497.5 , premiumRev:3498.25 , eliteRev:2999.25 , totalRev:8995    , apiCost:5343.1  , infraCost:371, ebitda:3280.9   , margin:0.365  , status:"✅ Strong profit" },
+  { users:750 , starterRev:3746.25, premiumRev:5237.38 , eliteRev:4518.87 , totalRev:13502.5 , apiCost:8023.589, infraCost:371, ebitda:5107.911 , margin:0.378  , status:"✅ Strong profit" },
+  { users:1000, starterRev:4995   , premiumRev:6996.5  , eliteRev:5998.5  , totalRev:17990   , apiCost:10686.2 , infraCost:371, ebitda:6932.8   , margin:0.385  , status:"✅ Strong profit" },
+  { users:2000, starterRev:9990   , premiumRev:13993   , eliteRev:11997   , totalRev:35980   , apiCost:21372.4 , infraCost:371, ebitda:14236.6  , margin:0.396  , status:"✅ Strong profit" },
+  { users:5000, starterRev:24975  , premiumRev:34982.5 , eliteRev:29992.5 , totalRev:89950   , apiCost:53431   , infraCost:371, ebitda:36148    , margin:0.402  , status:"✅ Strong profit" },
 ];
 
 // ── Sheet 4: 36-Month Scenario Forecast ──────────────────────
@@ -4547,22 +4545,22 @@ const S4_FORECAST = [
 
 // ── Sheet 5: Pricing Sensitivity ────────────────────────────
 const S5_STARTER = [
-  { price:"$4.99",  api:0.827, gp:4.163, gm:0.834, u371:89,  u946:227, rev100:5988,  vsGGPT:"-67%",vsCan:"-58%",pos:"Undercuts market — good for acquisition" },
-  { price:"$6.99",  api:0.827, gp:6.163, gm:0.882, u371:60,  u946:153, rev100:8388,  vsGGPT:"-53%",vsCan:"-42%",pos:"Undercuts market — good for acquisition" },
-  { price:"$7.99",  api:0.827, gp:7.163, gm:0.896, u371:52,  u946:132, rev100:9588,  vsGGPT:"-47%",vsCan:"-33%",pos:"Undercuts market — good for acquisition" },
-  { price:"$9.99",  api:0.827, gp:9.163, gm:0.917, u371:40,  u946:103, rev100:11988, vsGGPT:"-33%",vsCan:"-17%",pos:"✅ Recommended — matches GPTGirlfriend low tier", rec:true },
-  { price:"$12.99", api:0.827, gp:12.163,gm:0.936, u371:31,  u946:78,  rev100:15588, vsGGPT:"-13%",vsCan:"+8%", pos:"Mid-market — solid positioning" },
-  { price:"$14.99", api:0.827, gp:14.163,gm:0.945, u371:26,  u946:67,  rev100:17988, vsGGPT:"-0%", vsCan:"+25%",pos:"Premium — smaller audience, higher margin" },
-  { price:"$19.99", api:0.827, gp:19.163,gm:0.959, u371:19,  u946:49,  rev100:23988, vsGGPT:"+33%",vsCan:"+67%",pos:"Premium — smaller audience, higher margin" },
+  { price:"$4.99",  api:4.002, gp:0.988, gm:0.198, u371:376, u946:957, rev100:5988,  vsGGPT:"-67%",vsCan:"-58%",pos:"Too low for current model cost" },
+  { price:"$6.99",  api:4.002, gp:2.988, gm:0.427, u371:124, u946:317, rev100:8388,  vsGGPT:"-53%",vsCan:"-42%",pos:"Aggressive acquisition pricing" },
+  { price:"$7.99",  api:4.002, gp:3.988, gm:0.499, u371:93,  u946:237, rev100:9588,  vsGGPT:"-47%",vsCan:"-33%",pos:"Low margin for current model cost" },
+  { price:"$9.99",  api:4.002, gp:5.988, gm:0.599, u371:62,  u946:158, rev100:11988, vsGGPT:"-33%",vsCan:"-17%",pos:"Current Starter price", rec:true },
+  { price:"$12.99", api:4.002, gp:8.988, gm:0.692, u371:41,  u946:105, rev100:15588, vsGGPT:"-13%",vsCan:"+8%", pos:"Healthier current-model margin" },
+  { price:"$14.99", api:4.002, gp:10.988,gm:0.733, u371:34,  u946:86,  rev100:17988, vsGGPT:"-0%", vsCan:"+25%",pos:"Premium starter positioning" },
+  { price:"$19.99", api:4.002, gp:15.988,gm:0.800, u371:23,  u946:59,  rev100:23988, vsGGPT:"+33%",vsCan:"+67%",pos:"High starter price" },
 ];
 const S5_PREMIUM = [
-  { price:"$9.99",  api:2.481, gp:7.509, gm:0.752, u371:49,  u946:126, rev100:11988, vsGGPT:"-50%",vsCan:"-17%",pos:"Near-starter pricing — consider removing Starter tier" },
-  { price:"$12.99", api:2.481, gp:10.509,gm:0.809, u371:35,  u946:90,  rev100:15588, vsGGPT:"-35%",vsCan:"+8%", pos:"Near-starter pricing — consider removing Starter tier" },
-  { price:"$14.99", api:2.481, gp:12.509,gm:0.834, u371:30,  u946:76,  rev100:17988, vsGGPT:"-25%",vsCan:"+25%",pos:"Near-starter pricing — consider removing Starter tier" },
-  { price:"$19.99", api:2.481, gp:17.509,gm:0.876, u371:21,  u946:54,  rev100:23988, vsGGPT:"—",   vsCan:"+67%",pos:"✅ Recommended", rec:true },
-  { price:"$24.99", api:2.481, gp:22.509,gm:0.901, u371:16,  u946:42,  rev100:29988, vsGGPT:"+25%",vsCan:"+108%",pos:"Good — matches GPTGirlfriend Deluxe" },
-  { price:"$29.99", api:2.481, gp:27.509,gm:0.917, u371:13,  u946:34,  rev100:35988, vsGGPT:"+50%",vsCan:"+150%",pos:"High-end — Elite-tier positioning needed" },
-  { price:"$34.99", api:2.481, gp:32.509,gm:0.929, u371:11,  u946:29,  rev100:41988, vsGGPT:"+75%",vsCan:"+192%",pos:"High-end — Elite-tier positioning needed" },
+  { price:"$9.99",  api:12.007, gp:-2.017,gm:-0.202,u371:-184,u946:-469,rev100:11988, vsGGPT:"-50%",vsCan:"-17%",pos:"Below current model cost" },
+  { price:"$12.99", api:12.007, gp:0.983, gm:0.076, u371:377, u946:962, rev100:15588, vsGGPT:"-35%",vsCan:"+8%", pos:"Barely covers API usage" },
+  { price:"$14.99", api:12.007, gp:2.983, gm:0.199, u371:124, u946:317, rev100:17988, vsGGPT:"-25%",vsCan:"+25%",pos:"Low current-model margin" },
+  { price:"$19.99", api:12.007, gp:7.983, gm:0.399, u371:46,  u946:119, rev100:23988, vsGGPT:"—",   vsCan:"+67%",pos:"Current Premium price", rec:true },
+  { price:"$24.99", api:12.007, gp:12.983,gm:0.520, u371:29,  u946:73,  rev100:29988, vsGGPT:"+25%",vsCan:"+108%",pos:"Healthier current-model margin" },
+  { price:"$29.99", api:12.007, gp:17.983,gm:0.600, u371:21,  u946:53,  rev100:35988, vsGGPT:"+50%",vsCan:"+150%",pos:"Strong premium positioning" },
+  { price:"$34.99", api:12.007, gp:22.983,gm:0.657, u371:16,  u946:41,  rev100:41988, vsGGPT:"+75%",vsCan:"+192%",pos:"High-end premium pricing" },
 ];
 
 // ── Sheet 6: Annual Summary + Key Takeaways ─────────────────
@@ -4817,7 +4815,7 @@ function StrategyPage() {
               </table>
             </div>
             <p style={{ fontSize:11, color:D.muted, marginTop:10, lineHeight:1.6 }}>
-              ℹ Free trial users cost <strong style={{color:D.text}}>$0.042 total</strong> per person (20 messages × $0.00209). At 1,000 free trials, total cost is $42. They either convert or churn at 4 cents each.
+              ℹ Free trial users cost <strong style={{color:D.text}}>$0.253 total</strong> per person (20 messages × $0.01267). At 1,000 free trials, total cost is $253. They either convert or churn at 25 cents each.
             </p>
           </div>
           </ShellCard>
@@ -4882,15 +4880,15 @@ function StrategyPage() {
                 <div style={{ padding:"14px 16px", background:D.tray, borderRadius:10, borderColor:`rgba(255,255,255,0.08)` }}>
                   <div style={{ fontSize:12, fontWeight:700, color:D.text, marginBottom:8 }}>🤖 AI (API) cost — sourced from xAI pricing</div>
                   <div style={{ fontSize:11, color:D.muted, lineHeight:1.7 }}>
-                    Every message costs <strong style={{color:D.text}}>$0.00209</strong> in AI tokens:<br/>
-                    &nbsp;• 7,450 input tokens × $0.20/M = $0.00149<br/>
-                    &nbsp;• 500 output tokens × $0.50/M = $0.00025<br/>
-                    &nbsp;• Character extraction every 5th msg = $0.00035<br/>
+                    Every message costs <strong style={{color:D.text}}>$0.01267</strong> in AI tokens:<br/>
+                    &nbsp;• 7,450 input tokens × $1.25/M = $0.00931<br/>
+                    &nbsp;• 500 output tokens × $2.50/M = $0.00125<br/>
+                    &nbsp;• Character extraction every 5th msg = $0.00211<br/>
                     Images cost <strong style={{color:D.text}}>$0.02 each</strong> (grok-imagine-image).<br/><br/>
                     So per subscriber per month:<br/>
-                    &nbsp;• Starter (300 msgs + 10 imgs): <strong style={{color:C.red}}>$0.83</strong><br/>
-                    &nbsp;• Premium (900 msgs + 30 imgs): <strong style={{color:C.red}}>$2.48</strong><br/>
-                    &nbsp;• Elite (2,200 msgs + 100 imgs): <strong style={{color:C.red}}>$6.60</strong>
+                    &nbsp;• Starter (300 msgs + 10 imgs): <strong style={{color:C.red}}>$4.00</strong><br/>
+                    &nbsp;• Premium (900 msgs + 30 imgs): <strong style={{color:C.red}}>$12.01</strong><br/>
+                    &nbsp;• Elite (2,200 msgs + 100 imgs): <strong style={{color:C.red}}>$29.89</strong>
                   </div>
                 </div>
 
@@ -5135,8 +5133,8 @@ function StrategyPage() {
               <div>
                 <p style={{ fontSize:12, color:D.muted, margin:0, lineHeight:1.5 }}>
                   {sensTier==="starter"
-                    ? "Starter tier: 300 msgs + 10 imgs, API cost = $0.827/mo fixed"
-                    : "Premium tier: 900 msgs + 30 imgs, API cost = $2.481/mo fixed"}
+                    ? "Starter tier: 300 msgs + 10 imgs, API cost = $4.002/mo fixed"
+                    : "Premium tier: 900 msgs + 30 imgs, API cost = $12.007/mo fixed"}
                 </p>
               </div>
               <Toggle options={[{label:"Starter",value:"starter"},{label:"Premium",value:"premium"}]} value={sensTier} onChange={setSensTier}/>
@@ -5272,7 +5270,7 @@ function StrategyPage() {
 
 // ── Revenue Calculator page wrapper ──────────────────────────
 function RevenueCalcPage() {
-  const API_COST  = { starter: 0.827, premium: 2.481, elite: 6.598 };
+  const API_COST  = { starter: 4.002, premium: 12.007, elite: 29.885 };
   const stripeFee = (price) => price * 0.029 + 0.30;
   return <CalcTab API_COST={API_COST} stripeFee={stripeFee} />;
 }

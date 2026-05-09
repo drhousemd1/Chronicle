@@ -650,8 +650,8 @@ serve(async (req) => {
       roleplayContext,
     } = body;
 
-    const VALID_GROK_MODELS = ['grok-4.20-0309-reasoning'];
-    const modelId = VALID_GROK_MODELS.includes(body.modelId) ? body.modelId : 'grok-4.20-0309-reasoning';
+    const VALID_GROK_MODELS = ['grok-4.3'];
+    const modelId = VALID_GROK_MODELS.includes(body.modelId) ? body.modelId : 'grok-4.3';
     if (body.modelId !== modelId) {
       warnLog(`[chat] Rejected non-Grok model "${body.modelId}", using "${modelId}"`);
     }

@@ -35,8 +35,8 @@ interface UsagePoint {
 }
 
 // Cost estimates per call (USD)
-const TEXT_COST_PER_CALL = 0.001;   // ~avg token usage at grok-3-fast rates
-const IMAGE_COST_PER_CALL = 0.02;   // grok-2-image rate
+const TEXT_COST_PER_CALL = 0.0127;  // ~avg chat+sync usage at grok-4.3 rates
+const IMAGE_COST_PER_CALL = 0.02;   // grok-imagine-image rate
 
 function createEmptyPoint(label: string): UsagePoint {
   return {

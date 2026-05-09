@@ -144,7 +144,7 @@ Primary function: `generateRoleplayResponseStream()` in `src/services/llm.ts` (~
 ### 6b. Character State Tracking
 
 After each AI response, the system can extract character updates:
-- Edge Function: `extract-character-updates` (model: `grok-4.20-0309-reasoning`)
+- Edge Function: `extract-character-updates` (model: `grok-4.3`)
 - Service: `src/services/character-ai.ts`
 - **Throttled**: Extraction only fires every 5th AI response (controlled by `extractionCountRef` in `ChatInterfaceTab.tsx`, reset on conversation switch)
 - Tracks: physical appearance, clothing, mood, location, relationships, personality changes
@@ -160,7 +160,7 @@ Service: `src/services/side-character-generator.ts`
 ### 6d. Memory System
 
 - **Auto-extraction**: After every AI response in `handleSend`, `extract-memory-events` is invoked non-blocking. Extracted events are saved as `entryType: 'bullet'` memories tagged with current day/time.
-- **Day-transition compression**: When `currentDay` increments, a `useEffect` (guarded by `currentDay > prevDay && memoriesEnabled && memoriesLoaded`) invokes `compress-day-memories` edge function (grok-3-mini). Completed-day bullets are compressed into a 2-3 sentence synopsis (`entryType: 'synopsis'`), raw bullets deleted.
+- **Day-transition compression**: When `currentDay` increments, a `useEffect` (guarded by `currentDay > prevDay && memoriesEnabled && memoriesLoaded`) invokes `compress-day-memories` edge function (`grok-4.3`). Completed-day bullets are compressed into a 2-3 sentence synopsis (`entryType: 'synopsis'`), raw bullets deleted.
 - **Conversation-switch safety**: `previousDayRef.current` is reset in the `conversationId` reset effect to prevent stale-state compression on conversation switch.
 - **Manual save**: `MemoryQuickSaveButton` component for user-initiated memory entries.
 - **Prompt injection**: `memoriesContext` in `llm.ts` separates synopses under "COMPLETED DAYS" and today's bullets under "TODAY" with memory rules preventing contradiction.
@@ -318,14 +318,14 @@ Applied in both `renderCharacterCard()` (main characters) and `SideCharacterCard
 ## 12. Known Issues & Gotchas
 
 - **RESOLVED — Bug #1**: `buildCharacterStateBlock()` omits empty sections — 13/16 section types invisible to AI when empty. (2026-03-01)
-- **RESOLVED — Bug #4**: Wrong AI model (`grok-3-mini`) used for character extraction instead of `grok-3`. Now uses `grok-4-1-fast-reasoning`. (2026-03-01, updated 2026-03-04)
+- **RESOLVED — Bug #4**: Wrong AI model used for character extraction. Current extraction model is `grok-4.3`. (2026-03-01, updated 2026-05-09)
 - **RESOLVED — Bug #5**: Extraction prompt lacks analytical depth — shallow analysis. (2026-03-01)
 - **RESOLVED — Bug #7**: Response length anchoring — all responses same length. Fixed with adaptive `responseLengthsRef` + `getLengthDirective()`. (2026-03-01)
 - **RESOLVED — Bug #8**: Forward momentum — AI re-narrates user-authored AI character content. Fixed with canon note detection in `handleSend` + system prompt rule. (2026-03-01)
 - **RESOLVED — Bug #9**: Control rule reliability — AI generates for user-controlled characters. Fixed by filtering CAST to AI-only + high-authority quick-reference. (2026-03-01)
 - **RESOLVED — Bug #10**: No in-session trait evolution guidance. Fixed with IN-SESSION TRAIT DYNAMICS block + `sessionMessageCountRef` + personality-driven NSFW pacing. (2026-03-01)
 - **RESOLVED — Bug #11**: NSFW intensity and verbosity instruction overlap. Fixed by moving sensory detail lines from nsfwRules to verbosityRules. (2026-03-01)
-- **RESOLVED — Bug #6**: Memory system incomplete — no long-term accumulation. Fixed with auto-extraction in `handleSend`, `previousDayRef` (reset on conversation switch) + day-compression `useEffect` (guarded by `memoriesLoaded`, dependency array: `[currentDay, memories, memoriesEnabled, conversationId]`), `entryType` field on Memory type, split `memoriesContext` builder in `llm.ts`, and `compress-day-memories` edge function (grok-3-mini). (2026-03-01)
+- **RESOLVED — Bug #6**: Memory system incomplete — no long-term accumulation. Fixed with auto-extraction in `handleSend`, `previousDayRef` (reset on conversation switch) + day-compression `useEffect` (guarded by `memoriesLoaded`, dependency array: `[currentDay, memories, memoriesEnabled, conversationId]`), `entryType` field on Memory type, split `memoriesContext` builder in `llm.ts`, and `compress-day-memories` edge function (`grok-4.3`). (2026-03-01, model updated 2026-05-09)
 - **ACTIVE**: `ChatInterfaceTab.tsx` is ~5000 lines — extremely large single component. (2026-03-01)
 - **ACTIVE**: Message parsing regex may miss edge cases with nested formatting markers. (2026-03-01)
 - **RESOLVED — 2026-03-15**: Tile image "shoot up then bounce" on expand/collapse. Root-cause: `transition-all` animated `object-position` changes. Fix: changed to `transition-[height,object-fit] duration-300`, matched expanded/collapsed classes to Story Builder (`h-auto object-contain object-top` / `h-full object-cover`).

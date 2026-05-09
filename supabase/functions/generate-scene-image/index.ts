@@ -1,6 +1,6 @@
 // ============================================================================
 // GROK ONLY -- Scene image generation uses xAI Grok exclusively.
-// Text analysis: grok-4-1-fast. Image generation: grok-imagine-image.
+// Text analysis: grok-4.3. Image generation: grok-imagine-image.
 // Do NOT add Gemini or OpenAI.
 // ============================================================================
 
@@ -172,7 +172,7 @@ async function callAnalysisLLM(prompt: string, modelId: string): Promise<string>
     throw new Error("XAI_API_KEY not configured");
   }
 
-  const textModel = modelId || 'grok-4.20-0309-reasoning';
+  const textModel = modelId === 'grok-4.3' ? modelId : 'grok-4.3';
   
   const response = await fetch("https://api.x.ai/v1/chat/completions", {
     method: "POST",
@@ -298,7 +298,7 @@ serve(async (req) => {
     }
 
     // GROK ONLY -- always use xAI
-    const effectiveTextModel = modelId || 'grok-4.20-0309-reasoning';
+    const effectiveTextModel = modelId === 'grok-4.3' ? modelId : 'grok-4.3';
     
     console.log(`[generate-scene-image] Text model: ${effectiveTextModel} (xAI only)`);
     console.log(`[generate-scene-image] Image model: grok-imagine-image (xAI only)`);

@@ -604,9 +604,9 @@ Return ONLY valid JSON. No explanations.`;
       aiResponse ? `LATEST AI RESPONSE:\n${aiResponse}` : ''
     ].filter(Boolean).join('\n\n---\n\n');
 
-    // Only grok-4.20-0309-reasoning is used app-wide; reject anything else
-    const VALID_GROK_MODELS = ['grok-4.20-0309-reasoning'];
-    const effectiveModelId = (modelId && VALID_GROK_MODELS.includes(modelId)) ? modelId : 'grok-4.20-0309-reasoning';
+    // Only grok-4.3 is used app-wide; reject anything else
+    const VALID_GROK_MODELS = ['grok-4.3'];
+    const effectiveModelId = (modelId && VALID_GROK_MODELS.includes(modelId)) ? modelId : 'grok-4.3';
     if (modelId && modelId !== effectiveModelId) {
       console.warn(`[extract-character-updates] Rejected non-Grok model "${modelId}", using "${effectiveModelId}"`);
     }
@@ -666,7 +666,7 @@ Return ONLY valid JSON. No explanations.`;
           method: "POST",
           headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: 'grok-4.20-0309-reasoning',
+            model: 'grok-4.3',
             messages: [
               { role: "system", content: "Extract only non-explicit character state metadata from the latest exchange. Return JSON with {updates:[{character,field,value}]}. Use only supported field paths and omit low-confidence changes." },
               { role: "user", content: `Characters: ${filteredCharacters.map((c: CharacterData) => c.name).join(', ')}. Analyze:\n${combinedText}` }

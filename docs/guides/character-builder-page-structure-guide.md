@@ -326,7 +326,7 @@ Every character field is injected into the LLM system prompt (built in `llm.ts`)
 The `character-ai.ts` service provides per-field AI enhancement:
 - `CHARACTER_FIELD_PROMPTS` contains field-specific instructions with per-field max sentence counts and formatting guidance
 - Builds full world + other-characters context via `buildFullContext()` and character self-context via `buildCharacterSelfContext()`
-- Uses **Grok-only** model chain with content-filter fallback: `grok-3` → `grok-3-mini` → `grok-2`
+- Uses the Grok-only app text model (`grok-4.3`) through the chat edge function.
 - This is hardcoded regardless of the user's selected model setting
 
 ### AI Fill
@@ -369,7 +369,7 @@ The `character-ai.ts` service provides per-field AI enhancement:
 ## 12. Known Issues / Quirks
 
 - **AutoResizeTextarea duplication**: The same component is duplicated across `CharactersTab.tsx`, `PersonalitySection.tsx`, `StoryGoalsSection.tsx`, `WorldTab.tsx`, and `CharacterEditModal.tsx` -- not extracted to a shared component.
-- **Grok-only AI**: AI Generate/Fill use Grok-only models (`grok-3` with fallback chain) regardless of the user's selected model setting. Hardcoded with "GROK ONLY" comments.
+- **Grok-only AI**: AI Generate/Fill use the Grok-only app text model (`grok-4.3`). Hardcoded with "GROK ONLY" comments.
 - **Tags as string**: The `tags` field on characters is a comma-separated string, not an array, unlike `content_themes` and scenario tags which use arrays.
 - **Legacy delete icon**: Grid view delete button uses the legacy `Icons.Trash` component rather than lucide's `Trash2`.
 - **All sections expanded**: When switching from grid to detail view, all 12 sections start expanded (`expandedSections` defaults all to `true`), which creates a long scroll on first load.
@@ -384,7 +384,7 @@ The `character-ai.ts` service provides per-field AI enhancement:
 - **RESOLVED — Bug #1 — 2026-03-01**: `buildCharacterStateBlock()` now outputs scaffolding placeholders for all section types when empty, including `currentlyWearing`, `physicalAppearance`, `preferredClothing`, `background`, `personality`, and all extras-only sections (tone, keyLifeEvents, relationships, secrets, fears). AI can now see and populate all 16 section types.
 - **RESOLVED — Bug #2 — 2026-03-01**: `personality.traits` added to TRACKABLE FIELDS for unified personality mode. Characters not using split mode will now have traits extracted correctly.
 - **RESOLVED — Bug #3 — 2026-03-01**: Extraction prompt now uses correct field name `undergarments`.
-- **RESOLVED — Bug #4 — 2026-03-01**: Default extraction model changed from `grok-3-mini` to `grok-3`. Deep Scan also uses `grok-3`. The 403 safe-mode retry path intentionally remains on `grok-3-mini`.
+- **RESOLVED — Bug #4 — 2026-05-09**: Default extraction and Deep Scan model migrated to `grok-4.3`.
 - **RESOLVED — Bug #5 — 2026-03-01**: Extraction prompt augmented with 7-block analytical depth framework covering psychological inference, progressive trait refinement, conflict resolution, split personality mode detection, tone inference from dialogue, cross-field coherence enforcement, and complete trait lifecycle management.
 - **ACTIVE — Bug #6**: Memory system architecture incomplete — no long-term accumulation. Memories are extracted per-message but never summarized or consolidated.
 - **RESOLVED — Bug #7**: Previous issue resolved.

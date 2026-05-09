@@ -406,7 +406,7 @@ Tags selected in the Content Themes section are processed through `tag-injection
 ### Bug Report Items (Added 2026-03-01)
 
 - **RESOLVED — Bug #1**: `buildCharacterStateBlock()` omits empty sections — fixed, empty sections now included in system prompt. (Resolved 2026-03-01)
-- **RESOLVED — Bug #4**: Wrong AI model — now uses `grok-4-1-fast-reasoning` for extraction. (Resolved 2026-03-04)
+- **RESOLVED — Bug #4**: Wrong AI model — now uses `grok-4.3` for extraction. (Updated 2026-05-09)
 - **RESOLVED — Bug #5**: Extraction prompt lacks analytical depth — prompt rewritten with deeper analysis. (Resolved 2026-03-01)
 - **RESOLVED — Bug #6**: Memory system architecture incomplete — fixed with auto-extraction, day-compression, and synopsis system. (Resolved 2026-03-01)
 - **RESOLVED — Bug #7**: Previous issue resolved.

@@ -689,7 +689,7 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
           userMessage: concatenatedUser,
           aiResponse: concatenatedAi,
           characters: charactersData,
-          modelId: modelId || 'grok-4.20-0309-reasoning'
+          modelId: modelId || 'grok-4.3'
         }
       });
       
@@ -936,11 +936,11 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
         detailPresence: buildRequiredPresence([
           ['single.character_avatar.avatar_prompt', avatarPrompt],
           ['single.character_avatar.character_name', draft.name || character.name],
-          ['single.character_avatar.model_id', modelId || 'grok-4.20-0309-reasoning'],
+          ['single.character_avatar.model_id', modelId || 'grok-4.3'],
         ]),
       });
       const { data, error } = await supabase.functions.invoke('generate-side-character-avatar', {
-        body: { avatarPrompt, characterName: draft.name || character.name, modelId: modelId || 'grok-4.20-0309-reasoning' }
+        body: { avatarPrompt, characterName: draft.name || character.name, modelId: modelId || 'grok-4.3' }
       });
       if (error) throw error;
       if (data?.imageUrl) {

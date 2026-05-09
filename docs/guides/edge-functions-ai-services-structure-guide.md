@@ -22,15 +22,15 @@
 | Function | Path | Purpose | AI Model Used |
 |----------|------|---------|---------------|
 | `chat` | `supabase/functions/chat/index.ts` | Main LLM chat endpoint — streams roleplay responses | User-selected model |
-| `extract-character-updates` | `supabase/functions/extract-character-updates/index.ts` | Extracts character state changes from conversation (throttled: fires every 5th message) | `grok-4.20-0309-reasoning` (default), `grok-3-mini` (403 safe-mode retry) |
-| `extract-memory-events` | `supabase/functions/extract-memory-events/index.ts` | Extracts memory-worthy events from messages | `grok-4.20-0309-reasoning` |
-| `evaluate-goal-progress` | `supabase/functions/evaluate-goal-progress/index.ts` | Evaluates story goal progress | `grok-4.20-0309-reasoning` |
+| `extract-character-updates` | `supabase/functions/extract-character-updates/index.ts` | Extracts character state changes from conversation (throttled: fires every 5th message) | `grok-4.3` (default and 403 safe-mode retry) |
+| `extract-memory-events` | `supabase/functions/extract-memory-events/index.ts` | Extracts memory-worthy events from messages | `grok-4.3` |
+| `evaluate-goal-progress` | `supabase/functions/evaluate-goal-progress/index.ts` | Evaluates story goal progress | `grok-4.3` |
 | `generate-cover-image` | `supabase/functions/generate-cover-image/index.ts` | Generates scenario cover images | Image generation model |
 | `generate-scene-image` | `supabase/functions/generate-scene-image/index.ts` | Generates in-chat scene images | Image generation model |
 | `generate-side-character` | `supabase/functions/generate-side-character/index.ts` | AI-generates side character profiles | AI model |
 | `generate-side-character-avatar` | `supabase/functions/generate-side-character-avatar/index.ts` | Generates avatars for side characters | Image generation model |
 | `check-shared-keys` | `supabase/functions/check-shared-keys/index.ts` | Validates shared API keys | N/A |
-| `compress-day-memories` | `supabase/functions/compress-day-memories/index.ts` | Compresses completed-day bullet memories into a 2-3 sentence synopsis | `grok-4.20-0309-reasoning` |
+| `compress-day-memories` | `supabase/functions/compress-day-memories/index.ts` | Compresses completed-day bullet memories into a 2-3 sentence synopsis | `grok-4.3` |
 | `sync-guide-to-github` | `supabase/functions/sync-guide-to-github/index.ts` | Syncs guide documents to GitHub repo | N/A |
 | `migrate-base64-images` | `supabase/functions/migrate-base64-images/index.ts` | Migrates legacy base64 images to storage | N/A |
 
@@ -116,9 +116,9 @@ The system prompt in `getSystemInstruction()` is constructed in this order:
 | #1 | `buildCharacterStateBlock()` now outputs scaffolding placeholders for all section types when empty | `supabase/functions/extract-character-updates/index.ts` | RESOLVED — 2026-03-01 |
 | #2 | `personality.traits` added to TRACKABLE FIELDS for unified mode | `supabase/functions/extract-character-updates/index.ts` | RESOLVED — 2026-03-01 |
 | #3 | `preferredClothing` field name mismatch (underwear vs undergarments) | `supabase/functions/extract-character-updates/index.ts` | RESOLVED — 2026-03-01 — preferredClothing.underwear renamed to preferredClothing.undergarments in TRACKABLE FIELDS |
-| #4 | Default model changed to `grok-3`; 403 retry remains `grok-3-mini` | `supabase/functions/extract-character-updates/index.ts` | RESOLVED — 2026-03-01 |
+| #4 | Default model migrated to `grok-4.3` | `supabase/functions/extract-character-updates/index.ts` | RESOLVED — 2026-05-09 |
 | #5 | Extraction prompt lacks analytical depth | `supabase/functions/extract-character-updates/index.ts` | RESOLVED — 2026-03-01 — Added 7-block analytical depth framework: psychological inference, progressive refinement, conflict resolution, split mode detection, tone inference, cross-field coherence, complete trait lifecycle |
-| #6 | Memory system incomplete — no long-term accumulation | `supabase/functions/extract-memory-events/index.ts`, `supabase/functions/compress-day-memories/index.ts`, `src/services/llm.ts`, `src/services/supabase-data.ts`, `src/types.ts`, `src/components/chronicle/ChatInterfaceTab.tsx` | RESOLVED — 2026-03-01 — Auto-extraction fires after every AI response, day-transition compression via compress-day-memories edge function (grok-3-mini), entryType field distinguishes bullets from synopses, previousDayRef reset on conversation switch, memoriesLoaded guard prevents stale-state compression |
+| #6 | Memory system incomplete — no long-term accumulation | `supabase/functions/extract-memory-events/index.ts`, `supabase/functions/compress-day-memories/index.ts`, `src/services/llm.ts`, `src/services/supabase-data.ts`, `src/types.ts`, `src/components/chronicle/ChatInterfaceTab.tsx` | RESOLVED — 2026-03-01 — Auto-extraction fires after every AI response, day-transition compression via compress-day-memories edge function (`grok-4.3`), entryType field distinguishes bullets from synopses, previousDayRef reset on conversation switch, memoriesLoaded guard prevents stale-state compression |
 | #7 | Response length anchoring — all responses same length | `src/services/llm.ts`, `src/components/chronicle/ChatInterfaceTab.tsx` | RESOLVED — 2026-03-01 — Added adaptive length directive system with responseLengthsRef tracking, removed RESPONSE SHAPE & LENGTH from antiRepetitionRules |
 | #8 | Forward momentum — AI re-narrates user-authored AI character content | `src/services/llm.ts`, `src/components/chronicle/ChatInterfaceTab.tsx` | RESOLVED — 2026-03-01 — Added AI-character canon rule to FORWARD MOMENTUM, canon note detection in handleSend |
 | #9 | Control rule reliability — AI generates for user-controlled characters | `src/services/llm.ts` | RESOLVED — 2026-03-01 — CAST filtered to AI-only, DO NOT GENERATE FOR quick-reference at top of INSTRUCTIONS |
@@ -164,7 +164,7 @@ The system prompt in `getSystemInstruction()` is constructed in this order:
 
 See Section 5 above for comprehensive bug list.
 
-- **RESOLVED — 2026-03-04**: Model migration — all extraction/compression Edge Functions migrated from `grok-3` / `grok-3-mini` to `grok-4-1-fast-reasoning` as the default model.
+- **RESOLVED — 2026-05-09**: Model migration — all text Edge Functions now use `grok-4.3` as the default model.
 - **RESOLVED — 2026-03-04**: Extraction throttling — `extract-character-updates` now only fires every 5th AI response (controlled by `extractionCountRef` in `ChatInterfaceTab.tsx`) to reduce API costs.
 - **RESOLVED — 2026-03-04**: CORS hardening — all 12 Edge Functions now use dynamic origin checking via `getCorsHeaders(req)` against an `ALLOWED_ORIGINS` whitelist instead of wildcard `'*'`.
 - **RESOLVED — 2026-03-07**: Pass 7 — Dialogue momentum & loop elimination. Confirmation Closure Protocol, No Deferral Loop, No Rehash rules added to system prompt. Priority hierarchy hardened (forward-momentum = #2 priority, never overridden). Runtime anti-loop micro-directives in ChatInterfaceTab. Regeneration context duplication fixed. Verbosity hard-capped with paragraph limits and verbosity-based max_tokens. 403 retry directive rewritten to require concrete action instead of evasive deflection.

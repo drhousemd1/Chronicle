@@ -472,7 +472,7 @@ export const CharacterBuilderScreen: React.FC<CharacterBuilderScreenProps> = ({
         currentValue,
         selected,
         appData,
-        appData.selectedModel || 'grok-3',
+        appData.selectedModel || 'grok-4.3',
         customLabel,
         mode
       );
@@ -1845,7 +1845,7 @@ export const CharacterBuilderScreen: React.FC<CharacterBuilderScreenProps> = ({
           sexType: selected?.sexType,
           age: selected?.age
         }}
-        modelId={appData.selectedModel || "grok-3"} /* GROK ONLY */
+        modelId={appData.selectedModel || "grok-4.3"} /* GROK ONLY */
       />
 
       <Dialog
