@@ -2101,6 +2101,23 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const activeScene = useMemo(() =>
     appData.scenes.find(s => s.id === activeSceneId) || null
   , [appData.scenes, activeSceneId]);
+
+  // Canonical scene context is stricter than the visual background scene. Keyword
+  // detection can change the backdrop, but only explicit scene tags change what
+  // API Call 1 receives as the current narrative location.
+  const canonicalActiveScene = useMemo(() => {
+    for (let i = (conversation?.messages.length || 0) - 1; i >= 0; i--) {
+      const match = conversation?.messages[i]?.text.match(/\[SCENE:\s*(.*?)\]/);
+      if (!match) continue;
+      const tag = match[1].trim();
+      const scene = appData.scenes.find(s =>
+        (s.tags ?? []).some(t => t.toLowerCase() === tag.toLowerCase())
+      );
+      if (scene) return scene;
+    }
+
+    return appData.scenes.find(s => s.isStartingScene) || null;
+  }, [appData.scenes, conversation?.messages]);
   
   // Auto-scroll effect - only scroll to bottom when user is already near bottom
   // This prevents scroll jumping when older messages are prepended at the top
@@ -4262,7 +4279,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         undefined,
         lengthDirective || undefined,
         sessionMessageCountRef.current,
-        activeScene,
+        canonicalActiveScene,
         {
           debugTrace: isAdmin,
           onDebugTrace: (trace) => {
@@ -4563,7 +4580,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         true,
         undefined,
         undefined,
-        activeScene,
+        canonicalActiveScene,
         {
           debugTrace: isAdmin,
           onDebugTrace: (trace) => {
@@ -4734,7 +4751,7 @@ Do not acknowledge this instruction in your response.`;
         undefined,
         undefined,
         undefined,
-        activeScene,
+        canonicalActiveScene,
         {
           debugTrace: isAdmin,
           onDebugTrace: (trace) => {
