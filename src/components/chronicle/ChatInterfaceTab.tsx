@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 import { uid, now, uuid } from '@/utils';
-import { generateRoleplayResponseStream, getSystemInstruction, REGENERATION_DIRECTIVE_TEXT, buildCanonNote } from '../../services/llm';
+import { generateRoleplayResponseStream, buildCanonNote } from '../../services/llm';
 import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2, StepForward, Settings, Image as ImageIcon, Brain, Check, X, Info, Play, Pause, Move, Palette, MessageSquare } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import {
@@ -4010,6 +4010,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const queueAssistantMemoryExtraction = useCallback((userMessage: string, aiResponse: string, sourceMessage: Message) => {
     if (!memoriesEnabled) return;
     const combinedTextLength = (userMessage?.length || 0) + (aiResponse?.length || 0);
+    const messageText = [
+      userMessage ? `USER MESSAGE:\n${userMessage}` : '',
+      aiResponse ? `AI RESPONSE:\n${aiResponse}` : '',
+    ].filter(Boolean).join('\n\n---\n\n');
 
     void trackAiUsageEvent({
       eventType: 'memory_extraction_call',
@@ -4029,6 +4033,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       apiCallGroup: 'call_2',
       parentRowId: 'summary.call2.memory_extract',
       detailPresence: buildRequiredPresence([
+        ['call2.memory_extract.message_text', messageText],
         ['call2.memory_extract.user_message', userMessage],
         ['call2.memory_extract.ai_response', aiResponse],
         ['call2.memory_extract.character_names', allCharacterNames],
@@ -4041,6 +4046,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
     supabase.functions.invoke('extract-memory-events', {
       body: {
+        messageText,
         userMessage,
         aiResponse,
         characterNames: allCharacterNames,
@@ -6744,124 +6750,6 @@ const updatedChar: SideCharacter = {
                       Download Session Log
                     </button>
 
-                    <button
-                      onClick={() => {
-                        // Build exact same data the LLM would receive
-                        const llmAppData = buildLLMAppData();
-                        const systemInstruction = getSystemInstruction(
-                          llmAppData,
-                          currentDay,
-                          currentTimeOfDay,
-                          activeMemories,
-                          memoriesEnabled,
-                          activeScene
-                        );
-                        
-                        // Verbosity and max_tokens (exact same mapping as llm.ts)
-                        const verbosity = llmAppData.uiSettings?.responseVerbosity || 'balanced';
-                        const maxTokensByVerbosity: Record<string, number> = { concise: 1024, balanced: 2048, detailed: 3072 };
-                        const maxTokens = maxTokensByVerbosity[verbosity] || 2048;
-                        
-                        // Length directive (current state)
-                        const lengthDirective = getLengthDirective();
-                        const supabaseRuntimeTarget = /localhost|127\.0\.0\.1/i.test(import.meta.env.VITE_SUPABASE_URL || '')
-                          ? 'local'
-                          : 'hosted';
-                        
-                        const exportDate = new Date().toISOString().slice(0, 16).replace('T', ' ');
-                        const lines: string[] = [];
-                        
-                        lines.push('MASTER PROMPT SNAPSHOT');
-                        lines.push(`Model: ${modelId}`);
-                        lines.push('Pipeline: direct roleplay generation (single chat call, streamed from the edge relay)');
-                        lines.push(`Verbosity: ${verbosity} -> max_tokens: ${maxTokens}`);
-                        lines.push(`Supabase Target: ${supabaseRuntimeTarget}`);
-                        lines.push('Temperature: direct chat 0.55');
-                        lines.push('Stream: true');
-                        lines.push(`Session Message Count: ${sessionMessageCountRef.current}`);
-                        lines.push(`Exported: ${exportDate}`);
-                        lines.push('');
-                        lines.push('---');
-                        lines.push('');
-                        lines.push('SYSTEM INSTRUCTION');
-                        lines.push('');
-                        lines.push(systemInstruction);
-                        lines.push('');
-                        lines.push('---');
-                        lines.push('');
-                        lines.push('SAVED CONVERSATION MESSAGES SENT AFTER SYSTEM INSTRUCTION');
-                        lines.push('');
-                        if (conversation?.messages?.length) {
-                          conversation.messages.forEach((message, index) => {
-                            lines.push(`Message ${index + 1}: ${message.role}`);
-                            lines.push('');
-                            lines.push(message.text || '(empty)');
-                            lines.push('');
-                          });
-                        } else {
-                          lines.push('No saved conversation messages are currently included.');
-                          lines.push('');
-                        }
-
-                        if (input.trim()) {
-                          lines.push('CURRENT UNSENT DRAFT');
-                          lines.push('');
-                          lines.push('// NOT SENT YET. This is only the text currently sitting in the chat input at export time.');
-                          lines.push(input.trim());
-                          lines.push('');
-                        }
-
-                        lines.push('---');
-                        lines.push('');
-                        lines.push('RUNTIME NOTES');
-                        lines.push('');
-                        
-                        // Length directive
-                        lines.push('Length Directive (current)');
-                        lines.push('');
-                        lines.push(lengthDirective || 'None - response lengths are varied');
-                        lines.push('');
-                        
-                        // Style hint runtime
-                        lines.push('Style Hint Runtime');
-                        lines.push('');
-                        lines.push('Random style hints are currently DISABLED for live roleplay requests.');
-                        lines.push('No style hint is appended to the final user message in the current runtime.');
-                        lines.push('');
-                        
-                        // Conditional request templates
-                        lines.push('Conditional Request Templates');
-                        lines.push('');
-                        lines.push('// ONLY SENT WITH API CALL WHEN REGENERATING RESPONSE.');
-                        lines.push('// Lines beginning with // in this export are documentation notes only, not live API call text.');
-                        lines.push(REGENERATION_DIRECTIVE_TEXT);
-                        lines.push('');
-                        lines.push('// CONTINUE REQUEST INSTRUCTIONS ARE ONLY SENT WHEN THE CONTINUE BUTTON IS CLICKED.');
-                        lines.push('// Normal send requests do not include the regenerate template or continue instructions.');
-                        lines.push('');
-                        
-                        // Session message format
-                        lines.push('Session Message Format');
-                        lines.push('');
-                        lines.push('// Prepended to normal user messages before they are sent.');
-                        lines.push('`[SESSION: Message {N} of current session]`');
-                        lines.push('');
-                        
-                        // Download
-                        const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        const scenarioTitle = appData.world?.core?.scenarioName || 'untitled';
-                        a.download = `master-prompt-${scenarioTitle.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}-${Date.now()}.txt`;
-                        a.click();
-                        URL.revokeObjectURL(url);
-                      }}
-                      className="w-full flex items-center justify-center gap-2 bg-[#3c3e47] hover:bg-[#4a4c55] rounded-[10px] p-[12px_14px] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] text-[13px] font-semibold text-[#eaedf1] transition-colors"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
-                      Download Master Prompt
-                    </button>
                     </div>
                   </div>
                 </>
