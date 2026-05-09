@@ -1106,8 +1106,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   }, []);
 
   const activeGoalCompletionIds = useMemo(() => {
-    return buildActiveGoalCompletionIds(goalStepDerivations, latestMessageGenerationMap);
-  }, [buildActiveGoalCompletionIds, goalStepDerivations, latestMessageGenerationMap]);
+    return buildActiveGoalCompletionIds(
+      goalStepDerivations.filter((derivation) => derivation.conversationId === conversationId),
+      latestMessageGenerationMap,
+    );
+  }, [buildActiveGoalCompletionIds, conversationId, goalStepDerivations, latestMessageGenerationMap]);
 
   const buildActiveMemories = useCallback((
     sourceMemories: Memory[],
@@ -1123,8 +1126,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   }, []);
 
   const activeMemories = useMemo(() => {
-    return buildActiveMemories(memories, latestMessageGenerationMap);
-  }, [buildActiveMemories, memories, latestMessageGenerationMap]);
+    return buildActiveMemories(
+      memories.filter((memory) => memory.conversationId === conversationId),
+      latestMessageGenerationMap,
+    );
+  }, [buildActiveMemories, conversationId, memories, latestMessageGenerationMap]);
 
   // Build effective world core by merging base with session overrides and canonical goal derivations
   const effectiveWorldCore = useMemo((): WorldCore => {
@@ -1164,7 +1170,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     const mainNameById = new Map(appData.characters.map((character) => [character.id, character.name]));
     const sideNameById = new Map((appData.sideCharacters || []).map((character) => [character.id, character.name]));
 
-    for (const snapshot of characterStateSnapshots) {
+    for (const snapshot of characterStateSnapshots.filter((entry) => entry.conversationId === conversationId)) {
       if (latestMessageGenerationMap.get(snapshot.sourceMessageId) !== snapshot.sourceGenerationId) continue;
       const characterName = mainNameById.get(snapshot.characterId) || 'Unknown character';
       for (const metadata of Object.values(snapshot.statePayload._fieldChangeMetadata || {})) {
@@ -1176,7 +1182,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }
     }
 
-    for (const snapshot of sideCharacterSnapshots) {
+    for (const snapshot of sideCharacterSnapshots.filter((entry) => entry.conversationId === conversationId)) {
       if (latestMessageGenerationMap.get(snapshot.sourceMessageId) !== snapshot.sourceGenerationId) continue;
       const characterName = sideNameById.get(snapshot.sideCharacterId) || 'Unknown side character';
       for (const metadata of Object.values(snapshot.statePayload._fieldChangeMetadata || {})) {
@@ -1189,7 +1195,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     }
 
     const goalMap = new Map(effectiveWorldCore.storyGoals?.map((goal) => [goal.id, goal]) || []);
-    for (const derivation of goalStepDerivations) {
+    for (const derivation of goalStepDerivations.filter((entry) => entry.conversationId === conversationId)) {
       if (latestMessageGenerationMap.get(derivation.sourceMessageId) !== derivation.sourceGenerationId) continue;
       if (!derivation.completed) continue;
       const goal = goalMap.get(derivation.goalId);
@@ -1205,6 +1211,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     appData.characters,
     appData.sideCharacters,
     characterStateSnapshots,
+    conversationId,
     effectiveWorldCore.storyGoals,
     goalStepDerivations,
     latestMessageGenerationMap,
@@ -1231,6 +1238,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     responseLengthsRef.current = [];
     sessionMessageCountRef.current = 0;
     previousDayRef.current = currentDayRef.current;
+    placeholderMapRef.current = {};
+    continueEventsRef.current = [];
+    setWorldCoreSessionOverrides(null);
   }, [conversationId]);
 
   useEffect(() => {
@@ -1275,24 +1285,38 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   useEffect(() => {
     // Skip loading if we're in the "loading" state (waiting for scenario data)
     if (conversationId === "loading") return;
+
+    let isCancelled = false;
+    setSessionStates([]);
+    setSessionStatesLoaded(false);
     
     // Use requestAnimationFrame to defer non-critical data loading
     // This allows the UI shell to render first
     const frameId = requestAnimationFrame(() => {
       supabaseData.fetchSessionStates(conversationId).then(states => {
+        if (isCancelled) return;
         setSessionStates(states);
         setSessionStatesLoaded(true);
       }).catch(err => {
+        if (isCancelled) return;
         console.error('Failed to load session states:', err);
         setSessionStatesLoaded(true);
       });
     });
     
-    return () => cancelAnimationFrame(frameId);
+    return () => {
+      isCancelled = true;
+      cancelAnimationFrame(frameId);
+    };
   }, [conversationId]);
 
   useEffect(() => {
     if (conversationId === "loading") return;
+
+    let isCancelled = false;
+    setCharacterStateSnapshots([]);
+    setSideCharacterSnapshots([]);
+    setGoalStepDerivations([]);
 
     const frameId = requestAnimationFrame(() => {
       Promise.all([
@@ -1300,15 +1324,20 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         supabaseData.fetchSideCharacterMessageSnapshots(conversationId),
         supabaseData.fetchStoryGoalStepDerivations(conversationId),
       ]).then(([snapshots, sideSnapshots, derivations]) => {
+        if (isCancelled) return;
         setCharacterStateSnapshots(snapshots);
         setSideCharacterSnapshots(sideSnapshots);
         setGoalStepDerivations(derivations);
       }).catch(err => {
+        if (isCancelled) return;
         console.error('Failed to load canonical chat derivations:', err);
       });
     });
 
-    return () => cancelAnimationFrame(frameId);
+    return () => {
+      isCancelled = true;
+      cancelAnimationFrame(frameId);
+    };
   }, [conversationId]);
   
   // Load sidebar backgrounds when auth is ready - DEFERRED to not block first render
@@ -1338,18 +1367,27 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   // Load memories on mount - DEFERRED to not block first render
   useEffect(() => {
     if (conversationId === "loading") return;
+
+    let isCancelled = false;
+    setMemories([]);
+    setMemoriesLoaded(false);
     
     const frameId = requestAnimationFrame(() => {
       supabaseData.fetchMemories(conversationId).then(mems => {
+        if (isCancelled) return;
         setMemories(mems);
         setMemoriesLoaded(true);
       }).catch(err => {
+        if (isCancelled) return;
         console.error('Failed to load memories:', err);
         setMemoriesLoaded(true);
       });
     });
     
-    return () => cancelAnimationFrame(frameId);
+    return () => {
+      isCancelled = true;
+      cancelAnimationFrame(frameId);
+    };
   }, [conversationId]);
   
   // Issue #6B: Day-transition compression -- compress bullet memories when day increments
@@ -1563,7 +1601,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   
 // Helper to get effective character (base + stable session overrides + canonical message-scoped snapshots)
   const getManualSessionCharacter = useCallback((baseChar: Character): Character & { previousNames?: string[] } => {
-    const sessionState = sessionStates.find(s => s.characterId === baseChar.id);
+    const sessionState = sessionStates.find(s => s.conversationId === conversationId && s.characterId === baseChar.id);
     if (!sessionState) return baseChar;
 
     const hasObjectContent = (value: unknown): value is Record<string, any> =>
@@ -1649,7 +1687,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       secrets: mergeExtrasSection(baseChar.secrets, (sessionState as any).secrets),
       fears: mergeExtrasSection(baseChar.fears, (sessionState as any).fears),
     };
-  }, [sessionStates]);
+  }, [conversationId, sessionStates]);
 
   const buildActiveCharacterSnapshotMap = useCallback((
     snapshots: CharacterStateMessageSnapshot[],
@@ -1683,8 +1721,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   }, []);
 
   const activeCharacterSnapshotMap = useMemo(
-    () => buildActiveCharacterSnapshotMap(characterStateSnapshots, latestMessageGenerationMap, conversation?.messages || []),
-    [buildActiveCharacterSnapshotMap, characterStateSnapshots, latestMessageGenerationMap, conversation?.messages],
+    () => buildActiveCharacterSnapshotMap(
+      characterStateSnapshots.filter((snapshot) => snapshot.conversationId === conversationId),
+      latestMessageGenerationMap,
+      conversation?.messages || [],
+    ),
+    [buildActiveCharacterSnapshotMap, characterStateSnapshots, conversationId, latestMessageGenerationMap, conversation?.messages],
   );
 
   const buildActiveSideCharacterSnapshotMap = useCallback((
@@ -1719,8 +1761,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   }, []);
 
   const activeSideCharacterSnapshotMap = useMemo(
-    () => buildActiveSideCharacterSnapshotMap(sideCharacterSnapshots, latestMessageGenerationMap, conversation?.messages || []),
-    [buildActiveSideCharacterSnapshotMap, sideCharacterSnapshots, latestMessageGenerationMap, conversation?.messages],
+    () => buildActiveSideCharacterSnapshotMap(
+      sideCharacterSnapshots.filter((snapshot) => snapshot.conversationId === conversationId),
+      latestMessageGenerationMap,
+      conversation?.messages || [],
+    ),
+    [buildActiveSideCharacterSnapshotMap, sideCharacterSnapshots, conversationId, latestMessageGenerationMap, conversation?.messages],
   );
 
   const computeEffectiveCharacter = useCallback((
@@ -1804,7 +1850,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     const snapshotMap =
       overrides?.snapshots || overrides?.conversationMessages
         ? buildActiveCharacterSnapshotMap(
-            overrides?.snapshots ?? characterStateSnapshots,
+            (overrides?.snapshots ?? characterStateSnapshots).filter((snapshot) => snapshot.conversationId === conversationId),
             overrideGenerationMap,
             conversationMessages,
           )
@@ -1813,7 +1859,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     const sideSnapshotMap =
       overrides?.sideSnapshots || overrides?.conversationMessages
         ? buildActiveSideCharacterSnapshotMap(
-            overrides?.sideSnapshots ?? sideCharacterSnapshots,
+            (overrides?.sideSnapshots ?? sideCharacterSnapshots).filter((snapshot) => snapshot.conversationId === conversationId),
             overrideGenerationMap,
             conversationMessages,
           )
@@ -1822,7 +1868,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     const overrideGoalCompletionIds =
       overrides?.goalDerivations || overrides?.conversationMessages
         ? buildActiveGoalCompletionIds(
-            overrides?.goalDerivations ?? goalStepDerivations,
+            (overrides?.goalDerivations ?? goalStepDerivations).filter((derivation) => derivation.conversationId === conversationId),
             overrideGenerationMap,
           )
         : activeGoalCompletionIds;
@@ -2733,7 +2779,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         showCharacterUpdateIndicator(mainChar.id);
         
         // Find or create session state
-        let sessionState = sessionStates.find(s => s.characterId === mainChar.id);
+        let sessionState = sessionStates.find(s => s.conversationId === conversationId && s.characterId === mainChar.id);
         if (!sessionState) {
           sessionState = await supabaseData.createSessionState(mainChar, conversationId, user.id);
           setSessionStates(prev => [...prev, sessionState!]);
@@ -4694,7 +4740,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       allPlayableCharacters
         .filter(c => c.controlledBy === 'AI')
         .forEach(c => {
-          const session = sessionStates.find(s => s.characterId === c.id);
+          const session = sessionStates.find(s => s.conversationId === conversationId && s.characterId === c.id);
           const goals = session?.goals || ('goals' in c ? c.goals : undefined);
           if (Array.isArray(goals)) {
             goals.forEach((g: any) => {
@@ -5082,7 +5128,7 @@ Do not acknowledge this instruction in your response.`;
       }
       
       // Find or create session state for this character
-      let sessionState = sessionStates.find(s => s.characterId === char.id);
+      let sessionState = sessionStates.find(s => s.conversationId === conversationId && s.characterId === char.id);
       
       if (!sessionState) {
         // Create new session state
@@ -5310,7 +5356,7 @@ const updatedChar: SideCharacter = {
         ? mapTilePositionToPreview(position, naturalSize, { width: CHAT_TILE_WIDTH, height: CHAT_TILE_HEIGHT })
         : { x: clampPercent(position.x), y: clampPercent(position.y) };
 
-      let sessionState = sessionStates.find(s => s.characterId === charId);
+      let sessionState = sessionStates.find(s => s.conversationId === conversationId && s.characterId === charId);
       if (!sessionState) {
         sessionState = await supabaseData.createSessionState(baseChar, conversationId, user.id);
         setSessionStates(prev => [...prev, sessionState!]);
