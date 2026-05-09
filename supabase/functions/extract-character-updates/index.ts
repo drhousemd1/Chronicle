@@ -91,6 +91,11 @@ function isAllowedUpdateField(field: string): boolean {
   return false;
 }
 
+function isAllowedUpdateValue(field: string, value: string): boolean {
+  if (field.startsWith("goals.") && value.trim().toUpperCase() === "REMOVE") return false;
+  return true;
+}
+
 function normalizeText(value: string): string {
   return value
     .toLowerCase()
@@ -530,8 +535,7 @@ Structured sections:
 - sections.SectionTitle.ItemLabel
 
 Character goals:
-- goals.GoalTitle
-- goals.GoalTitle = "REMOVE"`;
+- goals.GoalTitle`;
 
     const systemPrompt = `You are the post-turn CHARACTER STATE SYNC worker for an adult roleplay app. Your job is to compare the latest exchange against the current saved character cards and return only supported field updates that materially changed.
 
@@ -566,11 +570,10 @@ ${supportedFields}
 - Use goals.GoalTitle only for sustained goals, not one-off impulses or routine actions.
 - Prefer updating an existing goal over creating a near-duplicate.
 - Create at most one new goal per character from this exchange.
-- Keep goals bounded: 3-6 logical steps, never runaway lists.
-- Goal value format:
-  desired_outcome: What success looks like. | current_status: Current state. | progress: 0-100 | complete_steps: 1,3 | new_steps: Step 1: First milestone. Step 2: Second milestone.
+- For existing goals, update only current_status, progress, and complete_steps. Do not send new_steps for an existing goal, and do not replace an existing goal's step list.
+- For brand-new goals, include desired_outcome, current_status, progress, and new_steps. New goals should use a logical step-by-step path toward the desired outcome. Prefer 3-6 steps, with a hard cap of 10.
 - Use complete_steps only for existing steps that were clearly completed.
-- Use goals.GoalTitle = "REMOVE" only when a goal is clearly obsolete, contradicted, or abandoned.
+- Do not remove completed goals. When all steps are complete, preserve the goal and update current_status to show that the desired outcome is now part of the ongoing story.
 
 --- CONSERVATIVE UPDATE RULES ---
 - Empty updates are valid and preferred over low-confidence edits.
@@ -587,7 +590,8 @@ Return only this JSON shape:
     { "character": "CharacterName", "field": "currentMood", "value": "Nervous but determined" },
     { "character": "CharacterName", "field": "scenePosition", "value": "inside the cabin near the fireplace" },
     { "character": "CharacterName", "field": "relationships._extras", "value": "Emma: Trusted confidante after sharing the secret" },
-    { "character": "CharacterName", "field": "goals.Rebuild Trust", "value": "desired_outcome: Restore enough trust to work together honestly. | current_status: First honest conversation happened. | progress: 25 | complete_steps: 1 | new_steps: Step 1: Admit the lie. Step 2: Explain why it happened. Step 3: Follow through on one promise." }
+    { "character": "CharacterName", "field": "goals.Rebuild Trust", "value": "current_status: First honest conversation happened. | progress: 25 | complete_steps: 1" },
+    { "character": "CharacterName", "field": "goals.Escape the City", "value": "desired_outcome: Reach safety outside the city. | current_status: Goal newly established. | progress: 0 | new_steps: Step 1: Find transportation. Step 2: Gather supplies. Step 3: Leave before dawn." }
   ]
 }
 
@@ -681,7 +685,7 @@ Return ONLY valid JSON. No explanations.`;
               const safeUpdates = (parsed.updates || [])
                 .filter((u: any) =>
                   typeof u.character === 'string' && typeof u.field === 'string' && typeof u.value === 'string' &&
-                  u.character.trim() && u.field.trim() && u.value.trim() && isAllowedUpdateField(u.field.trim())
+                  u.character.trim() && u.field.trim() && u.value.trim() && isAllowedUpdateField(u.field.trim()) && isAllowedUpdateValue(u.field.trim(), u.value)
                 )
                 .map((u: ExtractedUpdate) => {
                   if (u.field !== 'currentMood') return u;
@@ -728,7 +732,8 @@ Return ONLY valid JSON. No explanations.`;
         u.character.trim() &&
         u.field.trim() &&
         u.value.trim() &&
-        isAllowedUpdateField(u.field.trim())
+        isAllowedUpdateField(u.field.trim()) &&
+        isAllowedUpdateValue(u.field.trim(), u.value)
       )
       .map((u: ExtractedUpdate) => {
         if (u.field !== 'currentMood') return u;

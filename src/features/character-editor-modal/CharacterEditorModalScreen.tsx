@@ -722,6 +722,8 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
           if (field.startsWith('goals.')) {
             const goalTitle = field.slice(6);
             if (goalTitle) {
+              if (value.trim().toUpperCase() === 'REMOVE') continue;
+
               let currentStatus = value;
               let desiredOutcome = '';
               let progress = 0;
@@ -744,31 +746,17 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
               const existingIdx = updatedGoals.findIndex(g => g.title.toLowerCase() === goalTitle.toLowerCase());
               if (existingIdx !== -1) {
                 const existingGoal = updatedGoals[existingIdx];
-                let updatedSteps = [...(existingGoal.steps || [])];
-                
+                const updatedSteps = [...(existingGoal.steps || [])];
+                if (!progressMatch) progress = existingGoal.progress || 0;
+
                 if (newStepsMatch) {
-                  const newStepsRaw = newStepsMatch[1].trim();
-                  const stepEntries = newStepsRaw.split(/Step\s+\d+:\s*/i).filter(Boolean);
-                  console.log(`[deep-scan] Goal "${existingGoal.title}" - received ${stepEntries.length} steps from AI (full replacement)`);
-                  
-                  updatedSteps = [];
-                  for (const desc of stepEntries) {
-                    const trimmed = desc.trim().replace(/\|$/, '').trim();
-                    if (trimmed) updatedSteps.push({ id: uid('step'), description: trimmed, completed: false });
-                  }
-                  
-                  if (completeStepsMatch) {
-                    const indices = completeStepsMatch[1].trim().split(',').map((s: string) => parseInt(s.trim(), 10)).filter((n: number) => !isNaN(n));
-                    for (const idx of indices) {
-                      if (idx >= 1 && idx <= updatedSteps.length) updatedSteps[idx - 1] = { ...updatedSteps[idx - 1], completed: true, completedAt: now() };
-                    }
-                  }
-                } else {
-                  console.log(`[deep-scan] Goal "${existingGoal.title}" - no new_steps found in AI response`);
-                  if (completeStepsMatch) {
-                    const indices = completeStepsMatch[1].trim().split(',').map((s: string) => parseInt(s.trim(), 10)).filter((n: number) => !isNaN(n));
-                    for (const idx of indices) {
-                      if (idx >= 1 && idx <= updatedSteps.length) updatedSteps[idx - 1] = { ...updatedSteps[idx - 1], completed: true, completedAt: now() };
+                  console.log(`[deep-scan] Goal "${existingGoal.title}" - ignored new_steps for existing goal`);
+                }
+                if (completeStepsMatch) {
+                  const indices = completeStepsMatch[1].trim().split(',').map((s: string) => parseInt(s.trim(), 10)).filter((n: number) => !isNaN(n));
+                  for (const idx of indices) {
+                    if (idx >= 1 && idx <= updatedSteps.length) {
+                      updatedSteps[idx - 1] = { ...updatedSteps[idx - 1], completed: true, completedAt: now() };
                     }
                   }
                 }
@@ -786,10 +774,14 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
                 const newSteps: Array<{ id: string; description: string; completed: boolean }> = [];
                 if (newStepsMatch) {
                   const newStepsRaw = newStepsMatch[1].trim();
-                  const stepEntries = newStepsRaw.split(/Step\s+\d+:\s*/i).filter(Boolean);
+                  const stepEntries = newStepsRaw.split(/\bStep\s+\d+:\s*/i).filter(Boolean);
                   console.log(`[deep-scan] NEW goal "${goalTitle}" - parsing ${stepEntries.length} steps from AI`);
-                  for (const desc of stepEntries) {
-                    const trimmed = desc.trim().replace(/\|$/, '').trim();
+                  for (const desc of stepEntries.slice(0, 10)) {
+                    const trimmed = desc
+                      .trim()
+                      .replace(/\|$/, '')
+                      .replace(/\s*\((?:complete|completed)\)\.?$/i, '')
+                      .trim();
                     if (trimmed) newSteps.push({ id: uid('step'), description: trimmed, completed: false });
                   }
                 } else {

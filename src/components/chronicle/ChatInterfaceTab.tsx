@@ -2955,6 +2955,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     return false;
   };
 
+  const isAllowedExtractionUpdate = (update: ExtractedUpdate): boolean => {
+    if (!isAllowedExtractionField(update.field)) return false;
+    if (update.field.startsWith('goals.') && update.value.trim().toUpperCase() === 'REMOVE') return false;
+    return true;
+  };
+
   const normalizeForSimilarity = (text: string): string =>
     text
       .toLowerCase()
@@ -3291,7 +3297,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       // Defensive: filter out updates for non-eligible characters and unsupported fields
       const updates = (data?.updates || [])
         .filter((u: ExtractedUpdate) => eligibleNames.has(u.character.toLowerCase()))
-        .filter((u: ExtractedUpdate) => isAllowedExtractionField(u.field));
+        .filter((u: ExtractedUpdate) => isAllowedExtractionUpdate(u));
 
       if (!isMessageGenerationStillCurrent(meta?.sourceMessageId, meta?.sourceMessageGenerationId)) {
         debugLog('[extractCharacterUpdates] Discarded stale result for non-current turn');
@@ -3457,11 +3463,15 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   };
 
   const parseGoalSteps = (raw: string): Array<{ id: string; description: string; completed: boolean }> => {
-    const stepEntries = raw.split(/(?:^|\n)Step\s+\d+:\s*/i).filter(Boolean);
+    const stepEntries = raw.split(/\bStep\s+\d+:\s*/i).filter(Boolean);
     return stepEntries
-      .map(desc => desc.trim().replace(/\|$/, '').trim())
+      .map(desc => desc
+        .trim()
+        .replace(/\|$/, '')
+        .replace(/\s*\((?:complete|completed)\)\.?$/i, '')
+        .trim())
       .filter(Boolean)
-      .slice(0, 6)
+      .slice(0, 10)
       .map(desc => ({ id: `step_${uuid().slice(0, 12)}`, description: desc, completed: false }));
   };
 
@@ -3544,10 +3554,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         if (!goalTitle) continue;
         const existingGoals = [...(nextState.goals || [])];
 
-        if (value.trim() === 'REMOVE') {
-          nextState.goals = existingGoals.filter(g => g.title.toLowerCase() !== goalTitle.toLowerCase());
-          continue;
-        }
+        if (value.trim().toUpperCase() === 'REMOVE') continue;
 
         let desiredOutcome = '';
         let currentStatus = value;
@@ -3572,10 +3579,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         const existingGoalIndex = existingGoals.findIndex(g => g.title.toLowerCase() === goalTitle.toLowerCase());
         if (existingGoalIndex !== -1) {
           const existingGoal = existingGoals[existingGoalIndex];
-          let updatedSteps = [...(existingGoal.steps || [])];
-          if (newStepsMatch) {
-            updatedSteps = parseGoalSteps(newStepsMatch[1].trim());
-          }
+          const updatedSteps = [...(existingGoal.steps || [])];
+          if (!progressMatch) progress = existingGoal.progress || 0;
           if (completeStepsMatch) {
             const indices = completeStepsMatch[1].trim().split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
             for (const idx of indices) {
