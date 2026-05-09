@@ -97,6 +97,8 @@ export type GoalStep = {
   description: string;
   completed: boolean;
   completedAt?: number;
+  completedDay?: number | null;
+  completedTimeOfDay?: TimeOfDay | null;
 };
 
 export type StoryGoal = {
@@ -483,8 +485,22 @@ export type Memory = {
   updatedAt: number;
 };
 
+export type FieldChangeMetadata = {
+  fieldPath: string;
+  storyDay: number | null;
+  timeOfDay: TimeOfDay | null;
+  sourceMessageId: string;
+  sourceGenerationId: string;
+  updatedAt: number;
+  previousValuePreview?: string;
+  nextValuePreview?: string;
+};
+
+export type FieldChangeMetadataMap = Record<string, FieldChangeMetadata>;
+
 export type CharacterStateSnapshotPayload = Partial<Character> & {
   previousNames?: string[];
+  _fieldChangeMetadata?: FieldChangeMetadataMap;
 };
 
 export type CharacterStateMessageSnapshot = {
@@ -498,7 +514,9 @@ export type CharacterStateMessageSnapshot = {
   createdAt: number;
 };
 
-export type SideCharacterStateSnapshotPayload = Partial<SideCharacter>;
+export type SideCharacterStateSnapshotPayload = Partial<SideCharacter> & {
+  _fieldChangeMetadata?: FieldChangeMetadataMap;
+};
 
 export type SideCharacterMessageSnapshot = {
   id: string;

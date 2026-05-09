@@ -16,6 +16,10 @@ interface CharacterData {
   name: string;
   previousNames?: string[];
   nicknames?: string;
+  age?: string;
+  sexType?: string;
+  sexualOrientation?: string;
+  roleDescription?: string;
   physicalAppearance?: Record<string, string>;
   currentlyWearing?: Record<string, string>;
   preferredClothing?: Record<string, string>;
@@ -26,7 +30,17 @@ interface CharacterData {
   customSections?: Array<{ title: string; items: Array<{ label: string; value: string }> }>;
   // New sections
   background?: Record<string, string>;
-  personality?: { splitMode?: boolean; traits?: Array<{ label: string; value: string }>; outwardTraits?: Array<{ label: string; value: string }>; inwardTraits?: Array<{ label: string; value: string }> };
+  personality?: {
+    splitMode?: boolean;
+    traits?: Array<{ label: string; value: string } | string>;
+    outwardTraits?: Array<{ label: string; value: string }>;
+    inwardTraits?: Array<{ label: string; value: string }>;
+    miscellaneous?: string;
+    secrets?: string;
+    fears?: string;
+    kinksFantasies?: string;
+    desires?: string;
+  };
   tone?: { _extras?: Array<{ label: string; value: string }> };
   keyLifeEvents?: { _extras?: Array<{ label: string; value: string }> };
   relationships?: { _extras?: Array<{ label: string; value: string }> };
@@ -54,9 +68,12 @@ function sanitizeCurrentMood(value: string): string {
 }
 
 function isAllowedUpdateField(field: string): boolean {
-  if (field === "location" || field === "scenePosition" || field === "currentMood" || field === "nicknames") return true;
+  if (["age", "sexType", "sexualOrientation", "roleDescription", "location", "scenePosition", "currentMood", "nicknames"].includes(field)) return true;
   if (field.startsWith("goals.")) return true;
-  if (field.startsWith("sections.")) return true;
+  if (field.startsWith("sections.")) {
+    const sectionTitle = field.split(".")[1]?.trim().toLowerCase();
+    return sectionTitle !== "goals" && sectionTitle !== "goal";
+  }
   if (!field.includes(".")) return false;
 
   const [parent, child] = field.split(".");
@@ -66,7 +83,7 @@ function isAllowedUpdateField(field: string): boolean {
     return true;
   }
   if (parent === "personality") {
-    return ["traits", "outwardTraits", "inwardTraits", "splitMode"].includes(child);
+    return ["traits", "outwardTraits", "inwardTraits", "splitMode", "miscellaneous", "secrets", "fears", "kinksFantasies", "desires"].includes(child);
   }
   if (["tone", "keyLifeEvents", "relationships", "secrets", "fears"].includes(parent)) {
     return child === "_extras";
@@ -171,7 +188,15 @@ function getExistingStructuredEntries(character: CharacterData, field: string): 
     const traits = (character.personality as any)?.[child];
     if (!Array.isArray(traits)) return [];
     return traits
-      .map((t: any) => ({ label: String(t?.label || "").trim(), value: String(t?.value || "").trim() }))
+      .map((t: any) => {
+        if (typeof t === "string") {
+          const parsed = parseLabeledValue(t);
+          return parsed
+            ? { label: parsed.label, value: parsed.description }
+            : { label: t.trim(), value: t.trim() };
+        }
+        return { label: String(t?.label || "").trim(), value: String(t?.value || "").trim() };
+      })
       .filter(t => t.label && t.value);
   }
 
@@ -222,7 +247,7 @@ function reconcileStructuredUpdates(
     }
 
     const structuredField =
-      update.field.startsWith("personality.") ||
+      ["personality.traits", "personality.outwardTraits", "personality.inwardTraits"].includes(update.field) ||
       ["tone._extras", "keyLifeEvents._extras", "relationships._extras", "secrets._extras", "fears._extras"].includes(update.field);
 
     if (!structuredField) {
@@ -292,118 +317,139 @@ function reconcileStructuredUpdates(
   return accepted;
 }
 
-/**
- * Build a structured "CURRENT STATE" view for each character.
- * Presents data in a way that emphasizes what the AI should maintain.
- */
 function buildCharacterStateBlock(c: CharacterData): string {
+  const formatTraitEntry = (trait: unknown): string => {
+    if (typeof trait === "string") {
+      const trimmed = trait.trim();
+      return trimmed ? `- ${trimmed}` : "";
+    }
+    if (trait && typeof trait === "object") {
+      const record = trait as { label?: unknown; value?: unknown };
+      const label = String(record.label || "").trim();
+      const value = String(record.value || "").trim();
+      if (label && value) return `- ${label}: ${value}`;
+      if (label) return `- ${label}`;
+      if (value) return `- ${value}`;
+    }
+    return "";
+  };
+
+  const formatRecord = (record: Record<string, any> | undefined): string[] => {
+    if (!record) return [];
+    const lines: string[] = [];
+    for (const [key, rawValue] of Object.entries(record)) {
+      if (key === "_extras") continue;
+      const value = typeof rawValue === "string" ? rawValue.trim() : "";
+      if (value) lines.push(`- ${key}: ${value}`);
+    }
+    const extras = (record as any)._extras;
+    if (Array.isArray(extras)) {
+      for (const entry of extras) {
+        const label = String(entry?.label || "").trim();
+        const value = String(entry?.value || "").trim();
+        if (label || value) lines.push(`- ${label || "Extra"}: ${value || "(empty)"}`);
+      }
+    }
+    return lines;
+  };
+
+  const formatExtras = (section: { _extras?: Array<{ label: string; value: string }> } | undefined): string[] => {
+    if (!Array.isArray(section?._extras)) return [];
+    return section!._extras!
+      .map((entry) => {
+        const label = String(entry?.label || "").trim();
+        const value = String(entry?.value || "").trim();
+        return label || value ? `- ${label || "Entry"}: ${value || "(empty)"}` : "";
+      })
+      .filter(Boolean);
+  };
+
+  const appendBlock = (lines: string[], title: string, entries: string[]) => {
+    lines.push(`--- ${title} ---`);
+    lines.push(entries.length ? entries.join("\n") : "(empty)");
+  };
+
   const lines: string[] = [];
-  lines.push(`=== ${c.name} ===`);
-  
-  // Include previous names for lookup
+  lines.push(`## ${c.name}`);
+
   if (c.previousNames?.length) {
-    lines.push(`  Previously known as: ${c.previousNames.join(', ')}`);
+    lines.push(`Previously known as: ${c.previousNames.join(", ")}`);
   }
   if (c.nicknames) {
-    lines.push(`  Nicknames: ${c.nicknames}`);
+    lines.push(`Nicknames: ${c.nicknames}`);
   }
-  
-  // --- VOLATILE STATE (should be actively maintained) ---
-  lines.push(`  [VOLATILE - maintain actively]`);
-  lines.push(`    Mood: ${c.currentMood || '(not set)'}`);
-  lines.push(`    Location: ${c.location || '(not set)'}`);
-  lines.push(`    Scene Position: ${c.scenePosition || '(not set)'}`);
-  
-  {
-    const wearingEntries = c.currentlyWearing ? Object.entries(c.currentlyWearing).filter(([k, v]) => k !== '_extras' && v).map(([k, v]) => `${k}: ${v}`).join(', ') : '';
-    const wearingExtras = (c.currentlyWearing as any)?._extras;
-    const extrasStr = wearingExtras?.length ? wearingExtras.filter((e: any) => e.value).map((e: any) => `${e.label}: ${e.value}`).join(', ') : '';
-    const allWearing = [wearingEntries, extrasStr].filter(Boolean).join(', ');
-    lines.push(`    Currently Wearing: ${allWearing || '(not yet described -- update when clothing is mentioned)'}`);
+  appendBlock(lines, "Core details", [
+    `- age: ${c.age || "(empty)"}`,
+    `- sexType: ${c.sexType || "(empty)"}`,
+    `- sexualOrientation: ${c.sexualOrientation || "(empty)"}`,
+    `- roleDescription: ${c.roleDescription || "(empty)"}`,
+  ]);
+
+  appendBlock(lines, "Current state", [
+    `- currentMood: ${c.currentMood || "(empty)"}`,
+    `- location: ${c.location || "(empty)"}`,
+    `- scenePosition: ${c.scenePosition || "(empty)"}`,
+  ]);
+  appendBlock(lines, "Physical appearance", formatRecord(c.physicalAppearance));
+  appendBlock(lines, "Currently wearing", formatRecord(c.currentlyWearing));
+  appendBlock(lines, "Preferred clothing", formatRecord(c.preferredClothing));
+  appendBlock(lines, "Background", formatRecord(c.background));
+
+  if (c.personality?.splitMode) {
+    appendBlock(lines, "Personality outward traits", (c.personality.outwardTraits || []).map(formatTraitEntry).filter(Boolean));
+    appendBlock(lines, "Personality inward traits", (c.personality.inwardTraits || []).map(formatTraitEntry).filter(Boolean));
+  } else if (Array.isArray(c.personality?.traits)) {
+    appendBlock(lines, "Personality traits", c.personality.traits.map(formatTraitEntry).filter(Boolean));
+  } else if (c.personality) {
+    appendBlock(lines, "Personality", Object.entries(c.personality).map(([key, value]) => `- ${key}: ${Array.isArray(value) ? value.join(", ") : value}`).filter(Boolean));
   }
-  
-  // --- STABLE STATE (update only when explicitly stated) ---
-  lines.push(`  [STABLE - update only when explicitly described]`);
-  {
-    const appearance = c.physicalAppearance ? Object.entries(c.physicalAppearance).filter(([k, v]) => k !== '_extras' && v).map(([k, v]) => `${k}: ${v}`).join(', ') : '';
-    const paExtras = (c.physicalAppearance as any)?._extras;
-    const paExtrasStr = paExtras?.length ? paExtras.filter((e: any) => e.value).map((e: any) => `${e.label}: ${e.value}`).join(', ') : '';
-    const allAppearance = [appearance, paExtrasStr].filter(Boolean).join(', ');
-    lines.push(`    Physical Appearance: ${allAppearance || '(not yet described -- populate when revealed in dialogue)'}`);
+
+  const sidePersonalityDetails = [
+    ["miscellaneous", c.personality?.miscellaneous],
+    ["secrets", c.personality?.secrets],
+    ["fears", c.personality?.fears],
+    ["kinksFantasies", c.personality?.kinksFantasies],
+    ["desires", c.personality?.desires],
+  ]
+    .map(([key, value]) => String(value || "").trim() ? `- ${key}: ${String(value).trim()}` : "")
+    .filter(Boolean);
+  if (sidePersonalityDetails.length) {
+    appendBlock(lines, "Personality details", sidePersonalityDetails);
   }
-  
-  {
-    const preferred = c.preferredClothing ? Object.entries(c.preferredClothing).filter(([k, v]) => k !== '_extras' && v).map(([k, v]) => `${k}: ${v}`).join(', ') : '';
-    const pcExtras = (c.preferredClothing as any)?._extras;
-    const pcExtrasStr = pcExtras?.length ? pcExtras.filter((e: any) => e.value).map((e: any) => `${e.label}: ${e.value}`).join(', ') : '';
-    const allPreferred = [preferred, pcExtrasStr].filter(Boolean).join(', ');
-    lines.push(`    Preferred Clothing: ${allPreferred || '(not yet described -- populate when style preferences emerge)'}`);
-  }
-  
-  // --- BACKGROUND (update only when explicitly stated) ---
-  {
-    const bgEntries = c.background ? Object.entries(c.background).filter(([k, v]) => k !== '_extras' && v).map(([k, v]) => `${k}: ${v}`).join(', ') : '';
-    const bgExtras = (c.background as any)?._extras;
-    const bgExtrasStr = bgExtras?.length ? bgExtras.filter((e: any) => e.value).map((e: any) => `${e.label}: ${e.value}`).join(', ') : '';
-    const allBg = [bgEntries, bgExtrasStr].filter(Boolean).join(', ');
-    lines.push(`    Background: ${allBg || '(not yet described -- populate when job, education, residence, hobbies, etc. are revealed)'}`);
-  }
-  
-  // --- PERSONALITY ---
-  {
-    if (c.personality?.splitMode) {
-      const outward = (c.personality.outwardTraits || []).filter(t => t.value).map(t => `${t.label}: ${t.value}`).join(', ');
-      const inward = (c.personality.inwardTraits || []).filter(t => t.value).map(t => `${t.label}: ${t.value}`).join(', ');
-      lines.push(`    Personality (outward): ${outward || '(not yet described -- infer outward traits from observed behavior)'}`);
-      lines.push(`    Personality (inward): ${inward || '(not yet described -- infer inner traits from thoughts and private moments)'}`);
-    } else {
-      const traits = (c.personality?.traits || []).filter(t => t.value).map(t => `${t.label}: ${t.value}`).join(', ');
-      lines.push(`    Personality: ${traits || '(not yet described -- infer traits from observed behavior and dialogue patterns)'}`);
-    }
-  }
-  
-  // --- EXTRAS-ONLY SECTIONS (Tone, Key Life Events, Relationships, Secrets, Fears) ---
+
   const extrasOnlySections: Array<{ key: keyof CharacterData; title: string }> = [
-    { key: 'tone', title: 'Tone' },
-    { key: 'keyLifeEvents', title: 'Key Life Events' },
-    { key: 'relationships', title: 'Relationships' },
-    { key: 'secrets', title: 'Secrets' },
-    { key: 'fears', title: 'Fears' },
+    { key: "tone", title: "Tone" },
+    { key: "keyLifeEvents", title: "Key life events" },
+    { key: "relationships", title: "Relationships" },
+    { key: "secrets", title: "Secrets" },
+    { key: "fears", title: "Fears" },
   ];
   for (const { key, title } of extrasOnlySections) {
-    const section = c[key] as { _extras?: Array<{ label: string; value: string }> } | undefined;
-    const extrasStr = section?._extras?.length ? section._extras.filter(e => e.value).map(e => `${e.label}: ${e.value}`).join(', ') : '';
-    lines.push(`    ${title}: ${extrasStr || '(none yet -- populate when revealed in dialogue)'}`);
+    appendBlock(lines, title, formatExtras(c[key] as { _extras?: Array<{ label: string; value: string }> } | undefined));
   }
+
   if (c.goals?.length) {
-    lines.push(`  [GOALS - REVIEW EACH ONE AGAINST DIALOGUE]`);
+    lines.push(`--- Character goals ---`);
     for (const g of c.goals) {
-      const outcome = g.desiredOutcome ? ` | desired_outcome: ${g.desiredOutcome}` : '';
+      const outcome = g.desiredOutcome ? `desired_outcome: ${g.desiredOutcome}` : "";
+      lines.push(`- ${g.title}: ${outcome} | current_status: ${g.currentStatus || "(empty)"} | progress: ${g.progress || 0}%`);
       if (g.steps?.length) {
-        const completedCount = g.steps.filter(s => s.completed).length;
-        const stepList = g.steps.map((s, i) => `      ${s.completed ? '[x]' : '[ ]'} Step ${i + 1}: ${s.description}`).join('\n');
-        const calcProgress = Math.round((completedCount / g.steps.length) * 100);
-        lines.push(`    ${g.title}: progress: ${calcProgress}% (${completedCount}/${g.steps.length} steps)${outcome}`);
-        lines.push(`    steps:\n${stepList}`);
-      } else {
-        lines.push(`    ${g.title}: progress: ${g.progress}%${outcome}`);
+        for (const [index, step] of g.steps.entries()) {
+          lines.push(`  ${step.completed ? "[x]" : "[ ]"} Step ${index + 1}: ${step.description}`);
+        }
       }
     }
   } else {
-    lines.push(`  [GOALS - NONE YET. Create goals from any desires, ambitions, or intentions expressed.]`);
+    appendBlock(lines, "Character goals", []);
   }
-  
-  // --- CUSTOM SECTIONS ---
+
   if (c.customSections?.length) {
     for (const section of c.customSections) {
-      lines.push(`  [${section.title} - CHECK EACH ITEM FOR ACCURACY]`);
-      for (const item of section.items) {
-        lines.push(`    ${item.label}: ${item.value}`);
-      }
+      appendBlock(lines, `Custom section: ${section.title}`, (section.items || []).map(item => `- ${item.label}: ${item.value}`).filter(Boolean));
     }
   }
-  
-  return lines.join('\n');
+
+  return lines.join("\n");
 }
 
 serve(async (req) => {
@@ -424,7 +470,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const { userMessage, aiResponse, recentContext, characters, modelId, eligibleCharacters } = await req.json();
+    const { userMessage, aiResponse, recentContext, characters, modelId, eligibleCharacters, currentDay, currentTimeOfDay } = await req.json();
     
     if (!userMessage && !aiResponse) {
       return new Response(
@@ -445,337 +491,103 @@ serve(async (req) => {
       ? `\n\nELIGIBLE CHARACTERS (ONLY emit updates for these — ignore all others):\n${[...eligibleSet].join(', ')}\n`
       : '';
 
-    const systemPrompt = `You are a CHARACTER EVOLUTION ANALYST for a roleplay/narrative application. Your role is to meticulously track how characters change, grow, and develop through dialogue. You are thorough, detail-oriented, and never lazy.
+    const storyClock = currentDay != null || currentTimeOfDay
+      ? `Day: ${currentDay ?? 'unknown'}\nTime of Day: ${currentTimeOfDay ?? 'unknown'}`
+      : 'Day: unknown\nTime of Day: unknown';
+
+    const supportedFields = `
+Top-level fields:
+- age
+- sexType
+- sexualOrientation
+- roleDescription
+- nicknames
+- location
+- scenePosition
+- currentMood
+
+Nested detail fields:
+- physicalAppearance.* and physicalAppearance._extras
+- currentlyWearing.* and currentlyWearing._extras
+- preferredClothing.* and preferredClothing._extras
+- background.* and background._extras
+
+Structured sections:
+- personality.traits
+- personality.outwardTraits
+- personality.inwardTraits
+- personality.splitMode
+- personality.miscellaneous
+- personality.secrets
+- personality.fears
+- personality.kinksFantasies
+- personality.desires
+- tone._extras
+- keyLifeEvents._extras
+- relationships._extras
+- secrets._extras
+- fears._extras
+- sections.SectionTitle.ItemLabel
+
+Character goals:
+- goals.GoalTitle
+- goals.GoalTitle = "REMOVE"`;
+
+    const systemPrompt = `You are the post-turn CHARACTER STATE SYNC worker for an adult roleplay app. Your job is to compare the latest exchange against the current saved character cards and return only supported field updates that materially changed.
+
+--- CURRENT STORY CLOCK ---
+${storyClock}
+
+The app code owns timestamps. Do not invent day/time metadata. If an accepted update is saved, the backend will stamp it with the current story clock and source message/generation.
+
 ${eligibleConstraint}
-CHARACTERS IN THIS SCENE:
-${characterContext || 'No character data provided'}
-
-YOUR MANDATORY PROCESS (THREE PHASES - NEVER SKIP ANY):
-
-═══════════════════════════════════════════════════
-PHASE 1 - SCAN FOR NEW INFORMATION (ALL CATEGORIES, EQUAL WEIGHT)
-═══════════════════════════════════════════════════
-Read the dialogue carefully. For EACH eligible character mentioned or active in the exchange, check ALL of these categories:
-
-A) VOLATILE STATE — mood, broad location, micro scene position, clothing changes, temporary physical conditions
-   → If a character is actively present and speaking/acting, update mood, location, and scenePosition when they materially changed.
-   → Characters NOT mentioned or acting in this exchange should NOT receive updates.
-   → location is the broad place ("abandoned cabin", "kitchen", "downtown coffee shop").
-   → scenePosition is the immediate physical placement within that place ("outside the cabin door", "halfway through the doorway", "inside near the fireplace", "pinned against the wall").
-   → For user-controlled characters, track scenePosition from the user's authored actions and from visible AI reactions, but NEVER assume they completed a movement the user did not write.
-
-B) APPEARANCE CHANGES — new descriptions of hair, clothing, physical traits
-
-C) PERSONALITY EVOLUTION — Does their behavior across these messages reveal personality traits?
-   → INFER traits from ACTIONS and DIALOGUE PATTERNS, not explicit statements.
-   → Example: A character who consistently deflects questions with humor → "Deflective: Uses humor as a shield to avoid vulnerability"
-   → Example: A character who touches others frequently → "Physically Affectionate: Expresses care through touch and proximity"
-   → Convert observed behavior into concise trait labels with grounded, specific descriptions.
-   → FORBIDDEN: Vague/generic traits like "interesting", "complex", "unique", "nice", "good".
-   → FORBIDDEN: Empty labels or descriptions.
-   → Prefer UPDATING existing personality trait labels over creating new ones.
-   → Only append a new trait if it adds genuinely non-duplicate signal.
-
-D) BACKGROUND REVEALS — job, education, residence, hobbies, financial status, motivation mentioned
-   → Update background.* fields when new info is revealed.
-
-E) RELATIONSHIP DEVELOPMENTS — new relationships formed, existing ones evolved
-   → Update relationships._extras with "PersonName: relationship description"
-
-F) TONE/SPEECH PATTERNS — character develops a distinctive speaking style
-   → Update tone._extras with "Context: description" (e.g., "With strangers: formal and guarded")
-
-G) FEARS/SECRETS REVEALED — character reveals fears, secrets, or vulnerabilities
-   → Update fears._extras or secrets._extras
-
-H) KEY LIFE EVENTS — significant events that shape the character
-   → Update keyLifeEvents._extras
-
-I) GOALS & DESIRES — sustained ambitions, NOT casual mentions
-   → Only create goals for sustained/repeated interests or explicitly stated ambitions
-   → Max 1 NEW goal per character per extraction
-   → Prefer UPDATING existing goals over creating new ones
-
-═══════════════════════════════════════════════════
-ANALYTICAL DEPTH FRAMEWORK (apply to ALL phases above and below)
-═══════════════════════════════════════════════════
-
---- BLOCK 1: PSYCHOLOGICAL INFERENCE FRAMEWORK ---
-(Apply to ALL personality, tone, fear, and relationship extractions)
-
-Before writing any trait or section entry, reason through THREE layers:
-- LAYER 1 (Surface): What did the character do or say in this specific moment?
-- LAYER 2 (Pattern): Is this consistent with earlier behavior, or new? One occurrence = tentative. Two or more = pattern. A revealing moment = decisive.
-- LAYER 3 (Psychology): What does this behavior suggest about the underlying personality, need, fear, or defense mechanism? What is the WHY behind the WHAT?
-
-Write ALL traits and entries at LAYER 3 depth, not LAYER 1.
-
-WRONG (Layer 1): "Humorous: Makes jokes frequently"
-RIGHT (Layer 3): "Deflective Humor: Uses wit and levity as a primary buffer against emotional vulnerability. Humor increases noticeably when conversation moves toward personal territory or when the character feels cornered — functions as both a social shield and a way to maintain control of the emotional temperature of an interaction."
-
-FORBIDDEN trait descriptions:
-- Single words without context (e.g., "Funny", "Shy", "Smart")
-- Vague adjectives without behavioral grounding (e.g., "Interesting", "Complex")
-- Circular descriptions (e.g., "Reserved: Is reserved in social situations")
-- Generic positives with no specificity (e.g., "Kind: Is a kind person")
-
---- BLOCK 2: PROGRESSIVE TRAIT REFINEMENT ---
-Treat every trait as a hypothesis that gets more precise over time, never less. When updating an existing trait, ask: "Can I make this more specific with the evidence I now have?" If yes, you MUST refine it.
-
-REFINEMENT STAGES:
-- STAGE 1 (Tentative, 1 observation): Broad label with minimal description. Example: "Reserved: Tends toward quietness in social settings."
-- STAGE 2 (Contextualised, 2-3 observations): Specify WHEN and WITH WHOM. Example: "Selectively Reserved: Comfortable and open in one-on-one conversation but noticeably quieter and more guarded in group settings."
-- STAGE 3 (Psychologically Grounded, 4+ observations or revealing moment): Describe the underlying mechanism and what it costs the character. Example: "Social Performance Anxiety: Functions confidently in intimate settings where they control the conversational frame. In groups, fear of being evaluated triggers withdrawal — shorter sentences, physical distancing, deflecting attention to others."
-
-RULES:
-- Always advance the stage if evidence supports it.
-- Never collapse a Stage 3 trait back to Stage 1 — only forward, never backward.
-- If you cannot yet reach Stage 2, write Stage 1 with tentative language.
-
---- BLOCK 3: TRAIT CONFLICT RESOLUTION ---
-(CRITICAL — apply before finalising any update)
-
-When new evidence CONTRADICTS or COMPLICATES an existing trait or entry, DO NOT simply add a second contradictory entry. Choose one resolution path:
-
-PATH A (Genuine Evolution): The character has changed over the session. Update the single trait entry to capture the arc. Example: Old "Conflict-Avoidant" + new directness → "Emerging Assertiveness: Initially defaulted to conflict avoidance, but across this session has shown growing willingness to state disagreement directly — particularly when the topic feels important."
-
-PATH B (Context Dependency): Both observations are true in different contexts. Merge into a single nuanced entry that specifies WHEN each applies. Example: Old "Outgoing" + new guardedness → "Contextually Social: Projects genuine warmth in structured settings where the social script is clear. In unstructured personal contexts, becomes noticeably more guarded."
-
-PATH C (False Presentation): The character is performing a trait they do not hold. This is a split-mode candidate. Move the performed trait to outwardTraits and the true underlying trait to inwardTraits.
-
-RESOLUTION RULE: After resolution, exactly ONE entry per psychological concept. Zero duplicates. Zero silent contradictions.
-
-STALENESS RULE: If a trait is contradicted and no resolution path applies cleanly, append "(REVIEW: may no longer be accurate based on recent behaviour)" to the description.
-
---- BLOCK 4: SPLIT PERSONALITY MODE DETECTION ---
-The character card supports two personality modes:
-- STANDARD MODE: A single unified trait list (personality.traits)
-- SPLIT MODE: Separate outwardTraits (public persona) and inwardTraits (private self)
-
-Flag a character as a Split Mode candidate when you observe CONSISTENT divergence between:
-- How the character presents publicly vs. what internal dialogue reveals about their actual state
-- What they say vs. what they do when alone or off-guard
-- How they behave with strangers vs. with trusted people
-- Emotions they perform vs. emotions they clearly feel
-
-When detected across 3+ exchanges, add to the personality section:
-[SPLIT MODE CANDIDATE: Consistent divergence observed between public persona and internal state. Recommend switching to Split Mode. Outward: [brief]. Inward: [brief].]
-
-When a character IS already in Split Mode:
-- outwardTraits = How others perceive them; the face they show the world
-- inwardTraits = Their actual emotional experience; private self
-- The two lists must COMPLEMENT each other, never duplicate
-- NEVER make outward = positive and inward = negative. Both should contain complex, realistic entries.
-
---- BLOCK 5: TONE INFERENCE FROM DIALOGUE ---
-(for tone._extras — extract from the text itself, do NOT wait for explicit statements)
-
-Tone captures HOW this character communicates — their linguistic fingerprint. Extract from:
-- VOCABULARY: Technical terms, slang, formal register, monosyllabic replies, elaborate sentences?
-- RHYTHM: Short/punchy or long/winding? Trail off, self-interrupt, or speak in polished thoughts?
-- FORMALITY SHIFTS: Does language change by audience? Map these shifts.
-- EMOTIONAL DIRECTNESS: Name feelings plainly ("I am angry") or obliquely ("It is fine. Whatever.")?
-- DEFLECTION PATTERNS: When pressed on uncomfortable topics — change subject? Counter-question? Go flat?
-- INTENSITY ESCALATION: Stay measured when emotional, or become clipped/expansive/erratic under pressure?
-
-FORMAT: "[Context]: [specific description of how they communicate]"
-Examples:
-- "Under pressure: Voice becomes clipped and transactional. Stops using filler words. Emotional content stripped from language entirely."
-- "With trusted people: Longer sentences with self-interruptions. Allows thoughts to trail off. Uses 'I mean' and 'the thing is' as openers."
-- "When deflecting: Pivots to questions rather than answering directly. Increases hedging language."
-
---- BLOCK 6: CROSS-FIELD COHERENCE ENFORCEMENT ---
-(Run after all updates are determined, before finalising output)
-
-Verify the character card tells a coherent story across all fields:
-- BACKGROUND → PERSONALITY: Do experiences produce the observed traits? Instability/trauma should show coping mechanisms.
-- FEARS → BEHAVIOUR: Do stored fears echo in personality and tone? If fear of abandonment exists, look for behavioural echoes.
-- GOALS → MOTIVATION: Does at least one goal connect to background motivation?
-- TONE → PERSONALITY: Does speech style align with personality? "Emotionally open" + "deflective and guarded" tone = incoherence.
-- RELATIONSHIPS → FEARS/SECRETS: Do dynamics reflect known vulnerabilities?
-
-When incoherence is found: flag it with a correction update, or note the inconsistency in the relevant field.
-
---- BLOCK 7: COMPLETE TRAIT LIFECYCLE ---
-Every stored value passes through this lifecycle. Use the appropriate operation:
-
-- CREATE: New info with no existing home. Must pass Layer 3 depth. No duplicates. Max 1 new non-goal entry per section per extraction.
-- REFINE: Existing info can be more specific. Always advance precision. PREFERRED over CREATE when topic is already represented.
-- MERGE: Two entries cover same psychological territory. Combine into one richer entry.
-- CORRECT: Entry factually contradicted. Apply Conflict Resolution (Block 3). Result: one accurate entry.
-- CONTEXTUALISE: Entry true in some situations. Specify contexts in one entry, do not split into two.
-- REMOVE: Entry definitively no longer accurate. For goals: goals.GoalTitle = "REMOVE". For traits: empty string ONLY if actively harmful to coherence. Err on CORRECT or CONTEXTUALISE over REMOVE.
-- HOLD: Entry not contradicted but not reinforced. Do not modify. Only flag if it creates active incoherence.
-
-GOLDEN RULE: "Every section of the character card should tell the same story as every other section. The card is a portrait — every brushstroke should contribute to one coherent image."
-
-═══════════════════════════════════════════════════
-PHASE 2 - REVIEW EXISTING STATE (MANDATORY - ALL SECTIONS)
-═══════════════════════════════════════════════════
-For EACH character present or mentioned:
-
-A) REVIEW ALL SECTION DATA:
-   - Is any stored value contradicted by the dialogue? → Update it
-   - Has new context made any item outdated? → Correct it
-   - Are there placeholder values? → Replace with real content
-
-B) REVIEW EXISTING GOALS (one subsection, not dominant):
-   - Has this goal progressed? → Update current_status and progress
-   - Has the character's direction CHANGED, making a goal obsolete? → Output: goals.OldGoalTitle = "REMOVE"
-   - Do two goals CONFLICT? → Keep one (update it), REMOVE the other
-   - Has the goal's desired outcome shifted? → Update it, don't create a duplicate
-
-═══════════════════════════════════════════════════
-GOAL LIFECYCLE MANAGEMENT (CRITICAL)
-═══════════════════════════════════════════════════
-Goals are NOT permanent. They must evolve with the character:
-
-REMOVE obsolete goals:
-- If a character abandons or achieves a goal → goals.GoalTitle = "REMOVE"
-- If two goals conflict (e.g., "Move to New York" vs "Stay in hometown") → REMOVE the outdated one, update the current one
-- If a goal becomes irrelevant due to story changes → REMOVE it
-
-UPDATE over CREATE:
-- When a character's direction shifts, UPDATE the existing goal's title and desired_outcome rather than creating a new one
-- This preserves progress history
-- Example: "Learn Guitar" evolves to "Master Guitar Performance" → update, don't create new
-
-CONSTRAINTS:
-- Max 1 NEW goal per character per extraction
-- Max 5 total active goals per character
-- Only sustained/repeated interests become goals, not casual one-off mentions
-- Behavioral patterns should update personality traits, NOT create goals
-
-═══════════════════════════════════════════════════
-PHASE 3 - PLACEHOLDER SCAN (MANDATORY)
-═══════════════════════════════════════════════════
-Scan ALL custom section items for placeholder labels/values:
-- "Trait 1", "Item 1", generic numbered labels → Replace with descriptive labels
-- "trait one", "example text", empty filler → Replace with dialogue-informed content
-
-═══════════════════════════════════════════════════
-TRACKABLE FIELDS
-═══════════════════════════════════════════════════
-
-HARDCODED FIELDS:
-- nicknames (comma-separated alternative names, aliases, pet names)
-- physicalAppearance.hairColor, physicalAppearance.eyeColor, physicalAppearance.build, physicalAppearance.height, physicalAppearance.skinTone, physicalAppearance.bodyHair, physicalAppearance.breastSize, physicalAppearance.genitalia, physicalAppearance.makeup, physicalAppearance.bodyMarkings, physicalAppearance.temporaryConditions
-- physicalAppearance._extras (array of {id, label, value})
-- currentlyWearing.top, currentlyWearing.bottom, currentlyWearing.undergarments, currentlyWearing.miscellaneous
-- currentlyWearing._extras (array of {id, label, value})
-- preferredClothing.casual, preferredClothing.work, preferredClothing.sleep, preferredClothing.undergarments, preferredClothing.miscellaneous
-- preferredClothing._extras (array of {id, label, value})
-- background.jobOccupation, background.educationLevel, background.residence, background.hobbies, background.financialStatus, background.motivation
-- background._extras (array of {id, label, value})
-- personality.outwardTraits, personality.inwardTraits (trait arrays — provide value as "Label: Description" format)
-- personality.traits (unified trait array -- used when character is NOT in split mode. Provide value as "Label: Description" format)
-- tone._extras (array of {id, label, value} — e.g., "With strangers: formal and clipped")
-- keyLifeEvents._extras (array of {id, label, value})
-- relationships._extras (array of {id, label, value} — e.g., "Emma: Close friend and confidante")
-- secrets._extras (array of {id, label, value})
-- fears._extras (array of {id, label, value})
-- location (current location/place)
-- scenePosition (micro-position inside the current place, max 18 words; examples: "outside the cabin door", "halfway through the doorway", "inside near the fireplace")
-- currentMood (emotional/psychological state ONLY, max 12 words, no physical actions)
-
-GOALS (structured tracking):
-- goals.GoalTitle = "desired_outcome: What fulfillment looks like (2-3 sentences) | progress: XX | complete_steps: 1,3 | new_steps: Step 1: Description. Step 2: Description. ..."
-- goals.GoalTitle = "REMOVE" (to delete an obsolete/contradicted goal)
-
-IMPORTANT GOAL STEP RULES:
-- new_steps must contain the COMPLETE replacement list of 4-6 steps (the full journey)
-- Include both completed and future steps
-- Use complete_steps to mark which are done
-- Each step: 1-2 sentences describing a discrete milestone
-
-CUSTOM SECTIONS:
-- sections.SectionTitle.ItemLabel = value
-
-═══════════════════════════════════════════════════
-FIELD VOLATILITY RULES
-═══════════════════════════════════════════════════
-
-HIGH VOLATILITY (mood, location, clothing, temporaryConditions):
-- Change frequently, actively track
-- Contextual inference ALLOWED (walks into bar → update location)
-
-SCENE POSITION QUALITY RULES (CRITICAL):
-- scenePosition tracks immediate physical placement, not mood or personality.
-- Update scenePosition when the exchange changes doorway/threshold status, inside/outside status, room position, proximity, restraints, vehicles, beds, hiding places, danger zones, or who is stuck/blocked.
-- Use concise natural phrases, max 18 words.
-- Do NOT put the whole action sequence in scenePosition.
-- CORRECT: "outside the narrow cabin door, waiting to enter"
-- CORRECT: "inside the cabin near the doorway"
-- WRONG: "Shivering and terrified while thinking about the storm"
-
-CURRENT MOOD QUALITY RULES (CRITICAL):
-- currentMood must describe FEELING, not ACTION.
-- FORBIDDEN in currentMood: body parts, movement verbs, clothing/object references, sexual mechanics.
-- CORRECT: "Slyly delighted but cautious"
-- WRONG: "Extending her foot under the bedspread toward his thigh"
-
-CONSERVATIVE UPDATE RULES (CRITICAL):
-- Preserve existing information unless directly contradicted by clear evidence.
-- Do NOT replace an existing tone/personality entry with a slight rewording.
-- Before adding a new tone/personality item, check if it's semantically similar to an existing one.
-  If similar, update/refine the existing entry instead of creating a new duplicate.
-- Avoid generic labels that are not true communication style or psychology.
-- Never emit top-level fields like "tone" or "personality" as raw strings; use allowed subfields only.
-- DEFAULT TO NO UPDATE when no material change is present.
-- EMPTY updates array is valid and preferred over low-confidence edits.
-- Only update mood/location when the latest exchange clearly changed them.
-
-LOW VOLATILITY (hair, eye color, build, height, stable traits):
-- ONLY update when EXPLICITLY described
-
-═══════════════════════════════════════════════════
-EXAMPLES OF NON-GOAL UPDATES (USE THESE FORMATS)
-═══════════════════════════════════════════════════
-
-Personality trait update:
-  { "character": "Ashley", "field": "personality.outwardTraits", "value": "Nurturing: Shows warmth through physical affection and verbal reassurance, especially with those she cares about" }
-
-Tone update:
-  { "character": "Ashley", "field": "tone._extras", "value": "With patients: Calm and professional, using medical terminology naturally" }
-
-Relationship update:
-  { "character": "Ashley", "field": "relationships._extras", "value": "Marcus: Ex-boyfriend, still harbors unresolved feelings but maintains distance" }
-
-Background update:
-  { "character": "Ashley", "field": "background.jobOccupation", "value": "Emergency room nurse at City General Hospital, 3 years experience" }
-
-Fear update:
-  { "character": "Ashley", "field": "fears._extras", "value": "Abandonment: Deeply fears being left behind by people she loves, stemming from childhood experience" }
-
-Goal REMOVE:
-  { "character": "Ashley", "field": "goals.Move to New York", "value": "REMOVE" }
-
-═══════════════════════════════════════════════════
-RULES
-═══════════════════════════════════════════════════
-1. SCAN user message AND AI response for ALL character state changes
-2. Match character names exactly (check nicknames and previous names)
-3. Use exact field names from TRACKABLE FIELDS
-4. Keep values concise but descriptive for hardcoded fields
-5. For goals, write detailed multi-sentence descriptions for desired_outcome
-6. For appearance/clothing in action text, extract the trait
-7. Do NOT hallucinate updates — only track what is supported by text
-8. Do NOT repeat unchanged values
-9. When updating _extras, use "Label: Description" format in the value string
-10. Behavioral patterns across messages → update personality, NOT create goals
-11. ALWAYS prefer updating existing sections/goals over creating new ones
-12. NEVER create sections named: Desires, Kinks, Preferences, Fantasies, Interests, Wants — use goals if sustained
-
-RESPONSE FORMAT (JSON only):
+--- CURRENT CHARACTER STATE ---
+${characterContext || 'No eligible character data provided'}
+
+--- SUPPORTED FIELD PATHS ---
+${supportedFields}
+
+--- CORE TASK ---
+- Review the latest user message and AI response against every supported field for each eligible character.
+- Return an update when the latest exchange changes, reveals, corrects, progresses, completes, or contradicts a supported field.
+- Return no update when the existing card is still accurate or when the evidence is weak.
+- Use the real field path from SUPPORTED FIELD PATHS. Never create fake containers such as sections.Goals.* when goals.* exists.
+- Preserve current card information unless the latest exchange gives a clear reason to change it.
+
+--- FIELD GUIDANCE ---
+- currentMood: emotional/psychological state only, max 12 words. No body-part prose, clothing, objects, or action sequences.
+- location: broad place, such as "abandoned cabin" or "downtown coffee shop".
+- scenePosition: immediate placement inside the broad place, max 18 words. It should not summarize mood or the full action sequence.
+- appearance/clothing/background: update when the exchange explicitly reveals or changes the fact.
+- personality/tone/relationships/secrets/fears/keyLifeEvents: write "Label: Description" as the value. Prefer refining a matching existing entry over adding a duplicate.
+- custom sections: use sections.SectionTitle.ItemLabel only when the information belongs in an existing or clearly appropriate custom section. Do not use custom sections to avoid the structured fields above.
+
+--- CHARACTER GOALS ---
+- Use goals.GoalTitle only for sustained goals, not one-off impulses or routine actions.
+- Prefer updating an existing goal over creating a near-duplicate.
+- Create at most one new goal per character from this exchange.
+- Keep goals bounded: 3-6 logical steps, never runaway lists.
+- Goal value format:
+  desired_outcome: What success looks like. | current_status: Current state. | progress: 0-100 | complete_steps: 1,3 | new_steps: Step 1: First milestone. Step 2: Second milestone.
+- Use complete_steps only for existing steps that were clearly completed.
+- Use goals.GoalTitle = "REMOVE" only when a goal is clearly obsolete, contradicted, or abandoned.
+
+--- CONSERVATIVE UPDATE RULES ---
+- Empty updates are valid and preferred over low-confidence edits.
+- Do not emit unchanged values.
+- Do not reword existing values just to make them sound better.
+- Do not add duplicate traits, tone entries, relationship entries, goals, or custom-section items under slightly different labels.
+- Do not update characters outside ELIGIBLE CHARACTERS.
+- Do not output unsupported fields; unsupported fields will be ignored.
+
+--- OUTPUT JSON ---
+Return only this JSON shape:
 {
   "updates": [
-    { "character": "CharacterName", "field": "currentMood", "value": "Nervous but excited" },
-    { "character": "CharacterName", "field": "location", "value": "Downtown coffee shop" },
-    { "character": "CharacterName", "field": "scenePosition", "value": "standing outside the shop entrance" },
-    { "character": "CharacterName", "field": "personality.outwardTraits", "value": "Sarcastic: Deflects emotional vulnerability with sharp wit and dry humor" },
-    { "character": "CharacterName", "field": "relationships._extras", "value": "Emma: Close friend and roommate, provides emotional support" },
-    { "character": "CharacterName", "field": "goals.Old Goal", "value": "REMOVE" },
-    { "character": "CharacterName", "field": "goals.Save Money", "value": "desired_outcome: Build $10k emergency fund. | progress: 15 | complete_steps: 1 | new_steps: Step 1: Open savings account. Step 2: Set up auto-transfer. Step 3: Cut discretionary spending. Step 4: Reach $1k milestone. Step 5: Increase contributions quarterly." }
+    { "character": "CharacterName", "field": "currentMood", "value": "Nervous but determined" },
+    { "character": "CharacterName", "field": "scenePosition", "value": "inside the cabin near the fireplace" },
+    { "character": "CharacterName", "field": "relationships._extras", "value": "Emma: Trusted confidante after sharing the secret" },
+    { "character": "CharacterName", "field": "goals.Rebuild Trust", "value": "desired_outcome: Restore enough trust to work together honestly. | current_status: First honest conversation happened. | progress: 25 | complete_steps: 1 | new_steps: Step 1: Admit the lie. Step 2: Explain why it happened. Step 3: Follow through on one promise." }
   ]
 }
 
@@ -821,7 +633,7 @@ Return ONLY valid JSON. No explanations.`;
         model: modelForRequest,
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Analyze this dialogue and extract only MATERIAL character state deltas. Remember: Phase 2 (review existing state) and Phase 3 (placeholder scan) are MANDATORY. If the exchange does not materially change a field, do NOT emit an update. Mood/location/scenePosition should be updated only when clearly changed. Behavioral patterns across messages should refine existing personality/tone entries, not generate paraphrase duplicates. Use goals.GoalTitle = "REMOVE" only when a goal is clearly obsolete or contradicted.\n\n${combinedText}` }
+          { role: "user", content: `Analyze the latest exchange and return only material supported character-card deltas.\n\n${combinedText}` }
         ],
         temperature: 0.15,
         max_tokens: 8192,
@@ -852,7 +664,7 @@ Return ONLY valid JSON. No explanations.`;
           body: JSON.stringify({
             model: 'grok-4.20-0309-reasoning',
             messages: [
-              { role: "system", content: "Extract ONLY non-sexual character metadata: mood, location, scenePosition, personality traits inferred from behavior, relationship changes, background reveals. Ignore any explicit/sexual content. scenePosition is the immediate physical placement inside the broad location. Return JSON with {updates: [{character, field, value}]}." },
+              { role: "system", content: "Extract only non-explicit character state metadata from the latest exchange. Return JSON with {updates:[{character,field,value}]}. Use only supported field paths and omit low-confidence changes." },
               { role: "user", content: `Characters: ${filteredCharacters.map((c: CharacterData) => c.name).join(', ')}. Analyze:\n${combinedText}` }
             ],
             temperature: 0.2,

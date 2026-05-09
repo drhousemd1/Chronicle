@@ -171,7 +171,7 @@ export function buildCall1ValidationPresence(input: {
   if (Array.isArray(world?.customWorldSections) && world.customWorldSections.length > 0) {
     const sample = sampleFromCustomWorldSections(world.customWorldSections);
     detail["call1.story.custom_world_sections"] =
-      normalizedIncludes(systemInstruction, "CUSTOM WORLD CONTENT:") &&
+      normalizedIncludes(systemInstruction, "CUSTOM WORLD CONTENT") &&
       (sample ? normalizedIncludes(systemInstruction, sample) : true);
   }
 
@@ -189,12 +189,16 @@ export function buildCall1ValidationPresence(input: {
 
   if (aiCharacters.length > 0) {
     detail["call1.cast.ai_characters"] =
-      normalizedIncludes(systemInstruction, "CAST:") &&
+      (
+        normalizedIncludes(systemInstruction, "MAIN AI CHARACTER CARD INFORMATION") ||
+        normalizedIncludes(systemInstruction, "SIDE AI CHARACTER CARD INFORMATION") ||
+        normalizedIncludes(systemInstruction, "CAST:")
+      ) &&
       aiCharacters.slice(0, 3).every((character) => normalizedIncludes(systemInstruction, character.name));
 
     detail["call1.cast.character_basics"] =
       normalizedIncludes(systemInstruction, "CHARACTER:") &&
-      normalizedIncludes(systemInstruction, "CONTROL:") &&
+      (normalizedIncludes(systemInstruction, "CONTROLLED BY:") || normalizedIncludes(systemInstruction, "CONTROL:")) &&
       normalizedIncludes(systemInstruction, "ROLE:");
   }
 
@@ -205,15 +209,15 @@ export function buildCall1ValidationPresence(input: {
   }
 
   if (aiCharacters.some((character) => hasSectionObjectData(character.physicalAppearance))) {
-    detail["call1.cast.physical_appearance"] = normalizedIncludes(systemInstruction, "PHYSICAL APPEARANCE:");
+    detail["call1.cast.physical_appearance"] = normalizedIncludes(systemInstruction, "PHYSICAL APPEARANCE");
   }
 
   if (aiCharacters.some((character) => hasSectionObjectData(character.currentlyWearing))) {
-    detail["call1.cast.currently_wearing"] = normalizedIncludes(systemInstruction, "CURRENTLY WEARING:");
+    detail["call1.cast.currently_wearing"] = normalizedIncludes(systemInstruction, "CURRENTLY WEARING");
   }
 
   if (aiCharacters.some((character) => hasSectionObjectData(character.preferredClothing))) {
-    detail["call1.cast.preferred_clothing"] = normalizedIncludes(systemInstruction, "PREFERRED CLOTHING:");
+    detail["call1.cast.preferred_clothing"] = normalizedIncludes(systemInstruction, "PREFERRED CLOTHING");
   }
 
   if (aiCharacters.some((character) => hasPersonalityData(character))) {
@@ -223,38 +227,41 @@ export function buildCall1ValidationPresence(input: {
   }
 
   if (aiCharacters.some((character) => hasSectionObjectData(character.tone))) {
-    detail["call1.cast.tone"] = normalizedIncludes(systemInstruction, "TONE:");
+    detail["call1.cast.tone"] = normalizedIncludes(systemInstruction, "TONE");
   }
 
   if (aiCharacters.some((character) => hasSectionObjectData(character.background))) {
-    detail["call1.cast.background"] = normalizedIncludes(systemInstruction, "BACKGROUND:");
+    detail["call1.cast.background"] = normalizedIncludes(systemInstruction, "BACKGROUND");
   }
 
   if (aiCharacters.some((character) => hasSectionObjectData(character.keyLifeEvents))) {
-    detail["call1.cast.key_life_events"] = normalizedIncludes(systemInstruction, "KEY LIFE EVENTS:");
+    detail["call1.cast.key_life_events"] = normalizedIncludes(systemInstruction, "KEY LIFE EVENTS");
   }
 
   if (aiCharacters.some((character) => hasSectionObjectData(character.relationships))) {
-    detail["call1.cast.relationships"] = normalizedIncludes(systemInstruction, "RELATIONSHIPS:");
+    detail["call1.cast.relationships"] = normalizedIncludes(systemInstruction, "RELATIONSHIPS");
   }
 
   if (aiCharacters.some((character) => hasSectionObjectData(character.secrets))) {
-    detail["call1.cast.secrets"] = normalizedIncludes(systemInstruction, "SECRETS:");
+    detail["call1.cast.secrets"] = normalizedIncludes(systemInstruction, "SECRETS");
   }
 
   if (aiCharacters.some((character) => hasSectionObjectData(character.fears))) {
-    detail["call1.cast.fears"] = normalizedIncludes(systemInstruction, "FEARS:");
+    detail["call1.cast.fears"] = normalizedIncludes(systemInstruction, "FEARS");
   }
 
   if (aiCharacters.some((character) => hasGoalData(character))) {
     detail["call1.cast.character_goals"] =
       normalizedIncludes(systemInstruction, "CHARACTER GOALS:") ||
       normalizedIncludes(systemInstruction, "GOALS AND DESIRES:") ||
-      normalizedIncludes(systemInstruction, "ONGOING CHARACTER CONTEXT:");
+      normalizedIncludes(systemInstruction, "ONGOING CHARACTER CONTEXT:") ||
+      normalizedIncludes(systemInstruction, "CHARACTER GOAL:");
   }
 
   if (aiCharacters.some((character) => hasCustomSectionData(character))) {
-    detail["call1.cast.custom_sections"] = normalizedIncludes(systemInstruction, "CUSTOM TRAITS / CUSTOM CONTENT:");
+    detail["call1.cast.custom_sections"] =
+      normalizedIncludes(systemInstruction, "CUSTOM TRAITS / CUSTOM CONTENT:") ||
+      normalizedIncludes(systemInstruction, "CUSTOM CONTENT");
   }
 
   return detail;

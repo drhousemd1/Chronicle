@@ -33,6 +33,7 @@ type ReviewExportSegment = {
   isRegenerated: boolean;
   imageUrl?: string;
   liveComment?: ChatReviewLiveComment;
+  postTurnStateChanges?: string[];
 };
 
 export type ChatReviewLiveComment = {
@@ -53,6 +54,7 @@ export type ChatReviewExportInput = {
   regenerateMessageIds: string[];
   sanitizeAssistantText: (text: string) => string;
   messageComments?: Record<string, ChatReviewLiveComment>;
+  postTurnStateChanges?: Record<string, string[]>;
 };
 
 function escapeHtml(value: string): string {
@@ -249,6 +251,7 @@ function buildSegments(input: ChatReviewExportInput): ReviewExportSegment[] {
       ? parsedSegments
       : [{ speakerName: null, content: rawMessageText }];
     const liveComment = input.messageComments?.[message.id];
+    const postTurnStateChanges = input.postTurnStateChanges?.[message.id] || [];
 
     messageSegments.forEach((segment, segmentIndex) => {
       const speaker = resolveSpeaker(segment, message.role, characters);
@@ -272,6 +275,7 @@ function buildSegments(input: ChatReviewExportInput): ReviewExportSegment[] {
         isRegenerated: regenerateSet.has(message.id),
         imageUrl: message.imageUrl,
         liveComment: segmentIndex === messageSegments.length - 1 ? liveComment : undefined,
+        postTurnStateChanges: segmentIndex === messageSegments.length - 1 ? postTurnStateChanges : undefined,
       });
     });
   }
@@ -298,6 +302,9 @@ function renderSegmentCard(segment: ReviewExportSegment, index: number): string 
   const imageBlock = segment.imageUrl
     ? `<img class="scene-image" src="${escapeAttribute(segment.imageUrl)}" alt="Generated scene image" loading="lazy" />`
     : '';
+  const stateChangesBlock = segment.postTurnStateChanges?.length
+    ? `<details class="state-change-details"><summary>Post-turn state sync (${segment.postTurnStateChanges.length})</summary><ul>${segment.postTurnStateChanges.map((change) => `<li>${escapeHtml(change)}</li>`).join('')}</ul></details>`
+    : '';
 
   return `
     <article class="${classes}" data-review-index="${index}" data-review-id="${escapeAttribute(segment.reviewId)}" data-message-id="${escapeAttribute(segment.messageId)}" data-turn="${segment.turnNumber}" data-role="${escapeAttribute(segment.role)}" data-speaker="${escapeAttribute(segment.speakerName)}" data-excerpt="${escapeAttribute(textPreview(segment.text, 260))}">
@@ -320,6 +327,7 @@ function renderSegmentCard(segment: ReviewExportSegment, index: number): string 
           <div class="rendered-message">${renderStyledText(segment.text)}</div>
           ${liveCommentBlock}
           ${imageBlock}
+          ${stateChangesBlock}
           ${rawBlock}
         </div>
       </div>
@@ -527,6 +535,8 @@ function reviewStyles(): string {
     details { margin-top: 12px; border: 1px solid rgba(255,255,255,0.10); border-radius: 14px; background: rgba(0,0,0,0.18); }
     summary { cursor: pointer; color: var(--muted); font-weight: 800; padding: 10px 12px; }
     pre { white-space: pre-wrap; margin: 0; padding: 12px; color: #cbd5e1; overflow-wrap: anywhere; }
+    .state-change-details ul { margin: 0; padding: 0 18px 14px 34px; color: #d8e2f2; }
+    .state-change-details li { margin: 7px 0; }
     .footer-note { color: var(--muted); text-align: center; margin-top: 26px; }
     @media (max-width: 720px) {
       .message-main { grid-template-columns: 1fr; }

@@ -752,19 +752,19 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
               },
               {
                 id: "settings-physical-locks",
-                title: "Scene-position locks and content-theme injections",
+                title: "Physical continuity and content-theme injections",
                 tag: "core-prompt",
                 summary:
-                  "Chronicle also injects physical-sequence safeguards and theme directives that affect how the live beat should be rendered.",
+                  "Chronicle injects general physical-continuity safeguards and selected story-theme directives that affect how the live beat should be rendered.",
                 fileRefs: [
-                  ref("/src/services/llm.ts", "position-lock / chronology rules"),
+                  ref("/src/services/llm.ts", "physical logic / visibility / continuity rules"),
                   ref("/src/constants/tag-injection-registry.ts", "theme directive text"),
                 ],
                 bullets: [
-                  bullet("Physical locks", "The prompt includes rules around unfinished crossings, thresholds, chronology, and not narrating user-controlled completion out of order."),
-                  bullet("Theme lane", "Content-theme injections convert selected story themes into extra prompt directives without needing a separate API call."),
+                  bullet("Physical continuity", "The prompt includes general rules for visibility, covered/hidden details, object availability, environmental constraints, unfinished actions, and preserving the user's concrete action direction."),
+                  bullet("Theme lane", "Content-theme injections convert only selected story themes into one STORY THEMES block without needing a separate API call."),
                 ],
-                meta: ["position locks", "theme injections"],
+                meta: ["physical continuity", "theme injections"],
               },
             ],
           },

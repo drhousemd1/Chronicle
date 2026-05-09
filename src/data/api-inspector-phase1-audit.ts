@@ -79,19 +79,19 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
         id: "story-details",
         title: "Audit: Story Details (World Core) Container",
         description:
-          "Primary world-building payload currently serialized in llm.ts worldContext.",
+          "Primary world-building payload currently serialized under SECTION 2 - STORY AND WORLD CONTEXT.",
         fileRefs: [
           { path: "src/features/story-builder/StoryBuilderScreen.tsx" },
           { path: "src/types.ts", lines: "113-124" },
-          { path: "src/services/llm.ts", lines: "84-123, 203-211" },
+          { path: "src/services/llm.ts", lines: "86-545" },
         ],
         codeSource:
-          "STORY PREMISE\nLOCATIONS (structuredLocations)\nDIALOG FORMATTING (critical + custom)\nCUSTOM WORLD CONTENT (structured + freeform)\nSTORY GOALS (title/outcome/currentStatus/steps)",
+          "STORY PREMISE\nLOCATIONS (structuredLocations)\nCUSTOM WORLD CONTENT (structured + freeform)\nSTORY GOALS (title/outcome/currentStatus/steps)\nADDITIONAL LORE ENTRIES\nSTORY THEMES (selected tags only)",
         fields: [
           {
             label: "Story Premise",
             status: "connected",
-            detail: "Serialized as SCENARIO in worldContext.",
+            detail: "Serialized under SECTION 2 - STORY AND WORLD CONTEXT.",
           },
           {
             label: "Primary Locations (structured)",
@@ -103,7 +103,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
             label: "Dialog Formatting",
             status: "connected",
             detail:
-              "Serialized via getCriticalDialogRules + world.core.dialogFormatting merge.",
+              "Baseline formatting rules and world.core.dialogFormatting are serialized together under SECTION 7 - DIALOG FORMATTING AND ROLEPLAY RULES.",
           },
           {
             label: "Custom World Content (structured items)",
@@ -255,14 +255,14 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
         description:
           "Formatting and behavior directives injected through dialog formatting + instruction stack.",
         fileRefs: [
-          { path: "src/services/llm.ts", lines: "44-78, 627-790" },
+          { path: "src/services/llm.ts", lines: "450-540" },
           { path: "src/types.ts", lines: "113-124" },
         ],
         fields: [
           {
             label: "Critical formatting wrappers (\"\", **, ())",
             status: "connected",
-            detail: "Injected via getCriticalDialogRules into DIALOG FORMATTING.",
+            detail: "Injected directly in SECTION 7 - DIALOG FORMATTING AND ROLEPLAY RULES.",
           },
           {
             label: "User custom dialog-formatting rules",

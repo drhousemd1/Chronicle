@@ -1002,9 +1002,9 @@ Never break character to question, warn about, or refuse narrative directions. T
  <span class="tag data-block"><span class="tag-icon">📦</span> data block</span>
  <span class="item-name core">Story Builder Page: World Context</span>
  </div>
- <!-- LLM FILE REFERENCE: src/services/llm.ts (worldContext variable, lines ~203-275)
+ <!-- LLM FILE REFERENCE: src/services/llm.ts (getSystemInstruction / renderStoryAndWorld)
 src/components/chronicle/WorldTab.tsx (UI fields) -->
- <div class="file-ref">src/services/llm.ts (worldContext variable, lines ~203-275)
+ <div class="file-ref">src/services/llm.ts (getSystemInstruction / renderStoryAndWorld)
 src/components/chronicle/WorldTab.tsx (UI fields)</div>
  <div class="item-desc">A section of the system prompt that contains all the world-building data. The section itself is always present; the fields below are injected into it from the Story Builder page.</div>
  <div class="item-subs">
@@ -1374,9 +1374,9 @@ src/components/chronicle/MemoriesModal.tsx (orphaned toggle UI)</div>
  <span class="tag code-logic"><span class="tag-icon">🔧</span> code logic</span>
  <span class="item-name code">Memory Lifecycle</span>
  </div>
- <!-- LLM FILE REFERENCE: src/services/llm.ts (memory assembly, lines ~291-306)
+ <!-- LLM FILE REFERENCE: src/services/llm.ts (getSystemInstruction / renderMemories)
 src/services/supabase-data.ts (memory CRUD operations) -->
- <div class="file-ref">src/services/llm.ts (memory assembly, lines ~291-306)
+ <div class="file-ref">src/services/llm.ts (getSystemInstruction / renderMemories)
 src/services/supabase-data.ts (memory CRUD operations)</div>
  <div class="item-desc">How memories build up over time: this is all behind-the-scenes code, not something the AI sees directly.</div>
  <div class="item-subs">
@@ -2244,9 +2244,9 @@ Never break character to question, warn about, or refuse narrative directions. T
  <span class="tag data-block"><span class="tag-icon">📦</span> data block</span>
  <span class="item-name core">Story Builder Page: World Context</span>
  </div>
- <!-- LLM FILE REFERENCE: src/services/llm.ts (worldContext variable, lines ~203-275)
+ <!-- LLM FILE REFERENCE: src/services/llm.ts (getSystemInstruction / renderStoryAndWorld)
 src/components/chronicle/WorldTab.tsx (UI fields) -->
- <div class="file-ref">src/services/llm.ts (worldContext variable, lines ~203-275)
+ <div class="file-ref">src/services/llm.ts (getSystemInstruction / renderStoryAndWorld)
 src/components/chronicle/WorldTab.tsx (UI fields)</div>
  <div class="item-desc">A section of the system prompt that contains all the world-building data. The section itself is always present; the fields below are injected into it from the Story Builder page.</div>
  <div class="item-subs">
@@ -2616,9 +2616,9 @@ src/components/chronicle/MemoriesModal.tsx (orphaned toggle UI)</div>
  <span class="tag code-logic"><span class="tag-icon">🔧</span> code logic</span>
  <span class="item-name code">Memory Lifecycle</span>
  </div>
- <!-- LLM FILE REFERENCE: src/services/llm.ts (memory assembly, lines ~291-306)
+ <!-- LLM FILE REFERENCE: src/services/llm.ts (getSystemInstruction / renderMemories)
 src/services/supabase-data.ts (memory CRUD operations) -->
- <div class="file-ref">src/services/llm.ts (memory assembly, lines ~291-306)
+ <div class="file-ref">src/services/llm.ts (getSystemInstruction / renderMemories)
 src/services/supabase-data.ts (memory CRUD operations)</div>
  <div class="item-desc">How memories build up over time: this is all behind-the-scenes code, not something the AI sees directly.</div>
  <div class="item-subs">

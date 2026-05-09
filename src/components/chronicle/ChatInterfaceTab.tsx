@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { ScenarioData, Character, CharacterStateMessageSnapshot, CharacterStateSnapshotPayload, Conversation, Message, CharacterTraitSection, Scene, TimeOfDay, SideCharacter, SideCharacterMessageSnapshot, SideCharacterStateSnapshotPayload, CharacterSessionState, Memory, WorldCore, StoryGoal, GoalFlexibility, StoryGoalStepDerivation } from '../../types';
+import { ScenarioData, Character, CharacterStateMessageSnapshot, CharacterStateSnapshotPayload, Conversation, Message, CharacterTraitSection, Scene, TimeOfDay, SideCharacter, SideCharacterMessageSnapshot, SideCharacterStateSnapshotPayload, CharacterSessionState, Memory, WorldCore, StoryGoal, GoalFlexibility, StoryGoalStepDerivation, FieldChangeMetadataMap } from '../../types';
 import { Button, TextArea } from './UI';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
@@ -1151,6 +1151,65 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       storyGoals,
     };
   }, [activeGoalCompletionIds, appData.world.core, worldCoreSessionOverrides]);
+
+  const exportPostTurnStateChanges = useMemo((): Record<string, string[]> => {
+    const changes: Record<string, string[]> = {};
+    const append = (messageId: string, text: string) => {
+      if (!changes[messageId]) changes[messageId] = [];
+      changes[messageId].push(text);
+    };
+    const formatClock = (day: number | null | undefined, timeOfDay: TimeOfDay | null | undefined) => (
+      day != null || timeOfDay ? `Day ${day ?? '?'}, ${timeOfDay ?? 'unknown'}` : 'story time unknown'
+    );
+    const mainNameById = new Map(appData.characters.map((character) => [character.id, character.name]));
+    const sideNameById = new Map((appData.sideCharacters || []).map((character) => [character.id, character.name]));
+
+    for (const snapshot of characterStateSnapshots) {
+      if (latestMessageGenerationMap.get(snapshot.sourceMessageId) !== snapshot.sourceGenerationId) continue;
+      const characterName = mainNameById.get(snapshot.characterId) || 'Unknown character';
+      for (const metadata of Object.values(snapshot.statePayload._fieldChangeMetadata || {})) {
+        if (metadata.sourceMessageId !== snapshot.sourceMessageId || metadata.sourceGenerationId !== snapshot.sourceGenerationId) continue;
+        append(
+          snapshot.sourceMessageId,
+          `${characterName}.${metadata.fieldPath} updated at ${formatClock(metadata.storyDay, metadata.timeOfDay)}${metadata.nextValuePreview ? ` -> ${metadata.nextValuePreview}` : ''}`,
+        );
+      }
+    }
+
+    for (const snapshot of sideCharacterSnapshots) {
+      if (latestMessageGenerationMap.get(snapshot.sourceMessageId) !== snapshot.sourceGenerationId) continue;
+      const characterName = sideNameById.get(snapshot.sideCharacterId) || 'Unknown side character';
+      for (const metadata of Object.values(snapshot.statePayload._fieldChangeMetadata || {})) {
+        if (metadata.sourceMessageId !== snapshot.sourceMessageId || metadata.sourceGenerationId !== snapshot.sourceGenerationId) continue;
+        append(
+          snapshot.sourceMessageId,
+          `${characterName}.${metadata.fieldPath} updated at ${formatClock(metadata.storyDay, metadata.timeOfDay)}${metadata.nextValuePreview ? ` -> ${metadata.nextValuePreview}` : ''}`,
+        );
+      }
+    }
+
+    const goalMap = new Map(effectiveWorldCore.storyGoals?.map((goal) => [goal.id, goal]) || []);
+    for (const derivation of goalStepDerivations) {
+      if (latestMessageGenerationMap.get(derivation.sourceMessageId) !== derivation.sourceGenerationId) continue;
+      if (!derivation.completed) continue;
+      const goal = goalMap.get(derivation.goalId);
+      const step = goal?.steps?.find((entry) => entry.id === derivation.stepId);
+      append(
+        derivation.sourceMessageId,
+        `Story goal step completed at ${formatClock(derivation.day, derivation.timeOfDay)}: ${goal?.title || derivation.goalId}${step?.description ? ` -> ${step.description}` : ''}`,
+      );
+    }
+
+    return changes;
+  }, [
+    appData.characters,
+    appData.sideCharacters,
+    characterStateSnapshots,
+    effectiveWorldCore.storyGoals,
+    goalStepDerivations,
+    latestMessageGenerationMap,
+    sideCharacterSnapshots,
+  ]);
   
   // Persistent map for placeholder name replacements (ensures consistency across the conversation)
   const placeholderMapRef = useRef<PlaceholderNameMap>({});
@@ -1161,9 +1220,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const sessionMessageCountRef = useRef<number>(0);
   // Issue #6B: Track previous day for compression trigger
   const previousDayRef = useRef<number>(currentDay);
-  // Character extraction cadence: hard-event trigger + periodic backstop
-  const assistantTurnsSinceExtractionRef = useRef<number>(0);
-  const EXTRACTION_BACKSTOP_INTERVAL = 6;
   const latestConversationsRef = useRef(appData.conversations);
   
   useEffect(() => {
@@ -1175,7 +1231,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     responseLengthsRef.current = [];
     sessionMessageCountRef.current = 0;
     previousDayRef.current = currentDayRef.current;
-    assistantTurnsSinceExtractionRef.current = 0;
   }, [conversationId]);
 
   useEffect(() => {
@@ -1208,43 +1263,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     // tactical/summary writing instead of letting the user's response-detail
     // setting control length on its own.
     return '';
-  };
-
-  const getExtractionDecision = (userText: string, aiText: string): { shouldExtract: boolean; reason: string } => {
-    const combined = `${userText}\n${aiText}`;
-    const locationChangePattern = /\b(enters?|entered|entering|leaves?|left|leaving|go(?:es|ing|ne)? to|arrives?|arrived|arriving|moves?|moved|moving to|heads?|headed|heading to|walks? into)\b/i;
-    const scenePositionPattern = /\b(inside|outside|door(?:way)?|threshold|entrance|exit|gap|squeez(?:e|es|ed|ing)|stuck|blocked|behind|ahead|near|beside|through|in front of|next to|under|over|against|pinned|trapped)\b/i;
-    const clothingChangePattern = /\b(puts? on|takes? off|took off|removes?|removed|removing|unzips?|unzipped|zips? up|pulls? down|pulled down|lifts?|lifted|strips?|stripped|changes? into|undresses?)\b/i;
-    const relationshipShiftPattern = /\b(i love you|we(?:'re| are) (dating|together|exclusive)|be my (boyfriend|girlfriend|partner)|broke up|break up|it'?s over|my ex|your ex|engaged|marry me|confess(?:ed)? feelings?|admit(?:ted)? feelings?)\b/i;
-    const relationshipDynamicPattern = /\b(flirt(?:ed|ing)?|jealous|jealousy|possessive|possessiveness|caught feelings|admit(?:ted)? attraction|confess(?:ed)? attraction)\b/i;
-    const intimacyMilestonePattern = /\b(first kiss|kiss(?:ed|ing)?|made out|slept together|had sex|fucked|went down on|oral|orgasm(?:ed)?|came)\b/i;
-    const persistentConditionPattern = /\b(started|suddenly|now|became)\b[\s\S]{0,40}\b(bleeding|injured|sick|dizzy|faint|bruised|cramp|erect|hard|wet)\b/i;
-
-    if (locationChangePattern.test(combined)) {
-      return { shouldExtract: true, reason: 'hard_event:location' };
-    }
-    if (scenePositionPattern.test(combined)) {
-      return { shouldExtract: true, reason: 'hard_event:scene_position' };
-    }
-    if (clothingChangePattern.test(combined)) {
-      return { shouldExtract: true, reason: 'hard_event:clothing' };
-    }
-    if (relationshipShiftPattern.test(combined)) {
-      return { shouldExtract: true, reason: 'hard_event:relationship' };
-    }
-    if (relationshipDynamicPattern.test(combined)) {
-      return { shouldExtract: true, reason: 'hard_event:relationship_dynamic' };
-    }
-    if (intimacyMilestonePattern.test(combined)) {
-      return { shouldExtract: true, reason: 'hard_event:intimacy' };
-    }
-    if (persistentConditionPattern.test(combined)) {
-      return { shouldExtract: true, reason: 'hard_event:condition' };
-    }
-    if (assistantTurnsSinceExtractionRef.current >= EXTRACTION_BACKSTOP_INTERVAL) {
-      return { shouldExtract: true, reason: `periodic_backstop:${EXTRACTION_BACKSTOP_INTERVAL}` };
-    }
-    return { shouldExtract: false, reason: 'skip' };
   };
 
   // Ref to always hold current sideCharacters - avoids stale closure in async callbacks
@@ -2773,12 +2791,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     const currentGenerationId = currentMessage.generationId || currentMessage.id;
     if (generationId && currentGenerationId !== generationId) return false;
 
-    if (currentMessage.role !== 'assistant') return true;
-
-    const hasLaterUserMessage = latestConversation.messages
-      .slice(messageIndex + 1)
-      .some(m => m.role === 'user');
-    return !hasLaterUserMessage;
+    return true;
   }, [conversationId]);
 
   const evaluateGoalProgress = async (
@@ -2916,9 +2929,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   }
 
   const isAllowedExtractionField = (field: string): boolean => {
-    if (field === 'location' || field === 'scenePosition' || field === 'currentMood' || field === 'nicknames') return true;
+    if (['age', 'sexType', 'sexualOrientation', 'roleDescription', 'location', 'scenePosition', 'currentMood', 'nicknames'].includes(field)) return true;
     if (field.startsWith('goals.')) return true;
-    if (field.startsWith('sections.')) return true;
+    if (field.startsWith('sections.')) {
+      const sectionTitle = field.split('.')[1]?.trim().toLowerCase();
+      return sectionTitle !== 'goals' && sectionTitle !== 'goal';
+    }
     if (!field.includes('.')) return false;
 
     const [parent, child] = field.split('.');
@@ -2929,7 +2945,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     }
 
     if (parent === 'personality') {
-      return ['traits', 'outwardTraits', 'inwardTraits', 'splitMode'].includes(child);
+      return ['traits', 'outwardTraits', 'inwardTraits', 'splitMode', 'miscellaneous', 'secrets', 'fears', 'kinksFantasies', 'desires'].includes(child);
     }
 
     if (['tone', 'keyLifeEvents', 'relationships', 'secrets', 'fears'].includes(parent)) {
@@ -3055,19 +3071,40 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   // Build eligible character set from latest exchange
   const buildEligibleCharacterNames = useCallback((userMessage: string, aiResponse: string): Set<string> => {
     const eligible = new Set<string>();
-    const combinedText = (userMessage + ' ' + aiResponse).toLowerCase();
+    const combinedText = `${userMessage}\n${aiResponse}`;
+    const isAliasMentioned = (alias: string): boolean => {
+      const trimmed = alias.trim();
+      if (!trimmed) return false;
+      const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return new RegExp(`(^|[^a-zA-Z0-9])${escaped}(?=$|[^a-zA-Z0-9])`, 'i').test(combinedText);
+    };
+
+    const addTaggedSpeaker = (speakerName: string | null | undefined) => {
+      const normalizedSpeaker = speakerName?.trim().toLowerCase();
+      if (!normalizedSpeaker) return;
+      const mainMatch = effectiveMainCharacters.find((character) => character.name.toLowerCase() === normalizedSpeaker);
+      if (mainMatch) {
+        eligible.add(mainMatch.name.toLowerCase());
+        return;
+      }
+      const sideMatch = effectiveSideCharacters.find((character) => character.name.toLowerCase() === normalizedSpeaker);
+      if (sideMatch) eligible.add(sideMatch.name.toLowerCase());
+    };
+
+    for (const segment of parseMessageSegments(userMessage)) addTaggedSpeaker(segment.speakerName);
+    for (const segment of parseMessageSegments(aiResponse)) addTaggedSpeaker(segment.speakerName);
     
     // Check all characters (main + side) by name, nicknames, previousNames
     for (const c of effectiveMainCharacters) {
       const names = [c.name, ...(c.nicknames?.split(',').map(n => n.trim()) || []), ...(c.previousNames || [])].filter(Boolean);
-      const mentioned = names.some(n => combinedText.includes(n.toLowerCase()));
+      const mentioned = names.some(isAliasMentioned);
       if (mentioned) {
         eligible.add(c.name.toLowerCase());
       }
     }
     for (const sc of effectiveSideCharacters) {
       const names = [sc.name, ...(sc.nicknames?.split(',').map(n => n.trim()) || [])].filter(Boolean);
-      const mentioned = names.some(n => combinedText.includes(n.toLowerCase()));
+      const mentioned = names.some(isAliasMentioned);
       if (mentioned) {
         eligible.add(sc.name.toLowerCase());
       }
@@ -3124,6 +3161,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           name: effective.name,
           previousNames: effective.previousNames || [],
           nicknames: effective.nicknames,
+          age: effective.age,
+          sexType: effective.sexType,
+          sexualOrientation: effective.sexualOrientation,
+          roleDescription: effective.roleDescription,
           physicalAppearance: effective.physicalAppearance,
           currentlyWearing: effective.currentlyWearing,
           preferredClothing: effective.preferredClothing,
@@ -3163,6 +3204,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       ).map(sc => ({
         name: sc.name,
         nicknames: sc.nicknames,
+        age: sc.age,
+        sexType: sc.sexType,
+        sexualOrientation: sc.sexualOrientation,
+        roleDescription: sc.roleDescription,
         customSections: (sc.sections || []).map(s => ({
           title: s.title,
           items: normalizeSectionItems(s)
@@ -3217,6 +3262,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           ['call2.character_updates.recent_context', recentContext],
           ['call2.character_updates.characters_payload', allCharacters],
           ['call2.character_updates.eligible_characters', [...eligibleNames]],
+          ['call2.character_updates.story_clock', { day: currentDay, timeOfDay: currentTimeOfDay }],
         ]),
         diagnostics: {
           scopedCharacterCount: allCharacters.length,
@@ -3231,7 +3277,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           recentContext,
           characters: allCharacters,
           modelId,
-          eligibleCharacters: [...eligibleNames]
+          eligibleCharacters: [...eligibleNames],
+          currentDay,
+          currentTimeOfDay,
         }
       });
       
@@ -3324,6 +3372,66 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     return JSON.parse(JSON.stringify(value));
   };
 
+  const previewStateValue = (value: unknown): string | undefined => {
+    if (value == null || value === '') return undefined;
+    const raw = typeof value === 'string' ? value : JSON.stringify(value);
+    const compact = raw.replace(/\s+/g, ' ').trim();
+    return compact.length > 260 ? `${compact.slice(0, 257)}...` : compact;
+  };
+
+  const getFieldValueForMetadata = (payload: Record<string, any>, fieldPath: string): unknown => {
+    if (fieldPath.startsWith('goals.')) {
+      const goalTitle = fieldPath.slice(6).toLowerCase();
+      return (payload.goals || []).find((goal: any) => goal?.title?.toLowerCase?.() === goalTitle);
+    }
+
+    if (fieldPath.startsWith('sections.')) {
+      const [, sectionTitle, ...itemParts] = fieldPath.split('.');
+      const itemLabel = itemParts.join('.').toLowerCase();
+      const section = (payload.sections || []).find((entry: any) => entry?.title?.toLowerCase?.() === sectionTitle.toLowerCase());
+      return section?.items?.find((item: any) => item?.label?.toLowerCase?.() === itemLabel);
+    }
+
+    const parts = fieldPath.split('.');
+    let current: any = payload;
+    for (const part of parts) {
+      if (current == null) return undefined;
+      current = current[part];
+    }
+    return current;
+  };
+
+  const stampFieldChangeMetadata = <T extends { _fieldChangeMetadata?: FieldChangeMetadataMap }>(
+    currentPayload: T,
+    nextPayload: T,
+    updates: ExtractedUpdate[],
+    meta: Required<Pick<ExtractionRequestMeta, 'sourceMessageId' | 'sourceMessageGenerationId'>>,
+  ): T => {
+    const stamped = cloneData(nextPayload);
+    const existingMetadata = cloneData(currentPayload._fieldChangeMetadata || {});
+    const updatedAt = Date.now();
+
+    for (const update of updates) {
+      const previousValue = getFieldValueForMetadata(currentPayload as Record<string, any>, update.field);
+      const nextValue = getFieldValueForMetadata(nextPayload as Record<string, any>, update.field);
+      if (JSON.stringify(previousValue ?? null) === JSON.stringify(nextValue ?? null)) continue;
+
+      existingMetadata[update.field] = {
+        fieldPath: update.field,
+        storyDay: currentDay,
+        timeOfDay: currentTimeOfDay,
+        sourceMessageId: meta.sourceMessageId,
+        sourceGenerationId: meta.sourceMessageGenerationId,
+        updatedAt,
+        previousValuePreview: previewStateValue(previousValue),
+        nextValuePreview: previewStateValue(nextValue ?? update.value),
+      };
+    }
+
+    stamped._fieldChangeMetadata = existingMetadata;
+    return stamped;
+  };
+
   const upsertExtrasEntry = (
     existing: Array<{ id?: string; label: string; value: string }>,
     rawValue: string,
@@ -3353,7 +3461,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     return stepEntries
       .map(desc => desc.trim().replace(/\|$/, '').trim())
       .filter(Boolean)
-      .slice(0, 8)
+      .slice(0, 6)
       .map(desc => ({ id: `step_${uuid().slice(0, 12)}`, description: desc, completed: false }));
   };
 
@@ -3377,6 +3485,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     relationships: character.relationships ? cloneData(character.relationships) : undefined,
     secrets: character.secrets ? cloneData(character.secrets) : undefined,
     fears: character.fears ? cloneData(character.fears) : undefined,
+    _fieldChangeMetadata: cloneData((character as any)._fieldChangeMetadata || {}),
   });
 
   const toSideCharacterStateSnapshotPayload = (
@@ -3402,6 +3511,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     avatarDataUrl: character.avatarDataUrl,
     avatarPosition: character.avatarPosition ? cloneData(character.avatarPosition) : undefined,
     extractedTraits: cloneData(character.extractedTraits || []),
+    _fieldChangeMetadata: cloneData((character as any)._fieldChangeMetadata || {}),
   });
 
   const applyUpdatesToCharacterSnapshot = (
@@ -3470,7 +3580,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             const indices = completeStepsMatch[1].trim().split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
             for (const idx of indices) {
               if (idx >= 1 && idx <= updatedSteps.length) {
-                updatedSteps[idx - 1] = { ...updatedSteps[idx - 1], completed: true, completedAt: Date.now() };
+                updatedSteps[idx - 1] = {
+                  ...updatedSteps[idx - 1],
+                  completed: true,
+                  completedAt: Date.now(),
+                  completedDay: currentDay,
+                  completedTimeOfDay: currentTimeOfDay,
+                };
               }
             }
           }
@@ -3796,7 +3912,15 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         const effectiveChar = computeEffectiveCharacter(mainChar);
         const nextEffectiveChar = applyUpdatesToCharacterSnapshot(effectiveChar, charUpdates);
         const currentPayload = toCharacterStateSnapshotPayload(effectiveChar);
-        const nextPayload = toCharacterStateSnapshotPayload(nextEffectiveChar);
+        const nextPayload = stampFieldChangeMetadata(
+          currentPayload,
+          toCharacterStateSnapshotPayload(nextEffectiveChar),
+          charUpdates,
+          {
+            sourceMessageId: meta.sourceMessageId,
+            sourceMessageGenerationId: meta.sourceMessageGenerationId,
+          },
+        );
 
         if (JSON.stringify(currentPayload) === JSON.stringify(nextPayload)) {
           debugLog(`[applyExtractedUpdates] No canonical delta for ${mainChar.name}`);
@@ -3837,7 +3961,15 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         const effectiveSideChar = computeEffectiveSideCharacter(sideChar);
         const nextEffectiveSideChar = applyUpdatesToSideCharacterSnapshot(effectiveSideChar, charUpdates);
         const currentPayload = toSideCharacterStateSnapshotPayload(effectiveSideChar);
-        const nextPayload = toSideCharacterStateSnapshotPayload(nextEffectiveSideChar);
+        const nextPayload = stampFieldChangeMetadata(
+          currentPayload,
+          toSideCharacterStateSnapshotPayload(nextEffectiveSideChar),
+          charUpdates,
+          {
+            sourceMessageId: meta.sourceMessageId,
+            sourceMessageGenerationId: meta.sourceMessageGenerationId,
+          },
+        );
 
         if (JSON.stringify(currentPayload) === JSON.stringify(nextPayload)) {
           debugLog(`[applyExtractedUpdates] No canonical delta for ${sideChar.name}`);
@@ -3875,8 +4007,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     }
   };
 
-  const queueAssistantMemoryExtraction = useCallback((messageText: string, sourceMessage: Message) => {
+  const queueAssistantMemoryExtraction = useCallback((userMessage: string, aiResponse: string, sourceMessage: Message) => {
     if (!memoriesEnabled) return;
+    const combinedTextLength = (userMessage?.length || 0) + (aiResponse?.length || 0);
 
     void trackAiUsageEvent({
       eventType: 'memory_extraction_call',
@@ -3885,7 +4018,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         conversationId,
         day: sourceMessage.day ?? currentDay,
         timeOfDay: sourceMessage.timeOfDay ?? currentTimeOfDay,
-        inputChars: messageText.length,
+        inputChars: combinedTextLength,
         modelId,
       },
     });
@@ -3896,7 +4029,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       apiCallGroup: 'call_2',
       parentRowId: 'summary.call2.memory_extract',
       detailPresence: buildRequiredPresence([
-        ['call2.memory_extract.message_text', messageText],
+        ['call2.memory_extract.user_message', userMessage],
+        ['call2.memory_extract.ai_response', aiResponse],
         ['call2.memory_extract.character_names', allCharacterNames],
         ['call2.memory_extract.model_id', modelId],
       ]),
@@ -3907,7 +4041,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
     supabase.functions.invoke('extract-memory-events', {
       body: {
-        messageText,
+        userMessage,
+        aiResponse,
         characterNames: allCharacterNames,
         modelId,
       }
@@ -3961,7 +4096,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     aiText: string,
     sourceMessage: Message,
   ) => {
-    queueAssistantMemoryExtraction(aiText, sourceMessage);
+    queueAssistantMemoryExtraction(userText, aiText, sourceMessage);
 
     evaluateGoalProgress(
       userText,
@@ -3972,21 +4107,16 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       console.error('[queueAssistantDerivedWork] Goal progress evaluation failed:', err);
     });
 
-    assistantTurnsSinceExtractionRef.current += 1;
-    const extractionDecision = getExtractionDecision(userText, aiText);
-    if (!extractionDecision.shouldExtract) return;
-
-    assistantTurnsSinceExtractionRef.current = 0;
     const extractionMeta: ExtractionRequestMeta = {
       sourceMessageId: sourceMessage.id,
       sourceMessageGenerationId: sourceMessage.generationId,
-      reason: extractionDecision.reason,
+      reason: 'post_turn_state_sync',
     };
 
     extractCharacterUpdatesFromDialogue(userText, aiText, extractionMeta).then(updates => {
       if (updates.length > 0) {
         debugLog(
-          `[queueAssistantDerivedWork] Extracted ${updates.length} character updates (${extractionDecision.reason})`,
+          `[queueAssistantDerivedWork] Extracted ${updates.length} character updates (${extractionMeta.reason})`,
           updates,
         );
         applyExtractedUpdates(updates, extractionMeta);
@@ -6598,6 +6728,7 @@ const updatedChar: SideCharacter = {
                           regenerateMessageIds: regenerateEventsRef.current.map(e => e.messageId),
                           sanitizeAssistantText: sanitizeAssistantMessageText,
                           messageComments: exportDialogDebugComments,
+                          postTurnStateChanges: exportPostTurnStateChanges,
                         });
                         const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
                         const url = URL.createObjectURL(blob);
@@ -6640,60 +6771,89 @@ const updatedChar: SideCharacter = {
                         const exportDate = new Date().toISOString().slice(0, 16).replace('T', ' ');
                         const lines: string[] = [];
                         
-                        lines.push('# Master Prompt Snapshot');
-                        lines.push(`**Model:** ${modelId}`);
-                        lines.push(`**Pipeline:** direct roleplay generation (single chat call, streamed from the edge relay)`);
-                        lines.push(`**Verbosity:** ${verbosity} → max_tokens: ${maxTokens}`);
-                        lines.push(`**Supabase Target:** ${supabaseRuntimeTarget}`);
-                        lines.push(`**Temperature:** direct chat 0.55`);
-                        lines.push(`**Stream:** true`);
-                        lines.push(`**Session Message Count:** ${sessionMessageCountRef.current}`);
-                        lines.push(`**Exported:** ${exportDate}`);
+                        lines.push('MASTER PROMPT SNAPSHOT');
+                        lines.push(`Model: ${modelId}`);
+                        lines.push('Pipeline: direct roleplay generation (single chat call, streamed from the edge relay)');
+                        lines.push(`Verbosity: ${verbosity} -> max_tokens: ${maxTokens}`);
+                        lines.push(`Supabase Target: ${supabaseRuntimeTarget}`);
+                        lines.push('Temperature: direct chat 0.55');
+                        lines.push('Stream: true');
+                        lines.push(`Session Message Count: ${sessionMessageCountRef.current}`);
+                        lines.push(`Exported: ${exportDate}`);
                         lines.push('');
                         lines.push('---');
                         lines.push('');
-                        lines.push('## System Instruction (verbatim)');
+                        lines.push('SYSTEM INSTRUCTION');
                         lines.push('');
                         lines.push(systemInstruction);
                         lines.push('');
                         lines.push('---');
                         lines.push('');
-                        lines.push('## Runtime Parameters');
+                        lines.push('SAVED CONVERSATION MESSAGES SENT AFTER SYSTEM INSTRUCTION');
+                        lines.push('');
+                        if (conversation?.messages?.length) {
+                          conversation.messages.forEach((message, index) => {
+                            lines.push(`Message ${index + 1}: ${message.role}`);
+                            lines.push('');
+                            lines.push(message.text || '(empty)');
+                            lines.push('');
+                          });
+                        } else {
+                          lines.push('No saved conversation messages are currently included.');
+                          lines.push('');
+                        }
+
+                        if (input.trim()) {
+                          lines.push('CURRENT UNSENT DRAFT');
+                          lines.push('');
+                          lines.push('// NOT SENT YET. This is only the text currently sitting in the chat input at export time.');
+                          lines.push(input.trim());
+                          lines.push('');
+                        }
+
+                        lines.push('---');
+                        lines.push('');
+                        lines.push('RUNTIME NOTES');
                         lines.push('');
                         
                         // Length directive
-                        lines.push('### Length Directive (current)');
+                        lines.push('Length Directive (current)');
                         lines.push('');
-                        lines.push(lengthDirective || 'None — response lengths are varied');
+                        lines.push(lengthDirective || 'None - response lengths are varied');
                         lines.push('');
                         
                         // Style hint runtime
-                        lines.push('### Style Hint Runtime');
+                        lines.push('Style Hint Runtime');
                         lines.push('');
                         lines.push('Random style hints are currently DISABLED for live roleplay requests.');
                         lines.push('No style hint is appended to the final user message in the current runtime.');
                         lines.push('');
                         
-                        // Regeneration request
-                        lines.push('### Regeneration Request (fixed template, appended on regenerate)');
+                        // Conditional request templates
+                        lines.push('Conditional Request Templates');
                         lines.push('');
+                        lines.push('// ONLY SENT WITH API CALL WHEN REGENERATING RESPONSE.');
+                        lines.push('// Lines beginning with // in this export are documentation notes only, not live API call text.');
                         lines.push(REGENERATION_DIRECTIVE_TEXT);
+                        lines.push('');
+                        lines.push('// CONTINUE REQUEST INSTRUCTIONS ARE ONLY SENT WHEN THE CONTINUE BUTTON IS CLICKED.');
+                        lines.push('// Normal send requests do not include the regenerate template or continue instructions.');
                         lines.push('');
                         
                         // Session message format
-                        lines.push('### Session Message Format');
+                        lines.push('Session Message Format');
                         lines.push('');
-                        lines.push('Prepended to every user message:');
+                        lines.push('// Prepended to normal user messages before they are sent.');
                         lines.push('`[SESSION: Message {N} of current session]`');
                         lines.push('');
                         
                         // Download
-                        const blob = new Blob([lines.join('\n')], { type: 'text/markdown' });
+                        const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement('a');
                         a.href = url;
                         const scenarioTitle = appData.world?.core?.scenarioName || 'untitled';
-                        a.download = `master-prompt-${scenarioTitle.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}-${Date.now()}.md`;
+                        a.download = `master-prompt-${scenarioTitle.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}-${Date.now()}.txt`;
                         a.click();
                         URL.revokeObjectURL(url);
                       }}

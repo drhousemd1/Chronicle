@@ -280,17 +280,17 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
               tagType: "data-block",
               icon: "📦",
               purpose:
-                "Builds WORLD CONTEXT from canonical story fields: story name, brief description, story premise, structured locations, dialog formatting, custom world sections, and story goals.",
+                "Builds SECTION 2 - STORY AND WORLD CONTEXT from canonical story fields: story name, brief description, story premise, structured locations, custom world sections, story goals, lore entries, and selected story themes.",
               whyItExists:
                 "Story Builder data lives across multiple authored containers, so the runtime needs one normalized world block before dispatch.",
               problemSolved:
                 "Prevents important story framing, location, and goal context from silently dropping out of API Call 1.",
               fileRefs: [
-                { path: "src/services/llm.ts", lines: "100-188, 254-653" },
+                { path: "src/services/llm.ts", lines: "86-545" },
               ],
-              codeSourceLabel: "`worldContext` assembly",
+              codeSourceLabel: "SECTION 2 story/world assembly",
               promptViewEnabled: true,
-              codeSource: `WORLD CONTEXT:\nSTORY NAME, BRIEF DESCRIPTION, STORY PREMISE, LOCATIONS, DIALOG FORMATTING, CUSTOM WORLD CONTENT, STORY GOALS\n(assembled directly from canonical appData.world.core fields).`,
+              codeSource: `SECTION 2 - STORY AND WORLD CONTEXT:\nSTORY NAME, BRIEF DESCRIPTION, STORY PREMISE, LOCATIONS, CUSTOM WORLD CONTENT, MAIN STORY GOALS, ADDITIONAL LORE ENTRIES, STORY THEMES\n(assembled directly from canonical appData.world/core fields plus selected contentThemes).`,
               crossRefs: [
                 {
                   badge: "4",
@@ -869,70 +869,69 @@ Only completed steps are persisted. Each row is tied to the source assistant gen
             },
             {
               id: "item-character-extractor-prompt",
-              title: "Character extractor 3-phase system prompt",
+              title: "Compact character state-sync prompt",
               tagType: "core-prompt",
               icon: "📝",
               purpose:
-                "Extractor prompt enforces phase scan discipline, trackable field allowlist, goal lifecycle rules, and conservative update policy.",
+                "Extractor prompt compares the latest exchange against eligible saved character cards and returns only supported material deltas.",
               whyItExists:
-                "If Chronicle is going to let an extraction pass mutate canon, that pass needs a narrow, rule-heavy contract instead of free-form inference.",
+                "The follow-up call should keep durable character state current without adding a second writing system or broad psychological lecture.",
               problemSolved:
-                "Reduces speculative character rewrites and keeps extraction focused on trackable, material state changes.",
+                "Reduces stale cards, speculative rewrites, fake field paths, and prompt bloat in the post-turn state-sync pass.",
               fileRefs: [
                 { path: "supabase/functions/extract-character-updates/index.ts", lines: "407-767" },
               ],
               codeSourceLabel: "extract-character-updates system prompt (abridged)",
               promptViewEnabled: true,
-              codeSource: `PHASE 1: extract material state deltas\nPHASE 2: review existing state\nPHASE 3: placeholder scan\nTRACKABLE FIELDS: ...\nDEFAULT TO NO UPDATE when no material change is present.`,
+              codeSource: `--- CURRENT STORY CLOCK ---\n--- CURRENT CHARACTER STATE ---\n--- SUPPORTED FIELD PATHS ---\n--- CORE TASK ---\n--- FIELD GUIDANCE ---\n--- CHARACTER GOALS ---\n--- CONSERVATIVE UPDATE RULES ---\n--- OUTPUT JSON ---`,
             },
             {
               id: "item-character-extractor-depth-lifecycle",
-              title: "Deep psychology and goal lifecycle rules",
+              title: "Field guidance and goal limits",
               tagType: "core-prompt",
               icon: "📝",
               purpose:
-                "Documents the extractor's deeper inference layer: psychological pattern reading, progressive trait refinement, conflict resolution, split-mode detection, and character-goal lifecycle management.",
+                "Documents the extractor's bounded field rules: update supported fields, refine existing entries, and keep character goals limited and non-duplicative.",
               whyItExists:
-                "This is the part of Chronicle that prevents characters from becoming static cards that forget who they are once older dialogue leaves the visible chat window.",
+                "Character cards still need durable evolution, but the follow-up worker should behave like a conservative state reconciler rather than a free-form author.",
               problemSolved:
-                "Prevents shallow one-line trait churn, duplicate contradictory psychology, stale goals, and casual one-off interests from being promoted into durable canon.",
+                "Prevents unsupported custom containers, duplicate traits/goals, runaway step lists, and low-confidence edits from becoming saved state.",
               fileRefs: [
                 { path: "supabase/functions/extract-character-updates/index.ts", lines: "498-642" },
               ],
-              codeSourceLabel: "Character extractor depth and lifecycle rules",
+              codeSourceLabel: "Character extractor field guidance",
               promptViewEnabled: true,
-              codeSource: `Psychological inference:
-- Layer 1: surface action or dialogue
-- Layer 2: pattern over time, or a decisive revealing moment
-- Layer 3: underlying need, fear, defense mechanism, or psychology
+              codeSource: `Field guidance:
+- currentMood: short emotional state only
+- location: broad place
+- scenePosition: immediate placement
+- structured sections use Label: Description
+- custom sections only when no structured field fits
 
-Trait lifecycle:
-CREATE, REFINE, MERGE, CORRECT, CONTEXTUALISE, REMOVE, HOLD
-
-Goal lifecycle:
-- Remove goals that are abandoned, achieved, contradicted, or irrelevant
-- Update existing goals over creating duplicates
-- Max 1 new goal per character per extraction
-- Max 5 active goals per character
-- Behavioral patterns update personality traits, not goals`,
+Character goals:
+- sustained goals only
+- update existing goals over duplicates
+- at most one new goal per character
+- 3-6 steps, never runaway lists
+- completed steps receive app-owned story-clock metadata`,
               subItems: [
                 {
                   id: "item-character-extractor-depth-lifecycle-sub-1",
-                  title: "Deep inference is intentional",
+                  title: "Conservative state reconciliation",
                   description:
-                    "The extractor is not just bookkeeping. It is explicitly asked to infer psychology from behavior, dialogue patterns, tone, fears, relationships, and context.",
+                    "The extractor can update durable character state, but empty updates are valid and preferred when the exchange does not clearly change a supported field.",
                 },
                 {
                   id: "item-character-extractor-depth-lifecycle-sub-2",
-                  title: "Evidence threshold",
+                  title: "Supported fields only",
                   description:
-                    "One observation can be tentative, two or more can become a pattern, and one decisive revealing moment can justify stronger psychological refinement.",
+                    "The prompt and client allowlist reject fake containers such as `sections.Goals.*` when the dedicated `goals.*` field path exists.",
                 },
                 {
                   id: "item-character-extractor-depth-lifecycle-sub-3",
                   title: "Goal cleanup",
                   description:
-                    "Character goals are not permanent. The extractor can remove, update, or refine them when the character's direction changes.",
+                    "Character goals can be updated, completed, removed, or created, but the prompt caps new goal creation and step count to avoid runaway generated checklists.",
                 },
               ],
             },

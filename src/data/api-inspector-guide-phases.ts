@@ -696,11 +696,11 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
             "title": "Story Builder Page: World Context",
             "tagType": "data-block",
             "icon": "📦",
-            "purpose": "A section of the system prompt that contains all the world-building data. The section itself is always present; the fields below are injected into it from the Story Builder page.",
+            "purpose": "SECTION 2 - STORY AND WORLD CONTEXT contains the world-building data. The section itself is always present; populated fields are injected from the Story Builder page and selected story theme settings.",
             "fileRefs": [
               {
                 "path": "src/services/llm.ts",
-                "lines": "worldContext variable, lines ~203-275"
+                "lines": "getSystemInstruction / renderStoryAndWorld"
               },
               {
                 "path": "src/components/chronicle/WorldTab.tsx",

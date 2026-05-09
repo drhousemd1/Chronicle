@@ -140,12 +140,8 @@ export function buildContentThemeDirectives(contentThemes: {
   triggerWarnings?: string[];
   customTags?: string[];
 }): string {
-  const strong: string[] = [];
-  const moderate: string[] = [];
-  const subtle: string[] = [];
-  const custom: string[] = [];
+  const selectedLines: string[] = [];
 
-  // Collect all selected tags
   const allTags: string[] = [
     ...(contentThemes.characterTypes || []),
     ...(contentThemes.storyType ? [contentThemes.storyType] : []),
@@ -157,48 +153,21 @@ export function buildContentThemeDirectives(contentThemes: {
   for (const tag of allTags) {
     const entry = getTagInjection(tag);
     if (!entry) continue;
-
-    const line = `• ${entry.tag}: ${entry.injection}`;
-    switch (entry.strength) {
-      case 'strong': strong.push(line); break;
-      case 'moderate': moderate.push(line); break;
-      case 'subtle': subtle.push(line); break;
-    }
+    selectedLines.push(`- ${entry.tag}: ${entry.injection}`);
   }
 
-  // Custom tags get generic treatment
   for (const tag of (contentThemes.customTags || [])) {
-    if (tag.trim()) {
-      custom.push(`• ${tag.trim()}: Treat this as a welcomed story element when it fits naturally in the scene.`);
+    const trimmed = tag.trim();
+    if (trimmed) {
+      selectedLines.push(`- ${trimmed}: Treat this as a welcomed story element when it fits naturally in the scene.`);
     }
   }
 
-  // Build the block only if there is model-facing guidance to inject
-  if (strong.length === 0 && moderate.length === 0 && subtle.length === 0 && custom.length === 0) {
-    return '';
-  }
+  if (selectedLines.length === 0) return '';
 
-  const sections: string[] = [];
+  return `--- STORY THEMES ---
 
-  if (strong.length > 0) {
-    sections.push(`    CORE INVITED CONTENT / BOUNDARIES:\n${strong.join('\n')}`);
-  }
-  if (moderate.length > 0) {
-    sections.push(`    WELCOMED THEMES TO LEAN INTO WHEN NATURAL:\n${moderate.join('\n')}`);
-  }
-  if (subtle.length > 0) {
-    sections.push(`    LIGHT STORY FLAVOR:\n${subtle.join('\n')}`);
-  }
-  if (custom.length > 0) {
-    sections.push(`    ADDITIONAL USER-REQUESTED THEMES:\n${custom.join('\n')}`);
-  }
-
-  return `
-    --- STORY THEMES THE WRITERS HAVE OPTED INTO ---
-    The scenario creator used story tags to show what this story is open to, what it should stay aware of, and which themes matter most here.
-    Treat these as content permission, background emphasis, and thematic direction -- not as a checklist to force into every response.
-    Some lines set hard boundaries (for example SFW/NSFW). Others mark themes the story can naturally lean into when the scene supports them.
-
-${sections.join('\n\n')}
-  `;
+- Themes have been selected by the creator of the story to help direct what type of themes the story centers around. These should occur naturally and not be forced, and should develop or occur throughout the story in a realistic fashion.
+- Treat these as content permission, background emphasis, and thematic direction, not as a checklist to force into every response.
+${selectedLines.join('\n')}`;
 }

@@ -24,11 +24,16 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const { messageText, characterNames, modelId } = await req.json();
+    const { messageText, userMessage, aiResponse, characterNames, modelId } = await req.json();
+    const exchangeText = [
+      userMessage ? `USER MESSAGE:\n${userMessage}` : '',
+      aiResponse ? `AI RESPONSE:\n${aiResponse}` : '',
+      !userMessage && !aiResponse && messageText ? `MESSAGE:\n${messageText}` : '',
+    ].filter(Boolean).join('\n\n---\n\n');
     
-    if (!messageText) {
+    if (!exchangeText) {
       return new Response(
-        JSON.stringify({ error: 'messageText is required' }),
+        JSON.stringify({ error: 'userMessage, aiResponse, or messageText is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -39,63 +44,23 @@ serve(async (req) => {
       throw new Error("XAI_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are a story memory curator for an adult roleplay. Your job is to identify ONLY events that will affect future scenes and that the AI must remember for narrative consistency.
+    const systemPrompt = `You are a story memory curator for an adult roleplay. Your job is to identify only durable events from the latest user+AI exchange that will affect future scenes and narrative consistency.
 
 CHARACTERS: ${characterNames?.join(', ') || 'Unknown'}
 
-WHAT TO EXTRACT (events with lasting consequences):
+--- EXTRACT ---
+- Relationship milestones, intimacy milestones, durable agreements, promises, rules, secrets revealed, major decisions, injuries, pregnancy/status changes, persistent location changes, appearance changes, or new backstory that would cause a future inconsistency if forgotten.
+- Include facts introduced by the USER even if the AI response did not repeat them.
+- Use past tense and include character names.
 
-RELATIONSHIP & INTIMACY:
-✓ Relationship milestones (first kiss, confession of love, becoming exclusive, breakup, proposal)
-✓ Sexual acts that occurred (not just flirting or buildup)
-✓ Changes in relationship dynamics (power shifts, one becoming dominant/submissive)
-✓ Rules established between characters ("You will call me X", "No doing Y without permission")
+--- IGNORE ---
+- Minor gestures, routine actions, mood-only beats, atmosphere, flirting/buildup without consequence, or lines that do not reveal new information.
 
-REVELATIONS & SECRETS:
-✓ Secrets revealed or discovered ("I'm actually a spy", "I have a twin sister")
-✓ Revealed preferences - kinks, desires, turn-ons disclosed by a character
-✓ New information about characters (backstory, true identity, hidden traits)
-
-INTENTIONS & COMMITMENTS:
-✓ Stated intentions - when a character declares what they want to do or their plan
-✓ Promises or commitments made ("I'll meet you at midnight", "I promise to protect you")
-✓ Major decisions or agreements (agreeing to elope, refusing a job offer)
-
-PHYSICAL & STATUS CHANGES:
-✓ Physical changes (injuries, illness, discovering pregnancy, transformations)
-✓ Location changes that persist (moved cities, arrived at new home)
-✓ Appearance changes (new haircut, costume, etc.)
-
-WHAT TO IGNORE (scene flavor with no lasting impact):
-✗ Minor gestures (touched shoulder, pulled closer, smiled, nodded)
-✗ Invitations fulfilled immediately ("sit down" followed by sitting)
-✗ Mood or atmosphere descriptions
-✗ Dialogue that doesn't reveal new information
-✗ Buildup/teasing without conclusion
-✗ Routine actions (drinking coffee, looking out window)
-
-KEY QUESTION: "If the AI forgot this, would it cause a plot hole or inconsistency later?"
-- If YES → include it
-- If NO → skip it
-
-RULES:
-1. Return 0-2 events MAXIMUM (only truly significant ones)
-2. It's OKAY to return an empty array if nothing significant happened
-3. Be extremely selective - less is more
-4. Use past tense, include character names
-5. Keep each point under 60 characters
-6. For preferences/intentions, note WHO has them
-
-EXAMPLES OF GOOD EXTRACTIONS:
-✓ "James confessed his love for Ashley"
-✓ "Ashley revealed she is a spy"
-✓ "James promised to meet Ashley at midnight"
-✓ "Ashley established a rule: James must ask permission first"
-✓ "James revealed he has a feminization kink"
-✓ "Ashley declared her plan to train James as her submissive"
-✓ "James was injured in the fight"
-✓ "Ashley discovered she is pregnant"
-✓ "They agreed to elope next week"
+--- RULES ---
+- Return 0-3 events maximum.
+- Empty array is valid when nothing durable happened.
+- Keep each point under 90 characters.
+- For preferences, intentions, rules, or secrets, state who they belong to.
 
 Return ONLY a JSON array. Example: ["James confessed his love", "Ashley revealed her secret identity"]
 Empty array is acceptable: []`;
@@ -112,7 +77,7 @@ Empty array is acceptable: []`;
         model: effectiveModel,
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Extract key story events from this message:\n\n${messageText}` }
+          { role: "user", content: `Extract durable story-memory events from this latest exchange:\n\n${exchangeText}` }
         ],
         temperature: 0.3,
       }),
@@ -148,7 +113,7 @@ Empty array is acceptable: []`;
       .filter((e: any) => typeof e === 'string' && e.trim().length > 0)
       .slice(0, 3);
 
-    console.log(`[extract-memory-events] Extracted ${extractedEvents.length} events from message`);
+    console.log(`[extract-memory-events] Extracted ${extractedEvents.length} events from latest exchange`);
 
     return new Response(
       JSON.stringify({ extractedEvents }),
