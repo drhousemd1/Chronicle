@@ -19,7 +19,10 @@ const LazyFinanceDashboard = React.lazy(() =>
 );
 
 const lazyToolFallback = <div className="h-full w-full" />;
-const LEGACY_STYLE_GUIDE_DESCRIPTION = 'Central hub for Style Guide, App Guide, App Architecture, Quality Hub, and API Inspector';
+const LEGACY_STYLE_GUIDE_DESCRIPTIONS = new Set([
+  'Central hub for Style Guide, App Guide, App Architecture, Quality Hub, and API Inspector',
+  'Central hub for Style Guide, App Guide, Quality Hub, and API Inspector',
+]);
 
 const DEFAULT_TOOLS: ToolMeta[] = [
   {
@@ -36,12 +39,17 @@ const DEFAULT_TOOLS: ToolMeta[] = [
   {
     id: 'style_guide',
     title: 'App Dashboard',
-    description: 'Central hub for Style Guide, App Guide, Quality Hub, and API Inspector',
+    description: 'Central hub for Style Guide, App Guide, and Quality Hub',
   },
   {
     id: 'app_architecture',
     title: 'App Architecture',
     description: 'Repository map for files, folders, components, and ownership flows',
+  },
+  {
+    id: 'roleplay_pipeline',
+    title: 'Roleplay Pipeline',
+    description: 'Map of roleplay API calls, prompt assembly, and post-turn state flow',
   },
   {
     id: 'finance_dashboard',
@@ -79,7 +87,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
           const overrides = data.setting_value as Record<string, Partial<ToolMeta>>;
           setTools(DEFAULT_TOOLS.map((t) => {
             const override = { ...(overrides[t.id] || {}) };
-            if (t.id === 'style_guide' && override.description === LEGACY_STYLE_GUIDE_DESCRIPTION) {
+            if (t.id === 'style_guide' && override.description && LEGACY_STYLE_GUIDE_DESCRIPTIONS.has(override.description)) {
               delete override.description;
             }
             return { ...t, ...override };
@@ -119,6 +127,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
   const handleOpenTool = (toolId: string) => {
     if (toolId === 'app_architecture') {
       navigate('/style-guide/app-architecture');
+      return;
+    }
+
+    if (toolId === 'roleplay_pipeline') {
+      navigate('/style-guide/api-inspector');
       return;
     }
 

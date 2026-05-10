@@ -2702,7 +2702,7 @@ const ApiInspectorPage: React.FC = () => {
       <div className="header">
         <button
           type="button"
-          onClick={() => navigate("/?tab=admin&adminTool=style_guide")}
+          onClick={() => navigate("/?tab=admin")}
           className="p-2 text-[hsl(var(--ui-surface-2))] hover:bg-slate-100 rounded-full transition-colors"
           aria-label="Go back"
           title="Go back"

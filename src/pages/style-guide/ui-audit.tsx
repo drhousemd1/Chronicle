@@ -164,8 +164,8 @@ const SCAN_CATALOG_ROWS: Record<string, ScanCatalogRow> = {
   },
   "api-inspector-doc": {
     id: "api-inspector-doc",
-    label: "API Inspector Map Consistency",
-    description: "Cross-checks API Inspector flow mapping against real prompt assembly, payload fields, and runtime behavior.",
+    label: "Roleplay Pipeline Map Consistency",
+    description: "Cross-checks Roleplay Pipeline flow mapping against real prompt assembly, payload fields, and runtime behavior.",
     moduleIds: ["module-api-inspector-integrity", "module-data-integrity", "module-docs"],
     domainHints: ["data-integrity", "documentation", "functionality"],
   },
@@ -344,9 +344,9 @@ const SCAN_CATALOG_SECTIONS: ScanCatalogSection[] = [
   },
   {
     id: "api-inspector-tool",
-    title: "Admin Tool: API Inspector",
+    title: "Admin Tool: Roleplay Pipeline",
     description: "Tool-specific scans for prompt/payload architecture map correctness and runtime parity.",
-    matchPages: ["API Inspector"],
+    matchPages: ["Roleplay Pipeline"],
     rowIds: ["api-inspector-doc", "quick-stability", "security-deep", "functionality", "data-integrity", "build-health"],
   },
   {
@@ -394,17 +394,42 @@ function cloneInitialRegistry(): QualityHubRegistry {
   return JSON.parse(JSON.stringify(qualityHubInitialRegistry)) as QualityHubRegistry;
 }
 
+function normalizeRoleplayPipelineLabels(registry: QualityHubRegistry): QualityHubRegistry {
+  return {
+    ...registry,
+    scanModules: registry.scanModules.map((module) => {
+      if (module.id !== "module-api-inspector-integrity") return module;
+      return {
+        ...module,
+        name: "Roleplay Pipeline Map Consistency",
+        description: "Cross-verify Roleplay Pipeline map content with real prompt assembly and runtime payload flow.",
+        notes: module.notes?.replace("API Inspector validation tests", "Roleplay Pipeline validation tests"),
+      };
+    }),
+    reviewUnits: registry.reviewUnits.map((unit) => {
+      if (unit.id !== "unit-api-inspector") return unit;
+      return {
+        ...unit,
+        name: "Roleplay Pipeline",
+        notes: unit.notes?.includes("standalone route remains `/style-guide/api-inspector`")
+          ? unit.notes
+          : "Reviewed in targeted AI mapping pass; the standalone route remains `/style-guide/api-inspector` while the Admin tile is now labeled Roleplay Pipeline.",
+      };
+    }),
+  };
+}
+
 /** Upgrade persisted registry to code-defined seed when seed version changes. */
 function upgradeRegistry(persisted: QualityHubRegistry): QualityHubRegistry {
   const seed = qualityHubInitialRegistry;
   const currentVersion = seed.meta.registryVersion ?? 0;
   const persistedVersion = persisted.meta?.registryVersion ?? 0;
 
-  if (persistedVersion >= currentVersion) return persisted;
+  if (persistedVersion >= currentVersion) return normalizeRoleplayPipelineLabels(persisted);
 
   // Preserve user-managed findings/runs/changelog while upgrading code-owned structure.
   const merged = mergeRegistries(seed, persisted);
-  return {
+  return normalizeRoleplayPipelineLabels({
     ...merged,
     meta: {
       ...merged.meta,
@@ -415,7 +440,7 @@ function upgradeRegistry(persisted: QualityHubRegistry): QualityHubRegistry {
       lastUpdatedAt: new Date().toISOString(),
       lastRunId: persisted.meta?.lastRunId || merged.meta.lastRunId || seed.meta.lastRunId,
     },
-  };
+  });
 }
 function formatDate(value: string): string {
   const date = new Date(value);
@@ -871,7 +896,7 @@ export default function UiAuditPage() {
   }, [registry, saveToDb]);
 
   const updateRegistry = useCallback((updater: (p: QualityHubRegistry) => QualityHubRegistry) => {
-    setRegistry((p) => nextRegistryWithTimestamp(updater(p)));
+    setRegistry((p) => nextRegistryWithTimestamp(normalizeRoleplayPipelineLabels(updater(p))));
   }, []);
 
   const allAgents = useMemo(() => getAgentList(registry), [registry]);

@@ -137,7 +137,7 @@ const GENERAL_PURPOSE_PROTOCOL = `\\~ (end) Prompt for all messages to LLM's (do
 13\\. Edge Functions & AI Services:  
 \\- Page/system-specific implementation guide and maintenance reference. 
 
-**\\[API Inspector\\]:**  
+**\\[Roleplay Pipeline\\]:**
 \\- Use for end-to-end AI/runtime flow verification: prompt assembly, context injections, API payload flow, and post-call handling.
 
 **\\[Quality Hub\\]:**  
@@ -279,7 +279,6 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
   const isNarrow = useMediaQuery('(max-width: 1024px)');
 
   const openUiAudit = useCallback(() => navigate('/style-guide/ui-audit'), [navigate]);
-  const openApiInspector = useCallback(() => navigate('/style-guide/api-inspector'), [navigate]);
   const openAppGuide = useCallback(() => { if (onSwitchToAppGuide) onSwitchToAppGuide(); else navigate('/?tab=admin&adminTool=app_guide'); }, [onSwitchToAppGuide, navigate]);
 
   return (
@@ -387,23 +386,6 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             Quality Hub
           </button>
 
-          <button
-            type="button"
-            onClick={openApiInspector}
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              textDecoration: 'none', whiteSpace: 'nowrap',
-              fontSize: isNarrow ? 12 : 13, fontWeight: 700,
-              padding: isNarrow ? '10px 12px' : '12px 14px',
-              borderRadius: 10, border: `1px solid ${sg.border}`,
-              cursor: 'pointer',
-              background: '#ffffff', color: '#475569',
-              transition: 'all 0.2s ease',
-              flex: isNarrow ? 1 : undefined,
-            }}
-          >
-            API Inspector
-          </button>
         </nav>
 
         {/* ─── MAIN CONTENT ─── */}

@@ -154,7 +154,7 @@ function getSummaryHelpText(rowId: string): string {
     case "summary.single.character_avatar":
       return "Triggered when avatar generation runs (Avatar modal or Character Card modal regenerate avatar).";
     default:
-      return "Triggered when this pipeline is invoked by its mapped API Inspector flow.";
+      return "Triggered when this pipeline is invoked by its mapped Roleplay Pipeline flow.";
   }
 }
 

@@ -25,8 +25,8 @@
 | Field | Detail |
 |-------|--------|
 | **Tab Key** | `admin` |
-| **Source File** | `src/pages/Admin.tsx` (222 lines) |
-| **Purpose** | Admin hub providing access to 5 top-level tiles: Image Generation, AI Status, App Dashboard, App Architecture, and Finance Dashboard. Only visible to users with `admin` role. |
+| **Source File** | `src/pages/Admin.tsx` (243 lines) |
+| **Purpose** | Admin hub providing access to 6 top-level tiles: Image Generation, AI Status, App Dashboard, App Architecture, Roleplay Pipeline, and Finance Dashboard. Only visible to users with `admin` role. |
 | **Access** | Requires async `checkIsAdmin(userId)` — calls `has_role()` RPC against `user_roles` table for `admin` role |
 | **Sidebar Label** | Settings (gear icon from lucide) |
 
@@ -61,6 +61,7 @@ Tool cards use the standard Chronicle card style: `aspect-[2/3] rounded-[2rem] b
 |--------|---------|--------|
 | Click standard tool card | `handleOpenTool(tool.id)` → `onSetActiveTool(tool.id)` | Opens the selected embedded admin tool |
 | Click App Architecture card | `handleOpenTool('app_architecture')` → `navigate('/style-guide/app-architecture')` | Opens the standalone App Architecture route |
+| Click Roleplay Pipeline card | `handleOpenTool('roleplay_pipeline')` → `navigate('/style-guide/api-inspector')` | Opens the standalone Roleplay Pipeline route |
 | Click Edit | `setEditingTool(tool)` | Opens AdminToolEditModal |
 | Save tool metadata | `handleSaveTool` | Persists to `app_settings` table, key `admin_tool_meta` |
 
@@ -84,7 +85,7 @@ Tool cards use the standard Chronicle card style: `aspect-[2/3] rounded-[2rem] b
 
 ### 6a. Tool Metadata
 
-5 default tiles defined in `DEFAULT_TOOLS` constant:
+6 default tiles defined in `DEFAULT_TOOLS` constant:
 
 | Tool ID | Title | Render Target |
 |---------|-------|---------------|
@@ -92,6 +93,7 @@ Tool cards use the standard Chronicle card style: `aspect-[2/3] rounded-[2rem] b
 | `model_settings` | AI Status | `src/components/chronicle/ModelSettingsTab.tsx` |
 | `style_guide` | App Dashboard | `src/components/admin/styleguide/StyleGuideTool.tsx` |
 | `app_architecture` | App Architecture | Standalone route `/style-guide/app-architecture` → `src/pages/style-guide/app-architecture.tsx` |
+| `roleplay_pipeline` | Roleplay Pipeline | Standalone route `/style-guide/api-inspector` → `src/pages/style-guide/api-inspector.tsx` |
 | `finance_dashboard` | Finance Dashboard | `src/components/admin/finance/FinanceDashboardTool.tsx` |
 
 Custom metadata (title/description/thumbnail overrides) stored in `app_settings` table with key `admin_tool_meta`.
@@ -123,14 +125,21 @@ Component: `AppArchitecturePage` renders from route `/style-guide/app-architectu
 - Opens via `navigate('/style-guide/app-architecture')` rather than an embedded `activeTool` branch
 - Back button returns to `/?tab=admin`, the Admin Panel hub
 
+### 6f. Standalone Tool: Roleplay Pipeline
+
+Component: `ApiInspectorPage` renders the Roleplay Pipeline map from route `/style-guide/api-inspector`.
+- Top-level Admin Panel tile ID: `roleplay_pipeline`
+- Opens via `navigate('/style-guide/api-inspector')` rather than an embedded `activeTool` branch
+- Back button returns to `/?tab=admin`, the Admin Panel hub
+
 ---
 
 ## 7. Component Tree
 
 ```tsx
-<AdminPage>  # src/pages/Admin.tsx
+  <AdminPage>  # src/pages/Admin.tsx
   {/* Hub view */}
-  <ToolCard> (×5)
+  <ToolCard> (×6)
   <AdminToolEditModal>  # src/components/admin/AdminToolEditModal.tsx
   
   {/* Tool views (conditional) */}
@@ -142,7 +151,8 @@ Component: `AppArchitecturePage` renders from route `/style-guide/app-architectu
     <GuideEditor>  # src/components/admin/guide/GuideEditor.tsx
   <FinanceDashboardTool>  # src/components/admin/finance/FinanceDashboardTool.tsx (lazy)
 
-<AppArchitecturePage>  # src/pages/style-guide/app-architecture.tsx (standalone route)
+  <AppArchitecturePage>  # src/pages/style-guide/app-architecture.tsx (standalone route)
+  <ApiInspectorPage>  # src/pages/style-guide/api-inspector.tsx (standalone route, visible as Roleplay Pipeline)
 ```
 
 ---
@@ -154,7 +164,7 @@ Component: `AppArchitecturePage` renders from route `/style-guide/app-architectu
 | `tools` | `ToolMeta[]` | Tool metadata (merged defaults + overrides) |
 | `editingTool` | `ToolMeta \| null` | Currently editing tool |
 | `activeTool` | `string` | Lifted to Index.tsx as `adminActiveTool` |
-| `handleOpenTool` | `(toolId: string) => void` | Routes App Architecture to standalone page; opens other tiles through `activeTool` |
+| `handleOpenTool` | `(toolId: string) => void` | Routes App Architecture and Roleplay Pipeline to standalone pages; opens other tiles through `activeTool` |
 
 ---
 
@@ -188,6 +198,7 @@ Component: `AppArchitecturePage` renders from route `/style-guide/app-architectu
 | Model settings → Chat | Config | Selected model used by LLM in chat |
 | Guide docs → GitHub | Sync | Docs synced to `docs/guides/` in repo |
 | App Architecture → Admin Panel | Navigation | Top-level Admin tile routes to `/style-guide/app-architecture`; App Architecture back button returns to `/?tab=admin` |
+| Roleplay Pipeline → Admin Panel | Navigation | Top-level Admin tile routes to `/style-guide/api-inspector`; Roleplay Pipeline back button returns to `/?tab=admin` |
 
 ---
 
@@ -196,6 +207,7 @@ Component: `AppArchitecturePage` renders from route `/style-guide/app-architectu
 - **RESOLVED — 2026-03-04**: `app_settings` RLS previously used hardcoded admin UUID — now uses `has_role(auth.uid(), 'admin')` database function.
 - **RESOLVED — 2026-03-04**: Admin check previously used sync `isAdminUser()` with hardcoded UUID — now uses async `checkIsAdmin(userId)` calling `has_role()` RPC in `src/services/app-settings.ts`.
 - **RESOLVED — 2026-05-09**: App Architecture previously lived inside the App Dashboard sidebar; it is now a top-level Admin Panel tile that opens the standalone `/style-guide/app-architecture` route.
+- **RESOLVED — 2026-05-09**: API Inspector / Roleplay Pipeline previously lived inside the App Dashboard sidebar; it is now a top-level Admin Panel tile titled Roleplay Pipeline that opens the standalone `/style-guide/api-inspector` route.
 - **ACTIVE**: Tool metadata persistence uses upsert pattern (update then insert on failure) which may race. (2026-03-01)
 
 ---
@@ -204,4 +216,4 @@ Component: `AppArchitecturePage` renders from route `/style-guide/app-architectu
 
 None documented.
 
-> Last updated: 2026-05-09 — App Architecture moved from the App Dashboard sidebar to its own top-level Admin Panel tile and standalone-route navigation.
+> Last updated: 2026-05-09 — Roleplay Pipeline moved from the App Dashboard sidebar to its own top-level Admin Panel tile and standalone-route navigation.
