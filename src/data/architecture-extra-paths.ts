@@ -24,6 +24,7 @@ export const architectureExtraPaths: string[] = [
   '/public/favicon.ico',
   '/public/placeholder.svg',
   '/public/robots.txt',
+  '/public/spellcheck/en-words.txt',
   '/public/style-guide-component-example.html',
   '/public/styleguide-mockup-reference.html',
   '/supabase/config.toml',
@@ -123,4 +124,9 @@ export const architectureExtraPaths: string[] = [
   '/supabase/migrations/20260404133000_add_side_character_custom_sections.sql',
   '/supabase/migrations/20260405034024_03a99d6f-3355-4189-8d72-204d655c9994.sql',
   '/supabase/migrations/20260417041136_297c107c-c7f2-49be-9458-9f4502ee75a7.sql',
+  '/supabase/migrations/20260502114500_update_story_default_model_to_grok_4_20_reasoning.sql',
+  '/supabase/migrations/20260506224500_add_conversation_dialog_debug_comments.sql',
+  '/supabase/migrations/20260507031244_0c84d7a0-7fd0-4da9-b8a7-867e48406529.sql',
+  '/supabase/migrations/20260507032313_e4496cef-ad79-47c3-872d-e361ce149dae.sql',
+  '/supabase/migrations/20260509061600_1e750646-4b80-40be-ab44-7a8f56c8301a.sql',
 ];

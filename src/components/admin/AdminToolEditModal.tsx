@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -87,6 +88,9 @@ export const AdminToolEditModal: React.FC<AdminToolEditModalProps> = ({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold">Edit Tool</DialogTitle>
+          <DialogDescription className="sr-only">
+            Update the admin tool title, description, and thumbnail image.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">

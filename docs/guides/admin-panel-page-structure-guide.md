@@ -25,8 +25,8 @@
 | Field | Detail |
 |-------|--------|
 | **Tab Key** | `admin` |
-| **Source File** | `src/pages/Admin.tsx` (174 lines) |
-| **Purpose** | Admin hub providing access to 3 sub-tools: Image Generation, Model Settings, and App Guide. Only visible to users with `admin` role. |
+| **Source File** | `src/pages/Admin.tsx` (222 lines) |
+| **Purpose** | Admin hub providing access to 5 top-level tiles: Image Generation, AI Status, App Dashboard, App Architecture, and Finance Dashboard. Only visible to users with `admin` role. |
 | **Access** | Requires async `checkIsAdmin(userId)` — calls `has_role()` RPC against `user_roles` table for `admin` role |
 | **Sidebar Label** | Settings (gear icon from lucide) |
 
@@ -59,7 +59,8 @@ Tool cards use the standard Chronicle card style: `aspect-[2/3] rounded-[2rem] b
 
 | Action | Handler | Effect |
 |--------|---------|--------|
-| Click tool card | `onSetActiveTool(tool.id)` | Opens the selected tool |
+| Click standard tool card | `handleOpenTool(tool.id)` → `onSetActiveTool(tool.id)` | Opens the selected embedded admin tool |
+| Click App Architecture card | `handleOpenTool('app_architecture')` → `navigate('/style-guide/app-architecture')` | Opens the standalone App Architecture route |
 | Click Edit | `setEditingTool(tool)` | Opens AdminToolEditModal |
 | Save tool metadata | `handleSaveTool` | Persists to `app_settings` table, key `admin_tool_meta` |
 
@@ -83,13 +84,15 @@ Tool cards use the standard Chronicle card style: `aspect-[2/3] rounded-[2rem] b
 
 ### 6a. Tool Metadata
 
-3 default tools defined in `DEFAULT_TOOLS` constant:
+5 default tiles defined in `DEFAULT_TOOLS` constant:
 
-| Tool ID | Title | Lazy-loaded Component |
-|---------|-------|-----------------------|
+| Tool ID | Title | Render Target |
+|---------|-------|---------------|
 | `image_generation` | Image Generation | `src/components/admin/ImageGenerationTool.tsx` |
-| `model_settings` | Model Settings | `src/components/chronicle/ModelSettingsTab.tsx` |
-| `app_guide` | App Guide | `src/components/admin/guide/AppGuideTool.tsx` |
+| `model_settings` | AI Status | `src/components/chronicle/ModelSettingsTab.tsx` |
+| `style_guide` | App Dashboard | `src/components/admin/styleguide/StyleGuideTool.tsx` |
+| `app_architecture` | App Architecture | Standalone route `/style-guide/app-architecture` → `src/pages/style-guide/app-architecture.tsx` |
+| `finance_dashboard` | Finance Dashboard | `src/components/admin/finance/FinanceDashboardTool.tsx` |
 
 Custom metadata (title/description/thumbnail overrides) stored in `app_settings` table with key `admin_tool_meta`.
 
@@ -107,11 +110,18 @@ Component: `ModelSettingsTab` — manages LLM model selection and shared API key
 
 ### 6d. Sub-Tool: App Guide
 
-Component: `AppGuideTool` → `GuideEditor` + `GuideSidebar`
+Component: `AppGuideTool` → `GuideEditor` + `GuideSidebar`. App Guide is reached through the App Dashboard, not as a top-level Admin Panel tile.
 - Table: `guide_documents` (id, title, markdown, sort_order, content, created_at, updated_at)
 - RLS: Admin-only CRUD
 - GitHub sync via `sync-guide-to-github` Edge Function
 - View/Edit split: ReactMarkdown view + raw textarea edit
+
+### 6e. Standalone Tool: App Architecture
+
+Component: `AppArchitecturePage` renders from route `/style-guide/app-architecture`.
+- Top-level Admin Panel tile ID: `app_architecture`
+- Opens via `navigate('/style-guide/app-architecture')` rather than an embedded `activeTool` branch
+- Back button returns to `/?tab=admin`, the Admin Panel hub
 
 ---
 
@@ -120,15 +130,19 @@ Component: `AppGuideTool` → `GuideEditor` + `GuideSidebar`
 ```tsx
 <AdminPage>  # src/pages/Admin.tsx
   {/* Hub view */}
-  <ToolCard> (×3)
+  <ToolCard> (×5)
   <AdminToolEditModal>  # src/components/admin/AdminToolEditModal.tsx
   
   {/* Tool views (conditional) */}
   <ImageGenerationTool>  # src/components/admin/ImageGenerationTool.tsx (lazy)
   <ModelSettingsTab>  # src/components/chronicle/ModelSettingsTab.tsx
+  <StyleGuideTool>  # src/components/admin/styleguide/StyleGuideTool.tsx (lazy)
   <AppGuideTool>  # src/components/admin/guide/AppGuideTool.tsx (lazy)
     <GuideSidebar>  # src/components/admin/guide/GuideSidebar.tsx
     <GuideEditor>  # src/components/admin/guide/GuideEditor.tsx
+  <FinanceDashboardTool>  # src/components/admin/finance/FinanceDashboardTool.tsx (lazy)
+
+<AppArchitecturePage>  # src/pages/style-guide/app-architecture.tsx (standalone route)
 ```
 
 ---
@@ -140,6 +154,7 @@ Component: `AppGuideTool` → `GuideEditor` + `GuideSidebar`
 | `tools` | `ToolMeta[]` | Tool metadata (merged defaults + overrides) |
 | `editingTool` | `ToolMeta \| null` | Currently editing tool |
 | `activeTool` | `string` | Lifted to Index.tsx as `adminActiveTool` |
+| `handleOpenTool` | `(toolId: string) => void` | Routes App Architecture to standalone page; opens other tiles through `activeTool` |
 
 ---
 
@@ -172,6 +187,7 @@ Component: `AppGuideTool` → `GuideEditor` + `GuideSidebar`
 | Art styles → Gallery/Chat | Config | Art style prompts used in image generation |
 | Model settings → Chat | Config | Selected model used by LLM in chat |
 | Guide docs → GitHub | Sync | Docs synced to `docs/guides/` in repo |
+| App Architecture → Admin Panel | Navigation | Top-level Admin tile routes to `/style-guide/app-architecture`; App Architecture back button returns to `/?tab=admin` |
 
 ---
 
@@ -179,6 +195,7 @@ Component: `AppGuideTool` → `GuideEditor` + `GuideSidebar`
 
 - **RESOLVED — 2026-03-04**: `app_settings` RLS previously used hardcoded admin UUID — now uses `has_role(auth.uid(), 'admin')` database function.
 - **RESOLVED — 2026-03-04**: Admin check previously used sync `isAdminUser()` with hardcoded UUID — now uses async `checkIsAdmin(userId)` calling `has_role()` RPC in `src/services/app-settings.ts`.
+- **RESOLVED — 2026-05-09**: App Architecture previously lived inside the App Dashboard sidebar; it is now a top-level Admin Panel tile that opens the standalone `/style-guide/app-architecture` route.
 - **ACTIVE**: Tool metadata persistence uses upsert pattern (update then insert on failure) which may race. (2026-03-01)
 
 ---
@@ -187,4 +204,4 @@ Component: `AppGuideTool` → `GuideEditor` + `GuideSidebar`
 
 None documented.
 
-> Last updated: 2026-03-04 — Admin security hardened: hardcoded UUID replaced with database role check via `has_role()` RPC. CORS hardening applied.
+> Last updated: 2026-05-09 — App Architecture moved from the App Dashboard sidebar to its own top-level Admin Panel tile and standalone-route navigation.

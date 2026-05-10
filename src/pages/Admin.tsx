@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { AdminToolEditModal, type ToolMeta } from '@/components/admin/AdminToolEditModal';
 import { ModelSettingsTab } from '@/components/chronicle/ModelSettingsTab';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,6 +19,7 @@ const LazyFinanceDashboard = React.lazy(() =>
 );
 
 const lazyToolFallback = <div className="h-full w-full" />;
+const LEGACY_STYLE_GUIDE_DESCRIPTION = 'Central hub for Style Guide, App Guide, App Architecture, Quality Hub, and API Inspector';
 
 const DEFAULT_TOOLS: ToolMeta[] = [
   {
@@ -34,7 +36,12 @@ const DEFAULT_TOOLS: ToolMeta[] = [
   {
     id: 'style_guide',
     title: 'App Dashboard',
-    description: 'Central hub for Style Guide, App Guide, App Architecture, Quality Hub, and API Inspector',
+    description: 'Central hub for Style Guide, App Guide, Quality Hub, and API Inspector',
+  },
+  {
+    id: 'app_architecture',
+    title: 'App Architecture',
+    description: 'Repository map for files, folders, components, and ownership flows',
   },
   {
     id: 'finance_dashboard',
@@ -55,6 +62,7 @@ interface AdminPageProps {
 }
 
 export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveTool, onRegisterGuideSave, onRegisterGuideSyncAll, onRegisterStyleGuideDownload, onRegisterStyleGuideEdits, onStyleGuideEditsCountChange, guideTheme }) => {
+  const navigate = useNavigate();
   const [tools, setTools] = useState<ToolMeta[]>(DEFAULT_TOOLS);
   const [editingTool, setEditingTool] = useState<ToolMeta | null>(null);
 
@@ -69,7 +77,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
           .maybeSingle();
         if (data?.setting_value && typeof data.setting_value === 'object') {
           const overrides = data.setting_value as Record<string, Partial<ToolMeta>>;
-          setTools(DEFAULT_TOOLS.map((t) => ({ ...t, ...overrides[t.id] })));
+          setTools(DEFAULT_TOOLS.map((t) => {
+            const override = { ...(overrides[t.id] || {}) };
+            if (t.id === 'style_guide' && override.description === LEGACY_STYLE_GUIDE_DESCRIPTION) {
+              delete override.description;
+            }
+            return { ...t, ...override };
+          }));
         }
       } catch {
         // keep defaults
@@ -100,6 +114,15 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
     } catch (e) {
       console.error('Failed to persist tool meta:', e);
     }
+  };
+
+  const handleOpenTool = (toolId: string) => {
+    if (toolId === 'app_architecture') {
+      navigate('/style-guide/app-architecture');
+      return;
+    }
+
+    onSetActiveTool(toolId);
   };
 
   if (activeTool === 'image_generation') {
@@ -150,7 +173,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
           <div
             key={tool.id}
             className="group relative cursor-pointer"
-            onClick={() => onSetActiveTool(tool.id)}
+            onClick={() => handleOpenTool(tool.id)}
           >
             <div className="aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-200 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)] transition-all duration-300 group-hover:-translate-y-3 group-hover:shadow-2xl border border-[#4a5f7f] relative">
               {tool.thumbnailUrl ? (
@@ -182,7 +205,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
                 </button>
                 <button
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); onSetActiveTool(tool.id); }}
+                  onClick={(e) => { e.stopPropagation(); handleOpenTool(tool.id); }}
                   className="px-4 py-2 bg-blue-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xl hover:bg-blue-600 transition-colors"
                 >
                   Open
