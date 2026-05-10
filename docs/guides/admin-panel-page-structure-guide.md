@@ -25,8 +25,8 @@
 | Field | Detail |
 |-------|--------|
 | **Tab Key** | `admin` |
-| **Source File** | `src/pages/Admin.tsx` (243 lines) |
-| **Purpose** | Admin hub providing access to 6 top-level tiles: Image Generation, AI Status, App Dashboard, App Architecture, Roleplay Pipeline, and Finance Dashboard. Only visible to users with `admin` role. |
+| **Source File** | `src/pages/Admin.tsx` (254 lines) |
+| **Purpose** | Admin hub providing access to 7 top-level tiles: Image Generation, AI Status, App Dashboard, App Architecture, Roleplay Pipeline, Quality Hub, and Finance Dashboard. Only visible to users with `admin` role. |
 | **Access** | Requires async `checkIsAdmin(userId)` — calls `has_role()` RPC against `user_roles` table for `admin` role |
 | **Sidebar Label** | Settings (gear icon from lucide) |
 
@@ -62,6 +62,7 @@ Tool cards use the standard Chronicle card style: `aspect-[2/3] rounded-[2rem] b
 | Click standard tool card | `handleOpenTool(tool.id)` → `onSetActiveTool(tool.id)` | Opens the selected embedded admin tool |
 | Click App Architecture card | `handleOpenTool('app_architecture')` → `navigate('/style-guide/app-architecture')` | Opens the standalone App Architecture route |
 | Click Roleplay Pipeline card | `handleOpenTool('roleplay_pipeline')` → `navigate('/style-guide/api-inspector')` | Opens the standalone Roleplay Pipeline route |
+| Click Quality Hub card | `handleOpenTool('quality_hub')` → `navigate('/style-guide/ui-audit')` | Opens the standalone Quality Hub route |
 | Click Edit | `setEditingTool(tool)` | Opens AdminToolEditModal |
 | Save tool metadata | `handleSaveTool` | Persists to `app_settings` table, key `admin_tool_meta` |
 
@@ -85,7 +86,7 @@ Tool cards use the standard Chronicle card style: `aspect-[2/3] rounded-[2rem] b
 
 ### 6a. Tool Metadata
 
-6 default tiles defined in `DEFAULT_TOOLS` constant:
+7 default tiles defined in `DEFAULT_TOOLS` constant:
 
 | Tool ID | Title | Render Target |
 |---------|-------|---------------|
@@ -94,6 +95,7 @@ Tool cards use the standard Chronicle card style: `aspect-[2/3] rounded-[2rem] b
 | `style_guide` | App Dashboard | `src/components/admin/styleguide/StyleGuideTool.tsx` |
 | `app_architecture` | App Architecture | Standalone route `/style-guide/app-architecture` → `src/pages/style-guide/app-architecture.tsx` |
 | `roleplay_pipeline` | Roleplay Pipeline | Standalone route `/style-guide/api-inspector` → `src/pages/style-guide/api-inspector.tsx` |
+| `quality_hub` | Quality Hub | Standalone route `/style-guide/ui-audit` → `src/pages/style-guide/ui-audit.tsx` |
 | `finance_dashboard` | Finance Dashboard | `src/components/admin/finance/FinanceDashboardTool.tsx` |
 
 Custom metadata (title/description/thumbnail overrides) stored in `app_settings` table with key `admin_tool_meta`.
@@ -132,6 +134,14 @@ Component: `ApiInspectorPage` renders the Roleplay Pipeline map from route `/sty
 - Opens via `navigate('/style-guide/api-inspector')` rather than an embedded `activeTool` branch
 - Back button returns to `/?tab=admin`, the Admin Panel hub
 
+### 6g. Standalone Tool: Quality Hub
+
+Component: `UiAuditPage` renders the Quality Hub from route `/style-guide/ui-audit`.
+- Top-level Admin Panel tile ID: `quality_hub`
+- Opens via `navigate('/style-guide/ui-audit')` rather than an embedded `activeTool` branch
+- Back button returns to `/?tab=admin`, the Admin Panel hub
+- Uses `quality_hub_registries` for persisted admin registry state, with localStorage fallback under `chronicle-quality-hub-v1`
+
 ---
 
 ## 7. Component Tree
@@ -139,7 +149,7 @@ Component: `ApiInspectorPage` renders the Roleplay Pipeline map from route `/sty
 ```tsx
   <AdminPage>  # src/pages/Admin.tsx
   {/* Hub view */}
-  <ToolCard> (×6)
+  <ToolCard> (×7)
   <AdminToolEditModal>  # src/components/admin/AdminToolEditModal.tsx
   
   {/* Tool views (conditional) */}
@@ -153,6 +163,7 @@ Component: `ApiInspectorPage` renders the Roleplay Pipeline map from route `/sty
 
   <AppArchitecturePage>  # src/pages/style-guide/app-architecture.tsx (standalone route)
   <ApiInspectorPage>  # src/pages/style-guide/api-inspector.tsx (standalone route, visible as Roleplay Pipeline)
+  <UiAuditPage>  # src/pages/style-guide/ui-audit.tsx (standalone route, visible as Quality Hub)
 ```
 
 ---
@@ -164,7 +175,7 @@ Component: `ApiInspectorPage` renders the Roleplay Pipeline map from route `/sty
 | `tools` | `ToolMeta[]` | Tool metadata (merged defaults + overrides) |
 | `editingTool` | `ToolMeta \| null` | Currently editing tool |
 | `activeTool` | `string` | Lifted to Index.tsx as `adminActiveTool` |
-| `handleOpenTool` | `(toolId: string) => void` | Routes App Architecture and Roleplay Pipeline to standalone pages; opens other tiles through `activeTool` |
+| `handleOpenTool` | `(toolId: string) => void` | Routes App Architecture, Roleplay Pipeline, and Quality Hub to standalone pages; opens other tiles through `activeTool` |
 
 ---
 
@@ -199,6 +210,7 @@ Component: `ApiInspectorPage` renders the Roleplay Pipeline map from route `/sty
 | Guide docs → GitHub | Sync | Docs synced to `docs/guides/` in repo |
 | App Architecture → Admin Panel | Navigation | Top-level Admin tile routes to `/style-guide/app-architecture`; App Architecture back button returns to `/?tab=admin` |
 | Roleplay Pipeline → Admin Panel | Navigation | Top-level Admin tile routes to `/style-guide/api-inspector`; Roleplay Pipeline back button returns to `/?tab=admin` |
+| Quality Hub → Admin Panel | Navigation | Top-level Admin tile routes to `/style-guide/ui-audit`; Quality Hub back button returns to `/?tab=admin` |
 
 ---
 
@@ -208,6 +220,7 @@ Component: `ApiInspectorPage` renders the Roleplay Pipeline map from route `/sty
 - **RESOLVED — 2026-03-04**: Admin check previously used sync `isAdminUser()` with hardcoded UUID — now uses async `checkIsAdmin(userId)` calling `has_role()` RPC in `src/services/app-settings.ts`.
 - **RESOLVED — 2026-05-09**: App Architecture previously lived inside the App Dashboard sidebar; it is now a top-level Admin Panel tile that opens the standalone `/style-guide/app-architecture` route.
 - **RESOLVED — 2026-05-09**: API Inspector / Roleplay Pipeline previously lived inside the App Dashboard sidebar; it is now a top-level Admin Panel tile titled Roleplay Pipeline that opens the standalone `/style-guide/api-inspector` route.
+- **RESOLVED — 2026-05-09**: Quality Hub previously lived inside the App Dashboard sidebar; it is now a top-level Admin Panel tile that opens the standalone `/style-guide/ui-audit` route.
 - **ACTIVE**: Tool metadata persistence uses upsert pattern (update then insert on failure) which may race. (2026-03-01)
 
 ---
@@ -216,4 +229,4 @@ Component: `ApiInspectorPage` renders the Roleplay Pipeline map from route `/sty
 
 None documented.
 
-> Last updated: 2026-05-09 — Roleplay Pipeline moved from the App Dashboard sidebar to its own top-level Admin Panel tile and standalone-route navigation.
+> Last updated: 2026-05-09 — Quality Hub moved from the App Dashboard sidebar to its own top-level Admin Panel tile and standalone-route navigation.

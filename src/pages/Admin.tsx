@@ -22,6 +22,7 @@ const lazyToolFallback = <div className="h-full w-full" />;
 const LEGACY_STYLE_GUIDE_DESCRIPTIONS = new Set([
   'Central hub for Style Guide, App Guide, App Architecture, Quality Hub, and API Inspector',
   'Central hub for Style Guide, App Guide, Quality Hub, and API Inspector',
+  'Central hub for Style Guide, App Guide, and Quality Hub',
 ]);
 
 const DEFAULT_TOOLS: ToolMeta[] = [
@@ -39,7 +40,7 @@ const DEFAULT_TOOLS: ToolMeta[] = [
   {
     id: 'style_guide',
     title: 'App Dashboard',
-    description: 'Central hub for Style Guide, App Guide, and Quality Hub',
+    description: 'Central hub for Style Guide and App Guide',
   },
   {
     id: 'app_architecture',
@@ -50,6 +51,11 @@ const DEFAULT_TOOLS: ToolMeta[] = [
     id: 'roleplay_pipeline',
     title: 'Roleplay Pipeline',
     description: 'Map of roleplay API calls, prompt assembly, and post-turn state flow',
+  },
+  {
+    id: 'quality_hub',
+    title: 'Quality Hub',
+    description: 'Scan runs, issue registry, changelog, and validation history',
   },
   {
     id: 'finance_dashboard',
@@ -132,6 +138,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
 
     if (toolId === 'roleplay_pipeline') {
       navigate('/style-guide/api-inspector');
+      return;
+    }
+
+    if (toolId === 'quality_hub') {
+      navigate('/style-guide/ui-audit');
       return;
     }
 
