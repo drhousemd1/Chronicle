@@ -106,27 +106,33 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
   }, []);
 
   const handleSaveTool = async (toolId: string, patch: Partial<ToolMeta>) => {
-    setTools((prev) => prev.map((t) => (t.id === toolId ? { ...t, ...patch } : t)));
+    const nextTools = tools.map((t) => (t.id === toolId ? { ...t, ...patch } : t));
+    setTools(nextTools);
 
     try {
       const overrides: Record<string, Partial<ToolMeta>> = {};
-      tools.forEach((t) => {
-        const merged = t.id === toolId ? { ...t, ...patch } : t;
-        overrides[t.id] = { title: merged.title, description: merged.description, thumbnailUrl: merged.thumbnailUrl };
+      nextTools.forEach((merged) => {
+        overrides[merged.id] = { title: merged.title, description: merged.description, thumbnailUrl: merged.thumbnailUrl };
       });
 
-      const { error: updateError } = await supabase
+      const { data: updatedRows, error: updateError } = await supabase
         .from('app_settings')
         .update({ setting_value: overrides as any, updated_at: new Date().toISOString() })
-        .eq('setting_key', 'admin_tool_meta');
+        .eq('setting_key', 'admin_tool_meta')
+        .select('id');
 
-      if (updateError) {
-        await supabase
+      if (updateError) throw updateError;
+
+      if (!updatedRows || updatedRows.length === 0) {
+        const { error: insertError } = await supabase
           .from('app_settings')
           .insert({ setting_key: 'admin_tool_meta', setting_value: overrides as any });
+        if (insertError) throw insertError;
       }
     } catch (e) {
       console.error('Failed to persist tool meta:', e);
+      setTools(tools);
+      throw e;
     }
   };
 

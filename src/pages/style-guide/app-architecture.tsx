@@ -77,9 +77,17 @@ type FileAnalysis = {
   imports: string[];
   importedBy: string[];
   tables: string[];
+  tableReads: string[];
+  tableWrites: string[];
   rpcs: string[];
   edgeFunctions: string[];
   storageBuckets: string[];
+  storageReads: string[];
+  storageWrites: string[];
+  localStorageReads: string[];
+  localStorageWrites: string[];
+  sessionStorageReads: string[];
+  sessionStorageWrites: string[];
 };
 
 type DetailLineKind = "files" | "tables" | "rpcs" | "edges" | "buckets" | "plain";
@@ -209,7 +217,7 @@ const REFACTOR_TRIAGE_OVERRIDES: Record<string, RefactorTriageOverride> = {
   },
   "/src/services/llm.ts": {
     fileNote:
-      "Refactor target: separate prompt assembly, `roleplay_v2` request execution, post-response parsing, and follow-up extraction/update helpers. This is one of the highest-risk files in the app because it now sits directly on the planner/writer/validator chat runtime path.",
+      "Refactor target: separate recurring prompt assembly, direct chat transport/SSE parsing, validation instrumentation, and post-turn helper logic. This file is still one of the highest-risk points in Chronicle because one change can destabilize the live roleplay request contract, debug-trace capture, and prompt serialization guarantees at the same time.",
   },
   "/src/pages/style-guide/app-architecture.tsx": {
     fileNote:
@@ -240,6 +248,11 @@ const REFACTOR_TRIAGE_OVERRIDES: Record<string, RefactorTriageOverride> = {
     lineBadgeClass: "is-large",
     lineBadgeDescription: "Large generated Supabase types file. Size alone is expected here and should not be treated as refactor debt.",
   },
+  "/public/spellcheck/en-words.txt": {
+    suppressAutoRefactor: true,
+    lineBadgeClass: "is-large",
+    lineBadgeDescription: "Large static dictionary asset. Size is expected here and should not be treated as refactor debt.",
+  },
 };
 
 const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
@@ -266,6 +279,15 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
           { kind: "file", path: "/src/pages/Index.tsx" },
           { kind: "file", path: "/src/pages/Admin.tsx" },
           { kind: "file", path: "/src/pages/Gallery.tsx" },
+          {
+            kind: "folder",
+            path: "/src/pages/style-guide",
+            children: [
+              { kind: "file", path: "/src/pages/style-guide/app-architecture.tsx" },
+              { kind: "file", path: "/src/pages/style-guide/api-inspector.tsx" },
+              { kind: "file", path: "/src/pages/style-guide/ui-audit.tsx" },
+            ],
+          },
         ],
       },
       {
@@ -294,6 +316,7 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
               { kind: "file", path: "/src/features/chat-debug/types.ts" },
               { kind: "file", path: "/src/features/chat-debug/storage.ts" },
               { kind: "file", path: "/src/features/chat-debug/session-log.ts" },
+              { kind: "file", path: "/src/features/chat-debug/review-export.ts" },
             ],
           },
         ],
@@ -304,6 +327,13 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
         children: [
           { kind: "file", path: "/src/services/llm.ts" },
           { kind: "file", path: "/src/services/supabase-data.ts" },
+          { kind: "file", path: "/src/services/app-settings.ts" },
+          { kind: "file", path: "/src/services/api-usage-test-session.ts" },
+          { kind: "file", path: "/src/services/api-usage-validation.ts" },
+          { kind: "file", path: "/src/services/admin-usage-metrics.ts" },
+          { kind: "file", path: "/src/services/world-ai.ts" },
+          { kind: "file", path: "/src/services/character-ai.ts" },
+          { kind: "file", path: "/src/services/side-character-generator.ts" },
           {
             kind: "folder",
             path: "/src/services/persistence",
@@ -327,7 +357,16 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
       {
         kind: "folder",
         path: "/src/hooks",
-        children: [{ kind: "file", path: "/src/hooks/use-auth.ts" }],
+        children: [
+          { kind: "file", path: "/src/hooks/use-auth.ts" },
+          { kind: "file", path: "/src/hooks/use-index-shell-bootstrap.ts" },
+          { kind: "file", path: "/src/hooks/use-index-authenticated-data.ts" },
+          { kind: "file", path: "/src/hooks/use-index-scenario-lifecycle.ts" },
+          { kind: "file", path: "/src/hooks/use-index-scenario-persistence.ts" },
+          { kind: "file", path: "/src/hooks/use-index-character-workspace.ts" },
+          { kind: "file", path: "/src/hooks/use-index-background-workspace.ts" },
+          { kind: "file", path: "/src/hooks/use-index-dialog-state.ts" },
+        ],
       },
       {
         kind: "folder",
@@ -352,9 +391,15 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
               },
               {
                 kind: "folder",
+                path: "/src/components/admin/styleguide",
+                children: [{ kind: "file", path: "/src/components/admin/styleguide/StyleGuideTool.tsx" }],
+              },
+              {
+                kind: "folder",
                 path: "/src/components/admin/finance",
                 children: [{ kind: "file", path: "/src/components/admin/finance/FinanceDashboardTool.tsx" }],
               },
+              { kind: "file", path: "/src/components/admin/ImageGenerationTool.tsx" },
             ],
           },
           {
@@ -362,6 +407,8 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
             path: "/src/components/chronicle",
             children: [
               { kind: "file", path: "/src/components/chronicle/ChatInterfaceTab.tsx" },
+              { kind: "file", path: "/src/components/chronicle/ChatSpellcheckTextarea.tsx" },
+              { kind: "file", path: "/src/components/chronicle/ModelSettingsTab.tsx" },
               { kind: "file", path: "/src/components/chronicle/CharacterCreationModal.tsx" },
               { kind: "file", path: "/src/components/chronicle/MemoriesModal.tsx" },
             ],
@@ -374,6 +421,7 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
         children: [
           { kind: "file", path: "/src/data/database-schema-inventory.ts" },
           { kind: "file", path: "/src/data/ui-audit-findings.ts" },
+          { kind: "file", path: "/src/data/api-inspector-live-map.ts" },
           { kind: "file", path: "/src/data/api-inspector-map-registry.ts" },
         ],
       },
@@ -382,6 +430,7 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
         path: "/src/lib",
         children: [
           { kind: "file", path: "/src/lib/app-architecture-utils.ts" },
+          { kind: "file", path: "/src/lib/chat-spellcheck.ts" },
           { kind: "file", path: "/src/lib/canonical-field-registry.ts" },
           { kind: "file", path: "/src/lib/api-inspector-schema.ts" },
         ],
@@ -411,12 +460,21 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
         path: "/docs/guides",
         children: [
           { kind: "file", path: "/docs/guides/app-overview-global-systems.md" },
+          { kind: "file", path: "/docs/guides/admin-panel-page-structure-guide.md" },
+          { kind: "file", path: "/docs/guides/account-page-structure-guide.md" },
+          { kind: "file", path: "/docs/guides/community-gallery-page-structure-guide.md" },
+          { kind: "file", path: "/docs/guides/your-stories-page-structure-guide.md" },
+          { kind: "file", path: "/docs/guides/character-library-page-structure-guide.md" },
+          { kind: "file", path: "/docs/guides/image-library-page-structure-guide.md" },
+          { kind: "file", path: "/docs/guides/chat-history-page-structure-guide.md" },
           { kind: "file", path: "/docs/guides/chat-interface-page-structure-guide.md" },
           { kind: "file", path: "/docs/guides/scenario-builder-page-structure-guide.md" },
           { kind: "file", path: "/docs/guides/character-builder-page-structure-guide.md" },
+          { kind: "file", path: "/docs/guides/shared-elements-architecture-structure-guide.md" },
           { kind: "file", path: "/docs/guides/edge-functions-ai-services-structure-guide.md" },
           { kind: "file", path: "/docs/guides/quality-hub-scan-playbook.md" },
           { kind: "file", path: "/docs/guides/story-character-builder-refactor-blueprint.md" },
+          { kind: "file", path: "/docs/guides/GUIDE_STYLE_RULES.md" },
         ],
       },
     ],
@@ -436,6 +494,19 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
     children: [{ kind: "file", path: "/e2e/smoke.spec.ts" }],
   },
   {
+    title: "public",
+    path: "/public",
+    children: [
+      { kind: "file", path: "/public/styleguide-mockup-reference.html" },
+      { kind: "file", path: "/public/style-guide-component-example.html" },
+      {
+        kind: "folder",
+        path: "/public/spellcheck",
+        children: [{ kind: "file", path: "/public/spellcheck/en-words.txt" }],
+      },
+    ],
+  },
+  {
     title: "supabase",
     path: "/supabase",
     children: [
@@ -446,8 +517,56 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
         children: [
           {
             kind: "folder",
+            path: "/supabase/functions/_shared",
+            children: [
+              { kind: "file", path: "/supabase/functions/_shared/cors.ts" },
+              { kind: "file", path: "/supabase/functions/_shared/rate-limit.ts" },
+            ],
+          },
+          {
+            kind: "folder",
             path: "/supabase/functions/chat",
             children: [{ kind: "file", path: "/supabase/functions/chat/index.ts" }],
+          },
+          {
+            kind: "folder",
+            path: "/supabase/functions/extract-memory-events",
+            children: [{ kind: "file", path: "/supabase/functions/extract-memory-events/index.ts" }],
+          },
+          {
+            kind: "folder",
+            path: "/supabase/functions/compress-day-memories",
+            children: [{ kind: "file", path: "/supabase/functions/compress-day-memories/index.ts" }],
+          },
+          {
+            kind: "folder",
+            path: "/supabase/functions/extract-character-updates",
+            children: [{ kind: "file", path: "/supabase/functions/extract-character-updates/index.ts" }],
+          },
+          {
+            kind: "folder",
+            path: "/supabase/functions/evaluate-goal-progress",
+            children: [{ kind: "file", path: "/supabase/functions/evaluate-goal-progress/index.ts" }],
+          },
+          {
+            kind: "folder",
+            path: "/supabase/functions/generate-side-character",
+            children: [{ kind: "file", path: "/supabase/functions/generate-side-character/index.ts" }],
+          },
+          {
+            kind: "folder",
+            path: "/supabase/functions/generate-side-character-avatar",
+            children: [{ kind: "file", path: "/supabase/functions/generate-side-character-avatar/index.ts" }],
+          },
+          {
+            kind: "folder",
+            path: "/supabase/functions/generate-cover-image",
+            children: [{ kind: "file", path: "/supabase/functions/generate-cover-image/index.ts" }],
+          },
+          {
+            kind: "folder",
+            path: "/supabase/functions/generate-scene-image",
+            children: [{ kind: "file", path: "/supabase/functions/generate-scene-image/index.ts" }],
           },
           {
             kind: "folder",
@@ -456,8 +575,38 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
           },
           {
             kind: "folder",
+            path: "/supabase/functions/admin-ai-usage-summary",
+            children: [{ kind: "file", path: "/supabase/functions/admin-ai-usage-summary/index.ts" }],
+          },
+          {
+            kind: "folder",
+            path: "/supabase/functions/admin-ai-usage-timeseries",
+            children: [{ kind: "file", path: "/supabase/functions/admin-ai-usage-timeseries/index.ts" }],
+          },
+          {
+            kind: "folder",
+            path: "/supabase/functions/admin-api-usage-test-report",
+            children: [{ kind: "file", path: "/supabase/functions/admin-api-usage-test-report/index.ts" }],
+          },
+          {
+            kind: "folder",
             path: "/supabase/functions/api-usage-test-session",
             children: [{ kind: "file", path: "/supabase/functions/api-usage-test-session/index.ts" }],
+          },
+          {
+            kind: "folder",
+            path: "/supabase/functions/track-api-usage-test",
+            children: [{ kind: "file", path: "/supabase/functions/track-api-usage-test/index.ts" }],
+          },
+          {
+            kind: "folder",
+            path: "/supabase/functions/sync-guide-to-github",
+            children: [{ kind: "file", path: "/supabase/functions/sync-guide-to-github/index.ts" }],
+          },
+          {
+            kind: "folder",
+            path: "/supabase/functions/check-shared-keys",
+            children: [{ kind: "file", path: "/supabase/functions/check-shared-keys/index.ts" }],
           },
           {
             kind: "folder",
@@ -510,6 +659,7 @@ const ROOT_CHILD_ORDER: readonly string[] = [
   "components.json",
   "src",
   "docs",
+  "public",
   "scripts",
   "e2e",
   "supabase",
@@ -523,10 +673,10 @@ const STATIC_LINE_COUNT_OVERRIDES: Record<string, number> = {
   "/eslint.config.js": 39,
   "/tsconfig.json": 24,
   "/components.json": 20,
-  "/scripts/refresh-architecture-paths.mjs": 276,
-  "/scripts/run-quality-hub-scan.mjs": 48,
-  "/scripts/verify-prompt-serialization.ts": 290,
-  "/e2e/smoke.spec.ts": 11,
+  "/scripts/refresh-architecture-paths.mjs": 873,
+  "/scripts/run-quality-hub-scan.mjs": 49,
+  "/scripts/verify-prompt-serialization.ts": 291,
+  "/e2e/smoke.spec.ts": 12,
 };
 
 const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
@@ -687,6 +837,642 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       },
     ],
   },
+  "/src/pages/Admin.tsx": {
+    description: "Admin hub route/controller that loads tile metadata, lazy-loads operator tools, and routes the standalone App Architecture, Roleplay Pipeline, and Quality Hub pages.",
+    rows: [
+      {
+        id: "admin-tool-router",
+        title: "Admin Tool Router",
+        summary: "Owns the operator tile grid, persisted admin-tool metadata, and the split between in-panel tools versus standalone style-guide routes.",
+        badgeLabel: "REACT COMPONENT",
+        badgeClass: "component",
+        details: [
+          {
+            label: "Renders / Opens",
+            values: [
+              "/src/components/admin/ImageGenerationTool.tsx",
+              "/src/components/chronicle/ModelSettingsTab.tsx",
+              "/src/components/admin/styleguide/StyleGuideTool.tsx",
+              "/src/components/admin/guide/AppGuideTool.tsx",
+              "/src/components/admin/finance/FinanceDashboardTool.tsx",
+              "/src/pages/style-guide/app-architecture.tsx",
+              "/src/pages/style-guide/api-inspector.tsx",
+              "/src/pages/style-guide/ui-audit.tsx",
+            ],
+            kind: "files",
+          },
+          {
+            label: "Uses Table",
+            values: ["app_settings"],
+            kind: "tables",
+          },
+          {
+            label: "Mutates",
+            values: ["admin tile title/description/thumbnail metadata under app_settings.setting_key = admin_tool_meta"],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["tile IDs, route mappings, and persisted admin_tool_meta structure stay aligned so operators open the intended tool surface"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/pages/style-guide/app-architecture.tsx": {
+    description: "Standalone operator page that renders Chronicle's repository map, curated ownership cards, schema inventory, and refactor/contract warnings as the main architecture source of truth.",
+    rows: [
+      {
+        id: "app-architecture-operator-map",
+        title: "App Architecture Operator Map",
+        summary: "Combines generated repo analysis with curated code-truth cards so contributors can see file ownership, persistence boundaries, tool surfaces, and refactor risk without re-reading the whole repo.",
+        badgeLabel: "REACT COMPONENT",
+        badgeClass: "component",
+        details: [
+          {
+            label: "Uses",
+            values: [
+              "/src/lib/app-architecture-utils.ts",
+              "/src/data/architecture-source-paths.ts",
+              "/src/data/architecture-extra-paths.ts",
+              "/src/data/architecture-file-metrics.ts",
+              "/src/data/architecture-file-analysis.ts",
+              "/src/data/database-schema-inventory.ts",
+            ],
+            kind: "files",
+          },
+          {
+            label: "Defines",
+            values: ["curated nav sections", "static file overrides", "refactor triage rules", "detail-row rendering and filter behavior"],
+            kind: "plain",
+          },
+          {
+            label: "Used By",
+            values: ["/src/pages/Admin.tsx"],
+            kind: "files",
+          },
+          {
+            label: "Requires",
+            values: ["generated architecture inventories, curated descriptions, and schema inventory stay concurrent with the live repo before this page can be trusted"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/pages/style-guide/api-inspector.tsx": {
+    description: "Standalone Roleplay Pipeline operator page that renders the end-to-end live chat/runtime map from the current code-truth registries.",
+    rows: [
+      {
+        id: "api-inspector-runtime-map",
+        title: "Roleplay Pipeline Runtime Map",
+        summary: "Shows how Chronicle assembles live roleplay calls, what supporting systems alter those calls, and which adjacent AI/tooling lanes still affect the roleplay experience.",
+        badgeLabel: "REACT COMPONENT",
+        badgeClass: "component",
+        details: [
+          {
+            label: "Uses",
+            values: [
+              "/src/data/api-inspector-live-map.ts",
+              "/src/data/api-inspector-line-map.ts",
+              "/src/data/api-inspector-phase1-audit.ts",
+            ],
+            kind: "files",
+          },
+          {
+            label: "Used By",
+            values: ["/src/pages/Admin.tsx"],
+            kind: "files",
+          },
+          {
+            label: "Requires",
+            values: ["the live map registry stays synchronized with the actual runtime, especially around chat lane changes, post-turn extraction, and admin telemetry flows"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/pages/style-guide/ui-audit.tsx": {
+    description: "Standalone Quality Hub operator page for scan modules, issue registry, scan-run history, and implementation changelog review.",
+    rows: [
+      {
+        id: "quality-hub-operator-console",
+        title: "Quality Hub Operator Console",
+        summary: "Renders Chronicle's scan checklist surfaces, issue tracking, scan-run summaries, and change-log history as the repo's operator-facing quality ledger.",
+        badgeLabel: "REACT COMPONENT",
+        badgeClass: "component",
+        details: [
+          {
+            label: "Uses",
+            values: ["/src/data/ui-audit-findings.ts", "/src/lib/ui-audit-schema.ts"],
+            kind: "files",
+          },
+          {
+            label: "Used By",
+            values: ["/src/pages/Admin.tsx"],
+            kind: "files",
+          },
+          {
+            label: "Requires",
+            values: ["Quality Hub registry keys, change-log entry shape, and overview module definitions stay aligned so scan history remains trustworthy"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/components/admin/styleguide/StyleGuideTool.tsx": {
+    description: "App Dashboard shell that gives operators the in-panel how-to protocol, style-guide card edit registry, and download workflow for Chronicle's admin tool directory.",
+    rows: [
+      {
+        id: "style-guide-dashboard-shell",
+        title: "App Dashboard Shell",
+        summary: "Owns the admin-facing App Dashboard card layout, edit/keep registry overlays, and the protocol copy that tells future threads how Architecture, App Guide, Roleplay Pipeline, and Quality Hub should be used together.",
+        badgeLabel: "REACT COMPONENT",
+        badgeClass: "component",
+        details: [
+          {
+            label: "Used By",
+            values: ["/src/pages/Admin.tsx"],
+            kind: "files",
+          },
+          {
+            label: "Uses",
+            values: ["/src/components/admin/styleguide/StyleGuideDownloadModal.tsx", "/src/components/admin/styleguide/StyleGuideEditsModal.tsx"],
+            kind: "files",
+          },
+          {
+            label: "Mutates",
+            values: ["local style-guide card edit registry, keep/remove decisions, and download/export handoff state"],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["dashboard card names, protocol copy, and edit-registry semantics stay aligned with the actual operator workflow and standalone tool routing"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/components/admin/guide/AppGuideTool.tsx": {
+    description: "App Guide editor shell for `guide_documents` CRUD, freshness metadata, and optional GitHub sync from inside the admin dashboard.",
+    rows: [
+      {
+        id: "app-guide-document-editor",
+        title: "App Guide Document Editor",
+        summary: "Loads, edits, reviews, sorts, and optionally GitHub-syncs long-form Chronicle guide documents while tracking truth-level and freshness metadata.",
+        badgeLabel: "REACT COMPONENT",
+        badgeClass: "component",
+        details: [
+          {
+            label: "Uses Table",
+            values: ["guide_documents"],
+            kind: "tables",
+          },
+          {
+            label: "Calls",
+            values: ["sync-guide-to-github"],
+            kind: "edges",
+          },
+          {
+            label: "Mutates",
+            values: ["guide markdown, structured content metadata, freshness review timestamps, and optional GitHub mirror state"],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["guide document schema, freshness metadata patching, and optional GitHub sync contract stay aligned so docs remain usable as code-truth references"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/components/admin/ImageGenerationTool.tsx": {
+    description: "Admin-only editor for art style names, backend prompt injections, and thumbnail assets used by Chronicle's image-generation surfaces.",
+    rows: [
+      {
+        id: "image-generation-style-editor",
+        title: "Image Style Prompt Editor",
+        summary: "Lets admins revise `art_styles` records and upload replacement thumbnails so avatar, cover, and scene generation surfaces stay aligned with the intended style catalog.",
+        badgeLabel: "REACT COMPONENT",
+        badgeClass: "component",
+        details: [
+          {
+            label: "Uses Table",
+            values: ["art_styles"],
+            kind: "tables",
+          },
+          {
+            label: "Mutates Storage",
+            values: ["avatars"],
+            kind: "buckets",
+          },
+          {
+            label: "Used By",
+            values: ["/src/pages/Admin.tsx"],
+            kind: "files",
+          },
+          {
+            label: "Requires",
+            values: ["art style prompt columns and the avatars bucket stay aligned with the generation surfaces that consume those style assets"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/features/story-builder/StoryBuilderScreen.tsx": {
+    description: "Main Story Builder shell for scenario/world authoring, including story-card fields, world/codex/scenes, content themes, goals, roster editing, and media flows.",
+    rows: [
+      {
+        id: "story-builder-authoring-shell",
+        title: "Story Builder Authoring Shell",
+        summary: "Owns the story/world authoring workspace where operators edit scenario metadata, world content, codex/scenes, story goals, roster context, and media-backed story surfaces before chat ever runs.",
+        badgeLabel: "REACT COMPONENT",
+        badgeClass: "component",
+        details: [
+          {
+            label: "Uses",
+            values: [
+              "/src/services/world-ai.ts",
+              "/src/services/supabase-data.ts",
+              "/src/features/story-builder/hooks/use-story-builder-media.ts",
+              "/src/features/story-builder/sidebar/StoryRosterSidebar.tsx",
+            ],
+            kind: "files",
+          },
+          {
+            label: "Mutates",
+            values: ["scenario/world draft state, custom world sections, story goals, scenes/codex content, and story media attachments"],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["builder section ownership, AI-enhance field targeting, and scenario save/load contracts stay aligned so authored world state matches what chat later consumes"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/features/character-builder/CharacterBuilderScreen.tsx": {
+    description: "Main Character Builder shell for authored card fields, custom sections, avatar/media controls, and AI-enhance flows for playable characters.",
+    rows: [
+      {
+        id: "character-builder-authoring-shell",
+        title: "Character Builder Authoring Shell",
+        summary: "Owns the character authoring workspace for hardcoded card fields, custom sections, personality/goals/relationships, avatar assets, and AI-assisted card enhancement.",
+        badgeLabel: "REACT COMPONENT",
+        badgeClass: "component",
+        details: [
+          {
+            label: "Uses",
+            values: [
+              "/src/services/character-ai.ts",
+              "/src/services/supabase-data.ts",
+              "/src/components/chronicle/AvatarGenerationModal.tsx",
+            ],
+            kind: "files",
+          },
+          {
+            label: "Mutates",
+            values: ["main character draft state, custom card sections, avatar/media state, and AI-enhance target fields"],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["section rendering, progress tracking, and save/enhance field mapping stay aligned so authored character data matches prompt serialization and persistence contracts"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/services/app-settings.ts": {
+    description: "Admin settings service for shared-key health checks, backend admin-role verification, local admin cache reads, and shared key persistence updates.",
+    rows: [
+      {
+        id: "admin-settings-service",
+        title: "Admin Settings and Shared-Key Service",
+        summary: "Checks backend shared-key health, verifies admin access, caches the last known admin flag locally, and updates the shared xAI-key setting used by the AI Status page.",
+        badgeLabel: "SERVICE",
+        badgeClass: "code-logic",
+        details: [
+          {
+            label: "Uses Table",
+            values: ["app_settings"],
+            kind: "tables",
+          },
+          {
+            label: "Uses RPC",
+            values: ["has_role"],
+            kind: "rpcs",
+          },
+          {
+            label: "Calls",
+            values: ["check-shared-keys"],
+            kind: "edges",
+          },
+          {
+            label: "Reads Browser Storage",
+            values: ["localStorage: chronicle.admin-state.v1"],
+            kind: "plain",
+          },
+          {
+            label: "Mutates Browser Storage",
+            values: ["localStorage: chronicle.admin-state.v1"],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["the local admin cache remains advisory only and never replaces the backend has_role check as the actual authorization source of truth"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/services/api-usage-test-session.ts": {
+    description: "Admin-side session-tracking service for turning API usage test mode on/off locally while coordinating with the backend `api-usage-test-session` edge function.",
+    rows: [
+      {
+        id: "api-usage-test-session-service",
+        title: "API Usage Test Session Tracker",
+        summary: "Starts, fetches, and stops admin test sessions, using local browser flags to remember whether the current operator has API usage test mode enabled between refreshes.",
+        badgeLabel: "SERVICE",
+        badgeClass: "code-logic",
+        details: [
+          {
+            label: "Calls",
+            values: ["api-usage-test-session"],
+            kind: "edges",
+          },
+          {
+            label: "Reads Browser Storage",
+            values: [
+              "localStorage: chronicle_api_usage_test_enabled",
+              "localStorage: chronicle_api_usage_test_session_id",
+            ],
+            kind: "plain",
+          },
+          {
+            label: "Mutates Browser Storage",
+            values: [
+              "localStorage: chronicle_api_usage_test_enabled",
+              "localStorage: chronicle_api_usage_test_session_id",
+            ],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["the local enabled/session-id flags stay synchronized with the backend active session so finance and validation tools do not report against the wrong audit window"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/services/api-usage-validation.ts": {
+    description: "Validation helper layer that converts live request/response inputs into presence maps and snapshots used by API usage auditing and finance-quality checks.",
+    rows: [
+      {
+        id: "api-usage-validation-service",
+        title: "Prompt and Payload Validation Mapper",
+        summary: "Builds structured presence maps for Chronicle's tracked AI calls so finance/admin tooling can see which required world, cast, and prompt sections were actually serialized on a given request.",
+        badgeLabel: "SERVICE",
+        badgeClass: "code-logic",
+        details: [
+          {
+            label: "Used By",
+            values: [
+              "/src/services/llm.ts",
+              "/src/services/world-ai.ts",
+              "/src/services/character-ai.ts",
+              "/src/components/chronicle/ChatInterfaceTab.tsx",
+            ],
+            kind: "files",
+          },
+          {
+            label: "Defines",
+            values: ["call-by-call validation presence maps", "required-field checks", "snapshot payloads for admin/finance review"],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["validation row IDs and prompt-section semantics stay aligned with the live request builders or the reporting layer will create false failures/passes"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/services/admin-usage-metrics.ts": {
+    description: "Finance/admin telemetry aggregation service that loads summary metrics, timeseries, validation status rollups, and API-usage test-session reports.",
+    rows: [
+      {
+        id: "admin-usage-metrics-service",
+        title: "Admin Usage and Validation Reporting",
+        summary: "Fetches the backend usage summary/report endpoints and folds validation snapshots into operator-facing pass/fail/blank rollups for finance and QA review.",
+        badgeLabel: "SERVICE",
+        badgeClass: "code-logic",
+        details: [
+          {
+            label: "Calls",
+            values: ["admin-ai-usage-summary", "admin-ai-usage-timeseries", "admin-api-usage-test-report"],
+            kind: "edges",
+          },
+          {
+            label: "Uses",
+            values: ["/src/data/api-usage-validation-registry.ts"],
+            kind: "files",
+          },
+          {
+            label: "Requires",
+            values: ["validation registry row IDs, backend report payloads, and finance dashboard expectations stay aligned or operator summaries will misclassify real usage gaps"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/services/world-ai.ts": {
+    description: "Story/world builder AI service for enhancing scenario fields, custom world content, goals, and arc-step prose before those values are saved into story state.",
+    rows: [
+      {
+        id: "world-ai-enhance-service",
+        title: "World Builder AI Enhance Service",
+        summary: "Serializes the current world/story context, selected tags, and target field rules into builder-side AI enhancement requests so Story Builder can fill or revise scenario prose safely.",
+        badgeLabel: "SERVICE",
+        badgeClass: "code-logic",
+        details: [
+          {
+            label: "Uses",
+            values: ["/src/services/api-usage-validation.ts", "/src/services/usage-tracking.ts", "/src/constants/tag-injection-registry.ts"],
+            kind: "files",
+          },
+          {
+            label: "Mutates",
+            values: ["builder-side AI-enhanced world text for story name, premise, formatting rules, custom world fields, and goal/arc prose"],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["selected tag directives, world context serialization, and builder field targeting stay aligned so AI-enhanced output matches the authored story model"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/services/side-character-generator.ts": {
+    description: "Chat-adjacent parsing and side-character discovery service that splits speaker-tagged text, resolves aliases, and helps Chronicle infer new side-character candidates from dialogue.",
+    rows: [
+      {
+        id: "side-character-discovery-service",
+        title: "Side Character Discovery and Parsing",
+        summary: "Owns the message-segmentation and character-name resolution logic that both chat rendering and review/export workflows reuse when they need to understand who spoke which beat.",
+        badgeLabel: "SERVICE",
+        badgeClass: "code-logic",
+        details: [
+          {
+            label: "Used By",
+            values: ["/src/components/chronicle/ChatInterfaceTab.tsx", "/src/features/chat-debug/review-export.ts"],
+            kind: "files",
+          },
+          {
+            label: "Defines",
+            values: ["speaker-tag parsing", "nickname/alias resolution", "duplicate-name prevention", "side-character candidate extraction"],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["speaker-tag rules, nickname matching, and render-safe cleanup stay aligned with the chat UI so the wrong character does not inherit a line or avatar"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/features/chat-debug/review-export.ts": {
+    description: "Admin review-export formatter that converts a full conversation into a standalone HTML review artifact with segment-by-segment speaker attribution and live debug notes.",
+    rows: [
+      {
+        id: "chat-review-export-builder",
+        title: "Standalone Chat Review Export Builder",
+        summary: "Builds the rich admin review export, including segmented speaker blocks, continue/regenerate markers, live debug comments, and post-turn state change annotations for human audit passes.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          {
+            label: "Uses",
+            values: ["/src/services/side-character-generator.ts", "/src/features/chat-debug/types.ts"],
+            kind: "files",
+          },
+          {
+            label: "Mutates",
+            values: ["downloaded HTML review artifact content only; it does not change runtime canon or backend rows"],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["its message parsing and speaker inference stay aligned with ChatInterfaceTab so review exports do not show a different speaker breakdown than the live chat surface"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/lib/chat-spellcheck.ts": {
+    description: "Browser spellcheck engine for the chat composer, including dictionary loading, morphology-aware token checks, edit-distance suggestions, and Chronicle-specific adult vocabulary allowances.",
+    rows: [
+      {
+        id: "chat-spellcheck-engine",
+        title: "Composer Spellcheck Engine",
+        summary: "Loads the dictionary asset, normalizes tokens, preserves common inflections and slang, and generates misspelling ranges/suggestions for the live chat composer without censoring adult vocabulary.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          {
+            label: "Uses",
+            values: ["/public/spellcheck/en-words.txt"],
+            kind: "files",
+          },
+          {
+            label: "Used By",
+            values: ["/src/components/chronicle/ChatSpellcheckTextarea.tsx"],
+            kind: "files",
+          },
+          {
+            label: "Requires",
+            values: ["the spellcheck dictionary asset path stays valid and Chronicle's built-in adult/slang allowlist remains intact so explicit chat text is not falsely flagged as broken English"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/public/spellcheck/en-words.txt": {
+    description: "Plain-text dictionary asset fetched by Chronicle's chat composer spellcheck layer at runtime.",
+    rows: [
+      {
+        id: "spellcheck-dictionary-asset",
+        title: "Spellcheck Dictionary Asset",
+        summary: "Supplies the baseline word list the browser spellcheck helper loads before layering Chronicle-specific slang and morphology rules on top.",
+        badgeLabel: "DOCUMENTATION",
+        badgeClass: "documentation",
+        details: [
+          {
+            label: "Used By",
+            values: ["/src/lib/chat-spellcheck.ts"],
+            kind: "files",
+          },
+          {
+            label: "Access",
+            values: ["public static asset fetched directly by the browser from /spellcheck/en-words.txt"],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["the public path and newline-delimited text format stay stable so chat spellcheck can load the dictionary without runtime parsing errors"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/data/api-inspector-live-map.ts": {
+    description: "Live code-truth registry for the Roleplay Pipeline page, defining the sections, phases, groups, and item-level explanatory copy the inspector renders.",
+    rows: [
+      {
+        id: "api-inspector-live-map-registry",
+        title: "Roleplay Pipeline Content Registry",
+        summary: "Stores the curated runtime map for live chat, supporting systems, and adjacent AI lanes so the inspector page can explain the real Chronicle request path in operator language.",
+        badgeLabel: "DATA BLOCK",
+        badgeClass: "data-block",
+        details: [
+          {
+            label: "Used By",
+            values: ["/src/pages/style-guide/api-inspector.tsx"],
+            kind: "files",
+          },
+          {
+            label: "Defines",
+            values: ["live inspector sections", "phase/group/item hierarchy", "operator-facing code-truth copy", "runtime file references"],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["its narrative claims stay concurrent with the live chat lane, post-turn extraction flows, admin tooling, and persistence contracts or the pipeline page becomes misleading"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
   "/src/pages/Index.tsx": {
     description: "Main Chronicle workspace shell that owns tab routing, auth-aware app bootstrap, scenario state, and lazy loading for the primary app surfaces.",
     rows: [
@@ -698,9 +1484,9 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
         badgeClass: "component",
         details: [
           { label: "Renders / Opens", values: ["/src/components/chronicle/GalleryHub.tsx", "/src/components/chronicle/StoryHub.tsx", "/src/components/chronicle/ChatInterfaceTab.tsx", "/src/features/story-builder/StoryBuilderScreen.tsx", "/src/features/character-builder/CharacterBuilderScreen.tsx", "/src/pages/Admin.tsx"], kind: "files" },
-          { label: "Uses", values: ["/src/services/supabase-data.ts", "/src/services/api-usage-test-session.ts", "/src/hooks/use-auth.ts", "/src/features/navigation/builder-tabs.ts"], kind: "files" },
+          { label: "Uses", values: ["/src/hooks/use-index-shell-bootstrap.ts", "/src/hooks/use-index-authenticated-data.ts", "/src/hooks/use-index-scenario-lifecycle.ts", "/src/hooks/use-index-scenario-persistence.ts", "/src/hooks/use-index-character-workspace.ts", "/src/hooks/use-index-background-workspace.ts", "/src/hooks/use-index-dialog-state.ts", "/src/hooks/use-auth.ts"], kind: "files" },
           { label: "Access", values: ["client-rendered primary app shell after auth/bootstrap", "owns tab selection and active scenario state"], kind: "plain" },
-          { label: "Requires", values: ["lazy-loaded tab contracts stay stable", "scenario state, auth state, and navigation state remain synchronized"], kind: "plain" },
+          { label: "Requires", values: ["lazy-loaded tab contracts stay stable", "the extracted use-index-* hook ownership boundaries stay synchronized with tab routing, auth bootstrap, and active scenario state"], kind: "plain" },
         ],
       },
     ],
@@ -876,7 +1662,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
         details: [
           {
             label: "Uses Tables",
-            values: ["conversations", "messages", "character_session_states", "memories"],
+            values: ["conversations", "messages", "character_session_states", "conversation_dialog_debug_comments", "memories"],
             kind: "tables",
           },
           {
@@ -886,12 +1672,12 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
           },
           {
             label: "Mutates",
-            values: ["conversation history", "message rows", "manual session overrides", "memory visibility"],
+            values: ["conversation history", "message rows and generation IDs", "manual session overrides", "admin dialog-debug notes", "memory visibility"],
             kind: "plain",
           },
           {
             label: "Requires",
-            values: ["message ordering and canonical conversation hydration stay stable before chat runtime state is derived"],
+            values: ["message IDs, generation IDs, and conversation-scoped queries stay aligned before the chat runtime resolves current canon"],
             kind: "plain",
           },
         ],
@@ -899,7 +1685,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       {
         id: "persistence-generation-ledger",
         title: "Generation Ledger Persistence",
-        summary: "Stores and resolves the message-scoped snapshot and derivation records that make refresh/regenerate safe instead of letting stale branches overwrite canon.",
+        summary: "Stores and filters message-scoped snapshot and derivation rows so only records whose `source_generation_id` still matches the active message branch survive into live canon.",
         badgeLabel: "DATA BLOCK",
         badgeClass: "data-block",
         details: [
@@ -915,7 +1701,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
           },
           {
             label: "Requires",
-            values: ["active message generation filters stay aligned with ChatInterfaceTab's effective-state resolver"],
+            values: ["active message generation filters stay aligned with ChatInterfaceTab's effective-state resolver so stale regenerate/continue branches cannot leak back into canon"],
             kind: "plain",
           },
         ],
@@ -957,7 +1743,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       {
         id: "persistence-side-character-snapshots",
         title: "Side Character Snapshot Ledger",
-        summary: "Stores AI-derived side-character canon per message generation so refresh/regenerate no longer mutates the wrong timeline branch.",
+        summary: "Stores AI-derived side-character canon per message generation with an `(side_character_id, source_message_id, source_generation_id)` uniqueness contract so stale branches cannot overwrite the active side-character state.",
         badgeLabel: "DATA BLOCK",
         badgeClass: "data-block",
         details: [
@@ -973,7 +1759,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
           },
           {
             label: "Requires",
-            values: ["snapshot writes and active generation resolution stay synchronized with the message ledger contract"],
+            values: ["snapshot writes and active generation resolution stay synchronized with the message ledger contract before side-character state is merged back into the visible scene"],
             kind: "plain",
           },
         ],
@@ -1046,8 +1832,8 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       },
       {
         id: "chat-interface-roleplay-runtime-path",
-        title: "Roleplay Runtime Path",
-        summary: "Packages the effective chat runtime into the Chronicle LLM request path and then applies the returned generation's post-response derivations back into the continuity ledger.",
+        title: "Direct Chat Runtime Path",
+        summary: "Packages the effective chat runtime into Chronicle's direct streaming Grok request path and then applies the returned generation's post-response derivations back into the continuity ledger.",
         badgeLabel: "API CALL",
         badgeClass: "api-call",
         details: [
@@ -1063,7 +1849,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
           },
           {
             label: "Requires",
-            values: ["the frontend request contract and backend `roleplay_v2` pipeline stay in sync"],
+            values: ["the frontend request contract and backend direct chat edge contract stay in sync, including generation IDs and optional debug-trace packets"],
             kind: "plain",
           },
         ],
@@ -1071,7 +1857,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       {
         id: "chat-interface-admin-debug-trace",
         title: "Admin Turn Debug Trace Export",
-        summary: "Captures the structured planner/writer/validator trace for each assistant turn, keeps it in browser session scope, and appends it to admin-downloaded session logs without changing normal chat output.",
+        summary: "Captures the structured direct-lane turn trace for each assistant turn, keeps it in browser session scope, and appends it to admin-downloaded session logs without changing normal chat output.",
         badgeLabel: "CODE LOGIC",
         badgeClass: "code-logic",
         details: [
@@ -1105,12 +1891,12 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
     ],
   },
   "/src/features/chat-debug/types.ts": {
-    description: "Shared admin-only chat observability contract defining the structured turn-debug trace shape passed between the frontend and the roleplay_v2 backend.",
+    description: "Shared admin-only chat observability contract defining the structured turn-debug trace shape passed between the frontend and Chronicle's chat backend.",
     rows: [
       {
         id: "chat-debug-trace-contract",
         title: "Turn Debug Trace Contract",
-        summary: "Defines the structured trace payload for pipeline path, selected excerpts, planner output, speaker-policy limits, scene-state facts, writer draft preview, validator outcome, and final fallback notes for a single assistant turn.",
+        summary: "Defines the structured trace payload for pipeline path, roleplay context, supporting excerpts, compatibility-shaped planner/validator fields, timing, and fallback notes for a single assistant turn.",
         badgeLabel: "CODE LOGIC",
         badgeClass: "code-logic",
         details: [
@@ -1139,7 +1925,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
           },
           {
             label: "Requires",
-            values: ["frontend trace typing stays aligned with the chat edge function's emitted debug payload shape"],
+            values: ["frontend trace typing stays aligned with the chat edge function's emitted direct-lane debug payload shape, including nullable compatibility fields"],
             kind: "plain",
           },
         ],
@@ -1186,7 +1972,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       {
         id: "chat-debug-session-log-formatting",
         title: "Session Log Debug Formatter",
-        summary: "Formats the captured debug trace into readable session-log sections so admins can inspect planner speaker limits, scene-state facts, validator result, policy-repair outcomes, and fallback path for each AI turn.",
+        summary: "Formats the captured debug trace into readable session-log sections so admins can inspect scene-state context, compatibility planner fields, quality-check outcomes, and fallback path for each AI turn.",
         badgeLabel: "CODE LOGIC",
         badgeClass: "code-logic",
         details: [
@@ -1220,7 +2006,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       {
         id: "llm-chat-request-assembly",
         title: "Chronicle Chat Request Assembly",
-        summary: "Builds the live system instruction, runtime directives, recent transcript slice, and final user wrapper before the paid Chronicle chat request is fired.",
+        summary: "Builds the recurring system instruction, current transcript slice, and final wrapped user turn before Chronicle fires the paid direct chat request.",
         badgeLabel: "API CALL",
         badgeClass: "api-call",
         details: [
@@ -1243,8 +2029,8 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       },
       {
         id: "llm-roleplay-v2-context",
-        title: "roleplay_v2 Runtime Context Injection",
-        summary: "Attaches the current conversation, temporal state, active scene, and AI/user speaker lists so the backend planner/writer/validator pipeline can reason against the right live canon.",
+        title: "Roleplay Context Injection",
+        summary: "Attaches the current conversation, temporal state, active scene, AI/user speaker lists, and per-character scene state so the backend direct lane reasons against the right live canon.",
         badgeLabel: "CONTEXT INJECTION",
         badgeClass: "context-injection",
         details: [
@@ -1292,12 +2078,12 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
     ],
   },
   "/supabase/functions/chat/index.ts": {
-    description: "Server-side Chronicle chat edge function that receives the assembled request and routes it through the paid chat runtime, including the newer multi-pass roleplay pipeline.",
+    description: "Server-side Chronicle chat edge function that receives the assembled request and routes it through Chronicle's direct paid chat runtime, while still accepting older pipeline labels as compatibility aliases.",
     rows: [
       {
         id: "chat-edge-entry",
         title: "Chronicle Chat Entry Point",
-        summary: "Acts as the backend entry point for Chronicle's live roleplay requests, authenticating the caller, applying rate limits, and choosing which chat pipeline executes.",
+        summary: "Acts as the backend entry point for Chronicle's live roleplay requests, authenticating the caller, applying rate limits, normalizing compatibility pipeline labels, and dispatching the direct provider call.",
         badgeLabel: "EDGE FUNCTION",
         badgeClass: "edge-fn",
         details: [
@@ -1320,22 +2106,20 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       },
       {
         id: "chat-edge-roleplay-v2",
-        title: "roleplay_v2 Planner / Writer / Validator Pipeline",
-        summary: "Runs Chronicle chat through a continuity planner, constrained writer, validator/reviser, and final structural policy check so the final response stays grounded in the latest canon instead of a single-pass raw draft.",
+        title: "Direct Streaming Chat Relay",
+        summary: "Runs Chronicle chat through the current direct streaming xAI lane, preserving compatibility-shaped debug metadata and deterministic cleanup without the older multi-pass planner/writer orchestration wait.",
         badgeLabel: "API CALL",
         badgeClass: "api-call",
         details: [
           {
             label: "Defines",
             values: [
-              "recent-history window",
-              "supporting-history selection",
-              "planner pass",
-              "allowed speaker plan",
-              "scene-state fact plan",
-              "writer pass",
-              "validator/reviser pass",
-              "deterministic policy repair check",
+              "auth + rate-limit gate",
+              "compatibility alias from roleplay_v2 -> direct",
+              "direct xAI call",
+              "403 content redirect retry",
+              "deterministic cleanup / normalization",
+              "SSE streaming relay",
             ],
             kind: "plain",
           },
@@ -1347,8 +2131,8 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
           {
             label: "Requires",
             values: [
-              "the latest user turn remains highest priority and supporting history never overrides the current canon branch",
-              "speaker tags, scene-state continuity, and repaired output all stay aligned with the planner contract before the final text is emitted",
+              "the latest user turn, roleplay context metadata, and direct provider response stay aligned before the streamed text becomes canon",
+              "compatibility aliasing never lies about the active runtime when debug traces or docs describe the lane",
             ],
             kind: "plain",
           },
@@ -1357,7 +2141,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       {
         id: "chat-edge-debug-trace-emission",
         title: "Admin Debug Trace Emission",
-        summary: "Builds a structured admin-only trace describing selected supporting excerpts, planner output, speaker/state limits, validator behavior, policy-repair outcomes, normalization changes, and direct-fallback reasons, then emits it alongside the normal chat response payload.",
+        summary: "Builds a structured admin-only trace describing roleplay context, selected supporting excerpts, compatibility planner/validator fields, normalization changes, and fallback reasons, then emits it alongside the normal chat response payload.",
         badgeLabel: "CODE LOGIC",
         badgeClass: "code-logic",
         details: [
@@ -1365,9 +2149,9 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
             label: "Defines",
             values: [
               "chronicle_debug_trace payload",
-              "direct fallback trace builder",
-              "roleplay_v2 trace summaries",
-              "policy repair notes",
+              "direct-lane trace builder",
+              "compatibility planner/validator summaries",
+              "cleanup / fallback notes",
               "SSE/JSON trace injection",
             ],
             kind: "plain",
@@ -1469,14 +2253,23 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
 };
 
 const DETAIL_HELPERS: Record<string, string> = {
+  Defines: "Shows the primary contracts, registries, or behaviors this file explicitly owns.",
   Uses: "Shows other code files this file directly imports and depends on.",
   Calls: "Shows backend functions or services this file triggers directly.",
   "Renders / Opens": "Shows the visible UI blocks, modal flows, or screens this file directly renders or opens.",
   "Uses Table": "Shows backend tables this file directly reads from or writes to.",
   "Uses Tables": "Shows backend tables this file directly reads from or writes to.",
+  "Reads Table": "Shows backend tables this file directly reads from without changing durable rows.",
+  "Reads Tables": "Shows backend tables this file directly reads from without changing durable rows.",
+  "Mutates Table": "Shows backend tables this file directly inserts, updates, upserts, or deletes.",
+  "Mutates Tables": "Shows backend tables this file directly inserts, updates, upserts, or deletes.",
   "Uses RPC": "Shows database functions this file calls through Supabase RPC.",
   "Uses RPCs": "Shows database functions this file calls through Supabase RPC.",
   "Uses Storage": "Shows storage buckets this file reads from or writes to.",
+  "Reads Storage": "Shows storage buckets this file reads, lists, or resolves URLs from.",
+  "Mutates Storage": "Shows storage buckets this file uploads to, removes from, or otherwise changes.",
+  "Reads Browser Storage": "Shows localStorage or sessionStorage keys this file reads in the browser runtime.",
+  "Mutates Browser Storage": "Shows localStorage or sessionStorage keys this file writes or clears in the browser runtime.",
   "Used By": "Shows other files that import and depend on this file.",
   Access: "Shows the access boundary this row operates inside.",
   Mutates: "Shows the durable data or state this row can change.",
@@ -3754,6 +4547,10 @@ function uniqueStrings(values: string[]): string[] {
   return Array.from(new Set(values.filter(Boolean)));
 }
 
+function prefixValues(prefix: string, values: string[]): string[] {
+  return (values ?? []).map((value) => `${prefix}: ${value}`);
+}
+
 function toTitleWords(input: string): string {
   return input
     .replace(/\.[^.]+$/, "")
@@ -4030,6 +4827,7 @@ function buildRequireValues(
   rpcs: string[],
   edgeFunctions: string[],
   storageBuckets: string[],
+  browserStorageValues: string[],
 ) {
   const values: string[] = [];
 
@@ -4044,6 +4842,9 @@ function buildRequireValues(
   }
   if (storageBuckets.length > 0) {
     values.push("matching storage bucket names and valid storage access rules");
+  }
+  if (browserStorageValues.length > 0) {
+    values.push("browser storage keys stay stable across the UI paths that read or overwrite them");
   }
   if (isReactSurface) {
     values.push("the imported UI blocks, state providers, and upstream props stay available");
@@ -4088,9 +4889,17 @@ function buildFileRows(
   const imports = analysis.imports.slice(0, 8);
   const importedBy = analysis.importedBy.slice(0, 8);
   const tables = analysis.tables;
+  const tableReads = analysis.tableReads;
+  const tableWrites = analysis.tableWrites;
   const rpcs = analysis.rpcs;
   const edgeFunctions = analysis.edgeFunctions;
   const storageBuckets = analysis.storageBuckets;
+  const storageReads = analysis.storageReads;
+  const storageWrites = analysis.storageWrites;
+  const localStorageReads = analysis.localStorageReads;
+  const localStorageWrites = analysis.localStorageWrites;
+  const sessionStorageReads = analysis.sessionStorageReads;
+  const sessionStorageWrites = analysis.sessionStorageWrites;
   const missingTables = tables.filter((name) => !knownTables.has(name));
   const missingRpcs = rpcs.filter((name) => !knownRpcs.has(name));
   const missingEdgeFunctions = edgeFunctions.filter((name) => !knownEdgeFunctions.has(name));
@@ -4103,7 +4912,45 @@ function buildFileRows(
       : analysis.imports
   ).slice(0, 8);
   const accessValues = buildAccessValues(fileKind, isReactSurface);
-  const requireValues = buildRequireValues(fileKind, isReactSurface, tables, rpcs, edgeFunctions, storageBuckets);
+  const browserStorageReadValues = uniqueStrings([
+    ...prefixValues("localStorage", localStorageReads),
+    ...prefixValues("sessionStorage", sessionStorageReads),
+  ]);
+  const browserStorageWriteValues = uniqueStrings([
+    ...prefixValues("localStorage", localStorageWrites),
+    ...prefixValues("sessionStorage", sessionStorageWrites),
+  ]);
+  const browserStorageValues = uniqueStrings([...browserStorageReadValues, ...browserStorageWriteValues]);
+  const requireValues = buildRequireValues(
+    fileKind,
+    isReactSurface,
+    tables,
+    rpcs,
+    edgeFunctions,
+    storageBuckets,
+    browserStorageValues,
+  );
+
+  const pushResourceDetails = (lines: DetailLine[]) => {
+    if (tableReads.length > 0 || tableWrites.length > 0) {
+      pushDetail(lines, tableReads.length > 1 ? "Reads Tables" : "Reads Table", tableReads, "tables");
+      pushDetail(lines, tableWrites.length > 1 ? "Mutates Tables" : "Mutates Table", tableWrites, "tables");
+    } else {
+      pushDetail(lines, tables.length > 1 ? "Uses Tables" : "Uses Table", tables, "tables");
+    }
+
+    pushDetail(lines, rpcs.length > 1 ? "Uses RPCs" : "Uses RPC", rpcs, "rpcs");
+
+    if (storageReads.length > 0 || storageWrites.length > 0) {
+      pushDetail(lines, "Reads Storage", storageReads, "buckets");
+      pushDetail(lines, "Mutates Storage", storageWrites, "buckets");
+    } else {
+      pushDetail(lines, "Uses Storage", storageBuckets, "buckets");
+    }
+
+    pushDetail(lines, "Reads Browser Storage", browserStorageReadValues, "plain");
+    pushDetail(lines, "Mutates Browser Storage", browserStorageWriteValues, "plain");
+  };
 
   const primaryDetails: DetailLine[] = [];
   if (isReactSurface) {
@@ -4117,10 +4964,8 @@ function buildFileRows(
   pushDetail(primaryDetails, "Requires", requireValues, "plain");
 
   if (isReactSurface || fileKind === "react-hook" || fileKind === "context-provider") {
-    pushDetail(primaryDetails, tables.length > 1 ? "Uses Tables" : "Uses Table", tables, "tables");
+    pushResourceDetails(primaryDetails);
     pushDetail(primaryDetails, "Calls", edgeFunctions, "edges");
-    pushDetail(primaryDetails, rpcs.length > 1 ? "Uses RPCs" : "Uses RPC", rpcs, "rpcs");
-    pushDetail(primaryDetails, "Uses Storage", storageBuckets, "buckets");
   }
 
   let badgeLabel: FileRow["badgeLabel"] = "CODE LOGIC";
@@ -4204,11 +5049,14 @@ function buildFileRows(
     }),
   );
 
-  if (tables.length > 0 || rpcs.length > 0 || storageBuckets.length > 0) {
+  if (
+    tables.length > 0 ||
+    rpcs.length > 0 ||
+    storageBuckets.length > 0 ||
+    browserStorageValues.length > 0
+  ) {
     const persistenceDetails: DetailLine[] = [];
-    pushDetail(persistenceDetails, tables.length > 1 ? "Uses Tables" : "Uses Table", tables, "tables");
-    pushDetail(persistenceDetails, rpcs.length > 1 ? "Uses RPCs" : "Uses RPC", rpcs, "rpcs");
-    pushDetail(persistenceDetails, "Uses Storage", storageBuckets, "buckets");
+    pushResourceDetails(persistenceDetails);
     pushDetail(persistenceDetails, "Used By", importedBy, "files");
     pushDetail(persistenceDetails, "Access", accessValues, "plain");
     if (tables.length > 0) {
@@ -4233,7 +5081,7 @@ function buildFileRows(
     const isPaidApiPath = edgeFunctions.some((name) => PAID_AI_EDGE_FUNCTIONS.has(name));
     const edgeDetails: DetailLine[] = [];
     pushDetail(edgeDetails, "Calls", edgeFunctions, "edges");
-    pushDetail(edgeDetails, tables.length > 1 ? "Uses Tables" : "Uses Table", tables, "tables");
+    pushResourceDetails(edgeDetails);
     pushDetail(edgeDetails, "Used By", importedBy, "files");
     pushDetail(edgeDetails, "Access", accessValues, "plain");
     pushDetail(edgeDetails, "Requires", requireValues, "plain");
@@ -4635,9 +5483,17 @@ function TreeFolder({
                   imports: [],
                   importedBy: [],
                   tables: [],
+                  tableReads: [],
+                  tableWrites: [],
                   rpcs: [],
                   edgeFunctions: [],
                   storageBuckets: [],
+                  storageReads: [],
+                  storageWrites: [],
+                  localStorageReads: [],
+                  localStorageWrites: [],
+                  sessionStorageReads: [],
+                  sessionStorageWrites: [],
                 }}
                 lineCount={resolveLineCount(child.path, metrics)}
                 highlighted={highlightedId === child.id}
@@ -5117,9 +5973,17 @@ export default function AppArchitecturePage() {
         imports: [],
         importedBy: [],
         tables: [],
+        tableReads: [],
+        tableWrites: [],
         rpcs: [],
         edgeFunctions: [],
         storageBuckets: [],
+        storageReads: [],
+        storageWrites: [],
+        localStorageReads: [],
+        localStorageWrites: [],
+        sessionStorageReads: [],
+        sessionStorageWrites: [],
       };
       const rows = buildFileRows(
         node,
@@ -5167,9 +6031,17 @@ export default function AppArchitecturePage() {
         imports: [],
         importedBy: [],
         tables: [],
+        tableReads: [],
+        tableWrites: [],
         rpcs: [],
         edgeFunctions: [],
         storageBuckets: [],
+        storageReads: [],
+        storageWrites: [],
+        localStorageReads: [],
+        localStorageWrites: [],
+        sessionStorageReads: [],
+        sessionStorageWrites: [],
       };
       const rows = buildFileRows(
         node,

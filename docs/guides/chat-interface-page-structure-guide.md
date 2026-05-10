@@ -178,21 +178,21 @@ Service: `src/services/side-character-generator.ts`
 
 ### 6f. Admin Turn Debug Trace
 
-- **Purpose**: Capture a structured trace of Chronicle's `roleplay_v2` pipeline for each assistant turn so bad dialogue can be debugged without injecting hidden text into the visible chat.
+- **Purpose**: Capture a structured trace of Chronicle's current direct chat lane for each assistant turn so bad dialogue can be debugged without injecting hidden text into the visible chat.
 - **Frontend storage**: `src/features/chat-debug/storage.ts`
   - Stores traces in `window.sessionStorage`
   - Keyed by scenario ID + conversation ID + `messageId:generationId`
   - Failures are intentionally soft so debug storage can never break chat
 - **Shared trace contract**: `src/features/chat-debug/types.ts`
-  - Defines `ChatDebugTrace`, `StoredChatDebugTrace`, planner trace shape, validator trace shape, and supporting-excerpt scoring metadata
+  - Defines `ChatDebugTrace`, `StoredChatDebugTrace`, compatibility-shaped planner/validator fields, timing metadata, and supporting-excerpt scoring metadata
 - **Export formatter**: `src/features/chat-debug/session-log.ts`
   - Formats captured traces into markdown blocks appended to the admin session-log export
-  - Includes pipeline path, selected excerpts, planner outcome, validator outcome, normalization flag, and fallback notes
+  - Includes pipeline path, selected excerpts, roleplay context, compatibility planner/validator details, normalization flag, and fallback notes
 - **Request bridge**: `generateRoleplayResponseStream()` in `src/services/llm.ts`
   - Sends `debugTrace: true` only for admins
   - Intercepts `chronicle_debug_trace` packets from the response stream and keeps them separate from user-visible text chunks
 - **Backend source**: `supabase/functions/chat/index.ts`
-  - Builds structured trace payloads for `roleplay_v2` and direct-fallback paths
+  - Builds structured trace payloads for the current direct lane while still accepting `roleplay_v2` as a compatibility alias
   - Emits the trace alongside the normal SSE/JSON chat response
 - **Important limitation**: This is Chronicle-selected context/debug data only. It is **not** the model's private chain-of-thought.
 

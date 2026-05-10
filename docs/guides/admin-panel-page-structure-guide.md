@@ -25,7 +25,7 @@
 | Field | Detail |
 |-------|--------|
 | **Tab Key** | `admin` |
-| **Source File** | `src/pages/Admin.tsx` (254 lines) |
+| **Source File** | `src/pages/Admin.tsx` (260 lines) |
 | **Purpose** | Admin hub providing access to 7 top-level tiles: Image Generation, AI Status, App Dashboard, App Architecture, Roleplay Pipeline, Quality Hub, and Finance Dashboard. Only visible to users with `admin` role. |
 | **Access** | Requires async `checkIsAdmin(userId)` — calls `has_role()` RPC against `user_roles` table for `admin` role |
 | **Sidebar Label** | Settings (gear icon from lucide) |
@@ -76,9 +76,10 @@ Tool cards use the standard Chronicle card style: `aspect-[2/3] rounded-[2rem] b
 |-------|--------|
 | **Trigger** | Edit button on tool card hover |
 | **Component** | `src/components/admin/AdminToolEditModal.tsx` |
-| **Purpose** | Edit tool title, description, and thumbnail URL |
-| **Form Fields** | Title (text), Description (text), Thumbnail URL (text) |
-| **Save** | Updates `app_settings.admin_tool_meta` in Supabase |
+| **Purpose** | Edit tool title, description, and thumbnail image |
+| **Form Fields** | Title (text), Description (text), Thumbnail upload/preview |
+| **Upload** | Stores tile images in the public `avatars` bucket under the authenticated user's folder, e.g. `{userId}/admin-tools/...` |
+| **Save** | Persists `app_settings.admin_tool_meta` in Supabase, using update-then-insert so the setting is created if it does not already exist |
 
 ---
 
@@ -98,7 +99,7 @@ Tool cards use the standard Chronicle card style: `aspect-[2/3] rounded-[2rem] b
 | `quality_hub` | Quality Hub | Standalone route `/style-guide/ui-audit` → `src/pages/style-guide/ui-audit.tsx` |
 | `finance_dashboard` | Finance Dashboard | `src/components/admin/finance/FinanceDashboardTool.tsx` |
 
-Custom metadata (title/description/thumbnail overrides) stored in `app_settings` table with key `admin_tool_meta`.
+Custom metadata (title/description/thumbnail overrides) is stored in the `app_settings` table with key `admin_tool_meta`. Thumbnail uploads store the public image URL in that JSON setting after the user clicks Save.
 
 ### 6b. Sub-Tool: Image Generation
 
@@ -221,7 +222,8 @@ Component: `UiAuditPage` renders the Quality Hub from route `/style-guide/ui-aud
 - **RESOLVED — 2026-05-09**: App Architecture previously lived inside the App Dashboard sidebar; it is now a top-level Admin Panel tile that opens the standalone `/style-guide/app-architecture` route.
 - **RESOLVED — 2026-05-09**: API Inspector / Roleplay Pipeline previously lived inside the App Dashboard sidebar; it is now a top-level Admin Panel tile titled Roleplay Pipeline that opens the standalone `/style-guide/api-inspector` route.
 - **RESOLVED — 2026-05-09**: Quality Hub previously lived inside the App Dashboard sidebar; it is now a top-level Admin Panel tile that opens the standalone `/style-guide/ui-audit` route.
-- **ACTIVE**: Tool metadata persistence uses upsert pattern (update then insert on failure) which may race. (2026-03-01)
+- **RESOLVED — 2026-05-10**: Admin tile metadata persistence previously treated a zero-row `app_settings` update as success, so new `admin_tool_meta` saves could silently fail. `handleSaveTool()` now selects updated rows and inserts the setting when no row exists.
+- **RESOLVED — 2026-05-10**: Admin tile thumbnail uploads previously used an `admin/tools/...` avatars storage path that did not match user-scoped storage policies. Uploads now write under `{userId}/admin-tools/...`.
 
 ---
 
@@ -229,4 +231,4 @@ Component: `UiAuditPage` renders the Quality Hub from route `/style-guide/ui-aud
 
 None documented.
 
-> Last updated: 2026-05-09 — Quality Hub moved from the App Dashboard sidebar to its own top-level Admin Panel tile and standalone-route navigation.
+> Last updated: 2026-05-10 — Admin tile edit modal restyled to the Chronicle dark modal pattern, and tile thumbnail metadata persistence fixed.
