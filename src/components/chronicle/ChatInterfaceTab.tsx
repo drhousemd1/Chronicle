@@ -3047,6 +3047,45 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     return overlap / Math.max(aSet.size, bSet.size);
   };
 
+  const goalComparableText = (goal: any): string =>
+    [goal?.title, goal?.desiredOutcome, goal?.currentStatus]
+      .filter((value) => typeof value === 'string' && value.trim().length > 0)
+      .join(' ');
+
+  const findSimilarGoalIndex = (
+    goals: any[],
+    goalTitle: string,
+    desiredOutcome: string,
+  ): number => {
+    const candidate = [goalTitle, desiredOutcome].filter(Boolean).join(' ');
+    if (!candidate.trim()) return -1;
+
+    let bestIndex = -1;
+    let bestScore = 0;
+    goals.forEach((goal, index) => {
+      const titleScore = tokenSimilarity(goal?.title || '', goalTitle);
+      const combinedScore = tokenSimilarity(goalComparableText(goal), candidate);
+      const score = Math.max(titleScore, combinedScore);
+      if (score > bestScore) {
+        bestScore = score;
+        bestIndex = index;
+      }
+    });
+
+    return bestScore >= 0.58 ? bestIndex : -1;
+  };
+
+  const isTaskLevelGoalText = (value: string): boolean => {
+    const normalized = normalizeForSimilarity(value);
+    if (!normalized) return true;
+
+    const words = normalized.split(/\s+/).filter(Boolean);
+    const startsWithImmediateAction = /^(check|open|close|grab|pick|look|search|walk|move|ask|tell|hand|push|pull|light|inspect|scan)\b/.test(normalized);
+    const hasImmediateTimeBox = /\b(now|immediately|right now|this turn|this exchange|next exchange|next few exchanges)\b/.test(normalized);
+
+    return hasImmediateTimeBox || (startsWithImmediateAction && words.length <= 8);
+  };
+
   const findNearDuplicateExtraIndex = (
     existing: Array<{ label: string; value: string }>,
     nextLabel: string,
@@ -3639,7 +3678,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         const completeStepsMatch = value.match(/complete_steps:\s*([^|]+)/i);
         const newStepsMatch = value.match(/new_steps:\s*(.*)/i);
 
-        const existingGoalIndex = existingGoals.findIndex(g => g.title.toLowerCase() === goalTitle.toLowerCase());
+        let existingGoalIndex = existingGoals.findIndex(g => g.title.toLowerCase() === goalTitle.toLowerCase());
+        if (existingGoalIndex === -1) {
+          existingGoalIndex = findSimilarGoalIndex(existingGoals, goalTitle, desiredOutcome);
+        }
+
         if (existingGoalIndex !== -1) {
           const existingGoal = existingGoals[existingGoalIndex];
           const updatedSteps = [...(existingGoal.steps || [])];
@@ -3671,13 +3714,21 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             updatedAt: Date.now(),
           };
         } else {
+          const hasDurableOutcome = Boolean(desiredOutcome && !isTaskLevelGoalText(desiredOutcome));
+          if (isTaskLevelGoalText(goalTitle) && !hasDurableOutcome) {
+            continue;
+          }
+          const parsedSteps = newStepsMatch
+            ? parseGoalSteps(newStepsMatch[1].trim()).filter(step => !isTaskLevelGoalText(step.description))
+            : [];
+
           existingGoals.push({
             id: `goal_${uuid().slice(0, 12)}`,
             title: goalTitle,
             desiredOutcome,
             currentStatus,
             progress,
-            steps: newStepsMatch ? parseGoalSteps(newStepsMatch[1].trim()) : [],
+            steps: parsedSteps,
             createdAt: Date.now(),
             updatedAt: Date.now(),
             flexibility: 'normal',
@@ -4734,8 +4785,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       let fullText = '';
       let pendingDebugTrace: ChatDebugTrace | null = null;
       
-      // Build goal-aware continue prompt without exposing implementation labels.
-      // Gather active character goals with near-term direction info.
+      // Build goal-aware continue prompt without turning goals into a task list.
       const goalSummaryParts: string[] = [];
       allPlayableCharacters
         .filter(c => c.controlledBy === 'AI')
@@ -4747,7 +4797,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
               const label = typeof g === 'string' ? g : (g?.title || g?.label || g?.value || '');
               const currentStep = g?.steps?.find?.((s: any) => !s.completed)?.description;
               if (label) {
-                goalSummaryParts.push(`${c.name}'s current goal: "${label}"${currentStep ? `; useful near-term direction: "${currentStep}"` : ''}`);
+                goalSummaryParts.push(`${c.name}'s current goal: "${label}"${currentStep ? `; open milestone: "${currentStep}"` : ''}`);
               }
             });
           }
@@ -4757,12 +4807,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       storyGoalsList.forEach((g: StoryGoal) => {
         const pendingStep = (g.steps || []).find(s => !s.completed);
         if (pendingStep) {
-          goalSummaryParts.push(`Story direction "${g.title || g.desiredOutcome}"; useful near-term direction: "${pendingStep.description}"`);
+          goalSummaryParts.push(`Story goal "${g.title || g.desiredOutcome}"; open milestone: "${pendingStep.description}"`);
         }
       });
       
       const goalContext = goalSummaryParts.length > 0
-        ? `\nSTORY DIRECTION:\n${goalSummaryParts.join('\n')}\nUse this as background direction. When it fits the immediate scene, let one believable action, answer, choice, or consequence move the story toward it without labeling the move.`
+        ? `\nGOAL CONTINUITY:\n${goalSummaryParts.join('\n')}\nUse this as background continuity only. Open milestones are not commands or a next-action checklist; touch them only when the immediate scene and user agency naturally support it.`
         : '';
       
       // Canon carry-forward for continue: check if the most recent user message
@@ -4775,7 +4825,7 @@ Continue naturally from the latest scene.
 Write only for AI-controlled characters: ${aiControlledNames.join(', ')}.
 Do not write dialogue, actions, or thoughts for user-controlled characters: ${userControlledNames.join(', ')}.${goalContext}
 Do not complete an action for a user-controlled character after an AI character gives them an instruction. The AI may command, prepare, or act itself, but the user must author the user-controlled character's execution.
-Use active story and character goals as direction, but do not force a jump. Move the scene by one believable next beat: an answer, decision, action, reveal, refusal, invitation, or clear change in relationship posture.
+Use active story and character goals as continuity, not as a checklist. Continue only as far as the current scene naturally supports, and stop before the response depends on an unmade user choice or action.
 If an AI character asked or was asked a question, acknowledge that question in this response. Acknowledgement can be a direct answer, refusal, deflection, counter-question, visible hesitation, or turning the question toward another present character.
 Use one focal AI speaker by default. Add a second tagged AI speaker only when they meaningfully contribute based on personality, knowledge, relationship, or scene pressure.
 If the latest user turn directly addressed two AI characters and both need to answer or acknowledge, give each one short tagged block instead of letting one character narrate the other's answer.

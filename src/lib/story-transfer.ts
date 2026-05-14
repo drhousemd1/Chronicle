@@ -43,7 +43,9 @@ export type StoryTransferEditorState = {
   contentThemes?: ContentThemes;
 };
 
-export type StoryTransferExportOptions = StoryTransferEditorState;
+export type StoryTransferExportOptions = StoryTransferEditorState & {
+  includeConversations?: boolean;
+};
 
 type StoryTransferPackageV2 = {
   packageType: 'chronicle-story-transfer';
@@ -339,6 +341,9 @@ const buildScenarioForTransfer = (
   const scenario = clone(data);
   const themes = cloneContentThemes(options?.contentThemes ?? data.contentThemes);
   if (themes) scenario.contentThemes = themes;
+  if (options?.includeConversations !== true) {
+    scenario.conversations = [];
+  }
   return scenario;
 };
 
@@ -2341,6 +2346,7 @@ const mergeConversations = (
 const buildTransferPackageFromScenario = (scenario: ScenarioData): StoryTransferPackageV2 => {
   const normalizedScenario = buildScenarioForTransfer(scenario, {
     contentThemes: scenario.contentThemes,
+    includeConversations: true,
   });
 
   return {
@@ -2362,6 +2368,7 @@ const applyTransferPackageToScenario = (
 ): StoryTransferResult => {
   const importedScenario = buildScenarioForTransfer(packagePayload.scenario, {
     contentThemes: packagePayload.editorState?.contentThemes ?? packagePayload.scenario.contentThemes,
+    includeConversations: true,
   });
   const editorState = packagePayload.editorState ? clone(packagePayload.editorState) : undefined;
   const transferWarnings: string[] = [];

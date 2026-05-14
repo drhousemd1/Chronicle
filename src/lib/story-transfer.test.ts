@@ -295,7 +295,10 @@ describe('story-transfer import/export', () => {
 
   it('round-trips JSON export into scenario data using importScenarioFromAny', () => {
     const source = buildScenario();
-    const exportedJson = exportScenarioToJson(source, buildExportOptions(source));
+    const exportedJson = exportScenarioToJson(source, {
+      ...buildExportOptions(source),
+      includeConversations: true,
+    });
 
     const imported = importScenarioFromAny(
       { text: exportedJson, fileName: 'story-transfer.json', mimeType: 'application/json' },
@@ -325,6 +328,27 @@ describe('story-transfer import/export', () => {
     expect(importedCaptain?.avatarDataUrl).toBe('https://example.com/captain-rowan.png');
     expect(imported.editorState?.coverImage).toBe('https://example.com/covers/chronicle-test-story.webp');
     expect(imported.editorState?.coverImagePosition).toEqual({ x: 38, y: 34 });
+  });
+
+  it('omits conversations from default story exports', () => {
+    const source = buildScenario();
+    const exportedJson = exportScenarioToJson(source, buildExportOptions(source));
+    const exportedMarkdown = exportScenarioToText(source, buildExportOptions(source));
+
+    const importedJson = importScenarioFromAny(
+      { text: exportedJson, fileName: 'story-transfer.json', mimeType: 'application/json' },
+      createDefaultScenarioData(),
+      'rewrite'
+    );
+    const importedMarkdown = importScenarioFromAny(
+      { text: exportedMarkdown, fileName: 'story-transfer.md', mimeType: 'text/markdown' },
+      createDefaultScenarioData(),
+      'rewrite'
+    );
+
+    expect(importedJson.data.conversations).toEqual([]);
+    expect(importedMarkdown.data.conversations).toEqual([]);
+    expect(exportedMarkdown).not.toContain('The snow keeps falling.');
   });
 
   it('round-trips markdown export without losing label-only rows or story-level sections', () => {

@@ -144,7 +144,7 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('Secure lasting peace.');
     expect(prompt).toContain('Longer view: Both courts ratify treaty without bloodshed.');
     expect(prompt).toContain('Current state: Negotiations stalled by mistrust.');
-    expect(prompt).toContain('Next open step: Hold midnight summit.');
+    expect(prompt).toContain('Open milestone (background context, not a task command): Hold midnight summit.');
     expect(prompt).toContain('--- STORY THEMES ---');
     expect(prompt).toContain('Treat these as content permission, background emphasis, and thematic direction, not as a checklist to force into every response.');
     expect(prompt).toContain('- NSFW: This is an ADULT (NSFW) scenario.');
@@ -353,7 +353,8 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('Survive the storm.');
     expect(prompt).toContain('Longer view: Reach shelter and keep everyone alive.');
     expect(prompt).toContain('Current state: Searching for warmth.');
-    expect(prompt).toContain('Next open step: Make the shelter safe enough to rest.');
+    expect(prompt).toContain('Open milestone (background context, not a task command): Make the shelter safe enough to rest.');
+    expect(prompt).not.toContain('Next open step');
     expect(prompt).not.toContain('ACTIVE GOALS & STEPS');
     expect(prompt).not.toContain('PENDING STEP');
     expect(prompt).not.toContain('CURRENT STEP');

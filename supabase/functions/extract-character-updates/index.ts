@@ -437,7 +437,8 @@ function buildCharacterStateBlock(c: CharacterData): string {
     lines.push(`--- Character goals ---`);
     for (const g of c.goals) {
       const outcome = g.desiredOutcome ? `desired_outcome: ${g.desiredOutcome}` : "";
-      lines.push(`- ${g.title}: ${outcome} | current_status: ${g.currentStatus || "(empty)"} | progress: ${g.progress || 0}%`);
+      const flexibility = g.flexibility ? ` | guidance_strength: ${g.flexibility}` : "";
+      lines.push(`- ${g.title}: ${outcome} | current_status: ${g.currentStatus || "(empty)"} | progress: ${g.progress || 0}%${flexibility}`);
       if (g.steps?.length) {
         for (const [index, step] of g.steps.entries()) {
           lines.push(`  ${step.completed ? "[x]" : "[ ]"} Step ${index + 1}: ${step.description}`);
@@ -567,11 +568,12 @@ ${supportedFields}
 - custom sections: use sections.SectionTitle.ItemLabel only when the information belongs in an existing or clearly appropriate custom section. Do not use custom sections to avoid the structured fields above.
 
 --- CHARACTER GOALS ---
-- Use goals.GoalTitle only for sustained goals, not one-off impulses or routine actions.
-- Prefer updating an existing goal over creating a near-duplicate.
-- Create at most one new goal per character from this exchange.
+- Use goals.GoalTitle only for durable objectives that remain meaningful beyond the current scene. Do not save momentary actions, current-scene logistics, or routine task choices as goals.
+- Prefer updating an existing goal over creating a near-duplicate. Respect the goal's guidance_strength when present: rigid goals change only with strong evidence, normal goals update when clearly advanced, and flexible goals can shift when the scene repeatedly carries them elsewhere.
 - For existing goals, update only current_status, progress, and complete_steps. Do not send new_steps for an existing goal, and do not replace an existing goal's step list.
-- For brand-new goals, include desired_outcome, current_status, progress, and new_steps. New goals should use a logical step-by-step path toward the desired outcome. Prefer 3-6 steps, with a hard cap of 10.
+- Create a brand-new goal only when the latest exchange clearly establishes a sustained objective that is not already covered by an existing goal.
+- For brand-new goals, include desired_outcome, current_status, progress, and new_steps. New steps must be milestone-level progress toward the desired outcome, not a minute-by-minute checklist. A valid step should remain useful across multiple possible scenes and should not dictate the next physical action.
+- If a proposed goal or step would normally be completed within the current exchange or the next few exchanges, it is too granular to save. Leave it in the scene instead of turning it into saved state.
 - Use complete_steps only for existing steps that were clearly completed.
 - Do not remove completed goals. When all steps are complete, preserve the goal and update current_status to show that the desired outcome is now part of the ongoing story.
 
@@ -591,7 +593,7 @@ Return only this JSON shape:
     { "character": "CharacterName", "field": "scenePosition", "value": "inside the cabin near the fireplace" },
     { "character": "CharacterName", "field": "relationships._extras", "value": "Emma: Trusted confidante after sharing the secret" },
     { "character": "CharacterName", "field": "goals.Rebuild Trust", "value": "current_status: First honest conversation happened. | progress: 25 | complete_steps: 1" },
-    { "character": "CharacterName", "field": "goals.Escape the City", "value": "desired_outcome: Reach safety outside the city. | current_status: Goal newly established. | progress: 0 | new_steps: Step 1: Find transportation. Step 2: Gather supplies. Step 3: Leave before dawn." }
+    { "character": "CharacterName", "field": "goals.Escape the City", "value": "desired_outcome: Reach safety outside the city. | current_status: Goal newly established. | progress: 0 | new_steps: Step 1: Establish a safe route out. Step 2: Secure the resources needed for travel. Step 3: Leave before the city is locked down." }
   ]
 }
 

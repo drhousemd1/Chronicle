@@ -3270,6 +3270,7 @@ const findings: QualityFinding[] = [
 ];
 
 const stabilitySweep7Timestamp = "2026-04-01T03:35:00.000Z";
+const stateFeedbackLoopFixTimestamp = "2026-05-14T09:58:57.000Z";
 
 type FindingResolutionNote = {
   runId: string;
@@ -3864,10 +3865,10 @@ const runs: QualityScanRun[] = [
 export const qualityHubInitialRegistry: QualityHubRegistry = {
   meta: {
     version: QUALITY_HUB_VERSION,
-    registryVersion: 29,
+    registryVersion: 30,
     project: "Chronicle",
     createdAt,
-    lastUpdatedAt: stabilitySweep7Timestamp,
+    lastUpdatedAt: stateFeedbackLoopFixTimestamp,
     lastRunId: runIds.stabilitySweep7,
   },
   scanModules: [
@@ -4773,6 +4774,31 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
     },
   ],
   changeLog: [
+    {
+      id: "cl-20260514-001",
+      title: "Reduce goal-state feedback loops in roleplay prompt/state pipeline",
+      summary: "Roleplay Pipeline · API Call 2 now treats goals as durable milestones instead of scene chores, and API Call 1 renders open steps as background continuity instead of next-action commands",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "Lost-style playthroughs kept converging on repetitive tactical beats, especially door/check/secure actions, even when those details were not present in the story or character cards. The likely feedback loop was that post-turn state extraction could promote current-scene logistics into saved goal state, and later prompt assembly rendered open steps with wording that made them feel like next-turn instructions. Story transfer exports also included conversation history in the machine payload by default, which made downloaded story-card exports look like old dialogue was part of the reusable story package.",
+      plan: "Fix this at the state boundary instead of stacking more writer-facing prompt rules. Tighten API Call 2 so saved goals remain durable objectives, add a code-level guard against obvious task-level goal/step saves, soften API Call 1 goal rendering so steps behave as milestones, keep rigid/normal/flexible guidance intact, and remove conversation history from default story exports while preserving full-package import compatibility.",
+      changes: "Updated `supabase/functions/extract-character-updates/index.ts`:\n- Added `guidance_strength` to serialized character goals so API Call 2 can respect rigid/normal/flexible goal behavior.\n- Rewrote the character-goal extraction instructions so new goals must be sustained objectives and new steps must be milestone-level progress rather than minute-by-minute scene checklists.\n- Changed the output example from tactical travel chores to broader escape milestones.\n\nUpdated `src/components/chronicle/ChatInterfaceTab.tsx`:\n- Added near-duplicate goal matching so extracted goal updates merge into existing goals instead of creating same-meaning copies.\n- Added a conservative task-level guard that rejects obvious short tactical actions as brand-new goals and filters task-level generated steps before saving them.\n- Reworked Continue goal context from `STORY DIRECTION` / useful near-term direction language into `GOAL CONTINUITY` / open milestone language that explicitly says milestones are not commands or checklists.\n\nUpdated `src/services/llm.ts`:\n- Softened story/character goal rendering so rigid goals are durable long-range direction, not immediate checklists.\n- Renamed open goal steps to `Open milestone (background context, not a task command)` and clarified that the current response may move toward, hold around, or ignore the milestone based on scene logic and user agency.\n- Kept proactive mode focused on AI character initiative while clarifying that proactive does not mean completing the scene past a user-dependent moment.\n\nUpdated `src/lib/story-transfer.ts`:\n- Added `includeConversations` export control and defaulted reusable story exports to omit conversation history.\n- Preserved explicit full-package import/export compatibility for packages that intentionally include conversations.\n\nUpdated tests:\n- Added story-transfer coverage that default exports omit conversations.\n- Updated canonical prompt coverage to lock in open-milestone wording and prevent regression back to `Next open step`.",
+      filesAffected: [
+        "supabase/functions/extract-character-updates/index.ts",
+        "src/components/chronicle/ChatInterfaceTab.tsx",
+        "src/services/llm.ts",
+        "src/lib/story-transfer.ts",
+        "src/lib/story-transfer.test.ts",
+        "src/services/llm-canonical-coverage.test.ts",
+        "src/data/ui-audit-findings.ts"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["roleplay-pipeline", "api-call-2", "goal-state", "prompt-rendering", "story-transfer", "state-isolation"],
+      comments: [],
+      createdAt: stateFeedbackLoopFixTimestamp,
+      updatedAt: stateFeedbackLoopFixTimestamp,
+    },
     {
       id: "cl-20260510-002",
       title: "Refresh Admin tile editor styling and persistence",
