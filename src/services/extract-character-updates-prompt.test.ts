@@ -26,4 +26,10 @@ describe('extract-character-updates prompt guidance', () => {
     expect(source).not.toContain('goals.Long-Term Objective');
     expect(source).not.toContain('Reach the sustained outcome.');
   });
+
+  it('requires scenePosition updates when immediate placement is clear', () => {
+    expect(source).toContain('scenePosition: volatile immediate placement within the broad place');
+    expect(source).toContain('Do not leave scenePosition blank when the current exchange clearly establishes immediate placement.');
+    expect(source).toContain('Update it only when the exchange clearly establishes that the character has actually arrived in, entered, left, or relocated');
+  });
 });

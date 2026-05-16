@@ -561,8 +561,8 @@ ${supportedFields}
 
 --- FIELD GUIDANCE ---
 - currentMood: emotional/psychological state only, max 12 words. No body-part prose, clothing, objects, or action sequences.
-- location: broad place only. Do not change location to a destination merely because it was seen, mentioned, chosen, or approached.
-- scenePosition: immediate placement within the broad place, including proximity to important unreached targets when relevant. Preserve in-transit states such as still approaching, visible ahead, separated from, outside, or not yet reached.
+- location: broad place only. Do not change location to a destination merely because it was seen, mentioned, chosen, or approached. Update it only when the exchange clearly establishes that the character has actually arrived in, entered, left, or relocated to a different broad place.
+- scenePosition: volatile immediate placement within the broad place. Update it whenever the latest exchange clearly changes where the character is right now: approaching, standing outside, blocked at an entrance, partially inside, fully inside, separated, hiding, restrained, positioned near another character, or positioned near an important object. Preserve in-transit states such as still approaching, visible ahead, separated from, outside, or not yet reached. Do not leave scenePosition blank when the current exchange clearly establishes immediate placement.
 - appearance/clothing/background: update when the exchange explicitly reveals or changes the fact.
 - personality/tone/relationships/secrets/fears/keyLifeEvents: write "Label: Description" as the value. Prefer refining a matching existing entry over adding a duplicate.
 - custom sections: use sections.SectionTitle.ItemLabel only when the information belongs in an existing or clearly appropriate custom section. Do not use custom sections to avoid the structured fields above.

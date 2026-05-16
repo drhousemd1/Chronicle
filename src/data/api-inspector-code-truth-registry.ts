@@ -465,38 +465,38 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               tagType: "code-logic",
               icon: "🔧",
               purpose:
-                "Composes ordered message array: systemInstruction -> conversation history -> optional runtime directive system message -> final wrapped user message.",
+                "Composes ordered message array: systemInstruction -> up to 9 prior roleplay messages -> final wrapped user message.",
               whyItExists:
-                "The edge runtime depends on strict ordering so system rules, transcript, corrective directives, and the final user turn land in the right lane.",
+                "The edge runtime depends on strict ordering so system rules, the capped recent transcript, adaptive style text, and the final user turn land in the right lane without bloating the context window.",
               problemSolved:
-                "Prevents wrappers and runtime directives from being buried in the wrong message slot or omitted from the outbound payload.",
+                "Prevents wrappers and adaptive style text from being buried in the wrong message slot or omitted from the outbound payload.",
               fileRefs: [
                 { path: "src/services/llm.ts", lines: "831-898" },
               ],
               codeSourceLabel: "`messages` assembly in `generateRoleplayResponseStream`",
               promptViewEnabled: true,
-              codeSource: `const messages = [\n  { role: 'system', content: systemInstruction },\n  ...history,\n];\nif (runtimeDirectives) messages.push({ role: 'system', content: 'RUNTIME DIRECTIVES...' });\nmessages.push({ role: 'user', content: [SESSION ...] + lengthDirective + userMessage + regen + styleHint });`,
+              codeSource: `const historyMessages = conversation.messages.slice(-9);\nconst messages = [\n  { role: 'system', content: systemInstruction },\n  ...historyMessages,\n];\nmessages.push({ role: 'user', content: [SESSION ...] + adaptiveStyleDirective + userMessage + regen });`,
             },
             {
               id: "item-runtime-directive-message",
-              title: "Runtime directive system message",
+              title: "Adaptive style directive",
               tagType: "context-injection",
               icon: "📥",
               purpose:
-                "Injects anti-loop/runtime constraints as a dedicated high-priority system message rather than burying in user text.",
+                "Injects a narrow one-turn style directive into the final user wrapper only when recent assistant turns repeat the same length band, block shape, or short dialogue phrasing.",
               whyItExists:
-                "One-turn corrective directives need to stay separate from authored user prose so the model treats them as runtime policy, not in-scene dialogue.",
+                "The live writer needs a small corrective nudge when repetition is detected, but Chronicle should not add random style prompts or permanent extra rule blocks every turn.",
               problemSolved:
-                "Prevents anti-loop, anti-ping-pong, and stagnation recovery instructions from being diluted or mistaken for the user's actual turn.",
+                "Prevents repeated response shape from continuing while keeping the intervention scoped to objective repetition signals.",
               settingsGate:
-                "Conditional payload lane. The extra system message is only inserted when the runtime actually produced one-turn corrective directives.",
+                "Conditional final-user wrapper text. It is only present when the runtime detects repetition.",
               fileRefs: [
                 { path: "src/services/llm.ts", lines: "862-865" },
                 { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3032-3039, 3312-3316" },
               ],
-              codeSourceLabel: "Runtime directive wrapper",
+              codeSourceLabel: "Adaptive style directive text",
               promptViewEnabled: true,
-              codeSource: "RUNTIME DIRECTIVES (HIGH PRIORITY — follow these for THIS response only):\n${runtimeDirectives}",
+              codeSource: "[STYLE ADJUSTMENT FOR THIS TURN]\nRecent assistant responses are repeating ${reasons}. Vary the next response naturally...",
               crossRefs: [
                 {
                   badge: "2",
@@ -512,7 +512,7 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               tagType: "context-injection",
               icon: "📥",
               purpose:
-                "Wraps the outbound user turn with session counter, optional length directive, and regeneration instructions when the current turn type needs them.",
+                "Wraps the outbound user turn with session counter, optional adaptive style directive, and regeneration instructions when the current turn type needs them.",
               whyItExists:
                 "Chronicle uses lightweight one-turn wrappers for session position and special turn behavior without mutating stored transcript history.",
               problemSolved:
@@ -523,7 +523,7 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               ],
               codeSourceLabel: "Final user wrapper expression",
               promptViewEnabled: true,
-              codeSource: "[SESSION: Message N] + lengthDirective + userMessage + REGENERATION_DIRECTIVE_TEXT",
+              codeSource: "[SESSION: Message N] + adaptiveStyleDirective + userMessage + REGENERATION_DIRECTIVE_TEXT",
               crossRefs: [
                 {
                   badge: "1",
@@ -903,8 +903,8 @@ Only completed steps are persisted. Each row is tied to the source assistant gen
               promptViewEnabled: true,
               codeSource: `Field guidance:
 - currentMood: short emotional state only
-- location: broad place
-- scenePosition: immediate placement
+- location: broad place, updated only after actual arrival/entry/exit/relocation
+- scenePosition: volatile immediate placement, updated whenever the exchange establishes where the character is right now
 - structured sections use Label: Description
 - custom sections only when no structured field fits
 

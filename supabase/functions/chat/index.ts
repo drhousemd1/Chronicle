@@ -150,7 +150,7 @@ const DEBUG_CHAT_LOGS = Deno.env.get("DEBUG_CHAT_LOGS") === "true";
 
 const RECENT_HISTORY_WINDOW = 16;
 
-const TEMP_DIRECT = 0.55;
+const TEMP_DIRECT = 0.7;
 
 const BANNED_TROPE_REPLACEMENTS: Record<string, string> = {
   tsundere: 'sharp-edged',
@@ -210,7 +210,7 @@ function withDebugTiming(
 
 // ============================================================================
 // xAI call (shared) — `temperature` is now an explicit parameter so each pass
-// can use its own value. Direct path keeps 0.55, planner 0.15, writer 0.3.
+// can use its own value. Direct path keeps 0.7, planner 0.15, writer 0.3.
 // ============================================================================
 async function callXAI(
   messages: Message[],

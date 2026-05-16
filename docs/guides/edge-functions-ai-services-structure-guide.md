@@ -44,7 +44,7 @@ Core LLM integration service.
 
 | Export | Purpose |
 |--------|--------|
-| `generateRoleplayResponseStream()` | Streams AI responses for chat. Accepts optional `lengthDirective` (adaptive length control) and `sessionMessageCount` (precise session depth). |
+| `generateRoleplayResponseStream()` | Streams AI responses for chat. Sends the system prompt, up to 9 prior roleplay messages, and the current wrapped user turn. Accepts optional `adaptiveStyleDirective` text and `sessionMessageCount` (precise session depth). |
 | `getSystemInstruction()` | Builds the complete system prompt. Includes IN-SESSION TRAIT DYNAMICS, personality-driven NSFW pacing, control quick-reference at top of INSTRUCTIONS, and forward momentum AI-character canon rule. |
 | `buildCharacterStateBlock()` | Constructs character context for prompt injection |
 | `getCriticalDialogRules()` | Dialog formatting rules (first/third person POV) |
@@ -119,7 +119,7 @@ The system prompt in `getSystemInstruction()` is constructed in this order:
 | #4 | Default model migrated to `grok-4.3` | `supabase/functions/extract-character-updates/index.ts` | RESOLVED — 2026-05-09 |
 | #5 | Extraction prompt lacks analytical depth | `supabase/functions/extract-character-updates/index.ts` | RESOLVED — 2026-03-01 — Added 7-block analytical depth framework: psychological inference, progressive refinement, conflict resolution, split mode detection, tone inference, cross-field coherence, complete trait lifecycle |
 | #6 | Memory system incomplete — no long-term accumulation | `supabase/functions/extract-memory-events/index.ts`, `supabase/functions/compress-day-memories/index.ts`, `src/services/llm.ts`, `src/services/supabase-data.ts`, `src/types.ts`, `src/components/chronicle/ChatInterfaceTab.tsx` | RESOLVED — 2026-03-01 — Auto-extraction fires after every AI response, day-transition compression via compress-day-memories edge function (`grok-4.3`), entryType field distinguishes bullets from synopses, previousDayRef reset on conversation switch, memoriesLoaded guard prevents stale-state compression |
-| #7 | Response length anchoring — all responses same length | `src/services/llm.ts`, `src/components/chronicle/ChatInterfaceTab.tsx` | RESOLVED — 2026-03-01 — Added adaptive length directive system with responseLengthsRef tracking, removed RESPONSE SHAPE & LENGTH from antiRepetitionRules |
+| #7 | Response/style anchoring — responses repeat length, structure, or short dialogue phrasing | `src/services/llm.ts`, `src/components/chronicle/ChatInterfaceTab.tsx` | RESOLVED — Updated 2026-05-16 — Adaptive style directive now watches recent word counts, action/dialogue/thought order, and reused short quoted lines |
 | #8 | Forward momentum — AI re-narrates user-authored AI character content | `src/services/llm.ts`, `src/components/chronicle/ChatInterfaceTab.tsx` | RESOLVED — 2026-03-01 — Added AI-character canon rule to FORWARD MOMENTUM, canon note detection in handleSend |
 | #9 | Control rule reliability — AI generates for user-controlled characters | `src/services/llm.ts` | RESOLVED — 2026-03-01 — CAST filtered to AI-only, DO NOT GENERATE FOR quick-reference at top of INSTRUCTIONS |
 | #10 | No in-session trait evolution guidance | `src/services/llm.ts`, `src/types.ts` | RESOLVED — 2026-03-01 — Added IN-SESSION TRAIT DYNAMICS block, personality-driven NSFW pacing, adherenceScore/scoreTrend on PersonalityTrait |

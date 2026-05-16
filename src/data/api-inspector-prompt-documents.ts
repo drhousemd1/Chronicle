@@ -221,8 +221,8 @@ function makeScenario(uiOverrides: Partial<UiSettings> = {}): ScenarioData {
         id: "{{conversation.id}}",
         title: "{{conversation.title}}",
         messages: [
-          { id: "history-user", role: "user", text: "{{recent user message text}}", createdAt: now, day: 1, timeOfDay: "sunrise" },
-          { id: "history-ai", role: "assistant", text: "{{recent assistant response text}}", createdAt: now, day: 1, timeOfDay: "sunrise" },
+          { id: "history-user", role: "user", text: "{{prior user message inside the 9-message API Call 1 history cap}}", createdAt: now, day: 1, timeOfDay: "sunrise" },
+          { id: "history-ai", role: "assistant", text: "{{prior assistant message inside the 9-message API Call 1 history cap}}", createdAt: now, day: 1, timeOfDay: "sunrise" },
         ],
         currentDay: 1,
         currentTimeOfDay: "sunrise",
@@ -408,8 +408,8 @@ Character goals:
 
 --- FIELD GUIDANCE ---
 - currentMood: emotional/psychological state only, max 12 words. No body-part prose, clothing, objects, or action sequences.
-- location: broad place only. Do not change location to a destination merely because it was seen, mentioned, chosen, or approached.
-- scenePosition: immediate placement within the broad place, including proximity to important unreached targets when relevant. Preserve in-transit states such as still approaching, visible ahead, separated from, outside, or not yet reached.
+- location: broad place only. Do not change location to a destination merely because it was seen, mentioned, chosen, or approached. Update it only when the exchange clearly establishes that the character has actually arrived in, entered, left, or relocated to a different broad place.
+- scenePosition: volatile immediate placement within the broad place. Update it whenever the latest exchange clearly changes where the character is right now: approaching, standing outside, blocked at an entrance, partially inside, fully inside, separated, hiding, restrained, positioned near another character, or positioned near an important object. Preserve in-transit states such as still approaching, visible ahead, separated from, outside, or not yet reached. Do not leave scenePosition blank when the current exchange clearly establishes immediate placement.
 - appearance/clothing/background: update when the exchange explicitly reveals or changes the fact.
 - personality/tone/relationships/secrets/fears/keyLifeEvents: write "Label: Description" as the value. Prefer refining a matching existing entry over adding a duplicate.
 - custom sections: use sections.SectionTitle.ItemLabel only when the information belongs in an existing or clearly appropriate custom section. Do not use custom sections to avoid the structured fields above.
@@ -694,9 +694,9 @@ REQUEST BODY SHAPE
 {
   "messages": [
     { "role": "system", "content": "<the full system message below>" },
-    { "role": "user", "content": "{{recent user message text}}" },
-    { "role": "assistant", "content": "{{recent assistant response text}}" },
-    { "role": "user", "content": "[SESSION: Message {{sessionMessageCount}} of current session] {{lengthDirective}} {{latest user text}}{{optional regeneration request}}" }
+    { "role": "user", "content": "{{up to 9 prior roleplay messages before the current turn}}" },
+    { "role": "assistant", "content": "{{up to 9 prior roleplay messages before the current turn}}" },
+    { "role": "user", "content": "[SESSION: Message {{sessionMessageCount}} of current session] {{adaptiveStyleDirective when triggered}} {{latest user text}}{{optional regeneration request}}" }
   ],
   "modelId": "grok-4.3",
   "stream": true,
@@ -707,12 +707,21 @@ REQUEST BODY SHAPE
     "conversationId": "{{conversationId}}",
     "currentDay": "{{currentDay}}",
     "currentTimeOfDay": "{{currentTimeOfDay}}",
-    "activeSceneTitle": "{{activeScene.title}}",
-    "activeSceneTags": "{{activeScene.tags}}",
+    "activeSceneTitle": "{{canonicalActiveScene.title or null unless an explicit [SCENE] tag has been established}}",
+    "activeSceneTags": "{{canonicalActiveScene.tags or [] unless an explicit [SCENE] tag has been established}}",
     "aiCharacterNames": "{{AI-controlled character names}}",
     "userCharacterNames": "{{User-controlled character names}}",
     "characterSceneStates": "{{name/control/role/location/scenePosition/currentMood for all playable characters}}"
   }
+}
+
+GROK REQUEST BODY SENT BY CHAT EDGE FUNCTION
+{
+  "model": "grok-4.3",
+  "messages": "<same messages array shown above>",
+  "stream": true,
+  "temperature": 0.7,
+  "max_tokens": "{{1024 concise | 2048 balanced | 3072 detailed}}"
 }
 
 ================================================================================

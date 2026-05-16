@@ -182,10 +182,13 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('CONTROLLED BY: User');
     expect(prompt).toContain('SECTION 7 - DIALOG FORMATTING AND ROLEPLAY RULES');
     expect(prompt).toContain('--- DIALOG FORMATTING RULES ---');
+    expect(prompt).toContain("The order can vary naturally. Do not include action, dialogue, and thought in every block unless the scene actually calls for all three.");
     expect(prompt).toContain('--- USER-DEFINED DIALOG FORMATTING FROM STORY BUILDER ---');
     expect(prompt).toContain('--- INTERNAL THOUGHTS ---');
-    expect(prompt).toContain('Internal thoughts should have clear anchoring logic to something in the same response');
+    expect(prompt).toContain('Use them only when they reveal private conflict');
+    expect(prompt).toContain('Do not use internal thoughts to repeat obvious facts');
     expect(prompt).toContain('--- PHYSICAL LOGIC, VISIBILITY, AND CONTINUITY ---');
+    expect(prompt).toContain("If the user's message clearly indicates that only a specific character or set of characters can hear");
     expect(prompt).toContain("The user's action verb is canon, not a paraphrase target.");
     expect(prompt).toContain('SECTION 8 - CHAT SETTINGS PER USER PREFERENCE');
     expect(prompt).toContain('NARRATIVE POV: Third Person');

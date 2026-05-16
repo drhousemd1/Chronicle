@@ -3273,6 +3273,7 @@ const stabilitySweep7Timestamp = "2026-04-01T03:35:00.000Z";
 const stateFeedbackLoopFixTimestamp = "2026-05-14T09:58:57.000Z";
 const promptContaminationFixTimestamp = "2026-05-14T11:20:00.000Z";
 const roleplayPipelineInspectorReviewTimestamp = "2026-05-15T21:30:00.000-06:00";
+const roleplayPromptContinuityPatchTimestamp = "2026-05-16T03:37:14.000-06:00";
 
 type FindingResolutionNote = {
   runId: string;
@@ -3867,10 +3868,10 @@ const runs: QualityScanRun[] = [
 export const qualityHubInitialRegistry: QualityHubRegistry = {
   meta: {
     version: QUALITY_HUB_VERSION,
-    registryVersion: 30,
+    registryVersion: 31,
     project: "Chronicle",
     createdAt,
-    lastUpdatedAt: stateFeedbackLoopFixTimestamp,
+    lastUpdatedAt: roleplayPromptContinuityPatchTimestamp,
     lastRunId: runIds.stabilitySweep7,
   },
   scanModules: [
@@ -4776,6 +4777,36 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
     },
   ],
   changeLog: [
+    {
+      id: "cl-20260516-001",
+      title: "Tighten roleplay prompt continuity, repetition control, and scene-state extraction",
+      summary: "Roleplay Pipeline · API Call 1 now sends only the capped recent transcript, uses a slightly higher live roleplay temperature, avoids forcing every character block into the same action/dialogue/thought pattern, and has a real adaptive style directive again. API Call 2 now treats scenePosition as volatile immediate placement instead of leaving clear movement states blank.",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "Test 18 showed several linked runtime issues: API Call 1 was still sending all loaded conversation history instead of the intended capped recent window, the documented repetition-control path was effectively disabled, the required-format example was encouraging cookie-cutter action/dialogue/thought blocks, active visual scene data could be treated as canonical scene context, and API Call 2 was too willing to leave scenePosition empty even when the exchange clearly established immediate placement.",
+      plan: "Fix the runtime pipeline instead of adding another broad story-specific rule. Cap API Call 1 to the last 9 prior messages plus the current user turn, raise only the live roleplay temperature to 0.7, replace the rigid format skeleton with flexible modality guidance, restore a narrow adaptive style directive for objective repetition signals, stop passing starting-scene visuals as canonical active-scene state, and strengthen extractor guidance for broad location versus immediate scenePosition.",
+      changes: "Updated `src/services/llm.ts`:\n- Added an API Call 1 history cap of 9 prior roleplay messages plus the current wrapped user turn.\n- Renamed the optional per-turn text from `lengthDirective` to `adaptiveStyleDirective` in the generation function.\n- Changed the debug-visible Grok model request temperature mirror from `0.55` to `0.7`.\n- Replaced the rigid required-format example with flexible speaker-tag/modality guidance so character blocks do not all need action, dialogue, and thought in the same order.\n- Rewrote internal-thought guidance so thoughts reveal private conflict, withheld emotion, motive, uncertainty, desire, fear, or interpretation instead of repeating obvious facts.\n- Added a perception-boundary rule for user messages that clearly establish only specific characters can hear, see, feel, notice, or otherwise perceive something.\n\nUpdated `src/components/chronicle/ChatInterfaceTab.tsx`:\n- Replaced the disabled `getLengthDirective()` with `getAdaptiveStyleDirective()`.\n- The adaptive directive now fires only when recent assistant replies repeat the same length band, action/dialogue/thought order, or short quoted dialogue line.\n- Kept the directive as one-turn final-user-wrapper text instead of a permanent prompt block.\n- Stopped using the starting scene as canonical API Call 1 scene context; only explicit `[SCENE: tag]` output now sets canonical activeScene for the prompt/debug payload.\n\nUpdated edge/runtime prompts:\n- Raised the direct chat edge-function temperature from `0.55` to `0.7`; extractor/support temperatures remain unchanged.\n- Strengthened `extract-character-updates` field guidance so `location` changes only after actual arrival/entry/exit/relocation, while `scenePosition` updates whenever the current exchange clearly establishes immediate placement.\n\nUpdated Roleplay Pipeline review docs and tests:\n- Documented the capped API Call 1 history window, adaptive style directive, and direct Grok temperature in the prompt review modal.\n- Updated API Call 2 prompt review text to match the new scenePosition extraction guidance.\n- Updated canonical prompt, prompt-document, and extractor-prompt tests to lock in the new wording.",
+      filesAffected: [
+        "src/services/llm.ts",
+        "src/components/chronicle/ChatInterfaceTab.tsx",
+        "supabase/functions/chat/index.ts",
+        "supabase/functions/extract-character-updates/index.ts",
+        "src/data/api-inspector-prompt-documents.ts",
+        "src/data/api-inspector-code-truth-registry.ts",
+        "docs/guides/chat-interface-page-structure-guide.md",
+        "docs/guides/edge-functions-ai-services-structure-guide.md",
+        "src/services/llm-canonical-coverage.test.ts",
+        "src/services/extract-character-updates-prompt.test.ts",
+        "src/data/api-inspector-prompt-documents.test.ts",
+        "src/data/ui-audit-findings.ts"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["roleplay-pipeline", "api-call-1", "api-call-2", "prompt-assembly", "scene-position", "adaptive-style", "debugging"],
+      comments: [],
+      createdAt: roleplayPromptContinuityPatchTimestamp,
+      updatedAt: roleplayPromptContinuityPatchTimestamp,
+    },
     {
       id: "cl-20260515-001",
       title: "Add Roleplay Pipeline source-backed prompt review and review metadata",

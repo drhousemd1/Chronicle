@@ -1299,7 +1299,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   // Persistent map for placeholder name replacements (ensures consistency across the conversation)
   const placeholderMapRef = useRef<PlaceholderNameMap>({});
   
-  // Issue #7: Response length tracking for adaptive length directives
+  // Issue #7: Response tracking for narrow adaptive style directives
   const responseLengthsRef = useRef<number[]>([]);
   // Issue #7 + #10: Session message counter for precise session depth awareness
   const sessionMessageCountRef = useRef<number>(0);
@@ -1345,12 +1345,60 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     supabaseData.updateConversationMeta(conversationId, { currentDay: newDay, currentTimeOfDay: newTime });
   }, [conversationId, onUpdate, timeProgressionMode]);
 
-  // Issue #7: Compute length directive based on recent response pattern
-  const getLengthDirective = (): string => {
-    // Disabled for live roleplay. Paragraph-shape nudges were encouraging
-    // tactical/summary writing instead of letting the user's response-detail
-    // setting control length on its own.
-    return '';
+  // Issue #7: Compute a narrow style directive only when recent AI turns lock into a repeated pattern.
+  const getAdaptiveStyleDirective = (): string => {
+    const recentLengths = responseLengthsRef.current.slice(-3);
+    const recentAssistantMessages = (conversation?.messages || [])
+      .filter((message) => message.role === 'assistant' && message.text?.trim())
+      .slice(-3);
+
+    const hasLockedLength = recentLengths.length >= 3 && (() => {
+      const min = Math.min(...recentLengths);
+      const max = Math.max(...recentLengths);
+      return min > 0 && (max - min) / min <= 0.2;
+    })();
+
+    const getSegmentShape = (content: string): string => {
+      const markers = [
+        { label: 'action', index: content.indexOf('*') },
+        { label: 'dialogue', index: content.indexOf('"') },
+        { label: 'thought', index: content.indexOf('(') },
+      ]
+        .filter((marker) => marker.index >= 0)
+        .sort((a, b) => a.index - b.index)
+        .map((marker) => marker.label);
+      return markers.join('>');
+    };
+
+    const getMessageShape = (text: string): string => parseMessageSegments(text)
+      .map((segment) => getSegmentShape(segment.content))
+      .filter(Boolean)
+      .join('|');
+
+    const shapes = recentAssistantMessages.map((message) => getMessageShape(message.text)).filter(Boolean);
+    const hasLockedShape = shapes.length >= 3 && shapes.every((shape) => shape === shapes[0]);
+
+    const quotedLineCounts = new Map<string, number>();
+    recentAssistantMessages.forEach((message) => {
+      const quotes = Array.from(message.text.matchAll(/"([^"]{3,120})"/g))
+        .map((match) => match[1].toLowerCase().replace(/\s+/g, ' ').trim())
+        .filter((quote) => quote.split(/\s+/).length <= 14);
+      new Set(quotes).forEach((quote) => {
+        quotedLineCounts.set(quote, (quotedLineCounts.get(quote) || 0) + 1);
+      });
+    });
+    const hasRepeatedShortQuote = Array.from(quotedLineCounts.values()).some((count) => count >= 2);
+
+    if (!hasLockedLength && !hasLockedShape && !hasRepeatedShortQuote) return '';
+
+    const reasons = [
+      hasLockedLength ? 'similar response lengths' : '',
+      hasLockedShape ? 'the same action/dialogue/thought order' : '',
+      hasRepeatedShortQuote ? 'reused short dialogue phrasing' : '',
+    ].filter(Boolean).join(', ');
+
+    return `[STYLE ADJUSTMENT FOR THIS TURN]
+Recent assistant responses are repeating ${reasons}. Vary the next response naturally. Do not force every character block into the same action-dialogue-internal-thought sequence, and do not reuse recent distinctive sentence shapes or short reactive lines unless the scene specifically calls for that repetition.`;
   };
 
   // Ref to always hold current sideCharacters - avoids stale closure in async callbacks
@@ -2227,8 +2275,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   , [appData.scenes, activeSceneId]);
 
   // Canonical scene context is stricter than the visual background scene. Keyword
-  // detection can change the backdrop, but only explicit scene tags change what
-  // API Call 1 receives as the current narrative location.
+  // detection and starting-scene art can change the backdrop, but only explicit
+  // scene tags change what API Call 1 receives as the current narrative location.
   const canonicalActiveScene = useMemo(() => {
     for (let i = (conversation?.messages.length || 0) - 1; i >= 0; i--) {
       const match = conversation?.messages[i]?.text.match(/\[SCENE:\s*(.*?)\]/);
@@ -2240,7 +2288,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       if (scene) return scene;
     }
 
-    return appData.scenes.find(s => s.isStartingScene) || null;
+    return null;
   }, [appData.scenes, conversation?.messages]);
   
   // Auto-scroll effect - only scroll to bottom when user is already near bottom
@@ -4597,8 +4645,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       // Issue #8: Detect user-authored AI character content and prepend canon note
       const canonNote = buildCanonNote(input, canonNoteCharacters);
       
-      // Issue #7: Compute length directive and increment session counter
-      const lengthDirective = getLengthDirective();
+      // Issue #7: Compute adaptive style directive and increment session counter
+      const adaptiveStyleDirective = getAdaptiveStyleDirective();
       sessionMessageCountRef.current += 1;
 
       const llmInput = canonNote + input;
@@ -4612,7 +4660,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         activeMemories,
         memoriesEnabled,
         undefined,
-        lengthDirective || undefined,
+        adaptiveStyleDirective || undefined,
         sessionMessageCountRef.current,
         canonicalActiveScene,
         {
@@ -4647,7 +4695,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, placeholderMapRef.current);
       cleanedText = normalizedText;
       
-      // Issue #7: Track response word count for adaptive length directives
+      // Issue #7: Track response word count for adaptive style directives
       responseLengthsRef.current.push(cleanedText.split(/\s+/).length);
 
       const aiMessageId = uuid();
@@ -5124,7 +5172,7 @@ Do not acknowledge this instruction in your response.`;
       const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, placeholderMapRef.current);
       cleanedText = normalizedText;
       
-      // Track response length for adaptive length directives
+      // Track response length for adaptive style directives
       responseLengthsRef.current.push(cleanedText.split(/\s+/).length);
       
       const aiMessageId = uuid();

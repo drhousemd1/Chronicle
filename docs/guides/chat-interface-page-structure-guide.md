@@ -135,7 +135,7 @@ Primary function: `generateRoleplayResponseStream()` in `src/services/llm.ts` (~
 
 **Streaming**: Uses backend Edge Function `chat` with streaming response.
 
-**Adaptive Length Control**: `responseLengthsRef` tracks word counts of recent responses. `getLengthDirective()` detects locked length patterns (last 3 responses within 20% of each other) and injects a targeted length directive.
+**Adaptive Style Control**: `responseLengthsRef` tracks recent assistant word counts while `getAdaptiveStyleDirective()` also inspects recent assistant structure and short quoted lines. It injects a narrow one-turn style directive only when recent assistant responses lock into the same length band, action/dialogue/thought order, or repeated short dialogue phrasing.
 
 **AI-Character Canon Detection**: `buildCanonNote()` (exported from `llm.ts`) checks if user input contains `CharacterName:` prefixes matching AI-controlled characters. If detected, returns a `[CANON NOTE]` prefix to prevent re-narration. Applied in all three generation paths: `handleSend`, `handleRegenerateMessage`, and `handleContinueConversation` (continue checks the most recent user message in history).
 
@@ -320,7 +320,7 @@ Applied in both `renderCharacterCard()` (main characters) and `SideCharacterCard
 - **RESOLVED — Bug #1**: `buildCharacterStateBlock()` omits empty sections — 13/16 section types invisible to AI when empty. (2026-03-01)
 - **RESOLVED — Bug #4**: Wrong AI model used for character extraction. Current extraction model is `grok-4.3`. (2026-03-01, updated 2026-05-09)
 - **RESOLVED — Bug #5**: Extraction prompt lacks analytical depth — shallow analysis. (2026-03-01)
-- **RESOLVED — Bug #7**: Response length anchoring — all responses same length. Fixed with adaptive `responseLengthsRef` + `getLengthDirective()`. (2026-03-01)
+- **RESOLVED — Bug #7**: Response/style anchoring — responses can lock into the same length, block shape, or repeated short line. Fixed with adaptive `responseLengthsRef` + `getAdaptiveStyleDirective()` style checks. (Updated 2026-05-16)
 - **RESOLVED — Bug #8**: Forward momentum — AI re-narrates user-authored AI character content. Fixed with canon note detection in `handleSend` + system prompt rule. (2026-03-01)
 - **RESOLVED — Bug #9**: Control rule reliability — AI generates for user-controlled characters. Fixed by filtering CAST to AI-only + high-authority quick-reference. (2026-03-01)
 - **RESOLVED — Bug #10**: No in-session trait evolution guidance. Fixed with IN-SESSION TRAIT DYNAMICS block + `sessionMessageCountRef` + personality-driven NSFW pacing. (2026-03-01)
