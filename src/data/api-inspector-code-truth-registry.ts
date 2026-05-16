@@ -467,15 +467,15 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               purpose:
                 "Composes ordered message array: systemInstruction -> up to 9 prior roleplay messages -> final wrapped user message.",
               whyItExists:
-                "The edge runtime depends on strict ordering so system rules, the capped recent transcript, adaptive style text, and the final user turn land in the right lane without bloating the context window.",
+                "The edge runtime depends on strict ordering so system rules, the capped recent transcript, adaptive style text, the final user turn, and the response priority check land in the right lane without bloating the context window.",
               problemSolved:
-                "Prevents wrappers and adaptive style text from being buried in the wrong message slot or omitted from the outbound payload.",
+                "Prevents wrappers, adaptive style text, and the final priority check from being buried in the wrong message slot or omitted from the outbound payload.",
               fileRefs: [
                 { path: "src/services/llm.ts", lines: "831-898" },
               ],
               codeSourceLabel: "`messages` assembly in `generateRoleplayResponseStream`",
               promptViewEnabled: true,
-              codeSource: `const historyMessages = conversation.messages.slice(-9);\nconst messages = [\n  { role: 'system', content: systemInstruction },\n  ...historyMessages,\n];\nmessages.push({ role: 'user', content: [SESSION ...] + adaptiveStyleDirective + userMessage + regen });`,
+              codeSource: `const historyMessages = conversation.messages.slice(-9);\nconst messages = [\n  { role: 'system', content: systemInstruction },\n  ...historyMessages,\n];\nmessages.push({ role: 'user', content: [SESSION ...] + adaptiveStyleDirective + userMessage + regen + RESPONSE_PRIORITY_CHECK_TEXT });`,
             },
             {
               id: "item-runtime-directive-message",
@@ -512,18 +512,18 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               tagType: "context-injection",
               icon: "📥",
               purpose:
-                "Wraps the outbound user turn with session counter, optional adaptive style directive, and regeneration instructions when the current turn type needs them.",
+                "Wraps the outbound user turn with session counter, optional adaptive style directive, regeneration instructions when needed, and the final response priority check.",
               whyItExists:
-                "Chronicle uses lightweight one-turn wrappers for session position and special turn behavior without mutating stored transcript history.",
+                "Chronicle uses lightweight one-turn wrappers for session position, special turn behavior, and immediate-scene priority without mutating stored transcript history.",
               problemSolved:
-                "Prevents regenerate and session metadata from being lost or permanently baked into the visible conversation record.",
+                "Prevents regenerate/session metadata from being lost and keeps the current user message/current scene higher priority than dormant card or goal details.",
               fileRefs: [
                 { path: "src/services/llm.ts", lines: "867, 792-829" },
                 { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3030-3039" },
               ],
               codeSourceLabel: "Final user wrapper expression",
               promptViewEnabled: true,
-              codeSource: "[SESSION: Message N] + adaptiveStyleDirective + userMessage + REGENERATION_DIRECTIVE_TEXT",
+              codeSource: "[SESSION: Message N] + adaptiveStyleDirective + userMessage + REGENERATION_DIRECTIVE_TEXT + RESPONSE_PRIORITY_CHECK_TEXT",
               crossRefs: [
                 {
                   badge: "1",

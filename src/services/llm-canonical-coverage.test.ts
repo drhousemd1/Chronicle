@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { getSystemInstruction } from '@/services/llm';
+import { getSystemInstruction, RESPONSE_PRIORITY_CHECK_TEXT } from '@/services/llm';
 import { createDefaultScenarioData, getHardcodedTestCharacters, now, uid } from '@/utils';
 
 describe('llm canonical prompt coverage', () => {
@@ -188,8 +188,11 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('Use them only when they reveal private conflict');
     expect(prompt).toContain('Do not use internal thoughts to repeat obvious facts');
     expect(prompt).toContain('--- PHYSICAL LOGIC, VISIBILITY, AND CONTINUITY ---');
+    expect(prompt).toContain('If the user frames something as uncertain, partial, distant, suspected, or not yet confirmed');
     expect(prompt).toContain("If the user's message clearly indicates that only a specific character or set of characters can hear");
     expect(prompt).toContain("The user's action verb is canon, not a paraphrase target.");
+    expect(RESPONSE_PRIORITY_CHECK_TEXT).toContain('Write the next response from the immediate scene first.');
+    expect(RESPONSE_PRIORITY_CHECK_TEXT).toContain('Use story cards, character cards, memories, and goals as supporting context');
     expect(prompt).toContain('SECTION 8 - CHAT SETTINGS PER USER PREFERENCE');
     expect(prompt).toContain('NARRATIVE POV: Third Person');
     expect(prompt).toContain('NSFW INTENSITY: Normal');

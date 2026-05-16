@@ -137,6 +137,8 @@ Primary function: `generateRoleplayResponseStream()` in `src/services/llm.ts` (~
 
 **Adaptive Style Control**: `responseLengthsRef` tracks recent assistant word counts while `getAdaptiveStyleDirective()` also inspects recent assistant structure and short quoted lines. It injects a narrow one-turn style directive only when recent assistant responses lock into the same length band, action/dialogue/thought order, or repeated short dialogue phrasing.
 
+**Final Priority Check**: Every normal roleplay request appends `RESPONSE_PRIORITY_CHECK_TEXT` to the final user wrapper. This is a short recency-weighted reminder that the immediate user message and current scene beat outrank dormant card, memory, and goal details unless the beat gives those details a clear reason to surface.
+
 **AI-Character Canon Detection**: `buildCanonNote()` (exported from `llm.ts`) checks if user input contains `CharacterName:` prefixes matching AI-controlled characters. If detected, returns a `[CANON NOTE]` prefix to prevent re-narration. Applied in all three generation paths: `handleSend`, `handleRegenerateMessage`, and `handleContinueConversation` (continue checks the most recent user message in history).
 
 **Session Depth**: `sessionMessageCountRef` increments per exchange and is injected as `[SESSION: Message N]` for precise trait evolution guidance.

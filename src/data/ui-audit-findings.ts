@@ -3274,6 +3274,7 @@ const stateFeedbackLoopFixTimestamp = "2026-05-14T09:58:57.000Z";
 const promptContaminationFixTimestamp = "2026-05-14T11:20:00.000Z";
 const roleplayPipelineInspectorReviewTimestamp = "2026-05-15T21:30:00.000-06:00";
 const roleplayPromptContinuityPatchTimestamp = "2026-05-16T03:37:14.000-06:00";
+const responsePriorityCheckPatchTimestamp = "2026-05-16T04:18:00.000-06:00";
 
 type FindingResolutionNote = {
   runId: string;
@@ -3868,10 +3869,10 @@ const runs: QualityScanRun[] = [
 export const qualityHubInitialRegistry: QualityHubRegistry = {
   meta: {
     version: QUALITY_HUB_VERSION,
-    registryVersion: 31,
+    registryVersion: 32,
     project: "Chronicle",
     createdAt,
-    lastUpdatedAt: roleplayPromptContinuityPatchTimestamp,
+    lastUpdatedAt: responsePriorityCheckPatchTimestamp,
     lastRunId: runIds.stabilitySweep7,
   },
   scanModules: [
@@ -4777,6 +4778,32 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
     },
   ],
   changeLog: [
+    {
+      id: "cl-20260516-002",
+      title: "Add final response priority check and uncertainty continuity rule",
+      summary: "Roleplay Pipeline · API Call 1 now appends a short final priority check to every live roleplay turn so the immediate scene and latest user message outrank dormant card, memory, and goal details. The physical-logic section also now preserves user-framed uncertainty until the scene confirms it.",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "A first-response test still surfaced dormant background details and private character-card material even when the live scene had not activated them, while uncertain user-framed observations could be treated as confirmed facts.",
+      plan: "Avoid another broad catch-all prompt block. Add one concise final-turn priority reminder at the end of the final user wrapper, and separately add one uncertainty sentence to the existing physical logic/visibility section where knowledge and perception boundaries already live.",
+      changes: "Updated `src/services/llm.ts`:\n- Added `RESPONSE_PRIORITY_CHECK_TEXT` and appended it to the final user message wrapper on live roleplay calls.\n- Switched final user wrapper assembly to newline-separated blocks so session metadata, adaptive style text, user text/regeneration text, and the priority check remain visually distinct.\n- Added a separate physical-logic rule: if the user frames something as uncertain, partial, distant, suspected, or not yet confirmed, characters must treat it as uncertain until the scene confirms it.\n\nUpdated Roleplay Pipeline review docs and tests:\n- Documented the final priority check in the API Call 1 prompt review body and code-truth registry.\n- Updated canonical prompt coverage and prompt-document tests to lock in the new priority-check and uncertainty wording.\n- Updated chat/edge guide notes so future audits know this is a final-turn wrapper, not another permanent system-prompt checklist.",
+      filesAffected: [
+        "src/services/llm.ts",
+        "src/data/api-inspector-prompt-documents.ts",
+        "src/data/api-inspector-code-truth-registry.ts",
+        "docs/guides/chat-interface-page-structure-guide.md",
+        "docs/guides/edge-functions-ai-services-structure-guide.md",
+        "src/services/llm-canonical-coverage.test.ts",
+        "src/data/api-inspector-prompt-documents.test.ts",
+        "src/data/ui-audit-findings.ts"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["roleplay-pipeline", "api-call-1", "prompt-assembly", "priority-check", "physical-logic", "uncertainty"],
+      comments: [],
+      createdAt: responsePriorityCheckPatchTimestamp,
+      updatedAt: responsePriorityCheckPatchTimestamp,
+    },
     {
       id: "cl-20260516-001",
       title: "Tighten roleplay prompt continuity, repetition control, and scene-state extraction",
