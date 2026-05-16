@@ -189,7 +189,7 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain("The user's action verb is canon, not a paraphrase target.");
     expect(prompt).toContain('SECTION 8 - CHAT SETTINGS PER USER PREFERENCE');
     expect(prompt).toContain('NARRATIVE POV: Third Person');
-    expect(prompt).toContain('NSFW INTENSITY: Natural');
+    expect(prompt).toContain('NSFW INTENSITY: Normal');
     expect(prompt).toContain('RESPONSE DETAIL: Balanced');
     expect(prompt).toContain('REALISM MODE: Off');
     expect(prompt).not.toContain('STRICT WRITING CONTRACT:');
@@ -320,10 +320,95 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).not.toContain('NARRATIVE POV: Third Person');
     expect(prompt).not.toContain('CHARACTER DISCOVERY: Proactive');
     expect(prompt).not.toContain('PROACTIVE AI MODE: On');
-    expect(prompt).not.toContain('NSFW INTENSITY: Natural');
+    expect(prompt).not.toContain('NSFW INTENSITY: Normal');
     expect(prompt).not.toContain('RESPONSE DETAIL: Concise');
     expect(prompt).not.toContain('RESPONSE DETAIL: Balanced');
     expect(prompt).not.toContain('REALISM MODE: Off');
+  });
+
+  it('keeps narrative POV examples generic and story-agnostic', () => {
+    const appData = createDefaultScenarioData();
+    const [aiCharacter, userCharacter] = getHardcodedTestCharacters();
+
+    aiCharacter.name = 'Mara';
+    aiCharacter.controlledBy = 'AI';
+    aiCharacter.characterRole = 'Main';
+    aiCharacter.roleDescription = 'A guide traveling with the group.';
+    aiCharacter.tags = 'guide, practical';
+    aiCharacter.location = 'Roadside';
+    aiCharacter.currentMood = 'Focused';
+    aiCharacter.physicalAppearance = {
+      ...aiCharacter.physicalAppearance,
+      hairColor: 'Black',
+      eyeColor: 'Brown',
+      breastSize: '',
+      genitalia: '',
+    };
+    aiCharacter.currentlyWearing = {
+      ...aiCharacter.currentlyWearing,
+      top: 'Travel jacket',
+      bottom: 'Work pants',
+      undergarments: '',
+      miscellaneous: '',
+    };
+    aiCharacter.preferredClothing = {
+      ...aiCharacter.preferredClothing,
+      casual: 'Layered travel clothes',
+      work: '',
+      sleep: '',
+      undergarments: '',
+      miscellaneous: '',
+    };
+    aiCharacter.sections = [];
+
+    userCharacter.name = 'Theo';
+    userCharacter.controlledBy = 'User';
+    userCharacter.characterRole = 'Main';
+    userCharacter.roleDescription = 'The user-controlled traveler.';
+    userCharacter.tags = 'traveler';
+    userCharacter.sections = [];
+
+    appData.characters = [aiCharacter, userCharacter];
+    appData.world.core.scenarioName = 'Neutral Route';
+    appData.world.core.briefDescription = 'A group travels through a quiet region.';
+    appData.world.core.storyPremise = 'The scene follows cautious movement and ordinary decisions.';
+    appData.world.core.structuredLocations = [];
+    appData.world.core.storyGoals = [];
+    appData.world.core.customWorldSections = [];
+    appData.contentThemes = {
+      characterTypes: [],
+      storyType: null,
+      genres: [],
+      origin: [],
+      triggerWarnings: [],
+      customTags: [],
+    };
+    appData.scenes = [];
+
+    const thirdPersonPrompt = getSystemInstruction(
+      { ...appData, uiSettings: { ...appData.uiSettings!, narrativePov: 'third' } },
+      1,
+      'day',
+      [],
+      true,
+      null,
+    );
+    const firstPersonPrompt = getSystemInstruction(
+      { ...appData, uiSettings: { ...appData.uiSettings!, narrativePov: 'first' } },
+      1,
+      'day',
+      [],
+      true,
+      null,
+    );
+
+    for (const prompt of [thirdPersonPrompt, firstPersonPrompt]) {
+      expect(prompt).toContain('Format pattern: CharacterName');
+      expect(prompt).not.toContain('Correct example: Ashley');
+      expect(prompt).not.toContain("I'm here!");
+      expect(prompt).not.toMatch(/\bAshley\b|\bSarah\b|\bJames\b/);
+      expect(prompt).not.toMatch(/fought against the wind|lost sight/i);
+    }
   });
 
   it('keeps mechanical planning labels out of the writer-facing system prompt', () => {

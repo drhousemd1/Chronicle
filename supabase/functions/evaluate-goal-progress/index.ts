@@ -14,6 +14,7 @@ type EvaluationRequest = {
   flexibility: 'rigid' | 'normal' | 'flexible';
   currentDay?: number;
   currentTimeOfDay?: string;
+  debugTrace?: boolean;
 };
 
 type StepUpdate = {
@@ -48,7 +49,7 @@ serve(async (req) => {
     }
 
     const body: EvaluationRequest = await req.json();
-    const { userMessage, aiResponse, pendingSteps, currentDay, currentTimeOfDay } = body;
+    const { userMessage, aiResponse, pendingSteps, currentDay, currentTimeOfDay, debugTrace = false } = body;
 
     if (!userMessage || !pendingSteps?.length) {
       return new Response(JSON.stringify({ stepUpdates: [] }), {
@@ -93,27 +94,39 @@ Respond in JSON format ONLY:
 
 Set "completed" to true ONLY when the step's objective has been clearly achieved or fulfilled.`;
 
+    const xaiRequestBody = {
+      model: "grok-4.3",
+      messages: [
+        { role: "system", content: "You are a precise story goal classifier. Respond only in valid JSON." },
+        { role: "user", content: classificationPrompt },
+      ],
+      temperature: 0.3,
+      max_tokens: 1024,
+    };
+    const debugPayload = debugTrace === true
+      ? {
+          modelRequest: {
+            endpoint: "https://api.x.ai/v1/chat/completions",
+            method: "POST",
+            capturedAt: Date.now(),
+            requestBody: xaiRequestBody,
+          },
+        }
+      : null;
+
     const response = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${XAI_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model: "grok-4.3",
-        messages: [
-          { role: "system", content: "You are a precise story goal classifier. Respond only in valid JSON." },
-          { role: "user", content: classificationPrompt },
-        ],
-        temperature: 0.3,
-        max_tokens: 1024,
-      }),
+      body: JSON.stringify(xaiRequestBody),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`[evaluate-goal-progress] xAI error: ${response.status} - ${errorText}`);
-      return new Response(JSON.stringify({ stepUpdates: [], error: 'Classification failed' }), {
+      return new Response(JSON.stringify({ stepUpdates: [], error: 'Classification failed', ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}) }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
@@ -127,7 +140,7 @@ Set "completed" to true ONLY when the step's objective has been clearly achieved
       parsed = JSON.parse(jsonMatch ? jsonMatch[0] : content);
     } catch {
       console.error('[evaluate-goal-progress] Failed to parse classification response:', content);
-      return new Response(JSON.stringify({ stepUpdates: [] }), {
+      return new Response(JSON.stringify({ stepUpdates: [], ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}) }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
@@ -144,7 +157,7 @@ Set "completed" to true ONLY when the step's objective has been clearly achieved
 
     console.log(`[evaluate-goal-progress] Classified ${stepUpdates.length} steps, ${stepUpdates.filter(u => u.completed).length} completed`);
 
-    return new Response(JSON.stringify({ stepUpdates }), {
+    return new Response(JSON.stringify({ stepUpdates, ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}) }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
 

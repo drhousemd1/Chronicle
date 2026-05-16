@@ -115,14 +115,47 @@ export type ChatDebugTrace = {
     changed: boolean;
   };
   timing?: ChatDebugTiming;
+  modelRequest?: ChatDebugRequestRecord['modelRequest'];
+  modelRequests?: ChatDebugRequestRecord['modelRequests'];
   notes: string[];
+};
+
+export type ChatDebugRequestRecord = {
+  id: string;
+  label: string;
+  apiCallGroup: 'call_1' | 'call_2' | 'support';
+  endpoint: string;
+  method?: string;
+  capturedAt: number;
+  status?: 'sent' | 'completed' | 'error';
+  requestBody: unknown;
+  modelRequest?: {
+    endpoint: string;
+    method?: string;
+    requestBody: unknown;
+    capturedAt?: number;
+    notes?: string[];
+  };
+  modelRequests?: Array<{
+    label?: string;
+    endpoint: string;
+    method?: string;
+    requestBody: unknown;
+    capturedAt?: number;
+    notes?: string[];
+  }>;
+  responseBody?: unknown;
+  error?: string;
+  notes?: string[];
 };
 
 export type StoredChatDebugTrace = {
   messageId: string;
   generationId: string;
   capturedAt: number;
-  trace: ChatDebugTrace;
+  trace?: ChatDebugTrace | null;
+  call1Request?: ChatDebugRequestRecord;
+  supportCalls?: ChatDebugRequestRecord[];
 };
 
 export type StoredChatDebugTraceMap = Record<string, StoredChatDebugTrace>;

@@ -3271,6 +3271,8 @@ const findings: QualityFinding[] = [
 
 const stabilitySweep7Timestamp = "2026-04-01T03:35:00.000Z";
 const stateFeedbackLoopFixTimestamp = "2026-05-14T09:58:57.000Z";
+const promptContaminationFixTimestamp = "2026-05-14T11:20:00.000Z";
+const roleplayPipelineInspectorReviewTimestamp = "2026-05-15T21:30:00.000-06:00";
 
 type FindingResolutionNote = {
   runId: string;
@@ -4774,6 +4776,58 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
     },
   ],
   changeLog: [
+    {
+      id: "cl-20260515-001",
+      title: "Add Roleplay Pipeline source-backed prompt review and review metadata",
+      summary: "Roleplay Pipeline · Added API Call 1 and API Call 2 + Support Calls prompt buttons to the API Inspector, wired them into the existing prompt/source modal, backed the modal text with current prompt renderers/source prompt bodies instead of abbreviated blueprints, exposed every chat-setting injection branch, and added typed LLM/Codex `Last reviewed` metadata to reviewed pipeline cards.",
+      severity: "feature" as const,
+      status: "completed" as const,
+      problem: "The Roleplay Pipeline inspector mapped runtime cards but did not provide a quick operator-facing view of the two main prompt families, and card freshness could not distinguish LLM/Codex prompt review timestamps from Quality Hub scan timestamps.",
+      plan: "Keep this as UI/tooling only. Add source-backed prompt documents under the API Inspector data layer, reuse the existing modal path, introduce typed review metadata for inspector cards, render a `Last reviewed` footer from data, and avoid changing the runtime prompt/state behavior.",
+      changes: "Updated `src/pages/style-guide/api-inspector.tsx`:\n- Added header buttons for `API Call 1` and `API Call 2 + Support Calls` in the same right-aligned action cluster as View Legend.\n- Styled the API buttons with the exact same dark shell, radius, typography, hover, and shadow treatment as the View Legend button.\n- Reused the existing prompt/source modal for full current prompt display.\n- Copied typed review metadata into the render model and displayed a `Last reviewed` card footer.\n- Added responsive header styles so the action cluster wraps cleanly only when the available width requires it.\n\nUpdated `src/services/llm.ts`:\n- Renamed the normal NSFW branch from `NSFW INTENSITY: Natural` to `NSFW INTENSITY: Normal` so the runtime prompt matches the chat settings UI/data model.\n\nUpdated `src/data/api-inspector-prompt-documents.ts`:\n- Changed the API Call buttons from abbreviated blueprints to source-backed current prompt documents.\n- Generated the API Call 1 document through `getSystemInstruction()` with placeholder runtime values, so the modal shows the actual current system-message renderer output rather than a hand-written summary.\n- Replaced repeated full Section 8 dumps with a clean chat-setting injection matrix grouped by setting.\n- Included every current chat-setting branch: first/third person POV, character discovery on/off, proactive AI mode on/off, NSFW normal/high, response detail concise/balanced/detailed with max-token caps, and realism mode off/on.\n- Added current prompt bodies/request shapes for API Call 2 character state sync plus memory extraction, side-character generation, avatar prompt optimization, character/world field enhancement, regenerate/continue wrappers, and adjacent image/support calls.\n\nUpdated inspector data:\n- Added shared review metadata type and initial Codex review timestamp.\n- Annotated representative live-map and Phase 1 audit cards with `Last reviewed` metadata.\n\nUpdated tests:\n- Added a registry test covering required prompt document ids, every chat-setting branch, source-backed current prompt content, and regression checks against the old blueprint/stub wording.\n- Updated canonical prompt coverage so the normal NSFW branch label cannot drift away from the UI label again.",
+      filesAffected: [
+        "src/pages/style-guide/api-inspector.tsx",
+        "src/data/api-inspector-live-map.ts",
+        "src/data/api-inspector-phase1-audit.ts",
+        "src/data/api-inspector-review.ts",
+        "src/data/api-inspector-prompt-documents.ts",
+        "src/data/api-inspector-prompt-documents.test.ts",
+        "src/data/ui-audit-findings.ts"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["roleplay-pipeline", "api-inspector", "api-call-1", "api-call-2", "prompt-review", "review-metadata"],
+      comments: [],
+      createdAt: roleplayPipelineInspectorReviewTimestamp,
+      updatedAt: roleplayPipelineInspectorReviewTimestamp,
+    },
+    {
+      id: "cl-20260514-002",
+      title: "Remove roleplay prompt contamination and harden goal update parsing",
+      summary: "Roleplay Pipeline · API Call 1 no longer sends Ashley/storm dialogue examples, supporting extractors no longer include cabin-shaped examples, generated goal steps now have positive milestone guidance, and goal update parsing prevents malformed `new_steps` output from becoming durable current status",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "Repeated Lost test playthroughs kept converging on very similar post-opening dialogue, including Ashley-style presence calls and cabin/door/security beats. Code review found a proven prompt contaminant in API Call 1: the Narrative POV section used a real `Ashley` storm example ending with `\"I'm here!\"`. The supporting memory and character extractors also contained concrete James/Ashley/cabin examples, and the client-side goal updater could let malformed `progress | complete_steps | new_steps` values leak into an existing goal's `currentStatus`, creating a same-conversation feedback loop.",
+      plan: "Treat this as a state/prompt contamination fix rather than another story-specific writing rule. Remove story-shaped examples from writer-facing and extractor prompts, give API Call 2 a positive specification for good generated goal milestones, move goal parsing into a tested helper, preserve existing goal status unless API Call 2 explicitly sends `current_status`, ignore `new_steps` for existing goals, and add regression tests so these contaminants cannot silently return.",
+      changes: "Updated `src/services/llm.ts`:\n- Replaced the Narrative POV first-person and third-person examples with generic `CharacterName` format patterns.\n- Removed the `Ashley`, wind, lost-sight, and `\"I'm here!\"` example text from API Call 1 prompt assembly.\n\nUpdated supporting extractors:\n- Replaced the memory extractor's James/Ashley JSON example with a generic durable-event instruction.\n- Replaced the character-update extractor's cabin/fireplace and named relationship/goal examples with generic placeholders.\n- Expanded the character-goal extractor with positive milestone guidance: `desired_outcome` is the sustained result, and generated steps should create durable shifts in knowledge, relationship, access, commitment, capability, status, or circumstances.\n- Added a structural-only relationship-dynamic example using `CharacterName` / `OtherCharacter` placeholders and explicit instructions not to copy its subject matter, genre, relationship type, setting, kink, or wording into unrelated stories.\n\nUpdated `src/lib/goal-state-guard.ts` and `src/components/chronicle/ChatInterfaceTab.tsx`:\n- Added a tested parser for extracted goal update values.\n- Preserved existing goal status when API Call 2 does not explicitly send `current_status`.\n- Applied `complete_steps` without allowing `new_steps` text to become an existing goal's status.\n- Kept task-level goal filtering centralized so short scene logistics are still rejected as saved goals or generated milestone steps.\n\nUpdated tests:\n- Added coverage that neutral API Call 1 prompt assembly does not include the old Ashley/Sarah/James/storm example language.\n- Added goal parser coverage for malformed tactical `new_steps` strings and durable milestone filtering.\n- Added extractor-prompt coverage for the positive milestone guidance and generic structural example.",
+      filesAffected: [
+        "src/services/llm.ts",
+        "supabase/functions/extract-memory-events/index.ts",
+        "supabase/functions/extract-character-updates/index.ts",
+        "src/lib/goal-state-guard.ts",
+        "src/lib/goal-state-guard.test.ts",
+        "src/components/chronicle/ChatInterfaceTab.tsx",
+        "src/services/extract-character-updates-prompt.test.ts",
+        "src/services/llm-canonical-coverage.test.ts",
+        "src/data/ui-audit-findings.ts"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["roleplay-pipeline", "api-call-1", "api-call-2", "prompt-contamination", "goal-state", "state-isolation"],
+      comments: [],
+      createdAt: promptContaminationFixTimestamp,
+      updatedAt: promptContaminationFixTimestamp,
+    },
     {
       id: "cl-20260514-001",
       title: "Reduce goal-state feedback loops in roleplay prompt/state pipeline",

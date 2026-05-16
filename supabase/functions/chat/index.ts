@@ -80,6 +80,15 @@ type RoleplayDebugTiming = {
   fallbackMs: number | null;
 };
 
+type RoleplayDebugModelRequest = {
+  label?: string;
+  endpoint: string;
+  method?: string;
+  capturedAt?: number;
+  requestBody: unknown;
+  notes?: string[];
+};
+
 type RoleplayDebugTrace = {
   version: 1;
   pipeline: 'roleplay_v2' | 'direct';
@@ -124,6 +133,8 @@ type RoleplayDebugTrace = {
     changed: boolean;
   };
   timing: RoleplayDebugTiming;
+  modelRequest?: RoleplayDebugModelRequest;
+  modelRequests?: RoleplayDebugModelRequest[];
   notes: string[];
 };
 
@@ -532,6 +543,29 @@ function jsonResponseAsCompletion(
 // ============================================================================
 // Direct-mode handler (preserves legacy behavior, including 403 retry)
 // ============================================================================
+function buildXaiDebugModelRequest(
+  messages: Message[],
+  modelId: string,
+  stream: boolean,
+  maxTokens: number,
+  temperature: number,
+  notes?: string[],
+): RoleplayDebugModelRequest {
+  return {
+    endpoint: "https://api.x.ai/v1/chat/completions",
+    method: "POST",
+    capturedAt: Date.now(),
+    requestBody: {
+      model: modelId,
+      messages,
+      stream,
+      temperature,
+      max_tokens: maxTokens,
+    },
+    notes,
+  };
+}
+
 async function handleDirect(
   messages: Message[],
   modelId: string,
@@ -541,8 +575,12 @@ async function handleDirect(
   debugTrace: RoleplayDebugTrace | null = null,
 ): Promise<Response> {
   const directStartedAt = performance.now();
+  const primaryModelRequest = buildXaiDebugModelRequest(messages, modelId, stream, maxTokens, TEMP_DIRECT);
   const result = await callXAI(messages, modelId, stream, maxTokens, TEMP_DIRECT);
   let timedDebugTrace = withDebugTiming(debugTrace, { directMs: elapsedMs(directStartedAt) });
+  if (timedDebugTrace) {
+    timedDebugTrace = { ...timedDebugTrace, modelRequest: primaryModelRequest };
+  }
 
   if (result.ok) {
     if (stream) {
@@ -571,8 +609,23 @@ async function handleDirect(
       messages[messages.length - 1],
     ];
     const fallbackStartedAt = performance.now();
+    const retryModelRequest = buildXaiDebugModelRequest(
+      redirectMessages,
+      modelId,
+      stream,
+      maxTokens,
+      TEMP_DIRECT,
+      ["Primary chat request received 403; this retry request was the final Grok request."],
+    );
     const retry = await callXAI(redirectMessages, modelId, stream, maxTokens, TEMP_DIRECT);
     timedDebugTrace = withDebugTiming(timedDebugTrace, { fallbackMs: elapsedMs(fallbackStartedAt) });
+    if (timedDebugTrace) {
+      timedDebugTrace = {
+        ...timedDebugTrace,
+        modelRequest: retryModelRequest,
+        modelRequests: [{ ...primaryModelRequest, label: 'Primary request before fallback retry' }],
+      };
+    }
     if (retry.ok) {
       if (stream) {
         return await streamSanitizedXAICompletion(retry.response.body, modelId, {

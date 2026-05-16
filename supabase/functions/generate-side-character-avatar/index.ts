@@ -9,12 +9,22 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
 
+type DebugModelRequest = {
+  label?: string;
+  endpoint: string;
+  method?: string;
+  capturedAt?: number;
+  requestBody: unknown;
+  notes?: string[];
+};
+
 // Step 1: Generate optimized image prompt using Grok
 async function generateOptimizedPrompt(
   characterName: string,
   avatarPrompt: string,
   stylePrompt: string | null,
-  negativePrompt: string | null
+  negativePrompt: string | null,
+  debugModelRequests?: DebugModelRequest[],
 ): Promise<string> {
   const XAI_API_KEY = Deno.env.get("XAI_API_KEY");
   if (!XAI_API_KEY) throw new Error("XAI_API_KEY not configured");
@@ -40,21 +50,30 @@ ${negativePrompt ? `Avoid: ${negativePrompt}` : ''}
 
 Write a focused prompt under ${maxLength} characters:`;
 
+  const xaiRequestBody = {
+    model: 'grok-4.3', // GROK ONLY
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt }
+    ],
+    max_tokens: 300,
+    temperature: 0.7
+  };
+  debugModelRequests?.push({
+    label: "Avatar prompt optimization",
+    endpoint: "https://api.x.ai/v1/chat/completions",
+    method: "POST",
+    capturedAt: Date.now(),
+    requestBody: xaiRequestBody,
+  });
+
   const response = await fetch("https://api.x.ai/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${XAI_API_KEY}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      model: 'grok-4.3', // GROK ONLY
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
-      ],
-      max_tokens: 300,
-      temperature: 0.7
-    }),
+    body: JSON.stringify(xaiRequestBody),
   });
 
   if (!response.ok) {
@@ -108,7 +127,7 @@ serve(async (req) => {
     }
     const rateHeaders = getRateLimitHeaders(rateDecision);
 
-    const { avatarPrompt, characterName, modelId, stylePrompt, negativePrompt } = await req.json();
+    const { avatarPrompt, characterName, modelId, stylePrompt, negativePrompt, debugTrace = false } = await req.json();
     
     if (!avatarPrompt) {
       return new Response(JSON.stringify({ error: "avatarPrompt is required" }), {
@@ -121,12 +140,14 @@ serve(async (req) => {
 
     // Step 1: Generate optimized prompt using Grok
     let optimizedPrompt: string;
+    const debugModelRequests: DebugModelRequest[] = [];
     try {
       optimizedPrompt = await generateOptimizedPrompt(
         characterName,
         avatarPrompt,
         stylePrompt || null,
-        negativePrompt || null
+        negativePrompt || null,
+        debugTrace === true ? debugModelRequests : undefined,
       );
       console.log(`[generate-avatar] Optimized prompt (${optimizedPrompt.length} chars):`, optimizedPrompt);
     } catch (err) {
@@ -152,17 +173,28 @@ serve(async (req) => {
       throw new Error("XAI_API_KEY not configured. Please add your Grok API key in settings.");
     }
 
+    const imageRequestBody = {
+      model: 'grok-imagine-image', // GROK ONLY
+      prompt: optimizedPrompt,
+      n: 1,
+    };
+    if (debugTrace === true) {
+      debugModelRequests.push({
+        label: "Avatar image generation",
+        endpoint: "https://api.x.ai/v1/images/generations",
+        method: "POST",
+        capturedAt: Date.now(),
+        requestBody: imageRequestBody,
+      });
+    }
+
     const response = await fetch("https://api.x.ai/v1/images/generations", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${XAI_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model: 'grok-imagine-image', // GROK ONLY
-        prompt: optimizedPrompt,
-        n: 1,
-      }),
+      body: JSON.stringify(imageRequestBody),
     });
 
     if (!response.ok) {
@@ -205,7 +237,10 @@ serve(async (req) => {
 
     console.log(`Avatar generated for ${characterName} via xAI`);
 
-    return new Response(JSON.stringify({ imageUrl }), {
+    return new Response(JSON.stringify({
+      imageUrl,
+      ...(debugTrace === true ? { chronicle_debug_payload: { modelRequests: debugModelRequests } } : {}),
+    }), {
       headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
     });
 

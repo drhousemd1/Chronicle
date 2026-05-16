@@ -1,3 +1,8 @@
+import {
+  ROLEPLAY_PIPELINE_REVIEW_20260515,
+  type ApiInspectorReview,
+} from "./api-inspector-review";
+
 export type ApiInspectorFamily =
   | "all"
   | "live-chat"
@@ -38,6 +43,7 @@ export interface ApiInspectorItem {
   settingsGate?: string;
   fileRefs: ApiInspectorFileRef[];
   bullets: ApiInspectorBullet[];
+  review?: ApiInspectorReview;
   meta?: string[];
 }
 
@@ -175,6 +181,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                   bullet("State payload", "World context, structured locations, cast cards, goals, temporal state, and memories are serialized into the same recurring instruction body."),
                   bullet("Theme layer", "Content themes and dialog-formatting rules are injected here so the live call sees the current authored tone and formatting contract."),
                 ],
+                review: ROLEPLAY_PIPELINE_REVIEW_20260515,
                 meta: ["system prompt", "world context", "cast serialization"],
               },
               {
@@ -192,6 +199,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                   bullet("Pipeline", "The local working tree now posts pipeline=direct instead of the older roleplay_v2 planner/writer lane."),
                   bullet("Metadata", "roleplayContext still carries conversation id, day, time of day, active scene, and AI-vs-user character ownership metadata."),
                 ],
+                review: ROLEPLAY_PIPELINE_REVIEW_20260515,
                 meta: ["/functions/v1/chat", "stream=true", "pipeline=direct"],
               },
             ],
@@ -271,6 +279,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                   bullet("Separate concern", "This is why API Call 2 matters: Chronicle can keep canonical state fresh even when older dialogue falls out of the raw context window."),
                   bullet("Generation-aware", "The queued work carries message and generation lineage so stale regenerate branches do not overwrite newer canon."),
                 ],
+                review: ROLEPLAY_PIPELINE_REVIEW_20260515,
                 meta: ["async follow-up", "generation-aware"],
               },
             ],
@@ -296,6 +305,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                   bullet("Input scope", "This pass is intentionally narrow: it focuses on the new assistant turn and the current conversation/session metadata."),
                   bullet("Purpose", "It keeps old but still relevant events alive after the raw transcript window eventually stops carrying them."),
                 ],
+                review: ROLEPLAY_PIPELINE_REVIEW_20260515,
                 meta: ["memory extraction", "continuity"],
               },
               {
@@ -312,6 +322,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                   bullet("Ledgered output", "Completed steps are persisted with source message and source generation lineage instead of being treated like fuzzy ambient progress."),
                   bullet("Current limitation", "The evaluator uses an ALIGNED vs NOT_ALIGNED concept internally, but only completion gets persisted today."),
                 ],
+                review: ROLEPLAY_PIPELINE_REVIEW_20260515,
                 meta: ["goal derivation", "completion ledger"],
               },
               {
@@ -330,6 +341,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                   bullet("Recent slice", "The local working tree currently rereads only the freshest 10 filtered messages instead of re-chewing a much larger transcript every turn."),
                   bullet("Allowlist", "Only supported character fields are allowed through, both on the edge side and again before client-side application."),
                 ],
+                review: ROLEPLAY_PIPELINE_REVIEW_20260515,
                 meta: ["state reconciliation", "last 10 messages", "allowlist"],
               },
             ],
@@ -465,6 +477,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                   bullet("Inputs", "The generator uses dialogue context, extracted trait scaffolding, and world context rather than trying to infer a side character from nothing."),
                   bullet("Why optional", "This is a conditional follow-up lane, not part of the baseline chat request path."),
                 ],
+                review: ROLEPLAY_PIPELINE_REVIEW_20260515,
                 meta: ["side cast", "follow-up avatar"],
               },
             ],
@@ -511,6 +524,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                   bullet("Visibility bias", "Outward traits get a +15 boost and inward traits get a -10 drag before prompt wording is generated."),
                   bullet("Trend", "scoreTrend can mark a trait as rising, falling, or stable so the prompt can talk about a personality shift instead of pretending traits are frozen forever."),
                 ],
+                review: ROLEPLAY_PIPELINE_REVIEW_20260515,
                 meta: ["rigid=100", "normal/flexible=75", "outward +15", "inward -10"],
               },
             ],
@@ -543,6 +557,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                   bullet("Rigid", "Treats the goal like a firm track the scene should keep moving toward unless the user clearly overrides it."),
                   bullet("Flexible", "Treats the goal more like a soft bias that should yield if the user's play keeps pushing elsewhere."),
                 ],
+                review: ROLEPLAY_PIPELINE_REVIEW_20260515,
                 meta: ["guidance strength", "story goals", "character goals"],
               },
             ],
@@ -570,6 +585,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                   bullet("Write side", "API Call 1 uses goal flexibility to influence how the scene should bend toward or away from a goal."),
                   bullet("Check side", "API Call 2 receives flexibility in the request shape but currently ignores it when deciding completion."),
                 ],
+                review: ROLEPLAY_PIPELINE_REVIEW_20260515,
                 meta: ["contract drift", "flexibility ignored"],
               },
               {
@@ -616,6 +632,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                   bullet("Hard events", "Some turns trigger extraction immediately because they clearly change state in a way the app should not wait to capture."),
                   bullet("Backstop", "Even without those triggers, Chronicle forces a deeper extraction every sixth assistant turn so state does not quietly drift stale."),
                 ],
+                review: ROLEPLAY_PIPELINE_REVIEW_20260515,
                 meta: ["heuristic gate", "backstop=6"],
               },
               {
@@ -633,6 +650,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                   bullet("Why it matters", "If a user regenerates a reply, stale post-turn writes from the rejected branch should not poison the active continuity state."),
                   bullet("Implementation", "Chronicle filters continuity records by sourceMessageId plus sourceGenerationId instead of trusting arrival order alone."),
                 ],
+                review: ROLEPLAY_PIPELINE_REVIEW_20260515,
                 meta: ["branch aware", "sourceGenerationId"],
               },
             ],
@@ -665,6 +683,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                   bullet("World", "Live scene, day/time, and session-specific overrides can replace older base story fields when they are the current canon."),
                   bullet("Characters", "Main and side characters are rebuilt from authored cards plus valid session and snapshot updates before the next turn is sent."),
                 ],
+                review: ROLEPLAY_PIPELINE_REVIEW_20260515,
                 meta: ["canonical overlay", "effective state"],
               },
             ],
@@ -697,6 +716,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                   bullet("Messages", "Each saved message can carry the current day and time-of-day, not just a raw created_at timestamp."),
                   bullet("Goals", "Completed goal-step derivations also carry explicit day/time, source message id, and source generation id."),
                 ],
+                review: ROLEPLAY_PIPELINE_REVIEW_20260515,
                 meta: ["day/time", "goal derivations"],
               },
               {
@@ -748,6 +768,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                   bullet("Continuity scope", "Memories enabled, active scene, and time progression settings change what state blocks are serialized into the next turn."),
                   bullet("Tone", "NSFW intensity and related content controls shape how explicit or restrained the live writing is allowed to be."),
                 ],
+                review: ROLEPLAY_PIPELINE_REVIEW_20260515,
                 meta: ["POV", "verbosity", "realism", "NSFW", "memories", "active scene"],
               },
               {
@@ -764,6 +785,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                   bullet("Physical continuity", "The prompt includes general rules for visibility, covered/hidden details, object availability, environmental constraints, unfinished actions, and preserving the user's concrete action direction."),
                   bullet("Theme lane", "Content-theme injections convert only selected story themes into one STORY THEMES block without needing a separate API call."),
                 ],
+                review: ROLEPLAY_PIPELINE_REVIEW_20260515,
                 meta: ["physical continuity", "theme injections"],
               },
             ],
@@ -843,6 +865,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                   bullet("Scoped context", "This lane uses a small recent message window rather than the full roleplay transcript."),
                   bullet("Result", "A returned image URL is appended back into chat as an image message instead of changing the narrative state directly."),
                 ],
+                review: ROLEPLAY_PIPELINE_REVIEW_20260515,
                 meta: ["scene image", "chat tool"],
               },
             ],
@@ -869,6 +892,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                   bullet("Two-step lane", "It uses a text-model analysis pass before the actual image-model request so the prompt can stay compact but still scene-aware."),
                   bullet("Separation", "This lane is roleplay-adjacent, not part of the core chat turn loop that writes and reconciles dialogue."),
                 ],
+                review: ROLEPLAY_PIPELINE_REVIEW_20260515,
                 meta: ["analysis + image", "byte-aware prompt"],
               },
             ],

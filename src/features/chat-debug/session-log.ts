@@ -54,7 +54,7 @@ function describeFinalPath(finalPath: string): string {
 export function formatChatDebugTraceForSessionLog(
   traceRecord: StoredChatDebugTrace | null,
 ): string[] {
-  if (!traceRecord) {
+  if (!traceRecord?.trace) {
     return [
       '#### Debug Trace',
       '',

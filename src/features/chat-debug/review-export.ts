@@ -4,6 +4,8 @@ import {
   CHAT_DEBUG_ISSUE_TAGS,
   type ChatDebugIssueTag,
   type DialogDebugComment,
+  type StoredChatDebugTrace,
+  type StoredChatDebugTraceMap,
 } from './types';
 
 type ReviewExportCharacter = {
@@ -17,6 +19,7 @@ type ReviewExportCharacter = {
 type ReviewExportSegment = {
   reviewId: string;
   messageId: string;
+  generationId: string;
   turnNumber: number;
   segmentNumber: number;
   role: Message['role'];
@@ -34,10 +37,12 @@ type ReviewExportSegment = {
   imageUrl?: string;
   liveComment?: ChatReviewLiveComment;
   postTurnStateChanges?: string[];
+  debugRecord?: StoredChatDebugTrace | null;
 };
 
 export type ChatReviewLiveComment = {
   messageId: DialogDebugComment['messageId'];
+  generationId?: DialogDebugComment['generationId'];
   note: DialogDebugComment['note'];
   tags: DialogDebugComment['tags'];
   createdAt: DialogDebugComment['createdAt'];
@@ -55,6 +60,7 @@ export type ChatReviewExportInput = {
   sanitizeAssistantText: (text: string) => string;
   messageComments?: Record<string, ChatReviewLiveComment>;
   postTurnStateChanges?: Record<string, string[]>;
+  debugRecords?: StoredChatDebugTraceMap;
 };
 
 function escapeHtml(value: string): string {
@@ -164,6 +170,153 @@ function textPreview(value: string, max = 180): string {
   return `${compact.slice(0, max - 3)}...`;
 }
 
+function formatDebugDate(value: number | undefined): string {
+  if (!value || !Number.isFinite(value)) return 'unknown time';
+  return new Date(value).toISOString().replace('T', ' ').slice(0, 19);
+}
+
+function prettyJson(value: unknown): string {
+  if (value == null) return '(none)';
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+}
+
+function safeJsonScript(value: unknown): string {
+  return JSON.stringify(value, null, 2)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026');
+}
+
+function debugTraceKey(messageId: string, generationId?: string | null): string {
+  return `${messageId}:${generationId || messageId}`;
+}
+
+function renderDebugJsonBlock(label: string, value: unknown): string {
+  return `
+    <div class="debug-json-block">
+      <div class="debug-json-label">${escapeHtml(label)}</div>
+      <pre>${escapeHtml(prettyJson(value))}</pre>
+    </div>
+  `;
+}
+
+function renderModelRequestBlocks(call: StoredChatDebugTrace['call1Request']): string {
+  if (!call) return '';
+
+  const modelRequests = [
+    ...(call.modelRequest ? [{ label: 'Grok-facing request', ...call.modelRequest }] : []),
+    ...(call.modelRequests || []),
+  ];
+
+  if (modelRequests.length === 0) return '';
+
+  return modelRequests.map((request, index) => `
+    <div class="model-request-card">
+      <div class="trace-meta-grid">
+        <span><strong>Model request</strong>${escapeHtml(request.label || `Grok-facing request ${index + 1}`)}</span>
+        <span><strong>Endpoint</strong>${escapeHtml(request.endpoint)}</span>
+        <span><strong>Method</strong>${escapeHtml(request.method || 'POST')}</span>
+        <span><strong>Captured</strong>${escapeHtml(formatDebugDate(request.capturedAt))}</span>
+      </div>
+      ${request.notes?.length ? `<ul class="trace-note-list">${request.notes.map((note) => `<li>${escapeHtml(note)}</li>`).join('')}</ul>` : ''}
+      ${renderDebugJsonBlock('Exact request body sent to Grok/xAI', request.requestBody)}
+    </div>
+  `).join('');
+}
+
+function renderApiCall1Details(segment: ReviewExportSegment): string {
+  if (segment.role !== 'assistant') return '';
+
+  const call = segment.debugRecord?.call1Request;
+  const trace = segment.debugRecord?.trace;
+
+  if (!call && !trace) {
+    return `<details class="trace-details trace-empty"><summary>API Call 1 Data</summary><p>No API Call 1 trace was captured for this message generation.</p></details>`;
+  }
+
+  const modelRequestBlocks = renderModelRequestBlocks(call);
+  const callBody = call
+    ? `
+      <div class="trace-meta-grid">
+        <span><strong>Endpoint</strong>${escapeHtml(call.endpoint)}</span>
+        <span><strong>Status</strong>${escapeHtml(call.status || 'captured')}</span>
+        <span><strong>Captured</strong>${escapeHtml(formatDebugDate(call.capturedAt))}</span>
+      </div>
+      ${modelRequestBlocks || renderDebugJsonBlock('Browser-to-edge request body captured before Grok call', call.requestBody)}
+      ${modelRequestBlocks ? renderDebugJsonBlock('Browser-to-edge request body', call.requestBody) : ''}
+    `
+    : '<p>No frontend or Grok-facing request payload was captured for this message generation.</p>';
+
+  const backendTrace = trace
+    ? renderDebugJsonBlock('Backend debug trace returned by chat edge function', trace)
+    : '<p>No backend debug trace was returned for this message generation.</p>';
+
+  return `
+    <details class="trace-details">
+      <summary>API Call 1 Data</summary>
+      ${callBody}
+      ${backendTrace}
+    </details>
+  `;
+}
+
+function renderSupportCallDetails(segment: ReviewExportSegment): string {
+  if (segment.role !== 'assistant') return '';
+
+  const supportCalls = segment.debugRecord?.supportCalls || [];
+  if (supportCalls.length === 0) {
+    return `<details class="trace-details trace-empty"><summary>API Call 2 + Supporting API Call Data</summary><p>No post-turn or support-call records were captured for this message generation at export time.</p></details>`;
+  }
+
+  const callsHtml = supportCalls.map((call) => `
+    <section class="support-call-card">
+      <div class="support-call-header">
+        <div>
+          <strong>${escapeHtml(call.label)}</strong>
+          <span>${escapeHtml(call.endpoint)}</span>
+        </div>
+        <em>${escapeHtml(call.status || 'captured')}</em>
+      </div>
+      <div class="trace-meta-grid">
+        <span><strong>Group</strong>${escapeHtml(call.apiCallGroup)}</span>
+        <span><strong>Method</strong>${escapeHtml(call.method || 'n/a')}</span>
+        <span><strong>Captured</strong>${escapeHtml(formatDebugDate(call.capturedAt))}</span>
+      </div>
+      ${call.error ? `<p class="trace-error">${escapeHtml(call.error)}</p>` : ''}
+      ${renderModelRequestBlocks(call)}
+      ${renderDebugJsonBlock(call.modelRequest || call.modelRequests?.length ? 'Browser-to-edge request body' : 'Request body sent', call.requestBody)}
+      ${renderDebugJsonBlock('Response body received', call.responseBody ?? '(not captured yet)')}
+    </section>
+  `).join('');
+
+  return `
+    <details class="trace-details">
+      <summary>API Call 2 + Supporting API Call Data (${supportCalls.length})</summary>
+      ${callsHtml}
+    </details>
+  `;
+}
+
+function renderAppliedUpdatesDetails(segment: ReviewExportSegment): string {
+  if (segment.role !== 'assistant') return '';
+
+  const changes = segment.postTurnStateChanges || [];
+  if (changes.length === 0) {
+    return `<details class="trace-details trace-empty"><summary>Applied Updates Summary</summary><p>No saved character, side-character, memory, or story-goal updates were recorded for this message generation at export time.</p></details>`;
+  }
+
+  return `
+    <details class="trace-details state-change-details">
+      <summary>Applied Updates Summary (${changes.length})</summary>
+      <ul>${changes.map((change) => `<li>${escapeHtml(change)}</li>`).join('')}</ul>
+    </details>
+  `;
+}
+
 function renderStyledText(text: string): string {
   const cleanText = text.replace(/\[SCENE:\s*.*?\]/g, '').trim();
   const tokenRegex = /(\*[\s\S]*?\*)|([“"][\s\S]*?[”"][,.!?;:]?)|(\([\s\S]*?\))/g;
@@ -252,6 +405,8 @@ function buildSegments(input: ChatReviewExportInput): ReviewExportSegment[] {
       : [{ speakerName: null, content: rawMessageText }];
     const liveComment = input.messageComments?.[message.id];
     const postTurnStateChanges = input.postTurnStateChanges?.[message.id] || [];
+    const generationId = message.generationId || message.id;
+    const debugRecord = input.debugRecords?.[debugTraceKey(message.id, generationId)] || null;
 
     messageSegments.forEach((segment, segmentIndex) => {
       const speaker = resolveSpeaker(segment, message.role, characters);
@@ -259,6 +414,7 @@ function buildSegments(input: ChatReviewExportInput): ReviewExportSegment[] {
       segments.push({
         reviewId: `${message.id}-${segmentIndex}`,
         messageId: message.id,
+        generationId,
         turnNumber: visibleTurn,
         segmentNumber: segmentIndex + 1,
         role: message.role,
@@ -275,7 +431,8 @@ function buildSegments(input: ChatReviewExportInput): ReviewExportSegment[] {
         isRegenerated: regenerateSet.has(message.id),
         imageUrl: message.imageUrl,
         liveComment: segmentIndex === messageSegments.length - 1 ? liveComment : undefined,
-        postTurnStateChanges: segmentIndex === messageSegments.length - 1 ? postTurnStateChanges : undefined,
+        postTurnStateChanges,
+        debugRecord,
       });
     });
   }
@@ -291,7 +448,6 @@ function renderSegmentCard(segment: ReviewExportSegment, index: number): string 
     segment.isContinueTarget ? 'is-continue' : '',
   ].filter(Boolean).join(' ');
 
-  const rawBlock = `<details class="raw-details"><summary>Raw saved message text</summary><pre>${escapeHtml(segment.rawMessageText)}</pre></details>`;
   const selectedTags = uniqueIssueTags(segment.liveComment?.tags);
   const liveCommentTags = selectedTags.length
     ? `<div class="comment-tag-row">${selectedTags.map((tag) => `<span class="comment-tag">${escapeHtml(tag)}</span>`).join('')}</div>`
@@ -302,12 +458,12 @@ function renderSegmentCard(segment: ReviewExportSegment, index: number): string 
   const imageBlock = segment.imageUrl
     ? `<img class="scene-image" src="${escapeAttribute(segment.imageUrl)}" alt="Generated scene image" loading="lazy" />`
     : '';
-  const stateChangesBlock = segment.postTurnStateChanges?.length
-    ? `<details class="state-change-details"><summary>Post-turn state sync (${segment.postTurnStateChanges.length})</summary><ul>${segment.postTurnStateChanges.map((change) => `<li>${escapeHtml(change)}</li>`).join('')}</ul></details>`
+  const traceBlocks = segment.role === 'assistant'
+    ? `<div class="trace-stack">${renderApiCall1Details(segment)}${renderSupportCallDetails(segment)}${renderAppliedUpdatesDetails(segment)}</div>`
     : '';
 
   return `
-    <article class="${classes}" data-review-index="${index}" data-review-id="${escapeAttribute(segment.reviewId)}" data-message-id="${escapeAttribute(segment.messageId)}" data-turn="${segment.turnNumber}" data-role="${escapeAttribute(segment.role)}" data-speaker="${escapeAttribute(segment.speakerName)}" data-excerpt="${escapeAttribute(textPreview(segment.text, 260))}">
+    <article class="${classes}" data-review-index="${index}" data-review-id="${escapeAttribute(segment.reviewId)}" data-message-id="${escapeAttribute(segment.messageId)}" data-generation-id="${escapeAttribute(segment.generationId)}" data-turn="${segment.turnNumber}" data-role="${escapeAttribute(segment.role)}" data-speaker="${escapeAttribute(segment.speakerName)}" data-excerpt="${escapeAttribute(textPreview(segment.text, 260))}">
       <div class="message-main">
         <div class="avatar">${avatarHtml(segment)}</div>
         <div class="message-content">
@@ -327,8 +483,7 @@ function renderSegmentCard(segment: ReviewExportSegment, index: number): string 
           <div class="rendered-message">${renderStyledText(segment.text)}</div>
           ${liveCommentBlock}
           ${imageBlock}
-          ${stateChangesBlock}
-          ${rawBlock}
+          ${traceBlocks}
         </div>
       </div>
     </article>
@@ -535,6 +690,108 @@ function reviewStyles(): string {
     details { margin-top: 12px; border: 1px solid rgba(255,255,255,0.10); border-radius: 14px; background: rgba(0,0,0,0.18); }
     summary { cursor: pointer; color: var(--muted); font-weight: 800; padding: 10px 12px; }
     pre { white-space: pre-wrap; margin: 0; padding: 12px; color: #cbd5e1; overflow-wrap: anywhere; }
+    .trace-stack { display: grid; gap: 10px; margin-top: 14px; }
+    .trace-details {
+      margin-top: 0;
+      border-color: rgba(226,179,106,0.22);
+      background: rgba(226,179,106,0.055);
+    }
+    .trace-details summary {
+      color: #f6df8f;
+      font-size: 13px;
+      letter-spacing: 0.01em;
+    }
+    .trace-details p {
+      margin: 0;
+      padding: 0 12px 12px;
+      color: #d5d9e3;
+    }
+    .trace-empty { border-style: dashed; opacity: 0.86; }
+    .trace-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 8px;
+      padding: 0 12px 12px;
+    }
+    .trace-meta-grid span {
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      background: rgba(0,0,0,0.18);
+      color: #cfd6e4;
+      padding: 8px 10px;
+      font-size: 12px;
+    }
+    .trace-meta-grid strong {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 2px;
+    }
+    .debug-json-block {
+      border-top: 1px solid rgba(255,255,255,0.08);
+      margin-top: 8px;
+    }
+    .debug-json-label {
+      color: #f6df8f;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 10px 12px 0;
+    }
+    .debug-json-block pre {
+      max-height: 520px;
+      overflow: auto;
+      color: #d8e2f2;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .model-request-card {
+      border-top: 1px solid rgba(120,220,202,0.18);
+      background: rgba(120,220,202,0.045);
+      padding-top: 10px;
+      margin-top: 8px;
+    }
+    .trace-note-list {
+      margin: 0;
+      padding: 0 18px 12px 34px;
+      color: #d8e2f2;
+      font-size: 12px;
+    }
+    .trace-note-list li { margin: 5px 0; }
+    .support-call-card {
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding-top: 10px;
+    }
+    .support-call-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 12px 10px;
+    }
+    .support-call-header strong { display: block; color: var(--text); }
+    .support-call-header span { display: block; color: var(--muted); font-size: 12px; }
+    .support-call-header em {
+      border: 1px solid rgba(120,220,202,0.22);
+      border-radius: 999px;
+      color: var(--accent);
+      font-style: normal;
+      font-weight: 900;
+      font-size: 11px;
+      padding: 4px 8px;
+      text-transform: uppercase;
+    }
+    .trace-error {
+      color: #ffd0d0 !important;
+      background: rgba(255,123,123,0.10);
+      border-top: 1px solid rgba(255,123,123,0.18);
+      border-bottom: 1px solid rgba(255,123,123,0.18);
+      margin-bottom: 8px !important;
+      padding-top: 8px !important;
+    }
     .state-change-details ul { margin: 0; padding: 0 18px 14px 34px; color: #d8e2f2; }
     .state-change-details li { margin: 7px 0; }
     .footer-note { color: var(--muted); text-align: center; margin-top: 26px; }
@@ -552,6 +809,24 @@ export function buildChatReviewHtml(input: ChatReviewExportInput): string {
   const exportedAt = formatExportDate(input.exportedAt);
   const cards = segments.map((segment, index) => renderSegmentCard(segment, index)).join('\n');
   const issueSummary = renderIssueSummary(input.messageComments);
+  const embeddedDebugData = {
+    schema: 'chronicle-session-review-v2',
+    exportedAt,
+    scenarioTitle: input.scenarioTitle,
+    conversationId: input.conversation.id,
+    messages: input.conversation.messages.map((message) => ({
+      id: message.id,
+      generationId: message.generationId || message.id,
+      role: message.role,
+      text: message.text,
+      day: message.day ?? null,
+      timeOfDay: message.timeOfDay ?? null,
+      createdAt: message.createdAt,
+      comment: input.messageComments?.[message.id] || null,
+      appliedUpdates: input.postTurnStateChanges?.[message.id] || [],
+      debugRecord: input.debugRecords?.[debugTraceKey(message.id, message.generationId || message.id)] || null,
+    })),
+  };
 
   return `<!doctype html>
 <html lang="en">
@@ -580,6 +855,7 @@ export function buildChatReviewHtml(input: ChatReviewExportInput): string {
     ${cards}
 
     <p class="footer-note">Dialogue debug notes are saved to this playthrough for testing only. They are not sent to the roleplay model and are not story canon.</p>
+    <script type="application/json" id="chronicle-session-review-data">${safeJsonScript(embeddedDebugData)}</script>
   </main>
 </body>
 </html>`;

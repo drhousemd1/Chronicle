@@ -1,3 +1,8 @@
+import {
+  ROLEPLAY_PIPELINE_REVIEW_20260515,
+  type ApiInspectorReview,
+} from "./api-inspector-review";
+
 export type PhaseOneAuditStatus =
   | "connected"
   | "missing"
@@ -31,6 +36,7 @@ export interface PhaseOneAuditContainer {
   description: string;
   fileRefs: Array<{ path: string; lines?: string; note?: string }>;
   codeSource?: string;
+  review?: ApiInspectorReview;
   fields: PhaseOneAuditField[];
 }
 
@@ -60,6 +66,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
         ],
         codeSource:
           "WORLD CONTEXT includes STORY NAME + BRIEF DESCRIPTION + STORY PREMISE in the primary system message.",
+        review: ROLEPLAY_PIPELINE_REVIEW_20260515,
         fields: [
           {
             label: "Story Name (scenarioName)",
@@ -87,6 +94,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
         ],
         codeSource:
           "STORY PREMISE\nLOCATIONS (structuredLocations)\nCUSTOM WORLD CONTENT (structured + freeform)\nSTORY GOALS (title/outcome/currentStatus/steps)\nADDITIONAL LORE ENTRIES\nSTORY THEMES (selected tags only)",
+        review: ROLEPLAY_PIPELINE_REVIEW_20260515,
         fields: [
           {
             label: "Story Premise",
@@ -130,6 +138,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
         ],
         codeSource:
           "[RIGID|NORMAL|FLEXIBLE] Goal + Desired Outcome + Steps + computed Progress + directive text",
+        review: ROLEPLAY_PIPELINE_REVIEW_20260515,
         fields: [
           {
             label: "Goal Name",
@@ -334,6 +343,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
         ],
         codeSource:
           "CHARACTER: name (sexType) + NICKNAMES + SEXUAL ORIENTATION\nROLE\nCONTROL + LOCATION + MOOD\n...",
+        review: ROLEPLAY_PIPELINE_REVIEW_20260515,
         fields: [
           { label: "Name", status: "connected", detail: "Serialized in CHARACTER header." },
           { label: "Nicknames", status: "connected", detail: "Serialized when non-empty." },
@@ -535,6 +545,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
             detail: "CharacterGoal.currentStatus is serialized when present.",
           },
         ],
+        review: ROLEPLAY_PIPELINE_REVIEW_20260515,
       },
       {
         id: "character-custom-content",
@@ -585,6 +596,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
               "Side character profiles are serialized in dedicated SIDE CHARACTER CONTEXT while preserving control guardrails.",
           },
         ],
+        review: ROLEPLAY_PIPELINE_REVIEW_20260515,
       },
     ],
   },

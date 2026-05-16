@@ -8,6 +8,7 @@ import {
   type PhaseOneAuditField,
   type PhaseOneAuditStatus,
 } from "@/data/api-inspector-phase1-audit";
+import { apiInspectorPromptDocumentList } from "@/data/api-inspector-prompt-documents";
 import {
   apiInspectorLiveSections,
   type ApiInspectorFileRef,
@@ -18,6 +19,7 @@ import {
   type ApiInspectorTag,
 } from "@/data/api-inspector-live-map";
 import { apiInspectorLineMap } from "@/data/api-inspector-line-map";
+import type { ApiInspectorReview } from "@/data/api-inspector-review";
 
 const HEADER_HEIGHT = 76;
 const ROOT_ID = "api-inspector-root";
@@ -67,6 +69,7 @@ interface RenderItem {
   codeSourceLabel?: string;
   promptViewEnabled?: boolean;
   crossRefs?: RenderCrossRef[];
+  review?: ApiInspectorReview;
   meta?: string[];
 }
 
@@ -188,12 +191,68 @@ body {
 }
 
 .header h1 {
+  margin: 0;
   font-size: 17px;
   font-weight: 900;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: #111111;
+}
+
+.header-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-left: auto;
+  min-width: 0;
+}
+
+.prompt-review-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  gap: 10px;
+  min-width: 0;
+}
+
+.prompt-review-btn,
+.legend-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  height: 40px;
+  padding: 0 20px;
+  border-radius: 14px;
+  border: none;
+  background: #2f3137;
+  color: #eaedf1;
+  box-shadow:
+    0 8px 24px rgba(0,0,0,0.45),
+    inset 0 1px 0 rgba(255,255,255,0.09),
+    inset 0 -1px 0 rgba(0,0,0,0.20);
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.prompt-review-btn:hover,
+.legend-toggle-btn:hover {
+  background: #343439;
+}
+
+.prompt-review-btn:active,
+.legend-toggle-btn:active {
+  transform: scale(0.98);
 }
 
 .nav-rail-shell {
@@ -506,38 +565,6 @@ body {
   min-height: calc(100vh - 76px);
   overflow: auto;
   padding: 24px;
-}
-
-.legend-toggle-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0;
-  margin-left: auto;
-  height: 40px;
-  padding: 0 20px;
-  border-radius: 14px;
-  border: none;
-  background: #2f3137;
-  color: #eaedf1;
-  box-shadow:
-    0 8px 24px rgba(0,0,0,0.45),
-    inset 0 1px 0 rgba(255,255,255,0.09),
-    inset 0 -1px 0 rgba(0,0,0,0.20);
-  cursor: pointer;
-  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: 12px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.legend-toggle-btn:hover {
-  background: #343439;
-}
-
-.legend-toggle-btn:active {
-  transform: scale(0.98);
 }
 
 .legend-toggle-btn[aria-expanded="true"] {
@@ -1164,6 +1191,27 @@ details > summary::-webkit-details-marker {
   padding: 14px;
 }
 
+.app-card-footer {
+  padding: 10px 14px 12px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  background: #242428;
+}
+
+.review-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #aeb8c8;
+  font-size: 11px;
+  line-height: 1.45;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.review-meta strong {
+  color: #dbeafe;
+  font-weight: 800;
+}
+
 .app-card-inner {
   background: #2e2e33;
   border-radius: 12px;
@@ -1680,6 +1728,21 @@ details > summary::-webkit-details-marker {
 }
 
 @media (max-width: 840px) {
+  .header {
+    gap: 12px;
+    padding: 12px 18px;
+  }
+
+  .header-actions {
+    order: 4;
+    flex: 1 1 100%;
+    margin-left: 44px;
+  }
+
+  .prompt-review-btn {
+    flex: 1 1 190px;
+  }
+
   .content {
     height: auto;
     min-height: calc(100vh - 76px);
@@ -1713,6 +1776,30 @@ details > summary::-webkit-details-marker {
   .folder-count,
   .line-count-badge {
     margin-left: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .header {
+    padding: 10px 14px;
+  }
+
+  .header h1 {
+    font-size: 15px;
+  }
+
+  .prompt-review-actions {
+    margin-left: 0;
+  }
+
+  .header-actions {
+    margin-left: 0;
+  }
+
+  .prompt-review-btn,
+  .legend-toggle-btn {
+    min-height: 36px;
+    height: auto;
   }
 }
 `;
@@ -1801,6 +1888,25 @@ function formatFileRef(fileRef: RenderFileRef) {
 
 function getSourceViewLabel(item: Pick<RenderItem, "codeSourceLabel" | "promptViewEnabled">) {
   return item.codeSourceLabel ?? (item.promptViewEnabled ? "Prompt / Source View" : "Source Snapshot");
+}
+
+function formatReviewDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  }).format(date);
+}
+
+function formatReviewMeta(review: ApiInspectorReview) {
+  const reviewedBy = review.reviewedBy ? ` by ${review.reviewedBy}` : "";
+  return `${formatReviewDate(review.lastReviewedAt)}${reviewedBy}`;
 }
 
 function normalizeSourcePath(path: string) {
@@ -1942,6 +2048,7 @@ function buildLiveItem(itemId: string, item: ApiInspectorItem): RenderItem {
     ownerFileName: getFileName(ownerPath),
     fileRefs: item.fileRefs.map(toRenderFileRef),
     details: buildLiveDetails(itemId, item),
+    review: item.review,
     meta: item.meta,
   };
 }
@@ -2011,6 +2118,7 @@ function buildAuditItem(group: { id: string; title: string }, container: PhaseOn
     codeSource: container.codeSource,
     codeSourceLabel: container.codeSource ? "Serialization / Prompt Coverage" : undefined,
     promptViewEnabled: Boolean(container.codeSource),
+    review: container.review,
     meta: Array.from(new Set(container.fields.map((field) => PHASE_ONE_STATUS_LABELS[field.status]))),
   };
 }
@@ -2455,6 +2563,14 @@ function FlowItemCard({
             </details>
           </div>
         </div>
+
+        {item.review ? (
+          <footer className="app-card-footer" title={item.review.runId}>
+            <span className="review-meta">
+              <strong>Last reviewed:</strong> {formatReviewMeta(item.review)}
+            </span>
+          </footer>
+        ) : null}
       </div>
     </article>
   );
@@ -2710,15 +2826,35 @@ const ApiInspectorPage: React.FC = () => {
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
         <h1>Roleplay Pipeline</h1>
-        <button
-          className="legend-toggle-btn"
-          type="button"
-          aria-expanded={legendOpen}
-          aria-controls="legend"
-          onClick={() => setLegendOpen((current) => !current)}
-        >
-          <span>{legendOpen ? "Hide Legend" : "View Legend"}</span>
-        </button>
+        <div className="header-actions">
+          <div className="prompt-review-actions" aria-label="Prompt review blueprints">
+            {apiInspectorPromptDocumentList.map((document) => (
+              <button
+                key={document.id}
+                type="button"
+                className="prompt-review-btn"
+                onClick={() =>
+                  setActivePrompt({
+                    title: document.title,
+                    source: document.body,
+                    label: document.modalLabel,
+                  })
+                }
+              >
+                {document.buttonLabel}
+              </button>
+            ))}
+          </div>
+          <button
+            className="legend-toggle-btn"
+            type="button"
+            aria-expanded={legendOpen}
+            aria-controls="legend"
+            onClick={() => setLegendOpen((current) => !current)}
+          >
+            <span>{legendOpen ? "Hide Legend" : "View Legend"}</span>
+          </button>
+        </div>
       </div>
 
       <div className="page-shell">

@@ -476,7 +476,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const { userMessage, aiResponse, recentContext, characters, modelId, eligibleCharacters, currentDay, currentTimeOfDay } = await req.json();
+    const { userMessage, aiResponse, recentContext, characters, modelId, eligibleCharacters, currentDay, currentTimeOfDay, debugTrace = false } = await req.json();
     
     if (!userMessage && !aiResponse) {
       return new Response(
@@ -572,7 +572,11 @@ ${supportedFields}
 - Prefer updating an existing goal over creating a near-duplicate. Respect the goal's guidance_strength when present: rigid goals change only with strong evidence, normal goals update when clearly advanced, and flexible goals can shift when the scene repeatedly carries them elsewhere.
 - For existing goals, update only current_status, progress, and complete_steps. Do not send new_steps for an existing goal, and do not replace an existing goal's step list.
 - Create a brand-new goal only when the latest exchange clearly establishes a sustained objective that is not already covered by an existing goal.
-- For brand-new goals, include desired_outcome, current_status, progress, and new_steps. New steps must be milestone-level progress toward the desired outcome, not a minute-by-minute checklist. A valid step should remain useful across multiple possible scenes and should not dictate the next physical action.
+- For brand-new goals, include desired_outcome, current_status, progress, and new_steps.
+- The desired_outcome describes the ultimate sustained result of the goal: what becomes true when the goal is meaningfully achieved.
+- New steps should be logical milestone stages that naturally build toward that desired_outcome. Each step should represent a durable shift in knowledge, relationship, access, commitment, capability, status, or circumstances.
+- A good step changes the ongoing story state after it happens. It should still matter later. It should not merely describe the next physical movement, object interaction, line of dialogue, or scene chore.
+- Examples are structural only. Do not copy their subject matter, genre, relationship type, setting, kink, or wording into unrelated stories.
 - If a proposed goal or step would normally be completed within the current exchange or the next few exchanges, it is too granular to save. Leave it in the scene instead of turning it into saved state.
 - Use complete_steps only for existing steps that were clearly completed.
 - Do not remove completed goals. When all steps are complete, preserve the goal and update current_status to show that the desired outcome is now part of the ongoing story.
@@ -590,10 +594,10 @@ Return only this JSON shape:
 {
   "updates": [
     { "character": "CharacterName", "field": "currentMood", "value": "Nervous but determined" },
-    { "character": "CharacterName", "field": "scenePosition", "value": "inside the cabin near the fireplace" },
-    { "character": "CharacterName", "field": "relationships._extras", "value": "Emma: Trusted confidante after sharing the secret" },
+    { "character": "CharacterName", "field": "scenePosition", "value": "beside the relevant scene object" },
+    { "character": "CharacterName", "field": "relationships._extras", "value": "OtherCharacter: Trusted after sharing important information" },
     { "character": "CharacterName", "field": "goals.Rebuild Trust", "value": "current_status: First honest conversation happened. | progress: 25 | complete_steps: 1" },
-    { "character": "CharacterName", "field": "goals.Escape the City", "value": "desired_outcome: Reach safety outside the city. | current_status: Goal newly established. | progress: 0 | new_steps: Step 1: Establish a safe route out. Step 2: Secure the resources needed for travel. Step 3: Leave before the city is locked down." }
+    { "character": "CharacterName", "field": "goals.Establish Lasting Dynamic", "value": "desired_outcome: CharacterName and OtherCharacter establish a sustained relationship dynamic that changes how they make decisions, communicate, and behave together. | current_status: Goal newly established. | progress: 0 | new_steps: Step 1: CharacterName tests whether OtherCharacter is receptive to the dynamic through low-pressure conversation or behavior. Step 2: CharacterName creates a repeated pattern that makes the dynamic part of their normal interactions. Step 3: CharacterName deepens the dynamic through a more meaningful commitment, ritual, agreement, or recurring behavior. Step 4: The characters confront the main resistance, uncertainty, or consequence preventing the dynamic from becoming stable. Step 5: The dynamic becomes an accepted part of the ongoing relationship and affects future choices." }
   ]
 }
 
@@ -629,21 +633,33 @@ Return ONLY valid JSON. No explanations.`;
       modelForRequest = effectiveModelId;
     }
 
+    const xaiRequestBody = {
+      model: modelForRequest,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Analyze the latest exchange and return only material supported character-card deltas.\n\n${combinedText}` }
+      ],
+      temperature: 0.15,
+      max_tokens: 8192,
+    };
+    const primaryDebugPayload = debugTrace === true
+      ? {
+          modelRequest: {
+            endpoint: apiUrl,
+            method: "POST",
+            capturedAt: Date.now(),
+            requestBody: xaiRequestBody,
+          },
+        }
+      : null;
+
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model: modelForRequest,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `Analyze the latest exchange and return only material supported character-card deltas.\n\n${combinedText}` }
-        ],
-        temperature: 0.15,
-        max_tokens: 8192,
-      }),
+      body: JSON.stringify(xaiRequestBody),
     });
 
     if (!response.ok) {
@@ -664,18 +680,31 @@ Return ONLY valid JSON. No explanations.`;
       if (response.status === 403) {
         console.log("[extract-character-updates] Content safety rejection (403), retrying with safe extraction mode");
         // Retry with a sanitized prompt focused on non-explicit metadata only
+        const safeRequestBody = {
+          model: 'grok-4.3',
+          messages: [
+            { role: "system", content: "Extract only non-explicit character state metadata from the latest exchange. Return JSON with {updates:[{character,field,value}]}. Use only supported field paths and omit low-confidence changes." },
+            { role: "user", content: `Characters: ${filteredCharacters.map((c: CharacterData) => c.name).join(', ')}. Analyze:\n${combinedText}` }
+          ],
+          temperature: 0.2,
+          max_tokens: 4096,
+        };
+        const safeDebugPayload = debugTrace === true
+          ? {
+              modelRequest: {
+                endpoint: apiUrl,
+                method: "POST",
+                capturedAt: Date.now(),
+                requestBody: safeRequestBody,
+                notes: ["Primary character-state sync request received 403; this safe retry was the final Grok request."],
+              },
+              primaryModelRequest: primaryDebugPayload?.modelRequest,
+            }
+          : null;
         const safeResponse = await fetch(apiUrl, {
           method: "POST",
           headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: 'grok-4.3',
-            messages: [
-              { role: "system", content: "Extract only non-explicit character state metadata from the latest exchange. Return JSON with {updates:[{character,field,value}]}. Use only supported field paths and omit low-confidence changes." },
-              { role: "user", content: `Characters: ${filteredCharacters.map((c: CharacterData) => c.name).join(', ')}. Analyze:\n${combinedText}` }
-            ],
-            temperature: 0.2,
-            max_tokens: 4096,
-          }),
+          body: JSON.stringify(safeRequestBody),
         });
         if (safeResponse.ok) {
           const safeData = await safeResponse.json();
@@ -697,13 +726,13 @@ Return ONLY valid JSON. No explanations.`;
                 .filter((u: ExtractedUpdate | null): u is ExtractedUpdate => Boolean(u));
               const reconciledSafeUpdates = reconcileStructuredUpdates(safeUpdates, filteredCharacters as CharacterData[]);
               console.log(`[extract-character-updates] Safe retry yielded ${reconciledSafeUpdates.length} updates`);
-              return new Response(JSON.stringify({ updates: reconciledSafeUpdates }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+              return new Response(JSON.stringify({ updates: reconciledSafeUpdates, ...(safeDebugPayload ? { chronicle_debug_payload: safeDebugPayload } : {}) }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
             }
           } catch { /* fall through */ }
         }
         // If safe retry also fails, return empty
         return new Response(
-          JSON.stringify({ updates: [] }),
+          JSON.stringify({ updates: [], ...(safeDebugPayload ? { chronicle_debug_payload: safeDebugPayload } : {}) }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -752,7 +781,7 @@ Return ONLY valid JSON. No explanations.`;
     }
 
     return new Response(
-      JSON.stringify({ updates: extractedUpdates }),
+      JSON.stringify({ updates: extractedUpdates, ...(primaryDebugPayload ? { chronicle_debug_payload: primaryDebugPayload } : {}) }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

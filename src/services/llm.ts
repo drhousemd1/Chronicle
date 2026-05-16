@@ -6,7 +6,7 @@ import {
   buildCall1ValidationPresence,
   trackApiValidationSnapshot,
 } from "@/services/api-usage-validation";
-import type { ChatDebugTrace } from "@/features/chat-debug/types";
+import type { ChatDebugRequestRecord, ChatDebugTrace } from "@/features/chat-debug/types";
 
 /**
  * Detect if a user message contains dialogue/actions written for AI-controlled characters.
@@ -56,6 +56,7 @@ The user wants a DIFFERENT VERSION of this response. For this alternate version:
 export type GenerateRoleplayResponseStreamOptions = {
   debugTrace?: boolean;
   onDebugTrace?: (trace: ChatDebugTrace) => void;
+  onRequestPayload?: (request: ChatDebugRequestRecord) => void;
 };
 
 const CHAT_RESPONSE_TIMEOUT_MS = 90_000;
@@ -427,9 +428,9 @@ export function getSystemInstruction(
   const renderNarrativePov = (): string => {
     const narrativePov = appData.uiSettings?.narrativePov || 'third';
     if (narrativePov === 'first') {
-      return `NARRATIVE POV: First Person\n- In each tagged character block, narration, action prose, and internal thoughts use first-person from that speaking character's perspective ("I", "me", "my").\n- Quoted dialogue remains natural spoken dialogue and may use whatever person the character would naturally speak in.\n- Keep POV consistent within the block. Do not slide into third-person narration or third-person thought about the focal character inside their own block unless they are consciously thinking about themself that way.\n- Correct example: Ashley: *I fought against the wind, my pulse hammering.* (If I lose sight of them now, I'm fucked.) "I'm here!"\n- Avoid: Ashley: *She fought against the wind, my pulse hammering.* (She couldn't lose them now.) "I'm here!"`;
+      return `NARRATIVE POV: First Person\n- In each tagged character block, narration, action prose, and internal thoughts use first-person from that speaking character's perspective ("I", "me", "my").\n- Quoted dialogue remains natural spoken dialogue and may use whatever person the character would naturally speak in.\n- Keep POV consistent within the block. Do not slide into third-person narration or third-person thought about the focal character inside their own block unless they are consciously thinking about themself that way.\n- Format pattern: CharacterName: *I describe my visible action from my own perspective.* (My private thought stays in first person.) "Spoken dialogue stays natural."`;
     }
-    return `NARRATIVE POV: Third Person\n- In each tagged character block, narration, action prose, and internal thoughts use third-person for that speaking character.\n- Quoted dialogue remains natural spoken dialogue and may use first-person naturally inside speech.\n- Keep POV consistent within the block. Do not slide into first-person narration or first-person thought outside quoted dialogue.\n- Correct example: Ashley: *She fought against the wind, her pulse hammering.* (If she lost sight of them now, she was fucked.) "I'm here!"\n- Avoid: Ashley: *I fought against the wind, my pulse hammering.* (I can't lose them now.) "I'm here!"`;
+    return `NARRATIVE POV: Third Person\n- In each tagged character block, narration, action prose, and internal thoughts use third-person for that speaking character.\n- Quoted dialogue remains natural spoken dialogue and may use first-person naturally inside speech.\n- Keep POV consistent within the block. Do not slide into first-person narration or first-person thought outside quoted dialogue.\n- Format pattern: CharacterName: *Visible action or narration uses third-person for that character.* (Private thought also stays in third-person unless quoted dialogue naturally uses "I".) "Spoken dialogue stays natural."`;
   };
 
   const renderCharacterDiscovery = (): string => {
@@ -453,7 +454,7 @@ export function getSystemInstruction(
     if (nsfwIntensity === 'high') {
       return `NSFW INTENSITY: High\n- High intensity does not force every scene to become sexual. Non-sexual scenes should remain non-sexual unless attraction, intimacy, erotic tension, nudity, touch, or user direction naturally brings sexual content into focus.\n- When sexual content is active or clearly developing, write it directly instead of softening, fading out, or summarizing.\n- Use explicit, profane, anatomical, and erotic language when it fits the character and moment.\n- Write detailed sexual and sensory description: touch, pressure, heat, wetness, scent, taste, sound, breath, movement, arousal, restraint, urgency, hesitation, dominance, submission, shame, hunger, and pleasure.\n- Let AI characters pursue, initiate, tease, escalate, resist, yield, or take control when that behavior fits their personality, desire, relationship, and the current scene.\n- Kinks, fetishes, and sexual preferences listed in character cards are prominent motivators when the scene supports them, not background details to ignore.\n- Characters may notice and comment on sexually relevant details when those details are visible, felt, or contextually relevant.\n- During active erotic or arousal-heavy moments, sexual thoughts in parentheses are allowed when they add hidden intent or conflict.\n- Never use a thought that only restates what action or dialogue already made obvious.\n- Do not sanitize explicit sexual acts into vague romance-language or summary. If the scene is actively erotic, show the physical details, emotional reactions, and character-specific dialogue.\n- Always filter explicit content through the character's established personality traits and tone. A shy character does not suddenly become aggressive unless the story has earned that shift, and a dominant character may command or direct explicitly when that fits the established character.\n- Vulgarity levels should match the character, not a universal mode.`;
     }
-    return `NSFW INTENSITY: Natural\n- Let intimate or sexual scenes develop organically when the narrative moves in that direction.\n- Engage authentically when sexual tension builds or the user initiates intimacy.\n- Balance explicit content with character development and story progression.\n- If the story moves away from sexual content, follow that direction naturally.\n- Character personality and boundaries guide their behavior in intimate situations.`;
+    return `NSFW INTENSITY: Normal\n- Let intimate or sexual scenes develop organically when the narrative moves in that direction.\n- Engage authentically when sexual tension builds or the user initiates intimacy.\n- Balance explicit content with character development and story progression.\n- If the story moves away from sexual content, follow that direction naturally.\n- Character personality and boundaries guide their behavior in intimate situations.`;
   };
 
   const renderResponseDetail = (): string => {
@@ -679,6 +680,54 @@ export async function* generateRoleplayResponseStream(
     scenePosition: character.scenePosition || '',
     currentMood: character.currentMood || '',
   }));
+  const roleplayContext = {
+    conversationId,
+    currentDay: currentDay ?? null,
+    currentTimeOfDay: currentTimeOfDay ?? null,
+    activeSceneTitle: activeScene?.title || null,
+    activeSceneTags: activeScene?.tags || [],
+    aiCharacterNames,
+    userCharacterNames,
+    characterSceneStates,
+  };
+  const requestBody = {
+    messages,
+    modelId,
+    stream: true,
+    max_tokens: maxTokens,
+    pipeline: 'direct',
+    debugTrace: options?.debugTrace === true,
+    roleplayContext,
+  };
+
+  if (options?.debugTrace === true) {
+    options.onRequestPayload?.({
+      id: 'call1.roleplay-generation',
+      label: 'API Call 1 - Roleplay generation',
+      apiCallGroup: 'call_1',
+      endpoint: '/functions/v1/chat',
+      method: 'POST',
+      capturedAt: Date.now(),
+      status: 'sent',
+      requestBody,
+      modelRequest: {
+        endpoint: 'https://api.x.ai/v1/chat/completions',
+        method: 'POST',
+        capturedAt: Date.now(),
+        requestBody: {
+          model: modelId,
+          messages,
+          stream: true,
+          temperature: 0.55,
+          max_tokens: maxTokens,
+        },
+        notes: [
+          'The chat edge function forwards this body to xAI in the normal direct path.',
+          'If the edge function receives a provider safety retry, the backend debug trace records the fallback path.',
+        ],
+      },
+    });
+  }
 
   const requestController = new AbortController();
   const requestTimeout = window.setTimeout(() => {
@@ -697,24 +746,7 @@ export async function* generateRoleplayResponseStream(
         'Authorization': `Bearer ${accessToken}`,
         'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
       },
-      body: JSON.stringify({
-        messages,
-        modelId,
-        stream: true,
-        max_tokens: maxTokens,
-        pipeline: 'direct',
-        debugTrace: options?.debugTrace === true,
-        roleplayContext: {
-          conversationId,
-          currentDay: currentDay ?? null,
-          currentTimeOfDay: currentTimeOfDay ?? null,
-          activeSceneTitle: activeScene?.title || null,
-          activeSceneTags: activeScene?.tags || [],
-          aiCharacterNames,
-          userCharacterNames,
-          characterSceneStates,
-        },
-      })
+      body: JSON.stringify(requestBody)
     });
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {

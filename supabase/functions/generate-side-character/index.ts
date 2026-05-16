@@ -49,7 +49,7 @@ serve(async (req) => {
     }
     const rateHeaders = getRateLimitHeaders(rateDecision);
 
-    const { name, dialogContext, extractedTraits, worldContext, modelId } = await req.json();
+    const { name, dialogContext, extractedTraits, worldContext, modelId, debugTrace = false } = await req.json();
     
     // GROK ONLY -- always use xAI
     const effectiveModelId = modelId === 'grok-4.3' ? modelId : 'grok-4.3';
@@ -106,23 +106,35 @@ Generate a JSON object with these fields (be creative but consistent with the di
 
 Return ONLY valid JSON, no markdown formatting.`;
 
+    const xaiRequestBody = {
+      model: effectiveModelId,
+      messages: [
+        {
+          role: "system",
+          content: "You are a creative writing assistant specialized in character creation for roleplay stories. You generate detailed, consistent character profiles. Return ONLY valid JSON with no markdown code blocks or extra formatting."
+        },
+        { role: "user", content: prompt }
+      ],
+      temperature: 0.8
+    };
+    const debugPayload = debugTrace === true
+      ? {
+          modelRequest: {
+            endpoint: "https://api.x.ai/v1/chat/completions",
+            method: "POST",
+            capturedAt: Date.now(),
+            requestBody: xaiRequestBody,
+          },
+        }
+      : null;
+
     const response = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${XAI_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model: effectiveModelId,
-        messages: [
-          { 
-            role: "system", 
-            content: "You are a creative writing assistant specialized in character creation for roleplay stories. You generate detailed, consistent character profiles. Return ONLY valid JSON with no markdown code blocks or extra formatting." 
-          },
-          { role: "user", content: prompt }
-        ],
-        temperature: 0.8
-      }),
+      body: JSON.stringify(xaiRequestBody),
     });
 
     if (!response.ok) {
@@ -150,7 +162,7 @@ Return ONLY valid JSON, no markdown formatting.`;
     
     try {
       const profile = JSON.parse(cleanContent);
-      return new Response(JSON.stringify(profile), {
+      return new Response(JSON.stringify({ ...profile, ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}) }), {
         headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
       });
     } catch (parseError) {

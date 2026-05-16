@@ -4,6 +4,7 @@ import { Button, TextArea } from './UI';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
+import { isTaskLevelGoalText, parseExtractedGoalUpdateValue } from '@/lib/goal-state-guard';
 import { uid, now, uuid } from '@/utils';
 import { generateRoleplayResponseStream, buildCanonNote } from '../../services/llm';
 import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2, StepForward, Settings, Image as ImageIcon, Brain, Check, X, Info, Play, Pause, Move, Palette, MessageSquare } from 'lucide-react';
@@ -66,6 +67,7 @@ import {
   CHAT_DEBUG_ISSUE_TAGS,
   normalizeDialogDebugTags,
   type ChatDebugIssueTag,
+  type ChatDebugRequestRecord,
   type ChatDebugTrace,
   type DialogDebugComment,
   type StoredChatDebugTraceMap,
@@ -74,6 +76,7 @@ import {
   buildDialogDebugCommentKey,
   loadChatDebugTraceStore,
   persistChatDebugTraceStore,
+  upsertChatDebugSupportCall,
   upsertChatDebugTrace,
 } from '@/features/chat-debug/storage';
 import {
@@ -115,6 +118,43 @@ interface ChatInterfaceTabProps {
 type ActionEvent = { messageId: string; timestamp: number };
 
 const TIME_SEQUENCE: TimeOfDay[] = ['sunrise', 'day', 'sunset', 'night'];
+
+type EdgeDebugPayload = {
+  modelRequest?: ChatDebugRequestRecord['modelRequest'];
+  modelRequests?: ChatDebugRequestRecord['modelRequests'];
+  primaryModelRequest?: ChatDebugRequestRecord['modelRequest'];
+};
+
+function splitEdgeDebugPayload(data: unknown): {
+  responseBody: unknown;
+  modelRequest?: ChatDebugRequestRecord['modelRequest'];
+  modelRequests?: ChatDebugRequestRecord['modelRequests'];
+} {
+  if (!data || typeof data !== 'object') {
+    return { responseBody: data ?? null };
+  }
+
+  const raw = data as Record<string, unknown>;
+  const payload = raw.chronicle_debug_payload as EdgeDebugPayload | undefined;
+  if (!payload || typeof payload !== 'object') {
+    return { responseBody: data };
+  }
+
+  const responseBody = { ...raw };
+  delete responseBody.chronicle_debug_payload;
+  const modelRequests = [
+    ...(payload.modelRequests || []),
+    ...(payload.primaryModelRequest
+      ? [{ ...payload.primaryModelRequest, label: 'Primary request before fallback retry' }]
+      : []),
+  ];
+
+  return {
+    responseBody,
+    modelRequest: payload.modelRequest,
+    modelRequests: modelRequests.length ? modelRequests : undefined,
+  };
+}
 const DIALOG_DEBUG_ENABLED_STORAGE_KEY = 'chronicle_dialog_debug_enabled_v1';
 
 function buildDialogDebugCommentsStorageKey(scenarioId: string, conversationId: string): string {
@@ -1065,16 +1105,45 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     [conversation?.messages, dialogDebugComments],
   );
 
-  const saveChatDebugTrace = useCallback((message: Message, trace: ChatDebugTrace | null) => {
-    if (!isAdmin || !trace) return;
+  const saveChatDebugTrace = useCallback((
+    message: Message,
+    trace: ChatDebugTrace | null,
+    call1Request?: ChatDebugRequestRecord | null,
+  ) => {
+    if (!isAdmin || (!trace && !call1Request)) return;
 
     const generationId = message.generationId || message.id;
+    const enrichedCall1Request = call1Request && trace?.modelRequest
+      ? {
+          ...call1Request,
+          modelRequest: trace.modelRequest,
+          modelRequests: trace.modelRequests || call1Request.modelRequests,
+        }
+      : call1Request;
     const nextStore = upsertChatDebugTrace(chatDebugTraceStoreRef.current, {
       messageId: message.id,
       generationId,
       capturedAt: Date.now(),
       trace,
+      call1Request: enrichedCall1Request || undefined,
     });
+
+    chatDebugTraceStoreRef.current = nextStore;
+    persistChatDebugTraceStore(scenarioId, conversationId, nextStore);
+  }, [conversationId, isAdmin, scenarioId]);
+
+  const recordChatDebugSupportCall = useCallback((
+    message: Pick<Message, 'id' | 'generationId'> | null | undefined,
+    call: ChatDebugRequestRecord,
+  ) => {
+    if (!isAdmin || !message?.id) return;
+
+    const nextStore = upsertChatDebugSupportCall(
+      chatDebugTraceStoreRef.current,
+      message.id,
+      message.generationId || message.id,
+      call,
+    );
 
     chatDebugTraceStoreRef.current = nextStore;
     persistChatDebugTraceStore(scenarioId, conversationId, nextStore);
@@ -1206,6 +1275,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       );
     }
 
+    for (const memory of memories.filter((entry) => entry.conversationId === conversationId && entry.sourceMessageId)) {
+      if (memory.sourceGenerationId && latestMessageGenerationMap.get(memory.sourceMessageId!) !== memory.sourceGenerationId) continue;
+      append(
+        memory.sourceMessageId!,
+        `Memory ${memory.entryType || 'entry'} saved at ${formatClock(memory.day, memory.timeOfDay)}: ${memory.content}`,
+      );
+    }
+
     return changes;
   }, [
     appData.characters,
@@ -1215,6 +1292,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     effectiveWorldCore.storyGoals,
     goalStepDerivations,
     latestMessageGenerationMap,
+    memories,
     sideCharacterSnapshots,
   ]);
   
@@ -2471,9 +2549,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   // Async function to generate side character details via edge function
   // Uses sideCharactersRef to avoid stale closure issues
   const generateSideCharacterDetailsAsync = async (
-    characterId: string, 
-    name: string, 
-    dialogContext: string
+    characterId: string,
+    name: string,
+    dialogContext: string,
+    sourceMessage?: Pick<Message, 'id' | 'generationId'>,
   ) => {
     try {
       debugLog(`Generating details for new side character: ${name}`);
@@ -2492,14 +2571,44 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       });
       
       // 1. Generate detailed profile via Grok
+      const profileRequestBody = {
+        name,
+        dialogContext,
+        extractedTraits: {},
+        worldContext: appData.world.core.storyPremise,
+        modelId,
+        debugTrace: isAdmin,
+      };
+      recordChatDebugSupportCall(sourceMessage, {
+        id: `support.side-character-profile.${characterId}`,
+        label: `Supporting Call - Side-character profile (${name})`,
+        apiCallGroup: 'support',
+        endpoint: '/functions/v1/generate-side-character',
+        method: 'POST',
+        capturedAt: Date.now(),
+        status: 'sent',
+        requestBody: profileRequestBody,
+      });
+
       const { data: profileData, error: profileError } = await supabase.functions.invoke('generate-side-character', {
-        body: { 
-          name, 
-          dialogContext, 
-          extractedTraits: {},
-          worldContext: appData.world.core.storyPremise,
-          modelId
-        }
+        body: profileRequestBody
+      });
+      const profileDebug = splitEdgeDebugPayload(profileData);
+      const profileForUse = profileDebug.responseBody as any;
+
+      recordChatDebugSupportCall(sourceMessage, {
+        id: `support.side-character-profile.${characterId}`,
+        label: `Supporting Call - Side-character profile (${name})`,
+        apiCallGroup: 'support',
+        endpoint: '/functions/v1/generate-side-character',
+        method: 'POST',
+        capturedAt: Date.now(),
+        status: profileError ? 'error' : 'completed',
+        requestBody: profileRequestBody,
+        modelRequest: profileDebug.modelRequest,
+        modelRequests: profileDebug.modelRequests,
+        responseBody: profileDebug.responseBody ?? null,
+        error: profileError ? JSON.stringify(profileError) : undefined,
       });
       
       if (profileError) {
@@ -2507,7 +2616,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         return;
       }
       
-      if (profileData && onUpdateSideCharacters) {
+      if (profileForUse && onUpdateSideCharacters) {
         void trackAiUsageEvent({
           eventType: 'side_character_card_generated',
           eventSource: 'chat-interface',
@@ -2517,7 +2626,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             characterName: name,
             modelId,
             inputChars: dialogContext.length + (appData.world.core.storyPremise?.length || 0),
-            outputChars: JSON.stringify(profileData).length,
+            outputChars: JSON.stringify(profileForUse).length,
           },
         });
 
@@ -2526,16 +2635,16 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           if (sc.id === characterId) {
             return {
               ...sc,
-              age: profileData.age || sc.age,
-              sexType: profileData.sexType || sc.sexType,
-              roleDescription: profileData.roleDescription || sc.roleDescription,
-              physicalAppearance: { ...sc.physicalAppearance, ...profileData.physicalAppearance },
-              currentlyWearing: { ...sc.currentlyWearing, ...profileData.currentlyWearing },
-              background: { ...sc.background, ...profileData.background },
+              age: profileForUse.age || sc.age,
+              sexType: profileForUse.sexType || sc.sexType,
+              roleDescription: profileForUse.roleDescription || sc.roleDescription,
+              physicalAppearance: { ...sc.physicalAppearance, ...profileForUse.physicalAppearance },
+              currentlyWearing: { ...sc.currentlyWearing, ...profileForUse.currentlyWearing },
+              background: { ...sc.background, ...profileForUse.background },
               personality: { 
                 ...sc.personality, 
-                ...profileData.personality,
-                traits: profileData.personality?.traits || sc.personality.traits
+                ...profileForUse.personality,
+                traits: profileForUse.personality?.traits || sc.personality.traits
               },
               updatedAt: now()
             };
@@ -2555,7 +2664,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         }
         
         // 2. Generate avatar using the avatarPrompt - pass modelId and art style
-        if (profileData.avatarPrompt) {
+        if (profileForUse.avatarPrompt) {
           debugLog(`Generating avatar for ${name}...`);
           
           // Get the art style prompt from the scenario's selected art style
@@ -2568,24 +2677,54 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             apiCallGroup: 'call_2',
             parentRowId: 'summary.call2.side_character_avatar',
             detailPresence: buildRequiredPresence([
-              ['call2.side_character_avatar.avatar_prompt', profileData.avatarPrompt],
+              ['call2.side_character_avatar.avatar_prompt', profileForUse.avatarPrompt],
               ['call2.side_character_avatar.character_name', name],
               ['call2.side_character_avatar.model_id', modelId],
             ]),
           });
           
+          const avatarRequestBody = {
+            avatarPrompt: profileForUse.avatarPrompt,
+            characterName: name,
+            modelId,
+            stylePrompt: styleData?.backendPrompt || '',
+            debugTrace: isAdmin,
+          };
+          recordChatDebugSupportCall(sourceMessage, {
+            id: `support.side-character-avatar.${characterId}`,
+            label: `Supporting Call - Side-character avatar (${name})`,
+            apiCallGroup: 'support',
+            endpoint: '/functions/v1/generate-side-character-avatar',
+            method: 'POST',
+            capturedAt: Date.now(),
+            status: 'sent',
+            requestBody: avatarRequestBody,
+          });
+
           const { data: avatarData, error: avatarError } = await supabase.functions.invoke('generate-side-character-avatar', {
-            body: { 
-              avatarPrompt: profileData.avatarPrompt,
-              characterName: name,
-              modelId,
-              stylePrompt: styleData?.backendPrompt || ''  // Pass the art style
-            }
+            body: avatarRequestBody
+          });
+          const avatarDebug = splitEdgeDebugPayload(avatarData);
+          const avatarResponseBody = avatarDebug.responseBody as any;
+
+          recordChatDebugSupportCall(sourceMessage, {
+            id: `support.side-character-avatar.${characterId}`,
+            label: `Supporting Call - Side-character avatar (${name})`,
+            apiCallGroup: 'support',
+            endpoint: '/functions/v1/generate-side-character-avatar',
+            method: 'POST',
+            capturedAt: Date.now(),
+            status: avatarError ? 'error' : 'completed',
+            requestBody: avatarRequestBody,
+            modelRequest: avatarDebug.modelRequest,
+            modelRequests: avatarDebug.modelRequests,
+            responseBody: avatarResponseBody ? { ...avatarResponseBody, imageUrl: avatarResponseBody.imageUrl ? '[image data url omitted from summary]' : undefined } : null,
+            error: avatarError ? JSON.stringify(avatarError) : undefined,
           });
           
           if (avatarError) {
             console.error('Avatar generation failed:', avatarError);
-          } else if (avatarData?.imageUrl) {
+          } else if (avatarResponseBody?.imageUrl) {
             void trackAiUsageEvent({
               eventType: 'side_character_avatar_generated',
               eventSource: 'chat-interface',
@@ -2594,7 +2733,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
                 characterId,
                 characterName: name,
                 modelId,
-                inputChars: profileData.avatarPrompt.length,
+                inputChars: profileForUse.avatarPrompt.length,
               },
             });
 
@@ -2603,7 +2742,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
               if (sc.id === characterId) {
                 return {
                   ...sc,
-                  avatarDataUrl: avatarData.imageUrl,
+                  avatarDataUrl: avatarResponseBody.imageUrl,
                   isAvatarGenerating: false,
                   updatedAt: now()
                 };
@@ -2614,7 +2753,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             
             // Persist avatar update to database
             try {
-              await supabaseData.updateSideCharacter(characterId, { avatarDataUrl: avatarData.imageUrl });
+              await supabaseData.updateSideCharacter(characterId, { avatarDataUrl: avatarResponseBody.imageUrl });
             } catch (err) {
               console.error(`Failed to update side character avatar in database:`, err);
             }
@@ -2624,12 +2763,33 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         }
       }
     } catch (error) {
+      recordChatDebugSupportCall(sourceMessage, {
+        id: `support.side-character-profile.${characterId}`,
+        label: `Supporting Call - Side-character profile (${name})`,
+        apiCallGroup: 'support',
+        endpoint: '/functions/v1/generate-side-character',
+        method: 'POST',
+        capturedAt: Date.now(),
+        status: 'error',
+        requestBody: {
+          name,
+          dialogContext,
+          extractedTraits: {},
+          worldContext: appData.world.core.storyPremise,
+          modelId,
+          debugTrace: isAdmin,
+        },
+        error: error instanceof Error ? error.message : String(error),
+      });
       console.error('Side character generation failed:', error);
     }
   };
 
   // Process AI response to detect new characters
-  const processResponseForNewCharacters = async (responseText: string) => {
+  const processResponseForNewCharacters = async (
+    responseText: string,
+    sourceMessage?: Pick<Message, 'id' | 'generationId'>,
+  ) => {
     if (!onUpdateSideCharacters) return;
     
     const knownNames = getKnownCharacterNames(effectiveAppData);
@@ -2674,7 +2834,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       newSideCharacters.forEach(sc => {
         const nc = newCharacters.find(c => c.name === sc.name);
         if (nc) {
-          generateSideCharacterDetailsAsync(sc.id, sc.name, nc.dialogContext);
+          generateSideCharacterDetailsAsync(sc.id, sc.name, nc.dialogContext, sourceMessage);
         }
       });
     }
@@ -2909,15 +3069,47 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         },
       });
 
+      const requestBody = {
+        userMessage,
+        aiResponse,
+        pendingSteps: pendingSteps.map(s => ({ stepId: s.stepId, description: s.description })),
+        flexibility: pendingSteps[0]?.flexibility || 'normal',
+        currentDay,
+        currentTimeOfDay,
+        debugTrace: isAdmin,
+      };
+      const sourceMessage = sourceAssistantMessageId
+        ? { id: sourceAssistantMessageId, generationId: sourceAssistantGenerationId }
+        : null;
+      recordChatDebugSupportCall(sourceMessage, {
+        id: 'call2.goal-progress-eval',
+        label: 'Supporting Call - Goal progress evaluation',
+        apiCallGroup: 'call_2',
+        endpoint: '/functions/v1/evaluate-goal-progress',
+        method: 'POST',
+        capturedAt: Date.now(),
+        status: 'sent',
+        requestBody,
+      });
+
       const { data, error } = await supabase.functions.invoke('evaluate-goal-progress', {
-        body: {
-          userMessage,
-          aiResponse,
-          pendingSteps: pendingSteps.map(s => ({ stepId: s.stepId, description: s.description })),
-          flexibility: pendingSteps[0]?.flexibility || 'normal',
-          currentDay,
-          currentTimeOfDay,
-        }
+        body: requestBody,
+      });
+      const goalDebug = splitEdgeDebugPayload(data);
+
+      recordChatDebugSupportCall(sourceMessage, {
+        id: 'call2.goal-progress-eval',
+        label: 'Supporting Call - Goal progress evaluation',
+        apiCallGroup: 'call_2',
+        endpoint: '/functions/v1/evaluate-goal-progress',
+        method: 'POST',
+        capturedAt: Date.now(),
+        status: error ? 'error' : 'completed',
+        requestBody,
+        modelRequest: goalDebug.modelRequest,
+        modelRequests: goalDebug.modelRequests,
+        responseBody: goalDebug.responseBody ?? null,
+        error: error ? JSON.stringify(error) : undefined,
       });
 
       if (error || !data?.stepUpdates?.length) return;
@@ -3073,17 +3265,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     });
 
     return bestScore >= 0.58 ? bestIndex : -1;
-  };
-
-  const isTaskLevelGoalText = (value: string): boolean => {
-    const normalized = normalizeForSimilarity(value);
-    if (!normalized) return true;
-
-    const words = normalized.split(/\s+/).filter(Boolean);
-    const startsWithImmediateAction = /^(check|open|close|grab|pick|look|search|walk|move|ask|tell|hand|push|pull|light|inspect|scan)\b/.test(normalized);
-    const hasImmediateTimeBox = /\b(now|immediately|right now|this turn|this exchange|next exchange|next few exchanges)\b/.test(normalized);
-
-    return hasImmediateTimeBox || (startsWithImmediateAction && words.length <= 8);
   };
 
   const findNearDuplicateExtraIndex = (
@@ -3378,17 +3559,49 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         },
       });
       
+      const requestBody = {
+        userMessage,
+        aiResponse,
+        recentContext,
+        characters: allCharacters,
+        modelId,
+        eligibleCharacters: [...eligibleNames],
+        currentDay,
+        currentTimeOfDay,
+        debugTrace: isAdmin,
+      };
+      const sourceMessage = meta?.sourceMessageId
+        ? { id: meta.sourceMessageId, generationId: meta.sourceMessageGenerationId }
+        : null;
+      recordChatDebugSupportCall(sourceMessage, {
+        id: 'call2.character-state-sync',
+        label: 'API Call 2 - Character state sync',
+        apiCallGroup: 'call_2',
+        endpoint: '/functions/v1/extract-character-updates',
+        method: 'POST',
+        capturedAt: Date.now(),
+        status: 'sent',
+        requestBody,
+      });
+
       const { data, error } = await supabase.functions.invoke('extract-character-updates', {
-        body: {
-          userMessage,
-          aiResponse,
-          recentContext,
-          characters: allCharacters,
-          modelId,
-          eligibleCharacters: [...eligibleNames],
-          currentDay,
-          currentTimeOfDay,
-        }
+        body: requestBody
+      });
+      const characterDebug = splitEdgeDebugPayload(data);
+
+      recordChatDebugSupportCall(sourceMessage, {
+        id: 'call2.character-state-sync',
+        label: 'API Call 2 - Character state sync',
+        apiCallGroup: 'call_2',
+        endpoint: '/functions/v1/extract-character-updates',
+        method: 'POST',
+        capturedAt: Date.now(),
+        status: error ? 'error' : 'completed',
+        requestBody,
+        modelRequest: characterDebug.modelRequest,
+        modelRequests: characterDebug.modelRequests,
+        responseBody: characterDebug.responseBody ?? null,
+        error: error ? JSON.stringify(error) : undefined,
       });
       
       if (error) {
@@ -3658,25 +3871,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
         if (value.trim().toUpperCase() === 'REMOVE') continue;
 
-        let desiredOutcome = '';
-        let currentStatus = value;
-        let progress = 0;
-        const desiredMatch = value.match(/desired_outcome:\s*(.*?)\s*\|\s*current_status:/i);
-        if (desiredMatch) desiredOutcome = desiredMatch[1].trim();
-        const statusMatch = value.match(/current_status:\s*(.*?)\s*\|\s*progress:/i);
-        if (statusMatch) {
-          currentStatus = statusMatch[1].trim();
-        } else {
-          currentStatus = value
-            .replace(/desired_outcome:\s*.*?\s*\|\s*/i, '')
-            .replace(/\s*\|\s*progress:\s*\d+.*/i, '')
-            .replace(/current_status:\s*/i, '')
-            .trim();
-        }
-        const progressMatch = value.match(/progress:\s*(\d+)/i);
-        if (progressMatch) progress = Math.min(100, Math.max(0, parseInt(progressMatch[1], 10)));
-        const completeStepsMatch = value.match(/complete_steps:\s*([^|]+)/i);
-        const newStepsMatch = value.match(/new_steps:\s*(.*)/i);
+        const parsedGoalUpdate = parseExtractedGoalUpdateValue(value);
+        const desiredOutcome = parsedGoalUpdate.desiredOutcome;
+        let currentStatus = parsedGoalUpdate.currentStatus;
+        let progress = parsedGoalUpdate.progress ?? 0;
 
         let existingGoalIndex = existingGoals.findIndex(g => g.title.toLowerCase() === goalTitle.toLowerCase());
         if (existingGoalIndex === -1) {
@@ -3686,19 +3884,17 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         if (existingGoalIndex !== -1) {
           const existingGoal = existingGoals[existingGoalIndex];
           const updatedSteps = [...(existingGoal.steps || [])];
-          if (!progressMatch) progress = existingGoal.progress || 0;
-          if (completeStepsMatch) {
-            const indices = completeStepsMatch[1].trim().split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
-            for (const idx of indices) {
-              if (idx >= 1 && idx <= updatedSteps.length) {
-                updatedSteps[idx - 1] = {
-                  ...updatedSteps[idx - 1],
-                  completed: true,
-                  completedAt: Date.now(),
-                  completedDay: currentDay,
-                  completedTimeOfDay: currentTimeOfDay,
-                };
-              }
+          if (!parsedGoalUpdate.hasProgress) progress = existingGoal.progress || 0;
+          if (!parsedGoalUpdate.hasCurrentStatus) currentStatus = existingGoal.currentStatus || '';
+          for (const idx of parsedGoalUpdate.completeStepIndexes) {
+            if (idx >= 1 && idx <= updatedSteps.length) {
+              updatedSteps[idx - 1] = {
+                ...updatedSteps[idx - 1],
+                completed: true,
+                completedAt: Date.now(),
+                completedDay: currentDay,
+                completedTimeOfDay: currentTimeOfDay,
+              };
             }
           }
           if (updatedSteps.length > 0) {
@@ -3707,7 +3903,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           }
           existingGoals[existingGoalIndex] = {
             ...existingGoal,
-            currentStatus,
+            currentStatus: currentStatus || existingGoal.currentStatus || '',
             progress,
             steps: updatedSteps,
             ...(desiredOutcome ? { desiredOutcome } : {}),
@@ -3718,15 +3914,15 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           if (isTaskLevelGoalText(goalTitle) && !hasDurableOutcome) {
             continue;
           }
-          const parsedSteps = newStepsMatch
-            ? parseGoalSteps(newStepsMatch[1].trim()).filter(step => !isTaskLevelGoalText(step.description))
+          const parsedSteps = parsedGoalUpdate.newStepsText
+            ? parseGoalSteps(parsedGoalUpdate.newStepsText).filter(step => !isTaskLevelGoalText(step.description))
             : [];
 
           existingGoals.push({
             id: `goal_${uuid().slice(0, 12)}`,
             title: goalTitle,
             desiredOutcome,
-            currentStatus,
+            currentStatus: currentStatus || 'Goal newly established.',
             progress,
             steps: parsedSteps,
             createdAt: Date.now(),
@@ -4163,15 +4359,43 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       },
     });
 
+    const requestBody = {
+      messageText,
+      userMessage,
+      aiResponse,
+      characterNames: allCharacterNames,
+      modelId,
+      debugTrace: isAdmin,
+    };
+    recordChatDebugSupportCall(sourceMessage, {
+      id: 'call2.memory-extraction',
+      label: 'Supporting Call - Memory extraction',
+      apiCallGroup: 'call_2',
+      endpoint: '/functions/v1/extract-memory-events',
+      method: 'POST',
+      capturedAt: Date.now(),
+      status: 'sent',
+      requestBody,
+    });
+
     supabase.functions.invoke('extract-memory-events', {
-      body: {
-        messageText,
-        userMessage,
-        aiResponse,
-        characterNames: allCharacterNames,
-        modelId,
-      }
+      body: requestBody
     }).then(({ data, error }) => {
+      const memoryDebug = splitEdgeDebugPayload(data);
+      recordChatDebugSupportCall(sourceMessage, {
+        id: 'call2.memory-extraction',
+        label: 'Supporting Call - Memory extraction',
+        apiCallGroup: 'call_2',
+        endpoint: '/functions/v1/extract-memory-events',
+        method: 'POST',
+        capturedAt: Date.now(),
+        status: error ? 'error' : 'completed',
+        requestBody,
+        modelRequest: memoryDebug.modelRequest,
+        modelRequests: memoryDebug.modelRequests,
+        responseBody: memoryDebug.responseBody ?? null,
+        error: error ? JSON.stringify(error) : undefined,
+      });
       if (error || !data?.extractedEvents?.length) return;
       if (!isMessageGenerationStillCurrent(sourceMessage.id, sourceMessage.generationId)) {
         debugLog('[memoryExtraction] Discarded stale result for non-current turn');
@@ -4203,6 +4427,17 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         sourceMessage.generationId,
       );
     }).catch(err => {
+      recordChatDebugSupportCall(sourceMessage, {
+        id: 'call2.memory-extraction',
+        label: 'Supporting Call - Memory extraction',
+        apiCallGroup: 'call_2',
+        endpoint: '/functions/v1/extract-memory-events',
+        method: 'POST',
+        capturedAt: Date.now(),
+        status: 'error',
+        requestBody,
+        error: err instanceof Error ? err.message : String(err),
+      });
       console.error('[queueAssistantMemoryExtraction] Memory extraction failed:', err);
     });
   }, [
@@ -4212,8 +4447,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     currentTimeOfDay,
     handleCreateMemory,
     isMessageGenerationStillCurrent,
+    isAdmin,
     memoriesEnabled,
     modelId,
+    recordChatDebugSupportCall,
   ]);
 
   const queueAssistantDerivedWork = (
@@ -4355,6 +4592,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     try {
       let fullText = '';
       let pendingDebugTrace: ChatDebugTrace | null = null;
+      let pendingCall1Request: ChatDebugRequestRecord | null = null;
       const llmAppData = buildLLMAppData();
       // Issue #8: Detect user-authored AI character content and prepend canon note
       const canonNote = buildCanonNote(input, canonNoteCharacters);
@@ -4381,6 +4619,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           debugTrace: isAdmin,
           onDebugTrace: (trace) => {
             pendingDebugTrace = trace;
+          },
+          onRequestPayload: (request) => {
+            pendingCall1Request = request;
           },
         }
       );
@@ -4425,11 +4666,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       latestConversationsRef.current = nextConvsWithAi;
       onUpdate(nextConvsWithAi);
       onSaveScenario(nextConvsWithAi);
-      saveChatDebugTrace(aiMsg, pendingDebugTrace);
+      saveChatDebugTrace(aiMsg, pendingDebugTrace, pendingCall1Request);
       queueAssistantDerivedWork(userInput, cleanedText, aiMsg);
       
       // Process AI response for new character detection
-      processResponseForNewCharacters(cleanedText);
+      processResponseForNewCharacters(cleanedText, aiMsg);
     } catch (err) {
       console.error(err);
       onSaveScenario(nextConvsWithUser);
@@ -4662,6 +4903,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       
       let fullText = '';
       let pendingDebugTrace: ChatDebugTrace | null = null;
+      let pendingCall1Request: ChatDebugRequestRecord | null = null;
       // Apply canon note to regenerate flow so user-authored AI dialogue is preserved
       const canonNote = buildCanonNote(userMessage.text, canonNoteCharacters);
       const regenInput = canonNote + userMessage.text;
@@ -4682,6 +4924,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           debugTrace: isAdmin,
           onDebugTrace: (trace) => {
             pendingDebugTrace = trace;
+          },
+          onRequestPayload: (request) => {
+            pendingCall1Request = request;
           },
         }
       );
@@ -4741,11 +4986,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       supabaseData.saveNewMessages(conversationId, [regeneratedMessage]).catch(err => {
         console.error('[handleRegenerate] Failed to persist regenerated message:', err);
       });
-      saveChatDebugTrace(regeneratedMessage, pendingDebugTrace);
+      saveChatDebugTrace(regeneratedMessage, pendingDebugTrace, pendingCall1Request);
       queueAssistantDerivedWork(userMessage.text, cleanedText, regeneratedMessage);
       
       // Process for new characters after normalization
-      processResponseForNewCharacters(cleanedText);
+      processResponseForNewCharacters(cleanedText, regeneratedMessage);
     } catch (err) {
       console.error(err);
       const message = err instanceof Error ? err.message : "Regeneration failed. Check your connection or model settings.";
@@ -4784,6 +5029,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     try {
       let fullText = '';
       let pendingDebugTrace: ChatDebugTrace | null = null;
+      let pendingCall1Request: ChatDebugRequestRecord | null = null;
       
       // Build goal-aware continue prompt without turning goals into a task list.
       const goalSummaryParts: string[] = [];
@@ -4853,6 +5099,9 @@ Do not acknowledge this instruction in your response.`;
           onDebugTrace: (trace) => {
             pendingDebugTrace = trace;
           },
+          onRequestPayload: (request) => {
+            pendingCall1Request = request;
+          },
         }
       );
       
@@ -4897,10 +5146,10 @@ Do not acknowledge this instruction in your response.`;
       latestConversationsRef.current = updatedConvs;
       onUpdate(updatedConvs);
       onSaveScenario(updatedConvs);
-      saveChatDebugTrace(aiMsg, pendingDebugTrace);
+      saveChatDebugTrace(aiMsg, pendingDebugTrace, pendingCall1Request);
       queueAssistantDerivedWork('', cleanedText, aiMsg);
       
-      processResponseForNewCharacters(cleanedText);
+      processResponseForNewCharacters(cleanedText, aiMsg);
       
     } catch (err) {
       console.error(err);
@@ -6853,6 +7102,7 @@ const updatedChar: SideCharacter = {
                           sanitizeAssistantText: sanitizeAssistantMessageText,
                           messageComments: exportDialogDebugComments,
                           postTurnStateChanges: exportPostTurnStateChanges,
+                          debugRecords: chatDebugTraceStoreRef.current,
                         });
                         const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
                         const url = URL.createObjectURL(blob);

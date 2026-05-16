@@ -24,7 +24,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const { messageText, userMessage, aiResponse, characterNames, modelId } = await req.json();
+    const { messageText, userMessage, aiResponse, characterNames, modelId, debugTrace = false } = await req.json();
     const exchangeText = [
       userMessage ? `USER MESSAGE:\n${userMessage}` : '',
       aiResponse ? `AI RESPONSE:\n${aiResponse}` : '',
@@ -62,25 +62,36 @@ CHARACTERS: ${characterNames?.join(', ') || 'Unknown'}
 - Keep each point under 90 characters.
 - For preferences, intentions, rules, or secrets, state who they belong to.
 
-Return ONLY a JSON array. Example: ["James confessed his love", "Ashley revealed her secret identity"]
+Return ONLY a JSON array of durable event strings.
 Empty array is acceptable: []`;
 
     // GROK ONLY -- call xAI API directly
     const effectiveModel = modelId === "grok-4.3" ? modelId : "grok-4.3";
+    const xaiRequestBody = {
+      model: effectiveModel,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Extract durable story-memory events from this latest exchange:\n\n${exchangeText}` }
+      ],
+      temperature: 0.3,
+    };
+    const debugPayload = debugTrace === true
+      ? {
+          modelRequest: {
+            endpoint: "https://api.x.ai/v1/chat/completions",
+            method: "POST",
+            capturedAt: Date.now(),
+            requestBody: xaiRequestBody,
+          },
+        }
+      : null;
     const response = await fetch("https://api.x.ai/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${XAI_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model: effectiveModel,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `Extract durable story-memory events from this latest exchange:\n\n${exchangeText}` }
-        ],
-        temperature: 0.3,
-      }),
+      body: JSON.stringify(xaiRequestBody),
     });
 
     if (!response.ok) {
@@ -116,7 +127,7 @@ Empty array is acceptable: []`;
     console.log(`[extract-memory-events] Extracted ${extractedEvents.length} events from latest exchange`);
 
     return new Response(
-      JSON.stringify({ extractedEvents }),
+      JSON.stringify({ extractedEvents, ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}) }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
