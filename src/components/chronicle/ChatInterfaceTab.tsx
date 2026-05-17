@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 import { isTaskLevelGoalText, parseExtractedGoalUpdateValue } from '@/lib/goal-state-guard';
+import { buildAssistantStyleDirective } from '@/lib/assistant-style-directive';
 import { uid, now, uuid } from '@/utils';
 import { generateRoleplayResponseStream, buildCanonNote } from '../../services/llm';
 import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2, StepForward, Settings, Image as ImageIcon, Brain, Check, X, Info, Play, Pause, Move, Palette, MessageSquare } from 'lucide-react';
@@ -1347,58 +1348,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
   // Issue #7: Compute a narrow style directive only when recent AI turns lock into a repeated pattern.
   const getAdaptiveStyleDirective = (): string => {
-    const recentLengths = responseLengthsRef.current.slice(-3);
-    const recentAssistantMessages = (conversation?.messages || [])
-      .filter((message) => message.role === 'assistant' && message.text?.trim())
-      .slice(-3);
-
-    const hasLockedLength = recentLengths.length >= 3 && (() => {
-      const min = Math.min(...recentLengths);
-      const max = Math.max(...recentLengths);
-      return min > 0 && (max - min) / min <= 0.2;
-    })();
-
-    const getSegmentShape = (content: string): string => {
-      const markers = [
-        { label: 'action', index: content.indexOf('*') },
-        { label: 'dialogue', index: content.indexOf('"') },
-        { label: 'thought', index: content.indexOf('(') },
-      ]
-        .filter((marker) => marker.index >= 0)
-        .sort((a, b) => a.index - b.index)
-        .map((marker) => marker.label);
-      return markers.join('>');
-    };
-
-    const getMessageShape = (text: string): string => parseMessageSegments(text)
-      .map((segment) => getSegmentShape(segment.content))
-      .filter(Boolean)
-      .join('|');
-
-    const shapes = recentAssistantMessages.map((message) => getMessageShape(message.text)).filter(Boolean);
-    const hasLockedShape = shapes.length >= 3 && shapes.every((shape) => shape === shapes[0]);
-
-    const quotedLineCounts = new Map<string, number>();
-    recentAssistantMessages.forEach((message) => {
-      const quotes = Array.from(message.text.matchAll(/"([^"]{3,120})"/g))
-        .map((match) => match[1].toLowerCase().replace(/\s+/g, ' ').trim())
-        .filter((quote) => quote.split(/\s+/).length <= 14);
-      new Set(quotes).forEach((quote) => {
-        quotedLineCounts.set(quote, (quotedLineCounts.get(quote) || 0) + 1);
-      });
-    });
-    const hasRepeatedShortQuote = Array.from(quotedLineCounts.values()).some((count) => count >= 2);
-
-    if (!hasLockedLength && !hasLockedShape && !hasRepeatedShortQuote) return '';
-
-    const reasons = [
-      hasLockedLength ? 'similar response lengths' : '',
-      hasLockedShape ? 'the same action/dialogue/thought order' : '',
-      hasRepeatedShortQuote ? 'reused short dialogue phrasing' : '',
-    ].filter(Boolean).join(', ');
-
-    return `[STYLE ADJUSTMENT FOR THIS TURN]
-Recent assistant responses are repeating ${reasons}. Vary the next response naturally. Do not force every character block into the same action-dialogue-internal-thought sequence, and do not reuse recent distinctive sentence shapes or short reactive lines unless the scene specifically calls for that repetition.`;
+    return buildAssistantStyleDirective(conversation?.messages || [], responseLengthsRef.current);
   };
 
   // Ref to always hold current sideCharacters - avoids stale closure in async callbacks

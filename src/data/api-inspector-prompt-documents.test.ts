@@ -23,8 +23,11 @@ describe("api-inspector prompt document registry", () => {
     expect(document.body).toContain("{{up to 9 prior roleplay messages before the current turn}}");
     expect(document.body).toContain("{{adaptiveStyleDirective when triggered}}");
     expect(document.body).toContain("{{responsePriorityCheck}}");
+    expect(document.body).toContain("{{assistantStructureReminder}}");
     expect(document.body).toContain("RESPONSE PRIORITY CHECK APPENDED TO FINAL USER MESSAGE ON EVERY LIVE ROLEPLAY CALL");
     expect(document.body).toContain("Write the next response from the immediate scene first.");
+    expect(document.body).toContain("ASSISTANT STRUCTURE REMINDER APPENDED TO FINAL USER MESSAGE ON EVERY LIVE ROLEPLAY CALL");
+    expect(document.body).toContain("Compare against prior assistant outputs, not the user's message.");
     expect(document.body).toContain("--- SECTION 1 - CORE ROLE LOGIC ---");
     expect(document.body).toContain("--- SECTION 7 - DIALOG FORMATTING AND ROLEPLAY RULES ---");
     expect(document.body).toContain("REGENERATION REQUEST APPENDED TO FINAL USER MESSAGE ONLY WHEN REGENERATING");

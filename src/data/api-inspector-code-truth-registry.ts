@@ -475,7 +475,7 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               ],
               codeSourceLabel: "`messages` assembly in `generateRoleplayResponseStream`",
               promptViewEnabled: true,
-              codeSource: `const historyMessages = conversation.messages.slice(-9);\nconst messages = [\n  { role: 'system', content: systemInstruction },\n  ...historyMessages,\n];\nmessages.push({ role: 'user', content: [SESSION ...] + adaptiveStyleDirective + userMessage + regen + RESPONSE_PRIORITY_CHECK_TEXT });`,
+              codeSource: `const historyMessages = conversation.messages.slice(-9);\nconst messages = [\n  { role: 'system', content: systemInstruction },\n  ...historyMessages,\n];\nmessages.push({ role: 'user', content: [SESSION ...] + adaptiveStyleDirective + userMessage + regen + RESPONSE_PRIORITY_CHECK_TEXT + ASSISTANT_STRUCTURE_REMINDER_TEXT });`,
             },
             {
               id: "item-runtime-directive-message",
@@ -483,7 +483,7 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               tagType: "context-injection",
               icon: "📥",
               purpose:
-                "Injects a narrow one-turn style directive into the final user wrapper only when recent assistant turns repeat the same length band, block shape, or short dialogue phrasing.",
+                "Injects a narrow one-turn style directive into the final user wrapper only when recent assistant turns repeat the same length band, block cadence, exact block shape, or short dialogue phrasing.",
               whyItExists:
                 "The live writer needs a small corrective nudge when repetition is detected, but Chronicle should not add random style prompts or permanent extra rule blocks every turn.",
               problemSolved:
@@ -496,7 +496,7 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               ],
               codeSourceLabel: "Adaptive style directive text",
               promptViewEnabled: true,
-              codeSource: "[STYLE ADJUSTMENT FOR THIS TURN]\nRecent assistant responses are repeating ${reasons}. Vary the next response naturally...",
+              codeSource: "[STYLE ADJUSTMENT FOR THIS TURN]\nYour own recent assistant responses are repeating ${reasons}. Compare against prior assistant outputs, not the user's message. Vary the next response naturally...",
               crossRefs: [
                 {
                   badge: "2",
@@ -523,7 +523,7 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               ],
               codeSourceLabel: "Final user wrapper expression",
               promptViewEnabled: true,
-              codeSource: "[SESSION: Message N] + adaptiveStyleDirective + userMessage + REGENERATION_DIRECTIVE_TEXT + RESPONSE_PRIORITY_CHECK_TEXT",
+              codeSource: "[SESSION: Message N] + adaptiveStyleDirective + userMessage + REGENERATION_DIRECTIVE_TEXT + RESPONSE_PRIORITY_CHECK_TEXT + ASSISTANT_STRUCTURE_REMINDER_TEXT",
               crossRefs: [
                 {
                   badge: "1",

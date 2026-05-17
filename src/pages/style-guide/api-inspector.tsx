@@ -123,6 +123,13 @@ interface InspectorModel {
   itemIds: string[];
 }
 
+interface ActivePromptView {
+  title: string;
+  source: string;
+  label: string;
+  filename: string;
+}
+
 const TAG_META: Record<RenderTag, { label: string; className: string }> = {
   "code-logic": { label: "Code Logic", className: "code-logic" },
   "context-injection": { label: "Context Injection", className: "context-injection" },
@@ -137,6 +144,26 @@ const TAG_META: Record<RenderTag, { label: string; className: string }> = {
   database: { label: "Database", className: "database" },
   "api-call": { label: "API Call", className: "api-call" },
 };
+
+function slugifyPromptFilename(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80) || "roleplay-pipeline-prompt";
+}
+
+function downloadPromptSource(prompt: ActivePromptView) {
+  const blob = new Blob([prompt.source], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = prompt.filename.endsWith(".md") ? prompt.filename : `${prompt.filename}.md`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
 
 const pageStyles = `
 :root {
@@ -1511,6 +1538,15 @@ details > summary::-webkit-details-marker {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
+.code-modal-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.code-modal-action-btn,
 .code-modal-close {
   border: 0;
   border-radius: 999px;
@@ -1524,6 +1560,7 @@ details > summary::-webkit-details-marker {
   cursor: pointer;
 }
 
+.code-modal-action-btn:hover,
 .code-modal-close:hover {
   background: rgba(0,0,0,0.34);
 }
@@ -2709,7 +2746,7 @@ const ApiInspectorPage: React.FC = () => {
     return ids;
   });
   const [openDetailIds, setOpenDetailIds] = useState<Set<string>>(() => new Set());
-  const [activePrompt, setActivePrompt] = useState<{ title: string; source: string; label: string } | null>(null);
+  const [activePrompt, setActivePrompt] = useState<ActivePromptView | null>(null);
 
   useEffect(() => {
     const scroller = mainScrollRef.current;
@@ -2838,6 +2875,7 @@ const ApiInspectorPage: React.FC = () => {
                     title: document.title,
                     source: document.body,
                     label: document.modalLabel,
+                    filename: `${document.id}-current-prompt.md`,
                   })
                 }
               >
@@ -2917,6 +2955,7 @@ const ApiInspectorPage: React.FC = () => {
                               title: item.title,
                               source: item.codeSource ?? "",
                               label: item.codeSourceLabel ?? (item.promptViewEnabled ? "Prompt / Source View" : "Source Snapshot"),
+                              filename: `${slugifyPromptFilename(item.title)}.md`,
                             })
                           }
                           onJump={jumpTo}
@@ -2947,9 +2986,14 @@ const ApiInspectorPage: React.FC = () => {
                 <span className="code-modal-kicker">{activePrompt.label}</span>
                 <span id="api-inspector-prompt-title">{activePrompt.title}</span>
               </div>
-              <button type="button" className="code-modal-close" onClick={() => setActivePrompt(null)}>
-                Close
-              </button>
+              <div className="code-modal-actions">
+                <button type="button" className="code-modal-action-btn" onClick={() => downloadPromptSource(activePrompt)}>
+                  Download
+                </button>
+                <button type="button" className="code-modal-close" onClick={() => setActivePrompt(null)}>
+                  Close
+                </button>
+              </div>
             </div>
             <div className="code-modal-body">
               <pre>{activePrompt.source}</pre>

@@ -3275,6 +3275,8 @@ const promptContaminationFixTimestamp = "2026-05-14T11:20:00.000Z";
 const roleplayPipelineInspectorReviewTimestamp = "2026-05-15T21:30:00.000-06:00";
 const roleplayPromptContinuityPatchTimestamp = "2026-05-16T03:37:14.000-06:00";
 const responsePriorityCheckPatchTimestamp = "2026-05-16T04:18:00.000-06:00";
+const assistantCadenceReminderPatchTimestamp = "2026-05-16T05:08:00.000-06:00";
+const roleplayPromptDownloadPatchTimestamp = "2026-05-16T19:52:00.000-06:00";
 
 type FindingResolutionNote = {
   runId: string;
@@ -4778,6 +4780,56 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
     },
   ],
   changeLog: [
+    {
+      id: "cl-20260516-004",
+      title: "Add Roleplay Pipeline prompt-review downloads",
+      summary: "Roleplay Pipeline · Prompt preview modals now include a header Download action so API Call 1 and API Call 2 + Support Calls review documents can be exported directly as Markdown from the same source text shown in the preview.",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "The prompt preview modals showed the full current API prompt-review documents but did not provide a direct export path, forcing prompt-audit handoffs to rely on manually created Desktop documents.",
+      plan: "Reuse the existing prompt preview modal state, add a client-side Markdown download helper, and wire the header Download button to the exact source string currently displayed so preview and export cannot drift apart.",
+      changes: "Updated `src/pages/style-guide/api-inspector.tsx`:\n- Added an `ActivePromptView` model with a stable Markdown filename.\n- Added a client-side Blob download helper for prompt/source modal content.\n- Added a `Download` button beside `Close` in the prompt preview modal header.\n\nCreated `/Users/thomashall/Desktop/Grok Prompt Structure Audit Instructions.md` as a standalone prompt for handing API Call 1, API Call 2/support, and test-log artifacts to Grok for model-specific prompt-structure analysis.",
+      filesAffected: [
+        "src/pages/style-guide/api-inspector.tsx",
+        "src/data/ui-audit-findings.ts",
+        "/Users/thomashall/Desktop/Grok Prompt Structure Audit Instructions.md"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["roleplay-pipeline", "api-inspector", "prompt-review", "download", "grok-audit"],
+      comments: [],
+      createdAt: roleplayPromptDownloadPatchTimestamp,
+      updatedAt: roleplayPromptDownloadPatchTimestamp,
+    },
+    {
+      id: "cl-20260516-003",
+      title: "Scope roleplay structure repetition checks to assistant outputs",
+      summary: "Roleplay Pipeline · API Call 1 now appends a short assistant-structure reminder after the final priority check, and the adaptive style detector now compares assistant responses against prior assistant responses instead of leaving the model or code to compare against the user's latest message.",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "Test 19 showed the writer repeating the same action/dialogue/internal-thought cadence even after prompt cleanup. The existing prompt said to avoid repetitive formatting from one message to another, which could be interpreted against the user's latest message rather than the assistant's own prior outputs. The runtime detector also required exact three-message shape matches, so obvious repeated assistant cadence could slip through.",
+      plan: "Replace the ambiguous repetition wording with assistant-scoped wording, append a concise final-turn structure reminder, and move the adaptive style detector into a tested helper that catches repeated assistant cadence earlier without using story-specific banned phrases.",
+      changes: "Updated `src/services/llm.ts`:\n- Added `ASSISTANT_STRUCTURE_REMINDER_TEXT` and appended it to the final user wrapper after the response priority check.\n- Reworded the static dialog-format repetition rule so it explicitly compares against prior assistant outputs, not the user's message.\n\nUpdated `src/lib/assistant-style-directive.ts` and `src/components/chronicle/ChatInterfaceTab.tsx`:\n- Moved adaptive structure detection into a testable helper.\n- The detector now filters to assistant messages, catches repeated action -> dialogue -> internal thought cadence across the last two assistant outputs, and still catches locked length, exact shape, and reused short assistant dialogue.\n\nUpdated Roleplay Pipeline review docs and tests:\n- Documented the assistant structure reminder in the API Call 1 prompt review body and code-truth registry.\n- Added regression coverage for assistant-scoped cadence detection and the new prompt wording.",
+      filesAffected: [
+        "src/services/llm.ts",
+        "src/components/chronicle/ChatInterfaceTab.tsx",
+        "src/lib/assistant-style-directive.ts",
+        "src/lib/assistant-style-directive.test.ts",
+        "src/data/api-inspector-prompt-documents.ts",
+        "src/data/api-inspector-code-truth-registry.ts",
+        "docs/guides/chat-interface-page-structure-guide.md",
+        "docs/guides/edge-functions-ai-services-structure-guide.md",
+        "src/services/llm-canonical-coverage.test.ts",
+        "src/data/api-inspector-prompt-documents.test.ts",
+        "src/data/ui-audit-findings.ts"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["roleplay-pipeline", "api-call-1", "assistant-cadence", "adaptive-style", "prompt-assembly", "repetition-control"],
+      comments: [],
+      createdAt: assistantCadenceReminderPatchTimestamp,
+      updatedAt: assistantCadenceReminderPatchTimestamp,
+    },
     {
       id: "cl-20260516-002",
       title: "Add final response priority check and uncertainty continuity rule",

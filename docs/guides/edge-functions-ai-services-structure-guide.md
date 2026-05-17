@@ -44,7 +44,7 @@ Core LLM integration service.
 
 | Export | Purpose |
 |--------|--------|
-| `generateRoleplayResponseStream()` | Streams AI responses for chat. Sends the system prompt, up to 9 prior roleplay messages, and the current wrapped user turn. Accepts optional `adaptiveStyleDirective` text, `sessionMessageCount` (precise session depth), and appends `RESPONSE_PRIORITY_CHECK_TEXT` so the latest scene beat outranks dormant card/goal details. |
+| `generateRoleplayResponseStream()` | Streams AI responses for chat. Sends the system prompt, up to 9 prior roleplay messages, and the current wrapped user turn. Accepts optional `adaptiveStyleDirective` text, `sessionMessageCount` (precise session depth), and appends `RESPONSE_PRIORITY_CHECK_TEXT` plus `ASSISTANT_STRUCTURE_REMINDER_TEXT` so the latest scene beat outranks dormant card/goal details and structure repetition is compared against prior assistant outputs instead of the user's message. |
 | `getSystemInstruction()` | Builds the complete system prompt. Includes IN-SESSION TRAIT DYNAMICS, personality-driven NSFW pacing, control quick-reference at top of INSTRUCTIONS, and forward momentum AI-character canon rule. |
 | `buildCharacterStateBlock()` | Constructs character context for prompt injection |
 | `getCriticalDialogRules()` | Dialog formatting rules (first/third person POV) |

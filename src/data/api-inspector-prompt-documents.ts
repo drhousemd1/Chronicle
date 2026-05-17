@@ -1,4 +1,4 @@
-import { getSystemInstruction, REGENERATION_DIRECTIVE_TEXT, RESPONSE_PRIORITY_CHECK_TEXT } from "@/services/llm";
+import { ASSISTANT_STRUCTURE_REMINDER_TEXT, getSystemInstruction, REGENERATION_DIRECTIVE_TEXT, RESPONSE_PRIORITY_CHECK_TEXT } from "@/services/llm";
 import type { Character, Memory, ScenarioData, Scene, TimeOfDay } from "@/types";
 
 export type ApiInspectorPromptDocumentId = "api-call-1" | "api-call-2-support";
@@ -696,7 +696,7 @@ REQUEST BODY SHAPE
     { "role": "system", "content": "<the full system message below>" },
     { "role": "user", "content": "{{up to 9 prior roleplay messages before the current turn}}" },
     { "role": "assistant", "content": "{{up to 9 prior roleplay messages before the current turn}}" },
-    { "role": "user", "content": "[SESSION: Message {{sessionMessageCount}} of current session]\\n\\n{{adaptiveStyleDirective when triggered}}\\n\\n{{latest user text}}{{optional regeneration request}}\\n\\n{{responsePriorityCheck}}" }
+    { "role": "user", "content": "[SESSION: Message {{sessionMessageCount}} of current session]\\n\\n{{adaptiveStyleDirective when triggered}}\\n\\n{{latest user text}}{{optional regeneration request}}\\n\\n{{responsePriorityCheck}}\\n\\n{{assistantStructureReminder}}" }
   ],
   "modelId": "grok-4.3",
   "stream": true,
@@ -740,7 +740,13 @@ ${REGENERATION_DIRECTIVE_TEXT}
 RESPONSE PRIORITY CHECK APPENDED TO FINAL USER MESSAGE ON EVERY LIVE ROLEPLAY CALL
 ================================================================================
 
-${RESPONSE_PRIORITY_CHECK_TEXT}`;
+${RESPONSE_PRIORITY_CHECK_TEXT}
+
+================================================================================
+ASSISTANT STRUCTURE REMINDER APPENDED TO FINAL USER MESSAGE ON EVERY LIVE ROLEPLAY CALL
+================================================================================
+
+${ASSISTANT_STRUCTURE_REMINDER_TEXT}`;
 }
 
 function buildApiCall2SupportDocument() {

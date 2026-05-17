@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { getSystemInstruction, RESPONSE_PRIORITY_CHECK_TEXT } from '@/services/llm';
+import { ASSISTANT_STRUCTURE_REMINDER_TEXT, getSystemInstruction, RESPONSE_PRIORITY_CHECK_TEXT } from '@/services/llm';
 import { createDefaultScenarioData, getHardcodedTestCharacters, now, uid } from '@/utils';
 
 describe('llm canonical prompt coverage', () => {
@@ -182,6 +182,9 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('CONTROLLED BY: User');
     expect(prompt).toContain('SECTION 7 - DIALOG FORMATTING AND ROLEPLAY RULES');
     expect(prompt).toContain('--- DIALOG FORMATTING RULES ---');
+    expect(prompt).toContain("Avoid repeating the same structure across your own recent AI responses.");
+    expect(prompt).toContain("Compare against prior assistant outputs, not the user's message.");
+    expect(prompt).not.toContain('Avoid repetitive formatting from one message to another.');
     expect(prompt).toContain("The order can vary naturally. Do not include action, dialogue, and thought in every block unless the scene actually calls for all three.");
     expect(prompt).toContain('--- USER-DEFINED DIALOG FORMATTING FROM STORY BUILDER ---');
     expect(prompt).toContain('--- INTERNAL THOUGHTS ---');
@@ -193,6 +196,8 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain("The user's action verb is canon, not a paraphrase target.");
     expect(RESPONSE_PRIORITY_CHECK_TEXT).toContain('Write the next response from the immediate scene first.');
     expect(RESPONSE_PRIORITY_CHECK_TEXT).toContain('Use story cards, character cards, memories, and goals as supporting context');
+    expect(ASSISTANT_STRUCTURE_REMINDER_TEXT).toContain('Avoid repeating the same structure across your own recent AI responses.');
+    expect(ASSISTANT_STRUCTURE_REMINDER_TEXT).toContain("Compare against prior assistant outputs, not the user's message.");
     expect(prompt).toContain('SECTION 8 - CHAT SETTINGS PER USER PREFERENCE');
     expect(prompt).toContain('NARRATIVE POV: Third Person');
     expect(prompt).toContain('NSFW INTENSITY: Normal');

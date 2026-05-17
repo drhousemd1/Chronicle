@@ -139,6 +139,8 @@ Primary function: `generateRoleplayResponseStream()` in `src/services/llm.ts` (~
 
 **Final Priority Check**: Every normal roleplay request appends `RESPONSE_PRIORITY_CHECK_TEXT` to the final user wrapper. This is a short recency-weighted reminder that the immediate user message and current scene beat outrank dormant card, memory, and goal details unless the beat gives those details a clear reason to surface.
 
+**Assistant Structure Reminder**: Every normal roleplay request also appends `ASSISTANT_STRUCTURE_REMINDER_TEXT` after the priority check. This keeps repetition comparison scoped to prior assistant outputs, not the user's latest message, so the model does not treat a user-authored turn as proof that its own repeated action-dialogue-thought cadence is varied.
+
 **AI-Character Canon Detection**: `buildCanonNote()` (exported from `llm.ts`) checks if user input contains `CharacterName:` prefixes matching AI-controlled characters. If detected, returns a `[CANON NOTE]` prefix to prevent re-narration. Applied in all three generation paths: `handleSend`, `handleRegenerateMessage`, and `handleContinueConversation` (continue checks the most recent user message in history).
 
 **Session Depth**: `sessionMessageCountRef` increments per exchange and is injected as `[SESSION: Message N]` for precise trait evolution guidance.
