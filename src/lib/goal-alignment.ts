@@ -137,6 +137,10 @@ export function describeGoalAlignmentForPrompt(
 
 export function formatGoalAlignmentChange(state: GoalAlignmentState, label: string): string {
   const rationale = state.lastRationale ? ` because ${state.lastRationale}` : '';
+  const previous = state.previousState;
+  if (previous) {
+    return `${label} alignment ${previous.status} -> ${state.status}, score ${previous.score}/100 -> ${state.score}/100 (${state.trend}, ${state.lastSignal})${rationale}`;
+  }
   return `${label} alignment ${state.status}, score ${state.score}/100 (${state.trend}, ${state.lastSignal})${rationale}`;
 }
 

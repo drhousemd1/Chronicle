@@ -598,7 +598,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                   "The older goal-progress support call still owns story-step completion only. It is intentionally separate from goal alignment, which stores the softer user-receptiveness gradient.",
                 fileRefs: [
                   ref("/supabase/functions/evaluate-goal-progress/index.ts", "completed true/false prompt rules"),
-                  ref("/supabase/migrations/20260516093000_add_goal_alignment_states.sql", "goal_alignment_states"),
+                  ref("/supabase/migrations/20260521044256_424aa268-34cd-41aa-a2ea-dc2779b01344.sql", "goal_alignment_states"),
                 ],
                 bullets: [
                   bullet("Progress", "A listed milestone is either completed or not completed."),

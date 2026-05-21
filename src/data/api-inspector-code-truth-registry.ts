@@ -885,7 +885,7 @@ Only completed steps are persisted. Each row is tied to the source assistant gen
               problemSolved:
                 "Makes goal guidance adaptive instead of static, while keeping story goals session-scoped and regenerate-safe.",
               fileRefs: [
-                { path: "supabase/migrations/20260516093000_add_goal_alignment_states.sql", lines: "1-93" },
+                { path: "supabase/migrations/20260521044256_424aa268-34cd-41aa-a2ea-dc2779b01344.sql", lines: "1-113" },
                 { path: "src/services/persistence/conversations.ts", lines: "817-905" },
                 { path: "src/services/llm.ts", lines: "217-240" },
               ],

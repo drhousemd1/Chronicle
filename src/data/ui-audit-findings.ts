@@ -3279,6 +3279,7 @@ const assistantCadenceReminderPatchTimestamp = "2026-05-16T05:08:00.000-06:00";
 const roleplayPromptDownloadPatchTimestamp = "2026-05-16T19:52:00.000-06:00";
 const goalAlignmentWeightingPatchTimestamp = "2026-05-17T00:26:00.000-06:00";
 const goalAlignmentHardeningPatchTimestamp = "2026-05-20T20:40:00.000-06:00";
+const goalAlignmentInspectionSurfacePatchTimestamp = "2026-05-21T00:48:00.000-06:00";
 
 type FindingResolutionNote = {
   runId: string;
@@ -4783,6 +4784,33 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260521-001",
+      title: "Align goal-alignment inspection surfaces",
+      summary: "Roleplay Pipeline · Goal-alignment docs, architecture inventory, and debug exports now point at the deployed Lovable migration and expose previous-to-current alignment score changes in exported test logs.",
+      severity: "patch" as const,
+      status: "completed" as const,
+      problem: "Manual inspection showed the runtime goal-alignment system was wired, but several review surfaces still referenced the retired placeholder migration path and the HTML test export summarized only final alignment state instead of showing what changed.",
+      plan: "Replace stale migration references with the deployed Lovable migration, regenerate App Architecture inventories, and make the debug export's applied-updates summary show goal-alignment score/status deltas when rollback snapshots are available.",
+      changes: "Updated Roleplay Pipeline references:\n- Corrected the goal-alignment ledger migration path in the code-truth registry and live map.\n- Regenerated App Architecture inventories so the page now points at the deployed `20260521044256_424aa268-34cd-41aa-a2ea-dc2779b01344.sql` migration.\n\nUpdated debug export readability:\n- Changed goal-alignment applied-update summaries to show previous status/score -> current status/score when `previous_state` exists.\n- Updated the empty Applied Updates Summary copy so goal-alignment updates are explicitly included in the export contract.\n- Added regression coverage for previous-to-current goal-alignment summary formatting.",
+      filesAffected: [
+        "src/data/api-inspector-code-truth-registry.ts",
+        "src/data/api-inspector-live-map.ts",
+        "src/data/architecture-extra-paths.ts",
+        "src/data/architecture-file-analysis.ts",
+        "src/data/architecture-file-metrics.ts",
+        "src/features/chat-debug/review-export.ts",
+        "src/lib/goal-alignment.ts",
+        "src/lib/goal-alignment.test.ts",
+        "src/data/ui-audit-findings.ts"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["roleplay-pipeline", "api-inspector", "app-architecture", "chat-debug-export", "goal-alignment"],
+      comments: [],
+      createdAt: goalAlignmentInspectionSurfacePatchTimestamp,
+      updatedAt: goalAlignmentInspectionSurfacePatchTimestamp,
+    },
+    {
       id: "cl-20260520-001",
       title: "Harden adaptive goal alignment weighting",
       summary: "Roleplay Pipeline · Goal alignment now waits for canonical derivations before new turns, serializes support-call scoring, refreshes persisted baselines before applying deltas, preserves rollback snapshots for regenerated turns, and rejects malformed evaluator outputs instead of silently normalizing them.",
@@ -4799,7 +4827,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
         "src/types.ts",
         "src/integrations/supabase/types.ts",
         "supabase/functions/evaluate-goal-alignment/index.ts",
-        "supabase/migrations/20260516093000_add_goal_alignment_states.sql",
+        "supabase/migrations/20260521044256_424aa268-34cd-41aa-a2ea-dc2779b01344.sql",
         "src/data/ui-audit-findings.ts"
       ],
       agent: "ChatGPT Codex",
@@ -4835,7 +4863,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
         "supabase/functions/evaluate-goal-alignment/index.ts",
         "supabase/functions/extract-character-updates/index.ts",
         "supabase/functions/track-ai-usage/index.ts",
-        "supabase/migrations/20260516093000_add_goal_alignment_states.sql",
+        "supabase/migrations/20260521044256_424aa268-34cd-41aa-a2ea-dc2779b01344.sql",
         "src/data/architecture-extra-paths.ts",
         "src/data/architecture-file-analysis.ts",
         "src/data/architecture-file-metrics.ts",

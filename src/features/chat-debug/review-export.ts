@@ -306,7 +306,7 @@ function renderAppliedUpdatesDetails(segment: ReviewExportSegment): string {
 
   const changes = segment.postTurnStateChanges || [];
   if (changes.length === 0) {
-    return `<details class="trace-details trace-empty"><summary>Applied Updates Summary</summary><p>No saved character, side-character, memory, or story-goal updates were recorded for this message generation at export time.</p></details>`;
+    return `<details class="trace-details trace-empty"><summary>Applied Updates Summary</summary><p>No saved character, side-character, memory, story-goal, or goal-alignment updates were recorded for this message generation at export time.</p></details>`;
   }
 
   return `

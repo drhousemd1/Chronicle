@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   applyGoalAlignmentEvaluation,
   describeGoalAlignmentForPrompt,
+  formatGoalAlignmentChange,
   normalizeGoalAlignmentState,
   shouldRenderGoalToWriter,
 } from './goal-alignment';
@@ -137,6 +138,8 @@ describe('goal-alignment scoring', () => {
     expect(next.previousState?.status).toBe('supported');
     expect(next.previousState?.sourceMessageId).toBe('message-a');
     expect(next.previousState?.sourceGenerationId).toBe('generation-a');
+    expect(formatGoalAlignmentChange(next, 'Story goal "Trust"')).toContain('score 61/100 -> 48/100');
+    expect(formatGoalAlignmentChange(next, 'Story goal "Trust"')).toContain('supported -> resisted');
   });
 
   it('tracks drift separately from direct resistance', () => {
