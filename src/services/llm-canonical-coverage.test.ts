@@ -332,7 +332,8 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('NSFW INTENSITY: High');
     expect(prompt).toContain('Use explicit, profane, anatomical, and erotic language when it fits the character and moment.');
     expect(prompt).toContain('RESPONSE DETAIL: Detailed');
-    expect(prompt).toContain('detailed mode does not mean every character block should be the same length.');
+    expect(prompt).toContain('Responses should be verbose, with lengthy, highly detailed sensory, emotional, and environmental descriptions');
+    expect(prompt).toContain('Details should be unique to each message and not repeated from one message to the next as copy/paste context.');
     expect(prompt).not.toContain('Target: usually 3-5 paragraphs per character block.');
     expect(prompt).toContain('REALISM MODE: On');
     expect(prompt).not.toContain('NARRATIVE POV: Third Person');

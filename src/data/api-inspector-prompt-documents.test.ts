@@ -22,8 +22,10 @@ describe("api-inspector prompt document registry", () => {
     expect(document.body).toContain('"temperature": 0.7');
     expect(document.body).toContain("{{up to 9 prior roleplay messages before the current turn}}");
     expect(document.body).toContain("{{adaptiveStyleDirective when triggered}}");
+    expect(document.body).toContain("{{selectedResponseDetailRules}}");
     expect(document.body).toContain("{{responsePriorityCheck}}");
     expect(document.body).toContain("{{assistantStructureReminder}}");
+    expect(document.body).toContain("SELECTED RESPONSE DETAIL RULES APPENDED TO FINAL USER MESSAGE ON EVERY LIVE ROLEPLAY CALL");
     expect(document.body).toContain("RESPONSE PRIORITY CHECK APPENDED TO FINAL USER MESSAGE ON EVERY LIVE ROLEPLAY CALL");
     expect(document.body).toContain("Write the next response from the immediate scene first.");
     expect(document.body).toContain("ASSISTANT STRUCTURE REMINDER APPENDED TO FINAL USER MESSAGE ON EVERY LIVE ROLEPLAY CALL");

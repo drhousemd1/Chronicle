@@ -63,6 +63,16 @@ Write the next response from the immediate scene first. The latest user message,
 export const ASSISTANT_STRUCTURE_REMINDER_TEXT = `[ASSISTANT STRUCTURE REMINDER]
 Avoid repeating the same structure across your own recent AI responses. Compare against your own previous 2-3 assistant character blocks, not the user's message. If your recent AI responses used the same action -> dialogue -> internal thought cadence, choose a different natural cadence when the scene allows it.`;
 
+export function renderResponseDetailInstruction(responseVerbosity: string = 'balanced'): string {
+  if (responseVerbosity === 'concise') {
+    return `RESPONSE DETAIL: Concise\n- Keep the overall response tight and direct. Prioritize clear actions, external dialogue, or internal thoughts.\n- Use sensory, emotional, or environmental descriptions at key points to emphasize importance, but otherwise keep back-and-forth dialogue within the same scene more concise. Focus descriptive detail on moments when something new or important is happening.\n- Follow-up responses between AI characters can be simple one-sentence responses.`;
+  }
+  if (responseVerbosity === 'detailed') {
+    return `RESPONSE DETAIL: Detailed\n- Responses should be verbose, with lengthy, highly detailed sensory, emotional, and environmental descriptions that accompany and support physical actions, external dialogue, or internal thoughts.\n- Details should be unique to each message and not repeated from one message to the next as copy/paste context.\n- Follow-up responses between AI characters can be more concise if additional descriptive details would not add new context to the situation or would only repeat details already established in another text block.`;
+  }
+  return `RESPONSE DETAIL: Balanced\n- Use a natural balance of scene description, character voice, action, external dialogue, and internal thought.\n- Responses should include some sensory, emotional, or environmental descriptions, but should remain more concise with a focus on external dialogue, actions, or internal thoughts.\n- Follow-up responses between AI characters can be more concise if additional descriptive details would not add new context to the situation or would only repeat details already established in another text block.`;
+}
+
 export type GenerateRoleplayResponseStreamOptions = {
   debugTrace?: boolean;
   onDebugTrace?: (trace: ChatDebugTrace) => void;
@@ -475,14 +485,7 @@ export function getSystemInstruction(
   };
 
   const renderResponseDetail = (): string => {
-    const responseVerbosity = appData.uiSettings?.responseVerbosity || 'balanced';
-    if (responseVerbosity === 'concise') {
-      return `RESPONSE DETAIL: Concise\n- Keep the overall response tight and direct. Prioritize clear actions, natural dialogue, and only the most essential internal thoughts.\n- Use shorter blocks overall, but let block length vary by narrative importance. Some characters may have only a brief reactive beat when that fits the moment.\n- Keep scene description minimal.`;
-    }
-    if (responseVerbosity === 'detailed') {
-      return `RESPONSE DETAIL: Detailed\n- Write richer, more immersive prose with sensory detail, emotional texture, and environmental description where it serves the scene.\n- Give longer, more descriptive blocks to the character or characters most central to the current beat, especially when the moment has physical, emotional, sensory, or relational complexity.\n- Still allow brief, natural reactions from other present characters; detailed mode does not mean every character block should be the same length.`;
-    }
-    return `RESPONSE DETAIL: Balanced\n- Use a natural balance of scene description, character voice, action, dialogue, and internal thought.\n- Let block lengths vary realistically. One character may carry the main beat while another responds briefly.\n- Do not pad every character block to the same size.`;
+    return renderResponseDetailInstruction(appData.uiSettings?.responseVerbosity || 'balanced');
   };
 
   const renderRealismMode = (): string => {
@@ -583,6 +586,7 @@ export async function* generateRoleplayResponseStream(
   
   // Regeneration request - tells AI to provide a different take on the same scene
   const regenerationDirective = isRegeneration ? '\n\n' + REGENERATION_DIRECTIVE_TEXT : '';
+  const responseDetailReminder = renderResponseDetailInstruction(appData.uiSettings?.responseVerbosity || 'balanced');
 
   // Build messages array for xAI Grok API
   const historyMessages = conversation.messages.slice(-API_CALL_1_HISTORY_MESSAGE_LIMIT);
@@ -598,6 +602,7 @@ export async function* generateRoleplayResponseStream(
     sessionMessageCount != null ? `[SESSION: Message ${sessionMessageCount} of current session]` : '',
     adaptiveStyleDirective || '',
     `${userMessage}${regenerationDirective}`.trim(),
+    responseDetailReminder,
     RESPONSE_PRIORITY_CHECK_TEXT,
     ASSISTANT_STRUCTURE_REMINDER_TEXT,
   ]

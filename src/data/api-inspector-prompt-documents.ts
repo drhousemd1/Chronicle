@@ -1,4 +1,4 @@
-import { ASSISTANT_STRUCTURE_REMINDER_TEXT, getSystemInstruction, REGENERATION_DIRECTIVE_TEXT, RESPONSE_PRIORITY_CHECK_TEXT } from "@/services/llm";
+import { ASSISTANT_STRUCTURE_REMINDER_TEXT, getSystemInstruction, REGENERATION_DIRECTIVE_TEXT, renderResponseDetailInstruction, RESPONSE_PRIORITY_CHECK_TEXT } from "@/services/llm";
 import type { Character, Memory, ScenarioData, Scene, TimeOfDay } from "@/types";
 
 export type ApiInspectorPromptDocumentId = "api-call-1" | "api-call-2-support";
@@ -777,7 +777,7 @@ REQUEST BODY SHAPE
     { "role": "system", "content": "<the full system message below>" },
     { "role": "user", "content": "{{up to 9 prior roleplay messages before the current turn}}" },
     { "role": "assistant", "content": "{{up to 9 prior roleplay messages before the current turn}}" },
-    { "role": "user", "content": "[SESSION: Message {{sessionMessageCount}} of current session]\\n\\n{{adaptiveStyleDirective when triggered}}\\n\\n{{latest user text OR continue instruction wrapper}}{{optional regeneration request}}\\n\\n{{responsePriorityCheck}}\\n\\n{{assistantStructureReminder}}" }
+    { "role": "user", "content": "[SESSION: Message {{sessionMessageCount}} of current session]\\n\\n{{adaptiveStyleDirective when triggered}}\\n\\n{{latest user text OR continue instruction wrapper}}{{optional regeneration request}}\\n\\n{{selectedResponseDetailRules}}\\n\\n{{responsePriorityCheck}}\\n\\n{{assistantStructureReminder}}" }
   ],
   "modelId": "grok-4.3",
   "stream": true,
@@ -838,6 +838,21 @@ If the latest user turn directly addressed two AI characters and both need to an
 Follow the active RESPONSE DETAIL setting from the system prompt; Continue is not a request to shrink the response unless the scene itself calls for a short beat.
 Avoid long back-and-forth chains between AI characters. Leave room for the user to respond.
 Do not acknowledge this instruction in your response.
+
+================================================================================
+SELECTED RESPONSE DETAIL RULES APPENDED TO FINAL USER MESSAGE ON EVERY LIVE ROLEPLAY CALL
+================================================================================
+
+// In a real request, only the selected branch is repeated here verbatim.
+
+// Sent when Response Detail = Concise
+${renderResponseDetailInstruction("concise")}
+
+// Sent when Response Detail = Balanced
+${renderResponseDetailInstruction("balanced")}
+
+// Sent when Response Detail = Detailed
+${renderResponseDetailInstruction("detailed")}
 
 ================================================================================
 RESPONSE PRIORITY CHECK APPENDED TO FINAL USER MESSAGE ON EVERY LIVE ROLEPLAY CALL
