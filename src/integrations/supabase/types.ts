@@ -1039,6 +1039,106 @@ export type Database = {
         }
         Relationships: []
       }
+      goal_alignment_states: {
+        Row: {
+          character_id: string | null
+          character_scope_id: string
+          conversation_id: string
+          created_at: string
+          drift_count: number
+          goal_id: string
+          goal_kind: string
+          id: string
+          last_evaluated_at: string | null
+          last_evaluated_day: number | null
+          last_evaluated_time_of_day: string | null
+          last_rationale: string | null
+          last_signal: string
+          previous_state: Json | null
+          resistance_count: number
+          score: number
+          source_generation_id: string | null
+          source_message_id: string | null
+          status: string
+          support_count: number
+          trend: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          character_id?: string | null
+          character_scope_id?: string
+          conversation_id: string
+          created_at?: string
+          drift_count?: number
+          goal_id: string
+          goal_kind: string
+          id?: string
+          last_evaluated_at?: string | null
+          last_evaluated_day?: number | null
+          last_evaluated_time_of_day?: string | null
+          last_rationale?: string | null
+          last_signal?: string
+          previous_state?: Json | null
+          resistance_count?: number
+          score?: number
+          source_generation_id?: string | null
+          source_message_id?: string | null
+          status?: string
+          support_count?: number
+          trend?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          character_id?: string | null
+          character_scope_id?: string
+          conversation_id?: string
+          created_at?: string
+          drift_count?: number
+          goal_id?: string
+          goal_kind?: string
+          id?: string
+          last_evaluated_at?: string | null
+          last_evaluated_day?: number | null
+          last_evaluated_time_of_day?: string | null
+          last_rationale?: string | null
+          last_signal?: string
+          previous_state?: Json | null
+          resistance_count?: number
+          score?: number
+          source_generation_id?: string | null
+          source_message_id?: string | null
+          status?: string
+          support_count?: number
+          trend?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goal_alignment_states_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goal_alignment_states_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goal_alignment_states_source_message_id_fkey"
+            columns: ["source_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       guide_documents: {
         Row: {
           content: Json | null
@@ -1890,106 +1990,6 @@ export type Database = {
           world_core?: Json
         }
         Relationships: []
-      }
-      goal_alignment_states: {
-        Row: {
-          character_id: string | null
-          character_scope_id: string
-          conversation_id: string
-          created_at: string
-          drift_count: number
-          goal_id: string
-          goal_kind: string
-          id: string
-          last_evaluated_at: string | null
-          last_evaluated_day: number | null
-          last_evaluated_time_of_day: string | null
-          last_rationale: string | null
-          last_signal: string
-          previous_state: Json | null
-          resistance_count: number
-          score: number
-          source_generation_id: string | null
-          source_message_id: string | null
-          status: string
-          support_count: number
-          trend: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          character_id?: string | null
-          character_scope_id?: string
-          conversation_id: string
-          created_at?: string
-          drift_count?: number
-          goal_id: string
-          goal_kind: string
-          id?: string
-          last_evaluated_at?: string | null
-          last_evaluated_day?: number | null
-          last_evaluated_time_of_day?: string | null
-          last_rationale?: string | null
-          last_signal?: string
-          previous_state?: Json | null
-          resistance_count?: number
-          score?: number
-          source_generation_id?: string | null
-          source_message_id?: string | null
-          status?: string
-          support_count?: number
-          trend?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          character_id?: string | null
-          character_scope_id?: string
-          conversation_id?: string
-          created_at?: string
-          drift_count?: number
-          goal_id?: string
-          goal_kind?: string
-          id?: string
-          last_evaluated_at?: string | null
-          last_evaluated_day?: number | null
-          last_evaluated_time_of_day?: string | null
-          last_rationale?: string | null
-          last_signal?: string
-          previous_state?: Json | null
-          resistance_count?: number
-          score?: number
-          source_generation_id?: string | null
-          source_message_id?: string | null
-          status?: string
-          support_count?: number
-          trend?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "goal_alignment_states_character_id_fkey"
-            columns: ["character_id"]
-            isOneToOne: false
-            referencedRelation: "characters"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "goal_alignment_states_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "goal_alignment_states_source_message_id_fkey"
-            columns: ["source_message_id"]
-            isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       story_goal_step_derivations: {
         Row: {
