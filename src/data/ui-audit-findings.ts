@@ -3277,6 +3277,8 @@ const roleplayPromptContinuityPatchTimestamp = "2026-05-16T03:37:14.000-06:00";
 const responsePriorityCheckPatchTimestamp = "2026-05-16T04:18:00.000-06:00";
 const assistantCadenceReminderPatchTimestamp = "2026-05-16T05:08:00.000-06:00";
 const roleplayPromptDownloadPatchTimestamp = "2026-05-16T19:52:00.000-06:00";
+const goalAlignmentWeightingPatchTimestamp = "2026-05-17T00:26:00.000-06:00";
+const goalAlignmentHardeningPatchTimestamp = "2026-05-20T20:40:00.000-06:00";
 
 type FindingResolutionNote = {
   runId: string;
@@ -4780,6 +4782,73 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
     },
   ],
   changeLog: [
+    {
+      id: "cl-20260520-001",
+      title: "Harden adaptive goal alignment weighting",
+      summary: "Roleplay Pipeline · Goal alignment now waits for canonical derivations before new turns, serializes support-call scoring, refreshes persisted baselines before applying deltas, preserves rollback snapshots for regenerated turns, and rejects malformed evaluator outputs instead of silently normalizing them.",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "The first goal-alignment implementation had real scaffolding, but audit showed several reliability gaps: concurrent evaluations could apply deltas from stale baselines, regenerated/deleted message generations could keep influencing scores, dropped non-rigid goals could not be revived if the user reintroduced them, and malformed support-call JSON could be converted into valid-looking updates.",
+      plan: "Tighten the runtime queue and generation checks, fetch the latest persisted alignment ledger before every score application, keep a previous-state rollback snapshot for regenerated/deleted source turns, allow support signals to revive dropped non-rigid goals, strengthen database ownership/scope invariants, and expand goal-alignment unit coverage around drop/revive/neutral/drift behavior.",
+      changes: "Updated `src/components/chronicle/ChatInterfaceTab.tsx`:\n- Added a canonical-derivation load gate so send/regenerate/continue cannot build API Call 1 before snapshots, goal-step derivations, and goal-alignment states finish loading.\n- Changed canonical-state loading to fail closed: if persisted derivations or alignment states cannot load, generation controls stay disabled instead of silently sending API Call 1 with missing state.\n- Waited for the assistant source message to be upserted before launching derived support work, preventing foreign-key races for post-turn rows keyed to that message.\n- Serialized goal-alignment support calls through a promise queue so overlapping post-turn work cannot apply full replacement states from the same stale score.\n- Re-read persisted goal-alignment states and rebuilt an active generation-filtered baseline immediately before applying new deltas.\n- Filtered the Continue flow's GOAL CONTINUITY block through the same dropped-goal render rule used by the main API Call 1 system prompt.\n- Evaluated dropped non-rigid goals in the support call so user reintroduction can revive them, while writer rendering still suppresses dropped goals until alignment changes.\n\nUpdated `src/lib/goal-alignment.ts` and tests:\n- Changed the state machine so support evidence can revive a dropped flexible/normal goal into writer guidance.\n- Added previous-state rollback snapshots so regenerated/deleted latest turns can fall back to the prior cumulative alignment instead of resetting the whole goal to neutral.\n- Added regression coverage for normal drops, neutral/no-op evaluations, drift tracking, dropped-goal revival, and rollback snapshot creation.\n\nUpdated persistence and Supabase edge/schema boundaries:\n- Removed caller-provided ids from goal-alignment upserts and validated conversation/character scope before writing.\n- Added `previous_state` to `goal_alignment_states` and preserved rows when a source message is deleted so stale latest contributions can fall back to the prior snapshot.\n- Strengthened `goal_alignment_states` RLS and scope constraints so rows must belong to the authenticated user's conversation and story/character rows cannot use invalid null-scope combinations.\n- Rejected invalid evaluator `goalKind`, `signal`, and `intensity` values in `evaluate-goal-alignment` instead of coercing malformed output into real updates.",
+      filesAffected: [
+        "src/components/chronicle/ChatInterfaceTab.tsx",
+        "src/lib/goal-alignment.ts",
+        "src/lib/goal-alignment.test.ts",
+        "src/services/persistence/conversations.ts",
+        "src/types.ts",
+        "src/integrations/supabase/types.ts",
+        "supabase/functions/evaluate-goal-alignment/index.ts",
+        "supabase/migrations/20260516093000_add_goal_alignment_states.sql",
+        "src/data/ui-audit-findings.ts"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["roleplay-pipeline", "api-call-2", "goal-alignment", "adaptive-weighting", "stale-state", "supabase"],
+      comments: [],
+      createdAt: goalAlignmentHardeningPatchTimestamp,
+      updatedAt: goalAlignmentHardeningPatchTimestamp,
+    },
+    {
+      id: "cl-20260517-001",
+      title: "Build adaptive goal alignment weighting",
+      summary: "Roleplay Pipeline · Goal flexibility is now backed by a real session-scoped alignment ledger, deterministic weighting rules, and a dedicated post-turn evaluator instead of static prompt text.",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "Rigid, normal, and flexible goal behavior existed mostly as prompt wording. The app did not persist an actual per-playthrough alignment score, did not evaluate whether the latest exchange supported or resisted a goal, and could not show or feed that adaptive state back into the next API Call 1 prompt.",
+      plan: "Add a session-scoped goal-alignment table, evaluate each active goal after a turn, apply deterministic score changes in app code based on flexibility, feed compact alignment state back into API Call 1, and document the new support call in Roleplay Pipeline/Quality Hub sources.",
+      changes: "Added a real adaptive goal-alignment pipeline:\n- Created `goal_alignment_states` with per-conversation goal scores, status, trend, counters, rationale, timestamps, and source generation metadata.\n- Added `src/lib/goal-alignment.ts` so scoring is code-owned: rigid shifts slowly and does not auto-drop, normal requires sustained negative evidence before dropping, and flexible shifts faster.\n- Added `evaluate-goal-alignment` as a post-turn support edge function that classifies each active goal as support, resistance, drift, neutral, or not_applicable without writing story text or inventing progress.\n- Wired ChatInterfaceTab to load, merge, evaluate, persist, and debug-log alignment state after assistant turns.\n- Updated API Call 1 goal rendering so Grok sees compact alignment context while dropped non-rigid goals are filtered from writer guidance.\n- Updated API Inspector prompt documents, validation registry, usage tracking, code-truth registry, live map, Supabase generated types, and architecture inventories to reflect the new support call and ledger.",
+      filesAffected: [
+        "src/components/chronicle/ChatInterfaceTab.tsx",
+        "src/lib/goal-alignment.ts",
+        "src/lib/goal-alignment.test.ts",
+        "src/services/llm.ts",
+        "src/services/persistence/conversations.ts",
+        "src/types.ts",
+        "src/integrations/supabase/types.ts",
+        "src/services/usage-tracking.ts",
+        "src/data/api-inspector-prompt-documents.ts",
+        "src/data/api-inspector-prompt-documents.test.ts",
+        "src/data/api-usage-validation-registry.ts",
+        "src/data/api-inspector-code-truth-registry.ts",
+        "src/data/api-inspector-live-map.ts",
+        "supabase/functions/evaluate-goal-alignment/index.ts",
+        "supabase/functions/extract-character-updates/index.ts",
+        "supabase/functions/track-ai-usage/index.ts",
+        "supabase/migrations/20260516093000_add_goal_alignment_states.sql",
+        "src/data/architecture-extra-paths.ts",
+        "src/data/architecture-file-analysis.ts",
+        "src/data/architecture-file-metrics.ts",
+        "src/data/architecture-source-paths.ts",
+        "src/data/ui-audit-findings.ts"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["roleplay-pipeline", "api-call-2", "goal-alignment", "adaptive-weighting", "supabase", "prompt-state"],
+      comments: [],
+      createdAt: goalAlignmentWeightingPatchTimestamp,
+      updatedAt: goalAlignmentWeightingPatchTimestamp,
+    },
     {
       id: "cl-20260516-004",
       title: "Add Roleplay Pipeline prompt-review downloads",

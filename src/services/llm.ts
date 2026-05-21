@@ -6,6 +6,10 @@ import {
   buildCall1ValidationPresence,
   trackApiValidationSnapshot,
 } from "@/services/api-usage-validation";
+import {
+  describeGoalAlignmentForPrompt,
+  shouldRenderGoalToWriter,
+} from "@/lib/goal-alignment";
 import type { ChatDebugRequestRecord, ChatDebugTrace } from "@/features/chat-debug/types";
 
 /**
@@ -231,12 +235,15 @@ export function getSystemInstruction(
       text(goal?.currentStatus) ? `Current state: ${ensureSentence(text(goal.currentStatus))}` : '',
       progressNote,
       describeGoalFlexibility(flexibility, subject),
+      describeGoalAlignmentForPrompt(goal?.alignment, flexibility),
     ].filter(Boolean).join(' ');
   }
 
   const renderGoalBlock = (heading: string, goals: any[] | undefined, subject: 'story' | 'character'): string => {
     if (!Array.isArray(goals) || goals.length === 0) return '';
-    return `${heading}\n${goals.map((goal) => `${subject === 'story' ? 'STORY' : 'CHARACTER'} GOAL: ${text(goal?.title) || 'Untitled'}\n- ${buildGoalDescription(goal, subject)}`).join('\n\n')}`;
+    const visibleGoals = goals.filter((goal) => shouldRenderGoalToWriter(goal?.alignment, normalizeFlexibility(goal?.flexibility)));
+    if (visibleGoals.length === 0) return '';
+    return `${heading}\n${visibleGoals.map((goal) => `${subject === 'story' ? 'STORY' : 'CHARACTER'} GOAL: ${text(goal?.title) || 'Untitled'}\n- ${buildGoalDescription(goal, subject)}`).join('\n\n')}`;
   };
 
   const renderPersonalityBlock = (character: any): string => {

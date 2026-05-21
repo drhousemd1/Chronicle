@@ -4,6 +4,8 @@ import type {
   CharacterSessionState,
   CharacterTone,
   CharacterKeyLifeEvents,
+  GoalAlignmentState,
+  GoalAlignmentStateSnapshot,
   CharacterRelationships,
   CharacterSecrets,
   CharacterFears,
@@ -807,4 +809,103 @@ export async function upsertStoryGoalStepDerivations(
   if (error) throw error;
 
   return (data || []).map(dbToStoryGoalStepDerivation);
+}
+
+const GOAL_ALIGNMENT_ZERO_CHARACTER_ID = '00000000-0000-0000-0000-000000000000';
+
+function dbToGoalAlignmentState(row: any): GoalAlignmentState {
+  const previousState = row.previous_state && typeof row.previous_state === 'object'
+    ? row.previous_state as GoalAlignmentStateSnapshot
+    : null;
+  return {
+    id: row.id,
+    conversationId: row.conversation_id,
+    goalId: row.goal_id,
+    goalKind: row.goal_kind,
+    characterId: row.character_id ?? null,
+    score: row.score ?? 50,
+    status: row.status || 'active',
+    trend: row.trend || 'stable',
+    supportCount: row.support_count ?? 0,
+    resistanceCount: row.resistance_count ?? 0,
+    driftCount: row.drift_count ?? 0,
+    lastSignal: row.last_signal || 'not_applicable',
+    lastRationale: row.last_rationale || '',
+    lastEvaluatedAt: row.last_evaluated_at ? toTimestamp(row.last_evaluated_at) : undefined,
+    lastEvaluatedDay: row.last_evaluated_day ?? null,
+    lastEvaluatedTimeOfDay: row.last_evaluated_time_of_day ?? null,
+    sourceMessageId: row.source_message_id ?? null,
+    sourceGenerationId: row.source_generation_id ?? null,
+    previousState,
+    createdAt: row.created_at ? toTimestamp(row.created_at) : undefined,
+    updatedAt: row.updated_at ? toTimestamp(row.updated_at) : undefined,
+  };
+}
+
+export async function fetchGoalAlignmentStates(
+  conversationId: string,
+): Promise<GoalAlignmentState[]> {
+  const { data, error } = await supabase
+    .from('goal_alignment_states')
+    .select('*')
+    .eq('conversation_id', conversationId)
+    .order('updated_at', { ascending: true });
+
+  if (error) throw error;
+
+  return (data || []).map(dbToGoalAlignmentState);
+}
+
+export async function upsertGoalAlignmentStates(
+  input: {
+    conversationId: string;
+    userId: string;
+    states: GoalAlignmentState[];
+  },
+): Promise<GoalAlignmentState[]> {
+  if (input.states.length === 0) return [];
+  for (const state of input.states) {
+    if (state.conversationId && state.conversationId !== input.conversationId) {
+      throw new Error('Goal alignment state conversation mismatch');
+    }
+    if (state.goalKind === 'character' && !state.characterId) {
+      throw new Error('Character goal alignment state requires characterId');
+    }
+  }
+
+  const { data, error } = await supabase
+    .from('goal_alignment_states')
+    .upsert(
+      input.states.map((state) => {
+        const characterId = state.goalKind === 'character' ? state.characterId ?? null : null;
+        return {
+          user_id: input.userId,
+          conversation_id: input.conversationId,
+          goal_kind: state.goalKind,
+          character_id: characterId,
+          character_scope_id: characterId || GOAL_ALIGNMENT_ZERO_CHARACTER_ID,
+          goal_id: state.goalId,
+          score: state.score,
+          status: state.status,
+          trend: state.trend,
+          support_count: state.supportCount,
+          resistance_count: state.resistanceCount,
+          drift_count: state.driftCount,
+          last_signal: state.lastSignal,
+          last_rationale: state.lastRationale || null,
+          last_evaluated_at: state.lastEvaluatedAt ? new Date(state.lastEvaluatedAt).toISOString() : null,
+          last_evaluated_day: state.lastEvaluatedDay ?? null,
+          last_evaluated_time_of_day: state.lastEvaluatedTimeOfDay ?? null,
+          source_message_id: state.sourceMessageId || null,
+          source_generation_id: state.sourceGenerationId || null,
+          previous_state: state.previousState ?? null,
+        };
+      }),
+      { onConflict: 'conversation_id,goal_kind,character_scope_id,goal_id' },
+    )
+    .select();
+
+  if (error) throw error;
+
+  return (data || []).map(dbToGoalAlignmentState);
 }

@@ -71,6 +71,60 @@ export type WorldCustomItem = {
 
 // Goal flexibility levels for story goals and character goals
 export type GoalFlexibility = 'rigid' | 'normal' | 'flexible';
+export type GoalKind = 'story' | 'character';
+export type GoalAlignmentSignal = 'support' | 'resistance' | 'drift' | 'neutral' | 'not_applicable';
+export type GoalAlignmentStatus = 'active' | 'supported' | 'resisted' | 'drifting' | 'dormant' | 'dropped';
+export type GoalAlignmentTrend = 'rising' | 'falling' | 'stable';
+
+export type GoalAlignmentStateSnapshot = {
+  score: number;
+  status: GoalAlignmentStatus;
+  trend: GoalAlignmentTrend;
+  supportCount: number;
+  resistanceCount: number;
+  driftCount: number;
+  lastSignal: GoalAlignmentSignal;
+  lastRationale?: string;
+  lastEvaluatedAt?: number;
+  lastEvaluatedDay?: number | null;
+  lastEvaluatedTimeOfDay?: TimeOfDay | null;
+  sourceMessageId?: string | null;
+  sourceGenerationId?: string | null;
+};
+
+export type GoalAlignmentState = {
+  id?: string;
+  conversationId?: string;
+  goalId: string;
+  goalKind: GoalKind;
+  characterId?: string | null;
+  score: number;
+  status: GoalAlignmentStatus;
+  trend: GoalAlignmentTrend;
+  supportCount: number;
+  resistanceCount: number;
+  driftCount: number;
+  lastSignal: GoalAlignmentSignal;
+  lastRationale?: string;
+  lastEvaluatedAt?: number;
+  lastEvaluatedDay?: number | null;
+  lastEvaluatedTimeOfDay?: TimeOfDay | null;
+  sourceMessageId?: string | null;
+  sourceGenerationId?: string | null;
+  previousState?: GoalAlignmentStateSnapshot | null;
+  createdAt?: number;
+  updatedAt?: number;
+};
+
+export type GoalAlignmentEvaluation = {
+  goalId: string;
+  goalKind: GoalKind;
+  characterId?: string | null;
+  signal: GoalAlignmentSignal;
+  intensity: 0 | 1 | 2 | 3;
+  rationale?: string;
+  evidence?: string;
+};
 
 // Personality trait flexibility
 export type PersonalityTraitFlexibility = 'rigid' | 'normal' | 'flexible';
@@ -108,6 +162,7 @@ export type StoryGoal = {
   currentStatus?: string;
   steps: GoalStep[];
   flexibility: GoalFlexibility;
+  alignment?: GoalAlignmentState;
   createdAt: number;
   updatedAt: number;
 };
@@ -221,6 +276,7 @@ export type CharacterGoal = {
   flexibility?: GoalFlexibility;  // Guidance strength for this goal
   milestones?: GoalMilestone[];  // Deprecated - kept for backward compatibility
   steps?: GoalStep[];      // Step-based planning (replaces milestones)
+  alignment?: GoalAlignmentState;
   createdAt: number;
   updatedAt: number;
 };

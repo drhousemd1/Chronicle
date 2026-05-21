@@ -41,6 +41,7 @@ export const architectureExtraPaths: string[] = [
   '/supabase/functions/chat/index.ts',
   '/supabase/functions/check-shared-keys/index.ts',
   '/supabase/functions/compress-day-memories/index.ts',
+  '/supabase/functions/evaluate-goal-alignment/index.ts',
   '/supabase/functions/evaluate-goal-progress/index.ts',
   '/supabase/functions/extract-character-updates/index.ts',
   '/supabase/functions/extract-memory-events/index.ts',
@@ -133,4 +134,5 @@ export const architectureExtraPaths: string[] = [
   '/supabase/migrations/20260507031244_0c84d7a0-7fd0-4da9-b8a7-867e48406529.sql',
   '/supabase/migrations/20260507032313_e4496cef-ad79-47c3-872d-e361ce149dae.sql',
   '/supabase/migrations/20260509061600_1e750646-4b80-40be-ab44-7a8f56c8301a.sql',
+  '/supabase/migrations/20260516093000_add_goal_alignment_states.sql',
 ];

@@ -19,6 +19,7 @@ export type AiUsageEventType =
   | "memory_day_compression_call"
   | "memory_bullets_compressed"
   | "goal_progress_eval_call"
+  | "goal_alignment_eval_call"
   | "scene_image_generated"
   | "cover_image_generated"
   | "character_avatar_generated";

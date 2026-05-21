@@ -61,6 +61,13 @@ const rows: ApiUsageValidationRowSeed[] = [
   { id: "call2.goal_eval.pending_steps", label: "pendingSteps", kind: "detail", callGroup: "call_2", parentId: "summary.call2.goal_eval", sort: 133 },
   { id: "call2.goal_eval.temporal_context", label: "day/time", kind: "detail", callGroup: "call_2", parentId: "summary.call2.goal_eval", sort: 134 },
 
+  { id: "summary.call2.goal_alignment", label: "Call 2: Goal Alignment", kind: "summary", callGroup: "call_2", sort: 135 },
+  { id: "call2.goal_alignment.user_message", label: "userMessage", kind: "detail", callGroup: "call_2", parentId: "summary.call2.goal_alignment", sort: 136 },
+  { id: "call2.goal_alignment.ai_response", label: "aiResponse", kind: "detail", callGroup: "call_2", parentId: "summary.call2.goal_alignment", sort: 137 },
+  { id: "call2.goal_alignment.recent_context", label: "recentContext", kind: "detail", callGroup: "call_2", parentId: "summary.call2.goal_alignment", sort: 138 },
+  { id: "call2.goal_alignment.goals", label: "goals", kind: "detail", callGroup: "call_2", parentId: "summary.call2.goal_alignment", sort: 139 },
+  { id: "call2.goal_alignment.temporal_context", label: "day/time", kind: "detail", callGroup: "call_2", parentId: "summary.call2.goal_alignment", sort: 139.5 },
+
   { id: "summary.call2.memory_compress", label: "Call 2: Memory Compression", kind: "summary", callGroup: "call_2", sort: 140 },
   { id: "call2.memory_compress.bullets", label: "bullets", kind: "detail", callGroup: "call_2", parentId: "summary.call2.memory_compress", sort: 141 },
   { id: "call2.memory_compress.day", label: "day", kind: "detail", callGroup: "call_2", parentId: "summary.call2.memory_compress", sort: 142 },
@@ -131,6 +138,8 @@ function getSummaryHelpText(rowId: string): string {
       return "Triggered when memory extraction invokes extract-memory-events after an assistant reply.";
     case "summary.call2.goal_eval":
       return "Triggered when goal evaluation invokes evaluate-goal-progress for pending story-goal steps.";
+    case "summary.call2.goal_alignment":
+      return "Triggered when goal alignment invokes evaluate-goal-alignment to score support, resistance, or drift for story and character goals.";
     case "summary.call2.memory_compress":
       return "Triggered on day change when bullet memories are compressed via compress-day-memories.";
     case "summary.call2.side_character_profile":
@@ -177,6 +186,9 @@ function getDetailHelpText(row: ApiUsageValidationRowSeed): string {
   }
   if (row.parentId === "summary.call2.goal_eval") {
     return `Goal evaluation trigger: required payload key \`${row.label}\` for evaluate-goal-progress.`;
+  }
+  if (row.parentId === "summary.call2.goal_alignment") {
+    return `Goal alignment trigger: required payload key \`${row.label}\` for evaluate-goal-alignment.`;
   }
   if (row.parentId === "summary.call2.memory_compress") {
     return `Memory compression trigger: required payload key \`${row.label}\` for compress-day-memories.`;

@@ -87,6 +87,18 @@ function makeCharacter(name: string, controlledBy: "AI" | "User", role: "Main" |
         currentStatus: `{{${name}.goal.currentStatus}}`,
         progress: 25,
         flexibility: "normal",
+        alignment: {
+          goalId: `${name}-goal`,
+          goalKind: "character",
+          characterId: `${name.toLowerCase()}-${role.toLowerCase()}`,
+          score: 58,
+          status: "active",
+          trend: "stable",
+          supportCount: 1,
+          resistanceCount: 0,
+          driftCount: 0,
+          lastSignal: "neutral",
+        },
         steps: [
           { id: `${name}-step-open`, description: `{{${name}.goal.openMilestone}}`, completed: false },
           { id: `${name}-step-complete`, description: `{{${name}.goal.completedMilestone}}`, completed: true, completedDay: 1, completedTimeOfDay: "sunrise" },
@@ -183,6 +195,17 @@ function makeScenario(uiOverrides: Partial<UiSettings> = {}): ScenarioData {
             desiredOutcome: "{{storyGoal.desiredOutcome}}",
             currentStatus: "{{storyGoal.currentStatus}}",
             flexibility: "rigid",
+            alignment: {
+              goalId: "story-goal-1",
+              goalKind: "story",
+              score: 64,
+              status: "supported",
+              trend: "rising",
+              supportCount: 2,
+              resistanceCount: 0,
+              driftCount: 0,
+              lastSignal: "support",
+            },
             steps: [
               { id: "story-step-open", description: "{{storyGoal.openMilestone}}", completed: false },
               { id: "story-step-complete", description: "{{storyGoal.completedMilestone}}", completed: true, completedDay: 1, completedTimeOfDay: "sunrise" },
@@ -461,6 +484,63 @@ const characterStateSyncUserPrompt = `Analyze the latest exchange and return onl
 ---
 
 {{aiResponse ? "LATEST AI RESPONSE:\\n" + aiResponse : ""}}`;
+
+const goalAlignmentSystemPrompt = `You are a precise goal-alignment classifier. Return valid JSON only.`;
+
+const goalAlignmentUserPrompt = `You are the post-turn GOAL ALIGNMENT evaluator for an adult roleplay app.
+
+Your job is NOT to write story text, create new goals, complete goal steps, or update character cards.
+Your only job is to judge whether the latest exchange shows the user and scene supporting, resisting, drifting away from, or not engaging each existing goal.
+
+--- STORY CLOCK ---
+{{storyClock}}
+
+--- RECENT CONTEXT ---
+{{recentContext || "(none provided)"}}
+
+--- LATEST USER MESSAGE ---
+{{userMessage || "(empty)"}}
+
+--- LATEST AI RESPONSE ---
+{{aiResponse || "(empty)"}}
+
+--- GOALS TO EVALUATE ---
+{{goalsContext}}
+
+--- CLASSIFICATION RULES ---
+For each goal, choose exactly one signal:
+- support: The latest exchange accepts, enables, follows, advances, or becomes more receptive to this goal.
+- resistance: The user explicitly refuses, blocks, contradicts, rejects, avoids, or pushes back against this goal or an AI attempt to move toward it.
+- drift: The user or scene keeps moving elsewhere without directly rejecting the goal. Use this when the goal is becoming less central because the roleplay is naturally carrying away from it.
+- neutral: The goal is present as background but the exchange does not meaningfully change alignment.
+- not_applicable: The goal has no real connection to this exchange.
+
+Intensity:
+- 0: no meaningful signal
+- 1: weak signal
+- 2: clear signal
+- 3: strong signal
+
+Important:
+- Evaluate alignment only. Do not judge whether a step is completed.
+- Do not penalize a goal just because it did not appear in a single turn. Use drift only when the user or scene is actively carrying away from it.
+- Rigid, normal, and flexible are guidance strengths, not signals. Classify the exchange evidence; the app code will apply different scoring rates later.
+- Empty or mostly not_applicable results are valid.
+
+Respond in JSON only:
+{
+  "evaluations": [
+    {
+      "goalId": "...",
+      "goalKind": "story|character",
+      "characterId": null,
+      "signal": "support|resistance|drift|neutral|not_applicable",
+      "intensity": 0,
+      "rationale": "One concise reason.",
+      "evidence": "Short quote or paraphrase from this exchange."
+    }
+  ]
+}`;
 
 const memoryExtractionSystemPrompt = `You are a story memory curator for an adult roleplay. Your job is to identify only durable events from the latest user+AI exchange that will affect future scenes and narrative consistency.
 
@@ -778,6 +858,30 @@ ${characterStateSyncSystemPrompt}
 
 USER MESSAGE
 ${characterStateSyncUserPrompt}
+
+================================================================================
+SUPPORT CALL: GOAL ALIGNMENT EVALUATION
+================================================================================
+
+EDGE FUNCTION
+/functions/v1/evaluate-goal-alignment
+
+REQUEST BODY SHAPE SENT TO xAI
+{
+  "model": "grok-4.3",
+  "messages": [
+    { "role": "system", "content": "<system prompt below>" },
+    { "role": "user", "content": "<user prompt below>" }
+  ],
+  "temperature": 0.15,
+  "max_tokens": 2048
+}
+
+SYSTEM MESSAGE
+${goalAlignmentSystemPrompt}
+
+USER MESSAGE
+${goalAlignmentUserPrompt}
 
 ================================================================================
 SUPPORT CALL: MEMORY EXTRACTION

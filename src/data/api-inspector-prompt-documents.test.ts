@@ -62,6 +62,10 @@ describe("api-inspector prompt document registry", () => {
     expect(document.body).toContain("API CALL 2: CHARACTER STATE SYNC");
     expect(document.body).toContain("Return ONLY valid JSON. No explanations.");
     expect(document.body).toContain("scenePosition: volatile immediate placement within the broad place");
+    expect(document.body).toContain("SUPPORT CALL: GOAL ALIGNMENT EVALUATION");
+    expect(document.body).toContain("/functions/v1/evaluate-goal-alignment");
+    expect(document.body).toContain("support|resistance|drift|neutral|not_applicable");
+    expect(document.body).toContain("the app code will apply different scoring rates later");
     expect(document.body).toContain("MEMORY EXTRACTION");
     expect(document.body).toContain("SIDE-CHARACTER GENERATION");
     expect(document.body).toContain("SIDE-CHARACTER AVATAR PROMPT OPTIMIZATION");

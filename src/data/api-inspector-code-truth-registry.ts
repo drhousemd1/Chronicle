@@ -749,8 +749,8 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
         },
         {
           id: "section-api2-goals",
-          title: "API 2B - Goal Step Evaluation",
-          description: "Classifies pending story-goal steps as aligned/completed.",
+          title: "API 2B - Goal Evaluation and Alignment",
+          description: "Separates binary story-step completion from adaptive goal-alignment scoring.",
           items: [
             {
               id: "item-evaluate-goals",
@@ -781,13 +781,13 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
                   id: "item-evaluate-goals-sub-2",
                   title: "Completion-only persistence",
                   description:
-                    "The edge function returns completed true/false, but the client only persists rows where completed is true. Soft alignment is not currently saved as durable progress.",
+                    "The edge function returns completed true/false, and the client only persists rows where completed is true. Soft alignment is handled by the separate goal-alignment evaluator.",
                 },
                 {
                   id: "item-evaluate-goals-sub-3",
-                  title: "Known code-truth caveat",
+                  title: "Scope boundary",
                   description:
-                    "The request type includes flexibility, and the client sends it, but the current edge prompt does not use flexibility when classifying step completion.",
+                    "This call should not decide whether the user is receptive to a goal over time. It only checks whether an authored story step was clearly completed.",
                 },
               ],
               crossRefs: [
@@ -796,6 +796,42 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
                   targetItemId: "item-post-response-fanout",
                   label: "Triggered by post-response fanout",
                   tooltip: "Goal classification invocation is launched after assistant response commit.",
+                },
+              ],
+            },
+            {
+              id: "item-evaluate-goal-alignment",
+              title: "evaluate-goal-alignment edge function",
+              tagType: "core-prompt",
+              icon: "📝",
+              purpose:
+                "Classifies the latest exchange as support, resistance, drift, neutral, or not-applicable for each active story and AI-character goal.",
+              whyItExists:
+                "Goal strength needs a real feedback loop instead of static rigid/normal/flexible wording that never changes based on user behavior.",
+              problemSolved:
+                "Creates a durable alignment score that can rise, fall, become dormant, or drop flexible/normal goals without mutating the base Story Builder definitions.",
+              fileRefs: [
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3248-3435" },
+                { path: "supabase/functions/evaluate-goal-alignment/index.ts", lines: "1-272" },
+                { path: "src/lib/goal-alignment.ts", lines: "1-211" },
+              ],
+              codeSourceLabel: "Goal alignment prompt",
+              promptViewEnabled: true,
+              codeSource: `You are the post-turn GOAL ALIGNMENT evaluator...
+Classify each active goal as support, resistance, drift, neutral, or not_applicable.
+The app code applies scoring rates differently for rigid, normal, and flexible goals.`,
+              subItems: [
+                {
+                  id: "item-evaluate-goal-alignment-sub-1",
+                  title: "Scoring owner",
+                  description:
+                    "Grok classifies the evidence, but Chronicle code applies the numeric score changes so the model cannot invent arbitrary weights.",
+                },
+                {
+                  id: "item-evaluate-goal-alignment-sub-2",
+                  title: "Session-scoped persistence",
+                  description:
+                    "Alignment rows live in goal_alignment_states by conversation, goal kind, optional character, and goal id so one playthrough cannot bleed into another.",
                 },
               ],
             },
@@ -836,6 +872,34 @@ Only completed steps are persisted. Each row is tied to the source assistant gen
                   tooltip: "Only completed rows returned by evaluate-goal-progress are written into the derivation ledger.",
                 },
               ],
+            },
+            {
+              id: "item-goal-alignment-ledger",
+              title: "Goal alignment state ledger",
+              tagType: "data-block",
+              icon: "📦",
+              purpose:
+                "Persists the current 0-100 alignment score, trend, status, counters, and source message lineage for story and character goals.",
+              whyItExists:
+                "The next API Call 1 needs a compact snapshot of whether the roleplay is supporting, resisting, or drifting from a goal.",
+              problemSolved:
+                "Makes goal guidance adaptive instead of static, while keeping story goals session-scoped and regenerate-safe.",
+              fileRefs: [
+                { path: "supabase/migrations/20260516093000_add_goal_alignment_states.sql", lines: "1-93" },
+                { path: "src/services/persistence/conversations.ts", lines: "817-905" },
+                { path: "src/services/llm.ts", lines: "217-240" },
+              ],
+              codeSourceLabel: "goal_alignment_states write contract",
+              promptViewEnabled: true,
+              codeSource: `goal_alignment_states:
+- conversation_id
+- goal_kind
+- character_id / character_scope_id
+- goal_id
+- score, status, trend
+- support_count, resistance_count, drift_count
+- last_signal, last_rationale
+- source_message_id, source_generation_id`,
             },
           ],
         },

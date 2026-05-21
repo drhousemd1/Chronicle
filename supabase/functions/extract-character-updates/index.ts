@@ -9,6 +9,7 @@ interface CharacterGoalData {
   desiredOutcome?: string;
   currentStatus: string;
   progress: number;
+  flexibility?: "rigid" | "normal" | "flexible";
   steps?: Array<{ id: string; description: string; completed: boolean }>;
 }
 

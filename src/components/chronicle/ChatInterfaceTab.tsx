@@ -1,10 +1,17 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { ScenarioData, Character, CharacterStateMessageSnapshot, CharacterStateSnapshotPayload, Conversation, Message, CharacterTraitSection, Scene, TimeOfDay, SideCharacter, SideCharacterMessageSnapshot, SideCharacterStateSnapshotPayload, CharacterSessionState, Memory, WorldCore, StoryGoal, GoalFlexibility, StoryGoalStepDerivation, FieldChangeMetadataMap } from '../../types';
+import { ScenarioData, Character, CharacterStateMessageSnapshot, CharacterStateSnapshotPayload, Conversation, Message, CharacterTraitSection, Scene, TimeOfDay, SideCharacter, SideCharacterMessageSnapshot, SideCharacterStateSnapshotPayload, CharacterSessionState, Memory, WorldCore, StoryGoal, GoalFlexibility, StoryGoalStepDerivation, FieldChangeMetadataMap, GoalAlignmentEvaluation, GoalAlignmentState } from '../../types';
 import { Button, TextArea } from './UI';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 import { isTaskLevelGoalText, parseExtractedGoalUpdateValue } from '@/lib/goal-state-guard';
+import {
+  applyGoalAlignmentEvaluation,
+  buildGoalAlignmentKey,
+  formatGoalAlignmentChange,
+  normalizeGoalAlignmentState,
+  shouldRenderGoalToWriter,
+} from '@/lib/goal-alignment';
 import { buildAssistantStyleDirective } from '@/lib/assistant-style-directive';
 import { uid, now, uuid } from '@/utils';
 import { generateRoleplayResponseStream, buildCanonNote } from '../../services/llm';
@@ -31,10 +38,10 @@ import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 
 import { supabase } from '@/integrations/supabase/client';
 import * as supabaseData from '@/services/supabase-data';
-import { 
-  parseMessageSegments, 
-  detectNewCharacters, 
-  createSideCharacter, 
+import {
+  parseMessageSegments,
+  detectNewCharacters,
+  createSideCharacter,
   getKnownCharacterNames,
   findCharacterByName,
   MessageSegment
@@ -475,7 +482,7 @@ const FormattedMessage: React.FC<{ text: string; dynamicText?: boolean; plainTex
             </span>
           );
         }
-        
+
         if (token.type === 'speech') {
           return (
             <span key={i} className="text-white font-medium">
@@ -492,8 +499,8 @@ const FormattedMessage: React.FC<{ text: string; dynamicText?: boolean; plainTex
         }
         if (token.type === 'thought') {
           return (
-            <span 
-              key={i} 
+            <span
+              key={i}
               className="text-indigo-200/90 italic tracking-tight animate-in fade-in zoom-in-95 duration-500"
               style={{
                 textShadow: '0 0 8px rgba(129, 140, 248, 0.6), 0 0 16px rgba(129, 140, 248, 0.4), 0 0 24px rgba(129, 140, 248, 0.2)'
@@ -616,8 +623,8 @@ const inferCanonicalNarrativeSpeakerName = (
 };
 
 const resolveRenderedSpeakerName = (
-  segment: MessageSegment, 
-  isAi: boolean, 
+  segment: MessageSegment,
+  isAi: boolean,
   appData: ScenarioData,
   userChar: Character | null,
   resolveCanonicalName?: (name: string) => string | null
@@ -646,14 +653,14 @@ const resolveRenderedSpeakerName = (
  * This ensures that a null speaker (renders as Ashley) merges with an explicit "Ashley:" tag.
  */
 const mergeByRenderedSpeaker = (
-  rawSegments: MessageSegment[], 
+  rawSegments: MessageSegment[],
   isAi: boolean,
   appData: ScenarioData,
   userChar: Character | null,
   resolveCanonicalName?: (name: string) => string | null
 ): MessageSegment[] => {
   if (rawSegments.length <= 1) return rawSegments;
-  
+
   // Resolve speaker names first (lowercased for comparison)
   const withResolvedNames = rawSegments.map(seg => ({
     ...seg,
@@ -662,11 +669,11 @@ const mergeByRenderedSpeaker = (
       ? (resolveCanonicalName?.(seg.speakerName) || seg.speakerName)
       : inferCanonicalNarrativeSpeakerName(seg, appData, resolveCanonicalName)
   }));
-  
+
   // Merge consecutive segments with same resolved name
   const merged: MessageSegment[] = [];
   let current = withResolvedNames[0];
-  
+
   for (let i = 1; i < withResolvedNames.length; i++) {
     const next = withResolvedNames[i];
     if (current.resolvedName === next.resolvedName) {
@@ -686,7 +693,7 @@ const mergeByRenderedSpeaker = (
     speakerName: current.canonicalSpeakerName ?? current.speakerName,
     content: current.content
   });
-  
+
   return merged;
 };
 
@@ -940,7 +947,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const timeProgressionIntervalRef = useRef<number>(15);
   const currentDayRef = useRef<number>(1);
   const scrollRef = useRef<HTMLDivElement>(null);
-  
+
   // Lazy loading state for scroll-based message loading
   const isLoadingOlderRef = useRef(false);
   const [localHasMore, setLocalHasMore] = useState(hasMoreMessages);
@@ -948,27 +955,30 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [characterToEdit, setCharacterToEdit] = useState<Character | SideCharacter | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
-  
+
   // Session states for per-playthrough character overrides
   const [sessionStates, setSessionStates] = useState<CharacterSessionState[]>([]);
   const [sessionStatesLoaded, setSessionStatesLoaded] = useState(false);
   const [characterStateSnapshots, setCharacterStateSnapshots] = useState<CharacterStateMessageSnapshot[]>([]);
   const [sideCharacterSnapshots, setSideCharacterSnapshots] = useState<SideCharacterMessageSnapshot[]>([]);
   const [goalStepDerivations, setGoalStepDerivations] = useState<StoryGoalStepDerivation[]>([]);
-  
+  const [goalAlignmentStates, setGoalAlignmentStates] = useState<GoalAlignmentState[]>([]);
+  const [canonicalDerivationsLoaded, setCanonicalDerivationsLoaded] = useState(false);
+  const [canonicalDerivationsLoadError, setCanonicalDerivationsLoadError] = useState<string | null>(null);
+
   // Sidebar theme state
   const [isSidebarThemeOpen, setIsSidebarThemeOpen] = useState(false);
   const [sidebarBackgrounds, setSidebarBackgrounds] = useState<UserBackground[]>([]);
   const [selectedSidebarBgId, setSelectedSidebarBgId] = useState<string | null>(null);
   const [isUploadingSidebarBg, setIsUploadingSidebarBg] = useState(false);
   const [sidebarBgIsLight, setSidebarBgIsLight] = useState<boolean>(true);
-  
+
   // Memories state
   const [memories, setMemories] = useState<Memory[]>([]);
   const [memoriesEnabled, setMemoriesEnabled] = useState(true);
   const [isMemoriesModalOpen, setIsMemoriesModalOpen] = useState(false);
   const [memoriesLoaded, setMemoriesLoaded] = useState(false);
-  
+
   // Track which characters are showing the "updating" indicator
   const [updatingCharacterIds, setUpdatingCharacterIds] = useState<Set<string>>(new Set());
   // Per-tile avatar crop positioning UX (main character cards)
@@ -1091,10 +1101,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [isMainCharacterDelete, setIsMainCharacterDelete] = useState(false);
   const [chatCanvasHexInput, setChatCanvasHexInput] = useState('#1a1b20');
   const [chatBubbleHexInput, setChatBubbleHexInput] = useState('#1a1b20');
-  
+
   // Session-scoped world core overrides (global across all characters)
   const [worldCoreSessionOverrides, setWorldCoreSessionOverrides] = useState<Partial<WorldCore> | null>(null);
-  
+
   // Collapsible character sections
   const [mainCharsCollapsed, setMainCharsCollapsed] = useState(false);
   const [sideCharsCollapsed, setSideCharsCollapsed] = useState(false);
@@ -1182,6 +1192,48 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     );
   }, [buildActiveGoalCompletionIds, conversationId, goalStepDerivations, latestMessageGenerationMap]);
 
+  const buildActiveGoalAlignmentMap = useCallback((
+    states: GoalAlignmentState[],
+    generationMap: Map<string, string>,
+  ): Map<string, GoalAlignmentState> => {
+    const map = new Map<string, GoalAlignmentState>();
+    for (const state of states) {
+      const latestSourceIsStale =
+        (state.sourceMessageId && state.sourceGenerationId && generationMap.get(state.sourceMessageId) !== state.sourceGenerationId) ||
+        (!state.sourceMessageId && !!state.sourceGenerationId);
+
+      if (latestSourceIsStale) {
+        const previous = state.previousState;
+        if (!previous) continue;
+        const previousSourceIsStale =
+          (previous.sourceMessageId && previous.sourceGenerationId && generationMap.get(previous.sourceMessageId) !== previous.sourceGenerationId) ||
+          (!previous.sourceMessageId && !!previous.sourceGenerationId);
+        if (previousSourceIsStale) continue;
+
+        const normalizedPrevious = normalizeGoalAlignmentState({
+          ...state,
+          ...previous,
+          previousState: null,
+        });
+        map.set(buildGoalAlignmentKey(normalizedPrevious.goalKind, normalizedPrevious.goalId, normalizedPrevious.characterId), normalizedPrevious);
+        continue;
+      }
+
+      const normalized = normalizeGoalAlignmentState(state);
+      map.set(buildGoalAlignmentKey(normalized.goalKind, normalized.goalId, normalized.characterId), normalized);
+    }
+    return map;
+  }, []);
+
+  const activeGoalAlignmentMap = useMemo(() => {
+    return buildActiveGoalAlignmentMap(
+      goalAlignmentStates.filter((entry) => entry.conversationId === conversationId),
+      latestMessageGenerationMap,
+    );
+  }, [buildActiveGoalAlignmentMap, conversationId, goalAlignmentStates, latestMessageGenerationMap]);
+
+  const canUseCanonicalChatState = canonicalDerivationsLoaded && !canonicalDerivationsLoadError;
+
   const buildActiveMemories = useCallback((
     sourceMemories: Memory[],
     generationMap: Map<string, string>,
@@ -1216,6 +1268,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
     const storyGoals = (manualCore.storyGoals || []).map((goal) => ({
       ...goal,
+      alignment: activeGoalAlignmentMap.get(buildGoalAlignmentKey('story', goal.id)),
       steps: (goal.steps || []).map((step) => {
         if (!activeGoalCompletionIds.has(step.id)) return step;
         return step.completed ? step : { ...step, completed: true };
@@ -1226,7 +1279,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       ...manualCore,
       storyGoals,
     };
-  }, [activeGoalCompletionIds, appData.world.core, worldCoreSessionOverrides]);
+  }, [activeGoalAlignmentMap, activeGoalCompletionIds, appData.world.core, worldCoreSessionOverrides]);
 
   const exportPostTurnStateChanges = useMemo((): Record<string, string[]> => {
     const changes: Record<string, string[]> = {};
@@ -1276,6 +1329,28 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       );
     }
 
+    const characterGoalLabelMap = new Map<string, string>();
+    for (const character of appData.characters) {
+      for (const goal of character.goals || []) {
+        characterGoalLabelMap.set(
+          buildGoalAlignmentKey('character', goal.id, character.id),
+          `${character.name} goal "${goal.title}"`,
+        );
+      }
+    }
+    for (const state of goalAlignmentStates.filter((entry) => entry.conversationId === conversationId)) {
+      if (!state.sourceMessageId) continue;
+      if (state.sourceGenerationId && latestMessageGenerationMap.get(state.sourceMessageId) !== state.sourceGenerationId) continue;
+      const normalized = normalizeGoalAlignmentState(state);
+      const label = normalized.goalKind === 'story'
+        ? `Story goal "${goalMap.get(normalized.goalId)?.title || normalized.goalId}"`
+        : characterGoalLabelMap.get(buildGoalAlignmentKey('character', normalized.goalId, normalized.characterId)) || `Character goal "${normalized.goalId}"`;
+      append(
+        state.sourceMessageId,
+        formatGoalAlignmentChange(normalized, label),
+      );
+    }
+
     for (const memory of memories.filter((entry) => entry.conversationId === conversationId && entry.sourceMessageId)) {
       if (memory.sourceGenerationId && latestMessageGenerationMap.get(memory.sourceMessageId!) !== memory.sourceGenerationId) continue;
       append(
@@ -1291,15 +1366,16 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     characterStateSnapshots,
     conversationId,
     effectiveWorldCore.storyGoals,
+    goalAlignmentStates,
     goalStepDerivations,
     latestMessageGenerationMap,
     memories,
     sideCharacterSnapshots,
   ]);
-  
+
   // Persistent map for placeholder name replacements (ensures consistency across the conversation)
   const placeholderMapRef = useRef<PlaceholderNameMap>({});
-  
+
   // Issue #7: Response tracking for narrow adaptive style directives
   const responseLengthsRef = useRef<number[]>([]);
   // Issue #7 + #10: Session message counter for precise session depth awareness
@@ -1307,11 +1383,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   // Issue #6B: Track previous day for compression trigger
   const previousDayRef = useRef<number>(currentDay);
   const latestConversationsRef = useRef(appData.conversations);
-  
+  const goalAlignmentEvalQueueRef = useRef<Promise<void>>(Promise.resolve());
+
   useEffect(() => {
     currentDayRef.current = currentDay;
   }, [currentDay]);
-  
+
   // Reset session tracking when conversation changes
   useEffect(() => {
     responseLengthsRef.current = [];
@@ -1356,7 +1433,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   useEffect(() => {
     sideCharactersRef.current = appData.sideCharacters || [];
   }, [appData.sideCharacters]);
-  
+
   // Load session states on mount - DEFERRED to not block first render
   useEffect(() => {
     // Skip loading if we're in the "loading" state (waiting for scenario data)
@@ -1365,7 +1442,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     let isCancelled = false;
     setSessionStates([]);
     setSessionStatesLoaded(false);
-    
+
     // Use requestAnimationFrame to defer non-critical data loading
     // This allows the UI shell to render first
     const frameId = requestAnimationFrame(() => {
@@ -1379,7 +1456,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         setSessionStatesLoaded(true);
       });
     });
-    
+
     return () => {
       isCancelled = true;
       cancelAnimationFrame(frameId);
@@ -1393,20 +1470,29 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     setCharacterStateSnapshots([]);
     setSideCharacterSnapshots([]);
     setGoalStepDerivations([]);
+    setGoalAlignmentStates([]);
+    setCanonicalDerivationsLoaded(false);
+    setCanonicalDerivationsLoadError(null);
 
     const frameId = requestAnimationFrame(() => {
       Promise.all([
         supabaseData.fetchCharacterStateMessageSnapshots(conversationId),
         supabaseData.fetchSideCharacterMessageSnapshots(conversationId),
         supabaseData.fetchStoryGoalStepDerivations(conversationId),
-      ]).then(([snapshots, sideSnapshots, derivations]) => {
+        supabaseData.fetchGoalAlignmentStates(conversationId),
+      ]).then(([snapshots, sideSnapshots, derivations, alignmentStates]) => {
         if (isCancelled) return;
         setCharacterStateSnapshots(snapshots);
         setSideCharacterSnapshots(sideSnapshots);
         setGoalStepDerivations(derivations);
+        setGoalAlignmentStates(alignmentStates);
+        setCanonicalDerivationsLoadError(null);
+        setCanonicalDerivationsLoaded(true);
       }).catch(err => {
         if (isCancelled) return;
         console.error('Failed to load canonical chat derivations:', err);
+        setCanonicalDerivationsLoadError('Could not load canonical chat state. Refresh before generating another response.');
+        setCanonicalDerivationsLoaded(false);
       });
     });
 
@@ -1415,7 +1501,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       cancelAnimationFrame(frameId);
     };
   }, [conversationId]);
-  
+
   // Load sidebar backgrounds when auth is ready - DEFERRED to not block first render
   useEffect(() => {
     if (conversationId === "loading" || !user?.id) return;
@@ -1439,7 +1525,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       cancelAnimationFrame(frameId);
     };
   }, [conversationId, user?.id]);
-  
+
   // Load memories on mount - DEFERRED to not block first render
   useEffect(() => {
     if (conversationId === "loading") return;
@@ -1447,7 +1533,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     let isCancelled = false;
     setMemories([]);
     setMemoriesLoaded(false);
-    
+
     const frameId = requestAnimationFrame(() => {
       supabaseData.fetchMemories(conversationId).then(mems => {
         if (isCancelled) return;
@@ -1459,13 +1545,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         setMemoriesLoaded(true);
       });
     });
-    
+
     return () => {
       isCancelled = true;
       cancelAnimationFrame(frameId);
     };
   }, [conversationId]);
-  
+
   // Issue #6B: Day-transition compression -- compress bullet memories when day increments
   // Memory CRUD handlers
   const handleCreateMemory = useCallback(async (
@@ -1478,7 +1564,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   ) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
-    
+
     const memory = await supabaseData.createMemory(
       conversationId,
       user.id,
@@ -1493,22 +1579,22 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     setMemories(prev => [...prev, memory]);
     return memory;
   }, [conversationId]);
-  
+
   const handleUpdateMemory = useCallback(async (id: string, content: string) => {
     await supabaseData.updateMemory(id, content);
     setMemories(prev => prev.map(m => m.id === id ? { ...m, content, updatedAt: Date.now() } : m));
   }, []);
-  
+
   const handleDeleteMemory = useCallback(async (id: string) => {
     await supabaseData.deleteMemory(id);
     setMemories(prev => prev.filter(m => m.id !== id));
   }, []);
-  
+
   const handleDeleteAllMemories = useCallback(async () => {
     await supabaseData.deleteAllMemories(conversationId);
     setMemories([]);
   }, [conversationId]);
-  
+
   const handleQuickSaveMemory = useCallback(async (
     content: string,
     day: number | null,
@@ -1583,13 +1669,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       });
     }
   }, [activeMemories, currentDay, memoriesEnabled, memoriesLoaded, conversationId, modelId, handleCreateMemory, handleDeleteMemory]);
-  
+
   // Sidebar background handlers
   const selectedSidebarBgUrl = useMemo(() => {
     if (!selectedSidebarBgId) return null;
     return sidebarBackgrounds.find(bg => bg.id === selectedSidebarBgId)?.imageUrl || null;
   }, [selectedSidebarBgId, sidebarBackgrounds]);
-  
+
   // Analyze sidebar background brightness for dynamic text color
   const analyzeImageBrightness = useCallback((imageUrl: string) => {
     const img = new Image();
@@ -1599,22 +1685,22 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
-        
+
         const sampleSize = 50;
         canvas.width = sampleSize;
         canvas.height = sampleSize;
-        
+
         ctx.drawImage(img, 0, 0, sampleSize, sampleSize);
         const imageData = ctx.getImageData(0, 0, sampleSize, sampleSize);
         const data = imageData.data;
-        
+
         let totalLuminosity = 0;
         const pixelCount = data.length / 4;
-        
+
         for (let i = 0; i < data.length; i += 4) {
           totalLuminosity += (0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2]);
         }
-        
+
         setSidebarBgIsLight((totalLuminosity / pixelCount) > 128);
       } catch (e) {
         console.warn('Could not analyze sidebar background brightness (CORS):', e);
@@ -1623,7 +1709,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     };
     img.src = imageUrl;
   }, []);
-  
+
   useEffect(() => {
     if (selectedSidebarBgUrl) {
       analyzeImageBrightness(selectedSidebarBgUrl);
@@ -1631,13 +1717,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       setSidebarBgIsLight(true);
     }
   }, [selectedSidebarBgUrl, analyzeImageBrightness]);
-  
+
   const handleUploadSidebarBg = async (file: File) => {
     try {
       setIsUploadingSidebarBg(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      
+
       const filename = `sidebar-${Date.now()}-${file.name}`;
       const imageUrl = await supabaseData.uploadSidebarBackgroundImage(user.id, file, filename);
       const newBg = await supabaseData.createSidebarBackground(user.id, imageUrl);
@@ -1648,12 +1734,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       setIsUploadingSidebarBg(false);
     }
   };
-  
+
   const handleSelectSidebarBg = async (id: string | null) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      
+
       await supabaseData.setSelectedSidebarBackground(user.id, id);
       setSelectedSidebarBgId(id);
       setSidebarBackgrounds(prev => prev.map(bg => ({ ...bg, isSelected: bg.id === id })));
@@ -1661,12 +1747,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       console.error('Failed to select sidebar background:', err);
     }
   };
-  
+
   const handleDeleteSidebarBg = async (id: string, imageUrl: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      
+
       await supabaseData.deleteSidebarBackground(user.id, id, imageUrl);
       setSidebarBackgrounds(prev => prev.filter(bg => bg.id !== id));
       if (selectedSidebarBgId === id) setSelectedSidebarBgId(null);
@@ -1674,7 +1760,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       console.error('Failed to delete sidebar background:', err);
     }
   };
-  
+
 // Helper to get effective character (base + stable session overrides + canonical message-scoped snapshots)
   const getManualSessionCharacter = useCallback((baseChar: Character): Character & { previousNames?: string[] } => {
     const sessionState = sessionStates.find(s => s.conversationId === conversationId && s.characterId === baseChar.id);
@@ -1700,7 +1786,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }
       return { ...(baseSection || {}), ...sessionSection, _extras: mergedExtras };
     };
-    
+
     const mergedPhysicalAppearance: PhysicalAppearance = {
       ...defaultPhysicalAppearance,
       ...(baseChar.physicalAppearance || {}),
@@ -1848,10 +1934,18 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const computeEffectiveCharacter = useCallback((
     baseChar: Character,
     snapshotMap: Map<string, CharacterStateMessageSnapshot> = activeCharacterSnapshotMap,
+    alignmentMap: Map<string, GoalAlignmentState> = activeGoalAlignmentMap,
   ): Character & { previousNames?: string[] } => {
+    const withGoalAlignment = (character: Character & { previousNames?: string[] }) => ({
+      ...character,
+      goals: (character.goals || []).map((goal) => ({
+        ...goal,
+        alignment: alignmentMap.get(buildGoalAlignmentKey('character', goal.id, baseChar.id)),
+      })),
+    });
     const manualMerged = getManualSessionCharacter(baseChar);
     const snapshot = snapshotMap.get(baseChar.id);
-    if (!snapshot?.statePayload) return manualMerged;
+    if (!snapshot?.statePayload) return withGoalAlignment(manualMerged);
 
     const payload = snapshot.statePayload;
     const merged = {
@@ -1862,8 +1956,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       avatarDataUrl: payload.avatarDataUrl ?? manualMerged.avatarDataUrl,
       previousNames: payload.previousNames ?? manualMerged.previousNames ?? [],
     };
-    return merged as Character & { previousNames?: string[] };
-  }, [activeCharacterSnapshotMap, getManualSessionCharacter]);
+    return withGoalAlignment(merged as Character & { previousNames?: string[] });
+  }, [activeCharacterSnapshotMap, activeGoalAlignmentMap, getManualSessionCharacter]);
 
   const getEffectiveCharacter = useCallback((baseChar: Character): Character & { previousNames?: string[] } => {
     return computeEffectiveCharacter(baseChar);
@@ -1949,6 +2043,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           )
         : activeGoalCompletionIds;
 
+    const overrideGoalAlignmentMap = overrides?.conversationMessages
+      ? buildActiveGoalAlignmentMap(
+          goalAlignmentStates.filter((state) => state.conversationId === conversationId),
+          overrideGenerationMap,
+        )
+      : activeGoalAlignmentMap;
+
     const manualCore = worldCoreSessionOverrides
       ? {
           ...appData.world.core,
@@ -1963,6 +2064,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       ...manualCore,
       storyGoals: (manualCore.storyGoals || []).map((goal) => ({
         ...goal,
+        alignment: overrideGoalAlignmentMap.get(buildGoalAlignmentKey('story', goal.id)),
         steps: (goal.steps || []).map((step) => (
           overrideGoalCompletionIds.has(step.id) && !step.completed
             ? { ...step, completed: true }
@@ -1973,7 +2075,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
     return {
       ...appData,
-      characters: appData.characters.map(c => computeEffectiveCharacter(c, snapshotMap)),
+      characters: appData.characters.map(c => computeEffectiveCharacter(c, snapshotMap, overrideGoalAlignmentMap)),
       sideCharacters: (appData.sideCharacters || []).map((sideChar) => computeEffectiveSideCharacter(sideChar, sideSnapshotMap)),
       conversations: overrides?.conversationMessages
         ? appData.conversations.map((entry) => (
@@ -1987,9 +2089,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   }, [
     activeCharacterSnapshotMap,
     activeGoalCompletionIds,
+    activeGoalAlignmentMap,
     activeSideCharacterSnapshotMap,
     appData,
     buildActiveGoalCompletionIds,
+    buildActiveGoalAlignmentMap,
     buildActiveCharacterSnapshotMap,
     buildActiveSideCharacterSnapshotMap,
     buildMessageGenerationMap,
@@ -1998,6 +2102,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     computeEffectiveCharacter,
     computeEffectiveSideCharacter,
     conversation?.messages,
+    goalAlignmentStates,
     goalStepDerivations,
     latestMessageGenerationMap,
     sideCharacterSnapshots,
@@ -2131,7 +2236,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const conversationTimeProgressionMode = conversation?.timeProgressionMode;
   const conversationTimeProgressionInterval = conversation?.timeProgressionInterval;
   const conversationTimeRemaining = conversation?.timeRemaining;
-  
+
   // Merge all characters (main characters with session overrides + side characters)
   // and dynamically group by their effective characterRole
   // NOTE: Must be called before any early returns to maintain hooks order
@@ -2147,12 +2252,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     }));
     return [...effectiveMainChars, ...sideChars];
   }, [appData.characters, effectiveSideCharacters, getEffectiveCharacter, conversationId]);
-  
-  const mainCharactersForDisplay = useMemo(() => 
+
+  const mainCharactersForDisplay = useMemo(() =>
     allCharactersForDisplay.filter(c => c.characterRole === 'Main'),
     [allCharactersForDisplay]
   );
-  const sideCharactersForDisplay = useMemo(() => 
+  const sideCharactersForDisplay = useMemo(() =>
     allCharactersForDisplay.filter(c => c.characterRole === 'Side'),
     [allCharactersForDisplay]
   );
@@ -2204,7 +2309,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       debugLog('[ChatInterfaceTab] messages count:', conversation?.messages?.length ?? 0);
     }
   }, [conversationId, conversation]);
-  
+
   // Trigger update indicator for a character (10-second duration)
   // MUST be defined before early return to maintain hooks order
   const showCharacterUpdateIndicator = useCallback((characterId: string) => {
@@ -2217,7 +2322,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       });
     }, 10000); // 10 second duration for better visibility
   }, []);
-  
+
   // Active scene computed from scene ID
   // MUST be defined before early return to maintain hooks order
   const activeScene = useMemo(() =>
@@ -2240,19 +2345,19 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
     return null;
   }, [appData.scenes, conversation?.messages]);
-  
+
   // Auto-scroll effect - only scroll to bottom when user is already near bottom
   // This prevents scroll jumping when older messages are prepended at the top
   // MUST be defined before early return to maintain hooks order
   const isNearBottomRef = useRef(true);
   const prevMessageCountRef = useRef(0);
-  
+
   useEffect(() => {
     if (scrollRef.current) {
       const el = scrollRef.current;
       const currentCount = conversation?.messages?.length || 0;
       const prevCount = prevMessageCountRef.current;
-      
+
       // If messages were added (not prepended older ones), auto-scroll if near bottom
       if (currentCount >= prevCount || streamingContent) {
         if (isNearBottomRef.current) {
@@ -2262,42 +2367,42 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       prevMessageCountRef.current = currentCount;
     }
   }, [conversation?.messages, streamingContent]);
-  
+
   // Sync hasMoreMessages prop to local state
   useEffect(() => {
     setLocalHasMore(hasMoreMessages);
   }, [hasMoreMessages]);
-  
+
   // Scroll-based lazy loading of older messages
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
-    
+
     // Track if user is near bottom (for auto-scroll logic)
     isNearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
-    
+
     // Check if user scrolled near top and we have more messages to load
     if (
-      el.scrollTop < 200 && 
-      localHasMore && 
-      !isLoadingOlderRef.current && 
-      onLoadOlderMessages && 
+      el.scrollTop < 200 &&
+      localHasMore &&
+      !isLoadingOlderRef.current &&
+      onLoadOlderMessages &&
       conversation?.messages?.length
     ) {
       const oldestMessage = conversation.messages[0];
       if (!oldestMessage) return;
-      
+
       isLoadingOlderRef.current = true;
       const prevScrollHeight = el.scrollHeight;
-      
+
       // Convert timestamp to ISO string for the query
       const beforeCreatedAt = new Date(oldestMessage.createdAt).toISOString();
-      
+
       onLoadOlderMessages(conversationId, beforeCreatedAt).then(olderMessages => {
         if (olderMessages.length === 0) {
           setLocalHasMore(false);
         }
-        
+
         // After messages are prepended by parent, preserve scroll position
         requestAnimationFrame(() => {
           if (scrollRef.current) {
@@ -2412,10 +2517,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   useEffect(() => {
     // Skip processing if in loading state
     if (conversationId === "loading" || !conversation) return;
-    
+
     // For the FIRST message (opening dialog), always use starting scene
     const isInitialState = conversation?.messages.length === 1;
-    
+
     if (isInitialState) {
       const startingScene = appData.scenes.find(s => s.isStartingScene);
       if (startingScene) {
@@ -2423,7 +2528,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         return;
       }
     }
-    
+
     // First, try to find a [SCENE: tag] command in messages (highest priority)
     let foundSceneTag = false;
     if (conversation?.messages.length) {
@@ -2431,7 +2536,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         const match = conversation.messages[i].text.match(/\[SCENE:\s*(.*?)\]/);
         if (match) {
           const tag = match[1].trim();
-          const scene = appData.scenes.find(s => 
+          const scene = appData.scenes.find(s =>
             (s.tags ?? []).some(t => t.toLowerCase() === tag.toLowerCase())
           );
           if (scene) {
@@ -2442,7 +2547,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         }
       }
     }
-    
+
     // Second pass: Keyword-based detection if no explicit tag found
     if (!foundSceneTag && conversation?.messages.length && appData.scenes.length > 0) {
       const sceneScores: { sceneId: string; score: number; matchedInMostRecent: boolean }[] = [];
@@ -2451,19 +2556,19 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         const originalIndex = allMessages.length - arr.length + idx;
         return !(originalIndex === 0 && allMessages.length > 1);
       });
-      
-      const mostRecentMessageText = recentMessages.length > 0 
-        ? recentMessages[recentMessages.length - 1].text.toLowerCase() 
+
+      const mostRecentMessageText = recentMessages.length > 0
+        ? recentMessages[recentMessages.length - 1].text.toLowerCase()
         : '';
-      
+
       const checkTagMatch = (tagKeyword: string, messageText: string): { matched: boolean; percentage: number } => {
         const stopWords = ['a', 'an', 'the', 'with', 'in', 'on', 'at', 'to', 'for', 'of', 'and', 'or'];
-        const tagWords = tagKeyword.split(/\s+/).filter(word => 
+        const tagWords = tagKeyword.split(/\s+/).filter(word =>
           word.length > 1 && !stopWords.includes(word)
         );
-        
+
         if (tagWords.length === 0) return { matched: false, percentage: 0 };
-        
+
         let matchedWords = 0;
         for (const word of tagWords) {
           const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -2472,16 +2577,16 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             matchedWords++;
           }
         }
-        
+
         const matchPercentage = matchedWords / tagWords.length;
         return { matched: matchPercentage >= 0.5, percentage: matchPercentage };
       };
-      
+
       for (const scene of appData.scenes) {
         let score = 0;
         let matchedInMostRecent = false;
         const sceneTags = scene.tags ?? [];
-        
+
         for (const tag of sceneTags) {
           if (tag && tag.trim() !== '') {
             const tagKeyword = tag.toLowerCase().trim();
@@ -2492,16 +2597,16 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             }
           }
         }
-        
+
         for (let msgIdx = 0; msgIdx < recentMessages.length; msgIdx++) {
           const messageText = recentMessages[msgIdx].text.toLowerCase();
           const messageWeight = msgIdx === recentMessages.length - 1 ? 3 : (msgIdx === recentMessages.length - 2 ? 2 : 1);
-          
+
           for (const tag of sceneTags) {
             if (tag && tag.trim() !== '') {
               const tagKeyword = tag.toLowerCase().trim();
               const { matched, percentage } = checkTagMatch(tagKeyword, messageText);
-              
+
               if (matched) {
                 const matchBonus = 1 + percentage;
                 score += messageWeight * matchBonus;
@@ -2509,14 +2614,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             }
           }
         }
-        
+
         if (score > 0) {
           sceneScores.push({ sceneId: scene.id, score, matchedInMostRecent });
         }
       }
-      
+
       const validScenes = sceneScores.filter(s => s.matchedInMostRecent);
-      
+
       if (validScenes.length > 0) {
         validScenes.sort((a, b) => b.score - a.score);
         setActiveSceneId(validScenes[0].sceneId);
@@ -2525,7 +2630,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         foundSceneTag = true; // Prevent fallback to starting scene
       }
     }
-    
+
     if (!foundSceneTag) {
       if (!activeSceneId) {
         const startingScene = appData.scenes.find(s => s.isStartingScene);
@@ -2567,7 +2672,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           ['call2.side_character_profile.model_id', modelId],
         ]),
       });
-      
+
       // 1. Generate detailed profile via Grok
       const profileRequestBody = {
         name,
@@ -2608,12 +2713,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         responseBody: profileDebug.responseBody ?? null,
         error: profileError ? JSON.stringify(profileError) : undefined,
       });
-      
+
       if (profileError) {
         console.error('Profile generation failed:', profileError);
         return;
       }
-      
+
       if (profileForUse && onUpdateSideCharacters) {
         void trackAiUsageEvent({
           eventType: 'side_character_card_generated',
@@ -2639,8 +2744,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
               physicalAppearance: { ...sc.physicalAppearance, ...profileForUse.physicalAppearance },
               currentlyWearing: { ...sc.currentlyWearing, ...profileForUse.currentlyWearing },
               background: { ...sc.background, ...profileForUse.background },
-              personality: { 
-                ...sc.personality, 
+              personality: {
+                ...sc.personality,
                 ...profileForUse.personality,
                 traits: profileForUse.personality?.traits || sc.personality.traits
               },
@@ -2650,7 +2755,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           return sc;
         });
         onUpdateSideCharacters(updatedSideChars);
-        
+
         // Persist updated character to database
         const updatedChar = updatedSideChars.find(sc => sc.id === characterId);
         if (updatedChar) {
@@ -2660,11 +2765,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             console.error(`Failed to update side character ${name} in database:`, err);
           }
         }
-        
+
         // 2. Generate avatar using the avatarPrompt - pass modelId and art style
         if (profileForUse.avatarPrompt) {
           debugLog(`Generating avatar for ${name}...`);
-          
+
           // Get the art style prompt from the scenario's selected art style
           const selectedStyleId = appData.selectedArtStyle || DEFAULT_STYLE_ID;
           const styleData = getStyleById(selectedStyleId);
@@ -2680,7 +2785,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
               ['call2.side_character_avatar.model_id', modelId],
             ]),
           });
-          
+
           const avatarRequestBody = {
             avatarPrompt: profileForUse.avatarPrompt,
             characterName: name,
@@ -2719,7 +2824,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             responseBody: avatarResponseBody ? { ...avatarResponseBody, imageUrl: avatarResponseBody.imageUrl ? '[image data url omitted from summary]' : undefined } : null,
             error: avatarError ? JSON.stringify(avatarError) : undefined,
           });
-          
+
           if (avatarError) {
             console.error('Avatar generation failed:', avatarError);
           } else if (avatarResponseBody?.imageUrl) {
@@ -2748,14 +2853,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
               return sc;
             });
             onUpdateSideCharacters(finalSideChars);
-            
+
             // Persist avatar update to database
             try {
               await supabaseData.updateSideCharacter(characterId, { avatarDataUrl: avatarResponseBody.imageUrl });
             } catch (err) {
               console.error(`Failed to update side character avatar in database:`, err);
             }
-            
+
             debugLog(`${name} has joined the story!`);
           }
         }
@@ -2789,14 +2894,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     sourceMessage?: Pick<Message, 'id' | 'generationId'>,
   ) => {
     if (!onUpdateSideCharacters) return;
-    
+
     const knownNames = getKnownCharacterNames(effectiveAppData);
     const newCharacters = detectNewCharacters(responseText, knownNames);
-    
+
     if (newCharacters.length > 0) {
       debugLog(`Detected ${newCharacters.length} new character(s):`, newCharacters.map(c => c.name));
-      
-      const newSideCharacters = newCharacters.map(nc => 
+
+      const newSideCharacters = newCharacters.map(nc =>
         createSideCharacter(nc.name, nc.dialogContext, conversationId)
       );
 
@@ -2811,11 +2916,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           },
         });
       });
-      
+
       // Add to sideCharacters array (optimistic UI update)
       const updatedSideChars = [...(appData.sideCharacters || []), ...newSideCharacters];
       onUpdateSideCharacters(updatedSideChars);
-      
+
       // Persist each new side character to database
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -2827,7 +2932,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           }
         }
       }
-      
+
       // Trigger async profile + avatar generation for each
       newSideCharacters.forEach(sc => {
         const nc = newCharacters.find(c => c.name === sc.name);
@@ -2849,7 +2954,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
   const parseCharacterUpdates = (responseText: string): CharacterUpdate[] => {
     const results: CharacterUpdate[] = [];
-    
+
     // Parse [UPDATE:...] tags - allow | or \ as field separators for flexibility
     const updateRegex = /\[UPDATE:([^|\\\]]+)[|\\]([^\]]+)\]/g;
     let match;
@@ -2868,7 +2973,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         results.push({ characterName: match[1].trim(), type: 'update', updates });
       }
     }
-    
+
     // Parse [ADDROW:...] tags
     const addRowRegex = /\[ADDROW:([^|]+)\|([^|]+)\|([^\]]+)\]/g;
     while ((match = addRowRegex.exec(responseText)) !== null) {
@@ -2884,7 +2989,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         });
       }
     }
-    
+
     // Parse [NEWCAT:...] tags
     const newCatRegex = /\[NEWCAT:([^|]+)\|([^|]+)\|([^\]]+)\]/g;
     while ((match = newCatRegex.exec(responseText)) !== null) {
@@ -2905,7 +3010,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         items
       });
     }
-    
+
     return results;
   };
 
@@ -2931,18 +3036,18 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       // Find the character by name
       const mainChar = appData.characters.find(c => c.name.toLowerCase() === update.characterName.toLowerCase());
       const sideChar = (appData.sideCharacters || []).find(sc => sc.name.toLowerCase() === update.characterName.toLowerCase());
-      
+
       if (mainChar) {
         // Show updating indicator
         showCharacterUpdateIndicator(mainChar.id);
-        
+
         // Find or create session state
         let sessionState = sessionStates.find(s => s.conversationId === conversationId && s.characterId === mainChar.id);
         if (!sessionState) {
           sessionState = await supabaseData.createSessionState(mainChar, conversationId, user.id);
           setSessionStates(prev => [...prev, sessionState!]);
         }
-        
+
         if (update.type === 'update' && update.updates) {
           // Apply field updates
           const patch: Record<string, any> = {};
@@ -2967,7 +3072,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       } else if (sideChar) {
         // Show updating indicator
         showCharacterUpdateIndicator(sideChar.id);
-        
+
         if (update.type === 'update' && update.updates) {
           const patch: Record<string, any> = {};
           for (const [field, value] of Object.entries(update.updates)) {
@@ -2984,7 +3089,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           }
           await supabaseData.updateSideCharacter(sideChar.id, patch);
           if (onUpdateSideCharacters) {
-            const updated = (appData.sideCharacters || []).map(sc => 
+            const updated = (appData.sideCharacters || []).map(sc =>
               sc.id === sideChar.id ? { ...sc, ...patch } : sc
             );
             onUpdateSideCharacters(updated);
@@ -3165,10 +3270,213 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     }
   };
 
+  const evaluateGoalAlignment = async (
+    userMessage: string,
+    aiResponse: string,
+    sourceAssistantMessageId?: string,
+    sourceAssistantGenerationId?: string,
+  ) => {
+    const storyGoals = (effectiveWorldCore.storyGoals || [])
+      .filter((goal) => goal.title?.trim() || goal.desiredOutcome?.trim())
+      .map((goal) => ({
+        goalId: goal.id,
+        goalKind: 'story' as const,
+        characterId: null,
+        title: goal.title || 'Untitled story goal',
+        desiredOutcome: goal.desiredOutcome || '',
+        currentStatus: goal.currentStatus || '',
+        flexibility: goal.flexibility || 'normal',
+        openStep: (goal.steps || []).find((step) => !step.completed)?.description || '',
+        alignment: goal.alignment,
+      }));
+
+    const characterGoals = effectiveMainCharacters
+      .filter((character) => character.controlledBy !== 'User')
+      .flatMap((character) => (character.goals || [])
+        .filter((goal) => goal.title?.trim() || goal.desiredOutcome?.trim())
+        .map((goal) => ({
+          goalId: goal.id,
+          goalKind: 'character' as const,
+          characterId: character.id,
+          characterName: character.name,
+          title: goal.title || 'Untitled character goal',
+          desiredOutcome: goal.desiredOutcome || '',
+          currentStatus: goal.currentStatus || '',
+          flexibility: goal.flexibility || 'normal',
+          openStep: (goal.steps || []).find((step) => !step.completed)?.description || '',
+          alignment: goal.alignment,
+        })));
+
+    const goals = [...storyGoals, ...characterGoals];
+    if (goals.length === 0) return;
+    if (!isMessageGenerationStillCurrent(sourceAssistantMessageId, sourceAssistantGenerationId)) {
+      debugLog('[evaluateGoalAlignment] Skipped stale turn before support call');
+      return;
+    }
+
+    const conversationForContext = latestConversationsRef.current.find(c => c.id === conversationId);
+    const recentContext = (conversationForContext?.messages || [])
+      .slice(-10)
+      .map(m => `${m.role === 'user' ? 'USER' : 'AI'}: ${m.text}`)
+      .join('\n\n');
+
+    try {
+      void trackAiUsageEvent({
+        eventType: 'goal_alignment_eval_call',
+        eventSource: 'chat-interface',
+        metadata: {
+          conversationId,
+          goalCount: goals.length,
+          inputChars: (userMessage?.length || 0) + (aiResponse?.length || 0) + recentContext.length,
+        },
+      });
+
+      void trackApiValidationSnapshot({
+        eventKey: 'validation.call2.goal_alignment',
+        eventSource: 'chat-interface.goal-alignment',
+        apiCallGroup: 'call_2',
+        parentRowId: 'summary.call2.goal_alignment',
+        detailPresence: buildRequiredPresence([
+          ['call2.goal_alignment.user_message', userMessage],
+          ['call2.goal_alignment.ai_response', aiResponse],
+          ['call2.goal_alignment.recent_context', recentContext],
+          ['call2.goal_alignment.goals', goals],
+          ['call2.goal_alignment.temporal_context', `${currentDay}:${currentTimeOfDay}`],
+        ]),
+        diagnostics: {
+          goalCount: goals.length,
+        },
+      });
+
+      const requestBody = {
+        userMessage,
+        aiResponse,
+        recentContext,
+        goals,
+        currentDay,
+        currentTimeOfDay,
+        debugTrace: isAdmin,
+      };
+      const sourceMessage = sourceAssistantMessageId
+        ? { id: sourceAssistantMessageId, generationId: sourceAssistantGenerationId }
+        : null;
+
+      recordChatDebugSupportCall(sourceMessage, {
+        id: 'call2.goal-alignment-eval',
+        label: 'Supporting Call - Goal alignment evaluation',
+        apiCallGroup: 'call_2',
+        endpoint: '/functions/v1/evaluate-goal-alignment',
+        method: 'POST',
+        capturedAt: Date.now(),
+        status: 'sent',
+        requestBody,
+      });
+
+      const { data, error } = await supabase.functions.invoke('evaluate-goal-alignment', {
+        body: requestBody,
+      });
+      const alignmentDebug = splitEdgeDebugPayload(data);
+
+      recordChatDebugSupportCall(sourceMessage, {
+        id: 'call2.goal-alignment-eval',
+        label: 'Supporting Call - Goal alignment evaluation',
+        apiCallGroup: 'call_2',
+        endpoint: '/functions/v1/evaluate-goal-alignment',
+        method: 'POST',
+        capturedAt: Date.now(),
+        status: error ? 'error' : 'completed',
+        requestBody,
+        modelRequest: alignmentDebug.modelRequest,
+        modelRequests: alignmentDebug.modelRequests,
+        responseBody: alignmentDebug.responseBody ?? null,
+        error: error ? JSON.stringify(error) : undefined,
+      });
+
+      if (error || !data?.evaluations?.length) return;
+      if (!isMessageGenerationStillCurrent(sourceAssistantMessageId, sourceAssistantGenerationId)) {
+        debugLog('[evaluateGoalAlignment] Discarded stale result for non-current turn');
+        return;
+      }
+
+      const evaluatedAt = Date.now();
+      const goalByKey = new Map(goals.map((goal) => [
+        buildGoalAlignmentKey(goal.goalKind, goal.goalId, goal.characterId),
+        goal,
+      ]));
+      const latestConversationForBaseline = latestConversationsRef.current.find(c => c.id === conversationId);
+      const latestGenerationMap = buildMessageGenerationMap(latestConversationForBaseline?.messages || []);
+      const latestPersistedAlignmentStates = await supabaseData.fetchGoalAlignmentStates(conversationId);
+      if (!isMessageGenerationStillCurrent(sourceAssistantMessageId, sourceAssistantGenerationId)) {
+        debugLog('[evaluateGoalAlignment] Discarded stale result after baseline refresh');
+        return;
+      }
+      const existingByKey = buildActiveGoalAlignmentMap(
+        latestPersistedAlignmentStates.filter((state) => state.conversationId === conversationId),
+        latestGenerationMap,
+      );
+
+      const nextStates = (data.evaluations as GoalAlignmentEvaluation[])
+        .filter((evaluation) => evaluation.signal !== 'not_applicable' && evaluation.intensity > 0)
+        .map((evaluation) => {
+          const key = buildGoalAlignmentKey(evaluation.goalKind, evaluation.goalId, evaluation.characterId);
+          const goal = goalByKey.get(key);
+          if (!goal) return null;
+          const previous = existingByKey.get(key) || {
+            goalId: evaluation.goalId,
+            goalKind: evaluation.goalKind,
+            characterId: evaluation.characterId ?? null,
+          };
+          return applyGoalAlignmentEvaluation(
+            previous,
+            evaluation,
+            goal.flexibility,
+            {
+              conversationId,
+              sourceMessageId: sourceAssistantMessageId,
+              sourceGenerationId: sourceAssistantGenerationId,
+              day: currentDay,
+              timeOfDay: currentTimeOfDay,
+              evaluatedAt,
+            },
+          );
+        })
+        .filter(Boolean) as GoalAlignmentState[];
+
+      if (nextStates.length === 0 || !sourceAssistantMessageId || !sourceAssistantGenerationId) return;
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const persisted = await supabaseData.upsertGoalAlignmentStates({
+        conversationId,
+        userId: user.id,
+        states: nextStates,
+      });
+
+      setGoalAlignmentStates(prev => {
+        const next = [...prev];
+        for (const state of persisted) {
+          const key = buildGoalAlignmentKey(state.goalKind, state.goalId, state.characterId);
+          const index = next.findIndex((entry) => (
+            entry.conversationId === conversationId &&
+            buildGoalAlignmentKey(entry.goalKind, entry.goalId, entry.characterId) === key
+          ));
+          if (index === -1) next.push(state);
+          else next[index] = state;
+        }
+        return next;
+      });
+
+      debugLog(`[evaluateGoalAlignment] Updated ${persisted.length} goal alignment states`);
+    } catch (err) {
+      console.error('[evaluateGoalAlignment] Failed:', err);
+    }
+  };
+
   // ============================================================================
   // DEDICATED CHARACTER UPDATE EXTRACTION (runs in parallel with narrative)
   // ============================================================================
-  
+
   interface ExtractedUpdate {
     character: string;
     field: string;
@@ -3380,7 +3688,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
     for (const segment of parseMessageSegments(userMessage)) addTaggedSpeaker(segment.speakerName);
     for (const segment of parseMessageSegments(aiResponse)) addTaggedSpeaker(segment.speakerName);
-    
+
     // Check all characters (main + side) by name, nicknames, previousNames
     for (const c of effectiveMainCharacters) {
       const names = [c.name, ...(c.nicknames?.split(',').map(n => n.trim()) || []), ...(c.previousNames || [])].filter(Boolean);
@@ -3401,7 +3709,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
   // Call the dedicated extraction edge function
   const extractCharacterUpdatesFromDialogue = async (
-    userMessage: string, 
+    userMessage: string,
     aiResponse: string,
     meta?: ExtractionRequestMeta
   ): Promise<ExtractedUpdate[]> => {
@@ -3463,6 +3771,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             desiredOutcome: g.desiredOutcome || '',
             currentStatus: g.currentStatus || '',
             progress: g.progress || 0,
+            flexibility: g.flexibility || 'normal',
             steps: (g.steps || []).map(s => ({ id: s.id, description: s.description, completed: s.completed }))
           })),
           customSections: (effective.sections || []).map(s => ({
@@ -3484,9 +3793,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           fears: effective.fears,
         };
       }).filter(c => eligibleNames.has(c.name.toLowerCase()));
-      
+
       // Also include eligible side characters
-      const sideCharsData = effectiveSideCharacters.filter(sc => 
+      const sideCharsData = effectiveSideCharacters.filter(sc =>
         eligibleNames.has(sc.name.toLowerCase())
       ).map(sc => ({
         name: sc.name,
@@ -3509,7 +3818,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         background: sc.background,
         personality: sc.personality,
       }));
-      
+
       const allCharacters = [...charactersData, ...sideCharsData];
       const scopedCharactersChars = JSON.stringify(allCharacters).length;
 
@@ -3525,13 +3834,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           inputChars: (userMessage?.length || 0) + (aiResponse?.length || 0) + scopedCharactersChars,
         },
       });
-      
+
       // Build recent context from only the freshest slice. Older durable truth should
       // come from canonical state, not from re-reading a huge transcript every turn.
       const conversation = appData.conversations.find(c => c.id === conversationId);
       const recentMessages = conversation?.messages.slice(-10) || [];
       const errorPatterns = ['Invalid token', 'xAI/Grok error', 'Payment required', '⚠️'];
-      const filteredMessages = recentMessages.filter(m => 
+      const filteredMessages = recentMessages.filter(m =>
         !errorPatterns.some(pat => m.text.includes(pat))
       );
       const recentContext = filteredMessages
@@ -3556,7 +3865,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           eligibleCharacterCount: eligibleNames.size,
         },
       });
-      
+
       const requestBody = {
         userMessage,
         aiResponse,
@@ -3601,12 +3910,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         responseBody: characterDebug.responseBody ?? null,
         error: error ? JSON.stringify(error) : undefined,
       });
-      
+
       if (error) {
         console.error('[extractCharacterUpdates] Edge function error:', error);
         return [];
       }
-      
+
       // Defensive: filter out updates for non-eligible characters and unsupported fields
       const updates = (data?.updates || [])
         .filter((u: ExtractedUpdate) => eligibleNames.has(u.character.toLowerCase()))
@@ -4198,7 +4507,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const applyExtractedUpdates = async (updates: ExtractedUpdate[], meta?: ExtractionRequestMeta) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user || updates.length === 0) return;
-    
+
     // Group updates by character
     const updatesByCharacter = new Map<string, ExtractedUpdate[]>();
     for (const update of updates) {
@@ -4206,16 +4515,16 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       existing.push(update);
       updatesByCharacter.set(update.character.toLowerCase(), existing);
     }
-    
+
     for (const [charNameLower, charUpdates] of updatesByCharacter) {
       const resolvedMatch = resolveCharacterReference(charNameLower);
       const mainChar = resolvedMatch?.kind === 'main' ? resolvedMatch.base : undefined;
       const sideChar = resolvedMatch?.kind === 'side' ? resolvedMatch.base : undefined;
-      
+
       if (!mainChar && !sideChar) {
         debugLog(`[applyExtractedUpdates] Character not found: ${charNameLower}`);
       }
-      
+
       if (mainChar) {
         if (!meta?.sourceMessageId || !meta?.sourceMessageGenerationId) {
           debugLog(`[applyExtractedUpdates] Missing canonical source metadata for ${mainChar.name}; skipping main-character snapshot persist`);
@@ -4467,6 +4776,19 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       console.error('[queueAssistantDerivedWork] Goal progress evaluation failed:', err);
     });
 
+    goalAlignmentEvalQueueRef.current = goalAlignmentEvalQueueRef.current
+      .catch(() => undefined)
+      .then(() => evaluateGoalAlignment(
+        userText,
+        aiText,
+        sourceMessage.id,
+        sourceMessage.generationId,
+      ))
+      .catch(err => {
+        console.error('[queueAssistantDerivedWork] Goal alignment evaluation failed:', err);
+      });
+    void goalAlignmentEvalQueueRef.current;
+
     const extractionMeta: ExtractionRequestMeta = {
       sourceMessageId: sourceMessage.id,
       sourceMessageGenerationId: sourceMessage.generationId,
@@ -4483,6 +4805,19 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }
     }).catch(err => {
       console.error('[queueAssistantDerivedWork] Character extraction failed:', err);
+    });
+  };
+
+  const queueAssistantDerivedWorkAfterSourcePersist = (
+    messagesToPersist: Message[],
+    userText: string,
+    aiText: string,
+    sourceMessage: Message,
+  ) => {
+    supabaseData.saveNewMessages(conversationId, messagesToPersist).then(() => {
+      queueAssistantDerivedWork(userText, aiText, sourceMessage);
+    }).catch(err => {
+      console.error('[queueAssistantDerivedWork] Skipped derived work because source messages failed to persist:', err);
     });
   };
 
@@ -4524,7 +4859,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     const effectiveTimeRemaining = effectiveInterval * 60;
     setTimeRemaining(effectiveTimeRemaining);
     timeRemainingRef.current = effectiveTimeRemaining;
-    
+
     // Update conversation in app state (local only)
     const updatedConvs = appData.conversations.map(c =>
       c.id === conversationId
@@ -4565,16 +4900,16 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   };
 
   const handleSend = async () => {
-    if (!input.trim() || !conversation || isStreaming) return;
+    if (!input.trim() || !conversation || isStreaming || !canUseCanonicalChatState) return;
 
-    const userMsg: Message = { 
-      id: uuid(), 
+    const userMsg: Message = {
+      id: uuid(),
       generationId: uuid(),
-      role: 'user', 
-      text: input, 
+      role: 'user',
+      text: input,
       day: currentDay,
       timeOfDay: currentTimeOfDay,
-      createdAt: now() 
+      createdAt: now()
     };
     const nextConvsWithUser = appData.conversations.map(c =>
       c.id === conversationId ? { ...c, messages: [...c.messages, userMsg], updatedAt: now() } : c
@@ -4594,7 +4929,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       const llmAppData = buildLLMAppData();
       // Issue #8: Detect user-authored AI character content and prepend canon note
       const canonNote = buildCanonNote(input, canonNoteCharacters);
-      
+
       // Issue #7: Compute adaptive style directive and increment session counter
       const adaptiveStyleDirective = getAdaptiveStyleDirective();
       sessionMessageCountRef.current += 1;
@@ -4627,7 +4962,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       for await (const chunk of stream) {
         fullText += chunk;
         setStreamingContent(fullText);
-        
+
         // Format streaming content on-the-fly to prevent flickering
         const existingNamesForStream = getKnownCharacterNames(effectiveAppData);
         const formatted = sanitizeAssistantOutput(fullText);
@@ -4639,24 +4974,24 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
       // Strip any legacy update tags that might still be in response (fallback)
       let cleanedText = sanitizeAssistantOutput(fullText);
-      
+
       // Apply placeholder name guard to replace "Man 1:", "Cashier:", etc. with proper names
       const existingNames = getKnownCharacterNames(effectiveAppData);
       const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, placeholderMapRef.current);
       cleanedText = normalizedText;
-      
+
       // Issue #7: Track response word count for adaptive style directives
       responseLengthsRef.current.push(cleanedText.split(/\s+/).length);
 
       const aiMessageId = uuid();
-      const aiMsg: Message = { 
-        id: aiMessageId, 
+      const aiMsg: Message = {
+        id: aiMessageId,
         generationId: uuid(),
-        role: 'assistant', 
-        text: cleanedText, 
+        role: 'assistant',
+        text: cleanedText,
         day: currentDay,
         timeOfDay: currentTimeOfDay,
-        createdAt: now() 
+        createdAt: now()
       };
       const nextConvsWithAi = appData.conversations.map(c =>
         c.id === conversationId ? { ...c, messages: [...c.messages, userMsg, aiMsg], updatedAt: now() } : c
@@ -4665,8 +5000,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       onUpdate(nextConvsWithAi);
       onSaveScenario(nextConvsWithAi);
       saveChatDebugTrace(aiMsg, pendingDebugTrace, pendingCall1Request);
-      queueAssistantDerivedWork(userInput, cleanedText, aiMsg);
-      
+      queueAssistantDerivedWorkAfterSourcePersist([userMsg, aiMsg], userInput, cleanedText, aiMsg);
+
       // Process AI response for new character detection
       processResponseForNewCharacters(cleanedText, aiMsg);
     } catch (err) {
@@ -4786,7 +5121,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       text: editText,
       generationId: uuid(),
     };
-    
+
     const updatedConvs = appData.conversations.map(c =>
       c.id === conversationId
         ? {
@@ -4862,13 +5197,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   };
 
   const handleRegenerateMessage = async (messageId: string) => {
-    regenerateEventsRef.current.push({ messageId, timestamp: Date.now() });
     const conv = conversation;
-    if (!conv) return;
+    if (!conv || !canUseCanonicalChatState) return;
+    regenerateEventsRef.current.push({ messageId, timestamp: Date.now() });
 
     const msgIndex = conv.messages.findIndex(m => m.id === messageId);
     if (msgIndex < 1) return;
-    
+
     // Search backward from msgIndex for the nearest user message
     let userMessage: Message | undefined;
     for (let i = msgIndex - 1; i >= 0; i--) {
@@ -4878,14 +5213,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }
     }
     if (!userMessage) return;
-    
+
     // Track which specific message is being regenerated (for in-place streaming)
     setRegeneratingMessageId(messageId);
     setIsRegenerating(true);
     setIsStreaming(true);
     setStreamingContent('');
     setFormattedStreamingContent('');
-    
+
     try {
       // Strip the old AI response AND the triggering user message from context
       // (generateRoleplayResponseStream will re-add the user message as the final turn,
@@ -4898,7 +5233,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         memories,
         buildMessageGenerationMap(truncatedMessages),
       );
-      
+
       let fullText = '';
       let pendingDebugTrace: ChatDebugTrace | null = null;
       let pendingCall1Request: ChatDebugRequestRecord | null = null;
@@ -4928,28 +5263,28 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           },
         }
       );
-      
+
       for await (const chunk of stream) {
         fullText += chunk;
         setStreamingContent(fullText);
-        
+
         // Format streaming content on-the-fly
         const existingNamesForStream = getKnownCharacterNames(effectiveAppData);
         const formatted = sanitizeAssistantOutput(fullText);
         const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, placeholderMapRef.current);
         setFormattedStreamingContent(normalizedText);
       }
-      
+
       // Regeneration is text-variation only: avoid mutating persistent character state here.
 
       // Strip any legacy update tags
       let cleanedText = sanitizeAssistantOutput(fullText);
-      
+
       // Apply placeholder name guard
       const existingNames = getKnownCharacterNames(effectiveAppData);
       const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, placeholderMapRef.current);
       cleanedText = normalizedText;
-      
+
       // UPDATE IN-PLACE: Replace the existing message instead of creating a new one
       const existingMessage = conv.messages.find((message) => message.id === messageId);
       if (!existingMessage) {
@@ -4981,12 +5316,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       );
       latestConversationsRef.current = updatedConvs;
       onUpdate(updatedConvs);
-      supabaseData.saveNewMessages(conversationId, [regeneratedMessage]).catch(err => {
-        console.error('[handleRegenerate] Failed to persist regenerated message:', err);
-      });
       saveChatDebugTrace(regeneratedMessage, pendingDebugTrace, pendingCall1Request);
-      queueAssistantDerivedWork(userMessage.text, cleanedText, regeneratedMessage);
-      
+      queueAssistantDerivedWorkAfterSourcePersist([regeneratedMessage], userMessage.text, cleanedText, regeneratedMessage);
+
       // Process for new characters after normalization
       processResponseForNewCharacters(cleanedText, regeneratedMessage);
     } catch (err) {
@@ -5003,67 +5335,73 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   };
 
   const handleContinueConversation = async () => {
-    if (!conversation || isStreaming) return;
+    if (!conversation || isStreaming || !canUseCanonicalChatState) return;
     const lastMsg = conversation.messages[conversation.messages.length - 1];
     if (lastMsg) continueEventsRef.current.push({ messageId: lastMsg.id, timestamp: Date.now() });
-    
+
     setIsStreaming(true);
     setStreamingContent('');
     setFormattedStreamingContent('');
-    
+
     // Use session-merged data so the AI sees current locations/moods/control
     const llmAppData = buildLLMAppData();
     const allPlayableCharacters = [...llmAppData.characters, ...(llmAppData.sideCharacters || [])];
-    
+
     // Get character control lists from session-merged data
     const userControlledNames = allPlayableCharacters
       .filter(c => c.controlledBy === 'User')
       .map(c => c.name);
-    
+
     const aiControlledNames = allPlayableCharacters
       .filter(c => c.controlledBy === 'AI')
       .map(c => c.name);
-    
+
     try {
       let fullText = '';
       let pendingDebugTrace: ChatDebugTrace | null = null;
       let pendingCall1Request: ChatDebugRequestRecord | null = null;
-      
-      // Build goal-aware continue prompt without turning goals into a task list.
-      const goalSummaryParts: string[] = [];
-      allPlayableCharacters
-        .filter(c => c.controlledBy === 'AI')
-        .forEach(c => {
-          const session = sessionStates.find(s => s.conversationId === conversationId && s.characterId === c.id);
-          const goals = session?.goals || ('goals' in c ? c.goals : undefined);
-          if (Array.isArray(goals)) {
-            goals.forEach((g: any) => {
-              const label = typeof g === 'string' ? g : (g?.title || g?.label || g?.value || '');
-              const currentStep = g?.steps?.find?.((s: any) => !s.completed)?.description;
-              if (label) {
+
+	      // Build goal-aware continue prompt without turning goals into a task list.
+	      const goalSummaryParts: string[] = [];
+	      const isGoalVisibleToWriter = (goal: any): boolean => {
+	        const flexibility: GoalFlexibility =
+	          goal?.flexibility === 'rigid' || goal?.flexibility === 'flexible'
+	            ? goal.flexibility
+	            : 'normal';
+	        return shouldRenderGoalToWriter(goal?.alignment, flexibility);
+	      };
+	      allPlayableCharacters
+	        .filter(c => c.controlledBy === 'AI')
+	        .forEach(c => {
+	          const goals = 'goals' in c ? c.goals : undefined;
+	          if (Array.isArray(goals)) {
+	            goals.filter(isGoalVisibleToWriter).forEach((g: any) => {
+	              const label = typeof g === 'string' ? g : (g?.title || g?.label || g?.value || '');
+	              const currentStep = g?.steps?.find?.((s: any) => !s.completed)?.description;
+	              if (label) {
                 goalSummaryParts.push(`${c.name}'s current goal: "${label}"${currentStep ? `; open milestone: "${currentStep}"` : ''}`);
               }
             });
           }
         });
-      
-      const storyGoalsList = effectiveWorldCore.storyGoals || [];
-      storyGoalsList.forEach((g: StoryGoal) => {
-        const pendingStep = (g.steps || []).find(s => !s.completed);
-        if (pendingStep) {
+
+	      const storyGoalsList = effectiveWorldCore.storyGoals || [];
+	      storyGoalsList.filter(isGoalVisibleToWriter).forEach((g: StoryGoal) => {
+	        const pendingStep = (g.steps || []).find(s => !s.completed);
+	        if (pendingStep) {
           goalSummaryParts.push(`Story goal "${g.title || g.desiredOutcome}"; open milestone: "${pendingStep.description}"`);
         }
       });
-      
+
       const goalContext = goalSummaryParts.length > 0
         ? `\nGOAL CONTINUITY:\n${goalSummaryParts.join('\n')}\nUse this as background continuity only. Open milestones are not commands or a next-action checklist; touch them only when the immediate scene and user agency naturally support it.`
         : '';
-      
+
       // Canon carry-forward for continue: check if the most recent user message
       // contained AI-authored dialogue that should not be re-narrated
       const lastUserMsg = conversation.messages.slice().reverse().find(m => m.role === 'user');
       const continueCanonNote = lastUserMsg ? buildCanonNote(lastUserMsg.text, canonNoteCharacters) : '';
-      
+
       const continuePrompt = `${continueCanonNote}[CONTINUE INSTRUCTION]
 Continue naturally from the latest scene.
 Write only for AI-controlled characters: ${aiControlledNames.join(', ')}.
@@ -5075,10 +5413,10 @@ Use one focal AI speaker by default. Add a second tagged AI speaker only when th
 If the latest user turn directly addressed two AI characters and both need to answer or acknowledge, give each one short tagged block instead of letting one character narrate the other's answer.
 Avoid long back-and-forth chains between AI characters. Leave room for the user to respond.
 Do not acknowledge this instruction in your response.`;
-      
+
       debugLog('[handleContinue] Goal context:', goalContext || '(no goals found)');
       debugLog('[handleContinue] Canon note applied:', continueCanonNote ? 'YES' : 'NO');
-      
+
       const stream = generateRoleplayResponseStream(
         llmAppData,
         conversationId,
@@ -5102,53 +5440,53 @@ Do not acknowledge this instruction in your response.`;
           },
         }
       );
-      
+
       for await (const chunk of stream) {
         fullText += chunk;
         setStreamingContent(fullText);
-        
+
         // Format streaming content on-the-fly
         const existingNamesForStream = getKnownCharacterNames(effectiveAppData);
         const formatted = sanitizeAssistantOutput(fullText);
         const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, placeholderMapRef.current);
         setFormattedStreamingContent(normalizedText);
       }
-      
+
       // Strip any legacy update tags
       let cleanedText = sanitizeAssistantOutput(fullText);
-      
+
       // Apply placeholder name guard
       const existingNames = getKnownCharacterNames(effectiveAppData);
       const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, placeholderMapRef.current);
       cleanedText = normalizedText;
-      
+
       // Track response length for adaptive style directives
       responseLengthsRef.current.push(cleanedText.split(/\s+/).length);
-      
+
       const aiMessageId = uuid();
-      const aiMsg: Message = { 
-        id: aiMessageId, 
+      const aiMsg: Message = {
+        id: aiMessageId,
         generationId: uuid(),
-        role: 'assistant', 
-        text: cleanedText, 
+        role: 'assistant',
+        text: cleanedText,
         day: currentDay,
         timeOfDay: currentTimeOfDay,
-        createdAt: now() 
+        createdAt: now()
       };
-      
+
       const updatedConvs = appData.conversations.map(c =>
-        c.id === conversationId 
-          ? { ...c, messages: [...c.messages, aiMsg], updatedAt: now() } 
+        c.id === conversationId
+          ? { ...c, messages: [...c.messages, aiMsg], updatedAt: now() }
           : c
       );
       latestConversationsRef.current = updatedConvs;
       onUpdate(updatedConvs);
       onSaveScenario(updatedConvs);
       saveChatDebugTrace(aiMsg, pendingDebugTrace, pendingCall1Request);
-      queueAssistantDerivedWork('', cleanedText, aiMsg);
-      
+      queueAssistantDerivedWorkAfterSourcePersist([aiMsg], '', cleanedText, aiMsg);
+
       processResponseForNewCharacters(cleanedText, aiMsg);
-      
+
     } catch (err) {
       console.error(err);
       const message = err instanceof Error ? err.message : "Continue failed. Check your connection or model settings.";
@@ -5163,22 +5501,22 @@ Do not acknowledge this instruction in your response.`;
   // Generate scene image from recent conversation context
   const handleGenerateSceneImage = async () => {
     if (!conversation || isGeneratingImage) return;
-    
+
     setIsGeneratingImage(true);
-    
+
     try {
       // Get last 5 messages for context
       const recentMessages = conversation.messages.slice(-5).map(m => ({
         role: m.role,
         text: m.text
       }));
-      
+
       if (recentMessages.length === 0) {
         console.error('No messages to generate scene from');
         setIsGeneratingImage(false);
         return;
       }
-      
+
       // Get characters mentioned in recent messages
       const mentionedNames = new Set<string>();
       recentMessages.forEach(m => {
@@ -5187,7 +5525,7 @@ Do not acknowledge this instruction in your response.`;
           if (seg.speakerName) mentionedNames.add(seg.speakerName);
         });
       });
-      
+
       // Build character data for mentioned characters
       const charactersData = [...mentionedNames].map(name => {
         const char = findCharacterByName(name, effectiveAppData);
@@ -5198,11 +5536,11 @@ Do not acknowledge this instruction in your response.`;
           currentlyWearing: 'currentlyWearing' in char ? char.currentlyWearing : {}
         };
       }).filter(Boolean);
-      
+
       // Get art style
       const selectedStyleId = appData.selectedArtStyle || DEFAULT_STYLE_ID;
       const styleData = getStyleById(selectedStyleId);
-      
+
       // Get active scene location
       const sceneLocation = activeScene?.tags?.[0] || undefined;
 
@@ -5216,7 +5554,7 @@ Do not acknowledge this instruction in your response.`;
           ['single.scene_image.characters_or_context', charactersData],
         ]),
       });
-      
+
       // Call edge function
       const { data, error } = await supabase.functions.invoke('generate-scene-image', {
         body: {
@@ -5228,12 +5566,12 @@ Do not acknowledge this instruction in your response.`;
           modelId
         }
       });
-      
+
       if (error) {
         console.error('Scene image generation error:', error);
         throw new Error(error.message || 'Failed to generate image');
       }
-      
+
       if (!data?.imageUrl) {
         throw new Error('No image returned from server');
       }
@@ -5247,7 +5585,7 @@ Do not acknowledge this instruction in your response.`;
           inputChars: recentMessages.join('\n').length + JSON.stringify(charactersData).length,
         },
       });
-      
+
       // Create image message
       const imageMessage: Message = {
         id: uuid(),
@@ -5259,22 +5597,22 @@ Do not acknowledge this instruction in your response.`;
         timeOfDay: currentTimeOfDay,
         createdAt: now()
       };
-      
+
       // Add to conversation
       const updatedMessages = [...conversation.messages, imageMessage];
-      const updatedConv = { 
-        ...conversation, 
+      const updatedConv = {
+        ...conversation,
         messages: updatedMessages,
         updatedAt: now()
       };
-      
+
       // Update state and save
-      const newConversations = appData.conversations.map(c => 
+      const newConversations = appData.conversations.map(c =>
         c.id === conversationId ? updatedConv : c
       );
       onUpdate(newConversations);
       onSaveScenario(newConversations);
-      
+
     } catch (error) {
       console.error('Failed to generate scene image:', error);
     } finally {
@@ -5283,8 +5621,8 @@ Do not acknowledge this instruction in your response.`;
   };
 
   // Returns char (if known), cleanText (with Name: stripped), and speakerName (always if detected)
-  const identifySpeaker = (text: string, isUser: boolean): { 
-    char: Character | SideCharacter | null; 
+  const identifySpeaker = (text: string, isUser: boolean): {
+    char: Character | SideCharacter | null;
     cleanText: string;
     speakerName: string | null;
   } => {
@@ -5294,10 +5632,10 @@ Do not acknowledge this instruction in your response.`;
       const userChar = effectiveMainCharacters.find(c => c.controlledBy === 'User');
       if (userChar) {
         if (cleanRaw.toLowerCase().startsWith(userChar.name.toLowerCase() + ':')) {
-          return { 
-            char: userChar, 
+          return {
+            char: userChar,
             cleanText: cleanRaw.slice(userChar.name.length + 1).trim(),
-            speakerName: userChar.name 
+            speakerName: userChar.name
           };
         }
         return { char: userChar, cleanText: cleanRaw, speakerName: userChar.name };
@@ -5347,37 +5685,37 @@ Do not acknowledge this instruction in your response.`;
   const toggleCharacterExpand = (id: string) => {
     setExpandedCharId(expandedCharId === id ? null : id);
   };
-  
+
   // Open the character edit modal
   const openCharacterEditModal = (char: Character | SideCharacter) => {
     setCharacterToEdit(char);
     setEditModalOpen(true);
   };
-  
+
   // Close the edit modal
   const closeCharacterEditModal = () => {
     setEditModalOpen(false);
     setCharacterToEdit(null);
   };
-  
+
   // Delete a side character - opens confirmation dialog
   const handleDeleteSideCharacter = (charId: string) => {
     setCharacterToDelete(charId);
     setIsMainCharacterDelete(false);
     setIsDeleteDialogOpen(true);
   };
-  
+
   // Delete a main character - opens confirmation dialog
   const handleDeleteMainCharacter = (charId: string) => {
     setCharacterToDelete(charId);
     setIsMainCharacterDelete(true);
     setIsDeleteDialogOpen(true);
   };
-  
+
   // Confirm deletion of a character (main or side)
   const confirmDeleteCharacter = async () => {
     if (!characterToDelete) return;
-    
+
     try {
       if (isMainCharacterDelete) {
         // For main characters, we delete any session state overrides
@@ -5387,18 +5725,18 @@ Do not acknowledge this instruction in your response.`;
           .delete()
           .eq('conversation_id', conversationId)
           .eq('character_id', characterToDelete);
-        
+
         if (error) throw error;
-        
+
       } else {
         // Delete side character
         await supabaseData.deleteSideCharacter(characterToDelete);
-        
+
         // Update local ref and propagate to parent
         const updatedList = sideCharactersRef.current.filter(sc => sc.id !== characterToDelete);
         sideCharactersRef.current = updatedList;
         onUpdateSideCharacters?.(updatedList);
-        
+
         // Close expanded state if this was the expanded character
         if (expandedCharId === characterToDelete) {
           setExpandedCharId(null);
@@ -5412,27 +5750,27 @@ Do not acknowledge this instruction in your response.`;
       setIsMainCharacterDelete(false);
     }
   };
-  
+
   // Save character edits to session state (main characters only)
   const handleSaveMainCharacterEdit = async (char: Character, draft: CharacterEditDraft) => {
     setIsSavingEdit(true);
-    
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         console.error('Not authenticated');
         return;
       }
-      
+
       // Find or create session state for this character
       let sessionState = sessionStates.find(s => s.conversationId === conversationId && s.characterId === char.id);
-      
+
       if (!sessionState) {
         // Create new session state
         sessionState = await supabaseData.createSessionState(char, conversationId, user.id);
         setSessionStates(prev => [...prev, sessionState!]);
       }
-      
+
 // Update session state with draft changes (including avatar, control, role, previousNames, and 7 section fields)
       await supabaseData.updateSessionState(sessionState.id, {
         name: draft.name,
@@ -5460,11 +5798,11 @@ Do not acknowledge this instruction in your response.`;
         secrets: (draft as any).secrets,
         fears: (draft as any).fears,
       });
-      
+
       // Refresh session states
       const updatedStates = await supabaseData.fetchSessionStates(conversationId);
       setSessionStates(updatedStates);
-      
+
       closeCharacterEditModal();
     } catch (err) {
       console.error('Failed to save character edit:', err);
@@ -5472,11 +5810,11 @@ Do not acknowledge this instruction in your response.`;
       setIsSavingEdit(false);
     }
   };
-  
+
   // Save side character edits (already session-scoped via side_characters table)
   const handleSaveSideCharacterEdit = async (char: SideCharacter, draft: CharacterEditDraft) => {
     setIsSavingEdit(true);
-    
+
     try {
 const updatedChar: SideCharacter = {
         ...char,
@@ -5498,16 +5836,16 @@ const updatedChar: SideCharacter = {
         avatarPosition: draft.avatarPosition || char.avatarPosition,
         updatedAt: now(),
       };
-      
+
       // Update in Supabase
       await supabaseData.updateSideCharacter(char.id, updatedChar);
-      
+
       // Update local state
-      const updatedList = sideCharactersRef.current.map(sc => 
+      const updatedList = sideCharactersRef.current.map(sc =>
         sc.id === char.id ? updatedChar : sc
       );
       onUpdateSideCharacters?.(updatedList);
-      
+
       closeCharacterEditModal();
     } catch (err) {
       console.error('Failed to save side character edit:', err);
@@ -5515,11 +5853,11 @@ const updatedChar: SideCharacter = {
       setIsSavingEdit(false);
     }
   };
-  
+
   // Unified save handler for the modal
   const handleModalSave = async (draft: CharacterEditDraft) => {
     if (!characterToEdit) return;
-    
+
    // Side characters have 'firstMentionedIn'; main characters do not
     if ('firstMentionedIn' in characterToEdit) {
       await handleSaveSideCharacterEdit(characterToEdit as SideCharacter, draft);
@@ -5805,7 +6143,7 @@ const updatedChar: SideCharacter = {
 
         {/* Blue vignette overlay - scoped to this card */}
         {isUpdating && (
-          <div 
+          <div
             className="absolute inset-0 z-[15] pointer-events-none rounded-2xl overflow-hidden animate-vignette-pulse"
             style={{
               background: 'radial-gradient(ellipse 120% 100% at center 30%, transparent 25%, rgba(59, 130, 246, 0.25) 50%, rgba(59, 130, 246, 0.5) 80%, rgba(59, 130, 246, 1) 100%)'
@@ -5816,7 +6154,7 @@ const updatedChar: SideCharacter = {
         {/* "Updating..." text overlay - top-left with ethereal glow */}
         {isUpdating && (
           <div className="absolute top-3 left-3 z-20 pointer-events-none">
-            <span 
+            <span
               className="text-indigo-200/90 text-xs italic font-light tracking-tight animate-in fade-in zoom-in-95 duration-500"
               style={{
                 textShadow: '0 0 8px rgba(129, 140, 248, 0.6), 0 0 16px rgba(129, 140, 248, 0.4), 0 0 24px rgba(129, 140, 248, 0.2)'
@@ -5834,11 +6172,11 @@ const updatedChar: SideCharacter = {
                 {char.name}
               </div>
             </div>
-            <Badge 
+            <Badge
               variant={char.controlledBy === 'User' ? 'default' : 'secondary'}
               className={`text-[9px] px-1.5 py-0.5 shadow-sm ${
-                char.controlledBy === 'User' 
-                  ? 'bg-blue-500 hover:bg-blue-500 text-white border-0' 
+                char.controlledBy === 'User'
+                  ? 'bg-blue-500 hover:bg-blue-500 text-white border-0'
                   : 'bg-slate-500 hover:bg-slate-500 text-white border-0'
               }`}
             >
@@ -5868,7 +6206,7 @@ const updatedChar: SideCharacter = {
                 <Pencil className="w-4 h-4 mr-2" />
                 Edit character
               </DropdownMenuItem>
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={() => handleDeleteMainCharacter(char.id)}
                 className="text-red-400 focus:text-red-400"
               >
@@ -5980,15 +6318,15 @@ const updatedChar: SideCharacter = {
             <button
               onClick={onBack}
               className={`flex items-center gap-2 text-xs font-black uppercase tracking-widest transition-colors ${
-                sidebarBgIsLight 
-                  ? 'text-black hover:text-blue-500' 
+                sidebarBgIsLight
+                  ? 'text-black hover:text-blue-500'
                   : 'text-white hover:text-blue-300'
               }`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
               Exit Scenario
             </button>
-            
+
             {/* Settings cog button */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -6068,7 +6406,7 @@ const updatedChar: SideCharacter = {
                     {currentDay}
                   </div>
                   <div className="flex flex-col border-l border-black">
-                    <button 
+                    <button
                       onClick={incrementDay}
                       className="px-1.5 py-0.5 hover:bg-slate-100 transition-colors text-black hover:text-blue-500"
                       aria-label="Increase day"
@@ -6076,7 +6414,7 @@ const updatedChar: SideCharacter = {
                     >
                       <ChevronUp className="w-3 h-3" />
                     </button>
-                    <button 
+                    <button
                       onClick={decrementDay}
                       disabled={currentDay <= 1}
                       className="px-1.5 py-0.5 hover:bg-slate-100 transition-colors text-black hover:text-blue-500 disabled:opacity-30 disabled:cursor-not-allowed"
@@ -6136,8 +6474,8 @@ const updatedChar: SideCharacter = {
                 }}
               >
                 <div className="space-y-2 pb-2">
-                {mainCharactersForDisplay.map(char => 
-                  char._source === 'character' 
+                {mainCharactersForDisplay.map(char =>
+                  char._source === 'character'
                     ? renderCharacterCard(char as Character)
                     : (
                       <SideCharacterCard
@@ -6179,8 +6517,8 @@ const updatedChar: SideCharacter = {
             <div className={`transition-all duration-300 ease-in-out overflow-hidden ${sideCharsCollapsed ? 'max-h-0 opacity-0' : 'max-h-[2000px] opacity-100'}`}>
             <ScrollableSection maxHeight="calc(50vh - 120px)" className="pr-1">
               <div className="space-y-2 pb-2">
-                {sideCharactersForDisplay.map(char => 
-                  char._source === 'character' 
+                {sideCharactersForDisplay.map(char =>
+                  char._source === 'character'
                     ? renderCharacterCard(char as Character)
                     : (
                       <SideCharacterCard
@@ -6215,7 +6553,7 @@ const updatedChar: SideCharacter = {
               <div className="absolute inset-0 bg-black/20" />
             </div>
           )}
-          
+
           <div ref={scrollRef} onScroll={handleScroll} className="relative z-10 h-full overflow-y-auto px-6 md:px-14 lg:px-20 py-8 space-y-10 custom-scrollbar scrollbar-thin">
           {conversation?.messages.length === 0 && !streamingContent && (
              <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-6">
@@ -6230,10 +6568,10 @@ const updatedChar: SideCharacter = {
           {conversation?.messages.map((msg) => {
             const isAi = msg.role === 'assistant';
             const visibleMessageText = isAi ? sanitizeAssistantMessageText(msg.text) : msg.text;
-            
+
             // Get the primary speaker for user messages
             const userChar = effectiveMainCharacters.find(c => c.controlledBy === 'User') || null;
-            
+
             // Parse segments and merge by RESOLVED speaker identity
             // This ensures null (default AI) and explicit "Ashley:" merge correctly
             const rawSegments = parseMessageSegments(visibleMessageText);
@@ -6247,8 +6585,8 @@ const updatedChar: SideCharacter = {
 
             return (
               <div key={msg.id} className={`w-full animate-in fade-in slide-in-from-bottom-4 duration-500 group ${
-                offsetBubbles 
-                  ? `max-w-3xl ${isAi ? 'mr-auto' : 'ml-auto'}` 
+                offsetBubbles
+                  ? `max-w-3xl ${isAi ? 'mr-auto' : 'ml-auto'}`
                   : 'max-w-4xl mx-auto'
               }`}>
                 <div className={`p-8 pt-14 pb-12 rounded-[2rem] shadow-2xl flex flex-col gap-4 transition-all relative ${
@@ -6257,7 +6595,7 @@ const updatedChar: SideCharacter = {
                     : ''
                 }`}
                 style={!bubblesTransparent ? { backgroundColor: chatBubbleColor } : undefined}>
-                  
+
                   {/* Action buttons - top right corner */}
                   <div className={`absolute top-4 right-4 flex items-center gap-1 transition-opacity ${
                     inlineEditingId === msg.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
@@ -6287,30 +6625,30 @@ const updatedChar: SideCharacter = {
                       <>
                         {/* Continue button - show on the LAST message in the conversation (user or AI) */}
                         {msg.id === conversation?.messages.slice(-1)[0]?.id && (
-                          <button
-                            onClick={handleContinueConversation}
-                            disabled={isStreaming || isRegenerating}
-                            className="p-2 rounded-lg hover:bg-ghost-white text-slate-400 hover:text-white transition-colors disabled:opacity-30"
-                            aria-label="Continue conversation"
-                            title="Continue"
-                          >
+	                          <button
+	                            onClick={handleContinueConversation}
+	                            disabled={isStreaming || isRegenerating || !canUseCanonicalChatState}
+	                            className="p-2 rounded-lg hover:bg-ghost-white text-slate-400 hover:text-white transition-colors disabled:opacity-30"
+	                            aria-label="Continue conversation"
+	                            title={canonicalDerivationsLoadError || "Continue"}
+	                          >
                             <StepForward className="w-4 h-4" />
                           </button>
                         )}
-                      
+
                         {/* Regenerate button - AI messages only */}
                         {isAi && (
-                          <button
-                            onClick={() => handleRegenerateMessage(msg.id)}
-                            disabled={isStreaming || isRegenerating}
-                            className="p-2 rounded-lg hover:bg-ghost-white text-slate-400 hover:text-white transition-colors disabled:opacity-30"
-                            aria-label="Regenerate response"
-                            title="Regenerate response"
-                          >
+	                          <button
+	                            onClick={() => handleRegenerateMessage(msg.id)}
+	                            disabled={isStreaming || isRegenerating || !canUseCanonicalChatState}
+	                            className="p-2 rounded-lg hover:bg-ghost-white text-slate-400 hover:text-white transition-colors disabled:opacity-30"
+	                            aria-label="Regenerate response"
+	                            title={canonicalDerivationsLoadError || "Regenerate response"}
+	                          >
                             <RefreshCw className={`w-4 h-4 ${regeneratingMessageId === msg.id ? 'animate-spin' : ''}`} />
                           </button>
                         )}
-                      
+
                         {isAdmin && dialogDebugEnabled && (
                           <button
                             onClick={() => openDialogDebugComment(msg)}
@@ -6347,7 +6685,7 @@ const updatedChar: SideCharacter = {
                               <Pencil className="w-4 h-4 mr-2" />
                               Edit
                             </DropdownMenuItem>
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                               onClick={() => handleDeleteMessage(msg.id)}
                               className="text-red-400 focus:text-red-400"
                             >
@@ -6359,14 +6697,14 @@ const updatedChar: SideCharacter = {
                       </>
                     )}
                   </div>
-                  
+
                   {/* Render image if this is an image message */}
                   {msg.imageUrl && (
                     <div className="flex justify-center py-4">
                       <div className="relative group/image max-w-2xl w-full">
-                        <img 
-                          src={msg.imageUrl} 
-                          alt="Generated scene" 
+                        <img
+                          src={msg.imageUrl}
+                          alt="Generated scene"
                           className="rounded-xl shadow-lg border border-ghost-white w-full h-auto"
                         />
                         {/* Regenerate overlay on hover */}
@@ -6390,7 +6728,7 @@ const updatedChar: SideCharacter = {
                       </div>
                     </div>
                   )}
-                  
+
                   {/* Render text segments - avatar only shows when speaker changes */}
                   {/* If this message is being regenerated, show streaming content instead */}
                   {msg.text && (() => {
@@ -6407,14 +6745,14 @@ const updatedChar: SideCharacter = {
                             resolveCanonicalSpeakerName
                           )
                         : segments;
-                    
+
                     return displaySegments.map((segment, segIndex) => {
                       // Determine speaker for this segment
                       let segmentChar: Character | SideCharacter | null = null;
                       let segmentName = '';
                       let segmentAvatar: string | null = null;
                       let isGenerating = false;
-                      
+
                       if (segment.speakerName) {
                         // BOTH user and AI: If there's a speaker tag, use session-aware lookup
                         segmentChar = findCharacterWithSession(segment.speakerName);
@@ -6434,7 +6772,7 @@ const updatedChar: SideCharacter = {
                         segmentName = segmentChar?.name || 'Narrator';
                         segmentAvatar = segmentChar?.avatarDataUrl || null;
                       }
-                      
+
                       // Check if this is a different speaker than the previous segment
                       const prevSegment = segIndex > 0 ? displaySegments[segIndex - 1] : null;
                       let prevSpeakerName = '';
@@ -6449,7 +6787,7 @@ const updatedChar: SideCharacter = {
                         }
                       }
                       const showAvatar = segIndex === 0 || prevSpeakerName !== segmentName;
-                    
+
                     return (
                       <div key={segIndex} className={`relative ${segIndex > 0 && showAvatar ? 'mt-2.5 pt-2.5 border-t border-ghost-white' : ''}`}>
                         {showAvatar && (
@@ -6497,7 +6835,7 @@ const updatedChar: SideCharacter = {
                      );
                     });
                   })()}
-                  
+
                   {/* Day/Time Badge - bottom left */}
                   {(msg.day || msg.timeOfDay) && (
                     <div className="absolute bottom-3 left-4 flex items-center gap-2 text-sm text-slate-400">
@@ -6512,7 +6850,7 @@ const updatedChar: SideCharacter = {
                       )}
                     </div>
                   )}
-                  
+
                 </div>
               </div>
             );
@@ -6532,7 +6870,7 @@ const updatedChar: SideCharacter = {
             const userChar = effectiveMainCharacters.find(c => c.controlledBy === 'User') || null;
             const rawSegments = parseMessageSegments(sanitizeAssistantMessageText(formattedStreamingContent));
             const segments = mergeByRenderedSpeaker(rawSegments, true, effectiveAppData, userChar, resolveCanonicalSpeakerName);
-            
+
             return (
               <div className={`w-full ${offsetBubbles ? 'max-w-3xl mr-auto' : 'max-w-4xl mx-auto'}`}>
                 <div className={`p-8 pt-14 pb-12 rounded-[2rem] shadow-2xl flex flex-col gap-4 ${
@@ -6543,7 +6881,7 @@ const updatedChar: SideCharacter = {
                 style={!bubblesTransparent ? { backgroundColor: chatBubbleColor } : undefined}>
                   {segments.map((segment, segIndex) => {
                     // Look up character for this segment using session-aware lookup
-                    const segmentChar = segment.speakerName 
+                    const segmentChar = segment.speakerName
                       ? findCharacterWithSession(segment.speakerName)
                       : (() => {
                           const aiChars = effectiveMainCharacters.filter(c => c.controlledBy === 'AI');
@@ -6554,12 +6892,12 @@ const updatedChar: SideCharacter = {
                       || 'Thinking';
                     const segmentAvatar = segmentChar?.avatarDataUrl || null;
                     const isGenerating = segmentChar && 'isAvatarGenerating' in segmentChar ? segmentChar.isAvatarGenerating : false;
-                    
+
                     // Check if this is a different speaker than the previous segment
                     const prevSegment = segIndex > 0 ? segments[segIndex - 1] : null;
                     let prevSpeakerName = '';
                     if (prevSegment) {
-                      const prevChar = prevSegment.speakerName 
+                      const prevChar = prevSegment.speakerName
                         ? findCharacterWithSession(prevSegment.speakerName)
                         : (() => {
                             const aiChars = effectiveMainCharacters.filter(c => c.controlledBy === 'AI');
@@ -6570,7 +6908,7 @@ const updatedChar: SideCharacter = {
                         || 'Thinking';
                     }
                     const showAvatar = segIndex === 0 || prevSpeakerName !== segmentName;
-                    
+
                     return (
                       <div key={segIndex} className={`relative ${segIndex > 0 && showAvatar ? 'mt-2.5 pt-2.5 border-t border-ghost-white' : ''}`}>
                         {showAvatar && (
@@ -6616,7 +6954,7 @@ const updatedChar: SideCharacter = {
                 <Settings className="w-4 h-4" />
                 Chat Settings
               </button>
-              
+
               {/* Generate Image Button */}
               <button
                 onClick={handleGenerateSceneImage}
@@ -6644,12 +6982,13 @@ const updatedChar: SideCharacter = {
                 Change Color
               </button>
 
-              <button
-                onClick={handleSend}
-                disabled={!input.trim() || isStreaming}
-                className={cn(
-                  'inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border px-5 text-[11px] font-black uppercase tracking-[0.12em] transition-colors active:scale-95 disabled:pointer-events-none sm:ml-auto sm:w-auto',
-                  input.trim() && !isStreaming
+	              <button
+	                onClick={handleSend}
+	                disabled={!input.trim() || isStreaming || !canUseCanonicalChatState}
+	                title={canonicalDerivationsLoadError || undefined}
+	                className={cn(
+	                  'inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border px-5 text-[11px] font-black uppercase tracking-[0.12em] transition-colors active:scale-95 disabled:pointer-events-none sm:ml-auto sm:w-auto',
+	                  input.trim() && !isStreaming && canUseCanonicalChatState
                     ? 'border-[#5f7ca7] bg-[#5a7292] text-white shadow-[0_10px_28px_rgba(0,0,0,0.42),inset_0_1px_0_rgba(255,255,255,0.16),inset_0_-1px_0_rgba(0,0,0,0.26)] hover:bg-[#6884ab]'
                     : 'border-white/[0.10] bg-[#3c3e47] text-[#8f95a3] opacity-50 shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]',
                 )}
@@ -6657,7 +6996,7 @@ const updatedChar: SideCharacter = {
                 {isStreaming ? '...' : 'Send'}
               </button>
             </div>
-            
+
             {/* Input Area */}
             <div className="rounded-2xl border border-white/[0.08] bg-[#2e2e33] p-2.5 shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
               <ChatSpellcheckTextarea
@@ -6780,7 +7119,7 @@ const updatedChar: SideCharacter = {
           setWorldCoreSessionOverrides(prev => prev ? { ...prev, ...patch } : patch);
         }}
       />
-      
+
       {/* Sidebar Theme Modal */}
       <SidebarThemeModal
         isOpen={isSidebarThemeOpen}
@@ -6803,7 +7142,7 @@ const updatedChar: SideCharacter = {
           }
         }}
       />
-      
+
       {/* Memories Modal */}
       <MemoriesModal
         isOpen={isMemoriesModalOpen}
@@ -6820,7 +7159,7 @@ const updatedChar: SideCharacter = {
         onDeleteMemory={handleDeleteMemory}
         onDeleteAllMemories={handleDeleteAllMemories}
       />
-      
+
       {/* Chat Settings Modal */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
         <DialogContentBare className="max-w-2xl bg-[#2a2a2f] rounded-[24px] overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.55),inset_1px_1px_0_rgba(255,255,255,0.09),inset_-1px_-1px_0_rgba(0,0,0,0.35)]">
