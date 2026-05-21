@@ -3280,6 +3280,8 @@ const roleplayPromptDownloadPatchTimestamp = "2026-05-16T19:52:00.000-06:00";
 const goalAlignmentWeightingPatchTimestamp = "2026-05-17T00:26:00.000-06:00";
 const goalAlignmentHardeningPatchTimestamp = "2026-05-20T20:40:00.000-06:00";
 const goalAlignmentInspectionSurfacePatchTimestamp = "2026-05-21T00:48:00.000-06:00";
+const usageTelemetryFailOpenPatchTimestamp = "2026-05-21T02:02:00.000-06:00";
+const roleplayPromptFollowthroughPatchTimestamp = "2026-05-21T02:51:36.000-06:00";
 
 type FindingResolutionNote = {
   runId: string;
@@ -4783,6 +4785,57 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
     },
   ],
   changeLog: [
+    {
+      id: "cl-20260521-003",
+      title: "Ship roleplay prompt and Continue follow-through fixes",
+      summary: "Roleplay Pipeline · API Call 1 now frames card data as reference context, removes per-character response-length quotas, strengthens anti-cadence guidance, and keeps Continue anchored to the last real user-authored turn.",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "The previous push did not include the parked prompt rewrites, so new playthroughs were still exercising the old card/checklist framing, per-character response-detail targets, and Continue support calls that passed an empty user message into post-turn derivations.",
+      plan: "Apply the approved prompt rewrites without trimming card data, keep parser-critical speaker-tag rules, make response-detail settings control overall verbosity rather than equal block length, document the Continue wrapper in Roleplay Pipeline, and send the last real user-authored scene text into Continue support work.",
+      changes: "Updated API Call 1 prompt construction:\n- Added a story/character card reference-context rule before card sections so full cards remain present but are not treated as details to mention by default.\n- Reframed rigid/normal/flexible goals as long-range direction and clarified that open milestones are not immediate task commands.\n- Reworked dialog formatting so speaker tags remain parser-safe while action, dialogue, and internal thought are treated as optional formatting tools, not required ingredients.\n- Removed numeric per-character response-detail targets and replaced them with overall concise/balanced/detailed verbosity guidance that allows uneven character block lengths.\n- Updated the assistant structure reminder and adaptive style directive to compare against the app's own recent assistant blocks rather than the user's message.\n\nUpdated Continue and support-call behavior:\n- Added the most recent user-authored scene turn to the Continue wrapper as an explicit anchor.\n- Changed Continue speaker selection so directly affected AI characters are not omitted just because Continue prefers a focused beat.\n- Passed the last real user-authored text into derived support work after Continue instead of sending an empty user message.\n\nUpdated review surfaces:\n- Added the Continue request wrapper to the API Call 1 prompt-review document.\n- Tightened API Call 2 goal-step language so generated steps must be durable milestones rather than current-scene logistics.\n- Regenerated architecture metrics after the patch.",
+      filesAffected: [
+        "src/services/llm.ts",
+        "src/lib/assistant-style-directive.ts",
+        "src/components/chronicle/ChatInterfaceTab.tsx",
+        "supabase/functions/extract-character-updates/index.ts",
+        "src/data/api-inspector-prompt-documents.ts",
+        "src/data/api-inspector-code-truth-registry.ts",
+        "src/data/architecture-file-metrics.ts",
+        "src/services/llm-canonical-coverage.test.ts",
+        "src/lib/assistant-style-directive.test.ts",
+        "src/services/extract-character-updates-prompt.test.ts",
+        "src/data/api-inspector-prompt-documents.test.ts",
+        "src/data/ui-audit-findings.ts"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["roleplay-pipeline", "api-call-1", "api-call-2", "continue", "prompt-quality", "chat-debug"],
+      comments: [],
+      createdAt: roleplayPromptFollowthroughPatchTimestamp,
+      updatedAt: roleplayPromptFollowthroughPatchTimestamp,
+    },
+    {
+      id: "cl-20260521-002",
+      title: "Make AI usage telemetry fail open",
+      summary: "Roleplay Chat · Usage-tracking failures no longer surface runtime errors after successful message sends.",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "After the goal-alignment telemetry event was added, each successful roleplay send could still produce a runtime popup from `track-ai-usage` if the deployed edge function, auth context, or usage tables rejected the non-critical telemetry request.",
+      plan: "Treat AI usage tracking as non-critical telemetry: keep logging diagnostics, but return successful skip responses for telemetry failures and avoid client-side runtime-error logging.",
+      changes: "Hardened usage telemetry boundaries:\n- Changed `track-ai-usage` to fail open for missing auth, invalid auth, missing env, unsupported event types, insert failures, and unexpected exceptions by returning `200` with `{ ok: false, skipped: true }` instead of user-facing 4xx/5xx responses.\n- Kept diagnostics in edge logs with `console.warn` so tracking issues remain visible without interrupting chat.\n- Added `event_type` and `function_name` to mirrored test-session trace inserts so the payload fits both historical `ai_usage_test_events` schema variants.\n- Changed the frontend usage helper to warn instead of logging runtime errors for non-critical tracking skips.",
+      filesAffected: [
+        "supabase/functions/track-ai-usage/index.ts",
+        "src/services/usage-tracking.ts",
+        "src/data/ui-audit-findings.ts"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      tags: ["roleplay-chat", "telemetry", "edge-functions", "usage-tracking", "runtime-error"],
+      comments: [],
+      createdAt: usageTelemetryFailOpenPatchTimestamp,
+      updatedAt: usageTelemetryFailOpenPatchTimestamp,
+    },
     {
       id: "cl-20260521-001",
       title: "Align goal-alignment inspection surfaces",

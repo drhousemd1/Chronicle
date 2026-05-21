@@ -145,6 +145,7 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('Longer view: Both courts ratify treaty without bloodshed.');
     expect(prompt).toContain('Current state: Negotiations stalled by mistrust.');
     expect(prompt).toContain('Open milestone (background context, not a task command): Hold midnight summit.');
+    expect(prompt).toContain('This milestone describes long-range direction and may not apply to the current response.');
     expect(prompt).toContain('--- STORY THEMES ---');
     expect(prompt).toContain('Treat these as content permission, background emphasis, and thematic direction, not as a checklist to force into every response.');
     expect(prompt).toContain('- NSFW: This is an ADULT (NSFW) scenario.');
@@ -158,6 +159,10 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).not.toContain('LIGHT STORY FLAVOR');
     expect(prompt).not.toContain('MANDATORY CONTENT DIRECTIVES');
     expect(prompt).not.toContain('[Trigger Warnings]');
+
+    expect(prompt).toContain('STORY AND CHARACTER CARD REFERENCE RULE');
+    expect(prompt).toContain('provided as reference context');
+    expect(prompt).toContain('Do not treat any card field as a checklist of details');
 
     expect(prompt).toContain('SECTION 3 - MAIN AI CHARACTER CARD INFORMATION');
     expect(prompt).toContain('CHARACTER: Tamlin');
@@ -182,10 +187,11 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('CONTROLLED BY: User');
     expect(prompt).toContain('SECTION 7 - DIALOG FORMATTING AND ROLEPLAY RULES');
     expect(prompt).toContain('--- DIALOG FORMATTING RULES ---');
-    expect(prompt).toContain("Avoid repeating the same structure across your own recent AI responses.");
-    expect(prompt).toContain("Compare against prior assistant outputs, not the user's message.");
+    expect(prompt).toContain("Every AI-written character block must begin with that character's exact card NAME followed by a colon.");
+    expect(prompt).toContain("These are formatting tools, not required ingredients.");
+    expect(prompt).toContain("Compare against your own previous 2-3 assistant character blocks, not the user's message");
     expect(prompt).not.toContain('Avoid repetitive formatting from one message to another.');
-    expect(prompt).toContain("The order can vary naturally. Do not include action, dialogue, and thought in every block unless the scene actually calls for all three.");
+    expect(prompt).toContain("Do not default to action -> dialogue -> internal thought");
     expect(prompt).toContain('--- USER-DEFINED DIALOG FORMATTING FROM STORY BUILDER ---');
     expect(prompt).toContain('--- INTERNAL THOUGHTS ---');
     expect(prompt).toContain('Use them only when they reveal private conflict');
@@ -197,7 +203,7 @@ describe('llm canonical prompt coverage', () => {
     expect(RESPONSE_PRIORITY_CHECK_TEXT).toContain('Write the next response from the immediate scene first.');
     expect(RESPONSE_PRIORITY_CHECK_TEXT).toContain('Use story cards, character cards, memories, and goals as supporting context');
     expect(ASSISTANT_STRUCTURE_REMINDER_TEXT).toContain('Avoid repeating the same structure across your own recent AI responses.');
-    expect(ASSISTANT_STRUCTURE_REMINDER_TEXT).toContain("Compare against prior assistant outputs, not the user's message.");
+    expect(ASSISTANT_STRUCTURE_REMINDER_TEXT).toContain("Compare against your own previous 2-3 assistant character blocks, not the user's message.");
     expect(prompt).toContain('SECTION 8 - CHAT SETTINGS PER USER PREFERENCE');
     expect(prompt).toContain('NARRATIVE POV: Third Person');
     expect(prompt).toContain('NSFW INTENSITY: Normal');
@@ -326,7 +332,8 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('NSFW INTENSITY: High');
     expect(prompt).toContain('Use explicit, profane, anatomical, and erotic language when it fits the character and moment.');
     expect(prompt).toContain('RESPONSE DETAIL: Detailed');
-    expect(prompt).toContain('Target: usually 3-5 paragraphs per character block.');
+    expect(prompt).toContain('detailed mode does not mean every character block should be the same length.');
+    expect(prompt).not.toContain('Target: usually 3-5 paragraphs per character block.');
     expect(prompt).toContain('REALISM MODE: On');
     expect(prompt).not.toContain('NARRATIVE POV: Third Person');
     expect(prompt).not.toContain('CHARACTER DISCOVERY: Proactive');
@@ -450,6 +457,7 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('Longer view: Reach shelter and keep everyone alive.');
     expect(prompt).toContain('Current state: Searching for warmth.');
     expect(prompt).toContain('Open milestone (background context, not a task command): Make the shelter safe enough to rest.');
+    expect(prompt).toContain('Goal strength: Rigid.');
     expect(prompt).not.toContain('Next open step');
     expect(prompt).not.toContain('ACTIVE GOALS & STEPS');
     expect(prompt).not.toContain('PENDING STEP');

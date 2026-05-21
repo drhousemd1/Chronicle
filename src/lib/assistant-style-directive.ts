@@ -127,5 +127,5 @@ export function buildAssistantStyleDirective(
   ].filter(Boolean).join(', ');
 
   return `[STYLE ADJUSTMENT FOR THIS TURN]
-Your own recent assistant responses are repeating ${reasons}. Compare against prior assistant outputs, not the user's message. Vary the next response naturally. Do not force every character block into the same action -> dialogue -> internal thought sequence, and do not reuse recent distinctive sentence shapes or short reactive lines unless the scene specifically calls for that repetition.`;
+Your own recent assistant responses are repeating ${reasons}. Compare against your own previous 2-3 assistant character blocks, not the user's message. Vary the next response naturally. Do not force every character block into the same action -> dialogue -> internal thought sequence, and do not reuse recent distinctive sentence shapes or short reactive lines unless the scene specifically calls for that repetition.`;
 }

@@ -569,16 +569,17 @@ ${supportedFields}
 - custom sections: use sections.SectionTitle.ItemLabel only when the information belongs in an existing or clearly appropriate custom section. Do not use custom sections to avoid the structured fields above.
 
 --- CHARACTER GOALS ---
-- Use goals.GoalTitle only for durable objectives that remain meaningful beyond the current scene. Do not save momentary actions, current-scene logistics, or routine task choices as goals.
+- Use goals.GoalTitle only for durable objectives that remain meaningful beyond the current scene. Do not save momentary actions, current-scene logistics, routine movement, object interaction, or one-turn decisions as goals.
 - Prefer updating an existing goal over creating a near-duplicate. Respect the goal's guidance_strength when present: rigid goals change only with strong evidence, normal goals update when clearly advanced, and flexible goals can shift when the scene repeatedly carries them elsewhere.
 - For existing goals, update only current_status, progress, and complete_steps. Do not send new_steps for an existing goal, and do not replace an existing goal's step list.
 - Create a brand-new goal only when the latest exchange clearly establishes a sustained objective that is not already covered by an existing goal.
 - For brand-new goals, include desired_outcome, current_status, progress, and new_steps.
 - The desired_outcome describes the ultimate sustained result of the goal: what becomes true when the goal is meaningfully achieved.
-- New steps should be logical milestone stages that naturally build toward that desired_outcome. Each step should represent a durable shift in knowledge, relationship, access, commitment, capability, status, or circumstances.
-- A good step changes the ongoing story state after it happens. It should still matter later. It should not merely describe the next physical movement, object interaction, line of dialogue, or scene chore.
+- New steps must be logical milestone stages that naturally build toward that desired_outcome.
+- Create or advance goal steps only for major, durable shifts in knowledge, relationship, access, commitment, capability, status, safety, resources, or circumstances that will still matter many scenes later.
+- A good step changes the ongoing story state after it happens. It should still matter later. It should not merely describe the next physical movement, object interaction, line of dialogue, one-turn decision, or scene chore.
 - Examples are structural only. Do not copy their subject matter, genre, relationship type, setting, kink, or wording into unrelated stories.
-- If a proposed goal or step would normally be completed within the current exchange or the next few exchanges, it is too granular to save. Leave it in the scene instead of turning it into saved state.
+- If a proposed goal or step would normally be completed within the current exchange or the next few exchanges, it is too granular to save. Leave it in the live scene instead of turning it into saved state.
 - Use complete_steps only for existing steps that were clearly completed.
 - Do not remove completed goals. When all steps are complete, preserve the goal and update current_status to show that the desired outcome is now part of the ongoing story.
 

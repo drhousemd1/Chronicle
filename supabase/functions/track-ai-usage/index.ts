@@ -44,6 +44,17 @@ function toNonNegativeFloat(input: unknown): number {
   return Math.max(0, n);
 }
 
+function jsonResponse(
+  body: Record<string, unknown>,
+  corsHeaders: Record<string, string>,
+  status = 200,
+) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 const GROUP_BY_EVENT: Record<string, string> = {
   chat_call_1: "call_1",
   character_cards_update_call: "call_2",
@@ -101,20 +112,16 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.warn("[track-ai-usage] Skipped telemetry: missing auth header");
+      return jsonResponse({ ok: false, skipped: true, reason: "unauthorized" }, corsHeaders);
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!supabaseUrl || !anonKey || !serviceRoleKey) {
-      return new Response(JSON.stringify({ error: "Supabase env not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.warn("[track-ai-usage] Skipped telemetry: Supabase env not configured");
+      return jsonResponse({ ok: false, skipped: true, reason: "env_not_configured" }, corsHeaders);
     }
 
     const authClient = createClient(supabaseUrl, anonKey, {
@@ -123,10 +130,8 @@ serve(async (req) => {
     const accessToken = authHeader.replace("Bearer ", "");
     const { data: userResult, error: userError } = await authClient.auth.getUser(accessToken);
     if (userError || !userResult?.user) {
-      return new Response(JSON.stringify({ error: "Invalid token" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.warn("[track-ai-usage] Skipped telemetry: invalid auth token", userError);
+      return jsonResponse({ ok: false, skipped: true, reason: "invalid_token" }, corsHeaders);
     }
 
     const rawBody = await req.json().catch(() => ({}));
@@ -138,10 +143,8 @@ serve(async (req) => {
     const count = Number.isFinite(rawBody?.count) ? Math.max(1, Math.min(1000, Math.floor(rawBody.count))) : 1;
 
     if (!ALLOWED_EVENT_TYPES.has(eventType)) {
-      return new Response(JSON.stringify({ error: "Unsupported event type" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.warn("[track-ai-usage] Skipped telemetry: unsupported event type", eventType);
+      return jsonResponse({ ok: false, skipped: true, reason: "unsupported_event_type" }, corsHeaders);
     }
 
     const serviceClient = createClient(supabaseUrl, serviceRoleKey, {
@@ -157,16 +160,13 @@ serve(async (req) => {
     });
 
     if (insertError) {
-      console.error("[track-ai-usage] Failed insert:", insertError);
-      return new Response(JSON.stringify({ error: "Failed to record usage event" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.warn("[track-ai-usage] Skipped telemetry: usage event insert failed", insertError);
+      return jsonResponse({ ok: false, skipped: true, reason: "usage_insert_failed" }, corsHeaders);
     }
 
     // Mirror into test-session trace table when this user has an active trace session.
     // This keeps test instrumentation isolated without changing existing behavior.
-    const { data: activeSession } = await serviceClient
+    const { data: activeSession, error: activeSessionError } = await serviceClient
       .from("ai_usage_test_sessions")
       .select("id")
       .eq("user_id", userResult.user.id)
@@ -174,6 +174,10 @@ serve(async (req) => {
       .order("started_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    if (activeSessionError) {
+      console.warn("[track-ai-usage] Test trace session lookup failed:", activeSessionError);
+    }
 
     if (activeSession?.id) {
       const inputChars = toNonNegativeInt(metadata.inputChars);
@@ -191,9 +195,11 @@ serve(async (req) => {
       const traceInsert = {
         session_id: activeSession.id,
         user_id: userResult.user.id,
+        event_type: eventType,
         event_key: eventType,
         api_call_group: GROUP_BY_EVENT[eventType] || "misc",
         event_source: eventSource,
+        function_name: "track-ai-usage",
         model_id: typeof metadata.modelId === "string" ? metadata.modelId : null,
         input_chars: inputChars,
         output_chars: outputChars,
@@ -208,18 +214,13 @@ serve(async (req) => {
 
       const { error: traceError } = await serviceClient.from("ai_usage_test_events").insert(traceInsert);
       if (traceError) {
-        console.error("[track-ai-usage] Failed test trace insert:", traceError);
+        console.warn("[track-ai-usage] Test trace insert failed:", traceError);
       }
     }
 
-    return new Response(JSON.stringify({ ok: true }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonResponse({ ok: true }, corsHeaders);
   } catch (error) {
-    console.error("[track-ai-usage] Error:", error);
-    return new Response(JSON.stringify({ error: String(error) }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.warn("[track-ai-usage] Skipped telemetry: unexpected error", error);
+    return jsonResponse({ ok: false, skipped: true, reason: "unexpected_error" }, corsHeaders);
   }
 });

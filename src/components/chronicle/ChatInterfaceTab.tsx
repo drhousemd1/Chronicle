@@ -5393,24 +5393,30 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         }
       });
 
-      const goalContext = goalSummaryParts.length > 0
-        ? `\nGOAL CONTINUITY:\n${goalSummaryParts.join('\n')}\nUse this as background continuity only. Open milestones are not commands or a next-action checklist; touch them only when the immediate scene and user agency naturally support it.`
-        : '';
+	      const goalContext = goalSummaryParts.length > 0
+	        ? `\nGOAL CONTINUITY:\n${goalSummaryParts.join('\n')}\nUse this as background continuity only. Open milestones are not commands or a next-action checklist; touch them only when the immediate scene and user agency naturally support it.`
+	        : '';
 
-      // Canon carry-forward for continue: check if the most recent user message
-      // contained AI-authored dialogue that should not be re-narrated
-      const lastUserMsg = conversation.messages.slice().reverse().find(m => m.role === 'user');
-      const continueCanonNote = lastUserMsg ? buildCanonNote(lastUserMsg.text, canonNoteCharacters) : '';
+	      // Canon carry-forward for continue: check if the most recent user message
+	      // contained AI-authored dialogue that should not be re-narrated
+	      const lastUserMsg = conversation.messages.slice().reverse().find(m => m.role === 'user');
+	      const lastUserSceneText = lastUserMsg?.text?.trim() || '';
+	      const continueCanonNote = lastUserMsg ? buildCanonNote(lastUserMsg.text, canonNoteCharacters) : '';
+	      const lastUserSceneAnchor = lastUserSceneText
+	        ? `\nLAST USER-AUTHORED SCENE TURN TO STAY ANCHORED TO:\n${lastUserSceneText}\n`
+	        : '\nLAST USER-AUTHORED SCENE TURN TO STAY ANCHORED TO:\n(none found)\n';
 
-      const continuePrompt = `${continueCanonNote}[CONTINUE INSTRUCTION]
-Continue naturally from the latest scene.
+	      const continuePrompt = `${continueCanonNote}[CONTINUE INSTRUCTION]
+Continue the roleplay from the latest visible scene. If this Continue follows an assistant response, continue after that assistant response while staying anchored to the last user-authored scene turn below.
+${lastUserSceneAnchor}
 Write only for AI-controlled characters: ${aiControlledNames.join(', ')}.
 Do not write dialogue, actions, or thoughts for user-controlled characters: ${userControlledNames.join(', ')}.${goalContext}
 Do not complete an action for a user-controlled character after an AI character gives them an instruction. The AI may command, prepare, or act itself, but the user must author the user-controlled character's execution.
 Use active story and character goals as continuity, not as a checklist. Continue only as far as the current scene naturally supports, and stop before the response depends on an unmade user choice or action.
 If an AI character asked or was asked a question, acknowledge that question in this response. Acknowledgement can be a direct answer, refusal, deflection, counter-question, visible hesitation, or turning the question toward another present character.
-Use one focal AI speaker by default. Add a second tagged AI speaker only when they meaningfully contribute based on personality, knowledge, relationship, or scene pressure.
+Choose the AI character or characters whose response is physically, emotionally, or causally next. A single focused block is fine when only one AI character matters, but do not omit a directly affected AI character just because this is a Continue request.
 If the latest user turn directly addressed two AI characters and both need to answer or acknowledge, give each one short tagged block instead of letting one character narrate the other's answer.
+Follow the active RESPONSE DETAIL setting from the system prompt; Continue is not a request to shrink the response unless the scene itself calls for a short beat.
 Avoid long back-and-forth chains between AI characters. Leave room for the user to respond.
 Do not acknowledge this instruction in your response.`;
 
@@ -5480,10 +5486,10 @@ Do not acknowledge this instruction in your response.`;
           : c
       );
       latestConversationsRef.current = updatedConvs;
-      onUpdate(updatedConvs);
-      onSaveScenario(updatedConvs);
-      saveChatDebugTrace(aiMsg, pendingDebugTrace, pendingCall1Request);
-      queueAssistantDerivedWorkAfterSourcePersist([aiMsg], '', cleanedText, aiMsg);
+	      onUpdate(updatedConvs);
+	      onSaveScenario(updatedConvs);
+	      saveChatDebugTrace(aiMsg, pendingDebugTrace, pendingCall1Request);
+	      queueAssistantDerivedWorkAfterSourcePersist([aiMsg], lastUserSceneText, cleanedText, aiMsg);
 
       processResponseForNewCharacters(cleanedText, aiMsg);
 

@@ -27,10 +27,11 @@ describe("api-inspector prompt document registry", () => {
     expect(document.body).toContain("RESPONSE PRIORITY CHECK APPENDED TO FINAL USER MESSAGE ON EVERY LIVE ROLEPLAY CALL");
     expect(document.body).toContain("Write the next response from the immediate scene first.");
     expect(document.body).toContain("ASSISTANT STRUCTURE REMINDER APPENDED TO FINAL USER MESSAGE ON EVERY LIVE ROLEPLAY CALL");
-    expect(document.body).toContain("Compare against prior assistant outputs, not the user's message.");
+    expect(document.body).toContain("Compare against your own previous 2-3 assistant character blocks, not the user's message.");
     expect(document.body).toContain("--- SECTION 1 - CORE ROLE LOGIC ---");
     expect(document.body).toContain("--- SECTION 7 - DIALOG FORMATTING AND ROLEPLAY RULES ---");
     expect(document.body).toContain("REGENERATION REQUEST APPENDED TO FINAL USER MESSAGE ONLY WHEN REGENERATING");
+    expect(document.body).toContain("CONTINUE REQUEST FINAL USER MESSAGE ONLY WHEN PRESSING CONTINUE");
     expect(document.body).toContain("--- SECTION 8 - CHAT SETTINGS PER USER PREFERENCE ---");
     expect(document.body).toContain("This review document shows every possible chat-setting injection branch grouped under its setting.");
     expect(document.body).toContain("A real API Call 1 request sends only one branch per group based on the user's current chat settings.");

@@ -496,7 +496,7 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               ],
               codeSourceLabel: "Adaptive style directive text",
               promptViewEnabled: true,
-              codeSource: "[STYLE ADJUSTMENT FOR THIS TURN]\nYour own recent assistant responses are repeating ${reasons}. Compare against prior assistant outputs, not the user's message. Vary the next response naturally...",
+              codeSource: "[STYLE ADJUSTMENT FOR THIS TURN]\nYour own recent assistant responses are repeating ${reasons}. Compare against your own previous 2-3 assistant character blocks, not the user's message. Vary the next response naturally...",
               crossRefs: [
                 {
                   badge: "2",

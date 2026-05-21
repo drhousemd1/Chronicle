@@ -438,16 +438,17 @@ Character goals:
 - custom sections: use sections.SectionTitle.ItemLabel only when the information belongs in an existing or clearly appropriate custom section. Do not use custom sections to avoid the structured fields above.
 
 --- CHARACTER GOALS ---
-- Use goals.GoalTitle only for durable objectives that remain meaningful beyond the current scene. Do not save momentary actions, current-scene logistics, or routine task choices as goals.
+- Use goals.GoalTitle only for durable objectives that remain meaningful beyond the current scene. Do not save momentary actions, current-scene logistics, routine movement, object interaction, or one-turn decisions as goals.
 - Prefer updating an existing goal over creating a near-duplicate. Respect the goal's guidance_strength when present: rigid goals change only with strong evidence, normal goals update when clearly advanced, and flexible goals can shift when the scene repeatedly carries them elsewhere.
 - For existing goals, update only current_status, progress, and complete_steps. Do not send new_steps for an existing goal, and do not replace an existing goal's step list.
 - Create a brand-new goal only when the latest exchange clearly establishes a sustained objective that is not already covered by an existing goal.
 - For brand-new goals, include desired_outcome, current_status, progress, and new_steps.
 - The desired_outcome describes the ultimate sustained result of the goal: what becomes true when the goal is meaningfully achieved.
-- New steps should be logical milestone stages that naturally build toward that desired_outcome. Each step should represent a durable shift in knowledge, relationship, access, commitment, capability, status, or circumstances.
-- A good step changes the ongoing story state after it happens. It should still matter later. It should not merely describe the next physical movement, object interaction, line of dialogue, or scene chore.
+- New steps must be logical milestone stages that naturally build toward that desired_outcome.
+- Create or advance goal steps only for major, durable shifts in knowledge, relationship, access, commitment, capability, status, safety, resources, or circumstances that will still matter many scenes later.
+- A good step changes the ongoing story state after it happens. It should still matter later. It should not merely describe the next physical movement, object interaction, line of dialogue, one-turn decision, or scene chore.
 - Examples are structural only. Do not copy their subject matter, genre, relationship type, setting, kink, or wording into unrelated stories.
-- If a proposed goal or step would normally be completed within the current exchange or the next few exchanges, it is too granular to save. Leave it in the scene instead of turning it into saved state.
+- If a proposed goal or step would normally be completed within the current exchange or the next few exchanges, it is too granular to save. Leave it in the live scene instead of turning it into saved state.
 - Use complete_steps only for existing steps that were clearly completed.
 - Do not remove completed goals. When all steps are complete, preserve the goal and update current_status to show that the desired outcome is now part of the ongoing story.
 
@@ -776,7 +777,7 @@ REQUEST BODY SHAPE
     { "role": "system", "content": "<the full system message below>" },
     { "role": "user", "content": "{{up to 9 prior roleplay messages before the current turn}}" },
     { "role": "assistant", "content": "{{up to 9 prior roleplay messages before the current turn}}" },
-    { "role": "user", "content": "[SESSION: Message {{sessionMessageCount}} of current session]\\n\\n{{adaptiveStyleDirective when triggered}}\\n\\n{{latest user text}}{{optional regeneration request}}\\n\\n{{responsePriorityCheck}}\\n\\n{{assistantStructureReminder}}" }
+    { "role": "user", "content": "[SESSION: Message {{sessionMessageCount}} of current session]\\n\\n{{adaptiveStyleDirective when triggered}}\\n\\n{{latest user text OR continue instruction wrapper}}{{optional regeneration request}}\\n\\n{{responsePriorityCheck}}\\n\\n{{assistantStructureReminder}}" }
   ],
   "modelId": "grok-4.3",
   "stream": true,
@@ -815,6 +816,28 @@ REGENERATION REQUEST APPENDED TO FINAL USER MESSAGE ONLY WHEN REGENERATING
 ================================================================================
 
 ${REGENERATION_DIRECTIVE_TEXT}
+
+================================================================================
+CONTINUE REQUEST FINAL USER MESSAGE ONLY WHEN PRESSING CONTINUE
+================================================================================
+
+[CONTINUE INSTRUCTION]
+Continue the roleplay from the latest visible scene. If this Continue follows an assistant response, continue after that assistant response while staying anchored to the last user-authored scene turn below.
+
+LAST USER-AUTHORED SCENE TURN TO STAY ANCHORED TO:
+{{most recent user message text, or "(none found)"}}
+
+Write only for AI-controlled characters: {{AI-controlled character names}}.
+Do not write dialogue, actions, or thoughts for user-controlled characters: {{User-controlled character names}}.
+{{GOAL CONTINUITY block when visible goals have open milestones}}
+Do not complete an action for a user-controlled character after an AI character gives them an instruction. The AI may command, prepare, or act itself, but the user must author the user-controlled character's execution.
+Use active story and character goals as continuity, not as a checklist. Continue only as far as the current scene naturally supports, and stop before the response depends on an unmade user choice or action.
+If an AI character asked or was asked a question, acknowledge that question in this response. Acknowledgement can be a direct answer, refusal, deflection, counter-question, visible hesitation, or turning the question toward another present character.
+Choose the AI character or characters whose response is physically, emotionally, or causally next. A single focused block is fine when only one AI character matters, but do not omit a directly affected AI character just because this is a Continue request.
+If the latest user turn directly addressed two AI characters and both need to answer or acknowledge, give each one short tagged block instead of letting one character narrate the other's answer.
+Follow the active RESPONSE DETAIL setting from the system prompt; Continue is not a request to shrink the response unless the scene itself calls for a short beat.
+Avoid long back-and-forth chains between AI characters. Leave room for the user to respond.
+Do not acknowledge this instruction in your response.
 
 ================================================================================
 RESPONSE PRIORITY CHECK APPENDED TO FINAL USER MESSAGE ON EVERY LIVE ROLEPLAY CALL

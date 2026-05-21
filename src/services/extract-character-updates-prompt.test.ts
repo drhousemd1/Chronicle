@@ -10,7 +10,7 @@ describe('extract-character-updates prompt guidance', () => {
       'The desired_outcome describes the ultimate sustained result of the goal: what becomes true when the goal is meaningfully achieved.',
     );
     expect(source).toContain(
-      'New steps should be logical milestone stages that naturally build toward that desired_outcome.',
+      'Create or advance goal steps only for major, durable shifts',
     );
     expect(source).toContain(
       'A good step changes the ongoing story state after it happens. It should still matter later.',

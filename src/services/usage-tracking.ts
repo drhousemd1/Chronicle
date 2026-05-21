@@ -48,9 +48,9 @@ export async function trackAiUsageEvent({
     });
 
     if (error) {
-      console.error("[usage-tracking] Failed to track usage event:", error);
+      console.warn("[usage-tracking] Skipped usage event:", error);
     }
   } catch (error) {
-    console.error("[usage-tracking] Unexpected tracking error:", error);
+    console.warn("[usage-tracking] Unexpected tracking skip:", error);
   }
 }

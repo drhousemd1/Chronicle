@@ -20,7 +20,7 @@ describe('buildAssistantStyleDirective', () => {
     ]);
 
     expect(directive).toContain('[STYLE ADJUSTMENT FOR THIS TURN]');
-    expect(directive).toContain("Compare against prior assistant outputs, not the user's message.");
+    expect(directive).toContain("Compare against your own previous 2-3 assistant character blocks, not the user's message.");
     expect(directive).toContain('repeated action -> dialogue -> internal thought cadence');
   });
 
