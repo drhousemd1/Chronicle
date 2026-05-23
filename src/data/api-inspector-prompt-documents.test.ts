@@ -23,6 +23,7 @@ describe("api-inspector prompt document registry", () => {
     expect(document.body).toContain("{{up to 9 prior roleplay messages before the current turn}}");
     expect(document.body).toContain("{{adaptiveStyleDirective when triggered}}");
     expect(document.body).toContain("{{selectedResponseDetailRules}}");
+    expect(document.body).toContain("{{activeNsfwContextReminder when story type is NSFW}}");
     expect(document.body).toContain("{{responsePriorityCheck}}");
     expect(document.body).toContain("{{assistantStructureReminder}}");
     expect(document.body).toContain("SELECTED RESPONSE DETAIL RULES APPENDED TO FINAL USER MESSAGE ON EVERY LIVE ROLEPLAY CALL");
@@ -54,6 +55,10 @@ describe("api-inspector prompt document registry", () => {
     expect(document.body).toContain("REQUEST max_tokens: 2048");
     expect(document.body).toContain("RESPONSE DETAIL: Detailed");
     expect(document.body).toContain("REQUEST max_tokens: 3072");
+    expect(document.body).toContain("ACTIVE NSFW CONTEXT REMINDER APPENDED TO FINAL USER MESSAGE ONLY WHEN STORY TYPE = NSFW");
+    expect(document.body).toContain("(no active NSFW context reminder is appended)");
+    expect(document.body).toContain("This is an adult NSFW story.");
+    expect(document.body).toContain("This is an adult NSFW high-intensity story.");
     expect(document.body).toContain("REALISM MODE: Off");
     expect(document.body).toContain("REALISM MODE: On");
     expect(document.body).not.toContain("{{first-person branch text}}");

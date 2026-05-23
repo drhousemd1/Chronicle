@@ -1,4 +1,4 @@
-import { ASSISTANT_STRUCTURE_REMINDER_TEXT, getSystemInstruction, REGENERATION_DIRECTIVE_TEXT, renderResponseDetailInstruction, RESPONSE_PRIORITY_CHECK_TEXT } from "@/services/llm";
+import { ASSISTANT_STRUCTURE_REMINDER_TEXT, getSystemInstruction, REGENERATION_DIRECTIVE_TEXT, renderActiveNsfwContextReminder, renderResponseDetailInstruction, RESPONSE_PRIORITY_CHECK_TEXT } from "@/services/llm";
 import type { Character, Memory, ScenarioData, Scene, TimeOfDay } from "@/types";
 
 export type ApiInspectorPromptDocumentId = "api-call-1" | "api-call-2-support";
@@ -777,7 +777,7 @@ REQUEST BODY SHAPE
     { "role": "system", "content": "<the full system message below>" },
     { "role": "user", "content": "{{up to 9 prior roleplay messages before the current turn}}" },
     { "role": "assistant", "content": "{{up to 9 prior roleplay messages before the current turn}}" },
-    { "role": "user", "content": "[SESSION: Message {{sessionMessageCount}} of current session]\\n\\n{{adaptiveStyleDirective when triggered}}\\n\\n{{latest user text OR continue instruction wrapper}}{{optional regeneration request}}\\n\\n{{selectedResponseDetailRules}}\\n\\n{{responsePriorityCheck}}\\n\\n{{assistantStructureReminder}}" }
+    { "role": "user", "content": "[SESSION: Message {{sessionMessageCount}} of current session]\\n\\n{{adaptiveStyleDirective when triggered}}\\n\\n{{latest user text OR continue instruction wrapper}}{{optional regeneration request}}\\n\\n{{selectedResponseDetailRules}}\\n\\n{{activeNsfwContextReminder when story type is NSFW}}\\n\\n{{responsePriorityCheck}}\\n\\n{{assistantStructureReminder}}" }
   ],
   "modelId": "grok-4.3",
   "stream": true,
@@ -853,6 +853,19 @@ ${renderResponseDetailInstruction("balanced")}
 
 // Sent when Response Detail = Detailed
 ${renderResponseDetailInstruction("detailed")}
+
+================================================================================
+ACTIVE NSFW CONTEXT REMINDER APPENDED TO FINAL USER MESSAGE ONLY WHEN STORY TYPE = NSFW
+================================================================================
+
+// Sent when Story Type = SFW
+(no active NSFW context reminder is appended)
+
+// Sent when Story Type = NSFW and NSFW Intensity = Normal
+${renderActiveNsfwContextReminder("NSFW", "normal")}
+
+// Sent when Story Type = NSFW and NSFW Intensity = High
+${renderActiveNsfwContextReminder("NSFW", "high")}
 
 ================================================================================
 RESPONSE PRIORITY CHECK APPENDED TO FINAL USER MESSAGE ON EVERY LIVE ROLEPLAY CALL

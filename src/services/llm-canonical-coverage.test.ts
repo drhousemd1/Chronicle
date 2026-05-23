@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { ASSISTANT_STRUCTURE_REMINDER_TEXT, getSystemInstruction, RESPONSE_PRIORITY_CHECK_TEXT } from '@/services/llm';
+import { ASSISTANT_STRUCTURE_REMINDER_TEXT, getSystemInstruction, renderActiveNsfwContextReminder, RESPONSE_PRIORITY_CHECK_TEXT } from '@/services/llm';
 import { createDefaultScenarioData, getHardcodedTestCharacters, now, uid } from '@/utils';
 
 describe('llm canonical prompt coverage', () => {
@@ -197,7 +197,9 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain("Do not default to action -> dialogue -> internal thought");
     expect(prompt).toContain('--- USER-DEFINED DIALOG FORMATTING FROM STORY BUILDER ---');
     expect(prompt).toContain('--- INTERNAL THOUGHTS ---');
-    expect(prompt).toContain('Use them only when they reveal private conflict');
+    expect(prompt).toContain('Use internal thoughts only when they reveal private conflict');
+    expect(prompt).toContain('Internal thoughts must be complete, coherent private cognition');
+    expect(prompt).toContain('Every internal thought must be logically tied to what is actively happening in the scene');
     expect(prompt).toContain('Do not use internal thoughts to repeat obvious facts');
     expect(prompt).toContain('--- PHYSICAL LOGIC, VISIBILITY, AND CONTINUITY ---');
     expect(prompt).toContain('If the user frames something as uncertain, partial, distant, suspected, or not yet confirmed');
@@ -205,6 +207,10 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain("The user's action verb is canon, not a paraphrase target.");
     expect(RESPONSE_PRIORITY_CHECK_TEXT).toContain('Write the next response from the immediate scene first.');
     expect(RESPONSE_PRIORITY_CHECK_TEXT).toContain('Use story cards, character cards, memories, and goals as supporting context');
+    expect(renderActiveNsfwContextReminder('SFW', 'high')).toBe('');
+    expect(renderActiveNsfwContextReminder('NSFW', 'normal')).toContain('This is an adult NSFW story.');
+    expect(renderActiveNsfwContextReminder('NSFW', 'high')).toContain('This is an adult NSFW high-intensity story.');
+    expect(renderActiveNsfwContextReminder('NSFW', 'high')).toContain('not neutral logistics');
     expect(ASSISTANT_STRUCTURE_REMINDER_TEXT).toContain('Avoid repeating the same structure across your own recent AI responses.');
     expect(ASSISTANT_STRUCTURE_REMINDER_TEXT).toContain("Compare against your own previous 2-3 assistant character blocks, not the user's message.");
     expect(prompt).toContain('SECTION 8 - CHAT SETTINGS PER USER PREFERENCE');
