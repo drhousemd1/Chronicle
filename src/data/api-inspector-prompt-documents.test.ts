@@ -29,6 +29,7 @@ describe("api-inspector prompt document registry", () => {
     expect(document.body).toContain("SELECTED RESPONSE DETAIL RULES APPENDED TO FINAL USER MESSAGE ON EVERY LIVE ROLEPLAY CALL");
     expect(document.body).toContain("RESPONSE PRIORITY CHECK APPENDED TO FINAL USER MESSAGE ON EVERY LIVE ROLEPLAY CALL");
     expect(document.body).toContain("Write the next response from the immediate scene first.");
+    expect(document.body).toContain("All narration, actions, verbal dialogue, or internal thoughts must be connected logically to character card data and story card data.");
     expect(document.body).toContain("Do not surface background details, private traits, secrets, fears, kinks, goals, or backstory randomly.");
     expect(document.body).toContain("When the current beat directly activates one of those details through body contact, intimacy, exposure, secrecy, desire, fear, relationship tension, goal pressure, or another clear trigger");
     expect(document.body).toContain("ASSISTANT STRUCTURE REMINDER APPENDED TO FINAL USER MESSAGE ON EVERY LIVE ROLEPLAY CALL");

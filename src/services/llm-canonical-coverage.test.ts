@@ -200,6 +200,8 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('Use internal thoughts only when they reveal private conflict');
     expect(prompt).toContain('Internal thoughts must be complete, coherent private cognition');
     expect(prompt).toContain('Every internal thought must be logically tied to what is actively happening in the scene');
+    expect(prompt).toContain('Internal thoughts must follow the established facts of the current scene, character card data, and story card data');
+    expect(prompt).toContain('Internal thoughts must remain accurate to story and character card information, including what each character knows or does not know');
     expect(prompt).toContain('Do not use internal thoughts to repeat obvious facts');
     expect(prompt).toContain('--- PHYSICAL LOGIC, VISIBILITY, AND CONTINUITY ---');
     expect(prompt).toContain('If the user frames something as uncertain, partial, distant, suspected, or not yet confirmed');
@@ -207,6 +209,7 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain("The user's action verb is canon, not a paraphrase target.");
     expect(RESPONSE_PRIORITY_CHECK_TEXT).toContain('Write the next response from the immediate scene first.');
     expect(RESPONSE_PRIORITY_CHECK_TEXT).toContain('Use story cards, character cards, memories, and goals as supporting context');
+    expect(RESPONSE_PRIORITY_CHECK_TEXT).toContain('All narration, actions, verbal dialogue, or internal thoughts must be connected logically to character card data and story card data.');
     expect(renderActiveNsfwContextReminder('SFW', 'high')).toBe('');
     expect(renderActiveNsfwContextReminder('NSFW', 'normal')).toContain('This is an adult NSFW story.');
     expect(renderActiveNsfwContextReminder('NSFW', 'high')).toContain('This is an adult NSFW high-intensity story.');
