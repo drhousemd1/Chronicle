@@ -163,6 +163,9 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('STORY AND CHARACTER CARD REFERENCE RULE');
     expect(prompt).toContain('provided as reference context');
     expect(prompt).toContain('Do not treat any card field as a checklist of details');
+    expect(prompt).toContain('A card detail is background when nothing in the current beat activates it');
+    expect(prompt).toContain('A card detail becomes active when the last provided message window');
+    expect(prompt).toContain('physical contact, intimacy, exposure, secrecy, fear, desire, goal pressure');
 
     expect(prompt).toContain('SECTION 3 - MAIN AI CHARACTER CARD INFORMATION');
     expect(prompt).toContain('CHARACTER: Tamlin');
