@@ -15,6 +15,12 @@ type CadenceAnalysis = {
   totalBlocks: number;
 };
 
+type AssistantMessageStyle = CadenceAnalysis & {
+  wordCount: number;
+  shortQuotes: string[];
+  descriptiveTerms: string[];
+};
+
 const DESCRIPTIVE_STOPWORDS = new Set([
   'about',
   'again',
@@ -154,6 +160,20 @@ function analyzeAssistantCadence(messages: AssistantStyleMessage[]): CadenceAnal
   };
 }
 
+function analyzeAssistantMessage(text: string): AssistantMessageStyle {
+  const cadence = analyzeAssistantCadence([{ role: 'assistant', text }]);
+  const shortQuotes = Array.from((text || '').matchAll(/"([^"]{3,120})"|“([^”]{3,120})”/g))
+    .map((match) => normalizeQuote(match[1] || match[2] || ''))
+    .filter((quote) => quote.split(/\s+/).length <= 14);
+
+  return {
+    ...cadence,
+    wordCount: countWords(text),
+    shortQuotes: Array.from(new Set(shortQuotes)),
+    descriptiveTerms: Array.from(new Set(extractDescriptiveTerms(text))),
+  };
+}
+
 export function buildAssistantStyleDirective(
   messages: AssistantStyleMessage[],
   recentLengths: number[] = [],
@@ -230,4 +250,52 @@ export function buildAssistantStyleDirective(
 
   return `[STYLE ADJUSTMENT FOR THIS TURN]
 Your own recent assistant responses are repeating ${reasons}. Compare against your own previous 2-3 assistant character blocks, not the user's message. Vary the next response naturally. Do not force every character block into the same action -> dialogue -> internal thought sequence, do not bury external dialogue behind a long narration opening, and do not reuse recent descriptive terms, body/clothing focus, object focus, location focus, distinctive sentence shapes, or short reactive lines unless the scene specifically calls for that repetition.`;
+}
+
+export function buildAssistantRepetitionRepairDirective(
+  messages: AssistantStyleMessage[],
+  candidateText: string,
+  recentLengths: number[] = [],
+): string {
+  const recentAssistantMessages = messages
+    .filter((message) => message.role === 'assistant' && message.text?.trim())
+    .slice(-3);
+
+  if (recentAssistantMessages.length === 0 || !candidateText.trim()) return '';
+
+  const candidate = analyzeAssistantMessage(candidateText);
+  const previous = recentAssistantMessages.map((message) => analyzeAssistantMessage(message.text || ''));
+  const previousShapes = new Set(previous.flatMap((analysis) => analysis.shapes));
+  const previousShortQuotes = new Set(previous.flatMap((analysis) => analysis.shortQuotes));
+  const previousTerms = new Set(previous.flatMap((analysis) => analysis.descriptiveTerms));
+
+  const repeatedTerms = candidate.descriptiveTerms.filter((term) => previousTerms.has(term)).slice(0, 5);
+  const repeatedQuotes = candidate.shortQuotes.filter((quote) => previousShortQuotes.has(quote));
+  const repeatedShape = candidate.shapes.some((shape) => previousShapes.has(shape));
+  const repeatedTriad = candidate.totalBlocks > 0
+    && candidate.repeatedTriadBlocks / candidate.totalBlocks >= 0.5
+    && previous.some((analysis) => analysis.totalBlocks > 0 && analysis.repeatedTriadBlocks / analysis.totalBlocks >= 0.5);
+  const frontLoaded = candidate.frontLoadedNarrationBlocks > 0 || candidate.narrationHeavyBlocks > 0 || candidate.lowDialogueBlocks > 0;
+  const lockedLength = recentLengths.length > 0 && (() => {
+    const lastLength = recentLengths[recentLengths.length - 1];
+    const candidateLength = candidate.wordCount;
+    if (!lastLength || !candidateLength) return false;
+    const min = Math.min(lastLength, candidateLength);
+    const max = Math.max(lastLength, candidateLength);
+    return (max - min) / min <= 0.15;
+  })();
+
+  const reasons = [
+    repeatedShape ? 'same structure as a recent assistant response' : '',
+    repeatedTriad ? 'same action -> dialogue -> internal thought cadence' : '',
+    repeatedQuotes.length > 0 ? 'reused short dialogue phrasing' : '',
+    repeatedTerms.length >= 3 ? `reused descriptive focus (${repeatedTerms.join(', ')})` : '',
+    frontLoaded ? 'front-loaded narration or weak dialogue balance' : '',
+    lockedLength ? 'same response length band' : '',
+  ].filter(Boolean);
+
+  if (reasons.length === 0) return '';
+
+  return `[OUTPUT REVISION REQUIRED]
+The draft response repeated ${reasons.join(', ')}. Regenerate the response once. Keep the same established facts, speaker tags, user-character boundaries, and emotional direction, but do not rewrite the same exchange with swapped wording. The new response must add a concrete AI-owned development that changes the situation while preserving the user's control of their character. Use meaningful external dialogue when the character can speak, and avoid reusing the same descriptive focus, sentence shape, or closing internal thought pattern.`;
 }

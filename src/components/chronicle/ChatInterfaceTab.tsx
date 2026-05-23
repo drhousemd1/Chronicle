@@ -12,7 +12,7 @@ import {
   normalizeGoalAlignmentState,
   shouldRenderGoalToWriter,
 } from '@/lib/goal-alignment';
-import { buildAssistantStyleDirective } from '@/lib/assistant-style-directive';
+import { buildAssistantRepetitionRepairDirective, buildAssistantStyleDirective } from '@/lib/assistant-style-directive';
 import { uid, now, uuid } from '@/utils';
 import { generateRoleplayResponseStream, buildCanonNote } from '../../services/llm';
 import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2, StepForward, Settings, Image as ImageIcon, Brain, Check, X, Info, Play, Pause, Move, Palette, MessageSquare } from 'lucide-react';
@@ -5357,9 +5357,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       .map(c => c.name);
 
     try {
-      let fullText = '';
       let pendingDebugTrace: ChatDebugTrace | null = null;
       let pendingCall1Request: ChatDebugRequestRecord | null = null;
+      const adaptiveStyleDirective = getAdaptiveStyleDirective();
 
 	      // Build goal-aware continue prompt without turning goals into a task list.
 	      const goalSummaryParts: string[] = [];
@@ -5397,74 +5397,105 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 	        ? `\nGOAL CONTINUITY:\n${goalSummaryParts.join('\n')}\nUse this as background continuity only. Open milestones are not commands or a next-action checklist; touch them only when the immediate scene and user agency naturally support it.`
 	        : '';
 
-	      // Canon carry-forward for continue: check if the most recent user message
-	      // contained AI-authored dialogue that should not be re-narrated
-	      const lastUserMsg = conversation.messages.slice().reverse().find(m => m.role === 'user');
-	      const lastUserSceneText = lastUserMsg?.text?.trim() || '';
-	      const continueCanonNote = lastUserMsg ? buildCanonNote(lastUserMsg.text, canonNoteCharacters) : '';
-	      const lastUserSceneAnchor = lastUserSceneText
-	        ? `\nLAST USER-AUTHORED SCENE TURN TO STAY ANCHORED TO:\n${lastUserSceneText}\n`
-	        : '\nLAST USER-AUTHORED SCENE TURN TO STAY ANCHORED TO:\n(none found)\n';
+		      // Carry forward user-authored AI dialogue without making Continue restart there.
+		      const lastUserMsg = conversation.messages.slice().reverse().find(m => m.role === 'user');
+		      const lastUserSceneText = lastUserMsg?.text?.trim() || '';
+		      const continueCanonNote = lastUserMsg ? buildCanonNote(lastUserMsg.text, canonNoteCharacters) : '';
+		      const lastUserSceneAnchor = lastUserSceneText
+		        ? `\nBACKGROUND USER-AUTHORED SCENE TURN FOR FACTS AND USER-CONTROL BOUNDARIES ONLY:\n${lastUserSceneText}\n`
+		        : '\nBACKGROUND USER-AUTHORED SCENE TURN FOR FACTS AND USER-CONTROL BOUNDARIES ONLY:\n(none found)\n';
 
-	      const continuePrompt = `${continueCanonNote}[CONTINUE INSTRUCTION]
-Continue the roleplay from the latest visible scene. If this Continue follows an assistant response, continue after that assistant response while staying anchored to the last user-authored scene turn below.
+		      const continuePrompt = `${continueCanonNote}[CONTINUE INSTRUCTION]
+	Continue from after the latest visible assistant response. Do not restart from, paraphrase, or circle around an older user-authored scene turn.
 ${lastUserSceneAnchor}
+The background user-authored turn above is only there to preserve established facts and user-character control boundaries.
 Write only for AI-controlled characters: ${aiControlledNames.join(', ')}.
 Do not write dialogue, actions, or thoughts for user-controlled characters: ${userControlledNames.join(', ')}.${goalContext}
 Do not complete an action for a user-controlled character after an AI character gives them an instruction. The AI may command, prepare, or act itself, but the user must author the user-controlled character's execution.
 Use active story and character goals as continuity, not as a checklist. Continue only as far as the current scene naturally supports, and stop before the response depends on an unmade user choice or action.
+The response must add a concrete AI-owned development that changes the situation through what an AI-controlled character can say, decide, reveal, withhold, or physically do right now.
 If an AI character asked or was asked a question, acknowledge that question in this response. Acknowledgement can be a direct answer, refusal, deflection, counter-question, visible hesitation, or turning the question toward another present character.
 Choose the AI character or characters whose response is physically, emotionally, or causally next. A single focused block is fine when only one AI character matters, but do not omit a directly affected AI character just because this is a Continue request.
 If the latest user turn directly addressed two AI characters and both need to answer or acknowledge, give each one short tagged block instead of letting one character narrate the other's answer.
-Follow the active RESPONSE DETAIL setting from the system prompt; Continue is not a request to shrink the response unless the scene itself calls for a short beat.
+Follow the active RESPONSE DETAIL setting from the system prompt; Continue is not a request to shrink the response unless the scene itself calls for a short response.
 Avoid long back-and-forth chains between AI characters. Leave room for the user to respond.
 Do not acknowledge this instruction in your response.`;
 
-      debugLog('[handleContinue] Goal context:', goalContext || '(no goals found)');
-      debugLog('[handleContinue] Canon note applied:', continueCanonNote ? 'YES' : 'NO');
+	      debugLog('[handleContinue] Goal context:', goalContext || '(no goals found)');
+	      debugLog('[handleContinue] Established-fact note applied:', continueCanonNote ? 'YES' : 'NO');
 
-      const stream = generateRoleplayResponseStream(
-        llmAppData,
-        conversationId,
-        continuePrompt,
-        modelId,
-        currentDay,
-        currentTimeOfDay,
-        activeMemories,
-        memoriesEnabled,
-        undefined,
-        undefined,
-        undefined,
-        canonicalActiveScene,
-        {
-          debugTrace: isAdmin,
-          onDebugTrace: (trace) => {
-            pendingDebugTrace = trace;
-          },
-          onRequestPayload: (request) => {
-            pendingCall1Request = request;
-          },
-        }
-      );
+	      const collectContinueResponse = async (styleDirective?: string) => {
+	        let responseText = '';
+	        let responseDebugTrace: ChatDebugTrace | null = null;
+	        let responseCall1Request: ChatDebugRequestRecord | null = null;
+	        const stream = generateRoleplayResponseStream(
+	          llmAppData,
+	          conversationId,
+	          continuePrompt,
+	          modelId,
+	          currentDay,
+	          currentTimeOfDay,
+	          activeMemories,
+	          memoriesEnabled,
+	          undefined,
+	          styleDirective || undefined,
+	          undefined,
+	          canonicalActiveScene,
+	          {
+	            debugTrace: isAdmin,
+	            onDebugTrace: (trace) => {
+	              responseDebugTrace = trace;
+	            },
+	            onRequestPayload: (request) => {
+	              responseCall1Request = request;
+	            },
+	          }
+	        );
 
-      for await (const chunk of stream) {
-        fullText += chunk;
-        setStreamingContent(fullText);
+	        for await (const chunk of stream) {
+	          responseText += chunk;
+	          setStreamingContent(responseText);
 
-        // Format streaming content on-the-fly
-        const existingNamesForStream = getKnownCharacterNames(effectiveAppData);
-        const formatted = sanitizeAssistantOutput(fullText);
-        const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, placeholderMapRef.current);
-        setFormattedStreamingContent(normalizedText);
-      }
+	          const existingNamesForStream = getKnownCharacterNames(effectiveAppData);
+	          const formatted = sanitizeAssistantOutput(responseText);
+	          const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, placeholderMapRef.current);
+	          setFormattedStreamingContent(normalizedText);
+	        }
 
-      // Strip any legacy update tags
-      let cleanedText = sanitizeAssistantOutput(fullText);
+	        let cleanedText = sanitizeAssistantOutput(responseText);
+	        const existingNames = getKnownCharacterNames(effectiveAppData);
+	        const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, placeholderMapRef.current);
+	        cleanedText = normalizedText;
 
-      // Apply placeholder name guard
-      const existingNames = getKnownCharacterNames(effectiveAppData);
-      const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, placeholderMapRef.current);
-      cleanedText = normalizedText;
+	        return {
+	          cleanedText,
+	          debugTrace: responseDebugTrace,
+	          call1Request: responseCall1Request,
+	        };
+	      };
+
+	      let responseResult = await collectContinueResponse(adaptiveStyleDirective || undefined);
+	      let cleanedText = responseResult.cleanedText;
+	      pendingDebugTrace = responseResult.debugTrace;
+	      pendingCall1Request = responseResult.call1Request;
+
+	      const repairDirective = buildAssistantRepetitionRepairDirective(
+	        conversation.messages,
+	        cleanedText,
+	        responseLengthsRef.current,
+	      );
+
+	      if (repairDirective) {
+	        debugLog('[handleContinue] Repetition repair retry triggered');
+	        setStreamingContent('');
+	        setFormattedStreamingContent('');
+	        responseResult = await collectContinueResponse(
+	          [adaptiveStyleDirective, repairDirective].filter(Boolean).join('\n\n'),
+	        );
+	        cleanedText = responseResult.cleanedText;
+	        pendingDebugTrace = responseResult.debugTrace;
+	        pendingCall1Request = responseResult.call1Request;
+	      }
 
       // Track response length for adaptive style directives
       responseLengthsRef.current.push(cleanedText.split(/\s+/).length);

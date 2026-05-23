@@ -430,7 +430,7 @@ function buildSegments(input: ChatReviewExportInput): ReviewExportSegment[] {
         isContinueTarget: continueSet.has(message.id),
         isRegenerated: regenerateSet.has(message.id),
         imageUrl: message.imageUrl,
-        liveComment: segmentIndex === messageSegments.length - 1 ? liveComment : undefined,
+        liveComment,
         postTurnStateChanges,
         debugRecord,
       });
@@ -463,7 +463,7 @@ function renderSegmentCard(segment: ReviewExportSegment, index: number): string 
     : '';
 
   return `
-    <article class="${classes}" data-review-index="${index}" data-review-id="${escapeAttribute(segment.reviewId)}" data-message-id="${escapeAttribute(segment.messageId)}" data-generation-id="${escapeAttribute(segment.generationId)}" data-turn="${segment.turnNumber}" data-role="${escapeAttribute(segment.role)}" data-speaker="${escapeAttribute(segment.speakerName)}" data-excerpt="${escapeAttribute(textPreview(segment.text, 260))}">
+    <article id="review-${escapeAttribute(segment.reviewId)}" class="${classes}" data-review-index="${index}" data-review-id="${escapeAttribute(segment.reviewId)}" data-message-id="${escapeAttribute(segment.messageId)}" data-generation-id="${escapeAttribute(segment.generationId)}" data-turn="${segment.turnNumber}" data-role="${escapeAttribute(segment.role)}" data-speaker="${escapeAttribute(segment.speakerName)}" data-has-live-comment="${segment.liveComment ? 'true' : 'false'}" data-live-comment-note="${escapeAttribute(segment.liveComment?.note || '')}" data-live-comment-tags="${escapeAttribute(selectedTags.join(', '))}" data-excerpt="${escapeAttribute(textPreview(segment.text, 260))}">
       <div class="message-main">
         <div class="avatar">${avatarHtml(segment)}</div>
         <div class="message-content">
@@ -500,6 +500,50 @@ function renderCharacterSummary(characters: ReviewExportCharacter[]): string {
       </div>
     </div>
   `).join('');
+}
+
+function renderLiveCommentIndex(
+  comments: Record<string, ChatReviewLiveComment> | undefined,
+  segments: ReviewExportSegment[],
+): string {
+  const commentEntries = Object.values(comments || {})
+    .filter((comment) => comment.note.trim() || uniqueIssueTags(comment.tags).length > 0)
+    .sort((left, right) => left.updatedAt - right.updatedAt);
+
+  if (commentEntries.length === 0) return '';
+
+  return `
+    <section class="live-comment-index" data-live-comment-count="${commentEntries.length}">
+      <div class="issue-summary-header">
+        <div class="eyebrow">Live tester notes index</div>
+        <p>Every saved tester note is listed here and repeated on each split speaker card for the message it belongs to, so comments are easy to find by eye, search, or parser.</p>
+      </div>
+      <div class="live-comment-index-list">
+        ${commentEntries.map((comment, index) => {
+    const matchingSegments = segments.filter((segment) => (
+      segment.messageId === comment.messageId
+      && (!comment.generationId || segment.generationId === comment.generationId)
+    ));
+    const selectedTags = uniqueIssueTags(comment.tags);
+    const links = matchingSegments.length
+      ? matchingSegments.map((segment) => `<a href="#review-${escapeAttribute(segment.reviewId)}">Turn ${segment.turnNumber}${segment.segmentNumber > 1 ? `.${segment.segmentNumber}` : ''} ${escapeHtml(segment.speakerName)}</a>`).join(' ')
+      : '<span>No rendered message card matched this saved note.</span>';
+
+    return `
+          <article class="live-comment-index-card" data-live-comment-index="${index}" data-message-id="${escapeAttribute(comment.messageId)}" data-generation-id="${escapeAttribute(comment.generationId || comment.messageId)}">
+            <div class="comment-index-meta">
+              <strong>Note ${index + 1}</strong>
+              <span>message ${escapeHtml(comment.messageId)} · generation ${escapeHtml(comment.generationId || comment.messageId)}</span>
+            </div>
+            ${selectedTags.length ? `<div class="comment-tag-row">${selectedTags.map((tag) => `<span class="comment-tag">${escapeHtml(tag)}</span>`).join('')}</div>` : ''}
+            ${comment.note ? `<p>${escapeHtml(comment.note)}</p>` : '<p>No written note. Tags only.</p>'}
+            <div class="comment-index-links">${links}</div>
+          </article>
+        `;
+  }).join('')}
+      </div>
+    </section>
+  `;
 }
 
 function renderIssueSummary(
@@ -687,6 +731,52 @@ function reviewStyles(): string {
       color: var(--muted);
       font-size: 12px;
     }
+    .live-comment-index {
+      border: 1px solid rgba(120,220,202,0.24);
+      border-radius: 24px;
+      background: rgba(120,220,202,0.06);
+      padding: 18px;
+      margin: 20px 0;
+    }
+    .live-comment-index-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .live-comment-index-card {
+      border: 1px solid rgba(120,220,202,0.22);
+      border-radius: 18px;
+      background: rgba(12,20,22,0.76);
+      padding: 14px;
+    }
+    .comment-index-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+    .comment-index-meta strong { color: var(--text); }
+    .live-comment-index-card p {
+      color: #d7f7ef;
+      white-space: pre-wrap;
+      margin: 8px 0 10px;
+    }
+    .comment-index-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .comment-index-links a, .comment-index-links span {
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 999px;
+      color: var(--accent);
+      background: rgba(255,255,255,0.05);
+      padding: 4px 8px;
+      font-size: 12px;
+      text-decoration: none;
+    }
     details { margin-top: 12px; border: 1px solid rgba(255,255,255,0.10); border-radius: 14px; background: rgba(0,0,0,0.18); }
     summary { cursor: pointer; color: var(--muted); font-weight: 800; padding: 10px 12px; }
     pre { white-space: pre-wrap; margin: 0; padding: 12px; color: #cbd5e1; overflow-wrap: anywhere; }
@@ -809,11 +899,32 @@ export function buildChatReviewHtml(input: ChatReviewExportInput): string {
   const exportedAt = formatExportDate(input.exportedAt);
   const cards = segments.map((segment, index) => renderSegmentCard(segment, index)).join('\n');
   const issueSummary = renderIssueSummary(input.messageComments);
+  const liveCommentIndex = renderLiveCommentIndex(input.messageComments, segments);
+  const liveComments = Object.values(input.messageComments || {}).map((comment) => ({
+    messageId: comment.messageId,
+    generationId: comment.generationId || comment.messageId,
+    note: comment.note,
+    tags: uniqueIssueTags(comment.tags),
+    createdAt: comment.createdAt,
+    updatedAt: comment.updatedAt,
+    renderedSegments: segments
+      .filter((segment) => (
+        segment.messageId === comment.messageId
+        && (!comment.generationId || segment.generationId === comment.generationId)
+      ))
+      .map((segment) => ({
+        reviewId: segment.reviewId,
+        turnNumber: segment.turnNumber,
+        segmentNumber: segment.segmentNumber,
+        speakerName: segment.speakerName,
+      })),
+  }));
   const embeddedDebugData = {
     schema: 'chronicle-session-review-v2',
     exportedAt,
     scenarioTitle: input.scenarioTitle,
     conversationId: input.conversation.id,
+    liveComments,
     messages: input.conversation.messages.map((message) => ({
       id: message.id,
       generationId: message.generationId || message.id,
@@ -852,9 +963,11 @@ export function buildChatReviewHtml(input: ChatReviewExportInput): string {
     </section>
 
     ${issueSummary}
+    ${liveCommentIndex}
     ${cards}
 
     <p class="footer-note">Dialogue debug notes are saved to this playthrough for testing only. They are not sent to the roleplay model and are not story canon.</p>
+    <script type="application/json" id="chronicle-session-review-comments">${safeJsonScript(liveComments)}</script>
     <script type="application/json" id="chronicle-session-review-data">${safeJsonScript(embeddedDebugData)}</script>
   </main>
 </body>

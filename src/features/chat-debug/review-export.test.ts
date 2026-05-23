@@ -136,10 +136,17 @@ describe('buildChatReviewHtml', () => {
     expect(html).toContain('Ashley');
     expect(html).not.toContain('What went wrong?');
     expect(html).toContain('Live tester note');
+    expect(html.match(/<section class="live-comment">/g)).toHaveLength(2);
+    expect(html).toContain('Live tester notes index');
+    expect(html).toContain('chronicle-session-review-comments');
+    expect(html).toContain('data-has-live-comment="true"');
+    expect(html).toContain('data-live-comment-note="Ashley answered correctly, but Sarah sounded too mechanical."');
     expect(html).toContain('Sarah sounded too mechanical.');
     expect(html).toContain('Issue summary');
     expect(html).toContain('Dialogue Quality');
     expect(html).toContain('Speaker Flow');
+    expect(html).toContain('Turn 2 Sarah');
+    expect(html).toContain('Turn 2.2 Ashley');
     expect(html).toContain('data-review-id="message-ai-1-1"');
     expect(html).not.toContain('Raw saved message text');
     expect(html).toContain('API Call 1 Data');

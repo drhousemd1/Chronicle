@@ -777,7 +777,7 @@ REQUEST BODY SHAPE
     { "role": "system", "content": "<the full system message below>" },
     { "role": "user", "content": "{{up to 9 prior roleplay messages before the current turn}}" },
     { "role": "assistant", "content": "{{up to 9 prior roleplay messages before the current turn}}" },
-    { "role": "user", "content": "[SESSION: Message {{sessionMessageCount}} of current session]\\n\\n{{adaptiveStyleDirective when triggered}}\\n\\n{{latest user text OR continue instruction wrapper}}{{optional regeneration request}}\\n\\n{{selectedResponseDetailRules}}\\n\\n{{activeNsfwContextReminder when story type is NSFW}}\\n\\n{{responsePriorityCheck}}\\n\\n{{assistantStructureReminder}}" }
+    { "role": "user", "content": "[SESSION: Message {{sessionMessageCount}} of current session]\\n\\n{{adaptiveStyleDirective when triggered}}{{optionalOutputRevisionRequiredDirectiveOnContinueRetry}}\\n\\n{{latest user text OR continue instruction wrapper}}{{optional regeneration request}}\\n\\n{{selectedResponseDetailRules}}\\n\\n{{activeNsfwContextReminder when story type is NSFW}}\\n\\n{{responsePriorityCheck}}\\n\\n{{assistantStructureReminder}}" }
   ],
   "modelId": "grok-4.3",
   "stream": true,
@@ -788,8 +788,8 @@ REQUEST BODY SHAPE
     "conversationId": "{{conversationId}}",
     "currentDay": "{{currentDay}}",
     "currentTimeOfDay": "{{currentTimeOfDay}}",
-    "activeSceneTitle": "{{canonicalActiveScene.title or null unless an explicit [SCENE] tag has been established}}",
-    "activeSceneTags": "{{canonicalActiveScene.tags or [] unless an explicit [SCENE] tag has been established}}",
+    "activeSceneTitle": "{{active scene title or null unless an explicit [SCENE] tag has been established}}",
+    "activeSceneTags": "{{active scene tags or [] unless an explicit [SCENE] tag has been established}}",
     "aiCharacterNames": "{{AI-controlled character names}}",
     "userCharacterNames": "{{User-controlled character names}}",
     "characterSceneStates": "{{name/control/role/location/scenePosition/currentMood for all playable characters}}"
@@ -822,20 +822,22 @@ CONTINUE REQUEST FINAL USER MESSAGE ONLY WHEN PRESSING CONTINUE
 ================================================================================
 
 [CONTINUE INSTRUCTION]
-Continue the roleplay from the latest visible scene. If this Continue follows an assistant response, continue after that assistant response while staying anchored to the last user-authored scene turn below.
+Continue from after the latest visible assistant response. Do not restart from, paraphrase, or circle around an older user-authored scene turn.
 
-LAST USER-AUTHORED SCENE TURN TO STAY ANCHORED TO:
+BACKGROUND USER-AUTHORED SCENE TURN FOR FACTS AND USER-CONTROL BOUNDARIES ONLY:
 {{most recent user message text, or "(none found)"}}
 
+The background user-authored turn above is only there to preserve established facts and user-character control boundaries.
 Write only for AI-controlled characters: {{AI-controlled character names}}.
 Do not write dialogue, actions, or thoughts for user-controlled characters: {{User-controlled character names}}.
 {{GOAL CONTINUITY block when visible goals have open milestones}}
 Do not complete an action for a user-controlled character after an AI character gives them an instruction. The AI may command, prepare, or act itself, but the user must author the user-controlled character's execution.
 Use active story and character goals as continuity, not as a checklist. Continue only as far as the current scene naturally supports, and stop before the response depends on an unmade user choice or action.
+The response must add a concrete AI-owned development that changes the situation through what an AI-controlled character can say, decide, reveal, withhold, or physically do right now.
 If an AI character asked or was asked a question, acknowledge that question in this response. Acknowledgement can be a direct answer, refusal, deflection, counter-question, visible hesitation, or turning the question toward another present character.
 Choose the AI character or characters whose response is physically, emotionally, or causally next. A single focused block is fine when only one AI character matters, but do not omit a directly affected AI character just because this is a Continue request.
 If the latest user turn directly addressed two AI characters and both need to answer or acknowledge, give each one short tagged block instead of letting one character narrate the other's answer.
-Follow the active RESPONSE DETAIL setting from the system prompt; Continue is not a request to shrink the response unless the scene itself calls for a short beat.
+Follow the active RESPONSE DETAIL setting from the system prompt; Continue is not a request to shrink the response unless the scene itself calls for a short response.
 Avoid long back-and-forth chains between AI characters. Leave room for the user to respond.
 Do not acknowledge this instruction in your response.
 
@@ -877,7 +879,14 @@ ${RESPONSE_PRIORITY_CHECK_TEXT}
 ASSISTANT STRUCTURE REMINDER APPENDED TO FINAL USER MESSAGE ON EVERY LIVE ROLEPLAY CALL
 ================================================================================
 
-${ASSISTANT_STRUCTURE_REMINDER_TEXT}`;
+${ASSISTANT_STRUCTURE_REMINDER_TEXT}
+
+================================================================================
+OUTPUT REVISION REQUIRED APPENDED ONLY TO ONE-TIME CONTINUE RETRY WHEN THE FIRST DRAFT REPEATS RECENT ASSISTANT OUTPUT
+================================================================================
+
+[OUTPUT REVISION REQUIRED]
+The draft response repeated {{same structure / same cadence / reused short dialogue / reused descriptive focus / weak dialogue balance / same response-length band}}. Regenerate the response once. Keep the same established facts, speaker tags, user-character boundaries, and emotional direction, but do not rewrite the same exchange with swapped wording. The new response must add a concrete AI-owned development that changes the situation while preserving the user's control of their character. Use meaningful external dialogue when the character can speak, and avoid reusing the same descriptive focus, sentence shape, or closing internal thought pattern.`;
 }
 
 function buildApiCall2SupportDocument() {

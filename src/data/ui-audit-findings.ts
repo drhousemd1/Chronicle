@@ -3282,6 +3282,7 @@ const goalAlignmentHardeningPatchTimestamp = "2026-05-20T20:40:00.000-06:00";
 const goalAlignmentInspectionSurfacePatchTimestamp = "2026-05-21T00:48:00.000-06:00";
 const usageTelemetryFailOpenPatchTimestamp = "2026-05-21T02:02:00.000-06:00";
 const roleplayPromptFollowthroughPatchTimestamp = "2026-05-21T02:51:36.000-06:00";
+const continueRepetitionRepairPatchTimestamp = "2026-05-23T03:24:00.000-06:00";
 
 type FindingResolutionNote = {
   runId: string;
@@ -4785,6 +4786,30 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
     },
   ],
   changeLog: [
+    {
+      id: "cl-20260523-001",
+      title: "Stop Continue from circling older user turns",
+      summary: "Roleplay Chat · Continue now starts after the latest assistant response, carries the older user-authored turn only as boundary context, and retries once when a draft repeats recent assistant structure.",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "Test 26 showed Continue repeatedly orbiting the same earlier scene moment. The Continue wrapper told the model to continue after the latest assistant response, but then labeled the older user-authored scene turn as the anchor. Continue also bypassed the adaptive style directive used by normal send, so repeated assistant patterns were only weakly discouraged.",
+      plan: "Reframe the older user-authored scene turn as background context for facts and user-character boundaries, require a concrete AI-owned development in Continue responses, pass the adaptive style directive through Continue, and add one retry when the freshly generated draft repeats recent assistant structure, phrasing, descriptive focus, or weak dialogue balance.",
+      changes: "Updated `src/components/chronicle/ChatInterfaceTab.tsx`:\n- Reworded the Continue wrapper so generation starts after the latest visible assistant response instead of restarting from the older user-authored scene turn.\n- Relabeled the older user-authored scene turn as background context for facts and user-character control boundaries only.\n- Added a concise Continue instruction requiring a concrete AI-owned development without taking over the user character.\n- Passed the existing adaptive style directive into Continue requests.\n- Added a one-time Continue retry when the generated draft repeats recent assistant structure or descriptive focus.\n\nUpdated `src/lib/assistant-style-directive.ts`:\n- Added candidate-output repetition analysis for same structure, repeated action/dialogue/thought cadence, reused short dialogue, reused descriptive focus, weak dialogue balance, and same response-length band.\n- Added a narrow repair directive that asks for a different response while preserving established facts, speaker tags, and user-character boundaries.\n\nUpdated Roleplay Pipeline prompt review documentation and tests so the API Call 1 prompt document reflects the new Continue wrapper and repair behavior coverage.",
+      filesAffected: [
+        "src/components/chronicle/ChatInterfaceTab.tsx",
+        "src/lib/assistant-style-directive.ts",
+        "src/lib/assistant-style-directive.test.ts",
+        "src/data/api-inspector-prompt-documents.ts",
+        "src/data/api-inspector-prompt-documents.test.ts",
+        "src/data/ui-audit-findings.ts"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: ["cl-20260521-003"],
+      tags: ["roleplay-chat", "continue", "prompt-quality", "repetition", "chat-debug"],
+      comments: [],
+      createdAt: continueRepetitionRepairPatchTimestamp,
+      updatedAt: continueRepetitionRepairPatchTimestamp,
+    },
     {
       id: "cl-20260521-003",
       title: "Ship roleplay prompt and Continue follow-through fixes",

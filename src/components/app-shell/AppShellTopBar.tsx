@@ -225,17 +225,16 @@ function SegmentedControl({
   );
 }
 
-function SurfaceButton({
-  children,
-  className,
-  ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  return (
-    <button type="button" className={cn(SURFACE_BUTTON_CLASS, className)} {...props}>
-      {children}
-    </button>
-  );
-}
+const SurfaceButton = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>(
+  ({ children, className, ...props }, ref) => {
+    return (
+      <button ref={ref} type="button" className={cn(SURFACE_BUTTON_CLASS, className)} {...props}>
+        {children}
+      </button>
+    );
+  },
+);
+SurfaceButton.displayName = "SurfaceButton";
 
 function StoryTransferNotice({ notice }: { notice: StoryTransferNoticeConfig }) {
   return (

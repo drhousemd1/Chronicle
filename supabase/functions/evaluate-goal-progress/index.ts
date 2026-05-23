@@ -92,7 +92,7 @@ Respond in JSON format ONLY:
   ]
 }
 
-Set "completed" to true ONLY when the step's objective has been clearly achieved or fulfilled.`;
+Set "completed" to true only when the lasting condition described by the step is fully true in the story state. If the latest exchange only moves toward that condition, keep "completed" false and summarize the progress instead.`;
 
     const xaiRequestBody = {
       model: "grok-4.3",

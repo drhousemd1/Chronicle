@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildAssistantStyleDirective } from '@/lib/assistant-style-directive';
+import { buildAssistantRepetitionRepairDirective, buildAssistantStyleDirective } from '@/lib/assistant-style-directive';
 
 describe('buildAssistantStyleDirective', () => {
   it('compares assistant responses against assistant responses instead of the latest user message', () => {
@@ -70,5 +70,28 @@ describe('buildAssistantStyleDirective', () => {
 
     expect(directive).toContain('repeated descriptive terms');
     expect(directive).toContain('do not reuse recent descriptive terms');
+  });
+
+  it('builds a repair directive when a candidate output repeats recent assistant cadence and phrasing', () => {
+    const previousMessages = [
+      {
+        role: 'assistant',
+        text: 'Ashley: *Her palms moved slowly down his back while the quiet room pressed around them.* "Just relax for me, sweetie." (Every small reaction made her want to push further.)',
+      },
+      {
+        role: 'assistant',
+        text: 'Ashley: *Her palms moved slowly across his back while the quiet room held around them.* "Just relax for me, sweetie." (Every small reaction made her want to push further.)',
+      },
+    ];
+
+    const directive = buildAssistantRepetitionRepairDirective(
+      previousMessages,
+      'Ashley: *Her palms moved slowly down his back while the quiet room pressed around them.* "Just relax for me, sweetie." (Every small reaction made her want to push further.)',
+      [28, 29],
+    );
+
+    expect(directive).toContain('[OUTPUT REVISION REQUIRED]');
+    expect(directive).toContain('do not rewrite the same exchange with swapped wording');
+    expect(directive).toContain('concrete AI-owned development');
   });
 });

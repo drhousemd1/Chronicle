@@ -208,10 +208,10 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('--- PHYSICAL LOGIC, VISIBILITY, AND CONTINUITY ---');
     expect(prompt).toContain('If the user frames something as uncertain, partial, distant, suspected, or not yet confirmed');
     expect(prompt).toContain("If the user's message clearly indicates that only a specific character or set of characters can hear");
-    expect(prompt).toContain("The user's action verb is canon, not a paraphrase target.");
-    expect(RESPONSE_PRIORITY_CHECK_TEXT).toContain('Write the next response from the immediate scene first.');
-    expect(RESPONSE_PRIORITY_CHECK_TEXT).toContain('Use story cards, character cards, memories, and goals as supporting context');
-    expect(RESPONSE_PRIORITY_CHECK_TEXT).toContain('All narration, actions, verbal dialogue, or internal thoughts must be connected logically to character card data and story card data.');
+    expect(prompt).toContain('When the latest user message establishes a physical change, the next response must continue from that established physical state.');
+    expect(RESPONSE_PRIORITY_CHECK_TEXT).toContain('Write the next response from what is actively happening right now.');
+    expect(RESPONSE_PRIORITY_CHECK_TEXT).toContain('Use story cards, character cards, memories, and goals as supporting context.');
+    expect(RESPONSE_PRIORITY_CHECK_TEXT).toContain('Do not pull in background details unless they logically matter to the current scene.');
     expect(renderActiveNsfwContextReminder('SFW', 'high')).toBe('');
     expect(renderActiveNsfwContextReminder('NSFW', 'normal')).toContain('This is an adult NSFW story.');
     expect(renderActiveNsfwContextReminder('NSFW', 'high')).toContain('This is an adult NSFW high-intensity story.');
