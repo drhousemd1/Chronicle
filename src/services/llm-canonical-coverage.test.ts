@@ -162,10 +162,10 @@ describe('llm canonical prompt coverage', () => {
 
     expect(prompt).toContain('STORY AND CHARACTER CARD REFERENCE RULE');
     expect(prompt).toContain('provided as reference context');
-    expect(prompt).toContain('Do not treat any card field as a checklist of details');
-    expect(prompt).toContain('A card detail is background when nothing in the current beat activates it');
-    expect(prompt).toContain('A card detail becomes active when the last provided message window');
-    expect(prompt).toContain('physical contact, intimacy, exposure, secrecy, fear, desire, goal pressure');
+    expect(prompt).toContain('their relationships, their histories, and their current state');
+    expect(prompt).toContain('once a detail has already been established in recent assistant responses');
+    expect(prompt).toContain('describe the new action, contact, reaction, decision, or consequence');
+    expect(prompt).toContain('World locations, supplies, and custom world content are creator reference, not automatic character knowledge.');
 
     expect(prompt).toContain('SECTION 3 - MAIN AI CHARACTER CARD INFORMATION');
     expect(prompt).toContain('CHARACTER: Tamlin');
@@ -195,6 +195,8 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain("Compare against your own previous 2-3 assistant character blocks, not the user's message");
     expect(prompt).not.toContain('Avoid repetitive formatting from one message to another.');
     expect(prompt).toContain("Do not default to action -> dialogue -> internal thought");
+    expect(prompt).toContain('the response should include external dialogue');
+    expect(prompt).toContain('External dialogue should be meaningful, not a token quote attached to a long narration section.');
     expect(prompt).toContain('--- USER-DEFINED DIALOG FORMATTING FROM STORY BUILDER ---');
     expect(prompt).toContain('--- INTERNAL THOUGHTS ---');
     expect(prompt).toContain('Use internal thoughts only when they reveal private conflict');
@@ -214,6 +216,8 @@ describe('llm canonical prompt coverage', () => {
     expect(renderActiveNsfwContextReminder('NSFW', 'normal')).toContain('This is an adult NSFW story.');
     expect(renderActiveNsfwContextReminder('NSFW', 'high')).toContain('This is an adult NSFW high-intensity story.');
     expect(renderActiveNsfwContextReminder('NSFW', 'high')).toContain('not neutral logistics');
+    expect(renderActiveNsfwContextReminder('NSFW', 'high')).toContain('what is newly happening, changing, being felt, chosen, resisted, said, or revealed');
+    expect(renderActiveNsfwContextReminder('NSFW', 'high')).toContain('Do not replace character interaction with sensory narration alone.');
     expect(ASSISTANT_STRUCTURE_REMINDER_TEXT).toContain('Avoid repeating the same structure across your own recent AI responses.');
     expect(ASSISTANT_STRUCTURE_REMINDER_TEXT).toContain("Compare against your own previous 2-3 assistant character blocks, not the user's message.");
     expect(prompt).toContain('SECTION 8 - CHAT SETTINGS PER USER PREFERENCE');
@@ -344,8 +348,9 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('NSFW INTENSITY: High');
     expect(prompt).toContain('Use explicit, profane, anatomical, and erotic language when it fits the character and moment.');
     expect(prompt).toContain('RESPONSE DETAIL: Detailed');
-    expect(prompt).toContain('Responses should be verbose, with lengthy, highly detailed sensory, emotional, and environmental descriptions');
-    expect(prompt).toContain('Details should be unique to each message and not repeated from one message to the next as copy/paste context.');
+    expect(prompt).toContain('Write rich, immersive responses with lengthy sensory, emotional, and environmental description');
+    expect(prompt).toContain('Do not concentrate most of the detail in one opening narration section');
+    expect(prompt).toContain('Description should support what is currently changing or being interacted with.');
     expect(prompt).not.toContain('Target: usually 3-5 paragraphs per character block.');
     expect(prompt).toContain('REALISM MODE: On');
     expect(prompt).not.toContain('NARRATIVE POV: Third Person');

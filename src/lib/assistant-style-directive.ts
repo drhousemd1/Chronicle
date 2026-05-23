@@ -9,11 +9,71 @@ type CadenceAnalysis = {
   shapes: string[];
   blockCadences: CadenceMarker[][];
   repeatedTriadBlocks: number;
+  narrationHeavyBlocks: number;
+  lowDialogueBlocks: number;
+  frontLoadedNarrationBlocks: number;
   totalBlocks: number;
 };
 
+const DESCRIPTIVE_STOPWORDS = new Set([
+  'about',
+  'again',
+  'against',
+  'after',
+  'along',
+  'already',
+  'around',
+  'before',
+  'behind',
+  'being',
+  'between',
+  'could',
+  'every',
+  'their',
+  'there',
+  'these',
+  'thing',
+  'through',
+  'under',
+  'while',
+  'would',
+]);
+
 function normalizeQuote(value: string): string {
   return value.toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+function countWords(value: string): number {
+  return (value.match(/[A-Za-z][A-Za-z'-]{1,}/g) || []).length;
+}
+
+function extractDialogueText(value: string): string {
+  return Array.from(value.matchAll(/"([^"]+)"|“([^”]+)”/g))
+    .map((match) => match[1] || match[2] || '')
+    .join(' ');
+}
+
+function stripDialogueText(value: string): string {
+  return value.replace(/"[^"]+"|“[^”]+”/g, ' ');
+}
+
+function firstDialogueRatio(value: string): number {
+  const straightQuote = value.search(/"/);
+  const curlyQuote = value.search(/“/);
+  const indexes = [straightQuote, curlyQuote].filter((index) => index >= 0);
+  if (indexes.length === 0 || value.length === 0) return 1;
+  return Math.min(...indexes) / value.length;
+}
+
+function extractDescriptiveTerms(value: string): string[] {
+  const withoutDialogue = stripDialogueText(value)
+    .replace(/(?:^|\n{2,})([^:\n]{1,80}):\s*/g, ' ')
+    .replace(/[*()]/g, ' ')
+    .toLowerCase();
+
+  return (withoutDialogue.match(/[a-z][a-z'-]{4,}/g) || [])
+    .map((term) => term.replace(/'s$/, ''))
+    .filter((term) => !DESCRIPTIVE_STOPWORDS.has(term));
 }
 
 function splitTaggedBlocks(text: string): string[] {
@@ -58,11 +118,23 @@ function hasActionDialogueThoughtCadence(cadence: CadenceMarker[]): boolean {
 function analyzeAssistantCadence(messages: AssistantStyleMessage[]): CadenceAnalysis {
   const shapes: string[] = [];
   const blockCadences: CadenceMarker[][] = [];
+  let narrationHeavyBlocks = 0;
+  let lowDialogueBlocks = 0;
+  let frontLoadedNarrationBlocks = 0;
 
   for (const message of messages) {
-    const cadences = splitTaggedBlocks(message.text || '')
-      .map(extractCadenceMarkers)
-      .filter((cadence) => cadence.length > 0);
+    const blocks = splitTaggedBlocks(message.text || '');
+    const cadences = blocks.map(extractCadenceMarkers).filter((cadence) => cadence.length > 0);
+
+    blocks.forEach((block) => {
+      const totalWords = countWords(block);
+      const dialogueWords = countWords(extractDialogueText(block));
+      const dialogueRatio = totalWords > 0 ? dialogueWords / totalWords : 0;
+
+      if (totalWords >= 60 && dialogueRatio < 0.12) narrationHeavyBlocks += 1;
+      if (totalWords >= 45 && dialogueWords < 10) lowDialogueBlocks += 1;
+      if (totalWords >= 70 && firstDialogueRatio(block) > 0.45) frontLoadedNarrationBlocks += 1;
+    });
 
     if (cadences.length === 0) continue;
     shapes.push(cadences.map((cadence) => cadence.join('>')).join('|'));
@@ -75,6 +147,9 @@ function analyzeAssistantCadence(messages: AssistantStyleMessage[]): CadenceAnal
     shapes,
     blockCadences,
     repeatedTriadBlocks,
+    narrationHeavyBlocks,
+    lowDialogueBlocks,
+    frontLoadedNarrationBlocks,
     totalBlocks: blockCadences.length,
   };
 }
@@ -114,8 +189,31 @@ export function buildAssistantStyleDirective(
     });
   });
   const hasRepeatedShortQuote = Array.from(quotedLineCounts.values()).some((count) => count >= 2);
+  const descriptiveTermCounts = new Map<string, number>();
+  recentAssistantMessages.forEach((message) => {
+    new Set(extractDescriptiveTerms(message.text || '')).forEach((term) => {
+      descriptiveTermCounts.set(term, (descriptiveTermCounts.get(term) || 0) + 1);
+    });
+  });
+  const repeatedDescriptiveTerms = Array.from(descriptiveTermCounts.entries())
+    .filter(([, count]) => count >= 2)
+    .map(([term]) => term)
+    .slice(0, 5);
+  const hasRepeatedDescriptiveTerms = repeatedDescriptiveTerms.length > 0;
+  const hasNarrationHeavyOutput = cadenceAnalysis.totalBlocks >= 1 && cadenceAnalysis.narrationHeavyBlocks > 0;
+  const hasLowDialogueOutput = cadenceAnalysis.totalBlocks >= 1 && cadenceAnalysis.lowDialogueBlocks > 0;
+  const hasFrontLoadedNarration = cadenceAnalysis.totalBlocks >= 1 && cadenceAnalysis.frontLoadedNarrationBlocks > 0;
 
-  if (!hasLockedLength && !hasLockedShape && !hasRepeatedTriadCadence && !hasRepeatedShortQuote) {
+  if (
+    !hasLockedLength
+    && !hasLockedShape
+    && !hasRepeatedTriadCadence
+    && !hasRepeatedShortQuote
+    && !hasRepeatedDescriptiveTerms
+    && !hasNarrationHeavyOutput
+    && !hasLowDialogueOutput
+    && !hasFrontLoadedNarration
+  ) {
     return '';
   }
 
@@ -124,8 +222,12 @@ export function buildAssistantStyleDirective(
     hasLockedShape ? 'the same assistant block order' : '',
     hasRepeatedTriadCadence ? 'repeated action -> dialogue -> internal thought cadence' : '',
     hasRepeatedShortQuote ? 'reused short assistant dialogue phrasing' : '',
+    hasRepeatedDescriptiveTerms ? `repeated descriptive terms (${repeatedDescriptiveTerms.join(', ')})` : '',
+    hasNarrationHeavyOutput ? 'narration-heavy responses' : '',
+    hasLowDialogueOutput ? 'missing or very low external dialogue' : '',
+    hasFrontLoadedNarration ? 'external dialogue appearing too late after a long narration opening' : '',
   ].filter(Boolean).join(', ');
 
   return `[STYLE ADJUSTMENT FOR THIS TURN]
-Your own recent assistant responses are repeating ${reasons}. Compare against your own previous 2-3 assistant character blocks, not the user's message. Vary the next response naturally. Do not force every character block into the same action -> dialogue -> internal thought sequence, and do not reuse recent distinctive sentence shapes or short reactive lines unless the scene specifically calls for that repetition.`;
+Your own recent assistant responses are repeating ${reasons}. Compare against your own previous 2-3 assistant character blocks, not the user's message. Vary the next response naturally. Do not force every character block into the same action -> dialogue -> internal thought sequence, do not bury external dialogue behind a long narration opening, and do not reuse recent descriptive terms, body/clothing focus, object focus, location focus, distinctive sentence shapes, or short reactive lines unless the scene specifically calls for that repetition.`;
 }
