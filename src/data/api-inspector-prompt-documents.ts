@@ -777,7 +777,7 @@ REQUEST BODY SHAPE
     { "role": "system", "content": "<the full system message below>" },
     { "role": "user", "content": "{{up to 9 prior roleplay messages before the current turn}}" },
     { "role": "assistant", "content": "{{up to 9 prior roleplay messages before the current turn}}" },
-    { "role": "user", "content": "[SESSION: Message {{sessionMessageCount}} of current session]\\n\\n{{adaptiveStyleDirective when triggered}}{{optionalOutputRevisionRequiredDirectiveOnContinueRetry}}\\n\\n{{latest user text OR continue instruction wrapper}}{{optional regeneration request}}\\n\\n{{selectedResponseDetailRules}}\\n\\n{{activeNsfwContextReminder when story type is NSFW}}\\n\\n{{responsePriorityCheck}}\\n\\n{{assistantStructureReminder}}" }
+    { "role": "user", "content": "[SESSION: Message {{sessionMessageCount}} of current session]\\n\\n{{optionalContinueOrRetryStyleDirective}}{{optionalOutputRevisionRequiredDirectiveOnContinueRetry}}\\n\\n{{latest user text OR continue instruction wrapper}}{{optional regeneration request}}\\n\\n{{selectedResponseDetailRules}}\\n\\n{{activeNsfwContextReminder when story type is NSFW}}\\n\\n{{responsePriorityCheck}}\\n\\n{{assistantStructureReminder}}" }
   ],
   "modelId": "grok-4.3",
   "stream": true,

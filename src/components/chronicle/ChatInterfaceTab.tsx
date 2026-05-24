@@ -14,7 +14,7 @@ import {
 } from '@/lib/goal-alignment';
 import { buildAssistantRepetitionRepairDirective, buildAssistantStyleDirective } from '@/lib/assistant-style-directive';
 import { uid, now, uuid } from '@/utils';
-import { generateRoleplayResponseStream, buildCanonNote } from '../../services/llm';
+import { generateRoleplayResponseStream, buildCanonNote, renderGoalMilestoneTarget } from '../../services/llm';
 import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2, StepForward, Settings, Image as ImageIcon, Brain, Check, X, Info, Play, Pause, Move, Palette, MessageSquare } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import {
@@ -4930,8 +4930,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       // Issue #8: Detect user-authored AI character content and prepend canon note
       const canonNote = buildCanonNote(input, canonNoteCharacters);
 
-      // Issue #7: Compute adaptive style directive and increment session counter
-      const adaptiveStyleDirective = getAdaptiveStyleDirective();
+      // Keep normal sends free of automatic style repair; retry/continue paths still have targeted repair.
+      const adaptiveStyleDirective = '';
       sessionMessageCountRef.current += 1;
 
       const llmInput = canonNote + input;
@@ -5379,7 +5379,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 	              const label = typeof g === 'string' ? g : (g?.title || g?.label || g?.value || '');
 	              const currentStep = g?.steps?.find?.((s: any) => !s.completed)?.description;
 	              if (label) {
-                goalSummaryParts.push(`${c.name}'s current goal: "${label}"${currentStep ? `; open milestone: "${currentStep}"` : ''}`);
+                goalSummaryParts.push(`${c.name}'s current goal: "${label}"${currentStep ? `; open milestone target: "${renderGoalMilestoneTarget(currentStep)}"` : ''}`);
               }
             });
           }
@@ -5389,12 +5389,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 	      storyGoalsList.filter(isGoalVisibleToWriter).forEach((g: StoryGoal) => {
 	        const pendingStep = (g.steps || []).find(s => !s.completed);
 	        if (pendingStep) {
-          goalSummaryParts.push(`Story goal "${g.title || g.desiredOutcome}"; open milestone: "${pendingStep.description}"`);
+          goalSummaryParts.push(`Story goal "${g.title || g.desiredOutcome}"; open milestone target: "${renderGoalMilestoneTarget(pendingStep.description)}"`);
         }
       });
 
 	      const goalContext = goalSummaryParts.length > 0
-	        ? `\nGOAL CONTINUITY:\n${goalSummaryParts.join('\n')}\nUse this as background continuity only. Open milestones are not commands or a next-action checklist; touch them only when the immediate scene and user agency naturally support it.`
+	        ? `\nGOAL CONTINUITY:\n${goalSummaryParts.join('\n')}\nUse this as background continuity only. Open milestone targets are eventual states, not commands or a next-action checklist; touch them only when the immediate scene and user agency naturally support it.`
 	        : '';
 
 		      // Carry forward user-authored AI dialogue without making Continue restart there.

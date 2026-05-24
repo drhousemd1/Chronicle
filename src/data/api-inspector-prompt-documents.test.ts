@@ -21,7 +21,7 @@ describe("api-inspector prompt document registry", () => {
     expect(document.body).toContain("GROK REQUEST BODY SENT BY CHAT EDGE FUNCTION");
     expect(document.body).toContain('"temperature": 0.7');
     expect(document.body).toContain("{{up to 9 prior roleplay messages before the current turn}}");
-    expect(document.body).toContain("{{adaptiveStyleDirective when triggered}}");
+    expect(document.body).toContain("{{optionalContinueOrRetryStyleDirective}}");
     expect(document.body).toContain("{{optionalOutputRevisionRequiredDirectiveOnContinueRetry}}");
     expect(document.body).toContain("{{selectedResponseDetailRules}}");
     expect(document.body).toContain("{{activeNsfwContextReminder when story type is NSFW}}");

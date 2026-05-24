@@ -74,6 +74,7 @@ function firstDialogueRatio(value: string): number {
 function extractDescriptiveTerms(value: string): string[] {
   const withoutDialogue = stripDialogueText(value)
     .replace(/(?:^|\n{2,})([^:\n]{1,80}):\s*/g, ' ')
+    .replace(/\b[A-Z][a-z]+(?:'s)?\b/g, ' ')
     .replace(/[*()]/g, ' ')
     .toLowerCase();
 

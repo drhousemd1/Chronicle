@@ -144,8 +144,8 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('Secure lasting peace.');
     expect(prompt).toContain('Longer view: Both courts ratify treaty without bloodshed.');
     expect(prompt).toContain('Current state: Negotiations stalled by mistrust.');
-    expect(prompt).toContain('Open milestone (background context, not a task command): Hold midnight summit.');
-    expect(prompt).toContain('This milestone describes long-range direction and may not apply to the current response.');
+    expect(prompt).toContain('Open milestone target (background direction, not an instruction): Hold midnight summit.');
+    expect(prompt).toContain('Read this as an eventual state to develop over time, not as a command to execute now.');
     expect(prompt).toContain('--- STORY THEMES ---');
     expect(prompt).toContain('Treat these as content permission, background emphasis, and thematic direction, not as a checklist to force into every response.');
     expect(prompt).toContain('- NSFW: This is an ADULT (NSFW) scenario.');
@@ -162,9 +162,9 @@ describe('llm canonical prompt coverage', () => {
 
     expect(prompt).toContain('STORY AND CHARACTER CARD REFERENCE RULE');
     expect(prompt).toContain('provided as reference context');
-    expect(prompt).toContain('their relationships, their histories, and their current state');
-    expect(prompt).toContain('once a detail has already been established in recent assistant responses');
-    expect(prompt).toContain('describe the new action, contact, reaction, decision, or consequence');
+    expect(prompt).toContain("relationships, history, and each character's current state");
+    expect(prompt).toContain('do not keep restating an established detail with the same wording or the same descriptive focus');
+    expect(prompt).toContain('write the new action, contact, reaction, decision, or consequence it creates');
     expect(prompt).toContain('World locations, supplies, and custom world content are creator reference, not automatic character knowledge.');
 
     expect(prompt).toContain('SECTION 3 - MAIN AI CHARACTER CARD INFORMATION');
@@ -196,7 +196,8 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).not.toContain('Avoid repetitive formatting from one message to another.');
     expect(prompt).toContain("Do not default to action -> dialogue -> internal thought");
     expect(prompt).toContain('the response should include external dialogue');
-    expect(prompt).toContain('External dialogue should be meaningful, not a token quote attached to a long narration section.');
+    expect(prompt).toContain('External dialogue should read like something the character would actually say to the person in front of them.');
+    expect(prompt).toContain('A character block should follow one clear conversational thread.');
     expect(prompt).toContain('--- USER-DEFINED DIALOG FORMATTING FROM STORY BUILDER ---');
     expect(prompt).toContain('--- INTERNAL THOUGHTS ---');
     expect(prompt).toContain('Use internal thoughts only when they reveal private conflict');
@@ -206,7 +207,7 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('Internal thoughts must remain accurate to story and character card information, including what each character knows or does not know');
     expect(prompt).toContain('Do not use internal thoughts to repeat obvious facts');
     expect(prompt).toContain('--- PHYSICAL LOGIC, VISIBILITY, AND CONTINUITY ---');
-    expect(prompt).toContain('If the user frames something as uncertain, partial, distant, suspected, or not yet confirmed');
+    expect(prompt).toContain('If the user describes something as possible, feared, suspected, conditional, hidden, covered, partial, or not directly shown');
     expect(prompt).toContain("If the user's message clearly indicates that only a specific character or set of characters can hear");
     expect(prompt).toContain('When the latest user message establishes a physical change, the next response must continue from that established physical state.');
     expect(RESPONSE_PRIORITY_CHECK_TEXT).toContain('Write the next response from what is actively happening right now.');
@@ -474,7 +475,7 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('Survive the storm.');
     expect(prompt).toContain('Longer view: Reach shelter and keep everyone alive.');
     expect(prompt).toContain('Current state: Searching for warmth.');
-    expect(prompt).toContain('Open milestone (background context, not a task command): Make the shelter safe enough to rest.');
+    expect(prompt).toContain('Open milestone target (background direction, not an instruction): Make the shelter safe enough to rest.');
     expect(prompt).toContain('Goal strength: Rigid.');
     expect(prompt).not.toContain('Next open step');
     expect(prompt).not.toContain('ACTIVE GOALS & STEPS');

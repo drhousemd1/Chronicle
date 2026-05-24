@@ -475,7 +475,7 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               ],
               codeSourceLabel: "`messages` assembly in `generateRoleplayResponseStream`",
               promptViewEnabled: true,
-              codeSource: `const historyMessages = conversation.messages.slice(-9);\nconst messages = [\n  { role: 'system', content: systemInstruction },\n  ...historyMessages,\n];\nmessages.push({ role: 'user', content: [SESSION ...] + adaptiveStyleDirective + userMessage + regen + RESPONSE_PRIORITY_CHECK_TEXT + ASSISTANT_STRUCTURE_REMINDER_TEXT });`,
+              codeSource: `const historyMessages = conversation.messages.slice(-9);\nconst messages = [\n  { role: 'system', content: systemInstruction },\n  ...historyMessages,\n];\nmessages.push({ role: 'user', content: [SESSION ...] + optionalContinueOrRetryStyleDirective + userMessage + regen + RESPONSE_PRIORITY_CHECK_TEXT + ASSISTANT_STRUCTURE_REMINDER_TEXT });`,
             },
             {
               id: "item-runtime-directive-message",
@@ -523,7 +523,7 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               ],
               codeSourceLabel: "Final user wrapper expression",
               promptViewEnabled: true,
-              codeSource: "[SESSION: Message N] + adaptiveStyleDirective + userMessage + REGENERATION_DIRECTIVE_TEXT + RESPONSE_PRIORITY_CHECK_TEXT + ASSISTANT_STRUCTURE_REMINDER_TEXT",
+              codeSource: "[SESSION: Message N] + optionalContinueOrRetryStyleDirective + userMessage + REGENERATION_DIRECTIVE_TEXT + RESPONSE_PRIORITY_CHECK_TEXT + ASSISTANT_STRUCTURE_REMINDER_TEXT",
               crossRefs: [
                 {
                   badge: "1",

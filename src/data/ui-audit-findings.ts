@@ -3283,6 +3283,7 @@ const goalAlignmentInspectionSurfacePatchTimestamp = "2026-05-21T00:48:00.000-06
 const usageTelemetryFailOpenPatchTimestamp = "2026-05-21T02:02:00.000-06:00";
 const roleplayPromptFollowthroughPatchTimestamp = "2026-05-21T02:51:36.000-06:00";
 const continueRepetitionRepairPatchTimestamp = "2026-05-23T03:24:00.000-06:00";
+const roleplayPromptReviewSyncPatchTimestamp = "2026-05-23T19:12:00.000-06:00";
 
 type FindingResolutionNote = {
   runId: string;
@@ -4786,6 +4787,32 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
     },
   ],
   changeLog: [
+    {
+      id: "cl-20260523-002",
+      title: "Sync Roleplay Pipeline downloads with latest prompt behavior",
+      summary: "Roleplay Pipeline · API Call review downloads now reflect the latest open-milestone target rendering, normal-send directive behavior, dialogue clarity wording, and uncertainty handling.",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "The Roleplay Pipeline prompt-review downloads needed to match the latest local prompt and wrapper changes before another manual review pass. The old review text still implied the adaptive style note could appear on normal sends and showed older open-step wording that could read like a task command.",
+      plan: "Keep the prompt review documents source-backed, update stale final-user-wrapper labels, render open steps as eventual state targets, remove normal-send adaptive style injection, and lock the updated prompt wording with targeted tests.",
+      changes: "Updated `src/services/llm.ts`:\n- Added shared open-milestone target rendering so raw goal-step text is softened into eventual-state wording before reaching the writer prompt.\n- Reworded the card-reference rule to reduce repeated descriptive inventory while preserving full card context.\n- Replaced weak external-dialogue guidance with a clearer natural-speech standard.\n- Strengthened uncertainty handling so possible, hidden, conditional, or partial information stays at that level until the scene actually reveals it.\n\nUpdated `src/components/chronicle/ChatInterfaceTab.tsx`:\n- Stopped attaching automatic adaptive style text to normal sends.\n- Reused the milestone-target renderer in Continue goal context so Continue does not reintroduce command-like step wording.\n\nUpdated Roleplay Pipeline review surfaces:\n- Synced API Call 1 document labels so the final user-wrapper shape matches current behavior.\n- Updated code-truth registry snippets and prompt-document tests so stale wrapper text is caught.\n\nUpdated repetition analysis:\n- Ignored capitalized proper-name terms when extracting repeated descriptive terms so the repair layer does not flag character names as descriptive repetition.",
+      filesAffected: [
+        "src/services/llm.ts",
+        "src/components/chronicle/ChatInterfaceTab.tsx",
+        "src/lib/assistant-style-directive.ts",
+        "src/data/api-inspector-prompt-documents.ts",
+        "src/data/api-inspector-code-truth-registry.ts",
+        "src/data/api-inspector-prompt-documents.test.ts",
+        "src/services/llm-canonical-coverage.test.ts",
+        "src/data/ui-audit-findings.ts"
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: ["cl-20260523-001", "cl-20260521-003"],
+      tags: ["roleplay-pipeline", "api-call-1", "prompt-review", "prompt-quality", "continue", "chat-debug"],
+      comments: [],
+      createdAt: roleplayPromptReviewSyncPatchTimestamp,
+      updatedAt: roleplayPromptReviewSyncPatchTimestamp,
+    },
     {
       id: "cl-20260523-001",
       title: "Stop Continue from circling older user turns",
