@@ -28,8 +28,8 @@ describe('extract-character-updates prompt guidance', () => {
   });
 
   it('requires scenePosition updates when immediate placement is clear', () => {
-    expect(source).toContain('scenePosition: volatile immediate placement within the broad place');
-    expect(source).toContain('Do not leave scenePosition blank when the current exchange clearly establishes immediate placement.');
+    expect(source).toContain("scenePosition: short factual snapshot of the character's immediate physical situation inside the current location");
+    expect(source).toContain('Do not leave it blank when the latest exchange establishes a new physical state.');
     expect(source).toContain('Update it only when the exchange clearly establishes that the character has actually arrived in, entered, left, or relocated');
   });
 });

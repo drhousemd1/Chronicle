@@ -1,4 +1,4 @@
-import { ASSISTANT_STRUCTURE_REMINDER_TEXT, getSystemInstruction, REGENERATION_DIRECTIVE_TEXT, renderActiveNsfwContextReminder, renderResponseDetailInstruction, RESPONSE_PRIORITY_CHECK_TEXT } from "@/services/llm";
+import { EXECUTION_BRIEF_TEXT, getSystemInstruction, REGENERATION_DIRECTIVE_TEXT, renderResponseDetailInstruction } from "@/services/llm";
 import type { Character, Memory, ScenarioData, Scene, TimeOfDay } from "@/types";
 
 export type ApiInspectorPromptDocumentId = "api-call-1" | "api-call-2-support";
@@ -373,6 +373,147 @@ const defaultCall1SystemForReview = defaultCall1System.replace(
   extractSection(defaultCall1System, "SECTION 8 - CHAT SETTINGS PER USER PREFERENCE"),
   call1SettingsMatrixSection,
 );
+
+const browserToEdgeHeaders = `BROWSER -> SUPABASE EDGE HEADERS
+{
+  "Content-Type": "application/json",
+  "Authorization": "Bearer {{user_session_access_token}}",
+  "apikey": "{{VITE_SUPABASE_PUBLISHABLE_KEY}}"
+}`;
+
+const edgeToXaiChatHeaders = `EDGE -> xAI CHAT HEADERS
+{
+  "Authorization": "Bearer {{XAI_API_KEY}}",
+  "Content-Type": "application/json"
+}`;
+
+const edgeToXaiImageHeaders = `EDGE -> xAI IMAGE HEADERS
+{
+  "Authorization": "Bearer {{XAI_API_KEY}}",
+  "Content-Type": "application/json"
+}`;
+
+const requestPolicyNotes = `REQUEST POLICY NOTES
+- top_p is not currently sent by Chronicle. Sampling uses the provider default for top_p.
+- store is not currently sent by Chronicle. Provider support for an explicit storage opt-out on the active xAI endpoints must be verified before adding it.
+- Secrets are redacted in this review document. Live requests use runtime environment variables and the signed-in user's session token.`;
+
+const contentRedirectDirective = `[CONTENT REDIRECT] The previous user message touched on content the model cannot engage with directly. Continue the roleplay naturally by:
+1. Having the character(s) take a CONCRETE, IMMEDIATE action that pivots the scene — NOT a deflection or subject change
+2. Maintain the current scene's tone and momentum
+3. Do NOT reference the filter or moderation — stay fully in-character
+4. Move the story forward with a specific present-tense event (e.g., a character does something physical, makes a decision, initiates a new activity)
+5. FORBIDDEN: Postponement language ("we'll talk later," "let's discuss this soon," "another time"). Act NOW.
+6. FORBIDDEN: Vague redirects ("let's change the subject," "how about we..."). Be specific and decisive.`;
+
+const goalProgressSystemPrompt = `You are a precise story goal classifier. Respond only in valid JSON.`;
+
+const goalProgressUserPrompt = `You are a story goal progress evaluator. Analyze how the latest exchange relates to each pending story step.
+{{timeContext}}
+PENDING STEPS:
+{{pendingSteps.map((step, index) => 'Step ' + (index + 1) + ' (ID: ' + step.stepId + '): "' + step.description + '"').join('\\n')}}
+
+USER MESSAGE:
+{{userMessage}}
+
+AI RESPONSE (for context):
+{{aiResponse}}
+
+For EACH step, determine if the exchange ADVANCES or COMPLETES the step's objective. Consider the current day and time when evaluating deadline-based or pacing-sensitive goals. Classify as:
+- ALIGNED: The exchange moves toward or completes the step's objective
+- NOT_ALIGNED: The exchange does not advance this step
+
+Respond in JSON format ONLY:
+{
+  "classifications": [
+    { "stepId": "...", "completed": true/false, "summary": "Brief 1-sentence explanation" }
+  ]
+}
+
+Set "completed" to true only when the lasting condition described by the step is fully true in the story state. If the latest exchange only moves toward that condition, keep "completed" false and summarize the progress instead.`;
+
+const characterStateSyncFallbackSystemPrompt = `Extract only non-explicit character state metadata from the latest exchange. Return JSON with {updates:[{character,field,value}]}. Use only supported field paths and omit low-confidence changes.`;
+
+const characterStateSyncFallbackUserPrompt = `Eligible characters: {{eligibleCharacterNames}}
+
+Text:
+{{userMessage}}
+
+{{aiResponse}}`;
+
+const memoryCompressionSystemPrompt = `You are compressing a list of story memory bullet points from a single day of roleplay into a brief narrative synopsis for long-term storage.
+
+INPUT: An array of bullet point strings from one day.
+OUTPUT: A single plain-text synopsis of 2-3 sentences maximum.
+
+Rules:
+- Capture only changes, revelations, decisions, and events with future impact.
+- Distill the narrative essence of the day.
+- Use past tense.
+- No bullet points or formatting -- plain prose only.
+- Return ONLY the synopsis text, nothing else.`;
+
+const memoryCompressionUserPrompt = `Compress these Day {{day}} memory bullets into a 2-3 sentence synopsis:
+
+{{bullets.map((bullet) => '- ' + bullet).join('\\n')}}`;
+
+const sceneImageAnalysisPrompt = `You are an Image Prompt Optimizer. Analyze the character data and dialogue, then output structured JSON.
+
+===== CHARACTER DATA =====
+{{characterDescriptions || 'No character data provided.'}}
+
+===== SCENE LOCATION =====
+{{sceneLocation || 'unspecified location'}}
+
+===== RECENT DIALOGUE =====
+{{dialogueContext}}
+
+===== OUTPUT JSON SCHEMA =====
+{
+  "characters": [
+    {
+      "name": "string",
+      "genderPresentation": "feminine" | "masculine" | "androgynous",
+      "weightedTraits": "string with (trait:weight) format for physical/sexual traits only, or null if none",
+      "bodyDescription": "short phrase: age, hair color, skin tone, figure type - under 30 chars",
+      "pose": "body position inferred from dialogue actions - under 25 chars",
+      "expression": "facial expression inferred from dialogue emotion - under 15 chars",
+      "clothing": "what they're wearing, simplified - under 40 chars"
+    }
+  ],
+  "scene": "one or two words for location",
+  "cameraAngle": "medium shot" | "full body" | "close-up"
+}
+
+===== WEIGHTING RULES (MANDATORY) =====
+Add weights ONLY to physical/sexual traits. Use (trait:weight) format.
+- Large breasts: (extreme bust size:1.4) (very large bust:1.3) (heavy breasts:1.2)
+- Small breasts: (petite bust:1.3) (small chest:1.2) (flat chest:1.3)
+- Hips/waist: (wide hips:1.2) (slim waist:1.1) (hourglass figure:1.15)
+- Muscles: (muscular build:1.2) (toned physique:1.15) (broad shoulders:1.2)
+- Use 1.3-1.4 for exaggerated features, 1.1-1.2 for subtle emphasis
+- If character has NO notable physical/sexual traits mentioned, set weightedTraits to null
+
+===== GENDER PRESENTATION RULES =====
+Analyze the character's PHYSICAL DESCRIPTION, not just their sex field.
+- "feminine": breasts mentioned, soft features, curves, long hair, feminine clothing, developing female traits
+- "masculine": flat chest, defined muscles, facial hair, short hair, masculine clothing, broad build
+- "androgynous": mixed traits, non-binary presentation, or traits are unclear/unspecified
+A character with sex="male" but developing breasts/feminine traits = "feminine"
+A character with sex="female" but muscular/masculine presentation = "masculine"
+
+===== INFERENCE RULES =====
+If character data is sparse:
+- Infer reasonable defaults (adult, average build unless stated otherwise)
+- Do NOT invent sexual traits not mentioned - only weight what exists
+- bodyDescription should capture the essence in minimal words
+
+If character data is verbose:
+- Condense multiple sentences about one trait into 1-2 weighted phrases
+- Prioritize the most emphasized traits
+- Remove redundant adjectives
+
+Respond ONLY with valid JSON. No markdown, no explanation, no code blocks.`;
 
 const characterStateSyncSystemPrompt = `You are the post-turn CHARACTER STATE SYNC worker for an adult roleplay app. Your job is to compare the latest exchange against the current saved character cards and return only supported field updates that materially changed.
 
@@ -771,13 +912,15 @@ function buildApiCall1Document() {
 REQUEST TARGET
 /functions/v1/chat
 
+${browserToEdgeHeaders}
+
 REQUEST BODY SHAPE
 {
   "messages": [
     { "role": "system", "content": "<the full system message below>" },
     { "role": "user", "content": "{{up to 9 prior roleplay messages before the current turn}}" },
     { "role": "assistant", "content": "{{up to 9 prior roleplay messages before the current turn}}" },
-    { "role": "user", "content": "[SESSION: Message {{sessionMessageCount}} of current session]\\n\\n{{optionalContinueOrRetryStyleDirective}}{{optionalOutputRevisionRequiredDirectiveOnContinueRetry}}\\n\\n{{latest user text OR continue instruction wrapper}}{{optional regeneration request}}\\n\\n{{selectedResponseDetailRules}}\\n\\n{{activeNsfwContextReminder when story type is NSFW}}\\n\\n{{responsePriorityCheck}}\\n\\n{{assistantStructureReminder}}" }
+    { "role": "user", "content": "[SESSION: Message {{sessionMessageCount}} of current session]\\n\\n{{optionalContinueOrRetryStyleDirective}}{{optionalOutputRevisionRequiredDirectiveOnContinueRetry}}\\n\\n{{latest user text OR continue instruction wrapper}}{{optional regeneration request}}\\n\\n{{executionBrief}}" }
   ],
   "modelId": "grok-4.3",
   "stream": true,
@@ -801,9 +944,19 @@ GROK REQUEST BODY SENT BY CHAT EDGE FUNCTION
   "model": "grok-4.3",
   "messages": "<same messages array shown above>",
   "stream": true,
-  "temperature": 0.7,
+  "temperature": 0.6,
   "max_tokens": "{{1024 concise | 2048 balanced | 3072 detailed}}"
 }
+
+${edgeToXaiChatHeaders}
+
+${requestPolicyNotes}
+
+CONTENT-REDIRECT FALLBACK BRANCH
+If the primary xAI chat completion request returns HTTP 403, the chat edge function retries once with an additional system message inserted immediately before the final user message.
+
+Fallback system message:
+${contentRedirectDirective}
 
 ================================================================================
 FULL SYSTEM MESSAGE GENERATED BY getSystemInstruction()
@@ -842,10 +995,11 @@ Avoid long back-and-forth chains between AI characters. Leave room for the user 
 Do not acknowledge this instruction in your response.
 
 ================================================================================
-SELECTED RESPONSE DETAIL RULES APPENDED TO FINAL USER MESSAGE ON EVERY LIVE ROLEPLAY CALL
+RESPONSE DETAIL RULES ARE PART OF THE SYSTEM MESSAGE, NOT REPEATED IN THE FINAL USER MESSAGE
 ================================================================================
 
-// In a real request, only the selected branch is repeated here verbatim.
+// In a real request, only the selected branch is present in SECTION 8 of the system message.
+// The final user message does not repeat the active response-detail branch.
 
 // Sent when Response Detail = Concise
 ${renderResponseDetailInstruction("concise")}
@@ -857,29 +1011,16 @@ ${renderResponseDetailInstruction("balanced")}
 ${renderResponseDetailInstruction("detailed")}
 
 ================================================================================
-ACTIVE NSFW CONTEXT REMINDER APPENDED TO FINAL USER MESSAGE ONLY WHEN STORY TYPE = NSFW
+NSFW INTENSITY RULES ARE PART OF THE SYSTEM MESSAGE, NOT REPEATED IN THE FINAL USER MESSAGE
 ================================================================================
 
-// Sent when Story Type = SFW
-(no active NSFW context reminder is appended)
+// The selected NSFW Intensity branch appears in SECTION 8 of the system message.
+// The final user message does not append a separate active NSFW context reminder.
 
-// Sent when Story Type = NSFW and NSFW Intensity = Normal
-${renderActiveNsfwContextReminder("NSFW", "normal")}
-
-// Sent when Story Type = NSFW and NSFW Intensity = High
-${renderActiveNsfwContextReminder("NSFW", "high")}
-
-================================================================================
-RESPONSE PRIORITY CHECK APPENDED TO FINAL USER MESSAGE ON EVERY LIVE ROLEPLAY CALL
+EXECUTION BRIEF APPENDED TO FINAL USER MESSAGE ON EVERY LIVE ROLEPLAY CALL
 ================================================================================
 
-${RESPONSE_PRIORITY_CHECK_TEXT}
-
-================================================================================
-ASSISTANT STRUCTURE REMINDER APPENDED TO FINAL USER MESSAGE ON EVERY LIVE ROLEPLAY CALL
-================================================================================
-
-${ASSISTANT_STRUCTURE_REMINDER_TEXT}
+${EXECUTION_BRIEF_TEXT}
 
 ================================================================================
 OUTPUT REVISION REQUIRED APPENDED ONLY TO ONE-TIME CONTINUE RETRY WHEN THE FIRST DRAFT REPEATS RECENT ASSISTANT OUTPUT
@@ -902,6 +1043,8 @@ API CALL 2: CHARACTER STATE SYNC
 EDGE FUNCTION
 /functions/v1/extract-character-updates
 
+${browserToEdgeHeaders}
+
 REQUEST BODY SHAPE SENT TO xAI
 {
   "model": "grok-4.3",
@@ -913,11 +1056,74 @@ REQUEST BODY SHAPE SENT TO xAI
   "max_tokens": 8192
 }
 
+${edgeToXaiChatHeaders}
+
+${requestPolicyNotes}
+
 SYSTEM MESSAGE
 ${characterStateSyncSystemPrompt}
 
 USER MESSAGE
 ${characterStateSyncUserPrompt}
+
+403 CONTENT-REDIRECT FALLBACK
+If the primary xAI request returns HTTP 403, the function retries once with this shorter fallback request.
+
+FALLBACK SYSTEM MESSAGE
+${characterStateSyncFallbackSystemPrompt}
+
+FALLBACK USER MESSAGE
+${characterStateSyncFallbackUserPrompt}
+
+================================================================================
+SUPPORT CALL: GOAL PROGRESS EVALUATION
+================================================================================
+
+EDGE FUNCTION
+/functions/v1/evaluate-goal-progress
+
+${browserToEdgeHeaders}
+
+BROWSER-TO-EDGE REQUEST BODY SHAPE
+{
+  "userMessage": "{{latest user message}}",
+  "aiResponse": "{{latest assistant response}}",
+  "pendingSteps": [
+    { "stepId": "{{story goal step id}}", "description": "{{open story goal milestone description}}" }
+  ],
+  "flexibility": "{{first pending step goal flexibility; currently accepted by request type but not used by the edge prompt}}",
+  "currentDay": "{{currentDay}}",
+  "currentTimeOfDay": "{{currentTimeOfDay}}",
+  "debugTrace": "{{true only when requested}}"
+}
+
+REQUEST BODY SHAPE SENT TO xAI
+{
+  "model": "grok-4.3",
+  "messages": [
+    { "role": "system", "content": "<system prompt below>" },
+    { "role": "user", "content": "<user prompt below>" }
+  ],
+  "temperature": 0.3,
+  "max_tokens": 1024
+}
+
+${edgeToXaiChatHeaders}
+
+${requestPolicyNotes}
+
+SYSTEM MESSAGE
+${goalProgressSystemPrompt}
+
+USER MESSAGE
+${goalProgressUserPrompt}
+
+EDGE RESPONSE SHAPE
+{
+  "stepUpdates": [
+    { "stepId": "{{story goal step id}}", "completed": true, "summary": "{{model summary}}" }
+  ]
+}
 
 ================================================================================
 SUPPORT CALL: GOAL ALIGNMENT EVALUATION
@@ -925,6 +1131,8 @@ SUPPORT CALL: GOAL ALIGNMENT EVALUATION
 
 EDGE FUNCTION
 /functions/v1/evaluate-goal-alignment
+
+${browserToEdgeHeaders}
 
 REQUEST BODY SHAPE SENT TO xAI
 {
@@ -936,6 +1144,10 @@ REQUEST BODY SHAPE SENT TO xAI
   "temperature": 0.15,
   "max_tokens": 2048
 }
+
+${edgeToXaiChatHeaders}
+
+${requestPolicyNotes}
 
 SYSTEM MESSAGE
 ${goalAlignmentSystemPrompt}
@@ -950,6 +1162,8 @@ SUPPORT CALL: MEMORY EXTRACTION
 EDGE FUNCTION
 /functions/v1/extract-memory-events
 
+${browserToEdgeHeaders}
+
 REQUEST BODY SHAPE SENT TO xAI
 {
   "model": "grok-4.3",
@@ -960,8 +1174,53 @@ REQUEST BODY SHAPE SENT TO xAI
   "temperature": 0.3
 }
 
+${edgeToXaiChatHeaders}
+
+${requestPolicyNotes}
+
 SYSTEM MESSAGE
 ${memoryExtractionSystemPrompt}
+
+USER MESSAGE
+Extract durable story-memory events from this latest exchange:
+
+{{exchangeText}}
+
+================================================================================
+SUPPORT CALL: DAY MEMORY COMPRESSION
+================================================================================
+
+EDGE FUNCTION
+/functions/v1/compress-day-memories
+
+${browserToEdgeHeaders}
+
+BROWSER-TO-EDGE REQUEST BODY SHAPE
+{
+  "bullets": ["{{memory bullet from one day}}"],
+  "day": "{{day number}}",
+  "conversationId": "{{conversationId}}"
+}
+
+REQUEST BODY SHAPE SENT TO xAI
+{
+  "model": "grok-4.3",
+  "messages": [
+    { "role": "system", "content": "<system prompt below>" },
+    { "role": "user", "content": "<user prompt below>" }
+  ],
+  "temperature": 0.3
+}
+
+${edgeToXaiChatHeaders}
+
+${requestPolicyNotes}
+
+SYSTEM MESSAGE
+${memoryCompressionSystemPrompt}
+
+USER MESSAGE
+${memoryCompressionUserPrompt}
 
 ================================================================================
 SUPPORT CALL: SIDE-CHARACTER GENERATION
@@ -969,6 +1228,8 @@ SUPPORT CALL: SIDE-CHARACTER GENERATION
 
 EDGE FUNCTION
 /functions/v1/generate-side-character
+
+${browserToEdgeHeaders}
 
 REQUEST BODY SHAPE SENT TO xAI
 {
@@ -980,6 +1241,10 @@ REQUEST BODY SHAPE SENT TO xAI
   "temperature": 0.8
 }
 
+${edgeToXaiChatHeaders}
+
+${requestPolicyNotes}
+
 SYSTEM MESSAGE
 ${sideCharacterSystemPrompt}
 
@@ -990,12 +1255,14 @@ ${sideCharacterUserPrompt}
 SUPPORT CALL: SIDE-CHARACTER AVATAR PROMPT OPTIMIZATION
 ================================================================================
 
-// This section is only for the side-character portrait path.
+// This edge function is used by the side-character portrait path and by other character/avatar UI surfaces.
 // It first asks xAI to condense the new side character's avatar prompt, then sends that optimized prompt to image generation.
 // This is separate from the scene/cover image-generation calls documented later.
 
 EDGE FUNCTION
 /functions/v1/generate-side-character-avatar
+
+${browserToEdgeHeaders}
 
 TEXT OPTIMIZATION REQUEST BODY SENT TO xAI
 {
@@ -1007,6 +1274,10 @@ TEXT OPTIMIZATION REQUEST BODY SENT TO xAI
   "max_tokens": 300,
   "temperature": 0.7
 }
+
+${edgeToXaiChatHeaders}
+
+${requestPolicyNotes}
 
 SYSTEM MESSAGE
 ${avatarSystemPrompt}
@@ -1021,12 +1292,17 @@ IMAGE GENERATION REQUEST BODY SENT TO xAI
   "n": 1
 }
 
+${edgeToXaiImageHeaders}
+
 ================================================================================
 SUPPORT CALL: CHARACTER FIELD ENHANCEMENT / AI FILL / AI GENERATE
 ================================================================================
 
 FRONTEND SERVICE
 src/services/character-ai.ts
+
+EDGE TRANSPORT
+/functions/v1/chat with stream=false. The chat edge function forwards through the direct xAI chat-completions lane.
 
 ${characterEnhancementPromptFamilies}
 
@@ -1036,6 +1312,9 @@ SUPPORT CALL: STORY/WORLD FIELD ENHANCEMENT
 
 FRONTEND SERVICE
 src/services/world-ai.ts
+
+EDGE TRANSPORT
+/functions/v1/chat with stream=false. The chat edge function forwards through the direct xAI chat-completions lane.
 
 ${worldEnhancementPromptFamilies}
 
@@ -1053,7 +1332,51 @@ SUPPORT CALL: IMAGE GENERATION CALLS
 // This section is only for scene and cover image generation.
 // It is not the side-character avatar path above, and it is not part of the normal text roleplay turn.
 
-/functions/v1/generate-scene-image and /functions/v1/generate-cover-image call xAI image/text endpoints with runtime-built prompts from the current scene/style/card context. These are adjacent image calls, not part of the normal text roleplay turn.`;
+SCENE IMAGE EDGE FUNCTION
+/functions/v1/generate-scene-image
+
+${browserToEdgeHeaders}
+
+SCENE IMAGE TEXT ANALYSIS REQUEST BODY SENT TO xAI
+{
+  "model": "{{modelId if grok-4.3, otherwise grok-4.3 fallback}}",
+  "messages": [
+    { "role": "user", "content": "<analysis prompt below>" }
+  ],
+  "temperature": 0.3
+}
+
+${edgeToXaiChatHeaders}
+
+SCENE IMAGE ANALYSIS PROMPT
+${sceneImageAnalysisPrompt}
+
+SCENE IMAGE GENERATION REQUEST BODY SENT TO xAI
+{
+  "model": "grok-imagine-image",
+  "prompt": "{{assembled byte-limited scene prompt}}",
+  "n": 1,
+  "size": "1280x896",
+  "response_format": "url"
+}
+
+${edgeToXaiImageHeaders}
+
+COVER IMAGE EDGE FUNCTION
+/functions/v1/generate-cover-image
+
+${browserToEdgeHeaders}
+
+COVER IMAGE GENERATION REQUEST BODY SENT TO xAI
+{
+  "model": "grok-imagine-image",
+  "prompt": "Portrait composition (2:3 aspect ratio), vertical orientation. {{prompt}}{{optional stylePrompt}}{{optional negativePrompt}}",
+  "n": 1
+}
+
+${edgeToXaiImageHeaders}
+
+${requestPolicyNotes}`;
 }
 
 export const apiInspectorPromptDocuments: Record<ApiInspectorPromptDocumentId, ApiInspectorPromptDocument> = {

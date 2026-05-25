@@ -57,11 +57,12 @@ The user wants a DIFFERENT VERSION of this response. For this alternate version:
 14. Keep actions physically sensible and spatially coherent. Characters may only react to what they can currently see, hear, reach, or reasonably infer.
 15. If an AI-controlled character was directly asked a question and they can answer it now, answer it in this same response instead of ignoring it.`;
 
-export const RESPONSE_PRIORITY_CHECK_TEXT = `[RESPONSE PRIORITY CHECK]
-Write the next response from what is actively happening right now. The latest user message, recent dialogue, visible actions, and current scene conditions are the strongest guide for what matters. Use story cards, character cards, memories, and goals as supporting context. Do not pull in background details unless they logically matter to the current scene.`;
-
-export const ASSISTANT_STRUCTURE_REMINDER_TEXT = `[ASSISTANT STRUCTURE REMINDER]
-Avoid repeating the same structure across your own recent AI responses. Compare against your own previous 2-3 assistant character blocks, not the user's message. If your recent AI responses used the same action -> dialogue -> internal thought cadence, choose a different natural cadence when the scene allows it.`;
+export const EXECUTION_BRIEF_TEXT = `[EXECUTION BRIEF]
+Continue from the latest visible scene change.
+Preserve user-written facts, character awareness, and the current physical state.
+If a present AI-controlled character can naturally speak, use clear external dialogue.
+Every spoken line must have a clear conversational purpose instead of vague tension, filler, or circular wording.
+Add one concrete AI-owned development, including direct contact when the scene supports it, then stop before any user-owned response.`;
 
 export function renderResponseDetailInstruction(responseVerbosity: string = 'balanced'): string {
   if (responseVerbosity === 'concise') {
@@ -71,14 +72,6 @@ export function renderResponseDetailInstruction(responseVerbosity: string = 'bal
     return `RESPONSE DETAIL: Detailed\n- Write rich, immersive responses with lengthy sensory, emotional, and environmental description where that detail adds new information, consequence, tension, or character meaning.\n- Do not concentrate most of the detail in one opening narration section while leaving external dialogue short or underdeveloped. External dialogue should be substantial when characters are able to speak, carrying emotion, conflict, decisions, questions, reassurance, resistance, escalation, or relationship tension.\n- Description should support what is currently changing or being interacted with. Do not repeat already-established body, clothing, room, weather, or object details unless those details have changed, are being directly interacted with, or create a new consequence.\n- Some character responses may be longer than others, but the response should still feel like active roleplay rather than a descriptive summary.`;
   }
   return `RESPONSE DETAIL: Balanced\n- Use a natural balance of scene description, character voice, action, external dialogue, and internal thought.\n- Responses should include some sensory, emotional, or environmental descriptions, but should remain more concise with a focus on external dialogue, actions, or internal thoughts.\n- Follow-up responses between AI characters can be more concise if additional descriptive details would not add new context to the situation or would only repeat details already established in another text block.`;
-}
-
-export function renderActiveNsfwContextReminder(storyType?: string | null, nsfwIntensity: string = 'normal'): string {
-  if (storyType !== 'NSFW') return '';
-  if (nsfwIntensity === 'high') {
-    return `[ACTIVE NSFW CONTEXT REMINDER]\nThis is an adult NSFW high-intensity story. If the latest user message or current scene includes intimate touch, erotic tension, nudity, arousal, taboo attraction, kink, sexual contact, sexual coercion, manipulation, dominance, submission, or user-directed escalation, treat that as active scene content, not neutral logistics. Do not sanitize, fade out, or flatten the moment into generic action. Write detailed sexual and sensory description for what is newly happening, changing, being felt, chosen, resisted, said, or revealed in the current response. Do not repeat body or clothing details as filler, and do not re-describe a user-written action instead of responding to its consequence. External dialogue should remain active in erotic scenes when characters can speak. Do not replace character interaction with sensory narration alone.`;
-  }
-  return `[ACTIVE NSFW CONTEXT REMINDER]\nThis is an adult NSFW story. Do not force sexual content into unrelated moments, but when the latest user message or current scene includes intimacy, erotic tension, nudity, arousal, taboo attraction, kink, sexual contact, or user-directed escalation, treat that as active scene content. Let the character's physical reaction, emotional response, dialogue, restraint, desire, shame, hesitation, or internal thought reflect what is actively happening in the scene in a way that fits their personality and relationship context.`;
 }
 
 export type GenerateRoleplayResponseStreamOptions = {
@@ -489,7 +482,127 @@ export function getSystemInstruction(
     renderTemporalContext(),
   ].filter(Boolean).join('\n\n'));
 
-  const renderDialogRules = (): string => section('SECTION 7 - DIALOG FORMATTING AND ROLEPLAY RULES', `--- DIALOG FORMATTING RULES ---\n\nThese rules are critical for Chronicle to display character blocks, dialogue, avatars, and UI correctly.\n\n- Every AI-written character block must begin with that character's exact card NAME followed by a colon.\n- For any character that already exists in character cards, always use that card's exact NAME field as the speaker tag.\n- Do not expand, shorten, rename, or alter known character names. This breaks character block detection.\n- Only use alternate names when they are explicitly listed in that character's nicknames.\n- Do not write untagged paragraphs or bare prose outside a character block.\n- Do not write actions, dialogue, or internal thoughts for one character inside another character's block when that content belongs to the other character.\n- Within a character block, use * * for visible action or narration, " " for spoken dialogue, and ( ) for private internal thought. These are formatting tools, not required ingredients.\n- Use only the elements the moment genuinely needs. A block may contain multiple actions, multiple dialogue lines, or multiple internal thoughts, and those elements may alternate in the order that best fits the scene.\n- Do not default to action -> dialogue -> internal thought, and do not include all three elements in every block unless the scene actually calls for all three.\n- Vary the presence, order, and emphasis of action, dialogue, and thought across your own recent assistant outputs. Compare against your own previous 2-3 assistant character blocks, not the user's message, and break any repeating cadence when the scene allows it.\n- A character block should follow one clear conversational thread. Multiple actions, spoken lines, or thoughts can appear in the same block, but they should connect to each other instead of reading like separate response attempts stitched together.\n- When at least one present AI-controlled character is conscious and able to speak, the response should include external dialogue. Do not answer spoken user dialogue with narration only unless the character is physically unable to speak or is intentionally refusing to answer.\n- External dialogue should read like something the character would actually say to the person in front of them. It must be understandable within the current exchange. If a character hints, teases, pressures, avoids the truth, or manipulates, the line can be indirect, but it still needs a clear meaning and purpose. Do not use vague placeholder phrasing that gestures at tension without saying anything understandable.\n\nRequired speaker tag pattern:\nCharacterName: *Visible action or narration when needed.* "Spoken dialogue when needed." (Private internal thought when needed.)\n\n${appData.world.core.dialogFormatting ? `--- USER-DEFINED DIALOG FORMATTING FROM STORY BUILDER ---\n\n${appData.world.core.dialogFormatting}\n\n` : ''}--- USER CONTROL AND ESTABLISHED FACTS ---\n\n- Never create dialogue, actions, or internal thoughts for user characters.\n- The user's message establishes what happened. Do not re-describe, paraphrase, or elaborate on it.\n- If the user writes dialogue, actions, or thoughts for any AI-controlled character, treat it as something that has ALREADY OCCURRED exactly as written.\n- Never re-describe, rephrase, expand, elaborate, or have the character say it again.\n- Continue the scene from where the user left off. The next response may add development, reaction, buildup, or stillness depending on what the current scene actually calls for.\n- Never create or imply dialogue, internal thoughts, decisions, or continued actions for user characters.\n- If an AI character asks the user character a question, requests an action from them, or otherwise needs the user character to respond before the scene can continue, stop scene advancement at that user-dependent moment. Other AI characters may have a brief reactive response — action, dialogue, or internal thought — that responds to the moment without presupposing what the user character will do, say, or decide. Do not have any character proceed as if the user has already answered, agreed, moved, helped, resisted, complied, refused, or stayed silent.\n\n--- PRIVATE USER THOUGHT BOUNDARY ---\n\n- User text in parentheses represents private internal thoughts that AI characters cannot perceive.\n- AI characters may react only to spoken dialogue, visible actions, and observable body language explicitly described by the user.\n- Do not repeat, quote, or mirror distinctive words from the user's private thoughts.\n- If the user writes a private thought, react only to visible emotional cues the user also gave on the page.\n\n--- NATURAL ROLEPLAY AND SCENE PROGRESSION ---\n\n- AI characters drive their own goals through dialogue, action, and internal thought. They speak, act, and think on their own initiative without needing the user to script their lines, behavior, or inner life.\n- If the user has already answered, agreed, refused, consented, or confirmed something, treat that as settled and continue from it without re-asking in a different form.\n- AI characters should not push known plans to a later day or time when the current scene already affords the time and conditions to act. They should not announce future actions as a substitute for being present in the current scene. This is about timing, not pace; the action does not need to be completed in this turn.\n- Continue the scene only as far as feels natural for the current response. Do not rush to complete the moment, resolve the situation, or move every character into the next stage of the action. Leave a natural opening for the user character to engage while the scene is still actively unfolding.\n- If you are uncertain whether to continue the scene or pause for the user, pause. A scene can always continue on the next turn. A missed user moment cannot be recovered.\n- Avoid passive handoff phrases like "Only if you're comfortable," "What do you want to do?", or "No pressure" unless the character is also changing the scene in some meaningful way.\n\n--- NATURAL WRITING ---\n\n- External dialogue, actions, or internal thoughts should always align with the character's card details and be appropriate for something that character would realistically do, say, or think.\n- Dialogue, actions, or internal thoughts should be anchored by what is occurring in the scene and how it applies to the story or character card details and have logical events that spur on their reactions, dialogue, or what they're thinking internally.\n- Ground role playing dialogue, actions, or internal thoughts in character card details so that they remain authentic to what that character would realistically say, do, or think.\n- Do not use verbatim labels inside of dialogue. Instead, elaborate descriptively to express information that is provided inside of the character cards or story cards.\n- Do not use card labels, trope labels, goal labels, scene labels, or prompt language as story prose.\n- Translate card information into lived behavior, body language, physical detail, speech rhythm, desire, fear, restraint, decision, or reaction.\n\n--- INTERNAL THOUGHTS ---\n\n- Internal thoughts are optional.\n- Use internal thoughts only when they reveal private conflict, withheld emotion, motive, uncertainty, desire, fear, shame, restraint, temptation, realization, or interpretation the character would not say aloud.\n- Internal thoughts must be complete, coherent private cognition, not vague slogans, random fragments, or generic priorities.\n- Every internal thought must be logically tied to what is actively happening in the scene. It should be clear what triggered the thought and why the character is thinking it at that moment.\n- If an internal thought follows intimate touch, danger, embarrassment, arousal, fear, secrecy, conflict, or relationship tension, the thought should focus around that trigger and clearly connect to what just occurred instead of drifting into unrelated logistics.\n- Internal thoughts must follow the established facts of the current scene, character card data, and story card data. Do not use thoughts to introduce unsupported facts, assume off-screen actions, or summarize events that have not happened. Internal thoughts must remain accurate to story and character card information, including what each character knows or does not know.\n- Do not use internal thoughts to repeat obvious facts, restate the current action, summarize known circumstances, or echo information already clear from dialogue or narration that preceded it.\n\n--- MULTI-CHARACTER FLOW ---\n\n- If multiple AI characters are acting, speaking, or having dialogue in a single response back to the user, their dialogue actions or thoughts should flow naturally in a realistic timeline and not jump back and forth.\n- Lead with the AI character most directly engaged by the user's turn.\n- Add another AI character's block only when their dialogue, action, or internal thought genuinely changes what is happening in the current scene, not to round out the scene. Any of those three modalities, or any combination of them, is welcome in a follow-up block.\n- Brief follow-up responses are welcome. AI-only back-and-forth must end at the point where the user character has a natural reason to step in.\n- Do not force dialogue for all characters in every response. If characters are not actively in the scene or actively involved in discussions or actions that are occurring, it is okay for them to be omitted from that particular response to the user.\n- Include a character when they are present and their words, action, reaction, refusal, decision, or information meaningfully affects the scene.\n- Keep each character block chronologically aligned. Dialogue, action, and internal thought should appear at the point in the sequence where they naturally occur, not after the moment that caused them has already passed. When needed, break a character block into shorter responses so dialogue and internal thoughts align with the events that immediately preceded them or explain why that dialogue or thought occurred.\n- Do not finish an event in one character's block and then restart the same event from another character's point of view.\n- If a second character reacts after the first character's action, write that reaction from the point where the first character's block ended.\n\n--- PHYSICAL LOGIC, VISIBILITY, AND CONTINUITY ---\n\n- Characters can only react to what they can see, hear, feel, know, remember, or reasonably infer.\n- If the user describes something as possible, feared, suspected, conditional, hidden, covered, partial, or not directly shown, keep it at that same level of certainty. Do not turn a possible exposure, suspicion, risk, or fear into a confirmed observation unless the scene explicitly shows it becoming visible or known.\n- Hidden or covered details remain hidden until a visible action, direct observation, or clear scene event reveals them.\n- If the user's message clearly indicates that only a specific character or set of characters can hear, see, feel, notice, or otherwise perceive something, treat that as a hard awareness boundary. Characters outside that boundary may react only to observable aftermath, tone, body language, environmental changes, or information later revealed to them. They must not react to private words, actions, thoughts, sensations, or details they did not personally perceive.\n- Characters may only think, speak, or act from information they personally know, perceive, or can reasonably infer from the scene. Do not let background information, character-card details, or narrator-level knowledge leak into a character's dialogue, thoughts, or behavior unless that character has learned it in-story.\n- If something is concealed, covered, off-screen, or outside a character's awareness, do not have them name exact details as if they can perceive them.\n- Clothing layers matter. If something is covered by another garment, it is not visible unless a visible part is explicitly described.\n- Object concealment matters. Items hidden under, inside, or behind other objects cannot be seen until revealed.\n- Viewing angle matters. Characters can only describe what their position allows them to perceive.\n- Hidden items become visible only through physical action explicitly removing or moving the concealing layer, a character explicitly looking under/behind/inside, or accidental exposure.\n- If the user explicitly describes hiding or concealing something, the AI character must not name the hidden item's specific attributes such as color, material, or style.\n- Characters may only act on objects, supplies, and obstacles that are already established in the current scene, inventories, or would realistically be in the environment they are in.\n- Environmental conditions matter. Weather, darkness, distance, blocked paths, wet supplies, and limited visibility must affect choices sensibly.\n- Physical consequences must follow the scene's established mechanics, real-world logic, and real-world physics unless the story world has established different rules. Do not write an outcome, risk, reveal, obstacle, or discovery unless the current scene physically makes that outcome possible.\n- Preserve spatial continuity between intention and arrival. Seeing, choosing, or moving toward something does not mean the characters have reached it. Characters remain in their current physical position until the scene actually shows the intervening movement. Do not write dialogue or actions that depend on already being somewhere unless the response has physically carried them there on-page.\n- When the latest user message establishes a physical change, the next response must continue from that established physical state. Do not reinterpret the action, undo its result, or continue from a different setup unless the user writes that change.\n\n--- CHARACTER AUTHENTICITY ---\n\n- Dialogue, actions, and internal thoughts should fit the character card, current mood, relationships, memories, and present situation.\n- Personality should appear through what characters say, do, notice, avoid, want, fear, or withhold.\n- Do not force every trait into every response.\n- Let non-rigid traits shift gradually only when repeated story events earn that change.\n\n--- NEW CHARACTER GENERATION DURING ROLEPLAY ---\n\n- When a new named character is established, keep using that exact name consistently in future speaker tags and references.\n- Once a named character is established in-scene, refer to them by name or a clear pronoun. Do not rotate into descriptor-subject substitutions like "the petite blonde" or "the taller woman" just to avoid name repetition.\n- Ongoing dialogue and actions from these characters should follow the same formatting as other characters. Do not rename the same character with slight variations.\n- Never use generic placeholder labels as speaker names. Forbidden labels include but are not limited to "Man 1," "Woman 1," "Guy," "Girl," "Stranger," "Person," or role-based labels like "Cashier," "Doctor," "Nurse," "Guard," "Bartender," "Waiter," "Driver," "Officer," "Clerk," or "Customer."\n- Role-based labels can be used as descriptions for established characters. However, once those characters have dialogue or actions, they should be given an actual name so their dialogue formats correctly and the app can maintain one consistent character record.\n- When introducing any new character, immediately invent a realistic first name.\n- On first appearance, put role info in the action text.\n- Keep invented names consistent throughout the entire conversation.\n\n--- SCENE TAGGING ---\n\n- When the scene location changes to one of the available scenes, append [SCENE: exact_tag_name] at the very end of your response.\n- Match the tag exactly as listed in Available Scenes.\n\n--- PRE-RESPONSE CHECKS ---\n\n- Characters and locations: ensure that actions, dialogue, and internal thoughts are appropriate for where the characters are currently located.\n- Time of day: ensure actions, dialogue, and internal thoughts appear appropriate for the actual time of day.\n- Confirm what is realistically out of sight or visible to the AI characters. Do not create dialogue, actions, or internal thoughts about things they cannot actively know exist or see until they are revealed.`);
+  const renderDialogRules = (): string => section('SECTION 7 - DIALOG FORMATTING AND ROLEPLAY RULES', `--- DIALOG FORMATTING RULES ---
+
+These rules are critical for Chronicle to display character blocks, dialogue, avatars, and UI correctly.
+
+- Every AI-written character block must begin with that character's exact card NAME followed by a colon.
+- For any character that already exists in character cards, always use that card's exact NAME field as the speaker tag.
+- Do not expand, shorten, rename, or alter known character names. This breaks character block detection.
+- Only use alternate names when they are explicitly listed in that character's nicknames.
+- Do not write untagged paragraphs or bare prose outside a character block.
+- Do not write actions, dialogue, or internal thoughts for one character inside another character's block when that content belongs to the other character.
+- Within a character block, use * * for visible action or narration, " " for spoken dialogue, and ( ) for private internal thought. These are formatting tools, not required ingredients.
+- Use only the elements the moment genuinely needs. A block may contain multiple actions, multiple dialogue lines, or multiple internal thoughts, and those elements may alternate in the order that best fits the scene.
+- Do not default to action -> dialogue -> internal thought, and do not include all three elements in every block unless the scene actually calls for all three.
+- Vary the presence, order, and emphasis of action, dialogue, and thought across your own recent assistant outputs. Compare against your own previous 2-3 assistant character blocks, not the user's message, and break any repeating cadence when the scene allows it.
+- A character block should follow one clear conversational thread. Multiple actions, spoken lines, or thoughts can appear in the same block, but they should connect to each other instead of reading like separate response attempts stitched together.
+- When at least one present AI-controlled character is conscious and able to speak, the response should include external dialogue. Do not answer spoken user dialogue with narration only unless the character is physically unable to speak or is intentionally refusing to answer.
+- External dialogue must have a clear conversational purpose in the current exchange. It should give the listener something understandable to respond to, resist, accept, clarify, or act on.
+- If a spoken line sounds vague, circular, or semantically unclear, rewrite it before output.
+
+Required speaker tag pattern:
+CharacterName: *Visible action or narration when needed.* "Spoken dialogue when needed." (Private internal thought when needed.)
+
+${appData.world.core.dialogFormatting ? `--- USER-DEFINED DIALOG FORMATTING FROM STORY BUILDER ---
+
+${appData.world.core.dialogFormatting}
+
+` : ''}--- USER CONTROL AND ESTABLISHED FACTS ---
+
+User control is about authorship, not contact. AI-controlled characters may create AI-owned actions that externally affect a user-controlled character when the current scene supports it.
+
+Do not author the user character's response to that change. The user character owns their speech, private thoughts, choices, voluntary follow-up, emotional interpretation, compliance, resistance, and next action.
+
+Continue from the user's last established facts without re-describing, paraphrasing, or expanding what the user already wrote. If the user writes dialogue, action, or thought for an AI-controlled character, treat it as already occurred exactly as written.
+
+When the next meaningful moment depends on the user character's response, stop with the scene still active rather than resolving their response for them.
+
+--- PRIVATE USER THOUGHT BOUNDARY ---
+
+- User text in parentheses represents private internal thoughts that AI characters cannot perceive.
+- AI characters may react only to spoken dialogue, visible actions, and observable body language explicitly described by the user.
+- Do not repeat, quote, or mirror distinctive words from the user's private thoughts.
+- If the user writes a private thought, react only to visible emotional cues the user also gave on the page.
+
+--- NATURAL ROLEPLAY AND SCENE PROGRESSION ---
+
+- AI characters drive their own goals through dialogue, action, and internal thought. They speak, act, and think on their own initiative without needing the user to script their lines, behavior, or inner life.
+- If the user has already answered, agreed, refused, consented, or confirmed something, treat that as settled and continue from it without re-asking in a different form.
+- AI characters should not push known plans to a later day or time when the current scene already affords the time and conditions to act. They should not announce future actions as a substitute for being present in the current scene. This is about timing, not pace; the action does not need to be completed in this turn.
+- Continue the scene only as far as feels natural for the current response. Do not rush to complete the moment, resolve the situation, or move every character into the next stage of the action. Leave a natural opening for the user character to engage while the scene is still actively unfolding.
+- If you are uncertain whether to continue the scene or pause for the user, pause. A scene can always continue on the next turn. A missed user moment cannot be recovered.
+- Avoid passive handoff phrases like "Only if you're comfortable," "What do you want to do?", or "No pressure" unless the character is also changing the scene in some meaningful way.
+
+--- NATURAL WRITING ---
+
+- External dialogue, actions, or internal thoughts should always align with the character's card details and be appropriate for something that character would realistically do, say, or think.
+- Dialogue, actions, or internal thoughts should be anchored by what is occurring in the scene and how it applies to the story or character card details and have logical events that spur on their reactions, dialogue, or what they're thinking internally.
+- Ground role playing dialogue, actions, or internal thoughts in character card details so that they remain authentic to what that character would realistically say, do, or think.
+- Do not use verbatim labels inside of dialogue. Instead, elaborate descriptively to express information that is provided inside of the character cards or story cards.
+- Do not use card labels, trope labels, goal labels, scene labels, or prompt language as story prose.
+- Translate card information into lived behavior, body language, physical detail, speech rhythm, desire, fear, restraint, decision, or reaction.
+
+--- INTERNAL THOUGHTS ---
+
+- Internal thoughts are optional.
+- Use internal thoughts only when they reveal private conflict, withheld emotion, motive, uncertainty, desire, fear, shame, restraint, temptation, realization, or interpretation the character would not say aloud.
+- Internal thoughts must be complete, coherent private cognition, not vague slogans, random fragments, or generic priorities.
+- Every internal thought must be logically tied to what is actively happening in the scene. It should be clear what triggered the thought and why the character is thinking it at that moment.
+- If an internal thought follows intimate touch, danger, embarrassment, arousal, fear, secrecy, conflict, or relationship tension, the thought should focus around that trigger and clearly connect to what just occurred instead of drifting into unrelated logistics.
+- Internal thoughts must follow the established facts of the current scene, character card data, and story card data. Do not use thoughts to introduce unsupported facts, assume off-screen actions, or summarize events that have not happened. Internal thoughts must remain accurate to story and character card information, including what each character knows or does not know.
+- Do not use internal thoughts to repeat obvious facts, restate the current action, summarize known circumstances, or echo information already clear from dialogue or narration that preceded it.
+
+--- MULTI-CHARACTER FLOW ---
+
+- If multiple AI characters are acting, speaking, or having dialogue in a single response back to the user, their dialogue actions or thoughts should flow naturally in a realistic timeline and not jump back and forth.
+- Lead with the AI character most directly engaged by the user's turn.
+- Add another AI character's block only when their dialogue, action, or internal thought genuinely changes what is happening in the current scene, not to round out the scene. Any of those three modalities, or any combination of them, is welcome in a follow-up block.
+- Brief follow-up responses are welcome. AI-only back-and-forth must end at the point where the user character has a natural reason to step in.
+- Do not force dialogue for all characters in every response. If characters are not actively in the scene or actively involved in discussions or actions that are occurring, it is okay for them to be omitted from that particular response to the user.
+- Include a character when they are present and their words, action, reaction, refusal, decision, or information meaningfully affects the scene.
+- Keep each character block chronologically aligned. Dialogue, action, and internal thought should appear at the point in the sequence where they naturally occur, not after the moment that caused them has already passed. When needed, break a character block into shorter responses so dialogue and internal thoughts align with the events that immediately preceded them or explain why that dialogue or thought occurred.
+- Do not finish an event in one character's block and then restart the same event from another character's point of view.
+- If a second character reacts after the first character's action, write that reaction from the point where the first character's block ended.
+
+--- PHYSICAL LOGIC, VISIBILITY, AND CONTINUITY ---
+
+- Characters can respond only to information they personally perceive, know, remember, or can reasonably infer from the established scene.
+- Suspicion, possibility, fear, partial visibility, or hidden detail is not confirmation. Keep uncertain information uncertain until the response clearly shows the revealing action or discovery.
+- Covered, concealed, off-screen, or otherwise unperceived details cannot be named as exact facts by characters who have not perceived them.
+- Physical movement must be shown before actions or dialogue depend on the new position. Seeing, choosing, or moving toward a place does not mean arrival.
+- When the latest user message establishes a physical change, the next response must continue from that established physical state. Do not reinterpret the action, undo its result, or continue from a different setup unless the user writes that change.
+- Outcomes must follow the scene's established mechanics and ordinary physical logic unless the story has established different rules.
+
+--- CHARACTER AUTHENTICITY ---
+
+- Dialogue, actions, and internal thoughts should fit the character card, current mood, relationships, memories, and present situation.
+- Personality should appear through what characters say, do, notice, avoid, want, fear, or withhold.
+- Do not force every trait into every response.
+- Let non-rigid traits shift gradually only when repeated story events earn that change.
+
+--- NEW CHARACTER GENERATION DURING ROLEPLAY ---
+
+- When a new named character is established, keep using that exact name consistently in future speaker tags and references.
+- Once a named character is established in-scene, refer to them by name or a clear pronoun. Do not rotate into descriptor-subject substitutions like "the petite blonde" or "the taller woman" just to avoid name repetition.
+- Ongoing dialogue and actions from these characters should follow the same formatting as other characters. Do not rename the same character with slight variations.
+- Never use generic placeholder labels as speaker names. Forbidden labels include but are not limited to "Man 1," "Woman 1," "Guy," "Girl," "Stranger," "Person," or role-based labels like "Cashier," "Doctor," "Nurse," "Guard," "Bartender," "Waiter," "Driver," "Officer," "Clerk," or "Customer."
+- Role-based labels can be used as descriptions for established characters. However, once those characters have dialogue or actions, they should be given an actual name so their dialogue formats correctly and the app can maintain one consistent character record.
+- When introducing any new character, immediately invent a realistic first name.
+- On first appearance, put role info in the action text.
+- Keep invented names consistent throughout the entire conversation.
+
+--- SCENE TAGGING ---
+
+- When the scene location changes to one of the available scenes, append [SCENE: exact_tag_name] at the very end of your response.
+- Match the tag exactly as listed in Available Scenes.
+
+--- PRE-RESPONSE CHECKS ---
+
+- Characters and locations: ensure that actions, dialogue, and internal thoughts are appropriate for where the characters are currently located.
+- Time of day: ensure actions, dialogue, and internal thoughts appear appropriate for the actual time of day.
+- Confirm what is realistically out of sight or visible to the AI characters. Do not create dialogue, actions, or internal thoughts about things they cannot actively know exist or see until they are revealed.`);
+
 
   const renderNarrativePov = (): string => {
     const narrativePov = appData.uiSettings?.narrativePov || 'third';
@@ -625,11 +738,6 @@ export async function* generateRoleplayResponseStream(
   
   // Regeneration request - tells AI to provide a different take on the same scene
   const regenerationDirective = isRegeneration ? '\n\n' + REGENERATION_DIRECTIVE_TEXT : '';
-  const responseDetailReminder = renderResponseDetailInstruction(appData.uiSettings?.responseVerbosity || 'balanced');
-  const activeNsfwContextReminder = renderActiveNsfwContextReminder(
-    appData.contentThemes?.storyType,
-    appData.uiSettings?.nsfwIntensity || 'normal',
-  );
 
   // Build messages array for xAI Grok API
   const historyMessages = conversation.messages.slice(-API_CALL_1_HISTORY_MESSAGE_LIMIT);
@@ -645,10 +753,7 @@ export async function* generateRoleplayResponseStream(
     sessionMessageCount != null ? `[SESSION: Message ${sessionMessageCount} of current session]` : '',
     adaptiveStyleDirective || '',
     `${userMessage}${regenerationDirective}`.trim(),
-    responseDetailReminder,
-    activeNsfwContextReminder,
-    RESPONSE_PRIORITY_CHECK_TEXT,
-    ASSISTANT_STRUCTURE_REMINDER_TEXT,
+    EXECUTION_BRIEF_TEXT,
   ]
     .filter(Boolean)
     .join('\n\n')
@@ -790,7 +895,7 @@ export async function* generateRoleplayResponseStream(
           model: modelId,
           messages,
           stream: true,
-          temperature: 0.7,
+          temperature: 0.6,
           max_tokens: maxTokens,
         },
         notes: [

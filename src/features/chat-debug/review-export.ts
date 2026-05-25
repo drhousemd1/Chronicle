@@ -204,6 +204,146 @@ function renderDebugJsonBlock(label: string, value: unknown): string {
   `;
 }
 
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function asArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function renderKeyValueRows(rows: Array<[string, unknown]>): string {
+  return rows
+    .filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== '')
+    .map(([label, value]) => `<span><strong>${escapeHtml(label)}</strong>${escapeHtml(String(value))}</span>`)
+    .join('');
+}
+
+function renderSupportCallSummary(call: NonNullable<StoredChatDebugTrace['supportCalls']>[number]): string {
+  const response = asRecord(call.responseBody);
+  const endpoint = call.endpoint;
+  const notes = call.notes?.length
+    ? `<ul class="support-summary-notes">${call.notes.map((note) => `<li>${escapeHtml(note)}</li>`).join('')}</ul>`
+    : '';
+
+  if (endpoint.includes('evaluate-goal-progress')) {
+    const updates = asArray(response?.stepUpdates);
+    const completedCount = updates.filter((entry) => !!asRecord(entry)?.completed).length;
+    return `
+      <div class="support-summary">
+        <div class="support-summary-title">Goal progress summary</div>
+        <div class="support-summary-grid">
+          ${renderKeyValueRows([
+            ['Returned steps', updates.length],
+            ['Marked complete', completedCount],
+          ])}
+        </div>
+        ${updates.length ? `<ul>${updates.map((entry) => {
+          const item = asRecord(entry) || {};
+          return `<li><strong>${escapeHtml(String(item.stepId || 'unknown step'))}</strong> ${item.completed ? 'completed' : 'not completed'}${item.summary ? ` — ${escapeHtml(String(item.summary))}` : ''}</li>`;
+        }).join('')}</ul>` : '<p>No step updates returned.</p>'}
+        ${notes}
+      </div>
+    `;
+  }
+
+  if (endpoint.includes('extract-character-updates')) {
+    const updates = asArray(response?.updates);
+    return `
+      <div class="support-summary">
+        <div class="support-summary-title">Character state sync summary</div>
+        <div class="support-summary-grid">
+          ${renderKeyValueRows([
+            ['Proposed updates', updates.length],
+          ])}
+        </div>
+        ${updates.length ? `<ul>${updates.map((entry) => {
+          const item = asRecord(entry) || {};
+          const character = String(item.character || 'Unknown character');
+          const field = String(item.field || 'unknown field');
+          const value = item.value == null ? '' : String(item.value);
+          return `<li><strong>${escapeHtml(character)}.${escapeHtml(field)}</strong>${value ? ` -> ${escapeHtml(textPreview(value, 180))}` : ''}</li>`;
+        }).join('')}</ul>` : '<p>No character-card updates returned.</p>'}
+        ${notes}
+      </div>
+    `;
+  }
+
+  if (endpoint.includes('evaluate-goal-alignment')) {
+    const evaluations = asArray(response?.evaluations);
+    return `
+      <div class="support-summary">
+        <div class="support-summary-title">Goal alignment summary</div>
+        <div class="support-summary-grid">
+          ${renderKeyValueRows([
+            ['Evaluations', evaluations.length],
+            ['Error', response?.error],
+          ])}
+        </div>
+        ${evaluations.length ? `<ul>${evaluations.map((entry) => {
+          const item = asRecord(entry) || {};
+          return `<li><strong>${escapeHtml(String(item.goalId || 'unknown goal'))}</strong> ${escapeHtml(String(item.signal || 'unknown'))}${item.intensity != null ? ` / intensity ${escapeHtml(String(item.intensity))}` : ''}${item.rationale ? ` — ${escapeHtml(String(item.rationale))}` : ''}</li>`;
+        }).join('')}</ul>` : '<p>No goal-alignment evaluations returned.</p>'}
+        ${notes}
+      </div>
+    `;
+  }
+
+  if (endpoint.includes('extract-memory-events')) {
+    const events = asArray(response?.extractedEvents);
+    return `
+      <div class="support-summary">
+        <div class="support-summary-title">Memory extraction summary</div>
+        <div class="support-summary-grid">
+          ${renderKeyValueRows([
+            ['Events extracted', events.length],
+            ['Error', response?.error],
+          ])}
+        </div>
+        ${events.length ? `<ul>${events.map((event) => `<li>${escapeHtml(String(event))}</li>`).join('')}</ul>` : '<p>No durable memory events returned.</p>'}
+        ${notes}
+      </div>
+    `;
+  }
+
+  if (endpoint.includes('generate-side-character')) {
+    return `
+      <div class="support-summary">
+        <div class="support-summary-title">Side-character support summary</div>
+        <div class="support-summary-grid">
+          ${renderKeyValueRows([
+            ['Returned name', response?.name],
+            ['Returned role', response?.roleDescription],
+            ['Image returned', response?.imageUrl ? 'yes' : undefined],
+            ['Error', response?.error],
+          ])}
+        </div>
+        ${notes}
+      </div>
+    `;
+  }
+
+  if (endpoint.includes('generate-scene-image') || endpoint.includes('generate-cover-image')) {
+    return `
+      <div class="support-summary">
+        <div class="support-summary-title">Image support summary</div>
+        <div class="support-summary-grid">
+          ${renderKeyValueRows([
+            ['Image returned', response?.imageUrl ? 'yes' : undefined],
+            ['Error', response?.error],
+          ])}
+        </div>
+        ${notes}
+      </div>
+    `;
+  }
+
+  if (!notes) return '';
+  return `<div class="support-summary"><div class="support-summary-title">Support-call notes</div>${notes}</div>`;
+}
+
 function renderModelRequestBlocks(call: StoredChatDebugTrace['call1Request']): string {
   if (!call) return '';
 
@@ -287,6 +427,7 @@ function renderSupportCallDetails(segment: ReviewExportSegment): string {
         <span><strong>Captured</strong>${escapeHtml(formatDebugDate(call.capturedAt))}</span>
       </div>
       ${call.error ? `<p class="trace-error">${escapeHtml(call.error)}</p>` : ''}
+      ${renderSupportCallSummary(call)}
       ${renderModelRequestBlocks(call)}
       ${renderDebugJsonBlock(call.modelRequest || call.modelRequests?.length ? 'Browser-to-edge request body' : 'Request body sent', call.requestBody)}
       ${renderDebugJsonBlock('Response body received', call.responseBody ?? '(not captured yet)')}
@@ -873,6 +1014,62 @@ function reviewStyles(): string {
       font-size: 11px;
       padding: 4px 8px;
       text-transform: uppercase;
+    }
+    .support-summary {
+      margin: 0 12px 12px;
+      border: 1px solid rgba(120,220,202,0.18);
+      border-radius: 14px;
+      background: rgba(120,220,202,0.055);
+      padding: 10px 12px;
+    }
+    .support-summary-title {
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .support-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .support-summary-grid span {
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      background: rgba(0,0,0,0.16);
+      color: #d8e2f2;
+      padding: 7px 9px;
+      font-size: 12px;
+    }
+    .support-summary-grid strong {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 2px;
+    }
+    .support-summary ul,
+    .support-summary-notes {
+      margin: 0;
+      padding: 0 0 0 20px;
+      color: #d8e2f2;
+      font-size: 12px;
+    }
+    .support-summary li { margin: 5px 0; }
+    .support-summary p {
+      margin: 0 !important;
+      padding: 0 !important;
+      color: #d8e2f2;
+      font-size: 12px;
+    }
+    .support-summary-notes {
+      border-top: 1px solid rgba(255,255,255,0.08);
+      margin-top: 8px;
+      padding-top: 8px;
     }
     .trace-error {
       color: #ffd0d0 !important;

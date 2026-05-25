@@ -152,6 +152,9 @@ describe('buildChatReviewHtml', () => {
     expect(html).toContain('API Call 1 Data');
     expect(html).toContain('Exact request body sent to Grok');
     expect(html).toContain('API Call 2 + Supporting API Call Data');
+    expect(html).toContain('Character state sync summary');
+    expect(html).toContain('Proposed updates');
+    expect(html).toContain('No character-card updates returned.');
     expect(html).toContain('Applied Updates Summary');
     expect(html).toContain('Sarah.currentMood updated at Day 1, sunset');
     expect(html).toContain('chronicle-session-review-v2');

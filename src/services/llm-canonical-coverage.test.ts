@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { ASSISTANT_STRUCTURE_REMINDER_TEXT, getSystemInstruction, renderActiveNsfwContextReminder, RESPONSE_PRIORITY_CHECK_TEXT } from '@/services/llm';
+import { EXECUTION_BRIEF_TEXT, getSystemInstruction } from '@/services/llm';
 import { createDefaultScenarioData, getHardcodedTestCharacters, now, uid } from '@/utils';
 
 describe('llm canonical prompt coverage', () => {
@@ -196,7 +196,8 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).not.toContain('Avoid repetitive formatting from one message to another.');
     expect(prompt).toContain("Do not default to action -> dialogue -> internal thought");
     expect(prompt).toContain('the response should include external dialogue');
-    expect(prompt).toContain('External dialogue should read like something the character would actually say to the person in front of them.');
+    expect(prompt).toContain('External dialogue must have a clear conversational purpose in the current exchange.');
+    expect(prompt).toContain('If a spoken line sounds vague, circular, or semantically unclear, rewrite it before output.');
     expect(prompt).toContain('A character block should follow one clear conversational thread.');
     expect(prompt).toContain('--- USER-DEFINED DIALOG FORMATTING FROM STORY BUILDER ---');
     expect(prompt).toContain('--- INTERNAL THOUGHTS ---');
@@ -207,20 +208,17 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('Internal thoughts must remain accurate to story and character card information, including what each character knows or does not know');
     expect(prompt).toContain('Do not use internal thoughts to repeat obvious facts');
     expect(prompt).toContain('--- PHYSICAL LOGIC, VISIBILITY, AND CONTINUITY ---');
-    expect(prompt).toContain('If the user describes something as possible, feared, suspected, conditional, hidden, covered, partial, or not directly shown');
-    expect(prompt).toContain("If the user's message clearly indicates that only a specific character or set of characters can hear");
+    expect(prompt).toContain('Suspicion, possibility, fear, partial visibility, or hidden detail is not confirmation.');
+    expect(prompt).toContain('Covered, concealed, off-screen, or otherwise unperceived details cannot be named as exact facts');
     expect(prompt).toContain('When the latest user message establishes a physical change, the next response must continue from that established physical state.');
-    expect(RESPONSE_PRIORITY_CHECK_TEXT).toContain('Write the next response from what is actively happening right now.');
-    expect(RESPONSE_PRIORITY_CHECK_TEXT).toContain('Use story cards, character cards, memories, and goals as supporting context.');
-    expect(RESPONSE_PRIORITY_CHECK_TEXT).toContain('Do not pull in background details unless they logically matter to the current scene.');
-    expect(renderActiveNsfwContextReminder('SFW', 'high')).toBe('');
-    expect(renderActiveNsfwContextReminder('NSFW', 'normal')).toContain('This is an adult NSFW story.');
-    expect(renderActiveNsfwContextReminder('NSFW', 'high')).toContain('This is an adult NSFW high-intensity story.');
-    expect(renderActiveNsfwContextReminder('NSFW', 'high')).toContain('not neutral logistics');
-    expect(renderActiveNsfwContextReminder('NSFW', 'high')).toContain('what is newly happening, changing, being felt, chosen, resisted, said, or revealed');
-    expect(renderActiveNsfwContextReminder('NSFW', 'high')).toContain('Do not replace character interaction with sensory narration alone.');
-    expect(ASSISTANT_STRUCTURE_REMINDER_TEXT).toContain('Avoid repeating the same structure across your own recent AI responses.');
-    expect(ASSISTANT_STRUCTURE_REMINDER_TEXT).toContain("Compare against your own previous 2-3 assistant character blocks, not the user's message.");
+    expect(prompt).toContain('User control is about authorship, not contact.');
+    expect(prompt).toContain('AI-controlled characters may create AI-owned actions that externally affect a user-controlled character');
+    expect(prompt).toContain("Do not author the user character's response to that change.");
+    expect(prompt).toContain("When the next meaningful moment depends on the user character's response");
+    expect(EXECUTION_BRIEF_TEXT).toContain('Continue from the latest visible scene change.');
+    expect(EXECUTION_BRIEF_TEXT).toContain('Every spoken line must have a clear conversational purpose');
+    expect(EXECUTION_BRIEF_TEXT).toContain('including direct contact when the scene supports it');
+    expect(EXECUTION_BRIEF_TEXT).toContain('stop before any user-owned response.');
     expect(prompt).toContain('SECTION 8 - CHAT SETTINGS PER USER PREFERENCE');
     expect(prompt).toContain('NARRATIVE POV: Third Person');
     expect(prompt).toContain('NSFW INTENSITY: Normal');
