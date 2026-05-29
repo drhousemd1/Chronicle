@@ -14,7 +14,14 @@ import {
 } from '@/lib/goal-alignment';
 import { buildAssistantRepetitionRepairDirective, buildAssistantStyleDirective } from '@/lib/assistant-style-directive';
 import { uid, now, uuid } from '@/utils';
-import { generateRoleplayResponseStream, buildCanonNote, renderGoalMilestoneTarget } from '../../services/llm';
+import {
+  CONTENT_FILTER_NOTICE_TEXT,
+  ContentFilteredChatError,
+  buildCanonNote,
+  generateRoleplayResponseStream,
+  isLocalRoleplayNoticeMessage,
+  renderGoalMilestoneTarget,
+} from '../../services/llm';
 import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2, StepForward, Settings, Image as ImageIcon, Brain, Check, X, Info, Play, Pause, Move, Palette, MessageSquare } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import {
@@ -227,6 +234,19 @@ function buildExportDialogDebugComments(
       return comment ? [[message.id, comment] as const] : [];
     }),
   );
+}
+
+function buildContentFilterNoticeMessage(message: string, day?: number, timeOfDay?: TimeOfDay): Message {
+  return {
+    id: uuid(),
+    generationId: uuid(),
+    role: 'assistant',
+    text: message || CONTENT_FILTER_NOTICE_TEXT,
+    localNotice: 'content_filter',
+    day,
+    timeOfDay,
+    createdAt: now(),
+  };
 }
 
 function loadDialogDebugComments(
@@ -1142,6 +1162,31 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     chatDebugTraceStoreRef.current = nextStore;
     persistChatDebugTraceStore(scenarioId, conversationId, nextStore);
   }, [conversationId, isAdmin, scenarioId]);
+
+  const appendContentFilterNotice = useCallback((
+    baseConversations: Conversation[],
+    error: ContentFilteredChatError,
+    trace: ChatDebugTrace | null,
+    call1Request?: ChatDebugRequestRecord | null,
+  ) => {
+    const noticeMessage = buildContentFilterNoticeMessage(error.message, currentDay, currentTimeOfDay);
+    const nextConversations = baseConversations.map(c =>
+      c.id === conversationId
+        ? { ...c, messages: [...c.messages, noticeMessage], updatedAt: now() }
+        : c
+    );
+
+    latestConversationsRef.current = nextConversations;
+    onUpdate(nextConversations);
+    onSaveScenario(nextConversations);
+    saveChatDebugTrace(
+      noticeMessage,
+      trace,
+      call1Request ? { ...call1Request, status: 'error', error: error.message } : null,
+    );
+
+    return nextConversations;
+  }, [conversationId, currentDay, currentTimeOfDay, onSaveScenario, onUpdate, saveChatDebugTrace]);
 
   const recordChatDebugSupportCall = useCallback((
     message: Pick<Message, 'id' | 'generationId'> | null | undefined,
@@ -3316,6 +3361,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
     const conversationForContext = latestConversationsRef.current.find(c => c.id === conversationId);
     const recentContext = (conversationForContext?.messages || [])
+      .filter((message) => !isLocalRoleplayNoticeMessage(message))
       .slice(-10)
       .map(m => `${m.role === 'user' ? 'USER' : 'AI'}: ${m.text}`)
       .join('\n\n');
@@ -3838,7 +3884,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       // Build recent context from only the freshest slice. Older durable truth should
       // come from canonical state, not from re-reading a huge transcript every turn.
       const conversation = appData.conversations.find(c => c.id === conversationId);
-      const recentMessages = conversation?.messages.slice(-10) || [];
+      const recentMessages = (conversation?.messages || [])
+        .filter((message) => !isLocalRoleplayNoticeMessage(message))
+        .slice(-10);
       const errorPatterns = ['Invalid token', 'xAI/Grok error', 'Payment required', '⚠️'];
       const filteredMessages = recentMessages.filter(m =>
         !errorPatterns.some(pat => m.text.includes(pat))
@@ -4922,10 +4970,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     setStreamingContent('');
     setFormattedStreamingContent('');
 
+    let pendingDebugTrace: ChatDebugTrace | null = null;
+    let pendingCall1Request: ChatDebugRequestRecord | null = null;
+
     try {
       let fullText = '';
-      let pendingDebugTrace: ChatDebugTrace | null = null;
-      let pendingCall1Request: ChatDebugRequestRecord | null = null;
       const llmAppData = buildLLMAppData();
       // Issue #8: Detect user-authored AI character content and prepend canon note
       const canonNote = buildCanonNote(input, canonNoteCharacters);
@@ -5006,6 +5055,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       processResponseForNewCharacters(cleanedText, aiMsg);
     } catch (err) {
       console.error(err);
+      if (err instanceof ContentFilteredChatError) {
+        appendContentFilterNotice(nextConvsWithUser, err, pendingDebugTrace, pendingCall1Request);
+        return;
+      }
       onSaveScenario(nextConvsWithUser);
       const message = err instanceof Error ? err.message : "Dialogue stream failed. Check your connection or model settings.";
       alert(message);
@@ -5221,6 +5274,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     setStreamingContent('');
     setFormattedStreamingContent('');
 
+    let pendingDebugTrace: ChatDebugTrace | null = null;
+    let pendingCall1Request: ChatDebugRequestRecord | null = null;
+
     try {
       // Strip the old AI response AND the triggering user message from context
       // (generateRoleplayResponseStream will re-add the user message as the final turn,
@@ -5235,8 +5291,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       );
 
       let fullText = '';
-      let pendingDebugTrace: ChatDebugTrace | null = null;
-      let pendingCall1Request: ChatDebugRequestRecord | null = null;
       // Apply canon note to regenerate flow so user-authored AI dialogue is preserved
       const canonNote = buildCanonNote(userMessage.text, canonNoteCharacters);
       const regenInput = canonNote + userMessage.text;
@@ -5323,6 +5377,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       processResponseForNewCharacters(cleanedText, regeneratedMessage);
     } catch (err) {
       console.error(err);
+      if (err instanceof ContentFilteredChatError) {
+        appendContentFilterNotice(appData.conversations, err, pendingDebugTrace, pendingCall1Request);
+        return;
+      }
       const message = err instanceof Error ? err.message : "Regeneration failed. Check your connection or model settings.";
       alert(message);
     } finally {
@@ -5356,9 +5414,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       .filter(c => c.controlledBy === 'AI')
       .map(c => c.name);
 
+    let pendingDebugTrace: ChatDebugTrace | null = null;
+    let pendingCall1Request: ChatDebugRequestRecord | null = null;
+
     try {
-      let pendingDebugTrace: ChatDebugTrace | null = null;
-      let pendingCall1Request: ChatDebugRequestRecord | null = null;
       const adaptiveStyleDirective = getAdaptiveStyleDirective();
 
 	      // Build goal-aware continue prompt without turning goals into a task list.
@@ -5526,6 +5585,10 @@ Do not acknowledge this instruction in your response.`;
 
     } catch (err) {
       console.error(err);
+      if (err instanceof ContentFilteredChatError) {
+        appendContentFilterNotice(appData.conversations, err, pendingDebugTrace, pendingCall1Request);
+        return;
+      }
       const message = err instanceof Error ? err.message : "Continue failed. Check your connection or model settings.";
       alert(message);
     } finally {
@@ -5543,10 +5606,13 @@ Do not acknowledge this instruction in your response.`;
 
     try {
       // Get last 5 messages for context
-      const recentMessages = conversation.messages.slice(-5).map(m => ({
-        role: m.role,
-        text: m.text
-      }));
+      const recentMessages = conversation.messages
+        .filter((message) => !isLocalRoleplayNoticeMessage(message))
+        .slice(-5)
+        .map(m => ({
+          role: m.role,
+          text: m.text
+        }));
 
       if (recentMessages.length === 0) {
         console.error('No messages to generate scene from');
@@ -6604,6 +6670,7 @@ const updatedChar: SideCharacter = {
 
           {conversation?.messages.map((msg) => {
             const isAi = msg.role === 'assistant';
+            const isLocalNotice = isLocalRoleplayNoticeMessage(msg);
             const visibleMessageText = isAi ? sanitizeAssistantMessageText(msg.text) : msg.text;
 
             // Get the primary speaker for user messages
@@ -6661,7 +6728,7 @@ const updatedChar: SideCharacter = {
                     ) : (
                       <>
                         {/* Continue button - show on the LAST message in the conversation (user or AI) */}
-                        {msg.id === conversation?.messages.slice(-1)[0]?.id && (
+                        {!isLocalNotice && msg.id === conversation?.messages.filter((message) => !isLocalRoleplayNoticeMessage(message)).slice(-1)[0]?.id && (
 	                          <button
 	                            onClick={handleContinueConversation}
 	                            disabled={isStreaming || isRegenerating || !canUseCanonicalChatState}
@@ -6674,7 +6741,7 @@ const updatedChar: SideCharacter = {
                         )}
 
                         {/* Regenerate button - AI messages only */}
-                        {isAi && (
+                        {isAi && !isLocalNotice && (
 	                          <button
 	                            onClick={() => handleRegenerateMessage(msg.id)}
 	                            disabled={isStreaming || isRegenerating || !canUseCanonicalChatState}

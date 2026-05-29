@@ -398,13 +398,11 @@ const requestPolicyNotes = `REQUEST POLICY NOTES
 - store is not currently sent by Chronicle. Provider support for an explicit storage opt-out on the active xAI endpoints must be verified before adding it.
 - Secrets are redacted in this review document. Live requests use runtime environment variables and the signed-in user's session token.`;
 
-const contentRedirectDirective = `[CONTENT REDIRECT] The previous user message touched on content the model cannot engage with directly. Continue the roleplay naturally by:
-1. Having the character(s) take a CONCRETE, IMMEDIATE action that pivots the scene — NOT a deflection or subject change
-2. Maintain the current scene's tone and momentum
-3. Do NOT reference the filter or moderation — stay fully in-character
-4. Move the story forward with a specific present-tense event (e.g., a character does something physical, makes a decision, initiates a new activity)
-5. FORBIDDEN: Postponement language ("we'll talk later," "let's discuss this soon," "another time"). Act NOW.
-6. FORBIDDEN: Vague redirects ("let's change the subject," "how about we..."). Be specific and decisive.`;
+const contentRedirectDirective = `[CONTENT REDIRECT]
+The provider blocked the previous request. Continue in character without mentioning filters, moderation, or policy.
+Preserve the current scene, established facts, character knowledge, and user-control boundaries.
+If the blocked wording cannot be continued directly, continue through a believable character response, visible reaction, or immediate consequence that fits what was already happening.
+Do not abruptly replace the scene, ask the user to restate the scene, or turn the response into an out-of-character safety explanation.`;
 
 const goalProgressSystemPrompt = `You are a precise story goal classifier. Respond only in valid JSON.`;
 
@@ -908,6 +906,7 @@ function buildApiCall1Document() {
 // The {{...}} values below stand in for live story, character, memory, and conversation data.
 // In a real call, only one selected chat-setting branch is present in SECTION 8.
 // For review, SECTION 8 below is expanded into a grouped branch matrix so every possible setting injection is visible in-place.
+// Local Chronicle notices, including content-filter notices, are saved for the UI but excluded from the roleplay history sent to Grok.
 
 REQUEST TARGET
 /functions/v1/chat
@@ -918,8 +917,8 @@ REQUEST BODY SHAPE
 {
   "messages": [
     { "role": "system", "content": "<the full system message below>" },
-    { "role": "user", "content": "{{up to 9 prior roleplay messages before the current turn}}" },
-    { "role": "assistant", "content": "{{up to 9 prior roleplay messages before the current turn}}" },
+    { "role": "user", "content": "{{up to 9 prior roleplay messages before the current turn; local notices excluded}}" },
+    { "role": "assistant", "content": "{{up to 9 prior roleplay messages before the current turn; local notices excluded}}" },
     { "role": "user", "content": "[SESSION: Message {{sessionMessageCount}} of current session]\\n\\n{{optionalContinueOrRetryStyleDirective}}{{optionalOutputRevisionRequiredDirectiveOnContinueRetry}}\\n\\n{{latest user text OR continue instruction wrapper}}{{optional regeneration request}}\\n\\n{{executionBrief}}" }
   ],
   "modelId": "grok-4.3",
@@ -954,6 +953,7 @@ ${requestPolicyNotes}
 
 CONTENT-REDIRECT FALLBACK BRANCH
 If the primary xAI chat completion request returns HTTP 403, the chat edge function retries once with an additional system message inserted immediately before the final user message.
+If the retry is also blocked, the edge function returns a structured content-filter notice over HTTP 200 instead of throwing a 422 runtime error.
 
 Fallback system message:
 ${contentRedirectDirective}

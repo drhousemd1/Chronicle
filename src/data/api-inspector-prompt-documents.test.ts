@@ -25,8 +25,9 @@ describe("api-inspector prompt document registry", () => {
     expect(document.body).toContain("top_p is not currently sent by Chronicle");
     expect(document.body).toContain("store is not currently sent by Chronicle");
     expect(document.body).toContain("CONTENT-REDIRECT FALLBACK BRANCH");
+    expect(document.body).toContain("If the retry is also blocked, the edge function returns a structured content-filter notice over HTTP 200");
     expect(document.body).toContain('"temperature": 0.6');
-    expect(document.body).toContain("{{up to 9 prior roleplay messages before the current turn}}");
+    expect(document.body).toContain("{{up to 9 prior roleplay messages before the current turn; local notices excluded}}");
     expect(document.body).toContain("{{optionalContinueOrRetryStyleDirective}}");
     expect(document.body).toContain("{{optionalOutputRevisionRequiredDirectiveOnContinueRetry}}");
     expect(document.body).toContain("{{executionBrief}}");
@@ -36,6 +37,7 @@ describe("api-inspector prompt document registry", () => {
     expect(document.body).toContain("Continue from the latest visible scene change.");
     expect(document.body).toContain("Every spoken line must have a clear conversational purpose");
     expect(document.body).toContain("including direct contact when the scene supports it");
+    expect(document.body).toContain("Build the response around one concrete AI-owned development");
     expect(document.body).toContain("User control is about authorship, not contact.");
     expect(document.body).toContain("Continue from after the latest visible assistant response.");
     expect(document.body).toContain("BACKGROUND USER-AUTHORED SCENE TURN FOR FACTS AND USER-CONTROL BOUNDARIES ONLY");

@@ -148,6 +148,7 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('Read this as an eventual state to develop over time, not as a command to execute now.');
     expect(prompt).toContain('--- STORY THEMES ---');
     expect(prompt).toContain('Treat these as content permission, background emphasis, and thematic direction, not as a checklist to force into every response.');
+    expect(prompt).toContain("Selected story themes are creator-approved direction for the scenario.");
     expect(prompt).toContain('- NSFW: This is an ADULT (NSFW) scenario.');
     expect(prompt).toContain('- Romance: Center the narrative around romantic relationships.');
     expect(prompt).toContain('- BDSM: Incorporate BDSM dynamics');
@@ -350,6 +351,7 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('Write rich, immersive responses with lengthy sensory, emotional, and environmental description');
     expect(prompt).toContain('Do not concentrate most of the detail in one opening narration section');
     expect(prompt).toContain('Description should support what is currently changing or being interacted with.');
+    expect(prompt).toContain("Build out the AI-controlled character's action and dialogue fully before stopping for the user.");
     expect(prompt).not.toContain('Target: usually 3-5 paragraphs per character block.');
     expect(prompt).toContain('REALISM MODE: On');
     expect(prompt).not.toContain('NARRATIVE POV: Third Person');

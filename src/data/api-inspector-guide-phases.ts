@@ -1044,7 +1044,7 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
             "title": "403 Content Filter Retry",
             "tagType": "code-logic",
             "icon": "🔧",
-            "purpose": "If xAI's content filter blocks the request (returns a 403 error), the app automatically adds a redirect instruction and tries again. If the retry also fails, the user sees a \"too spicy\" error message.",
+            "purpose": "If xAI's content filter blocks the request (returns a 403 error), the app automatically adds a redirect instruction and tries again. If the retry also fails, the edge function returns a structured content-filter notice over HTTP 200 so the app can show an in-chat notice without a runtime overlay.",
             "settingsGate": "Failure-only fallback. This lane runs only after a 403 content-filter block, not on successful first-pass requests.",
             "fileRefs": [
               {

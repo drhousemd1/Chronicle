@@ -1,4 +1,4 @@
-import { ScenarioData, Character, World, TimeOfDay, Memory, Scene } from "../types";
+import { ScenarioData, Character, World, TimeOfDay, Memory, Scene, type Message } from "../types";
 import { supabase } from "@/integrations/supabase/client";
 import { buildContentThemeDirectives } from "@/constants/tag-injection-registry";
 import { trackAiUsageEvent } from "@/services/usage-tracking";
@@ -17,14 +17,32 @@ import type { ChatDebugRequestRecord, ChatDebugTrace } from "@/features/chat-deb
  * Returns an established-fact prefix if detected, empty string otherwise.
  * Used by send, regenerate, and continue flows to prevent re-narration.
  */
+export class ContentFilteredChatError extends Error {
+  constructor(message = CONTENT_FILTER_NOTICE_TEXT) {
+    super(message);
+    this.name = 'ContentFilteredChatError';
+  }
+}
+
+export const CONTENT_FILTER_NOTICE_TEXT = 'Chronicle: The model provider blocked this turn. This can happen because of your latest message or because the previous AI response is included in the request. Try editing the last user or AI message, then send again.';
+
+export function isLocalRoleplayNoticeMessage(message: Pick<Message, 'text' | 'localNotice'>): boolean {
+  return message.localNotice === 'content_filter' || message.text.startsWith('Chronicle: The model provider blocked this turn.');
+}
+
 export function buildCanonNote(
   userText: string,
   characters: Array<{ name: string; controlledBy?: string }>,
 ): string {
   const aiCharNames = characters.filter(c => c.controlledBy === 'AI').map(c => c.name);
   const hasCanonContent = aiCharNames.some(name => {
-    const regex = new RegExp(`(?:^|\\n)\\s*${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*:`, 'i');
-    return regex.test(userText);
+    const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const taggedBlock = new RegExp(`(?:^|\\n)\\s*${escapedName}\\s*:`, 'i');
+    const authoredAction = new RegExp(
+      `\\b${escapedName}\\b\\s+(?:\\w+\\s+){0,4}(?:sat|stood|leaned|looked|turned|moved|walked|ran|reached|touched|pulled|pushed|grabbed|held|placed|lowered|raised|pressed|kissed|wrapped|guided|led|opened|closed|entered|left|began|started|continued)\\b`,
+      'i',
+    );
+    return taggedBlock.test(userText) || authoredAction.test(userText);
   });
   return hasCanonContent
     ? '[ESTABLISHED FACT NOTE: User wrote content for AI character(s) in this message. That content is already true in the scene -- do not re-narrate it. Continue the story from after those events.] '
@@ -62,14 +80,14 @@ Continue from the latest visible scene change.
 Preserve user-written facts, character awareness, and the current physical state.
 If a present AI-controlled character can naturally speak, use clear external dialogue.
 Every spoken line must have a clear conversational purpose instead of vague tension, filler, or circular wording.
-Add one concrete AI-owned development, including direct contact when the scene supports it, then stop before any user-owned response.`;
+Build the response around one concrete AI-owned development, including direct contact when the scene supports it, then stop before any user-owned response.`;
 
 export function renderResponseDetailInstruction(responseVerbosity: string = 'balanced'): string {
   if (responseVerbosity === 'concise') {
     return `RESPONSE DETAIL: Concise\n- Keep the overall response tight and direct. Prioritize clear actions, external dialogue, or internal thoughts.\n- Use sensory, emotional, or environmental descriptions at key points to emphasize importance, but otherwise keep back-and-forth dialogue within the same scene more concise. Focus descriptive detail on moments when something new or important is happening.\n- Follow-up responses between AI characters can be simple one-sentence responses.`;
   }
   if (responseVerbosity === 'detailed') {
-    return `RESPONSE DETAIL: Detailed\n- Write rich, immersive responses with lengthy sensory, emotional, and environmental description where that detail adds new information, consequence, tension, or character meaning.\n- Do not concentrate most of the detail in one opening narration section while leaving external dialogue short or underdeveloped. External dialogue should be substantial when characters are able to speak, carrying emotion, conflict, decisions, questions, reassurance, resistance, escalation, or relationship tension.\n- Description should support what is currently changing or being interacted with. Do not repeat already-established body, clothing, room, weather, or object details unless those details have changed, are being directly interacted with, or create a new consequence.\n- Some character responses may be longer than others, but the response should still feel like active roleplay rather than a descriptive summary.`;
+    return `RESPONSE DETAIL: Detailed\n- Write rich, immersive responses with lengthy sensory, emotional, and environmental description where that detail adds new information, consequence, tension, or character meaning.\n- Do not concentrate most of the detail in one opening narration section while leaving external dialogue short or underdeveloped. External dialogue should be substantial when characters are able to speak, carrying emotion, conflict, decisions, questions, reassurance, resistance, escalation, or relationship tension.\n- Description should support what is currently changing or being interacted with. Do not repeat already-established body, clothing, room, weather, or object details unless those details have changed, are being directly interacted with, or create a new consequence.\n- Build out the AI-controlled character's action and dialogue fully before stopping for the user. Stopping before the user response does not mean cutting the AI character's action, dialogue, or sensory description short.\n- Some character responses may be longer than others, but the response should still feel like active roleplay rather than a descriptive summary.`;
   }
   return `RESPONSE DETAIL: Balanced\n- Use a natural balance of scene description, character voice, action, external dialogue, and internal thought.\n- Responses should include some sensory, emotional, or environmental descriptions, but should remain more concise with a focus on external dialogue, actions, or internal thoughts.\n- Follow-up responses between AI characters can be more concise if additional descriptive details would not add new context to the situation or would only repeat details already established in another text block.`;
 }
@@ -532,7 +550,7 @@ When the next meaningful moment depends on the user character's response, stop w
 - AI characters should not push known plans to a later day or time when the current scene already affords the time and conditions to act. They should not announce future actions as a substitute for being present in the current scene. This is about timing, not pace; the action does not need to be completed in this turn.
 - Continue the scene only as far as feels natural for the current response. Do not rush to complete the moment, resolve the situation, or move every character into the next stage of the action. Leave a natural opening for the user character to engage while the scene is still actively unfolding.
 - If you are uncertain whether to continue the scene or pause for the user, pause. A scene can always continue on the next turn. A missed user moment cannot be recovered.
-- Avoid passive handoff phrases like "Only if you're comfortable," "What do you want to do?", or "No pressure" unless the character is also changing the scene in some meaningful way.
+- Do not use permission-checking or user-direction questions as a substitute for character initiative. If the user has already established interest, agreement, or story direction, respond through the AI character's own choice, action, or dialogue instead of asking the user to restate the next move.
 
 --- NATURAL WRITING ---
 
@@ -740,7 +758,9 @@ export async function* generateRoleplayResponseStream(
   const regenerationDirective = isRegeneration ? '\n\n' + REGENERATION_DIRECTIVE_TEXT : '';
 
   // Build messages array for xAI Grok API
-  const historyMessages = conversation.messages.slice(-API_CALL_1_HISTORY_MESSAGE_LIMIT);
+  const historyMessages = conversation.messages
+    .filter((message) => !isLocalRoleplayNoticeMessage(message))
+    .slice(-API_CALL_1_HISTORY_MESSAGE_LIMIT);
   const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
     { role: 'system', content: systemInstruction },
     ...historyMessages.map(m => ({
@@ -941,7 +961,7 @@ export async function* generateRoleplayResponseStream(
     const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
     if (response.status === 422 && errorData.error_type === 'content_filtered') {
       emitCall1Trace("error_content_filtered");
-      throw new Error("It seems your story got a bit too spicy for the model. Change up the story and try again.");
+      throw new ContentFilteredChatError(errorData.message || CONTENT_FILTER_NOTICE_TEXT);
     }
     emitCall1Trace("error_http", { httpStatus: response.status, error: errorData.error || "Unknown error" });
     throw new Error(errorData.error || 'Failed to connect to AI service');
@@ -985,6 +1005,11 @@ export async function* generateRoleplayResponseStream(
           options?.onDebugTrace?.(debugTrace);
           continue;
         }
+        const contentFilter = parsed?.chronicle_content_filter as { message?: string; reason?: string } | undefined;
+        if (contentFilter) {
+          emitCall1Trace("error_content_filtered", { reason: contentFilter.reason || 'provider_content_filter' });
+          throw new ContentFilteredChatError(contentFilter.message);
+        }
 
         const content = parsed.choices?.[0]?.delta?.content as string | undefined;
         if (content) {
@@ -1013,6 +1038,11 @@ export async function* generateRoleplayResponseStream(
         if (debugTrace) {
           options?.onDebugTrace?.(debugTrace);
           continue;
+        }
+        const contentFilter = parsed?.chronicle_content_filter as { message?: string; reason?: string } | undefined;
+        if (contentFilter) {
+          emitCall1Trace("error_content_filtered", { reason: contentFilter.reason || 'provider_content_filter' });
+          throw new ContentFilteredChatError(contentFilter.message);
         }
         const content = parsed.choices?.[0]?.delta?.content as string | undefined;
         if (content) {

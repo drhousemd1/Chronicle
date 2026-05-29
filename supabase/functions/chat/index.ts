@@ -138,13 +138,13 @@ type RoleplayDebugTrace = {
   notes: string[];
 };
 
-const CONTENT_REDIRECT_DIRECTIVE = `[CONTENT REDIRECT] The previous user message touched on content the model cannot engage with directly. Continue the roleplay naturally by:
-1. Having the character(s) take a CONCRETE, IMMEDIATE action that pivots the scene — NOT a deflection or subject change
-2. Maintain the current scene's tone and momentum
-3. Do NOT reference the filter or moderation — stay fully in-character
-4. Move the story forward with a specific present-tense event (e.g., a character does something physical, makes a decision, initiates a new activity)
-5. FORBIDDEN: Postponement language ("we'll talk later," "let's discuss this soon," "another time"). Act NOW.
-6. FORBIDDEN: Vague redirects ("let's change the subject," "how about we..."). Be specific and decisive.`;
+const CONTENT_REDIRECT_DIRECTIVE = `[CONTENT REDIRECT]
+The provider blocked the previous request. Continue in character without mentioning filters, moderation, or policy.
+Preserve the current scene, established facts, character knowledge, and user-control boundaries.
+If the blocked wording cannot be continued directly, continue through a believable character response, visible reaction, or immediate consequence that fits what was already happening.
+Do not abruptly replace the scene, ask the user to restate the scene, or turn the response into an out-of-character safety explanation.`;
+
+const CONTENT_FILTER_NOTICE_TEXT = 'Chronicle: The model provider blocked this turn. This can happen because of your latest message or because the previous AI response is included in the request. Try editing the last user or AI message, then send again.';
 
 const DEBUG_CHAT_LOGS = Deno.env.get("DEBUG_CHAT_LOGS") === "true";
 
@@ -464,6 +464,31 @@ function streamTextAsSSE(
   return new Response(stream, { headers });
 }
 
+function streamContentFilterNoticeAsSSE(
+  modelId: string,
+  headers: HeadersInit,
+  debugTrace: RoleplayDebugTrace | null = null,
+): Response {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    start(controller) {
+      if (debugTrace) {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ chronicle_debug_trace: debugTrace })}\n\n`));
+      }
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+        chronicle_content_filter: {
+          message: CONTENT_FILTER_NOTICE_TEXT,
+          reason: 'provider_content_filter',
+        },
+      })}\n\n`));
+      controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+      controller.close();
+    },
+  });
+
+  return new Response(stream, { headers });
+}
+
 async function readXAIStreamContent(body: ReadableStream<Uint8Array> | null): Promise<string> {
   if (!body) return '';
 
@@ -643,9 +668,38 @@ async function handleDirect(
         headers: { ...responseHeadersBase, "Content-Type": "application/json" },
       });
     }
+    const blockedTrace: RoleplayDebugTrace | null = timedDebugTrace
+      ? {
+          ...timedDebugTrace,
+          finalPath: 'content_filter_notice',
+          fallbackReason: 'provider_content_filter',
+          notes: [
+            ...timedDebugTrace.notes,
+            'Primary chat request and content-redirect retry were both blocked by the provider.',
+            'The edge function returned a structured content-filter notice over HTTP 200 so the frontend can avoid a runtime overlay.',
+          ],
+        }
+      : null;
+
+    if (stream) {
+      return streamContentFilterNoticeAsSSE(modelId, {
+        ...responseHeadersBase,
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+      }, blockedTrace);
+    }
+
     return new Response(
-      JSON.stringify({ error: "Content filtered by safety system", error_type: "content_filtered" }),
-      { status: 422, headers: { ...responseHeadersBase, "Content-Type": "application/json" } },
+      JSON.stringify({
+        ok: false,
+        skipped: true,
+        error: "Content filtered by provider",
+        error_type: "content_filtered",
+        message: CONTENT_FILTER_NOTICE_TEXT,
+        chronicle_debug_trace: blockedTrace,
+      }),
+      { status: 200, headers: { ...responseHeadersBase, "Content-Type": "application/json" } },
     );
   }
 

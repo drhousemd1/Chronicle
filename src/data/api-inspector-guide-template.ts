@@ -1582,7 +1582,7 @@ src/services/supabase-data.ts (memory CRUD operations)</div>
  </div>
  <!-- LLM FILE REFERENCE: supabase/functions/v1/chat/index.ts (retry logic) -->
  <div class="file-ref">supabase/functions/v1/chat/index.ts (retry logic)</div>
- <div class="item-desc">If xAI's content filter blocks the request (returns a 403 error), the app automatically adds a redirect instruction and tries again. If the retry also fails, the user sees a "too spicy" error message.</div>
+ <div class="item-desc">If xAI's content filter blocks the request (returns a 403 error), the app automatically adds a redirect instruction and tries again. If the retry also fails, the edge function returns a structured content-filter notice over HTTP 200 so the app can show an in-chat notice without a runtime overlay.</div>
  </div>
 
  </div>
@@ -2824,7 +2824,7 @@ src/services/supabase-data.ts (memory CRUD operations)</div>
  </div>
  <!-- LLM FILE REFERENCE: supabase/functions/v1/chat/index.ts (retry logic) -->
  <div class="file-ref">supabase/functions/v1/chat/index.ts (retry logic)</div>
- <div class="item-desc">If xAI's content filter blocks the request (returns a 403 error), the app automatically adds a redirect instruction and tries again. If the retry also fails, the user sees a "too spicy" error message.</div>
+ <div class="item-desc">If xAI's content filter blocks the request (returns a 403 error), the app automatically adds a redirect instruction and tries again. If the retry also fails, the edge function returns a structured content-filter notice over HTTP 200 so the app can show an in-chat notice without a runtime overlay.</div>
  </div>
 
  </div>

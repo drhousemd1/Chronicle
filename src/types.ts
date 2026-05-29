@@ -8,6 +8,7 @@ export type Message = {
   generationId?: string;
   role: MessageRole;
   text: string;
+  localNotice?: 'content_filter';
   imageUrl?: string;  // For generated scene images
   day?: number;
   timeOfDay?: TimeOfDay;

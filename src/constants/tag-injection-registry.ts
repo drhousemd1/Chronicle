@@ -169,5 +169,6 @@ export function buildContentThemeDirectives(contentThemes: {
 
 - Themes have been selected by the creator of the story to help direct what type of themes the story centers around. These should occur naturally and not be forced, and should develop or occur throughout the story in a realistic fashion.
 - Treat these as content permission, background emphasis, and thematic direction, not as a checklist to force into every response.
+- Selected story themes are creator-approved direction for the scenario. Do not turn them into repeated out-of-character permission checks when the user's latest exchange already moves the story toward them.
 ${selectedLines.join('\n')}`;
 }

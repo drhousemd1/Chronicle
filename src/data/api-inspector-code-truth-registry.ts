@@ -475,7 +475,7 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               ],
               codeSourceLabel: "`messages` assembly in `generateRoleplayResponseStream`",
               promptViewEnabled: true,
-              codeSource: `const historyMessages = conversation.messages.slice(-9);\nconst messages = [\n  { role: 'system', content: systemInstruction },\n  ...historyMessages,\n];\nmessages.push({ role: 'user', content: [SESSION ...] + optionalContinueOrRetryStyleDirective + userMessage + regen + EXECUTION_BRIEF_TEXT });`,
+              codeSource: `const historyMessages = conversation.messages\n  .filter((message) => !isLocalRoleplayNoticeMessage(message))\n  .slice(-9);\nconst messages = [\n  { role: 'system', content: systemInstruction },\n  ...historyMessages,\n];\nmessages.push({ role: 'user', content: [SESSION ...] + optionalContinueOrRetryStyleDirective + userMessage + regen + EXECUTION_BRIEF_TEXT });`,
             },
             {
               id: "item-runtime-directive-message",
@@ -603,7 +603,7 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               tagType: "validation-check",
               icon: "✓",
               purpose:
-                "When xAI returns 403, injects `CONTENT_REDIRECT_DIRECTIVE` as system message and retries once before returning content_filtered.",
+                "When xAI returns 403, injects `CONTENT_REDIRECT_DIRECTIVE` as system message and retries once before returning a structured content-filter notice if both requests are blocked.",
               whyItExists:
                 "Chronicle needs one narrow recovery path for content-filter interruptions instead of immediately dead-ending the response.",
               problemSolved:
@@ -615,7 +615,7 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               ],
               codeSourceLabel: "CONTENT_REDIRECT_DIRECTIVE",
               promptViewEnabled: true,
-              codeSource: `[CONTENT REDIRECT] ...\n1. Take a CONCRETE, IMMEDIATE action\n2. Maintain scene momentum\n...\n6. FORBIDDEN: vague redirects`,
+              codeSource: `[CONTENT REDIRECT]\nThe provider blocked the previous request...\nPreserve the current scene, established facts, character knowledge, and user-control boundaries.\nIf the blocked wording cannot be continued directly, continue through a believable in-character response.`,
             },
             {
               id: "item-stream-pass-through",
