@@ -483,20 +483,20 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               tagType: "context-injection",
               icon: "📥",
               purpose:
-                "Injects a narrow one-turn style directive into the final user wrapper only when recent assistant turns repeat the same length band, block cadence, exact block shape, or short dialogue phrasing.",
+                "Injects a narrow one-turn style directive into the final user wrapper only when recent assistant turns repeat the same length band, block cadence, exact block shape, short dialogue phrasing, or collapse below the selected detailed response setting.",
               whyItExists:
                 "The live writer needs a small corrective nudge when repetition is detected, but Chronicle should not add random style prompts or permanent extra rule blocks every turn.",
               problemSolved:
                 "Prevents repeated response shape from continuing while keeping the intervention scoped to objective repetition signals.",
               settingsGate:
-                "Conditional final-user wrapper text. It is only present when the runtime detects repetition.",
+                "Conditional final-user wrapper text. It is only present when the runtime detects repetition or when detailed output has collapsed across recent assistant turns.",
               fileRefs: [
                 { path: "src/services/llm.ts", lines: "862-865" },
                 { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3032-3039, 3312-3316" },
               ],
               codeSourceLabel: "Adaptive style directive text",
               promptViewEnabled: true,
-              codeSource: "[STYLE ADJUSTMENT FOR THIS TURN]\nYour own recent assistant responses are repeating ${reasons}. Compare against your own previous 2-3 assistant character blocks, not the user's message. Vary the next response naturally...",
+              codeSource: "[STYLE ADJUSTMENT FOR THIS TURN] ... or [STYLE CORRECTION]\nRecent messages provide story state and continuity, not a template for response length...",
               crossRefs: [
                 {
                   badge: "2",
@@ -711,18 +711,18 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               tagType: "core-prompt",
               icon: "📝",
               purpose:
-                "Curates only plot-relevant memory events (0-2 preferred, allows empty) from latest assistant response.",
+                "Curates only plot-relevant memory events from the latest exchange while comparing against recent saved memories.",
               whyItExists:
                 "The memory lane exists to keep durable continuity facts without promoting every line of scene prose into long-term memory.",
               problemSolved:
-                "Prevents prompt bloat and stops low-value flavor text from polluting the continuity layer.",
+                "Prevents prompt bloat, skips repeated memory facts, and stops low-value flavor text from polluting the continuity layer.",
               fileRefs: [
-                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3067-3084" },
-                { path: "supabase/functions/extract-memory-events/index.ts", lines: "42-119" },
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "4680-4774" },
+                { path: "supabase/functions/extract-memory-events/index.ts", lines: "27-143" },
               ],
               codeSourceLabel: "Memory curator system prompt",
               promptViewEnabled: true,
-              codeSource: `You are a story memory curator...\nWHAT TO EXTRACT: lasting consequences\nWHAT TO IGNORE: scene flavor\nReturn 0-2 events max as JSON array.`,
+              codeSource: `You are a story memory curator...\nRECENT SAVED MEMORIES: {{recentExistingMemories}}\nIgnore events already captured by recent saved memory.\nReturn 0-3 events max as JSON array.`,
             },
             {
               id: "item-compress-day-memories",

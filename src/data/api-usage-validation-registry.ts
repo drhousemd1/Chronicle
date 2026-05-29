@@ -53,7 +53,8 @@ const rows: ApiUsageValidationRowSeed[] = [
   { id: "call2.memory_extract.user_message", label: "userMessage", kind: "detail", callGroup: "call_2", parentId: "summary.call2.memory_extract", sort: 122 },
   { id: "call2.memory_extract.ai_response", label: "aiResponse", kind: "detail", callGroup: "call_2", parentId: "summary.call2.memory_extract", sort: 123 },
   { id: "call2.memory_extract.character_names", label: "characterNames", kind: "detail", callGroup: "call_2", parentId: "summary.call2.memory_extract", sort: 124 },
-  { id: "call2.memory_extract.model_id", label: "modelId", kind: "detail", callGroup: "call_2", parentId: "summary.call2.memory_extract", sort: 125 },
+  { id: "call2.memory_extract.recent_existing_memories", label: "recentExistingMemories", kind: "detail", callGroup: "call_2", parentId: "summary.call2.memory_extract", sort: 125 },
+  { id: "call2.memory_extract.model_id", label: "modelId", kind: "detail", callGroup: "call_2", parentId: "summary.call2.memory_extract", sort: 126 },
 
   { id: "summary.call2.goal_eval", label: "Call 2: Goal Evaluation", kind: "summary", callGroup: "call_2", sort: 130 },
   { id: "call2.goal_eval.user_message", label: "userMessage", kind: "detail", callGroup: "call_2", parentId: "summary.call2.goal_eval", sort: 131 },

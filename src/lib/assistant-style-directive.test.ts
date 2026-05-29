@@ -92,6 +92,6 @@ describe('buildAssistantStyleDirective', () => {
 
     expect(directive).toContain('[OUTPUT REVISION REQUIRED]');
     expect(directive).toContain('do not rewrite the same exchange with swapped wording');
-    expect(directive).toContain('concrete AI-owned development');
+    expect(directive).toContain("develop the AI-controlled character's side of the current exchange");
   });
 });

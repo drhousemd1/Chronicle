@@ -24,7 +24,14 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const { messageText, userMessage, aiResponse, characterNames, modelId, debugTrace = false } = await req.json();
+    const { messageText, userMessage, aiResponse, characterNames, recentExistingMemories = [], modelId, debugTrace = false } = await req.json();
+    const existingMemoryText = Array.isArray(recentExistingMemories) && recentExistingMemories.length > 0
+      ? recentExistingMemories
+          .filter((entry: unknown): entry is string => typeof entry === "string" && entry.trim().length > 0)
+          .slice(-20)
+          .map((entry) => `- ${entry.trim()}`)
+          .join("\n")
+      : "(none)";
     const exchangeText = [
       userMessage ? `USER MESSAGE:\n${userMessage}` : '',
       aiResponse ? `AI RESPONSE:\n${aiResponse}` : '',
@@ -48,19 +55,24 @@ serve(async (req) => {
 
 CHARACTERS: ${characterNames?.join(', ') || 'Unknown'}
 
+RECENT SAVED MEMORIES:
+${existingMemoryText}
+
 --- EXTRACT ---
 - Relationship milestones, intimacy milestones, durable agreements, promises, rules, secrets revealed, major decisions, injuries, pregnancy/status changes, persistent location changes, appearance changes, or new backstory that would cause a future inconsistency if forgotten.
 - Include facts introduced by the USER even if the AI response did not repeat them.
 - Use past tense and include character names.
 
 --- IGNORE ---
-- Minor gestures, routine actions, mood-only beats, atmosphere, flirting/buildup without consequence, or lines that do not reveal new information.
+- Minor gestures, routine actions, mood-only moments, atmosphere, flirting/buildup without consequence, or lines that do not reveal new information.
+- Any event already captured by a recent saved memory, even if the wording is different.
 
 --- RULES ---
 - Return 0-3 events maximum.
 - Empty array is valid when nothing durable happened.
 - Keep each point under 90 characters.
 - For preferences, intentions, rules, or secrets, state who they belong to.
+- If a recent saved memory already preserves the same durable fact, do not return it again.
 
 Return ONLY a JSON array of durable event strings.
 Empty array is acceptable: []`;

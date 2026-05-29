@@ -12,7 +12,7 @@ import {
   normalizeGoalAlignmentState,
   shouldRenderGoalToWriter,
 } from '@/lib/goal-alignment';
-import { buildAssistantRepetitionRepairDirective, buildAssistantStyleDirective } from '@/lib/assistant-style-directive';
+import { buildAssistantRepetitionRepairDirective, buildAssistantStyleDirective, buildDetailedCollapseDirective } from '@/lib/assistant-style-directive';
 import { uid, now, uuid } from '@/utils';
 import {
   CONTENT_FILTER_NOTICE_TEXT,
@@ -4680,6 +4680,33 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const queueAssistantMemoryExtraction = useCallback((userMessage: string, aiResponse: string, sourceMessage: Message) => {
     if (!memoriesEnabled) return;
     const combinedTextLength = (userMessage?.length || 0) + (aiResponse?.length || 0);
+    const recentExistingMemories = activeMemories
+      .slice(-20)
+      .map((memory) => memory.content?.trim())
+      .filter(Boolean) as string[];
+    const isNearDuplicateMemory = (existing: string[], nextValue: string): boolean => {
+      const normalize = (value: string): string =>
+        value
+          .toLowerCase()
+          .replace(/[^a-z0-9\s]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+      const toTokenSet = (value: string): Set<string> => {
+        const stopWords = new Set(['a', 'an', 'the', 'and', 'or', 'of', 'to', 'in', 'on', 'for', 'with', 'by', 'at', 'from', 'is', 'are']);
+        return new Set(normalize(value).split(/\s+/).filter((token) => token && !stopWords.has(token)));
+      };
+      const nextSet = toTokenSet(nextValue);
+      if (nextSet.size === 0) return false;
+      return existing.some((memory) => {
+        const currentSet = toTokenSet(memory);
+        if (currentSet.size === 0) return false;
+        let overlap = 0;
+        for (const token of currentSet) {
+          if (nextSet.has(token)) overlap += 1;
+        }
+        return overlap / Math.max(currentSet.size, nextSet.size) >= 0.72;
+      });
+    };
     const messageText = [
       userMessage ? `USER MESSAGE:\n${userMessage}` : '',
       aiResponse ? `AI RESPONSE:\n${aiResponse}` : '',
@@ -4707,6 +4734,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         ['call2.memory_extract.user_message', userMessage],
         ['call2.memory_extract.ai_response', aiResponse],
         ['call2.memory_extract.character_names', allCharacterNames],
+        ['call2.memory_extract.recent_existing_memories', recentExistingMemories],
         ['call2.memory_extract.model_id', modelId],
       ]),
       diagnostics: {
@@ -4719,6 +4747,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       userMessage,
       aiResponse,
       characterNames: allCharacterNames,
+      recentExistingMemories,
       modelId,
       debugTrace: isAdmin,
     };
@@ -4757,7 +4786,15 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         return;
       }
 
-      const events: string[] = data.extractedEvents;
+      const events: string[] = [];
+      for (const event of data.extractedEvents as string[]) {
+        const trimmed = event.trim();
+        if (!trimmed) continue;
+        if (isNearDuplicateMemory([...recentExistingMemories, ...events], trimmed)) continue;
+        events.push(trimmed);
+      }
+      if (events.length === 0) return;
+
       void trackAiUsageEvent({
         eventType: 'memory_events_extracted',
         eventSource: 'chat-interface',
@@ -4797,6 +4834,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     });
   }, [
     allCharacterNames,
+    activeMemories,
     conversationId,
     currentDay,
     currentTimeOfDay,
@@ -4979,8 +5017,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       // Issue #8: Detect user-authored AI character content and prepend canon note
       const canonNote = buildCanonNote(input, canonNoteCharacters);
 
-      // Keep normal sends free of automatic style repair; retry/continue paths still have targeted repair.
-      const adaptiveStyleDirective = '';
+      const adaptiveStyleDirective = llmAppData.uiSettings?.responseVerbosity === 'detailed'
+        ? buildDetailedCollapseDirective(conversation?.messages || [], responseLengthsRef.current)
+        : '';
       sessionMessageCountRef.current += 1;
 
       const llmInput = canonNote + input;
@@ -5464,15 +5503,15 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 		        ? `\nBACKGROUND USER-AUTHORED SCENE TURN FOR FACTS AND USER-CONTROL BOUNDARIES ONLY:\n${lastUserSceneText}\n`
 		        : '\nBACKGROUND USER-AUTHORED SCENE TURN FOR FACTS AND USER-CONTROL BOUNDARIES ONLY:\n(none found)\n';
 
-		      const continuePrompt = `${continueCanonNote}[CONTINUE INSTRUCTION]
-	Continue from after the latest visible assistant response. Do not restart from, paraphrase, or circle around an older user-authored scene turn.
+	      const continuePrompt = `${continueCanonNote}[CONTINUE INSTRUCTION]
+Continue from after the latest visible assistant response. Do not restart from, paraphrase, or circle around an older user-authored scene turn.
 ${lastUserSceneAnchor}
 The background user-authored turn above is only there to preserve established facts and user-character control boundaries.
 Write only for AI-controlled characters: ${aiControlledNames.join(', ')}.
 Do not write dialogue, actions, or thoughts for user-controlled characters: ${userControlledNames.join(', ')}.${goalContext}
 Do not complete an action for a user-controlled character after an AI character gives them an instruction. The AI may command, prepare, or act itself, but the user must author the user-controlled character's execution.
 Use active story and character goals as continuity, not as a checklist. Continue only as far as the current scene naturally supports, and stop before the response depends on an unmade user choice or action.
-The response must add a concrete AI-owned development that changes the situation through what an AI-controlled character can say, decide, reveal, withhold, or physically do right now.
+Develop the AI-controlled character's side of the current exchange enough that it follows the active RESPONSE DETAIL setting while preserving user control.
 If an AI character asked or was asked a question, acknowledge that question in this response. Acknowledgement can be a direct answer, refusal, deflection, counter-question, visible hesitation, or turning the question toward another present character.
 Choose the AI character or characters whose response is physically, emotionally, or causally next. A single focused block is fine when only one AI character matters, but do not omit a directly affected AI character just because this is a Continue request.
 If the latest user turn directly addressed two AI characters and both need to answer or acknowledge, give each one short tagged block instead of letting one character narrate the other's answer.
@@ -5513,12 +5552,6 @@ Do not acknowledge this instruction in your response.`;
 
 	        for await (const chunk of stream) {
 	          responseText += chunk;
-	          setStreamingContent(responseText);
-
-	          const existingNamesForStream = getKnownCharacterNames(effectiveAppData);
-	          const formatted = sanitizeAssistantOutput(responseText);
-	          const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, placeholderMapRef.current);
-	          setFormattedStreamingContent(normalizedText);
 	        }
 
 	        let cleanedText = sanitizeAssistantOutput(responseText);
@@ -5546,8 +5579,6 @@ Do not acknowledge this instruction in your response.`;
 
 	      if (repairDirective) {
 	        debugLog('[handleContinue] Repetition repair retry triggered');
-	        setStreamingContent('');
-	        setFormattedStreamingContent('');
 	        responseResult = await collectContinueResponse(
 	          [adaptiveStyleDirective, repairDirective].filter(Boolean).join('\n\n'),
 	        );

@@ -253,6 +253,31 @@ export function buildAssistantStyleDirective(
 Your own recent assistant responses are repeating ${reasons}. Compare against your own previous 2-3 assistant character blocks, not the user's message. Vary the next response naturally. Do not force every character block into the same action -> dialogue -> internal thought sequence, do not bury external dialogue behind a long narration opening, and do not reuse recent descriptive terms, body/clothing focus, object focus, location focus, distinctive sentence shapes, or short reactive lines unless the scene specifically calls for that repetition.`;
 }
 
+export function buildDetailedCollapseDirective(
+  messages: AssistantStyleMessage[],
+  recentLengths: number[] = [],
+): string {
+  const recentAssistantMessages = messages
+    .filter((message) => message.role === 'assistant' && message.text?.trim())
+    .slice(-3);
+
+  if (recentAssistantMessages.length < 2) return '';
+
+  const measuredLengths = recentLengths.length > 0
+    ? recentLengths.slice(-3)
+    : recentAssistantMessages.map((message) => analyzeAssistantMessage(message.text || '').wordCount);
+  const lastTwo = measuredLengths.slice(-2);
+  const sorted = [...measuredLengths].sort((a, b) => a - b);
+  const median = sorted.length > 0 ? sorted[Math.floor(sorted.length / 2)] : 0;
+  const collapsedTwoTurns = lastTwo.length >= 2 && lastTwo.every((length) => length > 0 && length < 70);
+  const collapsedWindow = measuredLengths.length >= 3 && median > 0 && median < 90;
+
+  if (!collapsedTwoTurns && !collapsedWindow) return '';
+
+  return `[STYLE CORRECTION]
+Recent messages provide story state and continuity, not a template for response length. The active Response Detail setting calls for a developed response, so write the AI-controlled character's side of the current exchange with substantial external dialogue when speech is natural and enough action or description to make the moment clear. Do not pad with repeated details.`;
+}
+
 export function buildAssistantRepetitionRepairDirective(
   messages: AssistantStyleMessage[],
   candidateText: string,
@@ -298,5 +323,5 @@ export function buildAssistantRepetitionRepairDirective(
   if (reasons.length === 0) return '';
 
   return `[OUTPUT REVISION REQUIRED]
-The draft response repeated ${reasons.join(', ')}. Regenerate the response once. Keep the same established facts, speaker tags, user-character boundaries, and emotional direction, but do not rewrite the same exchange with swapped wording. The new response must add a concrete AI-owned development that changes the situation while preserving the user's control of their character. Use meaningful external dialogue when the character can speak, and avoid reusing the same descriptive focus, sentence shape, or closing internal thought pattern.`;
+The draft response repeated ${reasons.join(', ')}. Regenerate the response once. Keep the same established facts, speaker tags, user-character boundaries, and emotional direction, but do not rewrite the same exchange with swapped wording. The new response must develop the AI-controlled character's side of the current exchange while preserving the user's control of their character. Use meaningful external dialogue when the character can speak, and avoid reusing the same descriptive focus, sentence shape, or closing internal thought pattern.`;
 }

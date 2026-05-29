@@ -686,19 +686,24 @@ const memoryExtractionSystemPrompt = `You are a story memory curator for an adul
 
 CHARACTERS: {{characterNames?.join(', ') || 'Unknown'}}
 
+RECENT SAVED MEMORIES:
+{{recentExistingMemories as bullet list, or "(none)"}}
+
 --- EXTRACT ---
 - Relationship milestones, intimacy milestones, durable agreements, promises, rules, secrets revealed, major decisions, injuries, pregnancy/status changes, persistent location changes, appearance changes, or new backstory that would cause a future inconsistency if forgotten.
 - Include facts introduced by the USER even if the AI response did not repeat them.
 - Use past tense and include character names.
 
 --- IGNORE ---
-- Minor gestures, routine actions, mood-only beats, atmosphere, flirting/buildup without consequence, or lines that do not reveal new information.
+- Minor gestures, routine actions, mood-only moments, atmosphere, flirting/buildup without consequence, or lines that do not reveal new information.
+- Any event already captured by a recent saved memory, even if the wording is different.
 
 --- RULES ---
 - Return 0-3 events maximum.
 - Empty array is valid when nothing durable happened.
 - Keep each point under 90 characters.
 - For preferences, intentions, rules, or secrets, state who they belong to.
+- If a recent saved memory already preserves the same durable fact, do not return it again.
 
 Return ONLY a JSON array of durable event strings.
 Empty array is acceptable: []`;
@@ -986,7 +991,7 @@ Do not write dialogue, actions, or thoughts for user-controlled characters: {{Us
 {{GOAL CONTINUITY block when visible goals have open milestones}}
 Do not complete an action for a user-controlled character after an AI character gives them an instruction. The AI may command, prepare, or act itself, but the user must author the user-controlled character's execution.
 Use active story and character goals as continuity, not as a checklist. Continue only as far as the current scene naturally supports, and stop before the response depends on an unmade user choice or action.
-The response must add a concrete AI-owned development that changes the situation through what an AI-controlled character can say, decide, reveal, withhold, or physically do right now.
+Develop the AI-controlled character's side of the current exchange enough that it follows the active RESPONSE DETAIL setting while preserving user control.
 If an AI character asked or was asked a question, acknowledge that question in this response. Acknowledgement can be a direct answer, refusal, deflection, counter-question, visible hesitation, or turning the question toward another present character.
 Choose the AI character or characters whose response is physically, emotionally, or causally next. A single focused block is fine when only one AI character matters, but do not omit a directly affected AI character just because this is a Continue request.
 If the latest user turn directly addressed two AI characters and both need to answer or acknowledge, give each one short tagged block instead of letting one character narrate the other's answer.
@@ -1027,7 +1032,7 @@ OUTPUT REVISION REQUIRED APPENDED ONLY TO ONE-TIME CONTINUE RETRY WHEN THE FIRST
 ================================================================================
 
 [OUTPUT REVISION REQUIRED]
-The draft response repeated {{same structure / same cadence / reused short dialogue / reused descriptive focus / weak dialogue balance / same response-length band}}. Regenerate the response once. Keep the same established facts, speaker tags, user-character boundaries, and emotional direction, but do not rewrite the same exchange with swapped wording. The new response must add a concrete AI-owned development that changes the situation while preserving the user's control of their character. Use meaningful external dialogue when the character can speak, and avoid reusing the same descriptive focus, sentence shape, or closing internal thought pattern.`;
+The draft response repeated {{same structure / same cadence / reused short dialogue / reused descriptive focus / weak dialogue balance / same response-length band}}. Regenerate the response once. Keep the same established facts, speaker tags, user-character boundaries, and emotional direction, but do not rewrite the same exchange with swapped wording. The new response must develop the AI-controlled character's side of the current exchange while preserving the user's control of their character. Use meaningful external dialogue when the character can speak, and avoid reusing the same descriptive focus, sentence shape, or closing internal thought pattern.`;
 }
 
 function buildApiCall2SupportDocument() {
@@ -1163,6 +1168,17 @@ EDGE FUNCTION
 /functions/v1/extract-memory-events
 
 ${browserToEdgeHeaders}
+
+BROWSER-TO-EDGE REQUEST BODY SHAPE
+{
+  "messageText": "USER MESSAGE:\n{{latest user text}}\n\n---\n\nAI RESPONSE:\n{{latest AI response}}",
+  "userMessage": "{{latest user text}}",
+  "aiResponse": "{{latest AI response}}",
+  "characterNames": ["{{character name}}"],
+  "recentExistingMemories": ["{{up to 20 recent saved memory contents}}"],
+  "modelId": "grok-4.3",
+  "debugTrace": "{{true only when requested}}"
+}
 
 REQUEST BODY SHAPE SENT TO xAI
 {

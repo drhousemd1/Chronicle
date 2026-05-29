@@ -218,8 +218,9 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain("When the next meaningful moment depends on the user character's response");
     expect(EXECUTION_BRIEF_TEXT).toContain('Continue from the latest visible scene change.');
     expect(EXECUTION_BRIEF_TEXT).toContain('Every spoken line must have a clear conversational purpose');
-    expect(EXECUTION_BRIEF_TEXT).toContain('including direct contact when the scene supports it');
-    expect(EXECUTION_BRIEF_TEXT).toContain('stop before any user-owned response.');
+    expect(EXECUTION_BRIEF_TEXT).toContain('Recent messages provide story state and continuity, not a template for response length.');
+    expect(EXECUTION_BRIEF_TEXT).toContain('Direct contact is allowed when the scene supports it.');
+    expect(EXECUTION_BRIEF_TEXT).toContain('Stop before narrating any user-owned response');
     expect(prompt).toContain('SECTION 8 - CHAT SETTINGS PER USER PREFERENCE');
     expect(prompt).toContain('NARRATIVE POV: Third Person');
     expect(prompt).toContain('NSFW INTENSITY: Normal');

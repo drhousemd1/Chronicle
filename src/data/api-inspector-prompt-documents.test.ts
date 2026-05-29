@@ -36,12 +36,13 @@ describe("api-inspector prompt document registry", () => {
     expect(document.body).toContain("EXECUTION BRIEF APPENDED TO FINAL USER MESSAGE ON EVERY LIVE ROLEPLAY CALL");
     expect(document.body).toContain("Continue from the latest visible scene change.");
     expect(document.body).toContain("Every spoken line must have a clear conversational purpose");
-    expect(document.body).toContain("including direct contact when the scene supports it");
-    expect(document.body).toContain("Build the response around one concrete AI-owned development");
+    expect(document.body).toContain("Recent messages provide story state and continuity, not a template for response length.");
+    expect(document.body).toContain("Direct contact is allowed when the scene supports it.");
+    expect(document.body).toContain("Develop the AI-controlled character's side of the current exchange");
     expect(document.body).toContain("User control is about authorship, not contact.");
     expect(document.body).toContain("Continue from after the latest visible assistant response.");
     expect(document.body).toContain("BACKGROUND USER-AUTHORED SCENE TURN FOR FACTS AND USER-CONTROL BOUNDARIES ONLY");
-    expect(document.body).toContain("The response must add a concrete AI-owned development that changes the situation");
+    expect(document.body).toContain("Develop the AI-controlled character's side of the current exchange enough that it follows the active RESPONSE DETAIL setting");
     expect(document.body).toContain("OUTPUT REVISION REQUIRED APPENDED ONLY TO ONE-TIME CONTINUE RETRY");
     expect(document.body).toContain("do not rewrite the same exchange with swapped wording");
     expect(document.body).toContain("--- SECTION 1 - CORE ROLE LOGIC ---");
@@ -95,6 +96,9 @@ describe("api-inspector prompt document registry", () => {
     expect(document.body).toContain("support|resistance|drift|neutral|not_applicable");
     expect(document.body).toContain("the app code will apply different scoring rates later");
     expect(document.body).toContain("MEMORY EXTRACTION");
+    expect(document.body).toContain('"recentExistingMemories": ["{{up to 20 recent saved memory contents}}"]');
+    expect(document.body).toContain("RECENT SAVED MEMORIES:");
+    expect(document.body).toContain("Any event already captured by a recent saved memory");
     expect(document.body).toContain("DAY MEMORY COMPRESSION");
     expect(document.body).toContain("/functions/v1/compress-day-memories");
     expect(document.body).toContain("SIDE-CHARACTER GENERATION");

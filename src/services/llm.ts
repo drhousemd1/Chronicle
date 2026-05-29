@@ -78,9 +78,11 @@ The user wants a DIFFERENT VERSION of this response. For this alternate version:
 export const EXECUTION_BRIEF_TEXT = `[EXECUTION BRIEF]
 Continue from the latest visible scene change.
 Preserve user-written facts, character awareness, and the current physical state.
+Recent messages provide story state and continuity, not a template for response length. Follow the active Response Detail setting even if recent messages were short.
 If a present AI-controlled character can naturally speak, use clear external dialogue.
 Every spoken line must have a clear conversational purpose instead of vague tension, filler, or circular wording.
-Build the response around one concrete AI-owned development, including direct contact when the scene supports it, then stop before any user-owned response.`;
+Develop the AI-controlled character's side of the current exchange enough that it feels complete under the active Response Detail setting. Direct contact is allowed when the scene supports it.
+Stop before narrating any user-owned response, decision, voluntary follow-up, or interpretation.`;
 
 export function renderResponseDetailInstruction(responseVerbosity: string = 'balanced'): string {
   if (responseVerbosity === 'concise') {
@@ -112,24 +114,7 @@ export function renderGoalMilestoneTarget(description: string): string {
   let target = (description || '').trim();
   if (!target) return '';
 
-  target = target
-    .replace(/^find\s+(?:a\s+)?way\s+to\s+/i, '')
-    .replace(/^begin\s+to\s+/i, '')
-    .replace(/^start\s+to\s+/i, '')
-    .trim();
-
-  target = target
-    .replace(/^(?:convince|manipulate|coerce|force|pressure|persuade)(?:\s+or\s+(?:convince|manipulate|coerce|force|pressure|persuade))*\s+/i, '')
-    .trim();
-
-  target = target
-    .replace(/^([^.!?]{1,120}?)\s+to\s+start\s+(.+)$/i, '$1 starts $2')
-    .replace(/^([^.!?]{1,120}?)\s+to\s+become\s+(.+)$/i, '$1 becomes $2')
-    .replace(/^([^.!?]{1,120}?)\s+to\s+wear\s+(.+)$/i, '$1 wears $2')
-    .replace(/^([^.!?]{1,120}?)\s+to\s+accept\s+(.+)$/i, '$1 accepts $2')
-    .replace(/^([^.!?]{1,120}?)\s+to\s+understand\s+(.+)$/i, '$1 understands $2')
-    .replace(/^([^.!?]{1,120}?)\s+into\s+(.+)$/i, '$1 moves toward $2');
-
+  target = target.replace(/\s+/g, ' ').trim();
   return ensurePromptSentence(target);
 }
 
@@ -286,7 +271,7 @@ export function getSystemInstruction(
     const totalSteps = steps.length;
     const progressNote = totalSteps > 0
       ? nextStep
-        ? `Open milestone target (background direction, not an instruction): ${renderGoalMilestoneTarget(nextStep.description)} Read this as an eventual state to develop over time, not as a command to execute now. Do not force actions, dialogue, or internal thoughts from this milestone unless the current message window and visible situation make it naturally relevant.`
+        ? `Open milestone target (background direction, not an instruction): ${renderGoalMilestoneTarget(nextStep.description)} Read this as an eventual state to develop over time, not as a command to execute now. When multiple goals could fit, prefer the open milestone that requires the least unsupported escalation from the current story state. Do not force actions, dialogue, or internal thoughts from this milestone unless the current message window and visible situation make it naturally relevant.`
         : `All listed steps are complete (${completedCount} of ${totalSteps}); this goal's desired outcome is now established ongoing story context.`
       : '';
     return [
