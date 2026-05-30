@@ -22,11 +22,11 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
             "fileRefs": [
               {
                 "path": "src/components/chronicle/ChatInterfaceTab.tsx",
-                "lines": "sessionMessageCountRef, line ~583"
+                "lines": "sessionMessageCountRef, lines ~1468-1483"
               },
               {
                 "path": "src/services/llm.ts",
-                "lines": "injected at line ~856"
+                "lines": "injected at lines ~715-720"
               }
             ],
             "subItems": [
@@ -48,15 +48,15 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
             ]
           },
           {
-            "id": "item-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-anti-loop-pattern-detection",
-            "title": "Anti-Loop Pattern Detection",
+            "id": "item-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-adaptive style-pattern-detection",
+            "title": "Adaptive Style Pattern Detection",
             "tagType": "code-logic",
             "icon": "🔧",
             "purpose": "Before building the next request, the app reads the AI's last response and checks if it's falling into repetitive patterns.",
             "fileRefs": [
               {
                 "path": "src/components/chronicle/ChatInterfaceTab.tsx",
-                "lines": "getAntiLoopDirective, lines ~614-700"
+                "lines": "getAdaptiveStyleDirective, lines ~1513-1526"
               }
             ],
             "subItems": [
@@ -125,24 +125,29 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
             "fileRefs": [
               {
                 "path": "src/services/llm.ts",
-                "lines": "generateRoleplayResponseStream, lines ~827-870"
+                "lines": "generateRoleplayResponseStream, lines ~673-1005"
               }
             ],
             "subItems": [
               {
                 "id": "sub-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-session-counter",
                 "title": "Session Counter",
-                "description": "\"[SESSION: Message N]\": always present"
+                "description": "\"[SESSION: Message N]\": present on normal sends when the app supplies the session count; regenerate and continue may omit it"
               },
               {
-                "id": "sub-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-length-directive",
-                "title": "Length Directive",
-                "description": "Optional override like \"[Write a longer response]\": only if the user requested a specific length"
+                "id": "sub-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-scene-snapshot",
+                "title": "Current Scene Snapshot",
+                "description": "A short guard note reminding the model that the previous assistant response is already in history and should not be copied as an opening pattern"
+              },
+              {
+                "id": "sub-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-style-hint",
+                "title": "Adaptive Style Guidance",
+                "description": "Only present when recent assistant output shows repeated style, structure, or length patterns, or when a hidden repair retry is being sent"
               },
               {
                 "id": "sub-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-user-text",
                 "title": "User Text",
-                "description": "The actual message the user typed in the chat box"
+                "description": "The actual message the user typed in the chat box, or the Continue wrapper. During regeneration, the replaced assistant response reference is appended after the triggering user text."
               },
               {
                 "id": "sub-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-regen-directive",
@@ -150,9 +155,9 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
                 "description": "~180 tokens of \"write a different take\" rules: only added if the user hit the Regenerate button instead of sending a new message"
               },
               {
-                "id": "sub-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-style-hint",
-                "title": "Style Hint",
-                "description": "The random writing tip picked above: always present"
+                "id": "sub-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-execution-brief",
+                "title": "Execution Brief",
+                "description": "The compact final instruction block that restates the current-response priorities immediately before generation"
               }
             ]
           }
@@ -645,7 +650,7 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
               {
                 "id": "sub-phase-system-prompt-assembly-section-phase-system-prompt-assembly-story-memories-system-why-it-matters",
                 "title": "Why It Matters",
-                "description": "Only the last 20 messages fit in the chat window. Memories fill in everything before that: so if a first kiss happened on message 10 and you're now on message 40, the memory system is the only reason the AI remembers it."
+                "description": "Only the capped recent transcript is sent in the chat window. Memories fill in everything before that: so if a first kiss happened on message 10 and you're now on message 40, the memory system is the only reason the AI remembers it."
               }
             ]
           }
@@ -750,7 +755,7 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
               {
                 "id": "sub-phase-system-prompt-assembly-section-phase-system-prompt-assembly-context-data-custom-ai-instructions",
                 "title": "Custom AI Instructions",
-                "description": "Canonical custom instructions are represented through dialog formatting + custom world sections"
+                "description": "Authoritative custom instructions are represented through dialog formatting + custom world sections"
               }
             ]
           },
@@ -919,8 +924,8 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
             ]
           },
           {
-            "id": "item-phase-system-prompt-assembly-section-phase-system-prompt-assembly-full-instructions-forward-progress-anti-loop",
-            "title": "Forward Progress & Anti-Loop",
+            "id": "item-phase-system-prompt-assembly-section-phase-system-prompt-assembly-full-instructions-forward-progress-adaptive style",
+            "title": "Forward Progress & Adaptive Style",
             "tagType": "core-prompt",
             "icon": "📝",
             "purpose": "Rules that prevent the story from getting stuck: close off confirmations, don't defer decisions, don't rehash what already happened.",
@@ -1013,11 +1018,11 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
             "title": "Message Array",
             "tagType": "code-logic",
             "icon": "🔧",
-            "purpose": "The actual list of messages sent to the AI, in this exact order:",
+            "purpose": "The actual message array sent to the AI: one system message, up to 9 prior roleplay messages, then one final wrapped user message.",
             "fileRefs": [
               {
                 "path": "src/services/llm.ts",
-                "lines": "generateRoleplayResponseStream, lines ~827-870"
+                "lines": "generateRoleplayResponseStream, lines ~673-1005"
               }
             ],
             "subItems": [
@@ -1029,18 +1034,13 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
               {
                 "id": "sub-phase-api-call-1-fires-main-flow-2-conversation-history",
                 "title": "2. Conversation History",
-                "description": "The last 20 messages (alternating user and AI turns)"
+                "description": "Up to 9 prior roleplay messages only; the current user turn is sent as the final wrapped user message"
               },
-              {
-                "id": "sub-phase-api-call-1-fires-main-flow-3-runtime-directives",
-                "title": "3. Runtime Directives",
-                "description": "A second system message with corrective instructions: only present if the anti-loop detection in Phase 1 found a problem"
-              },
-              {
-                "id": "sub-phase-api-call-1-fires-main-flow-4-user-message",
-                "title": "4. User Message",
-                "description": "The fully assembled user message from Phase 1 (counter + directive + text + regen + hint)"
-              }
+	              {
+	                "id": "sub-phase-api-call-1-fires-main-flow-3-runtime-directives",
+	                "title": "3. Final Wrapped User Message",
+	                "description": "One user-role message containing the optional session counter, current-scene snapshot, optional one-turn adaptive or repair text, the current user text or continue wrapper, optional previous assistant response reference for regeneration, optional regenerate request, and execution brief."
+	              }
             ]
           },
           {

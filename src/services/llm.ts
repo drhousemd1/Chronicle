@@ -57,23 +57,10 @@ const TIME_DESCRIPTIONS: Record<TimeOfDay, string> = {
 };
 
 export const REGENERATION_DIRECTIVE_TEXT = `[REGENERATION REQUEST]
-The user wants a DIFFERENT VERSION of this response. For this alternate version:
-1. Maintain the same general scene context and emotional tone
-2. Vary the specific dialogue, word choices, actions, and pacing
-3. Try a different focus (e.g., more physical description, different dialogue approach, action-led opening, or environmental detail)
-4. Keep ONLY the characters who are present in the current scene — do NOT introduce characters who are elsewhere or not already in the scene
-5. Do NOT reverse the character's emotional state or stance — if they were enthusiastic, they should still be enthusiastic but expressed differently
-6. Do NOT suddenly shift the character's personality (e.g., from willing to reluctant, or from happy to disgusted)
-7. Think of this as a "different take" by a different writer on the same scene, not a plot reversal or tone shift
-8. The scene's momentum and direction should be preserved — only the specific execution changes
-9. CONTROL RULES STILL APPLY: Do NOT generate dialogue or actions for characters marked as CONTROL: User. Only AI-controlled characters speak or act.
-9a. Do NOT complete a user-controlled character's requested action for them. If an AI character tells the user character what to do, stop before the user character does it, unless the user already wrote that action.
-10. SCENE PRESENCE STILL APPLIES: Only characters at the SAME LOCATION as the current scene may have dialogue or actions. Characters at a different LOCATION are OFF-SCREEN and must not appear.
-11. Preserve RESOLVED PHYSICAL FACTS from the immediate scene. Do NOT replay the same moment as if it is happening again.
-12. Do NOT invent new items, resources, obstacles, or injuries unless they were already established in the scene, in inventory, or in the user's message.
-13. Keep the same immediate timeline. Do NOT jump backward, skip ahead, or rewrite the scene's causal logic.
-14. Keep actions physically sensible and spatially coherent. Characters may only react to what they can currently see, hear, reach, or reasonably infer.
-15. If an AI-controlled character was directly asked a question and they can answer it now, answer it in this same response instead of ignoring it.`;
+The user wants a different version of the previous assistant response. Keep the same established facts, current physical state, present characters, character awareness, user-control boundaries, and broad emotional direction.
+Change the execution rather than the situation: use a meaningfully different mix of dialogue, action, sensory detail, and pacing that still follows the current scene.
+Do not replay the same exchange with synonym swaps, invert character stance, add off-screen characters, jump time, invent physical facts, or author the user-controlled character's response.
+If a present AI-controlled character was directly asked something they can answer now, address it in this version.`;
 
 export const EXECUTION_BRIEF_TEXT = `[EXECUTION BRIEF]
 Continue from the latest visible scene change.
@@ -103,6 +90,16 @@ export type GenerateRoleplayResponseStreamOptions = {
 const CHAT_RESPONSE_TIMEOUT_MS = 90_000;
 const API_CALL_1_TOTAL_MESSAGE_WINDOW = 10;
 const API_CALL_1_HISTORY_MESSAGE_LIMIT = API_CALL_1_TOTAL_MESSAGE_WINDOW - 1;
+
+export function buildCurrentSceneSnapshotForPrompt(
+  historyMessages: Array<Pick<Message, 'role' | 'text'>>,
+): string {
+  const lastAssistant = [...historyMessages].reverse().find((message) => message.role === 'assistant' && message.text?.trim());
+  if (!lastAssistant?.text) return '';
+
+  return `[CURRENT SCENE SNAPSHOT]
+The previous assistant response is already in the conversation history. Use it only to preserve story state; do not copy its opening structure or continue from it unless the final instruction below says to continue.`;
+}
 
 function ensurePromptSentence(value: unknown): string {
   const trimmed = typeof value === 'string' ? value.trim() : '';
@@ -717,6 +714,7 @@ export async function* generateRoleplayResponseStream(
 
   const finalUserContent = [
     sessionMessageCount != null ? `[SESSION: Message ${sessionMessageCount} of current session]` : '',
+    buildCurrentSceneSnapshotForPrompt(historyMessages),
     adaptiveStyleDirective || '',
     `${userMessage}${regenerationDirective}`.trim(),
     EXECUTION_BRIEF_TEXT,
@@ -962,7 +960,8 @@ export async function* generateRoleplayResponseStream(
           outputChars += content.length;
           yield content;
         }
-      } catch {
+      } catch (error) {
+        if (error instanceof ContentFilteredChatError) throw error;
         // Incomplete or malformed JSON chunk - skip and continue
         continue;
       }
@@ -995,7 +994,10 @@ export async function* generateRoleplayResponseStream(
           outputChars += content.length;
           yield content;
         }
-      } catch { /* ignore */ }
+      } catch (error) {
+        if (error instanceof ContentFilteredChatError) throw error;
+        // Ignore malformed leftover stream fragments only.
+      }
     }
   }
 

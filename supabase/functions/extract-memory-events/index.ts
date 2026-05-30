@@ -74,8 +74,8 @@ ${existingMemoryText}
 - For preferences, intentions, rules, or secrets, state who they belong to.
 - If a recent saved memory already preserves the same durable fact, do not return it again.
 
-Return ONLY a JSON array of durable event strings.
-Empty array is acceptable: []`;
+Return ONLY JSON matching the requested schema.
+Empty events are acceptable.`;
 
     // GROK ONLY -- call xAI API directly
     const effectiveModel = modelId === "grok-4.3" ? modelId : "grok-4.3";
@@ -86,6 +86,23 @@ Empty array is acceptable: []`;
         { role: "user", content: `Extract durable story-memory events from this latest exchange:\n\n${exchangeText}` }
       ],
       temperature: 0.3,
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "chronicle_memory_events",
+          schema: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              events: {
+                type: "array",
+                items: { type: "string" },
+              },
+            },
+            required: ["events"],
+          },
+        },
+      },
     };
     const debugPayload = debugTrace === true
       ? {
@@ -122,14 +139,32 @@ Empty array is acceptable: []`;
     const content = data.choices?.[0]?.message?.content || '[]';
     
     let extractedEvents: string[] = [];
+    let parseError: string | null = null;
+    let malformedContent = "";
     try {
-      const jsonMatch = content.match(/\[[\s\S]*?\]/);
-      if (jsonMatch) {
-        extractedEvents = JSON.parse(jsonMatch[0]);
+      const objectMatch = content.match(/\{[\s\S]*\}/);
+      if (objectMatch) {
+        const parsed = JSON.parse(objectMatch[0]);
+        if (Array.isArray(parsed.events)) {
+          extractedEvents = parsed.events;
+        } else {
+          parseError = "events_not_array";
+          malformedContent = content;
+        }
+      } else {
+        const arrayMatch = content.match(/\[[\s\S]*?\]/);
+        if (arrayMatch) {
+          extractedEvents = JSON.parse(arrayMatch[0]);
+        } else {
+          parseError = "missing_json";
+          malformedContent = content;
+        }
       }
-    } catch (parseError) {
+    } catch (_parseError) {
       console.error("Failed to parse extraction response:", content);
       extractedEvents = [];
+      parseError = "parse_error";
+      malformedContent = content;
     }
 
     extractedEvents = extractedEvents
@@ -139,7 +174,19 @@ Empty array is acceptable: []`;
     console.log(`[extract-memory-events] Extracted ${extractedEvents.length} events from latest exchange`);
 
     return new Response(
-      JSON.stringify({ extractedEvents, ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}) }),
+      JSON.stringify({
+        extractedEvents,
+        ...(parseError ? {
+          parseError,
+          rejectedEvents: [{
+            index: 0,
+            accepted: false,
+            reason: parseError,
+            value: malformedContent.replace(/\s+/g, " ").trim().slice(0, 260),
+          }],
+        } : {}),
+        ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

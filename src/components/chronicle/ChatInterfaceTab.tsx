@@ -130,7 +130,7 @@ interface ChatInterfaceTabProps {
   hasMoreMessages?: boolean;
 }
 
-type ActionEvent = { messageId: string; timestamp: number };
+type ActionEvent = { messageId: string; generationId?: string; timestamp: number };
 
 const TIME_SEQUENCE: TimeOfDay[] = ['sunrise', 'day', 'sunset', 'night'];
 const GOAL_ALIGNMENT_SHADOW_MODE = true;
@@ -1137,6 +1137,89 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     [conversation?.messages, dialogDebugComments],
   );
 
+  const buildDiscardedCall1Attempt = useCallback((
+    request: ChatDebugRequestRecord | null | undefined,
+    trace: ChatDebugTrace | null,
+    draftText: string,
+    repairDirective: string,
+    source: 'send' | 'regenerate' | 'continue',
+  ): ChatDebugRequestRecord | null => {
+    if (!request) return null;
+
+    return {
+      ...request,
+      id: `${request.id}.discarded-${source}-first-draft-${Date.now()}`,
+      label: `${request.label} - First draft discarded before repair`,
+      apiCallGroup: 'call_1',
+      capturedAt: Date.now(),
+      status: 'completed',
+      modelRequest: trace?.modelRequest || request.modelRequest,
+      modelRequests: trace?.modelRequests || request.modelRequests,
+      responseBody: {
+        discardedDraftText: draftText,
+        discardedDraftCharacterCount: draftText.length,
+        discardedDraftWordCount: draftText.trim() ? draftText.trim().split(/\s+/).length : 0,
+        repairDirective,
+      },
+      notes: [
+        ...(request.notes || []),
+        'This API Call 1 attempt was discarded because the repetition repair guard triggered before the final assistant message was committed.',
+      ],
+    };
+  }, []);
+
+  const buildFailedRepairCall1Attempt = useCallback((
+    request: ChatDebugRequestRecord | null | undefined,
+    error: unknown,
+    source: 'send' | 'regenerate' | 'continue',
+  ): ChatDebugRequestRecord | null => {
+    if (!request) return null;
+
+    const message = error instanceof Error ? error.message : String(error || 'Unknown repair retry failure');
+    return {
+      ...request,
+      id: `${request.id}.failed-${source}-repair-retry-${Date.now()}`,
+      label: `${request.label} - Hidden repair retry failed`,
+      apiCallGroup: 'call_1',
+      capturedAt: Date.now(),
+      status: 'error',
+      error: message,
+      notes: [
+        ...(request.notes || []),
+        'This hidden API Call 1 repair retry failed. Chronicle kept the first completed draft instead of surfacing an error to the roleplay session.',
+      ],
+    };
+  }, []);
+
+  const attachRequestDebugToError = (
+    error: unknown,
+    trace: ChatDebugTrace | null,
+    request: ChatDebugRequestRecord | null,
+  ) => {
+    if (!error || typeof error !== 'object') return;
+    const carrier = error as Record<string, unknown>;
+    carrier.__chronicleDebugAttempted = true;
+    carrier.__chronicleDebugTrace = trace ?? null;
+    carrier.__chronicleCall1Request = request ?? null;
+  };
+
+  const readRequestDebugFromError = (
+    error: unknown,
+    fallbackTrace: ChatDebugTrace | null,
+    fallbackRequest: ChatDebugRequestRecord | null,
+  ) => {
+    const carrier = error && typeof error === 'object' ? error as Record<string, unknown> : {};
+    const hasAttemptDebug = carrier.__chronicleDebugAttempted === true;
+    return {
+      trace: hasAttemptDebug
+        ? (carrier.__chronicleDebugTrace as ChatDebugTrace | null | undefined) ?? null
+        : fallbackTrace,
+      call1Request: hasAttemptDebug
+        ? (carrier.__chronicleCall1Request as ChatDebugRequestRecord | null | undefined) ?? null
+        : fallbackRequest,
+    };
+  };
+
   const saveChatDebugTrace = useCallback((
     message: Message,
     trace: ChatDebugTrace | null,
@@ -1162,32 +1245,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
     chatDebugTraceStoreRef.current = nextStore;
     persistChatDebugTraceStore(scenarioId, conversationId, nextStore);
-  }, [conversationId, isAdmin, scenarioId]);
-
-  const appendContentFilterNotice = useCallback((
-    baseConversations: Conversation[],
-    error: ContentFilteredChatError,
-    trace: ChatDebugTrace | null,
-    call1Request?: ChatDebugRequestRecord | null,
-  ) => {
-    const noticeMessage = buildContentFilterNoticeMessage(error.message, currentDay, currentTimeOfDay);
-    const nextConversations = baseConversations.map(c =>
-      c.id === conversationId
-        ? { ...c, messages: [...c.messages, noticeMessage], updatedAt: now() }
-        : c
-    );
-
-    latestConversationsRef.current = nextConversations;
-    onUpdate(nextConversations);
-    onSaveScenario(nextConversations);
-    saveChatDebugTrace(
-      noticeMessage,
-      trace,
-      call1Request ? { ...call1Request, status: 'error', error: error.message } : null,
-    );
-
-    return nextConversations;
-  }, [conversationId, currentDay, currentTimeOfDay, onSaveScenario, onUpdate, saveChatDebugTrace]);
+	  }, [conversationId, isAdmin, scenarioId]);
 
   const recordChatDebugSupportCall = useCallback((
     message: Pick<Message, 'id' | 'generationId'> | null | undefined,
@@ -1205,6 +1263,33 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     chatDebugTraceStoreRef.current = nextStore;
     persistChatDebugTraceStore(scenarioId, conversationId, nextStore);
   }, [conversationId, isAdmin, scenarioId]);
+
+  const appendContentFilterNotice = useCallback((
+    baseConversations: Conversation[],
+    error: ContentFilteredChatError,
+    trace: ChatDebugTrace | null,
+    call1Request?: ChatDebugRequestRecord | null,
+    supportCalls: ChatDebugRequestRecord[] = [],
+  ) => {
+    const noticeMessage = buildContentFilterNoticeMessage(error.message, currentDay, currentTimeOfDay);
+    const nextConversations = baseConversations.map(c =>
+      c.id === conversationId
+        ? { ...c, messages: [...c.messages, noticeMessage], updatedAt: now() }
+        : c
+    );
+
+    latestConversationsRef.current = nextConversations;
+    onUpdate(nextConversations);
+    onSaveScenario(nextConversations);
+    saveChatDebugTrace(
+      noticeMessage,
+      trace,
+      call1Request ? { ...call1Request, status: 'error', error: error.message } : null,
+    );
+    supportCalls.forEach((call) => recordChatDebugSupportCall(noticeMessage, call));
+
+    return nextConversations;
+  }, [conversationId, currentDay, currentTimeOfDay, onSaveScenario, onUpdate, recordChatDebugSupportCall, saveChatDebugTrace]);
 
   const buildMessageGenerationMap = useCallback((messages: Message[]): Map<string, string> => {
     const map = new Map<string, string>();
@@ -1428,6 +1513,19 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
   // Issue #7: Response tracking for narrow adaptive style directives
   const responseLengthsRef = useRef<number[]>([]);
+  const getAssistantResponseLengths = (messages: Message[]) => {
+    return messages
+      .filter((message) => message.role === 'assistant' && message.text?.trim() && !isLocalRoleplayNoticeMessage(message))
+      .slice(-10)
+      .map((message) => message.text.trim().split(/\s+/).length)
+      .filter((wordCount) => wordCount > 0);
+  };
+  const syncAssistantResponseLengths = (messages: Message[]) => {
+    responseLengthsRef.current = getAssistantResponseLengths(messages);
+  };
+  const filterRoleplayMessagesForStyleEvidence = (messages: Message[]) => {
+    return messages.filter((message) => !isLocalRoleplayNoticeMessage(message));
+  };
   // Issue #7 + #10: Session message counter for precise session depth awareness
   const sessionMessageCountRef = useRef<number>(0);
   // Issue #6B: Track previous day for compression trigger
@@ -1477,11 +1575,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const getAdaptiveStyleDirective = (
     messages: Message[] = conversation?.messages || [],
     responseVerbosity?: string,
+    responseLengths: number[] = responseLengthsRef.current,
   ): string => {
+    const styleEvidenceMessages = filterRoleplayMessagesForStyleEvidence(messages);
     return [
-      buildAssistantStyleDirective(messages, responseLengthsRef.current),
+      buildAssistantStyleDirective(styleEvidenceMessages, responseLengths),
       responseVerbosity === 'detailed'
-        ? buildDetailedCollapseDirective(messages, responseLengthsRef.current)
+        ? buildDetailedCollapseDirective(styleEvidenceMessages, responseLengths)
         : '',
     ].filter(Boolean).join('\n\n');
   };
@@ -2101,12 +2201,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           )
         : activeGoalCompletionIds;
 
-    const overrideGoalAlignmentMap = overrides?.conversationMessages
-      ? buildActiveGoalAlignmentMap(
-          goalAlignmentStates.filter((state) => state.conversationId === conversationId),
-          overrideGenerationMap,
-        )
-      : activeGoalAlignmentMap;
+    const overrideGoalAlignmentMap = GOAL_ALIGNMENT_SHADOW_MODE
+      ? new Map<string, GoalAlignmentState>()
+      : overrides?.conversationMessages
+        ? buildActiveGoalAlignmentMap(
+            goalAlignmentStates.filter((state) => state.conversationId === conversationId),
+            overrideGenerationMap,
+          )
+        : activeGoalAlignmentMap;
 
     const manualCore = worldCoreSessionOverrides
       ? {
@@ -3178,6 +3280,21 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     return true;
   }, [conversationId]);
 
+  const normalizeEvidenceForGate = (value: unknown): string =>
+    String(value || '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/^["'`]+|["'`]+$/g, '')
+      .replace(/^evidence\s*:\s*/i, '')
+      .trim();
+
+  const isGenericEvidenceText = (value: unknown): boolean => {
+    const normalized = normalizeEvidenceForGate(value).toLowerCase();
+    return !normalized ||
+      /^(short quote|close paraphrase|supported by|evidence from|latest exchange|short exchange evidence|brief evidence|model evidence)/i.test(normalized) ||
+      normalized.includes('from this exchange');
+  };
+
   const evaluateGoalProgress = async (
     userMessage: string,
     aiResponse: string,
@@ -3280,14 +3397,21 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         : Array.isArray((data as any)?.stepUpdates)
           ? ((data as any).stepUpdates as any[])
           : [];
+      const returnedClassificationReviews = Array.isArray((goalDebug.responseBody as any)?.classificationReviews)
+        ? ((goalDebug.responseBody as any).classificationReviews as any[])
+        : Array.isArray((data as any)?.classificationReviews)
+          ? ((data as any).classificationReviews as any[])
+          : [];
       const pendingByStepId = new Map(pendingSteps.map((step) => [step.stepId, step]));
-      const completionReviews = returnedStepUpdates.map((update) => {
+      const completionReviewSource = returnedClassificationReviews.length ? returnedClassificationReviews : returnedStepUpdates;
+      const completionReviews = completionReviewSource.map((update, index) => {
         const pending = pendingByStepId.get(String(update?.stepId || ''));
         const confidence = typeof update?.confidence === 'number'
           ? update.confidence
           : Number(update?.confidence || 0);
-        const evidence = typeof update?.evidence === 'string' ? update.evidence.trim() : '';
-        const genericEvidence = /^(short quote|close paraphrase|supported by|evidence from|latest exchange)/i.test(evidence);
+        const evidence = normalizeEvidenceForGate(update?.evidence);
+        const genericEvidence = isGenericEvidenceText(evidence);
+        const modelCompleted = update?.modelCompleted === true || update?.completed === true;
         const accepted =
           !!pending &&
           update?.completed === true &&
@@ -3300,7 +3424,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           ? 'accepted'
           : !pending
             ? 'unknown_step'
-            : update?.completed !== true
+            : !modelCompleted
               ? 'not_marked_completed'
               : update?.result !== 'completed'
                 ? 'result_not_completed'
@@ -3310,20 +3434,23 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
                     ? 'missing_evidence'
                     : 'rejected';
         return {
+          index: typeof update?.index === 'number' ? update.index : index,
           stepId: String(update?.stepId || 'unknown'),
           result: update?.result || 'unknown',
           completed: update?.completed === true,
+          modelCompleted,
           confidence: Number.isFinite(confidence) ? confidence : 0,
           evidence,
           accepted,
-          reason,
+          reason: update?.rejectionReason || reason,
         };
       });
       const acceptedStepCompletions = completionReviews.filter((review) => review.accepted);
-      const rejectedStepCompletions = completionReviews.filter((review) => review.completed && !review.accepted);
+      const rejectedStepCompletions = completionReviews.filter((review) => !review.accepted && (review.modelCompleted || review.result === 'completed'));
       const reviewedGoalResponseBody = goalDebug.responseBody && typeof goalDebug.responseBody === 'object'
         ? {
             ...(goalDebug.responseBody as Record<string, unknown>),
+            stepCompletionReviews: completionReviews,
             acceptedStepCompletions,
             rejectedStepCompletions,
           }
@@ -3366,6 +3493,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      if (!isMessageGenerationStillCurrent(sourceAssistantMessageId, sourceAssistantGenerationId)) {
+        debugLog('[evaluateGoalProgress] Discarded stale result before persistence');
+        return;
+      }
 
       const persisted = await supabaseData.upsertStoryGoalStepDerivations({
         conversationId,
@@ -3669,7 +3800,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       : Number(update.confidence || 0);
     if (!Number.isFinite(confidence) || confidence < 0.72) return false;
     if (typeof update.evidence !== 'string' || !update.evidence.trim()) return false;
-    if (/^(short quote|close paraphrase|supported by|evidence from|latest exchange)/i.test(update.evidence.trim())) return false;
+    if (isGenericEvidenceText(update.evidence)) return false;
     return true;
   };
 
@@ -4053,21 +4184,31 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         : Array.isArray((data as any)?.updates)
           ? ((data as any).updates as any[])
           : [];
-      const characterUpdateReviews = rawCharacterUpdates.map((update) => {
+      const returnedCandidateReviews = Array.isArray((characterDebug.responseBody as any)?.candidateReviews)
+        ? ((characterDebug.responseBody as any).candidateReviews as any[])
+        : Array.isArray((data as any)?.candidateReviews)
+          ? ((data as any).candidateReviews as any[])
+          : [];
+      const characterUpdateReviews = (returnedCandidateReviews.length ? returnedCandidateReviews : rawCharacterUpdates).map((update, index) => {
         const normalized: ExtractedUpdate = {
           character: String(update?.character || ''),
           field: String(update?.field || ''),
           value: String(update?.value || ''),
-          evidence: typeof update?.evidence === 'string' ? update.evidence : '',
+          evidence: normalizeEvidenceForGate(update?.evidence),
           confidence: typeof update?.confidence === 'number'
             ? update.confidence
             : Number(update?.confidence || 0),
         };
         const eligible = eligibleNames.has(normalized.character.toLowerCase());
-        const genericEvidence = /^(short quote|close paraphrase|supported by|evidence from|latest exchange)/i.test((normalized.evidence || '').trim());
-        const accepted = eligible && isAllowedExtractionUpdate(normalized);
+        const genericEvidence = isGenericEvidenceText(normalized.evidence);
+        const edgeAccepted = update?.accepted === true;
+        const accepted = returnedCandidateReviews.length
+          ? edgeAccepted
+          : eligible && isAllowedExtractionUpdate(normalized);
         const reason = accepted
           ? 'accepted'
+          : typeof update?.reason === 'string' && update.reason.trim()
+            ? update.reason.trim()
           : !eligible
             ? 'ineligible_character'
             : !isAllowedExtractionField(normalized.field)
@@ -4080,7 +4221,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
                     ? 'missing_evidence'
                     : 'rejected';
         return {
+          index: typeof update?.index === 'number' ? update.index : index,
           character: normalized.character,
+          originalCharacter: typeof update?.originalCharacter === 'string' ? update.originalCharacter : undefined,
           field: normalized.field,
           value: normalized.value,
           evidence: normalized.evidence || '',
@@ -4092,6 +4235,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       const reviewedCharacterResponseBody = characterDebug.responseBody && typeof characterDebug.responseBody === 'object'
         ? {
             ...(characterDebug.responseBody as Record<string, unknown>),
+            characterUpdateReviews,
             acceptedUpdates: characterUpdateReviews.filter((review) => review.accepted),
             rejectedUpdates: characterUpdateReviews.filter((review) => !review.accepted),
           }
@@ -4713,6 +4857,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const applyExtractedUpdates = async (updates: ExtractedUpdate[], meta?: ExtractionRequestMeta) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user || updates.length === 0) return;
+    if (!isMessageGenerationStillCurrent(meta?.sourceMessageId, meta?.sourceMessageGenerationId)) {
+      debugLog('[applyExtractedUpdates] Discarded stale updates before persistence');
+      return;
+    }
 
     // Group updates by character
     const updatesByCharacter = new Map<string, ExtractedUpdate[]>();
@@ -4735,6 +4883,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         if (!meta?.sourceMessageId || !meta?.sourceMessageGenerationId) {
           debugLog(`[applyExtractedUpdates] Missing canonical source metadata for ${mainChar.name}; skipping main-character snapshot persist`);
           continue;
+        }
+
+        if (!isMessageGenerationStillCurrent(meta.sourceMessageId, meta.sourceMessageGenerationId)) {
+          debugLog(`[applyExtractedUpdates] Discarded stale main-character snapshot before persist for ${mainChar.name}`);
+          return;
         }
 
         const effectiveChar = computeEffectiveCharacter(mainChar);
@@ -4784,6 +4937,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         if (!meta?.sourceMessageId || !meta?.sourceMessageGenerationId) {
           debugLog(`[applyExtractedUpdates] Missing canonical source metadata for ${sideChar.name}; skipping side-character snapshot persist`);
           continue;
+        }
+
+        if (!isMessageGenerationStillCurrent(meta.sourceMessageId, meta.sourceMessageGenerationId)) {
+          debugLog(`[applyExtractedUpdates] Discarded stale side-character snapshot before persist for ${sideChar.name}`);
+          return;
         }
 
         const effectiveSideChar = computeEffectiveSideCharacter(sideChar);
@@ -5169,22 +5327,27 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
     let pendingDebugTrace: ChatDebugTrace | null = null;
     let pendingCall1Request: ChatDebugRequestRecord | null = null;
+    const hiddenCall1Attempts: ChatDebugRequestRecord[] = [];
 
     try {
       const llmAppData = buildLLMAppData();
-      // Issue #8: Detect user-authored AI character content and prepend canon note
+	      // Issue #8: Detect user-authored AI character content and prepend an established-fact note.
       const canonNote = buildCanonNote(input, canonNoteCharacters);
+      const currentResponseLengths = getAssistantResponseLengths(conversation.messages);
+      const styleEvidenceMessages = filterRoleplayMessagesForStyleEvidence(conversation.messages);
       const adaptiveStyleDirective = getAdaptiveStyleDirective(
         conversation.messages,
         llmAppData.uiSettings?.responseVerbosity,
+        currentResponseLengths,
       );
       sessionMessageCountRef.current += 1;
 
       const llmInput = canonNote + input;
-      const collectSendResponse = async (styleDirective?: string) => {
+      const collectSendResponse = async (styleDirective?: string, streamToUi = false) => {
         let responseText = '';
         let responseDebugTrace: ChatDebugTrace | null = null;
         let responseCall1Request: ChatDebugRequestRecord | null = null;
+        const candidatePlaceholderMap: PlaceholderNameMap = { ...placeholderMapRef.current };
         const stream = generateRoleplayResponseStream(
           llmAppData,
           conversationId,
@@ -5209,54 +5372,88 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           }
         );
 
-        for await (const chunk of stream) {
-          responseText += chunk;
-          setStreamingContent(responseText);
+        try {
+          for await (const chunk of stream) {
+            responseText += chunk;
 
-          // Format streaming content on-the-fly to prevent flickering
-          const existingNamesForStream = getKnownCharacterNames(effectiveAppData);
-          const formatted = sanitizeAssistantOutput(responseText);
-          const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, placeholderMapRef.current);
-          setFormattedStreamingContent(normalizedText);
+            if (streamToUi) {
+              setStreamingContent(responseText);
+
+              // Format streaming content on-the-fly to prevent flickering
+              const existingNamesForStream = getKnownCharacterNames(effectiveAppData);
+              const formatted = sanitizeAssistantOutput(responseText);
+              const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, candidatePlaceholderMap);
+              setFormattedStreamingContent(normalizedText);
+            }
+          }
+        } catch (error) {
+          attachRequestDebugToError(error, responseDebugTrace, responseCall1Request);
+          throw error;
         }
 
         let cleanedText = sanitizeAssistantOutput(responseText);
         const existingNames = getKnownCharacterNames(effectiveAppData);
-        const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, placeholderMapRef.current);
+        const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, candidatePlaceholderMap);
         cleanedText = normalizedText;
 
         return {
           cleanedText,
           debugTrace: responseDebugTrace,
           call1Request: responseCall1Request,
+          placeholderMap: candidatePlaceholderMap,
         };
       };
 
-      let responseResult = await collectSendResponse(adaptiveStyleDirective || undefined);
+      let responseResult = await collectSendResponse(adaptiveStyleDirective || undefined, false);
       let cleanedText = responseResult.cleanedText;
       pendingDebugTrace = responseResult.debugTrace;
       pendingCall1Request = responseResult.call1Request;
 
       const repairDirective = buildAssistantRepetitionRepairDirective(
-        conversation.messages,
+        styleEvidenceMessages,
         cleanedText,
-        responseLengthsRef.current,
+        currentResponseLengths,
       );
 
       if (repairDirective) {
         debugLog('[handleSend] Repetition repair retry triggered');
-        setStreamingContent('');
-        setFormattedStreamingContent('');
-        responseResult = await collectSendResponse(
-          [adaptiveStyleDirective, repairDirective].filter(Boolean).join('\n\n'),
+        const firstDraftResult = responseResult;
+        const discardedAttempt = buildDiscardedCall1Attempt(
+          responseResult.call1Request,
+          responseResult.debugTrace,
+          cleanedText,
+          repairDirective,
+          'send',
         );
+        try {
+          responseResult = await collectSendResponse(
+            [adaptiveStyleDirective, repairDirective].filter(Boolean).join('\n\n'),
+            false,
+          );
+          if (discardedAttempt) hiddenCall1Attempts.push(discardedAttempt);
+        } catch (repairError) {
+          console.warn('[handleSend] Hidden repetition repair retry failed; using the first completed draft.', repairError);
+          const repairDebug = readRequestDebugFromError(repairError, null, null);
+          const failedAttempt = buildFailedRepairCall1Attempt(
+            repairDebug.call1Request,
+            repairError,
+            'send',
+          );
+          if (failedAttempt) hiddenCall1Attempts.push(failedAttempt);
+          responseResult = firstDraftResult;
+        }
         cleanedText = responseResult.cleanedText;
         pendingDebugTrace = responseResult.debugTrace;
         pendingCall1Request = responseResult.call1Request;
       }
 
-      // Issue #7: Track response word count for adaptive style directives
-      responseLengthsRef.current.push(cleanedText.split(/\s+/).length);
+      const liveConversation = latestConversationsRef.current.find(c => c.id === conversationId);
+      const liveUserMessage = liveConversation?.messages.find(message => message.id === userMsg.id);
+      if (!liveConversation || !liveUserMessage || (liveUserMessage.generationId || liveUserMessage.id) !== (userMsg.generationId || userMsg.id)) {
+        debugLog('[handleSend] Skipping assistant commit because the triggering user message changed before completion.');
+        return;
+      }
+      placeholderMapRef.current = responseResult.placeholderMap;
 
       const aiMessageId = uuid();
       const aiMsg: Message = {
@@ -5266,15 +5463,23 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         text: cleanedText,
         day: currentDay,
         timeOfDay: currentTimeOfDay,
-        createdAt: now()
-      };
-      const nextConvsWithAi = appData.conversations.map(c =>
-        c.id === conversationId ? { ...c, messages: [...c.messages, userMsg, aiMsg], updatedAt: now() } : c
-      );
+	        createdAt: now()
+	      };
+      const nextConvsWithAi = latestConversationsRef.current.map(c => {
+        if (c.id !== conversationId) return c;
+        return {
+          ...c,
+          messages: [...c.messages, aiMsg],
+          updatedAt: now(),
+        };
+      });
       latestConversationsRef.current = nextConvsWithAi;
+      const updatedConversation = nextConvsWithAi.find(c => c.id === conversationId);
+      if (updatedConversation) syncAssistantResponseLengths(updatedConversation.messages);
       onUpdate(nextConvsWithAi);
       onSaveScenario(nextConvsWithAi);
       saveChatDebugTrace(aiMsg, pendingDebugTrace, pendingCall1Request);
+      hiddenCall1Attempts.forEach((call) => recordChatDebugSupportCall(aiMsg, call));
       queueAssistantDerivedWorkAfterSourcePersist([userMsg, aiMsg], userInput, cleanedText, aiMsg);
 
       // Process AI response for new character detection
@@ -5282,7 +5487,21 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     } catch (err) {
       console.error(err);
       if (err instanceof ContentFilteredChatError) {
-        appendContentFilterNotice(nextConvsWithUser, err, pendingDebugTrace, pendingCall1Request);
+        const errorDebug = readRequestDebugFromError(err, pendingDebugTrace, pendingCall1Request);
+        const latestBase = latestConversationsRef.current;
+        const liveConversation = latestBase.find(c => c.id === conversationId);
+        const liveUserMessage = liveConversation?.messages.find(message => message.id === userMsg.id);
+        if (!liveConversation || !liveUserMessage || (liveUserMessage.generationId || liveUserMessage.id) !== (userMsg.generationId || userMsg.id)) {
+          debugLog('[handleSend] Skipping content-filter notice because the triggering user message changed before completion.');
+          return;
+        }
+        appendContentFilterNotice(
+          latestBase,
+          err,
+          errorDebug.trace,
+          errorDebug.call1Request,
+          hiddenCall1Attempts,
+        );
         return;
       }
       onSaveScenario(nextConvsWithUser);
@@ -5478,10 +5697,15 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const handleRegenerateMessage = async (messageId: string) => {
     const conv = conversation;
     if (!conv || !canUseCanonicalChatState) return;
-    regenerateEventsRef.current.push({ messageId, timestamp: Date.now() });
 
     const msgIndex = conv.messages.findIndex(m => m.id === messageId);
     if (msgIndex < 1) return;
+    const existingMessage = conv.messages[msgIndex];
+    if (!existingMessage || existingMessage.role !== 'assistant') {
+      console.warn('[handleRegenerate] Target message missing during regenerate:', messageId);
+      return;
+    }
+    const expectedGenerationId = existingMessage.generationId || existingMessage.id;
 
     // Search backward from msgIndex for the nearest user message
     let userMessage: Message | undefined;
@@ -5502,6 +5726,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
     let pendingDebugTrace: ChatDebugTrace | null = null;
     let pendingCall1Request: ChatDebugRequestRecord | null = null;
+    const hiddenCall1Attempts: ChatDebugRequestRecord[] = [];
 
     try {
       // Strip the old AI response AND the triggering user message from context
@@ -5510,24 +5735,31 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       const userMsgIdx = conv?.messages.findIndex(m => m.id === userMessage.id) ?? msgIndex;
       const truncateAt = userMsgIdx >= 0 ? userMsgIdx : msgIndex;
       const truncatedMessages = conv?.messages.slice(0, truncateAt) || [];
+      const truncatedStyleEvidenceMessages = filterRoleplayMessagesForStyleEvidence(truncatedMessages);
       const truncatedAppData = buildLLMAppData({ conversationMessages: truncatedMessages });
       const truncatedMemories = buildActiveMemories(
         memories,
         buildMessageGenerationMap(truncatedMessages),
       );
+      const truncatedResponseLengths = getAssistantResponseLengths(truncatedMessages);
 
-      // Apply canon note to regenerate flow so user-authored AI dialogue is preserved
+	      // Apply the established-fact note to regenerate flow so user-authored AI dialogue is preserved.
       const canonNote = buildCanonNote(userMessage.text, canonNoteCharacters);
-      const regenInput = canonNote + userMessage.text;
+      const previousAssistantContext = existingMessage.text?.trim()
+        ? `\n\n[PREVIOUS ASSISTANT RESPONSE BEING REGENERATED - REFERENCE ONLY]\nThis text is the assistant response being replaced. Do not continue from it as story state. Use it only to preserve broad direction and avoid repeating the same wording, structure, or execution.\n${existingMessage.text.trim()}`
+        : '';
+      const regenInput = canonNote + userMessage.text + previousAssistantContext;
       const adaptiveStyleDirective = getAdaptiveStyleDirective(
         truncatedMessages,
         truncatedAppData.uiSettings?.responseVerbosity,
+        truncatedResponseLengths,
       );
 
-      const collectRegenerateResponse = async (styleDirective?: string) => {
+      const collectRegenerateResponse = async (styleDirective?: string, streamToUi = false) => {
         let responseText = '';
         let responseDebugTrace: ChatDebugTrace | null = null;
         let responseCall1Request: ChatDebugRequestRecord | null = null;
+        const candidatePlaceholderMap: PlaceholderNameMap = { ...placeholderMapRef.current };
         const stream = generateRoleplayResponseStream(
           truncatedAppData,
           conversationId,
@@ -5552,61 +5784,85 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           }
         );
 
-        for await (const chunk of stream) {
-          responseText += chunk;
-          setStreamingContent(responseText);
+        try {
+          for await (const chunk of stream) {
+            responseText += chunk;
 
-          // Format streaming content on-the-fly
-          const existingNamesForStream = getKnownCharacterNames(effectiveAppData);
-          const formatted = sanitizeAssistantOutput(responseText);
-          const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, placeholderMapRef.current);
-          setFormattedStreamingContent(normalizedText);
+            if (streamToUi) {
+              setStreamingContent(responseText);
+
+              // Format streaming content on-the-fly
+              const existingNamesForStream = getKnownCharacterNames(effectiveAppData);
+              const formatted = sanitizeAssistantOutput(responseText);
+              const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, candidatePlaceholderMap);
+              setFormattedStreamingContent(normalizedText);
+            }
+          }
+        } catch (error) {
+          attachRequestDebugToError(error, responseDebugTrace, responseCall1Request);
+          throw error;
         }
 
         let cleanedText = sanitizeAssistantOutput(responseText);
         const existingNames = getKnownCharacterNames(effectiveAppData);
-        const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, placeholderMapRef.current);
+        const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, candidatePlaceholderMap);
         cleanedText = normalizedText;
 
         return {
           cleanedText,
           debugTrace: responseDebugTrace,
           call1Request: responseCall1Request,
+          placeholderMap: candidatePlaceholderMap,
         };
       };
 
       // Regeneration is text-variation only: avoid mutating persistent character state here.
 
-      let responseResult = await collectRegenerateResponse(adaptiveStyleDirective || undefined);
+      let responseResult = await collectRegenerateResponse(adaptiveStyleDirective || undefined, false);
       let cleanedText = responseResult.cleanedText;
       pendingDebugTrace = responseResult.debugTrace;
       pendingCall1Request = responseResult.call1Request;
 
       const repairDirective = buildAssistantRepetitionRepairDirective(
-        truncatedMessages,
+        truncatedStyleEvidenceMessages,
         cleanedText,
-        responseLengthsRef.current,
+        truncatedResponseLengths,
+        [existingMessage.text],
       );
 
       if (repairDirective) {
         debugLog('[handleRegenerate] Repetition repair retry triggered');
-        setStreamingContent('');
-        setFormattedStreamingContent('');
-        responseResult = await collectRegenerateResponse(
-          [adaptiveStyleDirective, repairDirective].filter(Boolean).join('\n\n'),
+        const firstDraftResult = responseResult;
+        const discardedAttempt = buildDiscardedCall1Attempt(
+          responseResult.call1Request,
+          responseResult.debugTrace,
+          cleanedText,
+          repairDirective,
+          'regenerate',
         );
+        try {
+          responseResult = await collectRegenerateResponse(
+            [adaptiveStyleDirective, repairDirective].filter(Boolean).join('\n\n'),
+            false,
+          );
+          if (discardedAttempt) hiddenCall1Attempts.push(discardedAttempt);
+        } catch (repairError) {
+          console.warn('[handleRegenerate] Hidden repetition repair retry failed; using the first completed draft.', repairError);
+          const repairDebug = readRequestDebugFromError(repairError, null, null);
+          const failedAttempt = buildFailedRepairCall1Attempt(
+            repairDebug.call1Request,
+            repairError,
+            'regenerate',
+          );
+          if (failedAttempt) hiddenCall1Attempts.push(failedAttempt);
+          responseResult = firstDraftResult;
+        }
         cleanedText = responseResult.cleanedText;
         pendingDebugTrace = responseResult.debugTrace;
         pendingCall1Request = responseResult.call1Request;
       }
 
       // UPDATE IN-PLACE: Replace the existing message instead of creating a new one
-      const existingMessage = conv.messages.find((message) => message.id === messageId);
-      if (!existingMessage) {
-        console.warn('[handleRegenerate] Target message missing during regenerate:', messageId);
-        return;
-      }
-
       const regeneratedMessage = {
         ...existingMessage,
         text: cleanedText,
@@ -5616,7 +5872,15 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         generationId: uuid(),
       };
 
-      const updatedConvs = appData.conversations.map(c =>
+      const liveConversation = latestConversationsRef.current.find(c => c.id === conversationId);
+      const liveTargetMessage = liveConversation?.messages.find(m => m.id === messageId);
+      if (!liveConversation || !liveTargetMessage || (liveTargetMessage.generationId || liveTargetMessage.id) !== expectedGenerationId) {
+        debugLog('[handleRegenerate] Skipping assistant commit because the target message changed before completion.');
+        return;
+      }
+      placeholderMapRef.current = responseResult.placeholderMap;
+
+      const updatedConvs = latestConversationsRef.current.map(c =>
         c.id === conversationId
           ? {
               ...c,
@@ -5630,8 +5894,16 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           : c
       );
       latestConversationsRef.current = updatedConvs;
+      const updatedConversation = updatedConvs.find(c => c.id === conversationId);
+      if (updatedConversation) syncAssistantResponseLengths(updatedConversation.messages);
       onUpdate(updatedConvs);
       saveChatDebugTrace(regeneratedMessage, pendingDebugTrace, pendingCall1Request);
+      hiddenCall1Attempts.forEach((call) => recordChatDebugSupportCall(regeneratedMessage, call));
+      regenerateEventsRef.current.push({
+        messageId,
+        generationId: regeneratedMessage.generationId || regeneratedMessage.id,
+        timestamp: Date.now(),
+      });
       queueAssistantDerivedWorkAfterSourcePersist([regeneratedMessage], userMessage.text, cleanedText, regeneratedMessage);
 
       // Process for new characters after normalization
@@ -5639,7 +5911,21 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     } catch (err) {
       console.error(err);
       if (err instanceof ContentFilteredChatError) {
-        appendContentFilterNotice(appData.conversations, err, pendingDebugTrace, pendingCall1Request);
+        const errorDebug = readRequestDebugFromError(err, pendingDebugTrace, pendingCall1Request);
+        const latestBase = latestConversationsRef.current;
+        const liveConversation = latestBase.find(c => c.id === conversationId);
+        const liveTargetMessage = liveConversation?.messages.find(m => m.id === messageId);
+        if (!liveConversation || !liveTargetMessage || (liveTargetMessage.generationId || liveTargetMessage.id) !== expectedGenerationId) {
+          debugLog('[handleRegenerate] Skipping content-filter notice because the target message changed before completion.');
+          return;
+        }
+        appendContentFilterNotice(
+          latestBase,
+          err,
+          errorDebug.trace,
+          errorDebug.call1Request,
+          hiddenCall1Attempts,
+        );
         return;
       }
       const message = err instanceof Error ? err.message : "Regeneration failed. Check your connection or model settings.";
@@ -5656,7 +5942,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const handleContinueConversation = async () => {
     if (!conversation || isStreaming || !canUseCanonicalChatState) return;
     const lastMsg = conversation.messages[conversation.messages.length - 1];
-    if (lastMsg) continueEventsRef.current.push({ messageId: lastMsg.id, timestamp: Date.now() });
+    const continueAnchorMessageId = lastMsg?.id || null;
+    const continueAnchorGenerationId = lastMsg ? (lastMsg.generationId || lastMsg.id) : null;
 
     setIsStreaming(true);
     setStreamingContent('');
@@ -5677,11 +5964,15 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
     let pendingDebugTrace: ChatDebugTrace | null = null;
     let pendingCall1Request: ChatDebugRequestRecord | null = null;
+    const hiddenCall1Attempts: ChatDebugRequestRecord[] = [];
 
     try {
+      const currentResponseLengths = getAssistantResponseLengths(conversation.messages);
+      const styleEvidenceMessages = filterRoleplayMessagesForStyleEvidence(conversation.messages);
       const adaptiveStyleDirective = getAdaptiveStyleDirective(
         conversation.messages,
         llmAppData.uiSettings?.responseVerbosity,
+        currentResponseLengths,
       );
 
 	      // Build goal-aware continue prompt without turning goals into a task list.
@@ -5747,11 +6038,12 @@ Do not acknowledge this instruction in your response.`;
 	      debugLog('[handleContinue] Goal context:', goalContext || '(no goals found)');
 	      debugLog('[handleContinue] Established-fact note applied:', continueCanonNote ? 'YES' : 'NO');
 
-	      const collectContinueResponse = async (styleDirective?: string) => {
-	        let responseText = '';
-	        let responseDebugTrace: ChatDebugTrace | null = null;
-	        let responseCall1Request: ChatDebugRequestRecord | null = null;
-	        const stream = generateRoleplayResponseStream(
+		      const collectContinueResponse = async (styleDirective?: string, streamToUi = false) => {
+		        let responseText = '';
+		        let responseDebugTrace: ChatDebugTrace | null = null;
+		        let responseCall1Request: ChatDebugRequestRecord | null = null;
+		        const candidatePlaceholderMap: PlaceholderNameMap = { ...placeholderMapRef.current };
+		        const stream = generateRoleplayResponseStream(
 	          llmAppData,
 	          conversationId,
 	          continuePrompt,
@@ -5775,45 +6067,89 @@ Do not acknowledge this instruction in your response.`;
 	          }
 	        );
 
-	        for await (const chunk of stream) {
-	          responseText += chunk;
-	        }
+		        try {
+		          for await (const chunk of stream) {
+		            responseText += chunk;
 
-	        let cleanedText = sanitizeAssistantOutput(responseText);
-	        const existingNames = getKnownCharacterNames(effectiveAppData);
-	        const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, placeholderMapRef.current);
-	        cleanedText = normalizedText;
+		            if (streamToUi) {
+		              setStreamingContent(responseText);
+		              const existingNamesForStream = getKnownCharacterNames(effectiveAppData);
+		              const formatted = sanitizeAssistantOutput(responseText);
+		              const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, candidatePlaceholderMap);
+		              setFormattedStreamingContent(normalizedText);
+		            }
+		          }
+		        } catch (error) {
+		          attachRequestDebugToError(error, responseDebugTrace, responseCall1Request);
+		          throw error;
+		        }
 
-	        return {
-	          cleanedText,
-	          debugTrace: responseDebugTrace,
-	          call1Request: responseCall1Request,
-	        };
-	      };
+		        let cleanedText = sanitizeAssistantOutput(responseText);
+		        const existingNames = getKnownCharacterNames(effectiveAppData);
+		        const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, candidatePlaceholderMap);
+		        cleanedText = normalizedText;
 
-	      let responseResult = await collectContinueResponse(adaptiveStyleDirective || undefined);
+		        return {
+		          cleanedText,
+		          debugTrace: responseDebugTrace,
+		          call1Request: responseCall1Request,
+		          placeholderMap: candidatePlaceholderMap,
+		        };
+		      };
+
+	      let responseResult = await collectContinueResponse(adaptiveStyleDirective || undefined, false);
 	      let cleanedText = responseResult.cleanedText;
 	      pendingDebugTrace = responseResult.debugTrace;
 	      pendingCall1Request = responseResult.call1Request;
 
 	      const repairDirective = buildAssistantRepetitionRepairDirective(
-	        conversation.messages,
+	        styleEvidenceMessages,
 	        cleanedText,
-	        responseLengthsRef.current,
+	        currentResponseLengths,
 	      );
 
-	      if (repairDirective) {
-	        debugLog('[handleContinue] Repetition repair retry triggered');
-	        responseResult = await collectContinueResponse(
-	          [adaptiveStyleDirective, repairDirective].filter(Boolean).join('\n\n'),
-	        );
+		      if (repairDirective) {
+		        debugLog('[handleContinue] Repetition repair retry triggered');
+            const firstDraftResult = responseResult;
+			        const discardedAttempt = buildDiscardedCall1Attempt(
+			          responseResult.call1Request,
+			          responseResult.debugTrace,
+			          cleanedText,
+			          repairDirective,
+			          'continue',
+			        );
+			        try {
+			          responseResult = await collectContinueResponse(
+			            [adaptiveStyleDirective, repairDirective].filter(Boolean).join('\n\n'),
+			            false,
+			          );
+			          if (discardedAttempt) hiddenCall1Attempts.push(discardedAttempt);
+			        } catch (repairError) {
+		          console.warn('[handleContinue] Hidden repetition repair retry failed; using the first completed draft.', repairError);
+		          const repairDebug = readRequestDebugFromError(repairError, null, null);
+		          const failedAttempt = buildFailedRepairCall1Attempt(
+		            repairDebug.call1Request,
+		            repairError,
+		            'continue',
+		          );
+		          if (failedAttempt) hiddenCall1Attempts.push(failedAttempt);
+		          responseResult = firstDraftResult;
+		        }
 	        cleanedText = responseResult.cleanedText;
-	        pendingDebugTrace = responseResult.debugTrace;
-	        pendingCall1Request = responseResult.call1Request;
-	      }
+		        pendingDebugTrace = responseResult.debugTrace;
+		        pendingCall1Request = responseResult.call1Request;
+			      }
 
-      // Track response length for adaptive style directives
-      responseLengthsRef.current.push(cleanedText.split(/\s+/).length);
+      const liveConversation = latestConversationsRef.current.find(c => c.id === conversationId);
+      const liveLastMessage = liveConversation?.messages[liveConversation.messages.length - 1];
+      const continueAnchorStillCurrent = continueAnchorMessageId
+        ? liveLastMessage?.id === continueAnchorMessageId && (liveLastMessage.generationId || liveLastMessage.id) === continueAnchorGenerationId
+        : !liveLastMessage;
+      if (!liveConversation || !continueAnchorStillCurrent) {
+        debugLog('[handleContinue] Skipping assistant commit because the conversation tail changed before completion.');
+        return;
+      }
+			      placeholderMapRef.current = responseResult.placeholderMap;
 
       const aiMessageId = uuid();
       const aiMsg: Message = {
@@ -5823,26 +6159,53 @@ Do not acknowledge this instruction in your response.`;
         text: cleanedText,
         day: currentDay,
         timeOfDay: currentTimeOfDay,
-        createdAt: now()
-      };
+	        createdAt: now()
+	      };
 
-      const updatedConvs = appData.conversations.map(c =>
+      const updatedConvs = latestConversationsRef.current.map(c =>
         c.id === conversationId
           ? { ...c, messages: [...c.messages, aiMsg], updatedAt: now() }
           : c
       );
       latestConversationsRef.current = updatedConvs;
-	      onUpdate(updatedConvs);
-	      onSaveScenario(updatedConvs);
-	      saveChatDebugTrace(aiMsg, pendingDebugTrace, pendingCall1Request);
-	      queueAssistantDerivedWorkAfterSourcePersist([aiMsg], lastUserSceneText, cleanedText, aiMsg);
+      const updatedConversation = updatedConvs.find(c => c.id === conversationId);
+      if (updatedConversation) syncAssistantResponseLengths(updatedConversation.messages);
+		      onUpdate(updatedConvs);
+		      onSaveScenario(updatedConvs);
+		      saveChatDebugTrace(aiMsg, pendingDebugTrace, pendingCall1Request);
+		      hiddenCall1Attempts.forEach((call) => recordChatDebugSupportCall(aiMsg, call));
+          if (lastMsg) {
+            continueEventsRef.current.push({
+              messageId: lastMsg.id,
+              generationId: continueAnchorGenerationId || undefined,
+              timestamp: Date.now(),
+            });
+          }
+		      queueAssistantDerivedWorkAfterSourcePersist([aiMsg], lastUserSceneText, cleanedText, aiMsg);
 
       processResponseForNewCharacters(cleanedText, aiMsg);
 
     } catch (err) {
       console.error(err);
       if (err instanceof ContentFilteredChatError) {
-        appendContentFilterNotice(appData.conversations, err, pendingDebugTrace, pendingCall1Request);
+        const errorDebug = readRequestDebugFromError(err, pendingDebugTrace, pendingCall1Request);
+        const latestBase = latestConversationsRef.current;
+        const liveConversation = latestBase.find(c => c.id === conversationId);
+        const liveLastMessage = liveConversation?.messages[liveConversation.messages.length - 1];
+        const continueAnchorStillCurrent = continueAnchorMessageId
+          ? liveLastMessage?.id === continueAnchorMessageId && (liveLastMessage.generationId || liveLastMessage.id) === continueAnchorGenerationId
+          : !liveLastMessage;
+        if (!liveConversation || !continueAnchorStillCurrent) {
+          debugLog('[handleContinue] Skipping content-filter notice because the conversation tail changed before completion.');
+          return;
+        }
+        appendContentFilterNotice(
+          latestBase,
+          err,
+          errorDebug.trace,
+          errorDebug.call1Request,
+          hiddenCall1Attempts,
+        );
         return;
       }
       const message = err instanceof Error ? err.message : "Continue failed. Check your connection or model settings.";
@@ -7794,8 +8157,8 @@ const updatedChar: SideCharacter = {
                           scenarioTitle,
                           modelId,
                           exportedAt,
-                          continueMessageIds: continueEventsRef.current.map(e => e.messageId),
-                          regenerateMessageIds: regenerateEventsRef.current.map(e => e.messageId),
+                          continueMessageEvents: continueEventsRef.current,
+                          regenerateMessageEvents: regenerateEventsRef.current,
                           sanitizeAssistantText: sanitizeAssistantMessageText,
                           messageComments: exportDialogDebugComments,
                           postTurnStateChanges: exportPostTurnStateChanges,
@@ -7911,7 +8274,7 @@ const updatedChar: SideCharacter = {
               />
             </label>
             <p className="text-xs text-zinc-500">
-              Saved to this playthrough for review exports only. This is not sent to the AI and does not alter story canon.
+	              Saved to this playthrough for review exports only. This is not sent to the AI and does not alter accepted story state.
             </p>
           </div>
           <DialogFooter className="gap-2">

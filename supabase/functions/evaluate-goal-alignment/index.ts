@@ -45,6 +45,14 @@ type GoalAlignmentEvaluation = {
   evidence?: string;
 };
 
+type AlignmentReview = Partial<GoalAlignmentEvaluation> & {
+  index: number;
+  accepted: boolean;
+  reason: string;
+  goalId: string;
+  goalKind?: GoalKind;
+};
+
 const allowedSignals = new Set<GoalAlignmentSignal>([
   "support",
   "resistance",
@@ -66,6 +74,17 @@ function normalizeIntensity(value: unknown): 0 | 1 | 2 | 3 | null {
 
 function summarize(value: unknown, max = 260): string {
   return String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
+}
+
+function buildMalformedAlignmentReview(reason: string, content: string): AlignmentReview {
+  return {
+    index: 0,
+    accepted: false,
+    reason,
+    goalId: "unknown",
+    rationale: summarize(content, 220),
+    evidence: "",
+  };
 }
 
 serve(async (req) => {
@@ -169,7 +188,7 @@ Intensity:
 Important:
 - Evaluate alignment only. Do not judge whether a step is completed.
 - Do not penalize a goal just because it did not appear in a single turn. Use drift only when the user or scene is actively carrying away from it.
-- Rigid, normal, and flexible are guidance strengths, not signals. Classify the exchange evidence; the app code will apply different scoring rates later.
+- Rigid, normal, and flexible are guidance strengths, not signals. Classify the exchange evidence only; these results may remain diagnostic until the app explicitly enables adaptive goal pressure.
 - Empty or mostly not_applicable results are valid.
 
 Respond in JSON only:
@@ -195,6 +214,36 @@ Respond in JSON only:
       ],
       temperature: 0.15,
       max_tokens: 2048,
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "chronicle_goal_alignment",
+          schema: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              evaluations: {
+                type: "array",
+                items: {
+                  type: "object",
+                  additionalProperties: false,
+                  properties: {
+                    goalId: { type: "string" },
+                    goalKind: { type: "string", enum: ["story", "character"] },
+                    characterId: { anyOf: [{ type: "string" }, { type: "null" }] },
+                    signal: { type: "string", enum: ["support", "resistance", "drift", "neutral", "not_applicable"] },
+                    intensity: { type: "number", enum: [0, 1, 2, 3] },
+                    rationale: { type: "string" },
+                    evidence: { type: "string" },
+                  },
+                  required: ["goalId", "goalKind", "characterId", "signal", "intensity", "rationale", "evidence"],
+                },
+              },
+            },
+            required: ["evaluations"],
+          },
+        },
+      },
     };
 
     const debugPayload = debugTrace === true
@@ -238,34 +287,82 @@ Respond in JSON only:
       parsed = JSON.parse(jsonMatch ? jsonMatch[0] : content);
     } catch {
       console.error("[evaluate-goal-alignment] Failed to parse classification response:", content);
-      return new Response(JSON.stringify({ evaluations: [], ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}) }), {
+      const alignmentReviews = [buildMalformedAlignmentReview("parse_error", content)];
+      return new Response(JSON.stringify({
+        evaluations: [],
+        alignmentReviews,
+        rejectedEvaluations: alignmentReviews,
+        parseError: "parse_error",
+        ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!Array.isArray(parsed.evaluations)) {
+      const alignmentReviews = [buildMalformedAlignmentReview("evaluations_not_array", content)];
+      return new Response(JSON.stringify({
+        evaluations: [],
+        alignmentReviews,
+        rejectedEvaluations: alignmentReviews,
+        parseError: "evaluations_not_array",
+        ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const goalKeys = new Set(goals.map((goal) => `${goal.goalKind}:${goal.characterId || ""}:${goal.goalId}`));
-    const evaluations = (parsed.evaluations || []).map((evaluation) => {
-      const goalKind = evaluation.goalKind === "story" || evaluation.goalKind === "character" ? evaluation.goalKind : null;
+    const alignmentReviews: AlignmentReview[] = parsed.evaluations.map((evaluation, index) => {
+      const goalKind = evaluation?.goalKind === "story" || evaluation?.goalKind === "character" ? evaluation.goalKind : null;
       const signal = normalizeSignal(evaluation.signal);
       const intensity = normalizeIntensity(evaluation.intensity);
-      if (!goalKind || !signal || intensity === null) return null;
+      const goalId = summarize(evaluation?.goalId, 120);
 
       const normalized = {
-        goalId: summarize(evaluation.goalId, 120),
+        goalId,
         goalKind,
-        characterId: evaluation.characterId ?? null,
+        characterId: evaluation?.characterId ?? null,
         signal,
         intensity,
-        rationale: summarize(evaluation.rationale),
-        evidence: summarize(evaluation.evidence, 220),
+        rationale: summarize(evaluation?.rationale),
+        evidence: summarize(evaluation?.evidence, 220),
       };
-      const key = `${normalized.goalKind}:${normalized.characterId || ""}:${normalized.goalId}`;
-      return goalKeys.has(key) ? normalized : null;
-    }).filter(Boolean) as GoalAlignmentEvaluation[];
+      const key = `${normalized.goalKind || ""}:${normalized.characterId || ""}:${normalized.goalId}`;
+      const accepted = Boolean(goalKind && signal && intensity !== null && goalKeys.has(key));
+      const reason = accepted
+        ? "accepted"
+        : !goalId
+          ? "missing_goal_id"
+          : !goalKind
+            ? "invalid_goal_kind"
+            : !signal
+              ? "invalid_signal"
+              : intensity === null
+                ? "invalid_intensity"
+                : !goalKeys.has(key)
+                  ? "unknown_goal"
+                  : "rejected";
+      return {
+        index,
+        ...normalized,
+        accepted,
+        reason,
+      } as AlignmentReview;
+    });
+    const evaluations = alignmentReviews
+      .filter((review) => review.accepted)
+      .map(({ index: _index, accepted: _accepted, reason: _reason, ...evaluation }) => evaluation as GoalAlignmentEvaluation);
+    const rejectedEvaluations = alignmentReviews.filter((review) => !review.accepted);
 
     console.log(`[evaluate-goal-alignment] Evaluated ${evaluations.length} of ${goals.length} goals`);
 
-    return new Response(JSON.stringify({ evaluations, ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}) }), {
+    return new Response(JSON.stringify({
+      evaluations,
+      alignmentReviews,
+      rejectedEvaluations,
+      ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {

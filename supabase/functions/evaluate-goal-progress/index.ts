@@ -25,10 +25,19 @@ type EvaluationRequest = {
 type StepUpdate = {
   stepId: string;
   completed: boolean;
+  modelCompleted: boolean;
   result: 'no_progress' | 'partial_progress' | 'completed' | 'unsupported';
   confidence: number;
   evidence: string;
   summary: string;
+  rejectionReason?: string;
+};
+
+type ClassificationReview = StepUpdate & {
+  index: number;
+  accepted: boolean;
+  knownStep: boolean;
+  reason: string;
 };
 
 function clampConfidence(value: unknown): number {
@@ -41,8 +50,35 @@ function summarize(value: unknown, max = 320): string {
   return String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
 }
 
+function normalizeEvidence(value: unknown, max = 320): string {
+  return summarize(value, max)
+    .replace(/^["'`]+|["'`]+$/g, "")
+    .replace(/^evidence\s*:\s*/i, "")
+    .trim();
+}
+
 function isGenericEvidence(value: string): boolean {
-  return /^(short quote|close paraphrase|supported by|evidence from|latest exchange)/i.test(value.trim());
+  const normalized = normalizeEvidence(value).toLowerCase();
+  return !normalized ||
+    /^(short quote|close paraphrase|supported by|evidence from|latest exchange|short exchange evidence|brief evidence|model evidence)/i.test(normalized) ||
+    normalized.includes("from this exchange");
+}
+
+function buildMalformedClassificationReview(reason: string, content: string): ClassificationReview {
+  return {
+    index: 0,
+    stepId: "unknown",
+    completed: false,
+    modelCompleted: false,
+    result: "unsupported",
+    confidence: 0,
+    evidence: "",
+    summary: summarize(content, 260),
+    accepted: false,
+    knownStep: false,
+    reason,
+    rejectionReason: reason,
+  };
 }
 
 const allowedResults = new Set<StepUpdate["result"]>([
@@ -162,6 +198,35 @@ Set "completed" to true only when result is "completed", confidence is at least 
       ],
       temperature: 0.3,
       max_tokens: 1024,
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "chronicle_goal_progress",
+          schema: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              classifications: {
+                type: "array",
+                items: {
+                  type: "object",
+                  additionalProperties: false,
+                  properties: {
+                    stepId: { type: "string" },
+                    result: { type: "string", enum: ["no_progress", "partial_progress", "completed", "unsupported"] },
+                    completed: { type: "boolean" },
+                    confidence: { type: "number" },
+                    evidence: { type: "string" },
+                    summary: { type: "string" },
+                  },
+                  required: ["stepId", "result", "completed", "confidence", "evidence", "summary"],
+                },
+              },
+            },
+            required: ["classifications"],
+          },
+        },
+      },
     };
     const debugPayload = debugTrace === true
       ? {
@@ -209,31 +274,89 @@ Set "completed" to true only when result is "completed", confidence is at least 
       parsed = JSON.parse(jsonMatch ? jsonMatch[0] : content);
     } catch {
       console.error('[evaluate-goal-progress] Failed to parse classification response:', content);
-      return new Response(JSON.stringify({ stepUpdates: [], ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}) }), {
+      const classificationReviews = [buildMalformedClassificationReview("parse_error", content)];
+      return new Response(JSON.stringify({
+        stepUpdates: [],
+        classificationReviews,
+        rejectedClassifications: classificationReviews,
+        parseError: "Failed to parse classification response",
+        ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    const stepUpdates: StepUpdate[] = (parsed.classifications || []).map(c => {
-      const step = pendingSteps.find(s => s.stepId === c.stepId);
-      if (!step) return null;
+    if (!Array.isArray(parsed.classifications)) {
+      const classificationReviews = [buildMalformedClassificationReview("classifications_not_array", content)];
+      return new Response(JSON.stringify({
+        stepUpdates: [],
+        classificationReviews,
+        rejectedClassifications: classificationReviews,
+        parseError: "classifications was not an array",
+        ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    const classifications = parsed.classifications;
+    const pendingByStepId = new Map(pendingSteps.map((step) => [step.stepId, step]));
+    const classificationReviews: ClassificationReview[] = classifications.map((raw, index) => {
+      const c = raw && typeof raw === "object" ? raw as Record<string, unknown> : {};
+      const rawStepId = typeof c.stepId === "string" ? c.stepId.trim() : "";
+      const step = pendingByStepId.get(rawStepId);
       const confidence = clampConfidence(c.confidence);
-      const evidence = summarize(c.evidence, 280);
+      const evidence = normalizeEvidence(c.evidence, 280);
       const result = normalizeResult(c.result, c.completed);
-      const completed = result === "completed" && c.completed === true && confidence >= 0.75 && !!evidence && !isGenericEvidence(evidence);
-      return {
-        stepId: c.stepId,
+      const modelCompleted = c.completed === true;
+      const completed = !!step && result === "completed" && modelCompleted && confidence >= 0.75 && !!evidence && !isGenericEvidence(evidence);
+      const reason = completed
+        ? "accepted"
+        : !rawStepId
+          ? "missing_step_id"
+          : !step
+            ? "unknown_step"
+            : result !== "completed"
+              ? "result_not_completed"
+              : !modelCompleted
+                ? "not_marked_completed"
+                : confidence < 0.75
+                  ? "low_confidence"
+                  : !evidence || isGenericEvidence(evidence)
+                    ? "missing_evidence"
+                    : "rejected";
+      const review: ClassificationReview = {
+        index,
+        stepId: rawStepId || "unknown",
         completed,
+        modelCompleted,
         result,
         confidence,
         evidence,
         summary: summarize(c.summary, 260),
+        accepted: completed,
+        knownStep: Boolean(step),
+        reason,
       };
-    }).filter(Boolean) as StepUpdate[];
+      if (!completed) review.rejectionReason = reason;
+      return review;
+    });
+
+    const stepUpdates: StepUpdate[] = classificationReviews
+      .filter((review) => review.knownStep)
+      .map(({ index: _index, accepted: _accepted, knownStep: _knownStep, reason: _reason, ...update }) => update);
+    const rejectedClassifications = classificationReviews.filter(
+      (review) => !review.accepted && (review.modelCompleted || review.result === "completed" || !review.knownStep),
+    );
 
     console.log(`[evaluate-goal-progress] Classified ${stepUpdates.length} steps, ${stepUpdates.filter(u => u.completed).length} completed`);
 
-    return new Response(JSON.stringify({ stepUpdates, ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}) }), {
+    return new Response(JSON.stringify({
+      stepUpdates,
+      classificationReviews,
+      rejectedClassifications,
+      ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
 

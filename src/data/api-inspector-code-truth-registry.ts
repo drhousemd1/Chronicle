@@ -87,7 +87,7 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
       rows: [
         {
           label: "Prompt size pressure",
-          value: "System prompt assembly is large; instruction drift can occur when runtime directives are weak or missing.",
+          value: "System prompt assembly is large; instruction drift can occur when adaptive guidance is weak or missing.",
         },
         {
           label: "State drift risk",
@@ -160,23 +160,23 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
               tagType: "code-logic",
               icon: "🔧",
               purpose:
-                "Creates the user turn, applies established-fact note preservation, increments session message counter, injects anti-loop runtime directives, and starts streaming narrative generation.",
+                "Creates the user turn, applies established-fact note preservation, increments session message counter, appends any adaptive style guidance to the final user payload, and streams the response while preserving a one-retry repair path.",
               whyItExists:
                 "Chronicle needs one authoritative send path that assembles live turn state before any paid narrative request leaves the browser.",
               problemSolved:
-                "Prevents established-fact wrappers, session position, and runtime corrective directives from being applied inconsistently across normal sends.",
+                "Prevents established-fact wrappers, session position, adaptive style guidance, and hidden repair retries from being applied inconsistently across normal sends.",
               fileRefs: [
-                {
-                  path: "src/components/chronicle/ChatInterfaceTab.tsx",
-                  lines: "3003-3133",
-                },
+	                {
+	                  path: "src/components/chronicle/ChatInterfaceTab.tsx",
+			                  lines: "5281-5661",
+	                },
               ],
               subItems: [
                 {
                   id: "item-handle-send-sub-1",
-                  title: "Canon note pre-processing",
+	                  title: "Established-fact note pre-processing",
                   description:
-                    "`buildCanonNote` prepends a guard string when user authored AI-character content in-message.",
+	                    "`buildCanonNote` prepends an established-fact guard string when the user wrote AI-character content inside their message.",
                 },
                 {
                   id: "item-handle-send-sub-2",
@@ -186,23 +186,23 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
                 },
                 {
                   id: "item-handle-send-sub-3",
-                  title: "Streaming lifecycle",
-                  description:
-                    "Streams chunks, normalizes placeholder names, strips legacy tags, then commits assistant message.",
+	                  title: "Streaming lifecycle",
+	                  description:
+	                    "Streams model chunks into the UI, retries once when a repair directive is truly warranted, then normalizes placeholder names and commits the accepted assistant message.",
                 },
               ],
               crossRefs: [
                 {
                   badge: "1",
                   targetItemId: "item-final-user-wrapper",
-                  label: "Session/length/style wrapper",
+	                  label: "Session/style wrapper",
                   tooltip: "Values created here are injected into the final user message payload.",
                 },
                 {
                   badge: "2",
-                  targetItemId: "item-runtime-directive-message",
-                  label: "Runtime directive system message",
-                  tooltip: "Anti-loop directive produced here is injected as dedicated system message.",
+                  targetItemId: "item-final-user-wrapper",
+                  label: "Adaptive guidance in final user message",
+                  tooltip: "Adaptive style guidance produced here is appended inside the final user message when triggered.",
                 },
               ],
             },
@@ -220,10 +220,10 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
               settingsGate:
                 "Conditional entry lane. This only runs when the user clicked Regenerate or Continue instead of a normal Send.",
               fileRefs: [
-                {
-                  path: "src/components/chronicle/ChatInterfaceTab.tsx",
-                  lines: "3193-3434",
-                },
+	                {
+	                  path: "src/components/chronicle/ChatInterfaceTab.tsx",
+			                  lines: "5663-5895, 5897-6163",
+	                },
               ],
               subItems: [
                 {
@@ -446,11 +446,11 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               problemSolved:
                 "Guards against speaker/avatar drift, off-screen participation, malformed formatting, and control-rule violations in live dialogue.",
               fileRefs: [
-                { path: "src/services/llm.ts", lines: "657-789" },
+                { path: "src/services/llm.ts", lines: "118-671" },
               ],
               codeSourceLabel: "INSTRUCTIONS stack (priority hierarchy)",
               promptViewEnabled: true,
-              codeSource: `PRIORITY HIERARCHY:\n1. Control rules\n2. Forward Momentum + Anti-Loop\n3. Scene Presence\n4. Line of Sight\n...\nSTRICT FORMATTING RULES\nPARAGRAPH TAGGING\nCHARACTER NAMING RULES`,
+              codeSource: `PRIORITY HIERARCHY:\n1. Control rules\n2. Forward Momentum + Adaptive Style\n3. Scene Presence\n4. Line of Sight\n...\nSTRICT FORMATTING RULES\nPARAGRAPH TAGGING\nCHARACTER NAMING RULES`,
             },
           ],
         },
@@ -470,12 +470,12 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
                 "The edge runtime depends on strict ordering so system rules, the capped recent transcript, adaptive style text, the final user turn, and the compact execution brief land in the right lane without bloating the context window.",
               problemSolved:
                 "Prevents wrappers, adaptive style text, and the execution brief from being buried in the wrong message slot or omitted from the outbound payload.",
-              fileRefs: [
-                { path: "src/services/llm.ts", lines: "831-898" },
-              ],
+	              fileRefs: [
+	                { path: "src/services/llm.ts", lines: "703-726" },
+	              ],
               codeSourceLabel: "`messages` assembly in `generateRoleplayResponseStream`",
               promptViewEnabled: true,
-              codeSource: `const historyMessages = conversation.messages\n  .filter((message) => !isLocalRoleplayNoticeMessage(message))\n  .slice(-9);\nconst messages = [\n  { role: 'system', content: systemInstruction },\n  ...historyMessages,\n];\nmessages.push({ role: 'user', content: [SESSION ...] + optionalContinueOrRetryStyleDirective + userMessage + regen + EXECUTION_BRIEF_TEXT });`,
+	              codeSource: `const historyMessages = conversation.messages\n  .filter((message) => !isLocalRoleplayNoticeMessage(message))\n  .slice(-9);\nconst messages = [\n  { role: 'system', content: systemInstruction },\n  ...historyMessages,\n];\nmessages.push({ role: 'user', content: [optional SESSION, optional adaptive or repair directive, userMessage + regen, EXECUTION_BRIEF_TEXT].join('\\n\\n') });`,
             },
             {
               id: "item-runtime-directive-message",
@@ -491,8 +491,8 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               settingsGate:
                 "Conditional final-user wrapper text. It is only present when the runtime detects repetition or when detailed output has collapsed across recent assistant turns.",
               fileRefs: [
-                { path: "src/services/llm.ts", lines: "862-865" },
-                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3032-3039, 3312-3316" },
+                { path: "src/services/llm.ts", lines: "715-720" },
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "1507-1520, 5339-5364, 5714-5735, 5946-5969" },
               ],
               codeSourceLabel: "Adaptive style directive text",
               promptViewEnabled: true,
@@ -517,19 +517,19 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
                 "Chronicle uses lightweight one-turn wrappers for session position, special turn behavior, and immediate-scene priority without mutating stored transcript history.",
               problemSolved:
                 "Prevents regenerate/session metadata from being lost while keeping the final wrapper small enough not to compete with the system prompt.",
-              fileRefs: [
-                { path: "src/services/llm.ts", lines: "867, 792-829" },
-                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3030-3039" },
-              ],
+	              fileRefs: [
+	                { path: "src/services/llm.ts", lines: "715-720" },
+	                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "5281-5364, 5663-5738, 5897-5979" },
+	              ],
               codeSourceLabel: "Final user wrapper expression",
               promptViewEnabled: true,
-              codeSource: "[SESSION: Message N] + optionalContinueOrRetryStyleDirective + userMessage + REGENERATION_DIRECTIVE_TEXT + EXECUTION_BRIEF_TEXT",
+	              codeSource: "[optional SESSION] + optional adaptive style or repair directive + userMessage + optional REGENERATION_DIRECTIVE_TEXT + EXECUTION_BRIEF_TEXT",
               crossRefs: [
                 {
                   badge: "1",
                   targetItemId: "item-handle-send",
                   label: "Inputs originate in send pipeline",
-                  tooltip: "Session counter and anti-loop decisions originate in ChatInterfaceTab handleSend.",
+                  tooltip: "Session counter and adaptive style decisions originate in ChatInterfaceTab handleSend.",
                 },
               ],
             },
@@ -660,7 +660,7 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               problemSolved:
                 "Keeps chat responsive while still updating memories, goals, character state, and new-character side effects in the background.",
               fileRefs: [
-                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3065-3125, 3408-3425" },
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "5190-5201" },
               ],
               crossRefs: [
                 {
@@ -695,7 +695,7 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               problemSolved:
                 "Prevents stale memories, goals, or character updates from overwriting the currently active generation.",
               fileRefs: [
-                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "1863-1877, 1913-1916, 2200-2203" },
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3233-3247, 3457-3472, 4830-4915" },
               ],
             },
           ],
@@ -717,12 +717,12 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               problemSolved:
                 "Prevents prompt bloat, skips repeated memory facts, and stops low-value flavor text from polluting the continuity layer.",
               fileRefs: [
-                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "4680-4774" },
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "4973-5126" },
                 { path: "supabase/functions/extract-memory-events/index.ts", lines: "27-143" },
               ],
               codeSourceLabel: "Memory curator system prompt",
               promptViewEnabled: true,
-              codeSource: `You are a story memory curator...\nRECENT SAVED MEMORIES: {{recentExistingMemories}}\nIgnore events already captured by recent saved memory.\nReturn 0-3 events max as JSON array.`,
+              codeSource: `You are a story memory curator...\nRECENT SAVED MEMORIES: {{recentExistingMemories}}\nIgnore events already captured by recent saved memory.\nReturn JSON matching the events-array schema.`,
             },
             {
               id: "item-compress-day-memories",
@@ -750,7 +750,7 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
         {
           id: "section-api2-goals",
           title: "API 2B - Goal Evaluation and Alignment",
-          description: "Separates binary story-step completion from adaptive goal-alignment scoring.",
+          description: "Separates binary story-step completion from goal-alignment diagnostics. Goal alignment is still shadow-mode review data in the live app.",
           items: [
             {
               id: "item-evaluate-goals",
@@ -764,8 +764,8 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               problemSolved:
                 "Keeps completed goal steps tied to evidence-gated post-turn evaluation rather than loose prose interpretation alone.",
               fileRefs: [
-                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3181-3399" },
-                { path: "supabase/functions/evaluate-goal-progress/index.ts", lines: "118-155, 217-235" },
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3275-3507" },
+                { path: "supabase/functions/evaluate-goal-progress/index.ts", lines: "154-181, 243-305" },
               ],
               codeSourceLabel: "Goal classification prompt",
               promptViewEnabled: true,
@@ -807,11 +807,11 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               purpose:
                 "Classifies the latest exchange as support, resistance, drift, neutral, or not-applicable for each active story and AI-character goal.",
               whyItExists:
-                "Goal strength needs a real feedback loop instead of static rigid/normal/flexible wording that never changes based on user behavior.",
+                "Goal strength needs a real feedback loop eventually, but the classifier must be validated before it can change live prompt pressure.",
               problemSolved:
                 "Collects alignment diagnostics for review without letting unproven scores steer live generation while shadow mode is enabled.",
               fileRefs: [
-                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3401-3615" },
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3509-3723" },
                 { path: "supabase/functions/evaluate-goal-alignment/index.ts", lines: "1-272" },
                 { path: "src/lib/goal-alignment.ts", lines: "1-211" },
               ],
@@ -819,7 +819,7 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               promptViewEnabled: true,
               codeSource: `You are the post-turn GOAL ALIGNMENT evaluator...
 Classify each active goal as support, resistance, drift, neutral, or not_applicable.
-The app code applies scoring rates differently for rigid, normal, and flexible goals.`,
+Shadow mode keeps these results diagnostic-only until the lane is explicitly enabled.`,
               subItems: [
                 {
                   id: "item-evaluate-goal-alignment-sub-1",
@@ -879,11 +879,11 @@ Only completed steps are persisted. Each row is tied to the source assistant gen
               tagType: "data-block",
               icon: "📦",
               purpose:
-                "Persists the current 0-100 alignment score, trend, status, counters, and source message lineage for story and character goals.",
+                "Defines the durable 0-100 alignment score, trend, status, counters, and source message lineage for story and character goals when the shadow-mode lane is enabled.",
               whyItExists:
-                "The next API Call 1 needs a compact snapshot of whether the roleplay is supporting, resisting, or drifting from a goal.",
+                "The live app does not inject this snapshot while shadow mode is enabled; the ledger exists for the future adaptive-goal path.",
               problemSolved:
-                "Makes goal guidance adaptive instead of static, while keeping story goals session-scoped and regenerate-safe.",
+                "Provides the persistence contract for adaptive goal guidance once the diagnostic lane is proven safe to enable.",
               fileRefs: [
                 { path: "supabase/migrations/20260521044256_424aa268-34cd-41aa-a2ea-dc2779b01344.sql", lines: "1-113" },
                 { path: "src/services/persistence/conversations.ts", lines: "817-905" },
@@ -920,7 +920,7 @@ Only completed steps are persisted. Each row is tied to the source assistant gen
               problemSolved:
                 "Prevents every assistant turn from blindly mutating character state without an explicit eligibility and context pass.",
               fileRefs: [
-                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3862-4190" },
+	                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3970-4298" },
               ],
               crossRefs: [
                 {
@@ -942,9 +942,9 @@ Only completed steps are persisted. Each row is tied to the source assistant gen
                 "The follow-up call should keep durable character state current without adding a second writing system or broad psychological lecture.",
               problemSolved:
                 "Reduces stale cards, speculative rewrites, fake field paths, and prompt bloat in the post-turn state-sync pass.",
-              fileRefs: [
-                { path: "supabase/functions/extract-character-updates/index.ts", lines: "586-651, 730-735" },
-              ],
+	              fileRefs: [
+		                { path: "supabase/functions/extract-character-updates/index.ts", lines: "790-839, 885-894" },
+	              ],
               codeSourceLabel: "extract-character-updates system prompt (abridged)",
               promptViewEnabled: true,
               codeSource: `--- CURRENT STORY CLOCK ---\n--- CURRENT CHARACTER STATE ---\n--- SUPPORTED FIELD PATHS ---\n--- CORE TASK ---\n--- FIELD GUIDANCE ---\n--- CHARACTER GOALS ---\n--- CONSERVATIVE UPDATE RULES ---\n--- OUTPUT JSON ---`,
@@ -960,23 +960,23 @@ Only completed steps are persisted. Each row is tied to the source assistant gen
                 "Character cards still need durable evolution, but the follow-up worker should behave like a conservative state reconciler rather than a free-form author.",
               problemSolved:
                 "Prevents unsupported custom containers, duplicate traits/goals, runaway step lists, weak evidence, and low-confidence edits from becoming saved state.",
-              fileRefs: [
-                { path: "supabase/functions/extract-character-updates/index.ts", lines: "603-647" },
-              ],
+	              fileRefs: [
+		                { path: "supabase/functions/extract-character-updates/index.ts", lines: "810-831" },
+	              ],
               codeSourceLabel: "Character extractor field guidance",
               promptViewEnabled: true,
-              codeSource: `Field guidance:
+	              codeSource: `Field guidance:
 - currentMood: short emotional state only
 - location: broad place, updated only after actual arrival/entry/exit/relocation
-- scenePosition: volatile immediate placement, updated whenever the exchange establishes where the character is right now
+- scenePosition: short factual snapshot of the character's immediate physical situation inside the current location
 - structured sections use Label: Description
 - custom sections only when no structured field fits
 
 Character goals:
 - sustained goals only
 - update existing goals over duplicates
-- at most one new goal per character
-- 3-6 steps, never runaway lists
+- brand-new goals only when the latest exchange clearly establishes a sustained objective
+- new steps must be durable milestone stages, not current-scene logistics
 - completed steps receive app-owned story-clock metadata`,
               subItems: [
                 {
@@ -1011,8 +1011,8 @@ Character goals:
               problemSolved:
                 "Prevents unsupported fields, duplicate structured values, and malformed retry outputs from corrupting saved character data.",
               fileRefs: [
-                { path: "supabase/functions/extract-character-updates/index.ts", lines: "56-71, 116-143, 764-801" },
-                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3664-3683, 4068-4132" },
+                { path: "supabase/functions/extract-character-updates/index.ts", lines: "61-112, 357-445, 480-540, 871-975" },
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "4159-4208, 4241-4247, 4827-4915" },
               ],
               codeSourceLabel: "Validation/reconciliation checkpoints",
               promptViewEnabled: true,
@@ -1213,7 +1213,7 @@ Character goals:
               settingsGate:
                 "Optional image lane. This only fires when the user asks the chat interface to generate a scene image.",
               fileRefs: [
-                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3436-3498" },
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "6165-6280" },
                 { path: "supabase/functions/generate-scene-image/index.ts", lines: "47-162, 168-236" },
               ],
               codeSourceLabel: "Scene image analysis prompt",

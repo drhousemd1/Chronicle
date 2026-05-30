@@ -336,15 +336,22 @@ export function buildAssistantRepetitionRepairDirective(
   messages: AssistantStyleMessage[],
   candidateText: string,
   recentLengths: number[] = [],
+  comparisonTexts: string[] = [],
 ): string {
   const recentAssistantMessages = messages
     .filter((message) => message.role === 'assistant' && message.text?.trim())
     .slice(-3);
 
-  if (recentAssistantMessages.length === 0 || !candidateText.trim()) return '';
+  const comparisonMessages = comparisonTexts
+    .filter((text) => text?.trim())
+    .map((text) => ({ role: 'assistant', text }));
+
+  if (recentAssistantMessages.length === 0 && comparisonMessages.length === 0) return '';
+  if (!candidateText.trim()) return '';
 
   const candidate = analyzeAssistantMessage(candidateText);
-  const previous = recentAssistantMessages.map((message) => analyzeAssistantMessage(message.text || ''));
+  const previous = [...recentAssistantMessages, ...comparisonMessages]
+    .map((message) => analyzeAssistantMessage(message.text || ''));
   const previousShapes = new Set(previous.flatMap((analysis) => analysis.shapes));
   const previousShortQuotes = new Set(previous.flatMap((analysis) => analysis.shortQuotes));
   const previousTerms = new Set(previous.flatMap((analysis) => analysis.descriptiveTerms));
@@ -370,18 +377,34 @@ export function buildAssistantRepetitionRepairDirective(
     return (max - min) / min <= 0.15;
   })();
 
-  const reasons = [
+  const structureReasons = [
     repeatedShape ? 'same structure as a recent assistant response' : '',
     repeatedTriad ? 'same action -> dialogue -> internal thought cadence' : '',
     repeatedActionFirstDialogue ? 'same action-first dialogue cadence' : '',
+    lockedLength ? 'same response length band' : '',
+  ].filter(Boolean);
+  const wordingReasons = [
     repeatedQuotes.length > 0 ? 'reused short dialogue phrasing' : '',
     repeatedTerms.length >= 3 ? `reused descriptive focus (${repeatedTerms.join(', ')})` : '',
     repeatedContentTerms.length >= 3 ? `reused dialogue or topic focus (${repeatedContentTerms.join(', ')})` : '',
+  ].filter(Boolean);
+  const qualityReasons = [
     frontLoaded ? 'front-loaded narration or weak dialogue balance' : '',
-    lockedLength ? 'same response length band' : '',
   ].filter(Boolean);
 
-  if (reasons.length === 0) return '';
+  const reasonGroupsPresent = [
+    structureReasons.length > 0,
+    wordingReasons.length > 0,
+    qualityReasons.length > 0,
+  ].filter(Boolean).length;
+  const hasDirectCopyRisk = repeatedQuotes.length > 0
+    && (repeatedTerms.length >= 2 || repeatedContentTerms.length >= 2);
+  const hasRegenerationQuoteReuse = repeatedQuotes.length > 0 && comparisonMessages.length > 0;
+  const shouldRepair = reasonGroupsPresent >= 2 || hasDirectCopyRisk || hasRegenerationQuoteReuse;
+
+  const reasons = [...structureReasons, ...wordingReasons, ...qualityReasons];
+
+  if (!shouldRepair || reasons.length === 0) return '';
 
   return `[OUTPUT REVISION REQUIRED]
 The draft response repeated ${reasons.join(', ')}. Regenerate the response once. Keep the same established facts, speaker tags, user-character boundaries, and emotional direction, but do not rewrite the same exchange with swapped wording. The new response must develop the AI-controlled character's side of the current exchange while preserving the user's control of their character. Use meaningful external dialogue when the character can speak, and avoid reusing the same descriptive focus, topic focus, sentence shape, or closing pattern.`;

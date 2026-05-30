@@ -67,8 +67,8 @@ describe('buildChatReviewHtml', () => {
       scenarioTitle: 'Lost',
       modelId: 'test-model',
       exportedAt: new Date('2026-04-26T12:00:00.000Z'),
-      continueMessageIds: [],
-      regenerateMessageIds: ['message-ai-1'],
+      continueMessageEvents: [],
+      regenerateMessageEvents: [{ messageId: 'message-ai-1', generationId: 'generation-ai-1', timestamp: 4 }],
       sanitizeAssistantText: (text) => text,
       messageComments: {
         'message-ai-1': {
@@ -107,6 +107,23 @@ describe('buildChatReviewHtml', () => {
           },
           supportCalls: [
             {
+              id: 'call1.roleplay-generation.discarded-send-first-draft',
+              label: 'API Call 1 - First draft discarded before repair',
+              apiCallGroup: 'call_1',
+              endpoint: '/functions/v1/chat',
+              method: 'POST',
+              capturedAt: 3,
+              status: 'completed',
+              requestBody: { modelId: 'test-model', messages: [{ role: 'user', content: 'draft prompt' }] },
+              responseBody: {
+                discardedDraftText: 'Sarah: "Fire first."',
+                repairDirective: 'Break the repeated structure.',
+              },
+              notes: [
+                'This API Call 1 attempt was discarded because the repetition repair guard triggered before the final assistant message was committed.',
+              ],
+            },
+            {
               id: 'call2.character-state-sync',
               label: 'API Call 2 - Character state sync',
               apiCallGroup: 'call_2',
@@ -121,11 +138,81 @@ describe('buildChatReviewHtml', () => {
                 capturedAt: 4,
                 requestBody: { model: 'test-model', messages: [{ role: 'user', content: 'sync prompt' }] },
               },
-              responseBody: { updates: [] },
+              responseBody: {
+                updates: [
+                  { character: 'Sarah', field: 'currentMood', value: 'Focused', evidence: 'Sarah checks the hearth.', confidence: 0.9 },
+                ],
+                candidateReviews: [
+                  { index: 0, accepted: true, reason: 'accepted', character: 'Sarah', field: 'currentMood', value: 'Focused', evidence: 'Sarah checks the hearth.', confidence: 0.9 },
+                  { index: 1, accepted: false, reason: 'unsupported_field', character: 'Sarah', field: 'unsupported.path', value: 'Nope', evidence: 'n/a', confidence: 0.5 },
+                ],
+                rejectedCandidates: [
+                  { index: 1, accepted: false, reason: 'unsupported_field', character: 'Sarah', field: 'unsupported.path', value: 'Nope', evidence: 'n/a', confidence: 0.5 },
+                ],
+              },
             },
-          ],
-        },
-      },
+	            {
+	              id: 'call2.goal-progress',
+	              label: 'Support Call - Goal progress evaluation',
+	              apiCallGroup: 'support',
+              endpoint: '/functions/v1/evaluate-goal-progress',
+              method: 'POST',
+              capturedAt: 5,
+              status: 'completed',
+              requestBody: { userMessage: 'hello', aiResponse: 'reply' },
+              responseBody: {
+                stepUpdates: [
+                  { stepId: 'step-1', result: 'completed', completed: true, modelCompleted: true, confidence: 0.9, evidence: 'Fire first.', accepted: true },
+                  { stepId: 'step-2', result: 'completed', completed: false, modelCompleted: true, confidence: 0.3, evidence: 'too vague', accepted: false, reason: 'low_confidence' },
+                ],
+                classificationReviews: [
+                  { stepId: 'step-1', result: 'completed', completed: true, modelCompleted: true, confidence: 0.9, evidence: 'Fire first.', accepted: true },
+                  { stepId: 'step-2', result: 'completed', completed: false, modelCompleted: true, confidence: 0.3, evidence: 'too vague', accepted: false, reason: 'low_confidence' },
+	                ],
+	              },
+	            },
+	            {
+	              id: 'support.goal-alignment',
+	              label: 'Support Call - Goal alignment evaluation',
+	              apiCallGroup: 'support',
+	              endpoint: '/functions/v1/evaluate-goal-alignment',
+	              method: 'POST',
+	              capturedAt: 6,
+	              status: 'completed',
+	              requestBody: { goals: ['goal-1'] },
+	              responseBody: {
+	                evaluations: [],
+	                alignmentReviews: [
+	                  { index: 0, accepted: false, reason: 'unknown_goal', goalId: 'missing-goal', signal: 'support', intensity: 2, rationale: 'Model referenced a goal that was not provided.', evidence: 'unknown' },
+	                ],
+	                rejectedEvaluations: [
+	                  { index: 0, accepted: false, reason: 'unknown_goal', goalId: 'missing-goal', signal: 'support', intensity: 2, rationale: 'Model referenced a goal that was not provided.', evidence: 'unknown' },
+	                ],
+	                parseError: 'evaluations_not_array',
+	                shadowMode: true,
+	                persistence: 'diagnostic_only',
+	              },
+	            },
+	            {
+	              id: 'support.memory-extraction',
+	              label: 'Support Call - Memory extraction',
+	              apiCallGroup: 'support',
+	              endpoint: '/functions/v1/extract-memory-events',
+	              method: 'POST',
+	              capturedAt: 7,
+	              status: 'completed',
+	              requestBody: { userMessage: 'hello', aiResponse: 'reply' },
+	              responseBody: {
+	                extractedEvents: [],
+	                rejectedEvents: [
+	                  { index: 0, accepted: false, reason: 'parse_error', value: 'not json' },
+	                ],
+	                parseError: 'parse_error',
+	              },
+	            },
+	          ],
+	        },
+	      },
     });
 
     expect(html).toContain('Chronicle session log');
@@ -152,12 +239,73 @@ describe('buildChatReviewHtml', () => {
     expect(html).toContain('API Call 1 Data');
     expect(html).toContain('Exact request body sent to Grok');
     expect(html).toContain('API Call 2 + Supporting API Call Data');
+    expect(html).toContain('This section also includes API Call 1 repair attempts');
+    expect(html).toContain('First draft discarded before repair');
     expect(html).toContain('Character state sync summary');
-    expect(html).toContain('Proposed updates');
-    expect(html).toContain('No character-card updates returned.');
-    expect(html).toContain('Applied Updates Summary');
+    expect(html).toContain('Proposed candidates');
+    expect(html).toContain('Accepted update candidates');
+    expect(html).toContain('rejected: unsupported_field');
+	    expect(html).toContain('Goal progress summary');
+	    expect(html).toContain('Model marked complete');
+	    expect(html).toContain('accepted by gate');
+	    expect(html).toContain('not accepted by gate');
+	    expect(html).toContain('Goal alignment summary');
+	    expect(html).toContain('Rejected evaluations');
+	    expect(html).toContain('evaluations_not_array');
+	    expect(html).toContain('rejected: unknown_goal');
+	    expect(html).toContain('Memory extraction summary');
+	    expect(html).toContain('Rejected/malformed rows');
+	    expect(html).toContain('Rejected memory output');
+	    expect(html).toContain('parse_error');
+	    expect(html).toContain('Applied Updates Summary');
     expect(html).toContain('Sarah.currentMood updated at Day 1, sunset');
     expect(html).toContain('chronicle-session-review-v2');
     expect(html).toContain('Regenerated');
+  });
+
+  it('does not apply regenerate markers to later edited generations', () => {
+    const editedConversation = {
+      ...conversation,
+      messages: conversation.messages.map((message) =>
+        message.id === 'message-ai-1'
+          ? { ...message, generationId: 'generation-ai-edited', text: 'Sarah: "Edited manually."' }
+          : message,
+      ),
+    };
+
+    const html = buildChatReviewHtml({
+      appData,
+      conversation: editedConversation,
+      scenarioTitle: 'Lost',
+      modelId: 'test-model',
+      exportedAt: new Date('2026-04-26T12:00:00.000Z'),
+      regenerateMessageEvents: [{ messageId: 'message-ai-1', generationId: 'generation-ai-1', timestamp: 4 }],
+      sanitizeAssistantText: (text) => text,
+    });
+
+    expect(html).not.toContain('Regenerated');
+  });
+
+  it('does not apply continue markers to later edited generations', () => {
+    const editedConversation = {
+      ...conversation,
+      messages: conversation.messages.map((message) =>
+        message.id === 'message-ai-1'
+          ? { ...message, generationId: 'generation-ai-edited', text: 'Sarah: "Edited manually."' }
+          : message,
+      ),
+    };
+
+    const html = buildChatReviewHtml({
+      appData,
+      conversation: editedConversation,
+      scenarioTitle: 'Lost',
+      modelId: 'test-model',
+      exportedAt: new Date('2026-04-26T12:00:00.000Z'),
+      continueMessageEvents: [{ messageId: 'message-ai-1', generationId: 'generation-ai-1', timestamp: 4 }],
+      sanitizeAssistantText: (text) => text,
+    });
+
+    expect(html).not.toContain('Continue</span>');
   });
 });

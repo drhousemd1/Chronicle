@@ -49,14 +49,22 @@ export type ChatReviewLiveComment = {
   updatedAt: DialogDebugComment['updatedAt'];
 };
 
+export type ChatReviewActionEvent = {
+  messageId: string;
+  generationId?: string;
+  timestamp: number;
+};
+
 export type ChatReviewExportInput = {
   appData: ScenarioData;
   conversation: Conversation;
   scenarioTitle: string;
   modelId: string;
   exportedAt: Date;
-  continueMessageIds: string[];
-  regenerateMessageIds: string[];
+  continueMessageIds?: string[];
+  regenerateMessageIds?: string[];
+  continueMessageEvents?: ChatReviewActionEvent[];
+  regenerateMessageEvents?: ChatReviewActionEvent[];
   sanitizeAssistantText: (text: string) => string;
   messageComments?: Record<string, ChatReviewLiveComment>;
   postTurnStateChanges?: Record<string, string[]>;
@@ -230,31 +238,45 @@ function renderSupportCallSummary(call: NonNullable<StoredChatDebugTrace['suppor
 
   if (endpoint.includes('evaluate-goal-progress')) {
     const updates = asArray(response?.stepUpdates);
-    const completedCount = updates.filter((entry) => !!asRecord(entry)?.completed).length;
-    const accepted = asArray(response?.acceptedStepCompletions);
-    const rejected = asArray(response?.rejectedStepCompletions);
+    const reviewRows = asArray(response?.stepCompletionReviews).length
+      ? asArray(response?.stepCompletionReviews)
+      : asArray(response?.classificationReviews).length
+        ? asArray(response?.classificationReviews)
+        : updates;
+    const modelCompletedCount = reviewRows.filter((entry) => {
+      const item = asRecord(entry) || {};
+      return item.modelCompleted === true || (!('modelCompleted' in item) && item.completed === true);
+    }).length;
+    const accepted = reviewRows.filter((entry) => asRecord(entry)?.accepted === true);
+    const rejected = reviewRows.filter((entry) => {
+      const item = asRecord(entry) || {};
+      return item.accepted !== true && (item.modelCompleted === true || item.result === 'completed' || item.knownStep === false);
+    });
     return `
       <div class="support-summary">
         <div class="support-summary-title">Goal progress summary</div>
         <div class="support-summary-grid">
           ${renderKeyValueRows([
             ['Returned steps', updates.length],
-            ['Marked complete', completedCount],
+            ['Model marked complete', modelCompletedCount],
             ['Accepted completions', accepted.length],
             ['Rejected completion candidates', rejected.length],
           ])}
         </div>
-        ${updates.length ? `<ul>${updates.map((entry) => {
+        ${reviewRows.length ? `<ul>${reviewRows.map((entry) => {
           const item = asRecord(entry) || {};
+          const stepId = String(item.stepId || 'unknown step');
+          const statusLabel = item.accepted === true
+            ? 'accepted'
+            : item.reason
+              ? `rejected: ${String(item.reason)}`
+              : 'not accepted';
           const confidence = item.confidence == null ? '' : ` / confidence ${escapeHtml(String(item.confidence))}`;
           const result = item.result ? ` / ${escapeHtml(String(item.result))}` : '';
           const evidence = item.evidence ? ` Evidence: ${escapeHtml(String(item.evidence))}` : '';
-          return `<li><strong>${escapeHtml(String(item.stepId || 'unknown step'))}</strong> ${item.completed ? 'completed' : 'not completed'}${result}${confidence}${item.summary ? ` — ${escapeHtml(String(item.summary))}` : ''}${evidence}</li>`;
+          const modelCompleted = item.modelCompleted === true ? ' / model marked complete' : '';
+          return `<li><strong>${escapeHtml(stepId)}</strong> [${escapeHtml(statusLabel)}] ${item.accepted === true ? 'accepted by gate' : 'not accepted by gate'}${modelCompleted}${result}${confidence}${item.summary ? ` — ${escapeHtml(String(item.summary))}` : ''}${evidence}</li>`;
         }).join('')}</ul>` : '<p>No step updates returned.</p>'}
-        ${rejected.length ? `<p><strong>Rejected candidates:</strong></p><ul>${rejected.map((entry) => {
-          const item = asRecord(entry) || {};
-          return `<li><strong>${escapeHtml(String(item.stepId || 'unknown step'))}</strong> rejected: ${escapeHtml(String(item.reason || 'unknown'))}${item.evidence ? ` — ${escapeHtml(String(item.evidence))}` : ''}</li>`;
-        }).join('')}</ul>` : ''}
         ${notes}
       </div>
     `;
@@ -262,74 +284,104 @@ function renderSupportCallSummary(call: NonNullable<StoredChatDebugTrace['suppor
 
   if (endpoint.includes('extract-character-updates')) {
     const updates = asArray(response?.updates);
-    const accepted = asArray(response?.acceptedUpdates);
-    const rejected = asArray(response?.rejectedUpdates);
+    const reviewRows = asArray(response?.characterUpdateReviews).length
+      ? asArray(response?.characterUpdateReviews)
+      : asArray(response?.candidateReviews).length
+        ? asArray(response?.candidateReviews)
+        : updates;
+    const accepted = reviewRows.filter((entry) => asRecord(entry)?.accepted === true);
+    const rejected = reviewRows.filter((entry) => asRecord(entry)?.accepted === false);
+    const proposedCandidateCount = reviewRows.length || updates.length;
     return `
       <div class="support-summary">
         <div class="support-summary-title">Character state sync summary</div>
         <div class="support-summary-grid">
           ${renderKeyValueRows([
-            ['Proposed updates', updates.length],
-            ['Accepted updates', accepted.length],
+            ['Proposed candidates', proposedCandidateCount],
+            ['Accepted update candidates', accepted.length],
             ['Rejected updates', rejected.length],
           ])}
         </div>
-        ${updates.length ? `<ul>${updates.map((entry) => {
+        ${reviewRows.length ? `<ul>${reviewRows.map((entry) => {
           const item = asRecord(entry) || {};
           const character = String(item.character || 'Unknown character');
           const field = String(item.field || 'unknown field');
           const value = item.value == null ? '' : String(item.value);
+          const statusLabel = item.accepted === true
+            ? 'accepted'
+            : item.reason
+              ? `rejected: ${String(item.reason)}`
+              : 'not accepted';
           const confidence = item.confidence == null ? '' : ` / confidence ${escapeHtml(String(item.confidence))}`;
           const evidence = item.evidence ? ` Evidence: ${escapeHtml(String(item.evidence))}` : '';
-          return `<li><strong>${escapeHtml(character)}.${escapeHtml(field)}</strong>${value ? ` -> ${escapeHtml(textPreview(value, 180))}` : ''}${confidence}${evidence}</li>`;
+          return `<li><strong>${escapeHtml(character)}.${escapeHtml(field)}</strong> [${escapeHtml(statusLabel)}]${value ? ` -> ${escapeHtml(textPreview(value, 180))}` : ''}${confidence}${evidence}</li>`;
         }).join('')}</ul>` : '<p>No character-card updates returned.</p>'}
-        ${rejected.length ? `<p><strong>Rejected updates:</strong></p><ul>${rejected.map((entry) => {
-          const item = asRecord(entry) || {};
-          return `<li><strong>${escapeHtml(String(item.character || 'Unknown character'))}.${escapeHtml(String(item.field || 'unknown field'))}</strong> rejected: ${escapeHtml(String(item.reason || 'unknown'))}${item.evidence ? ` — ${escapeHtml(String(item.evidence))}` : ''}</li>`;
-        }).join('')}</ul>` : ''}
         ${notes}
       </div>
     `;
   }
 
-  if (endpoint.includes('evaluate-goal-alignment')) {
-    const evaluations = asArray(response?.evaluations);
-    return `
-      <div class="support-summary">
-        <div class="support-summary-title">Goal alignment summary</div>
-        <div class="support-summary-grid">
-          ${renderKeyValueRows([
-            ['Evaluations', evaluations.length],
-            ['Shadow mode', response?.shadowMode],
-            ['Persistence', response?.persistence],
-            ['Error', response?.error],
-          ])}
-        </div>
-        ${evaluations.length ? `<ul>${evaluations.map((entry) => {
-          const item = asRecord(entry) || {};
-          return `<li><strong>${escapeHtml(String(item.goalId || 'unknown goal'))}</strong> ${escapeHtml(String(item.signal || 'unknown'))}${item.intensity != null ? ` / intensity ${escapeHtml(String(item.intensity))}` : ''}${item.rationale ? ` — ${escapeHtml(String(item.rationale))}` : ''}</li>`;
-        }).join('')}</ul>` : '<p>No goal-alignment evaluations returned.</p>'}
-        ${notes}
-      </div>
-    `;
-  }
+	  if (endpoint.includes('evaluate-goal-alignment')) {
+	    const evaluations = asArray(response?.evaluations);
+	    const reviewRows = asArray(response?.alignmentReviews).length
+	      ? asArray(response?.alignmentReviews)
+	      : evaluations;
+	    const rejected = asArray(response?.rejectedEvaluations).length
+	      ? asArray(response?.rejectedEvaluations)
+	      : reviewRows.filter((entry) => asRecord(entry)?.accepted === false);
+	    return `
+	      <div class="support-summary">
+	        <div class="support-summary-title">Goal alignment summary</div>
+	        <div class="support-summary-grid">
+	          ${renderKeyValueRows([
+	            ['Evaluations', evaluations.length],
+	            ['Review rows', reviewRows.length],
+	            ['Rejected evaluations', rejected.length],
+	            ['Parse error', response?.parseError],
+	            ['Shadow mode', response?.shadowMode],
+	            ['Persistence', response?.persistence],
+	            ['Error', response?.error],
+	          ])}
+	        </div>
+	        ${reviewRows.length ? `<ul>${reviewRows.map((entry) => {
+	          const item = asRecord(entry) || {};
+	          const statusLabel = item.accepted === false
+	            ? `rejected: ${String(item.reason || 'not accepted')}`
+	            : item.accepted === true
+	              ? 'accepted'
+	              : 'returned';
+	          return `<li><strong>${escapeHtml(String(item.goalId || 'unknown goal'))}</strong> [${escapeHtml(statusLabel)}] ${escapeHtml(String(item.signal || 'unknown'))}${item.intensity != null ? ` / intensity ${escapeHtml(String(item.intensity))}` : ''}${item.rationale ? ` — ${escapeHtml(String(item.rationale))}` : ''}${item.evidence ? ` Evidence: ${escapeHtml(String(item.evidence))}` : ''}</li>`;
+	        }).join('')}</ul>` : '<p>No goal-alignment evaluations returned.</p>'}
+	        ${notes}
+	      </div>
+	    `;
+	  }
 
-  if (endpoint.includes('extract-memory-events')) {
-    const events = asArray(response?.extractedEvents);
-    return `
-      <div class="support-summary">
-        <div class="support-summary-title">Memory extraction summary</div>
-        <div class="support-summary-grid">
-          ${renderKeyValueRows([
-            ['Events extracted', events.length],
-            ['Error', response?.error],
-          ])}
-        </div>
-        ${events.length ? `<ul>${events.map((event) => `<li>${escapeHtml(String(event))}</li>`).join('')}</ul>` : '<p>No durable memory events returned.</p>'}
-        ${notes}
-      </div>
-    `;
-  }
+	  if (endpoint.includes('extract-memory-events')) {
+	    const events = asArray(response?.extractedEvents);
+	    const rejectedEvents = asArray(response?.rejectedEvents);
+	    return `
+	      <div class="support-summary">
+	        <div class="support-summary-title">Memory extraction summary</div>
+	        <div class="support-summary-grid">
+	          ${renderKeyValueRows([
+	            ['Events extracted', events.length],
+	            ['Rejected/malformed rows', rejectedEvents.length],
+	            ['Parse error', response?.parseError],
+	            ['Error', response?.error],
+	          ])}
+	        </div>
+	        ${events.length ? `<ul>${events.map((event) => `<li>${escapeHtml(String(event))}</li>`).join('')}</ul>` : '<p>No durable memory events returned.</p>'}
+	        ${rejectedEvents.length ? `<ul>${rejectedEvents.map((entry) => {
+	          const item = asRecord(entry) || {};
+	          const reason = String(item.reason || 'rejected');
+	          const value = item.value == null ? '' : ` — ${escapeHtml(textPreview(String(item.value), 220))}`;
+	          return `<li><strong>Rejected memory output</strong> [${escapeHtml(reason)}]${value}</li>`;
+	        }).join('')}</ul>` : ''}
+	        ${notes}
+	      </div>
+	    `;
+	  }
 
   if (endpoint.includes('generate-side-character')) {
     return `
@@ -435,6 +487,7 @@ function renderSupportCallDetails(segment: ReviewExportSegment): string {
     return `<details class="trace-details trace-empty"><summary>API Call 2 + Supporting API Call Data</summary><p>No post-turn or support-call records were captured for this message generation at export time.</p></details>`;
   }
 
+  const hasHiddenCall1Attempts = supportCalls.some((call) => call.apiCallGroup === 'call_1');
   const callsHtml = supportCalls.map((call) => `
     <section class="support-call-card">
       <div class="support-call-header">
@@ -460,6 +513,7 @@ function renderSupportCallDetails(segment: ReviewExportSegment): string {
   return `
     <details class="trace-details">
       <summary>API Call 2 + Supporting API Call Data (${supportCalls.length})</summary>
+      ${hasHiddenCall1Attempts ? '<p class="trace-note">This section also includes API Call 1 repair attempts that were discarded before the final assistant message was saved.</p>' : ''}
       ${callsHtml}
     </details>
   `;
@@ -551,8 +605,15 @@ function buildIssueTagCounts(
 
 function buildSegments(input: ChatReviewExportInput): ReviewExportSegment[] {
   const characters = getCharacters(input.appData);
-  const continueSet = new Set(input.continueMessageIds);
-  const regenerateSet = new Set(input.regenerateMessageIds);
+  const buildEventKey = (messageId: string, generationId?: string) => `${messageId}:${generationId || ''}`;
+  const continueSet = new Set(input.continueMessageIds || []);
+  const regenerateSet = new Set(input.regenerateMessageIds || []);
+  const continueGenerationSet = new Set(
+    (input.continueMessageEvents || []).map((event) => buildEventKey(event.messageId, event.generationId)),
+  );
+  const regenerateGenerationSet = new Set(
+    (input.regenerateMessageEvents || []).map((event) => buildEventKey(event.messageId, event.generationId)),
+  );
   const segments: ReviewExportSegment[] = [];
   let visibleTurn = 0;
 
@@ -591,8 +652,12 @@ function buildSegments(input: ChatReviewExportInput): ReviewExportSegment[] {
         day: message.day,
         timeOfDay: message.timeOfDay,
         createdAt: message.createdAt,
-        isContinueTarget: continueSet.has(message.id),
-        isRegenerated: regenerateSet.has(message.id),
+        isContinueTarget: continueGenerationSet.size > 0
+          ? continueGenerationSet.has(buildEventKey(message.id, generationId))
+          : continueSet.has(message.id),
+        isRegenerated: regenerateGenerationSet.size > 0
+          ? regenerateGenerationSet.has(buildEventKey(message.id, generationId))
+          : regenerateSet.has(message.id),
         imageUrl: message.imageUrl,
         liveComment,
         postTurnStateChanges,
@@ -1015,6 +1080,14 @@ function reviewStyles(): string {
       font-size: 12px;
     }
     .trace-note-list li { margin: 5px 0; }
+    .trace-note {
+      color: #d8e2f2;
+      background: rgba(120,220,202,0.07);
+      border: 1px solid rgba(120,220,202,0.16);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin: 0 0 12px;
+    }
     .support-call-card {
       border-top: 1px solid rgba(255,255,255,0.08);
       padding-top: 10px;

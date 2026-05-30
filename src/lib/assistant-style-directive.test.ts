@@ -141,11 +141,44 @@ describe('buildAssistantStyleDirective', () => {
 
     const directive = buildAssistantRepetitionRepairDirective(
       previousMessages,
-      'Ashley: *She reached forward and smoothed the garment against him with the same careful smile.* "Keep it on for me. This can stay secret."',
+      'Ashley: *She reached forward and smoothed the garment against him with the same careful smile.* "Keep it on for me. This stays between us."',
       [31, 34],
     );
 
     expect(directive).toContain('[OUTPUT REVISION REQUIRED]');
     expect(directive).toContain('same action-first dialogue cadence');
+  });
+
+  it('does not repair a candidate for structure alone when the content is otherwise fresh', () => {
+    const previousMessages = [
+      {
+        role: 'assistant',
+        text: 'Sarah: *She checked the lantern and glanced toward the hallway.* "I will look upstairs while you stay here."',
+      },
+      {
+        role: 'assistant',
+        text: 'Ashley: *She folded the blanket and set it beside the chair.* "That should keep you warm for now."',
+      },
+    ];
+
+    const directive = buildAssistantRepetitionRepairDirective(
+      previousMessages,
+      'Sarah: *She opened the old ledger and traced the faded handwriting with one finger.* "This changes what we know about the estate."',
+      [22, 24],
+    );
+
+    expect(directive).toBe('');
+  });
+
+  it('compares a regenerate candidate against the message being replaced', () => {
+    const directive = buildAssistantRepetitionRepairDirective(
+      [],
+      'Ashley: *She leaned closer with a private smile.* "Keep it on for me. This stays between us."',
+      [],
+      ['Ashley: *She leaned closer with a private smile.* "Keep it on for me. This stays between us."'],
+    );
+
+    expect(directive).toContain('[OUTPUT REVISION REQUIRED]');
+    expect(directive).toContain('reused short dialogue phrasing');
   });
 });

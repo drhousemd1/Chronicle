@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { EXECUTION_BRIEF_TEXT, getSystemInstruction } from '@/services/llm';
+import { buildCurrentSceneSnapshotForPrompt, EXECUTION_BRIEF_TEXT, getSystemInstruction, REGENERATION_DIRECTIVE_TEXT } from '@/services/llm';
 import { createDefaultScenarioData, getHardcodedTestCharacters, now, uid } from '@/utils';
 
 describe('llm canonical prompt coverage', () => {
@@ -221,6 +221,8 @@ describe('llm canonical prompt coverage', () => {
     expect(EXECUTION_BRIEF_TEXT).toContain('Recent messages provide story state and continuity, not a template for response length.');
     expect(EXECUTION_BRIEF_TEXT).toContain('Direct contact is allowed when the scene supports it.');
     expect(EXECUTION_BRIEF_TEXT).toContain('Stop before narrating any user-owned response');
+    expect(REGENERATION_DIRECTIVE_TEXT).toContain('Change the execution rather than the situation');
+    expect(REGENERATION_DIRECTIVE_TEXT).not.toContain('action-led opening');
     expect(prompt).toContain('SECTION 8 - CHAT SETTINGS PER USER PREFERENCE');
     expect(prompt).toContain('NARRATIVE POV: Third Person');
     expect(prompt).toContain('NSFW INTENSITY: Normal');
@@ -236,6 +238,18 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('--- ACTIVE SCENE CONTEXT ---');
     expect(prompt).toContain('- Scene Title: Balcony Summit');
     expect(prompt).toContain('- Active Scene Tag: palace');
+  });
+
+  it('builds a compact current-scene snapshot from the prior assistant response only', () => {
+    const snapshot = buildCurrentSceneSnapshotForPrompt([
+      { role: 'user', text: 'James: *James steps closer.*' } as any,
+      { role: 'assistant', text: 'Sarah: *Sarah steadies herself.* "Stay with me."' } as any,
+    ]);
+
+    expect(snapshot).toContain('[CURRENT SCENE SNAPSHOT]');
+    expect(snapshot).toContain('The previous assistant response is already in the conversation history.');
+    expect(snapshot).not.toContain('Sarah steadies herself');
+    expect(snapshot).not.toContain('James steps closer');
   });
 
   it('treats side-character control assignments as real prompt exclusions/reference context', () => {

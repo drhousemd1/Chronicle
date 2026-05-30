@@ -395,8 +395,11 @@ const edgeToXaiImageHeaders = `EDGE -> xAI IMAGE HEADERS
 
 const requestPolicyNotes = `REQUEST POLICY NOTES
 - top_p is not currently sent by Chronicle. Sampling uses the provider default for top_p.
-- store is not currently sent by Chronicle. Provider support for an explicit storage opt-out on the active xAI endpoints must be verified before adding it.
+- store is not currently sent by Chronicle on chat-completions requests. xAI documents explicit storage control on the Responses API; Chronicle should set store:false if it intentionally migrates these roleplay calls to that endpoint later.
 - Secrets are redacted in this review document. Live requests use runtime environment variables and the signed-in user's session token.`;
+
+const supportJsonSchemaPolicyNote = `STRUCTURED OUTPUT NOTE
+These JSON-returning support calls request xAI structured output with response_format.type = "json_schema" and still keep Chronicle's deterministic validation gates. Provider schema enforcement reduces malformed JSON; app-side validation still decides what can be saved.`;
 
 const contentRedirectDirective = `[CONTENT REDIRECT]
 The provider blocked the previous request. Continue in character without mentioning filters, moderation, or policy.
@@ -445,7 +448,7 @@ Respond in JSON format ONLY:
 
 Set "completed" to true only when result is "completed", confidence is at least 0.75, and evidence directly supports the lasting condition. Empty or conservative results are valid.`;
 
-const characterStateSyncFallbackSystemPrompt = `Extract only non-explicit character state metadata from the latest exchange. Return JSON with {updates:[{character,field,value,evidence,confidence}]}. Use only supported field paths. Include evidence from the latest exchange and confidence from 0 to 1. Omit weak or unsupported changes.`;
+const characterStateSyncFallbackSystemPrompt = `Extract only non-explicit character state metadata from the latest exchange. Return JSON with {updates:[{character,field,value,evidence,confidence}]}. Use only supported field paths. Include evidence from the latest exchange and confidence from 0 to 1. Omit weak or unsupported changes. Do not create, remove, or advance goals in this fallback.`;
 
 const characterStateSyncFallbackUserPrompt = `Eligible characters: {{eligibleCharacterNames}}
 
@@ -591,7 +594,7 @@ Character goals:
 --- FIELD GUIDANCE ---
 - currentMood: emotional/psychological state only, max 12 words. No body-part prose, clothing, objects, or action sequences.
 - location: broad place only. Do not change location to a destination merely because it was seen, mentioned, chosen, or approached. Update it only when the exchange clearly establishes that the character has actually arrived in, entered, left, or relocated to a different broad place.
-- scenePosition: volatile immediate placement within the broad place. Update it whenever the latest exchange clearly changes where the character is right now: approaching, standing outside, blocked at an entrance, partially inside, fully inside, separated, hiding, restrained, positioned near another character, or positioned near an important object. Preserve in-transit states such as still approaching, visible ahead, separated from, outside, or not yet reached. Do not leave scenePosition blank when the current exchange clearly establishes immediate placement.
+- scenePosition: short factual snapshot of the character's immediate physical situation inside the current location. Update it whenever the latest exchange materially changes that immediate situation, even if the broad location stays the same. Do not leave it blank when the latest exchange establishes a new physical state.
 - appearance/clothing/background: update when the exchange explicitly reveals or changes the fact.
 - personality/tone/relationships/secrets/fears/keyLifeEvents: write "Label: Description" as the value. Prefer refining a matching existing entry over adding a duplicate.
 - custom sections: use sections.SectionTitle.ItemLabel only when the information belongs in an existing or clearly appropriate custom section. Do not use custom sections to avoid the structured fields above.
@@ -684,7 +687,7 @@ Intensity:
 Important:
 - Evaluate alignment only. Do not judge whether a step is completed.
 - Do not penalize a goal just because it did not appear in a single turn. Use drift only when the user or scene is actively carrying away from it.
-- Rigid, normal, and flexible are guidance strengths, not signals. Classify the exchange evidence; the app code will apply different scoring rates later.
+- Rigid, normal, and flexible are guidance strengths, not signals. Classify the exchange evidence only; these results may remain diagnostic until the app explicitly enables adaptive goal pressure.
 - Empty or mostly not_applicable results are valid.
 
 Respond in JSON only:
@@ -725,8 +728,7 @@ RECENT SAVED MEMORIES:
 - For preferences, intentions, rules, or secrets, state who they belong to.
 - If a recent saved memory already preserves the same durable fact, do not return it again.
 
-Return ONLY a JSON array of durable event strings.
-Empty array is acceptable: []`;
+Return ONLY JSON matching the requested schema. Empty events are acceptable.`;
 
 const sideCharacterSystemPrompt = `You are a creative writing assistant specialized in character creation for roleplay stories. You generate detailed, consistent character profiles. Return ONLY valid JSON with no markdown code blocks or extra formatting.`;
 
@@ -944,7 +946,7 @@ REQUEST BODY SHAPE
     { "role": "system", "content": "<the full system message below>" },
     { "role": "user", "content": "{{up to 9 prior roleplay messages before the current turn; local notices excluded}}" },
     { "role": "assistant", "content": "{{up to 9 prior roleplay messages before the current turn; local notices excluded}}" },
-    { "role": "user", "content": "[SESSION: Message {{sessionMessageCount}} of current session]\\n\\n{{optionalContinueOrRetryStyleDirective}}{{optionalOutputRevisionRequiredDirectiveOnContinueRetry}}\\n\\n{{latest user text OR continue instruction wrapper}}{{optional regeneration request}}\\n\\n{{executionBrief}}" }
+    { "role": "user", "content": "{{optional session counter}}\\n\\n{{current scene snapshot when prior assistant context exists}}\\n\\n{{optional one-turn adaptive style, detailed-collapse, or repair directive}}\\n\\n{{latest user text OR continue instruction wrapper}}{{optional previous assistant response reference appended after triggering user text during regeneration}}{{optional regeneration request}}\\n\\n{{executionBrief}}" }
   ],
   "modelId": "grok-4.3",
   "stream": true,
@@ -988,6 +990,18 @@ FULL SYSTEM MESSAGE GENERATED BY getSystemInstruction()
 ================================================================================
 
 ${defaultCall1SystemForReview}
+
+================================================================================
+CURRENT SCENE SNAPSHOT APPENDED TO FINAL USER MESSAGE WHEN PRIOR ASSISTANT CONTEXT EXISTS
+================================================================================
+
+[CURRENT SCENE SNAPSHOT]
+The previous assistant response is already in the conversation history. Use it only to preserve story state; do not copy its opening structure or continue from it unless the final instruction below says to continue.
+
+When regenerating, the final user message also includes the exact assistant response being replaced after the triggering user text:
+[PREVIOUS ASSISTANT RESPONSE BEING REGENERATED - REFERENCE ONLY]
+This text is the assistant response being replaced. Do not continue from it as story state. Use it only to preserve broad direction and avoid repeating the same wording, structure, or execution.
+{{assistant response being replaced}}
 
 ================================================================================
 REGENERATION REQUEST APPENDED TO FINAL USER MESSAGE ONLY WHEN REGENERATING
@@ -1048,11 +1062,21 @@ EXECUTION BRIEF APPENDED TO FINAL USER MESSAGE ON EVERY LIVE ROLEPLAY CALL
 ${EXECUTION_BRIEF_TEXT}
 
 ================================================================================
-OUTPUT REVISION REQUIRED APPENDED ONLY TO ONE-TIME CONTINUE RETRY WHEN THE FIRST DRAFT REPEATS RECENT ASSISTANT OUTPUT
+OUTPUT REVISION REQUIRED APPENDED ONLY TO ONE-TIME REPAIR RETRY FOR SEND, REGENERATE, OR CONTINUE WHEN THE FIRST DRAFT REPEATS RECENT ASSISTANT OUTPUT
 ================================================================================
 
 [OUTPUT REVISION REQUIRED]
-The draft response repeated {{same structure / same cadence / reused short dialogue / reused descriptive focus / weak dialogue balance / same response-length band}}. Regenerate the response once. Keep the same established facts, speaker tags, user-character boundaries, and emotional direction, but do not rewrite the same exchange with swapped wording. The new response must develop the AI-controlled character's side of the current exchange while preserving the user's control of their character. Use meaningful external dialogue when the character can speak, and avoid reusing the same descriptive focus, sentence shape, or closing internal thought pattern.`;
+The draft response repeated {{runtime reasons from buildAssistantRepetitionRepairDirective()}}. Regenerate the response once. Keep the same established facts, speaker tags, user-character boundaries, and emotional direction, but do not rewrite the same exchange with swapped wording. The new response must develop the AI-controlled character's side of the current exchange while preserving the user's control of their character. Use meaningful external dialogue when the character can speak, and avoid reusing the same descriptive focus, topic focus, sentence shape, or closing pattern.
+
+================================================================================
+STYLE ADJUSTMENT AND DETAILED-COLLAPSE DIRECTIVES APPENDED ONLY WHEN RUNTIME DETECTORS TRIGGER
+================================================================================
+
+[STYLE ADJUSTMENT FOR THIS TURN]
+Your own recent assistant responses are repeating {{runtime reasons from buildAssistantStyleDirective()}}. Compare against your own previous 2-3 assistant character blocks, not the user's message. Vary the next response naturally. If your recent blocks keep opening with narration before speech, start with external dialogue when that fits the current exchange and let action support the conversation instead of repeating the same opening shape. Do not reuse the same descriptive focus, topic focus, sentence shape, or short reactive line unless the current scene specifically calls for that repetition.
+
+[STYLE CORRECTION]
+Recent messages provide story state and continuity, not a template for response length. The active Response Detail setting calls for a developed response, so write the AI-controlled character's side of the current exchange with substantial external dialogue when speech is natural and enough action or description to make the moment clear. Do not pad with repeated details.`;
 }
 
 function buildApiCall2SupportDocument() {
@@ -1078,12 +1102,20 @@ REQUEST BODY SHAPE SENT TO xAI
     { "role": "user", "content": "<user prompt below>" }
   ],
   "temperature": 0.15,
-  "max_tokens": 8192
+  "max_tokens": 8192,
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "chronicle_character_updates",
+      "schema": "{{updates array schema with character, field, value, evidence, confidence}}"
+    }
+  }
 }
 
 ${edgeToXaiChatHeaders}
 
 ${requestPolicyNotes}
+${supportJsonSchemaPolicyNote}
 
 SYSTEM MESSAGE
 ${characterStateSyncSystemPrompt}
@@ -1111,8 +1143,27 @@ EDGE RESPONSE SHAPE
       "confidence": 0.82
     }
   ],
-  "acceptedUpdates": "{{debug export annotation added by browser before applying state}}",
-  "rejectedUpdates": "{{debug export annotation added by browser before applying state}}"
+  "candidateReviews": [
+    {
+      "index": 0,
+      "accepted": true,
+      "reason": "accepted|invalid_candidate_shape|missing_required_value|unknown_character|ambiguous_character_alias|unsupported_field|unsupported_value|invalid_current_mood|low_confidence|missing_evidence|filtered_by_state_guard|superseded_by_refinement|goals_disabled_in_safe_retry|parse_error|updates_not_array|missing_json_object|no_json_object",
+      "character": "{{resolved character name}}",
+      "field": "{{supported field path}}",
+      "value": "{{proposed value}}",
+      "evidence": "{{short exchange evidence}}",
+      "confidence": 0.82
+    }
+  ],
+  "rejectedCandidates": "{{candidateReviews rows rejected by deterministic edge gates}}",
+  "parseError": "{{present only when the model response was malformed}}"
+}
+
+BROWSER DEBUG ANNOTATIONS ADDED BEFORE STATE APPLICATION
+{
+  "characterUpdateReviews": "{{browser review matrix derived from candidateReviews or updates}}",
+  "acceptedUpdates": "{{accepted review rows}}",
+  "rejectedUpdates": "{{rejected review rows}}"
 }
 
 ================================================================================
@@ -1152,12 +1203,20 @@ REQUEST BODY SHAPE SENT TO xAI
     { "role": "user", "content": "<user prompt below>" }
   ],
   "temperature": 0.3,
-  "max_tokens": 1024
+  "max_tokens": 1024,
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "chronicle_goal_progress",
+      "schema": "{{classifications array schema with stepId, result, completed, confidence, evidence, summary}}"
+    }
+  }
 }
 
 ${edgeToXaiChatHeaders}
 
 ${requestPolicyNotes}
+${supportJsonSchemaPolicyNote}
 
 SYSTEM MESSAGE
 ${goalProgressSystemPrompt}
@@ -1177,8 +1236,29 @@ EDGE RESPONSE SHAPE
       "summary": "{{model summary}}"
     }
   ],
-  "acceptedStepCompletions": "{{debug export annotation added by browser before persistence}}",
-  "rejectedStepCompletions": "{{debug export annotation added by browser before persistence}}"
+  "classificationReviews": [
+    {
+      "index": 0,
+      "stepId": "{{story goal step id}}",
+      "result": "no_progress|partial_progress|completed|unsupported",
+      "completed": true,
+      "modelCompleted": true,
+      "confidence": 0.82,
+      "evidence": "{{short exchange evidence}}",
+      "accepted": true,
+      "knownStep": true,
+      "reason": "accepted|missing_step_id|unknown_step|result_not_completed|not_marked_completed|low_confidence|missing_evidence|rejected|parse_error|classifications_not_array"
+    }
+  ],
+  "rejectedClassifications": "{{classificationReviews rows rejected by deterministic edge gates}}",
+  "parseError": "{{present only when the model response was malformed}}"
+}
+
+BROWSER DEBUG ANNOTATIONS ADDED BEFORE PERSISTENCE
+{
+  "stepCompletionReviews": "{{browser review matrix derived from classificationReviews or stepUpdates}}",
+  "acceptedStepCompletions": "{{accepted review rows that can persist}}",
+  "rejectedStepCompletions": "{{rejected review rows}}"
 }
 
 ================================================================================
@@ -1198,12 +1278,20 @@ REQUEST BODY SHAPE SENT TO xAI
     { "role": "user", "content": "<user prompt below>" }
   ],
   "temperature": 0.15,
-  "max_tokens": 2048
+  "max_tokens": 2048,
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "chronicle_goal_alignment",
+      "schema": "{{evaluations array schema with goalId, goalKind, characterId, signal, intensity, rationale, evidence}}"
+    }
+  }
 }
 
 ${edgeToXaiChatHeaders}
 
 ${requestPolicyNotes}
+${supportJsonSchemaPolicyNote}
 
 SYSTEM MESSAGE
 ${goalAlignmentSystemPrompt}
@@ -1213,6 +1301,14 @@ ${goalAlignmentUserPrompt}
 
 SHADOW-MODE NOTE
 Goal alignment currently runs for diagnostics only. Successful evaluations are attached to the debug export, but the browser does not persist them and does not inject alignment scores into API Call 1 while shadow mode is enabled.
+
+EDGE RESPONSE SHAPE
+{
+  "evaluations": "{{accepted alignment evaluations}}",
+  "alignmentReviews": "{{all model-returned alignment rows after deterministic review}}",
+  "rejectedEvaluations": "{{invalid, malformed, or unknown-goal rows}}",
+  "parseError": "{{present only when the model response was malformed}}"
+}
 
 ================================================================================
 SUPPORT CALL: MEMORY EXTRACTION
@@ -1241,12 +1337,20 @@ REQUEST BODY SHAPE SENT TO xAI
     { "role": "system", "content": "<system prompt below>" },
     { "role": "user", "content": "Extract durable story-memory events from this latest exchange:\n\n{{exchangeText}}" }
   ],
-  "temperature": 0.3
+  "temperature": 0.3,
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "chronicle_memory_events",
+      "schema": "{{object schema with events string array}}"
+    }
+  }
 }
 
 ${edgeToXaiChatHeaders}
 
 ${requestPolicyNotes}
+${supportJsonSchemaPolicyNote}
 
 SYSTEM MESSAGE
 ${memoryExtractionSystemPrompt}
@@ -1256,7 +1360,14 @@ Extract durable story-memory events from this latest exchange:
 
 {{exchangeText}}
 
-================================================================================
+EDGE RESPONSE SHAPE
+{
+  "extractedEvents": "{{accepted durable memory event strings}}",
+  "rejectedEvents": "{{malformed-output review rows when parsing failed}}",
+  "parseError": "{{present only when the model response was malformed}}"
+}
+
+	================================================================================
 SUPPORT CALL: DAY MEMORY COMPRESSION
 ================================================================================
 

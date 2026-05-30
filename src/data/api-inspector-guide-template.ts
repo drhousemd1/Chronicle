@@ -642,7 +642,7 @@ export const apiInspectorGuideGrokHtml = `<div class="grok-ref" id="grokRefPanel
 
   <h4>Roles and Instruction Placement</h4>
   <div class="grok-ref-row">The <code>developer</code> role is supported as an alias for <code>system</code>. xAI recommends using a <span class="grok-ref-label">single system/developer message as the first message</span> in the conversation. The API accepts mixed role sequences, but single-system-first maximizes instruction stability.</div>
-  <div class="grok-ref-row"><span class="grok-ref-label">Chronicle's current approach:</span> Single system message (Phase 2) + conversation history + optional runtime directives system message + user message. This aligns with xAI's recommendation.</div>
+  <div class="grok-ref-row"><span class="grok-ref-label">Chronicle's current approach:</span> Single system message (Phase 2) + conversation history + optional adaptive directive text inside the final user message + user message. This aligns with xAI's recommendation.</div>
 
   <h4>Context Window</h4>
   <div class="grok-ref-row">Grok 4.20 and Grok 4 Fast variants: <span class="grok-ref-label">2,000,000 token context window</span>. Note: Grok's own self-audit incorrectly claimed 128k; this was outdated or confabulated.</div>
@@ -654,10 +654,10 @@ export const apiInspectorGuideGrokHtml = `<div class="grok-ref" id="grokRefPanel
 
   <h4>Structured Outputs</h4>
   <div class="grok-ref-row">xAI's Structured Outputs feature <span class="grok-ref-label">guarantees the response matches your input schema</span> when used correctly. This is more reliable than "prompted JSON."</div>
-  <div class="grok-ref-row"><span class="grok-ref-label">Supported types:</span> string, number (int/float), object, array, boolean, enum, anyOf</div>
-  <div class="grok-ref-row"><span class="grok-ref-label">Not supported:</span> allOf, minLength/maxLength (string), minItems/maxItems (array), "contains" constraints</div>
+  <div class="grok-ref-row"><span class="grok-ref-label">Supported types:</span> string, number, integer, boolean, null, enum, const, array, object, anyOf, oneOf, and non-circular refs</div>
+  <div class="grok-ref-row"><span class="grok-ref-label">Rejected schema shapes:</span> empty enum or anyOf variants, boolean schemas, minContains/maxContains, and tuple-style items arrays</div>
   <div class="grok-ref-row"><span class="grok-ref-label">Structured outputs + tools:</span> Only available for Grok 4 family.</div>
-  <div class="grok-ref-row"><span class="grok-ref-label">Debugging implication:</span> Most "JSON reliability problems" are schema incompatibilities (unsupported keywords from Pydantic/OpenAPI auto-generation), not model randomness.</div>
+  <div class="grok-ref-row"><span class="grok-ref-label">Debugging implication:</span> Most "JSON reliability problems" come from unsupported or overly broad schema shapes, not model randomness.</div>
 
   <h4>Parameters That Error or Get Ignored</h4>
   <table>
@@ -675,7 +675,7 @@ export const apiInspectorGuideGrokHtml = `<div class="grok-ref" id="grokRefPanel
   <div class="grok-ref-row"><span class="grok-ref-label">Max tools per request:</span> 128. When tool-heavy orchestration fails, check: tool count exceeded, malformed schema, or tool results returned in wrong role/structure.</div>
 
   <h4>Privacy and Data Retention</h4>
-  <div class="grok-ref-row">xAI does not train on API inputs/outputs without explicit permission. Requests and responses are stored for 30 days for abuse auditing, then deleted. Use <code>store: false</code> for sensitive workloads.</div>
+  <div class="grok-ref-row">xAI does not train on API inputs/outputs without explicit permission. Requests and responses are stored for 30 days for abuse auditing, then deleted. Chronicle currently uses Chat Completions without sending a <code>store</code> flag; if the app later migrates sensitive roleplay calls to the Responses API, explicitly set storage controls there after verifying xAI endpoint support.</div>
  </div>
 
  <hr class="legend-rule">
@@ -724,7 +724,7 @@ export const apiInspectorGuideGrokHtml = `<div class="grok-ref" id="grokRefPanel
   <div class="grok-ref-caveat"><strong>Caveat:</strong> The following observations come from asking Grok to describe its own processing. Specific numbers (e.g., "85-90% compliance," "30-40% retention improvement") are unverified self-reported estimates, not measured benchmarks. Treat as useful mental models, not specs. Several claims in the original self-audit were factually incorrect (e.g., context window size). Use Layer A above for hard facts.</div>
 
   <h4>Instruction Priority (self-reported)</h4>
-  <div class="grok-ref-row">System prompt receives strongest attention weighting. Developer/runtime directives treated as high-priority overrides. User messages processed chronologically with recency bias.</div>
+  <div class="grok-ref-row">System prompt receives strongest attention weighting. Developer/adaptive guidance treated as high-priority overrides. User messages processed chronologically with recency bias.</div>
   <div class="grok-ref-row"><span class="grok-ref-label">Enforcement language that works:</span> "VIOLATION CHECK: Before finalizing, scan for X and DELETE if present" — Grok reports this as among the most reliable enforcement mechanisms. "MUST", "NEVER" are treated literally; "try to", "ideally" become interpretive.</div>
   <div class="grok-ref-row"><span class="grok-ref-label">Conflicting instructions:</span> Resolved by recency + system-prompt strength. Last system-level rule wins unless an earlier rule has explicit "highest priority" language.</div>
 
@@ -764,9 +764,9 @@ export const apiInspectorGuideGrokHtml = `<div class="grok-ref" id="grokRefPanel
   <div class="grok-ref-row">1. System role + highest-priority rules with VIOLATION CHECK language (single system message, first position)</div>
   <div class="grok-ref-row">2. Context data: world, characters, memories (structured, compact)</div>
   <div class="grok-ref-row">3. Behavioral rules and constraints (with priority hierarchy)</div>
-  <div class="grok-ref-row">4. Conversation history (last 20 messages in Chronicle)</div>
-  <div class="grok-ref-row">5. Runtime directives if needed (second system message — anti-loop corrections)</div>
-  <div class="grok-ref-row">6. User message (counter + directive + text + regen + style hint)</div>
+  <div class="grok-ref-row">4. Conversation history (up to 9 prior roleplay messages; the current user turn is appended separately)</div>
+  <div class="grok-ref-row">5. Adaptive style guidance if needed (appended inside the final user message)</div>
+  <div class="grok-ref-row">6. User message (counter + text + optional regen request + optional adaptive style guidance)</div>
   <div class="grok-ref-row"><span class="grok-ref-label">Chronicle's current structure follows this pattern.</span></div>
 
   <h4>Delimiters and Formatting</h4>
@@ -778,7 +778,7 @@ export const apiInspectorGuideGrokHtml = `<div class="grok-ref" id="grokRefPanel
   <div class="grok-ref-row">3. Keep structured state compact; avoid exceeding effective attention limits even within the 2M window</div>
   <div class="grok-ref-row">4. Use separate validation call for JSON/safety/state consistency</div>
   <div class="grok-ref-row">5. External code always validates JSON and state before rendering</div>
-  <div class="grok-ref-row">6. Temperature 0.7-0.9 for roleplay; 0.0-0.3 for structured tasks</div>
+  <div class="grok-ref-row">6. Use the app-selected live roleplay temperature; keep structured support calls low-temperature</div>
   <div class="grok-ref-row">7. Place critical constraints at top AND briefly restate near the end (counters "lost in the middle")</div>
   <div class="grok-ref-row">8. Test every new prompt with multiple regenerations</div>
   <div class="grok-ref-row">9. Do not send unsupported parameters to reasoning models (penalties, stop, reasoning_effort)</div>
@@ -825,10 +825,10 @@ export const apiInspectorGuideTreeHtml = `<div class="tree">
  <span class="item-name code">Session Message Counter</span>
  <span class="tag source">llm.ts</span>
  </div>
- <!-- LLM FILE REFERENCE: src/components/chronicle/ChatInterfaceTab.tsx (sessionMessageCountRef, line ~583)
-src/services/llm.ts (injected at line ~856) -->
- <div class="file-ref">src/components/chronicle/ChatInterfaceTab.tsx (sessionMessageCountRef, line ~583)
-src/services/llm.ts (injected at line ~856)</div>
+ <!-- LLM FILE REFERENCE: src/components/chronicle/ChatInterfaceTab.tsx (sessionMessageCountRef, lines ~1468-1483)
+src/services/llm.ts (injected at lines ~715-720) -->
+ <div class="file-ref">src/components/chronicle/ChatInterfaceTab.tsx (sessionMessageCountRef, lines ~1468-1483)
+src/services/llm.ts (injected at lines ~715-720)</div>
  <div class="item-desc">Every time you send a message, the app adds 1 to a running count for this conversation.</div>
  <div class="item-subs">
  <div class="item-sub">
@@ -846,16 +846,16 @@ src/services/llm.ts (injected at line ~856)</div>
  </div>
  </div>
 
- <!-- ═══ ANTI-LOOP PATTERN DETECTION ═══ -->
+ <!-- ═══ ADAPTIVE STYLE PATTERN DETECTION ═══ -->
  <div class="item-row">
  <div class="item-name-row">
- <span class="ref-badge" data-tooltip="Lands in → Phase 3 → Message Array → position 3 (runtime directives)">2</span>
+ <span class="ref-badge" data-tooltip="Lands in → Phase 3 → Message Array → position 3 (adaptive guidance)">2</span>
  <span class="tag code-logic"><span class="tag-icon">🔧</span> code logic</span>
- <span class="item-name code">Anti-Loop Pattern Detection</span>
+ <span class="item-name code">Adaptive Style Pattern Detection</span>
  <span class="tag source">llm.ts</span>
  </div>
- <!-- LLM FILE REFERENCE: src/components/chronicle/ChatInterfaceTab.tsx (getAntiLoopDirective, lines ~614-700) -->
- <div class="file-ref">src/components/chronicle/ChatInterfaceTab.tsx (getAntiLoopDirective, lines ~614-700)</div>
+ <!-- LLM FILE REFERENCE: src/components/chronicle/ChatInterfaceTab.tsx (getAdaptiveStyleDirective, lines ~1513-1526) -->
+ <div class="file-ref">src/components/chronicle/ChatInterfaceTab.tsx (getAdaptiveStyleDirective, lines ~1513-1526)</div>
  <div class="item-desc">Before building the next request, the app reads the AI's last response and checks if it's falling into repetitive patterns.</div>
  <div class="item-subs">
  <div class="item-sub">
@@ -911,18 +911,14 @@ src/services/llm.ts (injected at line ~856)</div>
  <span class="item-name code">User Message Assembly</span>
  <span class="tag source">llm.ts</span>
  </div>
- <!-- LLM FILE REFERENCE: src/services/llm.ts (generateRoleplayResponseStream, lines ~827-870) -->
- <div class="file-ref">src/services/llm.ts (generateRoleplayResponseStream, lines ~827-870)</div>
+ <!-- LLM FILE REFERENCE: src/services/llm.ts (generateRoleplayResponseStream, lines ~673-1005) -->
+ <div class="file-ref">src/services/llm.ts (generateRoleplayResponseStream, lines ~673-1005)</div>
  <div class="item-desc">Takes all the pieces above and combines them into one message. This is the final "user message" that gets sent to the AI, in this exact order:</div>
  <div class="item-subs">
  <div class="item-sub">
  <span class="ref-badge" data-tooltip="Created in → Phase 1 → Session Message Counter">1</span>
  <span class="tag context-injection"><span class="tag-icon">📥</span> context injection</span>
- <span class="sub-name injection">Session Counter</span>: <span class="sub-desc">"[SESSION: Message N]": always present</span>
- </div>
- <div class="item-sub">
- <span class="tag context-injection"><span class="tag-icon">📥</span> context injection</span>
- <span class="sub-name injection">Length Directive</span>: <span class="sub-desc">Optional override like "[Write a longer response]": only if the user requested a specific length</span>
+ <span class="sub-name injection">Session Counter</span>: <span class="sub-desc">"[SESSION: Message N]": present on normal sends when the app supplies the session count; regenerate and continue may omit it</span>
  </div>
  <div class="item-sub">
  <span class="tag context-injection"><span class="tag-icon">📥</span> context injection</span>
@@ -935,7 +931,7 @@ src/services/llm.ts (injected at line ~856)</div>
  <div class="item-sub">
  <span class="ref-badge" data-tooltip="Created in → Phase 1 → Adaptive Style Directive">3</span>
  <span class="tag context-injection"><span class="tag-icon">📥</span> context injection</span>
- <span class="sub-name injection">Style Hint</span>: <span class="sub-desc">The random writing tip picked above: always present</span>
+ <span class="sub-name injection">Adaptive Style Guidance</span>: <span class="sub-desc">Only present when recent assistant output shows repeated style, structure, or length patterns</span>
  </div>
  </div>
  </div>
@@ -1394,7 +1390,7 @@ src/services/supabase-data.ts (memory CRUD operations)</div>
  </div>
  <div class="item-sub">
  <span class="tag core-prompt"><span class="tag-icon">📝</span> core prompt</span>
- <span class="sub-name core">Why It Matters</span>: <span class="sub-desc">Only the last 20 messages fit in the chat window. Memories fill in everything before that: so if a first kiss happened on message 10 and you're now on message 40, the memory system is the only reason the AI remembers it.</span>
+ <span class="sub-name core">Why It Matters</span>: <span class="sub-desc">Only the capped recent transcript is sent in the chat window. Memories fill in everything before that: so if a first kiss happened on message 10 and you're now on message 40, the memory system is the only reason the AI remembers it.</span>
  </div>
  </div>
  </div>
@@ -1475,7 +1471,7 @@ src/services/supabase-data.ts (memory CRUD operations)</div>
  <div class="item-row">
  <div class="item-name-row">
  <span class="tag core-prompt"><span class="tag-icon">📝</span> core prompt</span>
- <span class="item-name core">Forward Progress &amp; Anti-Loop</span>
+ <span class="item-name core">Forward Progress &amp; Adaptive Style</span>
  </div>
  <!-- LLM FILE REFERENCE: src/services/llm.ts (forwardProgressRules variable, lines ~422-454) -->
  <div class="file-ref">src/services/llm.ts (forwardProgressRules variable, lines ~422-454)</div>
@@ -1548,7 +1544,7 @@ src/services/supabase-data.ts (memory CRUD operations)</div>
 
  <div class="meta-chips">
  <div class="meta-chip">Model <strong>grok-4.3</strong></div>
- <div class="meta-chip">Temp <strong>0.9</strong></div>
+ <div class="meta-chip">Temp <strong>0.6</strong></div>
  <div class="meta-chip">Stream <strong>true</strong></div>
  <div class="meta-chip">Route <strong>llm.ts → /functions/v1/chat → api.x.ai/v1/chat/completions</strong></div>
  </div>
@@ -1560,17 +1556,16 @@ src/services/supabase-data.ts (memory CRUD operations)</div>
  <span class="tag code-logic"><span class="tag-icon">🔧</span> code logic</span>
  <span class="item-name code">Message Array</span>
  </div>
- <!-- LLM FILE REFERENCE: src/services/llm.ts (generateRoleplayResponseStream, lines ~827-870) -->
- <div class="file-ref">src/services/llm.ts (generateRoleplayResponseStream, lines ~827-870)</div>
- <div class="item-desc">The actual list of messages sent to the AI, in this exact order:</div>
+ <!-- LLM FILE REFERENCE: src/services/llm.ts (generateRoleplayResponseStream, lines ~673-1005) -->
+ <div class="file-ref">src/services/llm.ts (generateRoleplayResponseStream, lines ~673-1005)</div>
+ <div class="item-desc">The actual message array sent to the AI: one system message, up to 9 prior roleplay messages, then one final wrapped user message.</div>
  <div class="item-subs">
  <div class="item-sub"><span class="sub-name code">1. System Message</span>: <span class="sub-desc">The entire system prompt (all of Phase 2: Context Data + Full Instructions combined into one block)</span></div>
- <div class="item-sub"><span class="sub-name code">2. Conversation History</span>: <span class="sub-desc">The last 20 messages (alternating user and AI turns)</span></div>
+ <div class="item-sub"><span class="sub-name code">2. Conversation History</span>: <span class="sub-desc">Up to 9 prior roleplay messages only; the current user turn is sent as the final wrapped user message</span></div>
  <div class="item-sub">
- <span class="ref-badge" data-tooltip="Created in → Phase 1 → Anti-Loop Pattern Detection">2</span>
- <span class="sub-name code">3. Runtime Directives</span>: <span class="sub-desc">A second system message with corrective instructions: only present if the anti-loop detection in Phase 1 found a problem</span>
+ <span class="ref-badge" data-tooltip="Created in → Phase 1 → Adaptive Style Pattern Detection">2</span>
+ <span class="sub-name code">3. Final Wrapped User Message</span>: <span class="sub-desc">One user-role message containing the optional session counter, current-scene snapshot, optional one-turn adaptive or repair text, the current user text or continue wrapper, optional previous assistant response reference for regeneration, optional regenerate request, and execution brief.</span>
  </div>
- <div class="item-sub"><span class="sub-name code">4. User Message</span>: <span class="sub-desc">The fully assembled user message from Phase 1 (counter + directive + text + regen + hint)</span></div>
  </div>
  </div>
 
@@ -1794,11 +1789,11 @@ HOW TO USE THIS DOCUMENT:
 
 7. KEY CONTEXT for prompt debugging:
    - Chronicle sends ONE large system message containing all of Phase 2
-   - Conversation history is the last 20 messages
-   - Runtime directives (anti-loop corrections) go in a SECOND system message
+   - Conversation history is capped to up to 9 prior roleplay messages; the current user turn is sent separately as the final wrapped user message
+   - Adaptive style guidance is appended inside the final user message when triggered
    - The user message is assembled in Phase 1 (counter + directive + text +
-     regen + style hint)
-   - Temperature is 0.9 for roleplay
+     regen + optional adaptive style guidance)
+   - Temperature is 0.6 for live roleplay
    - Model is grok-4.3
    - The app routes through a Supabase Edge Function to xAI's API
 
@@ -1885,7 +1880,7 @@ export const apiInspectorGuideCombinedHtml = `<div class="header">
 
   <h4>Roles and Instruction Placement</h4>
   <div class="grok-ref-row">The <code>developer</code> role is supported as an alias for <code>system</code>. xAI recommends using a <span class="grok-ref-label">single system/developer message as the first message</span> in the conversation. The API accepts mixed role sequences, but single-system-first maximizes instruction stability.</div>
-  <div class="grok-ref-row"><span class="grok-ref-label">Chronicle's current approach:</span> Single system message (Phase 2) + conversation history + optional runtime directives system message + user message. This aligns with xAI's recommendation.</div>
+  <div class="grok-ref-row"><span class="grok-ref-label">Chronicle's current approach:</span> Single system message (Phase 2) + conversation history + optional adaptive directive text inside the final user message + user message. This aligns with xAI's recommendation.</div>
 
   <h4>Context Window</h4>
   <div class="grok-ref-row">Grok 4.20 and Grok 4 Fast variants: <span class="grok-ref-label">2,000,000 token context window</span>. Note: Grok's own self-audit incorrectly claimed 128k; this was outdated or confabulated.</div>
@@ -1897,10 +1892,10 @@ export const apiInspectorGuideCombinedHtml = `<div class="header">
 
   <h4>Structured Outputs</h4>
   <div class="grok-ref-row">xAI's Structured Outputs feature <span class="grok-ref-label">guarantees the response matches your input schema</span> when used correctly. This is more reliable than "prompted JSON."</div>
-  <div class="grok-ref-row"><span class="grok-ref-label">Supported types:</span> string, number (int/float), object, array, boolean, enum, anyOf</div>
-  <div class="grok-ref-row"><span class="grok-ref-label">Not supported:</span> allOf, minLength/maxLength (string), minItems/maxItems (array), "contains" constraints</div>
+  <div class="grok-ref-row"><span class="grok-ref-label">Supported types:</span> string, number, integer, boolean, null, enum, const, array, object, anyOf, oneOf, and non-circular refs</div>
+  <div class="grok-ref-row"><span class="grok-ref-label">Rejected schema shapes:</span> empty enum or anyOf variants, boolean schemas, minContains/maxContains, and tuple-style items arrays</div>
   <div class="grok-ref-row"><span class="grok-ref-label">Structured outputs + tools:</span> Only available for Grok 4 family.</div>
-  <div class="grok-ref-row"><span class="grok-ref-label">Debugging implication:</span> Most "JSON reliability problems" are schema incompatibilities (unsupported keywords from Pydantic/OpenAPI auto-generation), not model randomness.</div>
+  <div class="grok-ref-row"><span class="grok-ref-label">Debugging implication:</span> Most "JSON reliability problems" come from unsupported or overly broad schema shapes, not model randomness.</div>
 
   <h4>Parameters That Error or Get Ignored</h4>
   <table>
@@ -1918,7 +1913,7 @@ export const apiInspectorGuideCombinedHtml = `<div class="header">
   <div class="grok-ref-row"><span class="grok-ref-label">Max tools per request:</span> 128. When tool-heavy orchestration fails, check: tool count exceeded, malformed schema, or tool results returned in wrong role/structure.</div>
 
   <h4>Privacy and Data Retention</h4>
-  <div class="grok-ref-row">xAI does not train on API inputs/outputs without explicit permission. Requests and responses are stored for 30 days for abuse auditing, then deleted. Use <code>store: false</code> for sensitive workloads.</div>
+  <div class="grok-ref-row">xAI does not train on API inputs/outputs without explicit permission. Requests and responses are stored for 30 days for abuse auditing, then deleted. Chronicle currently uses Chat Completions without sending a <code>store</code> flag; if the app later migrates sensitive roleplay calls to the Responses API, explicitly set storage controls there after verifying xAI endpoint support.</div>
  </div>
 
  <hr class="legend-rule">
@@ -1967,7 +1962,7 @@ export const apiInspectorGuideCombinedHtml = `<div class="header">
   <div class="grok-ref-caveat"><strong>Caveat:</strong> The following observations come from asking Grok to describe its own processing. Specific numbers (e.g., "85-90% compliance," "30-40% retention improvement") are unverified self-reported estimates, not measured benchmarks. Treat as useful mental models, not specs. Several claims in the original self-audit were factually incorrect (e.g., context window size). Use Layer A above for hard facts.</div>
 
   <h4>Instruction Priority (self-reported)</h4>
-  <div class="grok-ref-row">System prompt receives strongest attention weighting. Developer/runtime directives treated as high-priority overrides. User messages processed chronologically with recency bias.</div>
+  <div class="grok-ref-row">System prompt receives strongest attention weighting. Developer/adaptive guidance treated as high-priority overrides. User messages processed chronologically with recency bias.</div>
   <div class="grok-ref-row"><span class="grok-ref-label">Enforcement language that works:</span> "VIOLATION CHECK: Before finalizing, scan for X and DELETE if present" — Grok reports this as among the most reliable enforcement mechanisms. "MUST", "NEVER" are treated literally; "try to", "ideally" become interpretive.</div>
   <div class="grok-ref-row"><span class="grok-ref-label">Conflicting instructions:</span> Resolved by recency + system-prompt strength. Last system-level rule wins unless an earlier rule has explicit "highest priority" language.</div>
 
@@ -2007,9 +2002,9 @@ export const apiInspectorGuideCombinedHtml = `<div class="header">
   <div class="grok-ref-row">1. System role + highest-priority rules with VIOLATION CHECK language (single system message, first position)</div>
   <div class="grok-ref-row">2. Context data: world, characters, memories (structured, compact)</div>
   <div class="grok-ref-row">3. Behavioral rules and constraints (with priority hierarchy)</div>
-  <div class="grok-ref-row">4. Conversation history (last 20 messages in Chronicle)</div>
-  <div class="grok-ref-row">5. Runtime directives if needed (second system message — anti-loop corrections)</div>
-  <div class="grok-ref-row">6. User message (counter + directive + text + regen + style hint)</div>
+  <div class="grok-ref-row">4. Conversation history (up to 9 prior roleplay messages; the current user turn is appended separately)</div>
+  <div class="grok-ref-row">5. Adaptive style guidance if needed (appended inside the final user message)</div>
+  <div class="grok-ref-row">6. User message (counter + text + optional regen request + optional adaptive style guidance)</div>
   <div class="grok-ref-row"><span class="grok-ref-label">Chronicle's current structure follows this pattern.</span></div>
 
   <h4>Delimiters and Formatting</h4>
@@ -2021,7 +2016,7 @@ export const apiInspectorGuideCombinedHtml = `<div class="header">
   <div class="grok-ref-row">3. Keep structured state compact; avoid exceeding effective attention limits even within the 2M window</div>
   <div class="grok-ref-row">4. Use separate validation call for JSON/safety/state consistency</div>
   <div class="grok-ref-row">5. External code always validates JSON and state before rendering</div>
-  <div class="grok-ref-row">6. Temperature 0.7-0.9 for roleplay; 0.0-0.3 for structured tasks</div>
+  <div class="grok-ref-row">6. Use the app-selected live roleplay temperature; keep structured support calls low-temperature</div>
   <div class="grok-ref-row">7. Place critical constraints at top AND briefly restate near the end (counters "lost in the middle")</div>
   <div class="grok-ref-row">8. Test every new prompt with multiple regenerations</div>
   <div class="grok-ref-row">9. Do not send unsupported parameters to reasoning models (penalties, stop, reasoning_effort)</div>
@@ -2067,10 +2062,10 @@ export const apiInspectorGuideCombinedHtml = `<div class="header">
  <span class="item-name code">Session Message Counter</span>
  <span class="tag source">llm.ts</span>
  </div>
- <!-- LLM FILE REFERENCE: src/components/chronicle/ChatInterfaceTab.tsx (sessionMessageCountRef, line ~583)
-src/services/llm.ts (injected at line ~856) -->
- <div class="file-ref">src/components/chronicle/ChatInterfaceTab.tsx (sessionMessageCountRef, line ~583)
-src/services/llm.ts (injected at line ~856)</div>
+ <!-- LLM FILE REFERENCE: src/components/chronicle/ChatInterfaceTab.tsx (sessionMessageCountRef, lines ~1468-1483)
+src/services/llm.ts (injected at lines ~715-720) -->
+ <div class="file-ref">src/components/chronicle/ChatInterfaceTab.tsx (sessionMessageCountRef, lines ~1468-1483)
+src/services/llm.ts (injected at lines ~715-720)</div>
  <div class="item-desc">Every time you send a message, the app adds 1 to a running count for this conversation.</div>
  <div class="item-subs">
  <div class="item-sub">
@@ -2088,16 +2083,16 @@ src/services/llm.ts (injected at line ~856)</div>
  </div>
  </div>
 
- <!-- ═══ ANTI-LOOP PATTERN DETECTION ═══ -->
+ <!-- ═══ ADAPTIVE STYLE PATTERN DETECTION ═══ -->
  <div class="item-row">
  <div class="item-name-row">
- <span class="ref-badge" data-tooltip="Lands in → Phase 3 → Message Array → position 3 (runtime directives)">2</span>
+ <span class="ref-badge" data-tooltip="Lands in → Phase 3 → Message Array → position 3 (adaptive guidance)">2</span>
  <span class="tag code-logic"><span class="tag-icon">🔧</span> code logic</span>
- <span class="item-name code">Anti-Loop Pattern Detection</span>
+ <span class="item-name code">Adaptive Style Pattern Detection</span>
  <span class="tag source">llm.ts</span>
  </div>
- <!-- LLM FILE REFERENCE: src/components/chronicle/ChatInterfaceTab.tsx (getAntiLoopDirective, lines ~614-700) -->
- <div class="file-ref">src/components/chronicle/ChatInterfaceTab.tsx (getAntiLoopDirective, lines ~614-700)</div>
+ <!-- LLM FILE REFERENCE: src/components/chronicle/ChatInterfaceTab.tsx (getAdaptiveStyleDirective, lines ~1513-1526) -->
+ <div class="file-ref">src/components/chronicle/ChatInterfaceTab.tsx (getAdaptiveStyleDirective, lines ~1513-1526)</div>
  <div class="item-desc">Before building the next request, the app reads the AI's last response and checks if it's falling into repetitive patterns.</div>
  <div class="item-subs">
  <div class="item-sub">
@@ -2153,18 +2148,14 @@ src/services/llm.ts (injected at line ~856)</div>
  <span class="item-name code">User Message Assembly</span>
  <span class="tag source">llm.ts</span>
  </div>
- <!-- LLM FILE REFERENCE: src/services/llm.ts (generateRoleplayResponseStream, lines ~827-870) -->
- <div class="file-ref">src/services/llm.ts (generateRoleplayResponseStream, lines ~827-870)</div>
+ <!-- LLM FILE REFERENCE: src/services/llm.ts (generateRoleplayResponseStream, lines ~673-1005) -->
+ <div class="file-ref">src/services/llm.ts (generateRoleplayResponseStream, lines ~673-1005)</div>
  <div class="item-desc">Takes all the pieces above and combines them into one message. This is the final "user message" that gets sent to the AI, in this exact order:</div>
  <div class="item-subs">
  <div class="item-sub">
  <span class="ref-badge" data-tooltip="Created in → Phase 1 → Session Message Counter">1</span>
  <span class="tag context-injection"><span class="tag-icon">📥</span> context injection</span>
- <span class="sub-name injection">Session Counter</span>: <span class="sub-desc">"[SESSION: Message N]": always present</span>
- </div>
- <div class="item-sub">
- <span class="tag context-injection"><span class="tag-icon">📥</span> context injection</span>
- <span class="sub-name injection">Length Directive</span>: <span class="sub-desc">Optional override like "[Write a longer response]": only if the user requested a specific length</span>
+ <span class="sub-name injection">Session Counter</span>: <span class="sub-desc">"[SESSION: Message N]": present on normal sends when the app supplies the session count; regenerate and continue may omit it</span>
  </div>
  <div class="item-sub">
  <span class="tag context-injection"><span class="tag-icon">📥</span> context injection</span>
@@ -2177,7 +2168,7 @@ src/services/llm.ts (injected at line ~856)</div>
  <div class="item-sub">
  <span class="ref-badge" data-tooltip="Created in → Phase 1 → Adaptive Style Directive">3</span>
  <span class="tag context-injection"><span class="tag-icon">📥</span> context injection</span>
- <span class="sub-name injection">Style Hint</span>: <span class="sub-desc">The random writing tip picked above: always present</span>
+ <span class="sub-name injection">Adaptive Style Guidance</span>: <span class="sub-desc">Only present when recent assistant output shows repeated style, structure, or length patterns</span>
  </div>
  </div>
  </div>
@@ -2636,7 +2627,7 @@ src/services/supabase-data.ts (memory CRUD operations)</div>
  </div>
  <div class="item-sub">
  <span class="tag core-prompt"><span class="tag-icon">📝</span> core prompt</span>
- <span class="sub-name core">Why It Matters</span>: <span class="sub-desc">Only the last 20 messages fit in the chat window. Memories fill in everything before that: so if a first kiss happened on message 10 and you're now on message 40, the memory system is the only reason the AI remembers it.</span>
+ <span class="sub-name core">Why It Matters</span>: <span class="sub-desc">Only the capped recent transcript is sent in the chat window. Memories fill in everything before that: so if a first kiss happened on message 10 and you're now on message 40, the memory system is the only reason the AI remembers it.</span>
  </div>
  </div>
  </div>
@@ -2717,7 +2708,7 @@ src/services/supabase-data.ts (memory CRUD operations)</div>
  <div class="item-row">
  <div class="item-name-row">
  <span class="tag core-prompt"><span class="tag-icon">📝</span> core prompt</span>
- <span class="item-name core">Forward Progress &amp; Anti-Loop</span>
+ <span class="item-name core">Forward Progress &amp; Adaptive Style</span>
  </div>
  <!-- LLM FILE REFERENCE: src/services/llm.ts (forwardProgressRules variable, lines ~422-454) -->
  <div class="file-ref">src/services/llm.ts (forwardProgressRules variable, lines ~422-454)</div>
@@ -2790,7 +2781,7 @@ src/services/supabase-data.ts (memory CRUD operations)</div>
 
  <div class="meta-chips">
  <div class="meta-chip">Model <strong>grok-4.3</strong></div>
- <div class="meta-chip">Temp <strong>0.9</strong></div>
+ <div class="meta-chip">Temp <strong>0.6</strong></div>
  <div class="meta-chip">Stream <strong>true</strong></div>
  <div class="meta-chip">Route <strong>llm.ts → /functions/v1/chat → api.x.ai/v1/chat/completions</strong></div>
  </div>
@@ -2802,17 +2793,16 @@ src/services/supabase-data.ts (memory CRUD operations)</div>
  <span class="tag code-logic"><span class="tag-icon">🔧</span> code logic</span>
  <span class="item-name code">Message Array</span>
  </div>
- <!-- LLM FILE REFERENCE: src/services/llm.ts (generateRoleplayResponseStream, lines ~827-870) -->
- <div class="file-ref">src/services/llm.ts (generateRoleplayResponseStream, lines ~827-870)</div>
- <div class="item-desc">The actual list of messages sent to the AI, in this exact order:</div>
+ <!-- LLM FILE REFERENCE: src/services/llm.ts (generateRoleplayResponseStream, lines ~673-1005) -->
+ <div class="file-ref">src/services/llm.ts (generateRoleplayResponseStream, lines ~673-1005)</div>
+ <div class="item-desc">The actual message array sent to the AI: one system message, up to 9 prior roleplay messages, then one final wrapped user message.</div>
  <div class="item-subs">
  <div class="item-sub"><span class="sub-name code">1. System Message</span>: <span class="sub-desc">The entire system prompt (all of Phase 2: Context Data + Full Instructions combined into one block)</span></div>
- <div class="item-sub"><span class="sub-name code">2. Conversation History</span>: <span class="sub-desc">The last 20 messages (alternating user and AI turns)</span></div>
+ <div class="item-sub"><span class="sub-name code">2. Conversation History</span>: <span class="sub-desc">Up to 9 prior roleplay messages only; the current user turn is sent as the final wrapped user message</span></div>
  <div class="item-sub">
- <span class="ref-badge" data-tooltip="Created in → Phase 1 → Anti-Loop Pattern Detection">2</span>
- <span class="sub-name code">3. Runtime Directives</span>: <span class="sub-desc">A second system message with corrective instructions: only present if the anti-loop detection in Phase 1 found a problem</span>
+ <span class="ref-badge" data-tooltip="Created in → Phase 1 → Adaptive Style Pattern Detection">2</span>
+ <span class="sub-name code">3. Final Wrapped User Message</span>: <span class="sub-desc">One user-role message containing the optional session counter, current-scene snapshot, optional one-turn adaptive or repair text, the current user text or continue wrapper, optional previous assistant response reference for regeneration, optional regenerate request, and execution brief.</span>
  </div>
- <div class="item-sub"><span class="sub-name code">4. User Message</span>: <span class="sub-desc">The fully assembled user message from Phase 1 (counter + directive + text + regen + hint)</span></div>
  </div>
  </div>
 

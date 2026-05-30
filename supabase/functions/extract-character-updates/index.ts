@@ -55,6 +55,54 @@ interface ExtractedUpdate {
   value: string;
   evidence?: string;
   confidence?: number;
+  candidateIndex?: number;
+  supersededCandidateIndexes?: number[];
+}
+
+const characterUpdateResponseFormat = {
+  type: "json_schema",
+  json_schema: {
+    name: "chronicle_character_updates",
+    schema: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        updates: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              character: { type: "string" },
+              field: { type: "string" },
+              value: { type: "string" },
+              evidence: { type: "string" },
+              confidence: { type: "number" },
+            },
+            required: ["character", "field", "value", "evidence", "confidence"],
+          },
+        },
+      },
+      required: ["updates"],
+    },
+  },
+};
+
+type CharacterIndex = {
+  map: Map<string, CharacterData>;
+  ambiguous: Set<string>;
+}
+
+type CandidateReview = {
+  index: number;
+  accepted: boolean;
+  reason: string;
+  character: string;
+  originalCharacter?: string;
+  field: string;
+  value: string;
+  evidence: string;
+  confidence: number;
 }
 
 function clampConfidence(value: unknown): number {
@@ -67,8 +115,18 @@ function summarize(value: unknown, max = 320): string {
   return String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
 }
 
+function normalizeEvidence(value: unknown, max = 320): string {
+  return summarize(value, max)
+    .replace(/^["'`]+|["'`]+$/g, "")
+    .replace(/^evidence\s*:\s*/i, "")
+    .trim();
+}
+
 function isGenericEvidence(value: string): boolean {
-  return /^(short quote|close paraphrase|supported by|evidence from|latest exchange)/i.test(value.trim());
+  const normalized = normalizeEvidence(value).toLowerCase();
+  return !normalized ||
+    /^(short quote|close paraphrase|supported by|evidence from|latest exchange|short exchange evidence|brief evidence|model evidence)/i.test(normalized) ||
+    normalized.includes("from this exchange");
 }
 
 function sanitizeCurrentMood(value: string): string {
@@ -125,7 +183,7 @@ function normalizeUpdateCandidate(candidate: any): ExtractedUpdate | null {
   const character = candidate.character.trim();
   const field = candidate.field.trim();
   const value = candidate.value.trim();
-  const evidence = summarize(candidate.evidence, 280);
+  const evidence = normalizeEvidence(candidate.evidence, 280);
   const confidence = clampConfidence(candidate.confidence);
 
   if (!character || !field || !value) return null;
@@ -265,21 +323,36 @@ function isLikelyToneDescription(description: string): boolean {
   return /\b(voice|tone|speaks?|speech|word(?: choice)?|vocab(?:ulary)?|cadence|rhythm|formal|informal|direct|indirect|clipped|hesitant|quiet|loud|whisper(?:ed|ing)?|sarcastic|blunt|polite|curt|warm)\b/i.test(description);
 }
 
-function buildCharacterIndex(characters: CharacterData[]): Map<string, CharacterData> {
+function buildCharacterIndex(characters: CharacterData[]): CharacterIndex {
   const map = new Map<string, CharacterData>();
+  const ambiguous = new Set<string>();
+  const register = (key: string, character: CharacterData) => {
+    const normalizedKey = key.toLowerCase().trim();
+    if (!normalizedKey || ambiguous.has(normalizedKey)) return;
+
+    const existing = map.get(normalizedKey);
+    if (existing && existing.name !== character.name) {
+      map.delete(normalizedKey);
+      ambiguous.add(normalizedKey);
+      return;
+    }
+
+    map.set(normalizedKey, character);
+  };
+
   for (const c of characters || []) {
-    const primary = c.name?.toLowerCase?.().trim?.();
-    if (primary) map.set(primary, c);
+    const primary = c.name?.trim?.();
+    if (primary) register(primary, c);
     for (const alias of c.previousNames || []) {
-      const a = alias?.toLowerCase?.().trim?.();
-      if (a) map.set(a, c);
+      const a = alias?.trim?.();
+      if (a) register(a, c);
     }
     for (const nick of (c.nicknames || "").split(",")) {
-      const n = nick.trim().toLowerCase();
-      if (n) map.set(n, c);
+      const n = nick.trim();
+      if (n) register(n, c);
     }
   }
-  return map;
+  return { map, ambiguous };
 }
 
 function reconcileStructuredUpdates(
@@ -290,32 +363,37 @@ function reconcileStructuredUpdates(
   const accepted: ExtractedUpdate[] = [];
 
   for (const update of updates) {
-    const existingChar = charIndex.get(update.character.toLowerCase()) || null;
-    if (!existingChar) {
-      accepted.push(update);
+    const characterKey = update.character.toLowerCase().trim();
+    if (charIndex.ambiguous.has(characterKey)) {
       continue;
     }
+
+    const existingChar = charIndex.map.get(characterKey) || null;
+    if (!existingChar) {
+      continue;
+    }
+    const normalizedUpdate = { ...update, character: existingChar.name };
 
     const structuredField =
-      ["personality.traits", "personality.outwardTraits", "personality.inwardTraits"].includes(update.field) ||
-      ["tone._extras", "keyLifeEvents._extras", "relationships._extras", "secrets._extras", "fears._extras"].includes(update.field);
+      ["personality.traits", "personality.outwardTraits", "personality.inwardTraits"].includes(normalizedUpdate.field) ||
+      ["tone._extras", "keyLifeEvents._extras", "relationships._extras", "secrets._extras", "fears._extras"].includes(normalizedUpdate.field);
 
     if (!structuredField) {
-      accepted.push(update);
+      accepted.push(normalizedUpdate);
       continue;
     }
 
-    const parsed = parseLabeledValue(update.value);
+    const parsed = parseLabeledValue(normalizedUpdate.value);
     if (!parsed) {
       // Force structured fields to stay structured.
       continue;
     }
 
-    if (update.field === "tone._extras" && !isLikelyToneDescription(parsed.description)) {
+    if (normalizedUpdate.field === "tone._extras" && !isLikelyToneDescription(parsed.description)) {
       continue;
     }
 
-    const existingEntries = getExistingStructuredEntries(existingChar, update.field);
+    const existingEntries = getExistingStructuredEntries(existingChar, normalizedUpdate.field);
     const match = findBestExistingMatch(existingEntries, parsed.label, parsed.description);
 
     if (match.index !== -1) {
@@ -324,7 +402,7 @@ function reconcileStructuredUpdates(
         continue;
       }
       accepted.push({
-        ...update,
+        ...normalizedUpdate,
         // Preserve the existing label to avoid variant-label duplication.
         value: `${existing.label}: ${parsed.description}`
       });
@@ -333,7 +411,7 @@ function reconcileStructuredUpdates(
 
     // Also suppress duplicates introduced earlier in the same extraction payload.
     const sameFieldAccepted = accepted.filter(a =>
-      a.character.toLowerCase() === update.character.toLowerCase() && a.field === update.field
+      a.character.toLowerCase() === normalizedUpdate.character.toLowerCase() && a.field === normalizedUpdate.field
     );
     const priorEntries = sameFieldAccepted
       .map(a => parseLabeledValue(a.value))
@@ -348,23 +426,147 @@ function reconcileStructuredUpdates(
       }
       // Replace prior accepted variant with refined single entry.
       const replaceIdx = accepted.findIndex(a =>
-        a.character.toLowerCase() === update.character.toLowerCase() &&
-        a.field === update.field &&
+        a.character.toLowerCase() === normalizedUpdate.character.toLowerCase() &&
+        a.field === normalizedUpdate.field &&
         normalizeText(a.value.split(":")[0] || "") === normalizeText(existing.label)
       );
       if (replaceIdx !== -1) {
+        const supersededCandidateIndexes = [
+          ...(accepted[replaceIdx].supersededCandidateIndexes || []),
+          ...(typeof accepted[replaceIdx].candidateIndex === "number" ? [accepted[replaceIdx].candidateIndex] : []),
+        ];
+        const existingLabel = accepted[replaceIdx].value.split(":")[0].trim();
         accepted[replaceIdx] = {
-          ...accepted[replaceIdx],
-          value: `${accepted[replaceIdx].value.split(":")[0].trim()}: ${parsed.description}`
+          ...normalizedUpdate,
+          value: `${existingLabel}: ${parsed.description}`,
+          supersededCandidateIndexes,
         };
         continue;
       }
     }
 
-    accepted.push(update);
+    accepted.push(normalizedUpdate);
   }
 
   return accepted;
+}
+
+function getCandidateRejectionReason(
+  candidate: any,
+  charIndex: CharacterIndex,
+  options: { disallowGoals?: boolean } = {},
+): string {
+  if (
+    typeof candidate?.character !== "string" ||
+    typeof candidate?.field !== "string" ||
+    typeof candidate?.value !== "string"
+  ) {
+    return "invalid_candidate_shape";
+  }
+
+  const character = candidate.character.trim();
+  const field = candidate.field.trim();
+  const value = candidate.value.trim();
+  const evidence = normalizeEvidence(candidate.evidence, 280);
+  const confidence = clampConfidence(candidate.confidence);
+
+  if (!character || !field || !value) return "missing_required_value";
+  const characterKey = character.toLowerCase();
+  if (charIndex.ambiguous.has(characterKey)) return "ambiguous_character_alias";
+  if (!charIndex.map.has(characterKey)) return "unknown_character";
+  if (!isAllowedUpdateField(field)) return "unsupported_field";
+  if (!isAllowedUpdateValue(field, value)) return "unsupported_value";
+  if (options.disallowGoals && field.startsWith("goals.")) return "goals_disabled_in_safe_retry";
+  if (!evidence || isGenericEvidence(evidence)) return "missing_evidence";
+  if (confidence < 0.72) return "low_confidence";
+  if (field === "currentMood" && !sanitizeCurrentMood(value)) return "invalid_current_mood";
+  return "filtered_by_state_guard";
+}
+
+function reviewUpdateCandidates(
+  rawCandidates: any[],
+  characters: CharacterData[],
+  options: { disallowGoals?: boolean } = {},
+): { updates: ExtractedUpdate[]; candidateReviews: CandidateReview[]; rejectedCandidates: CandidateReview[] } {
+  const charIndex = buildCharacterIndex(characters);
+  const normalizedCandidates = rawCandidates.map((candidate, index) => {
+    const normalized = normalizeUpdateCandidate(candidate);
+    const disallowedByOptions = normalized && options.disallowGoals && normalized.field.startsWith("goals.");
+    return {
+      index,
+      raw: candidate,
+      normalized: normalized && !disallowedByOptions ? { ...normalized, candidateIndex: index } : null,
+      preRejectionReason: !normalized || disallowedByOptions
+        ? getCandidateRejectionReason(candidate, charIndex, options)
+        : "",
+    };
+  });
+
+  const reconciledUpdates = reconcileStructuredUpdates(
+    normalizedCandidates
+      .map((candidate) => candidate.normalized)
+      .filter((candidate): candidate is ExtractedUpdate => Boolean(candidate)),
+    characters,
+  );
+  const acceptedIndexes = new Set(
+    reconciledUpdates
+      .map((update) => update.candidateIndex)
+      .filter((index): index is number => typeof index === "number"),
+  );
+  const acceptedByIndex = new Map(
+    reconciledUpdates
+      .filter((update) => typeof update.candidateIndex === "number")
+      .map((update) => [update.candidateIndex as number, update]),
+  );
+  const supersededIndexes = new Set(
+    reconciledUpdates.flatMap((update) => update.supersededCandidateIndexes || []),
+  );
+
+  const candidateReviews = normalizedCandidates.map((candidate): CandidateReview => {
+    const normalized = candidate.normalized;
+    const raw = candidate.raw && typeof candidate.raw === "object" ? candidate.raw : {};
+    const accepted = acceptedIndexes.has(candidate.index);
+    const acceptedUpdate = acceptedByIndex.get(candidate.index);
+    const rejectionReason = candidate.preRejectionReason ||
+      (supersededIndexes.has(candidate.index) ? "superseded_by_refinement" : getCandidateRejectionReason(candidate.raw, charIndex, options));
+    const originalCharacter = String(raw.character ?? "");
+    const resolvedCharacter = acceptedUpdate?.character ?? normalized?.character ?? originalCharacter;
+    return {
+      index: candidate.index,
+      accepted,
+      reason: accepted ? "accepted" : rejectionReason,
+      character: String(resolvedCharacter),
+      ...(accepted && originalCharacter && originalCharacter !== resolvedCharacter ? { originalCharacter } : {}),
+      field: String(normalized?.field ?? raw.field ?? ""),
+      value: String(normalized?.value ?? raw.value ?? ""),
+      evidence: normalizeEvidence(normalized?.evidence ?? raw.evidence, 280),
+      confidence: clampConfidence(normalized?.confidence ?? raw.confidence),
+    };
+  });
+
+  const updates = reconciledUpdates.map(({
+    candidateIndex: _candidateIndex,
+    supersededCandidateIndexes: _supersededCandidateIndexes,
+    ...update
+  }) => update);
+  return {
+    updates,
+    candidateReviews,
+    rejectedCandidates: candidateReviews.filter((review) => !review.accepted),
+  };
+}
+
+function buildMalformedCandidateReview(reason: string, content: string): CandidateReview {
+  return {
+    index: 0,
+    accepted: false,
+    reason,
+    character: "",
+    field: "",
+    value: summarize(content, 260),
+    evidence: "",
+    confidence: 0,
+  };
 }
 
 function buildCharacterStateBlock(c: CharacterData): string {
@@ -688,6 +890,7 @@ Return ONLY valid JSON. No explanations.`;
       ],
       temperature: 0.15,
       max_tokens: 8192,
+      response_format: characterUpdateResponseFormat,
     };
     const primaryDebugPayload = debugTrace === true
       ? {
@@ -730,11 +933,12 @@ Return ONLY valid JSON. No explanations.`;
         const safeRequestBody = {
           model: 'grok-4.3',
           messages: [
-            { role: "system", content: "Extract only non-explicit character state metadata from the latest exchange. Return JSON with {updates:[{character,field,value,evidence,confidence}]}. Use only supported field paths. Include evidence from the latest exchange and confidence from 0 to 1. Omit weak or unsupported changes." },
+		            { role: "system", content: "Extract only non-explicit character state metadata from the latest exchange. Return JSON with {updates:[{character,field,value,evidence,confidence}]}. Use only supported field paths. Include evidence from the latest exchange and confidence from 0 to 1. Omit weak or unsupported changes. Do not create, remove, or advance goals in this fallback." },
             { role: "user", content: `Eligible characters: ${filteredCharacters.map((c: CharacterData) => c.name).join(', ')}.\n\nSupported fields:\n${supportedFields}\n\nCurrent character state:\n${characterContext || 'No eligible character data provided'}\n\nAnalyze:\n${combinedText}` }
           ],
           temperature: 0.2,
           max_tokens: 4096,
+          response_format: characterUpdateResponseFormat,
         };
         const safeDebugPayload = debugTrace === true
           ? {
@@ -760,14 +964,48 @@ Return ONLY valid JSON. No explanations.`;
             const jsonMatch = safeContent.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
               const parsed = JSON.parse(jsonMatch[0]);
-              const safeUpdates = (parsed.updates || [])
-                .map(normalizeUpdateCandidate)
-                .filter((u: ExtractedUpdate | null): u is ExtractedUpdate => Boolean(u));
-              const reconciledSafeUpdates = reconcileStructuredUpdates(safeUpdates, filteredCharacters as CharacterData[]);
-              console.log(`[extract-character-updates] Safe retry yielded ${reconciledSafeUpdates.length} updates`);
-              return new Response(JSON.stringify({ updates: reconciledSafeUpdates, ...(safeDebugPayload ? { chronicle_debug_payload: safeDebugPayload } : {}) }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+              if (!Array.isArray(parsed.updates)) {
+                const candidateReviews = [buildMalformedCandidateReview("updates_not_array", safeContent)];
+                return new Response(JSON.stringify({
+                  updates: [],
+                  candidateReviews,
+                  rejectedCandidates: candidateReviews,
+                  parseError: "updates was not an array",
+                  ...(safeDebugPayload ? { chronicle_debug_payload: safeDebugPayload } : {}),
+                }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+              }
+              const parsedUpdates = parsed.updates;
+              const reviewedSafeUpdates = reviewUpdateCandidates(
+                parsedUpdates,
+                filteredCharacters as CharacterData[],
+                { disallowGoals: true },
+              );
+              console.log(`[extract-character-updates] Safe retry yielded ${reviewedSafeUpdates.updates.length} updates`);
+              return new Response(JSON.stringify({
+                updates: reviewedSafeUpdates.updates,
+                candidateReviews: reviewedSafeUpdates.candidateReviews,
+                rejectedCandidates: reviewedSafeUpdates.rejectedCandidates,
+                ...(safeDebugPayload ? { chronicle_debug_payload: safeDebugPayload } : {}),
+              }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
             }
-          } catch { /* fall through */ }
+            const candidateReviews = [buildMalformedCandidateReview("no_json_object", safeContent)];
+            return new Response(JSON.stringify({
+              updates: [],
+              candidateReviews,
+              rejectedCandidates: candidateReviews,
+              parseError: "No JSON object found in safe extraction response",
+              ...(safeDebugPayload ? { chronicle_debug_payload: safeDebugPayload } : {}),
+            }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          } catch {
+            const candidateReviews = [buildMalformedCandidateReview("parse_error", safeContent)];
+            return new Response(JSON.stringify({
+              updates: [],
+              candidateReviews,
+              rejectedCandidates: candidateReviews,
+              parseError: "Failed to parse safe extraction response",
+              ...(safeDebugPayload ? { chronicle_debug_payload: safeDebugPayload } : {}),
+            }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }
         }
         // If safe retry also fails, return empty
         return new Response(
@@ -781,24 +1019,38 @@ Return ONLY valid JSON. No explanations.`;
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || '{"updates":[]}';
     
-    let extractedUpdates: ExtractedUpdate[] = [];
+    let extractedUpdates: any[] = [];
+    let parseError: string | null = null;
+    let parseErrorContent = "";
     try {
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
-        extractedUpdates = parsed.updates || [];
+        if (Array.isArray(parsed.updates)) {
+          extractedUpdates = parsed.updates;
+        } else {
+          parseError = "updates_not_array";
+          parseErrorContent = content;
+        }
+      } else {
+        parseError = "missing_json_object";
+        parseErrorContent = content;
       }
-    } catch (parseError) {
+    } catch (_parseError) {
       console.error("Failed to parse extraction response:", content);
       extractedUpdates = [];
+      parseError = "parse_error";
+      parseErrorContent = content;
     }
 
-    // Validate, sanitize, and filter updates
-    extractedUpdates = extractedUpdates
-      .map(normalizeUpdateCandidate)
-      .filter((u): u is ExtractedUpdate => Boolean(u));
-
-    extractedUpdates = reconcileStructuredUpdates(extractedUpdates, filteredCharacters as CharacterData[]);
+    const reviewedUpdates = parseError
+      ? {
+          updates: [] as ExtractedUpdate[],
+          candidateReviews: [buildMalformedCandidateReview(parseError, parseErrorContent || content)],
+          rejectedCandidates: [buildMalformedCandidateReview(parseError, parseErrorContent || content)],
+        }
+      : reviewUpdateCandidates(extractedUpdates, filteredCharacters as CharacterData[]);
+    extractedUpdates = reviewedUpdates.updates;
 
     console.log(`[extract-character-updates] Extracted ${extractedUpdates.length} updates from dialogue`);
     if (extractedUpdates.length > 0) {
@@ -806,7 +1058,13 @@ Return ONLY valid JSON. No explanations.`;
     }
 
     return new Response(
-      JSON.stringify({ updates: extractedUpdates, ...(primaryDebugPayload ? { chronicle_debug_payload: primaryDebugPayload } : {}) }),
+      JSON.stringify({
+        updates: extractedUpdates,
+        candidateReviews: reviewedUpdates.candidateReviews,
+        rejectedCandidates: reviewedUpdates.rejectedCandidates,
+        ...(parseError ? { parseError } : {}),
+        ...(primaryDebugPayload ? { chronicle_debug_payload: primaryDebugPayload } : {}),
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

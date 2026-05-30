@@ -126,28 +126,28 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                 ],
                 bullets: [
                   bullet("Send", "Appends the new user message locally, builds effective world and cast state, and starts the streamed generation request."),
-                  bullet("Regenerate", "Slices the transcript back to the triggering user turn so the assistant can try the same beat again without double-feeding later canon."),
+	                  bullet("Regenerate", "Slices the transcript back to the triggering user turn so the assistant can try a different version of the same exchange without double-feeding later accepted story state."),
                   bullet("Continue", "Builds a constrained continue instruction that keeps the turn focused on AI-controlled characters instead of treating it like a normal user prompt."),
                 ],
                 meta: ["chat ui", "conversation slice", "roleplay entry"],
               },
               {
                 id: "turn-wrappers",
-                title: "Canon note and session-position wrappers",
+	                title: "Established-fact note and session-position wrappers",
                 tag: "context-injection",
                 summary:
                   "The client still adds small turn-local wrappers, but the old runtime anti-loop system-message lane has been removed.",
                 fileRefs: [
-                  ref("/src/components/chronicle/ChatInterfaceTab.tsx", "buildCanonNote"),
+	                  ref("/src/components/chronicle/ChatInterfaceTab.tsx", "buildCanonNote"),
                   ref("/src/components/chronicle/ChatInterfaceTab.tsx", "sessionMessageCountRef"),
                   ref("/src/services/llm.ts", "generateRoleplayResponseStream"),
                 ],
                 bullets: [
-                  bullet("Canon carry-forward", "If the user typed AI-character dialogue directly, a canon note preserves that authored line so regenerate or continue does not overwrite it as if Grok invented it."),
+	                  bullet("Established-fact carry-forward", "If the user typed AI-character dialogue directly, an established-fact note preserves that authored line so regenerate or continue does not overwrite it as if Grok invented it."),
                   bullet("Session counter", "The final outbound user content still gets a session-position wrapper so the model knows roughly where it is in the current session."),
                   bullet("Current state", "The old one-turn anti-loop runtime directive and extra system-message injection are no longer part of the live path."),
                 ],
-                meta: ["canon note", "session wrapper", "no runtime directive"],
+	                meta: ["established-fact note", "session wrapper", "no runtime directive"],
               },
             ],
           },
@@ -276,8 +276,8 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                   ref("/src/components/chronicle/ChatInterfaceTab.tsx", "queueAssistantDerivedWork"),
                 ],
                 bullets: [
-                  bullet("Separate concern", "This is why API Call 2 matters: Chronicle can keep canonical state fresh even when older dialogue falls out of the raw context window."),
-                  bullet("Generation-aware", "The queued work carries message and generation lineage so stale regenerate branches do not overwrite newer canon."),
+	                  bullet("Separate concern", "This is why API Call 2 matters: Chronicle can keep accepted story state fresh even when older dialogue falls out of the raw context window."),
+	                  bullet("Generation-aware", "The queued work carries message and generation lineage so stale regenerate branches do not overwrite newer accepted story state."),
                 ],
                 review: ROLEPLAY_PIPELINE_REVIEW_20260515,
                 meta: ["async follow-up", "generation-aware"],
@@ -565,7 +565,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
           {
             id: "support-goal-guidance-evaluator",
             title: "Goal alignment evaluator",
-            description: "Post-turn support now separates binary step completion from the adaptive goal-alignment score used to tune future goal pressure.",
+            description: "Post-turn support now separates binary step completion from goal-alignment diagnostics. This lane is currently shadow-mode only: it is reviewed in debug output but does not tune API Call 1 yet.",
             ownerTone: "edge",
             primaryRef: ref("/supabase/functions/evaluate-goal-alignment/index.ts", "Goal alignment evaluator"),
             items: [
@@ -574,9 +574,9 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                 title: "Weighted alignment scoring",
                 tag: "validation",
                 summary:
-                  "Grok classifies support, resistance, drift, neutral, or not-applicable signals; Chronicle code applies deterministic scoring rates based on rigid, normal, or flexible goal strength.",
+                  "Grok classifies support, resistance, drift, neutral, or not-applicable signals for review. Chronicle has deterministic scoring code, but live persistence and API Call 1 steering are disabled while shadow mode remains on.",
                 problemSolved:
-                  "This replaces the old placeholder behavior where flexibility was descriptive only and there was no durable gradient showing whether a user was buying into or pushing away from a goal.",
+                  "This lets us inspect whether the classifier is trustworthy before allowing it to change durable goal pressure.",
                 fileRefs: [
                   ref("/supabase/functions/evaluate-goal-alignment/index.ts", "classification prompt"),
                   ref("/src/lib/goal-alignment.ts", "scoring algorithm"),
@@ -595,7 +595,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                 title: "Step completion remains binary",
                 tag: "validation",
                 summary:
-                  "The older goal-progress support call still owns story-step completion only. It is intentionally separate from goal alignment, which stores the softer user-receptiveness gradient.",
+                  "The older goal-progress support call still owns story-step completion only. It is intentionally separate from goal alignment, which currently reports softer user-receptiveness signals for debug review.",
                 fileRefs: [
                   ref("/supabase/functions/evaluate-goal-progress/index.ts", "completed true/false prompt rules"),
                   ref("/supabase/migrations/20260521044256_424aa268-34cd-41aa-a2ea-dc2779b01344.sql", "goal_alignment_states"),
@@ -662,7 +662,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
       },
       {
         id: "support-canonical-overlay",
-        title: "Support Group 4: Canonical State Overlay",
+        title: "Support Group 4: Accepted State Overlay",
         subtitle: "The effective cast and world state used in play is layered from multiple sources, not read straight from the original authored cards.",
         groups: [
           {
@@ -683,11 +683,11 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                   ref("/src/components/chronicle/ChatInterfaceTab.tsx", "computeEffectiveCharacter"),
                 ],
                 bullets: [
-                  bullet("World", "Live scene, day/time, and session-specific overrides can replace older base story fields when they are the current canon."),
+	                  bullet("World", "Live scene, day/time, and session-specific overrides can replace older base story fields when they are the current accepted story state."),
                   bullet("Characters", "Main and side characters are rebuilt from authored cards plus valid session and snapshot updates before the next turn is sent."),
                 ],
                 review: ROLEPLAY_PIPELINE_REVIEW_20260515,
-                meta: ["canonical overlay", "effective state"],
+	                meta: ["state overlay", "effective state"],
               },
             ],
           },
@@ -779,7 +779,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                 title: "Physical continuity and content-theme injections",
                 tag: "core-prompt",
                 summary:
-                  "Chronicle injects general physical-continuity safeguards and selected story-theme directives that affect how the live beat should be rendered.",
+	                  "Chronicle injects general physical-continuity safeguards and selected story-theme directives that affect how the current exchange should be rendered.",
                 fileRefs: [
                   ref("/src/services/llm.ts", "physical logic / visibility / continuity rules"),
                   ref("/src/constants/tag-injection-registry.ts", "theme directive text"),
