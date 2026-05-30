@@ -133,6 +133,7 @@ interface ChatInterfaceTabProps {
 type ActionEvent = { messageId: string; timestamp: number };
 
 const TIME_SEQUENCE: TimeOfDay[] = ['sunrise', 'day', 'sunset', 'night'];
+const GOAL_ALIGNMENT_SHADOW_MODE = true;
 
 type EdgeDebugPayload = {
   modelRequest?: ChatDebugRequestRecord['modelRequest'];
@@ -1271,6 +1272,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   }, []);
 
   const activeGoalAlignmentMap = useMemo(() => {
+    if (GOAL_ALIGNMENT_SHADOW_MODE) {
+      return new Map<string, GoalAlignmentState>();
+    }
+
     return buildActiveGoalAlignmentMap(
       goalAlignmentStates.filter((entry) => entry.conversationId === conversationId),
       latestMessageGenerationMap,
@@ -1468,9 +1473,17 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     supabaseData.updateConversationMeta(conversationId, { currentDay: newDay, currentTimeOfDay: newTime });
   }, [conversationId, onUpdate, timeProgressionMode]);
 
-  // Issue #7: Compute a narrow style directive only when recent AI turns lock into a repeated pattern.
-  const getAdaptiveStyleDirective = (): string => {
-    return buildAssistantStyleDirective(conversation?.messages || [], responseLengthsRef.current);
+  // Issue #7: Compute narrow style directives only when recent AI turns lock into repeated output.
+  const getAdaptiveStyleDirective = (
+    messages: Message[] = conversation?.messages || [],
+    responseVerbosity?: string,
+  ): string => {
+    return [
+      buildAssistantStyleDirective(messages, responseLengthsRef.current),
+      responseVerbosity === 'detailed'
+        ? buildDetailedCollapseDirective(messages, responseLengthsRef.current)
+        : '',
+    ].filter(Boolean).join('\n\n');
   };
 
   // Ref to always hold current sideCharacters - avoids stale closure in async callbacks
@@ -3174,7 +3187,15 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     const storyGoals = effectiveWorldCore.storyGoals;
     if (!storyGoals?.length) return;
 
-    const pendingSteps: Array<{ stepId: string; description: string; goalId: string; flexibility: GoalFlexibility }> = [];
+    const pendingSteps: Array<{
+      stepId: string;
+      description: string;
+      goalId: string;
+      goalTitle: string;
+      goalDesiredOutcome: string;
+      goalCurrentStatus: string;
+      flexibility: GoalFlexibility;
+    }> = [];
     for (const goal of storyGoals) {
       for (const step of goal.steps || []) {
         if (!step.completed) {
@@ -3182,6 +3203,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             stepId: step.id,
             description: step.description,
             goalId: goal.id,
+            goalTitle: goal.title || 'Untitled story goal',
+            goalDesiredOutcome: goal.desiredOutcome || '',
+            goalCurrentStatus: goal.currentStatus || '',
             flexibility: goal.flexibility,
           });
         }
@@ -3220,8 +3244,15 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       const requestBody = {
         userMessage,
         aiResponse,
-        pendingSteps: pendingSteps.map(s => ({ stepId: s.stepId, description: s.description })),
-        flexibility: pendingSteps[0]?.flexibility || 'normal',
+        pendingSteps: pendingSteps.map(s => ({
+          stepId: s.stepId,
+          goalId: s.goalId,
+          goalTitle: s.goalTitle,
+          goalDesiredOutcome: s.goalDesiredOutcome,
+          goalCurrentStatus: s.goalCurrentStatus,
+          description: s.description,
+          flexibility: s.flexibility,
+        })),
         currentDay,
         currentTimeOfDay,
         debugTrace: isAdmin,
@@ -3244,6 +3275,59 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         body: requestBody,
       });
       const goalDebug = splitEdgeDebugPayload(data);
+      const returnedStepUpdates = Array.isArray((goalDebug.responseBody as any)?.stepUpdates)
+        ? ((goalDebug.responseBody as any).stepUpdates as any[])
+        : Array.isArray((data as any)?.stepUpdates)
+          ? ((data as any).stepUpdates as any[])
+          : [];
+      const pendingByStepId = new Map(pendingSteps.map((step) => [step.stepId, step]));
+      const completionReviews = returnedStepUpdates.map((update) => {
+        const pending = pendingByStepId.get(String(update?.stepId || ''));
+        const confidence = typeof update?.confidence === 'number'
+          ? update.confidence
+          : Number(update?.confidence || 0);
+        const evidence = typeof update?.evidence === 'string' ? update.evidence.trim() : '';
+        const genericEvidence = /^(short quote|close paraphrase|supported by|evidence from|latest exchange)/i.test(evidence);
+        const accepted =
+          !!pending &&
+          update?.completed === true &&
+          update?.result === 'completed' &&
+          Number.isFinite(confidence) &&
+          confidence >= 0.75 &&
+          evidence.length > 0 &&
+          !genericEvidence;
+        const reason = accepted
+          ? 'accepted'
+          : !pending
+            ? 'unknown_step'
+            : update?.completed !== true
+              ? 'not_marked_completed'
+              : update?.result !== 'completed'
+                ? 'result_not_completed'
+                : !Number.isFinite(confidence) || confidence < 0.75
+                ? 'low_confidence'
+                  : !evidence || genericEvidence
+                    ? 'missing_evidence'
+                    : 'rejected';
+        return {
+          stepId: String(update?.stepId || 'unknown'),
+          result: update?.result || 'unknown',
+          completed: update?.completed === true,
+          confidence: Number.isFinite(confidence) ? confidence : 0,
+          evidence,
+          accepted,
+          reason,
+        };
+      });
+      const acceptedStepCompletions = completionReviews.filter((review) => review.accepted);
+      const rejectedStepCompletions = completionReviews.filter((review) => review.completed && !review.accepted);
+      const reviewedGoalResponseBody = goalDebug.responseBody && typeof goalDebug.responseBody === 'object'
+        ? {
+            ...(goalDebug.responseBody as Record<string, unknown>),
+            acceptedStepCompletions,
+            rejectedStepCompletions,
+          }
+        : goalDebug.responseBody ?? null;
 
       recordChatDebugSupportCall(sourceMessage, {
         id: 'call2.goal-progress-eval',
@@ -3256,25 +3340,24 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         requestBody,
         modelRequest: goalDebug.modelRequest,
         modelRequests: goalDebug.modelRequests,
-        responseBody: goalDebug.responseBody ?? null,
+        responseBody: reviewedGoalResponseBody,
         error: error ? JSON.stringify(error) : undefined,
       });
 
-      if (error || !data?.stepUpdates?.length) return;
+      if (error || !returnedStepUpdates.length) return;
 
       if (!isMessageGenerationStillCurrent(sourceAssistantMessageId, sourceAssistantGenerationId)) {
         debugLog('[evaluateGoalProgress] Discarded stale result for non-current turn');
         return;
       }
 
-      const completions = data.stepUpdates
-        .filter((u: any) => u.completed)
-        .map((u: any) => {
-          const pending = pendingSteps.find(step => step.stepId === u.stepId);
+      const completions = acceptedStepCompletions
+        .map((review) => {
+          const pending = pendingSteps.find(step => step.stepId === review.stepId);
           if (!pending) return null;
           return {
             goalId: pending.goalId,
-            stepId: u.stepId,
+            stepId: review.stepId,
             completed: true,
           };
         })
@@ -3422,6 +3505,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         body: requestBody,
       });
       const alignmentDebug = splitEdgeDebugPayload(data);
+      const reviewedAlignmentResponseBody = alignmentDebug.responseBody && typeof alignmentDebug.responseBody === 'object'
+        ? {
+            ...(alignmentDebug.responseBody as Record<string, unknown>),
+            shadowMode: GOAL_ALIGNMENT_SHADOW_MODE,
+            persistence: GOAL_ALIGNMENT_SHADOW_MODE ? 'diagnostic_only' : 'eligible',
+          }
+        : alignmentDebug.responseBody ?? null;
 
       recordChatDebugSupportCall(sourceMessage, {
         id: 'call2.goal-alignment-eval',
@@ -3434,11 +3524,18 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         requestBody,
         modelRequest: alignmentDebug.modelRequest,
         modelRequests: alignmentDebug.modelRequests,
-        responseBody: alignmentDebug.responseBody ?? null,
+        responseBody: reviewedAlignmentResponseBody,
+        notes: GOAL_ALIGNMENT_SHADOW_MODE
+          ? ['Goal alignment shadow mode is enabled; evaluations are shown for review but are not persisted or injected into API Call 1.']
+          : undefined,
         error: error ? JSON.stringify(error) : undefined,
       });
 
       if (error || !data?.evaluations?.length) return;
+      if (GOAL_ALIGNMENT_SHADOW_MODE) {
+        debugLog('[evaluateGoalAlignment] Shadow mode active; skipped persistence and prompt steering');
+        return;
+      }
       if (!isMessageGenerationStillCurrent(sourceAssistantMessageId, sourceAssistantGenerationId)) {
         debugLog('[evaluateGoalAlignment] Discarded stale result for non-current turn');
         return;
@@ -3527,6 +3624,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     character: string;
     field: string;
     value: string;
+    evidence?: string;
+    confidence?: number;
   }
 
   interface ExtractionRequestMeta {
@@ -3565,6 +3664,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const isAllowedExtractionUpdate = (update: ExtractedUpdate): boolean => {
     if (!isAllowedExtractionField(update.field)) return false;
     if (update.field.startsWith('goals.') && update.value.trim().toUpperCase() === 'REMOVE') return false;
+    const confidence = typeof update.confidence === 'number'
+      ? update.confidence
+      : Number(update.confidence || 0);
+    if (!Number.isFinite(confidence) || confidence < 0.72) return false;
+    if (typeof update.evidence !== 'string' || !update.evidence.trim()) return false;
+    if (/^(short quote|close paraphrase|supported by|evidence from|latest exchange)/i.test(update.evidence.trim())) return false;
     return true;
   };
 
@@ -3943,6 +4048,54 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         body: requestBody
       });
       const characterDebug = splitEdgeDebugPayload(data);
+      const rawCharacterUpdates = Array.isArray((characterDebug.responseBody as any)?.updates)
+        ? ((characterDebug.responseBody as any).updates as any[])
+        : Array.isArray((data as any)?.updates)
+          ? ((data as any).updates as any[])
+          : [];
+      const characterUpdateReviews = rawCharacterUpdates.map((update) => {
+        const normalized: ExtractedUpdate = {
+          character: String(update?.character || ''),
+          field: String(update?.field || ''),
+          value: String(update?.value || ''),
+          evidence: typeof update?.evidence === 'string' ? update.evidence : '',
+          confidence: typeof update?.confidence === 'number'
+            ? update.confidence
+            : Number(update?.confidence || 0),
+        };
+        const eligible = eligibleNames.has(normalized.character.toLowerCase());
+        const genericEvidence = /^(short quote|close paraphrase|supported by|evidence from|latest exchange)/i.test((normalized.evidence || '').trim());
+        const accepted = eligible && isAllowedExtractionUpdate(normalized);
+        const reason = accepted
+          ? 'accepted'
+          : !eligible
+            ? 'ineligible_character'
+            : !isAllowedExtractionField(normalized.field)
+              ? 'unsupported_field'
+              : normalized.field.startsWith('goals.') && normalized.value.trim().toUpperCase() === 'REMOVE'
+                ? 'unsupported_goal_removal'
+                : !Number.isFinite(normalized.confidence || 0) || (normalized.confidence || 0) < 0.72
+                  ? 'low_confidence'
+                  : !normalized.evidence?.trim() || genericEvidence
+                    ? 'missing_evidence'
+                    : 'rejected';
+        return {
+          character: normalized.character,
+          field: normalized.field,
+          value: normalized.value,
+          evidence: normalized.evidence || '',
+          confidence: Number.isFinite(normalized.confidence || 0) ? normalized.confidence || 0 : 0,
+          accepted,
+          reason,
+        };
+      });
+      const reviewedCharacterResponseBody = characterDebug.responseBody && typeof characterDebug.responseBody === 'object'
+        ? {
+            ...(characterDebug.responseBody as Record<string, unknown>),
+            acceptedUpdates: characterUpdateReviews.filter((review) => review.accepted),
+            rejectedUpdates: characterUpdateReviews.filter((review) => !review.accepted),
+          }
+        : characterDebug.responseBody ?? null;
 
       recordChatDebugSupportCall(sourceMessage, {
         id: 'call2.character-state-sync',
@@ -3955,7 +4108,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         requestBody,
         modelRequest: characterDebug.modelRequest,
         modelRequests: characterDebug.modelRequests,
-        responseBody: characterDebug.responseBody ?? null,
+        responseBody: reviewedCharacterResponseBody,
         error: error ? JSON.stringify(error) : undefined,
       });
 
@@ -3965,7 +4118,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }
 
       // Defensive: filter out updates for non-eligible characters and unsupported fields
-      const updates = (data?.updates || [])
+      const updates = rawCharacterUpdates
+        .filter((u: any): u is ExtractedUpdate => (
+          typeof u?.character === 'string' &&
+          typeof u?.field === 'string' &&
+          typeof u?.value === 'string'
+        ))
         .filter((u: ExtractedUpdate) => eligibleNames.has(u.character.toLowerCase()))
         .filter((u: ExtractedUpdate) => isAllowedExtractionUpdate(u));
 
@@ -5003,6 +5161,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
     latestConversationsRef.current = nextConvsWithUser;
     onUpdate(nextConvsWithUser);
+    const userInput = input;
     setInput('');
     setIsStreaming(true);
     setStreamingContent('');
@@ -5012,61 +5171,89 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     let pendingCall1Request: ChatDebugRequestRecord | null = null;
 
     try {
-      let fullText = '';
       const llmAppData = buildLLMAppData();
       // Issue #8: Detect user-authored AI character content and prepend canon note
       const canonNote = buildCanonNote(input, canonNoteCharacters);
-
-      const adaptiveStyleDirective = llmAppData.uiSettings?.responseVerbosity === 'detailed'
-        ? buildDetailedCollapseDirective(conversation?.messages || [], responseLengthsRef.current)
-        : '';
+      const adaptiveStyleDirective = getAdaptiveStyleDirective(
+        conversation.messages,
+        llmAppData.uiSettings?.responseVerbosity,
+      );
       sessionMessageCountRef.current += 1;
 
       const llmInput = canonNote + input;
-      const stream = generateRoleplayResponseStream(
-        llmAppData,
-        conversationId,
-        llmInput,
-        modelId,
-        currentDay,
-        currentTimeOfDay,
-        activeMemories,
-        memoriesEnabled,
-        undefined,
-        adaptiveStyleDirective || undefined,
-        sessionMessageCountRef.current,
-        canonicalActiveScene,
-        {
-          debugTrace: isAdmin,
-          onDebugTrace: (trace) => {
-            pendingDebugTrace = trace;
-          },
-          onRequestPayload: (request) => {
-            pendingCall1Request = request;
-          },
+      const collectSendResponse = async (styleDirective?: string) => {
+        let responseText = '';
+        let responseDebugTrace: ChatDebugTrace | null = null;
+        let responseCall1Request: ChatDebugRequestRecord | null = null;
+        const stream = generateRoleplayResponseStream(
+          llmAppData,
+          conversationId,
+          llmInput,
+          modelId,
+          currentDay,
+          currentTimeOfDay,
+          activeMemories,
+          memoriesEnabled,
+          undefined,
+          styleDirective || undefined,
+          sessionMessageCountRef.current,
+          canonicalActiveScene,
+          {
+            debugTrace: isAdmin,
+            onDebugTrace: (trace) => {
+              responseDebugTrace = trace;
+            },
+            onRequestPayload: (request) => {
+              responseCall1Request = request;
+            },
+          }
+        );
+
+        for await (const chunk of stream) {
+          responseText += chunk;
+          setStreamingContent(responseText);
+
+          // Format streaming content on-the-fly to prevent flickering
+          const existingNamesForStream = getKnownCharacterNames(effectiveAppData);
+          const formatted = sanitizeAssistantOutput(responseText);
+          const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, placeholderMapRef.current);
+          setFormattedStreamingContent(normalizedText);
         }
+
+        let cleanedText = sanitizeAssistantOutput(responseText);
+        const existingNames = getKnownCharacterNames(effectiveAppData);
+        const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, placeholderMapRef.current);
+        cleanedText = normalizedText;
+
+        return {
+          cleanedText,
+          debugTrace: responseDebugTrace,
+          call1Request: responseCall1Request,
+        };
+      };
+
+      let responseResult = await collectSendResponse(adaptiveStyleDirective || undefined);
+      let cleanedText = responseResult.cleanedText;
+      pendingDebugTrace = responseResult.debugTrace;
+      pendingCall1Request = responseResult.call1Request;
+
+      const repairDirective = buildAssistantRepetitionRepairDirective(
+        conversation.messages,
+        cleanedText,
+        responseLengthsRef.current,
       );
 
-      for await (const chunk of stream) {
-        fullText += chunk;
-        setStreamingContent(fullText);
-
-        // Format streaming content on-the-fly to prevent flickering
-        const existingNamesForStream = getKnownCharacterNames(effectiveAppData);
-        const formatted = sanitizeAssistantOutput(fullText);
-        const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, placeholderMapRef.current);
-        setFormattedStreamingContent(normalizedText);
+      if (repairDirective) {
+        debugLog('[handleSend] Repetition repair retry triggered');
+        setStreamingContent('');
+        setFormattedStreamingContent('');
+        responseResult = await collectSendResponse(
+          [adaptiveStyleDirective, repairDirective].filter(Boolean).join('\n\n'),
+        );
+        cleanedText = responseResult.cleanedText;
+        pendingDebugTrace = responseResult.debugTrace;
+        pendingCall1Request = responseResult.call1Request;
       }
-
-      const userInput = input; // Capture before clearing
-
-      // Strip any legacy update tags that might still be in response (fallback)
-      let cleanedText = sanitizeAssistantOutput(fullText);
-
-      // Apply placeholder name guard to replace "Man 1:", "Cashier:", etc. with proper names
-      const existingNames = getKnownCharacterNames(effectiveAppData);
-      const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, placeholderMapRef.current);
-      cleanedText = normalizedText;
 
       // Issue #7: Track response word count for adaptive style directives
       responseLengthsRef.current.push(cleanedText.split(/\s+/).length);
@@ -5329,54 +5516,89 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         buildMessageGenerationMap(truncatedMessages),
       );
 
-      let fullText = '';
       // Apply canon note to regenerate flow so user-authored AI dialogue is preserved
       const canonNote = buildCanonNote(userMessage.text, canonNoteCharacters);
       const regenInput = canonNote + userMessage.text;
-      const stream = generateRoleplayResponseStream(
-        truncatedAppData,
-        conversationId,
-        regenInput,
-        modelId,
-        currentDay,
-        currentTimeOfDay,
-        truncatedMemories,
-        memoriesEnabled,
-        true,
-        undefined,
-        undefined,
-        canonicalActiveScene,
-        {
-          debugTrace: isAdmin,
-          onDebugTrace: (trace) => {
-            pendingDebugTrace = trace;
-          },
-          onRequestPayload: (request) => {
-            pendingCall1Request = request;
-          },
-        }
+      const adaptiveStyleDirective = getAdaptiveStyleDirective(
+        truncatedMessages,
+        truncatedAppData.uiSettings?.responseVerbosity,
       );
 
-      for await (const chunk of stream) {
-        fullText += chunk;
-        setStreamingContent(fullText);
+      const collectRegenerateResponse = async (styleDirective?: string) => {
+        let responseText = '';
+        let responseDebugTrace: ChatDebugTrace | null = null;
+        let responseCall1Request: ChatDebugRequestRecord | null = null;
+        const stream = generateRoleplayResponseStream(
+          truncatedAppData,
+          conversationId,
+          regenInput,
+          modelId,
+          currentDay,
+          currentTimeOfDay,
+          truncatedMemories,
+          memoriesEnabled,
+          true,
+          styleDirective || undefined,
+          undefined,
+          canonicalActiveScene,
+          {
+            debugTrace: isAdmin,
+            onDebugTrace: (trace) => {
+              responseDebugTrace = trace;
+            },
+            onRequestPayload: (request) => {
+              responseCall1Request = request;
+            },
+          }
+        );
 
-        // Format streaming content on-the-fly
-        const existingNamesForStream = getKnownCharacterNames(effectiveAppData);
-        const formatted = sanitizeAssistantOutput(fullText);
-        const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, placeholderMapRef.current);
-        setFormattedStreamingContent(normalizedText);
-      }
+        for await (const chunk of stream) {
+          responseText += chunk;
+          setStreamingContent(responseText);
+
+          // Format streaming content on-the-fly
+          const existingNamesForStream = getKnownCharacterNames(effectiveAppData);
+          const formatted = sanitizeAssistantOutput(responseText);
+          const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, placeholderMapRef.current);
+          setFormattedStreamingContent(normalizedText);
+        }
+
+        let cleanedText = sanitizeAssistantOutput(responseText);
+        const existingNames = getKnownCharacterNames(effectiveAppData);
+        const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, placeholderMapRef.current);
+        cleanedText = normalizedText;
+
+        return {
+          cleanedText,
+          debugTrace: responseDebugTrace,
+          call1Request: responseCall1Request,
+        };
+      };
 
       // Regeneration is text-variation only: avoid mutating persistent character state here.
 
-      // Strip any legacy update tags
-      let cleanedText = sanitizeAssistantOutput(fullText);
+      let responseResult = await collectRegenerateResponse(adaptiveStyleDirective || undefined);
+      let cleanedText = responseResult.cleanedText;
+      pendingDebugTrace = responseResult.debugTrace;
+      pendingCall1Request = responseResult.call1Request;
 
-      // Apply placeholder name guard
-      const existingNames = getKnownCharacterNames(effectiveAppData);
-      const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, placeholderMapRef.current);
-      cleanedText = normalizedText;
+      const repairDirective = buildAssistantRepetitionRepairDirective(
+        truncatedMessages,
+        cleanedText,
+        responseLengthsRef.current,
+      );
+
+      if (repairDirective) {
+        debugLog('[handleRegenerate] Repetition repair retry triggered');
+        setStreamingContent('');
+        setFormattedStreamingContent('');
+        responseResult = await collectRegenerateResponse(
+          [adaptiveStyleDirective, repairDirective].filter(Boolean).join('\n\n'),
+        );
+        cleanedText = responseResult.cleanedText;
+        pendingDebugTrace = responseResult.debugTrace;
+        pendingCall1Request = responseResult.call1Request;
+      }
 
       // UPDATE IN-PLACE: Replace the existing message instead of creating a new one
       const existingMessage = conv.messages.find((message) => message.id === messageId);
@@ -5457,7 +5679,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     let pendingCall1Request: ChatDebugRequestRecord | null = null;
 
     try {
-      const adaptiveStyleDirective = getAdaptiveStyleDirective();
+      const adaptiveStyleDirective = getAdaptiveStyleDirective(
+        conversation.messages,
+        llmAppData.uiSettings?.responseVerbosity,
+      );
 
 	      // Build goal-aware continue prompt without turning goals into a task list.
 	      const goalSummaryParts: string[] = [];

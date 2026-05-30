@@ -160,11 +160,11 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
               tagType: "code-logic",
               icon: "🔧",
               purpose:
-                "Creates the user turn, applies canon-note preservation, increments session message counter, injects anti-loop runtime directives, and starts streaming narrative generation.",
+                "Creates the user turn, applies established-fact note preservation, increments session message counter, injects anti-loop runtime directives, and starts streaming narrative generation.",
               whyItExists:
                 "Chronicle needs one authoritative send path that assembles live turn state before any paid narrative request leaves the browser.",
               problemSolved:
-                "Prevents canon wrappers, session position, and runtime corrective directives from being applied inconsistently across normal sends.",
+                "Prevents established-fact wrappers, session position, and runtime corrective directives from being applied inconsistently across normal sends.",
               fileRefs: [
                 {
                   path: "src/components/chronicle/ChatInterfaceTab.tsx",
@@ -280,7 +280,7 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
               tagType: "data-block",
               icon: "📦",
               purpose:
-                "Builds SECTION 2 - STORY AND WORLD CONTEXT from canonical story fields: story name, brief description, story premise, structured locations, custom world sections, story goals, lore entries, and selected story themes.",
+                "Builds SECTION 2 - STORY AND WORLD CONTEXT from source story fields: story name, brief description, story premise, structured locations, custom world sections, story goals, lore entries, and selected story themes.",
               whyItExists:
                 "Story Builder data lives across multiple authored containers, so the runtime needs one normalized world block before dispatch.",
               problemSolved:
@@ -290,7 +290,7 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
               ],
               codeSourceLabel: "SECTION 2 story/world assembly",
               promptViewEnabled: true,
-              codeSource: `SECTION 2 - STORY AND WORLD CONTEXT:\nSTORY NAME, BRIEF DESCRIPTION, STORY PREMISE, LOCATIONS, CUSTOM WORLD CONTENT, MAIN STORY GOALS, ADDITIONAL LORE ENTRIES, STORY THEMES\n(assembled directly from canonical appData.world/core fields plus selected contentThemes).`,
+              codeSource: `SECTION 2 - STORY AND WORLD CONTEXT:\nSTORY NAME, BRIEF DESCRIPTION, STORY PREMISE, LOCATIONS, CUSTOM WORLD CONTENT, MAIN STORY GOALS, ADDITIONAL LORE ENTRIES, STORY THEMES\n(assembled directly from source appData.world/core fields plus selected contentThemes).`,
               crossRefs: [
                 {
                   badge: "4",
@@ -758,30 +758,30 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               tagType: "core-prompt",
               icon: "📝",
               purpose:
-                "Builds pending-step context + timeline context, then classifies each pending story-goal step as completed true/false with summary.",
+                "Builds goal-scoped pending-step context and timeline context, then classifies each pending story-goal step with result, evidence, confidence, and completion status.",
               whyItExists:
-                "Story goals need a dedicated post-turn classifier instead of hoping the main response implicitly updates canon correctly.",
+                "Story goals need a dedicated post-turn classifier instead of relying on the main response text to update saved progress correctly.",
               problemSolved:
-                "Keeps completed goal steps tied to explicit post-turn evaluation rather than loose prose interpretation alone.",
+                "Keeps completed goal steps tied to evidence-gated post-turn evaluation rather than loose prose interpretation alone.",
               fileRefs: [
-                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "2683-2775" },
-                { path: "supabase/functions/evaluate-goal-progress/index.ts", lines: "50-149" },
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3181-3399" },
+                { path: "supabase/functions/evaluate-goal-progress/index.ts", lines: "118-155, 217-235" },
               ],
               codeSourceLabel: "Goal classification prompt",
               promptViewEnabled: true,
-              codeSource: `You are a story goal progress evaluator...\nClassify each pending step as ALIGNED or NOT_ALIGNED and return JSON classifications with completed boolean.`,
+              codeSource: `You are a story goal progress evaluator...\nReturn no_progress, partial_progress, completed, or unsupported with evidence and confidence. The client only persists accepted completions.`,
               subItems: [
                 {
                   id: "item-evaluate-goals-sub-1",
                   title: "Input scope",
                   description:
-                    "The client sends the latest user message, assistant response, pending goal steps, current day, current time of day, and the first pending step's flexibility.",
+                    "The client sends the latest user message, assistant response, pending goal steps with their parent goal context, current day, current time of day, and each step's guidance strength.",
                 },
                 {
                   id: "item-evaluate-goals-sub-2",
-                  title: "Completion-only persistence",
+                  title: "Evidence-gated persistence",
                   description:
-                    "The edge function returns completed true/false, and the client only persists rows where completed is true. Soft alignment is handled by the separate goal-alignment evaluator.",
+                    "The edge function returns result, evidence, confidence, and completed status. The client persists only known-step completions with completed result, adequate confidence, and non-placeholder evidence.",
                 },
                 {
                   id: "item-evaluate-goals-sub-3",
@@ -809,9 +809,9 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               whyItExists:
                 "Goal strength needs a real feedback loop instead of static rigid/normal/flexible wording that never changes based on user behavior.",
               problemSolved:
-                "Creates a durable alignment score that can rise, fall, become dormant, or drop flexible/normal goals without mutating the base Story Builder definitions.",
+                "Collects alignment diagnostics for review without letting unproven scores steer live generation while shadow mode is enabled.",
               fileRefs: [
-                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3248-3435" },
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3401-3615" },
                 { path: "supabase/functions/evaluate-goal-alignment/index.ts", lines: "1-272" },
                 { path: "src/lib/goal-alignment.ts", lines: "1-211" },
               ],
@@ -829,9 +829,9 @@ The app code applies scoring rates differently for rigid, normal, and flexible g
                 },
                 {
                   id: "item-evaluate-goal-alignment-sub-2",
-                  title: "Session-scoped persistence",
+                  title: "Shadow mode",
                   description:
-                    "Alignment rows live in goal_alignment_states by conversation, goal kind, optional character, and goal id so one playthrough cannot bleed into another.",
+                    "Current evaluations are attached to the debug export but are not persisted or injected into API Call 1 while the lane is being validated.",
                 },
               ],
             },
@@ -920,7 +920,7 @@ Only completed steps are persisted. Each row is tied to the source assistant gen
               problemSolved:
                 "Prevents every assistant turn from blindly mutating character state without an explicit eligibility and context pass.",
               fileRefs: [
-                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "2065-2207" },
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3862-4190" },
               ],
               crossRefs: [
                 {
@@ -943,7 +943,7 @@ Only completed steps are persisted. Each row is tied to the source assistant gen
               problemSolved:
                 "Reduces stale cards, speculative rewrites, fake field paths, and prompt bloat in the post-turn state-sync pass.",
               fileRefs: [
-                { path: "supabase/functions/extract-character-updates/index.ts", lines: "407-767" },
+                { path: "supabase/functions/extract-character-updates/index.ts", lines: "586-651, 730-735" },
               ],
               codeSourceLabel: "extract-character-updates system prompt (abridged)",
               promptViewEnabled: true,
@@ -959,9 +959,9 @@ Only completed steps are persisted. Each row is tied to the source assistant gen
               whyItExists:
                 "Character cards still need durable evolution, but the follow-up worker should behave like a conservative state reconciler rather than a free-form author.",
               problemSolved:
-                "Prevents unsupported custom containers, duplicate traits/goals, runaway step lists, and low-confidence edits from becoming saved state.",
+                "Prevents unsupported custom containers, duplicate traits/goals, runaway step lists, weak evidence, and low-confidence edits from becoming saved state.",
               fileRefs: [
-                { path: "supabase/functions/extract-character-updates/index.ts", lines: "498-642" },
+                { path: "supabase/functions/extract-character-updates/index.ts", lines: "603-647" },
               ],
               codeSourceLabel: "Character extractor field guidance",
               promptViewEnabled: true,
@@ -1009,10 +1009,10 @@ Character goals:
               whyItExists:
                 "Extractor output still needs deterministic cleanup and allowlist enforcement before it can touch saved character state.",
               problemSolved:
-                "Prevents unsupported fields, duplicate structured values, and malformed retry outputs from corrupting canonical character data.",
+                "Prevents unsupported fields, duplicate structured values, and malformed retry outputs from corrupting saved character data.",
               fileRefs: [
-                { path: "supabase/functions/extract-character-updates/index.ts", lines: "55-75, 209-292, 830-913" },
-                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "1957-1968, 2195-2203" },
+                { path: "supabase/functions/extract-character-updates/index.ts", lines: "56-71, 116-143, 764-801" },
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3664-3683, 4068-4132" },
               ],
               codeSourceLabel: "Validation/reconciliation checkpoints",
               promptViewEnabled: true,

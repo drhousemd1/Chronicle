@@ -877,29 +877,29 @@ src/services/llm.ts (injected at line ~856)</div>
  </div>
  </div>
 
- <!-- ═══ RANDOM STYLE HINT ═══ -->
+ <!-- ═══ ADAPTIVE STYLE DIRECTIVE ═══ -->
  <div class="item-row">
  <div class="item-name-row">
  <span class="ref-badge" data-tooltip="Lands in → Phase 1 → User Message Assembly → position 5">3</span>
  <span class="tag code-logic"><span class="tag-icon">🔧</span> code logic</span>
- <span class="item-name code">Random Style Hint Selection</span>
- <span class="tag source">llm.ts</span>
+ <span class="item-name code">Adaptive Style Directive</span>
+ <span class="tag source">assistant-style-directive.ts</span>
  </div>
- <!-- LLM FILE REFERENCE: src/services/llm.ts (getRandomStyleHint, lines ~814-825) -->
- <div class="file-ref">src/services/llm.ts (getRandomStyleHint, lines ~814-825)</div>
- <div class="item-desc">Picks one random writing tip from a pool that matches the user's verbosity setting. Keeps the AI's writing style from getting stale.</div>
+ <!-- LLM FILE REFERENCE: src/lib/assistant-style-directive.ts (buildAssistantStyleDirective / buildDetailedCollapseDirective) -->
+ <div class="file-ref">src/lib/assistant-style-directive.ts (buildAssistantStyleDirective / buildDetailedCollapseDirective)</div>
+ <div class="item-desc">Checks recent assistant output for repeated structure, repeated topic focus, weak external dialogue, and response-length collapse, then injects a narrow one-turn correction only when needed.</div>
  <div class="item-subs">
  <div class="item-sub">
  <span class="tag code-logic"><span class="tag-icon">🔧</span> code logic</span>
- <span class="sub-name code">Concise Pool</span>: <span class="sub-desc">8 hints focused on short, punchy writing: dialogue-forward, action-first, punchy sentences.</span>
+ <span class="sub-name code">Structure Check</span>: <span class="sub-desc">Detects repeated assistant block order, action-first dialogue cadence, and front-loaded narration before the next API Call 1 request is assembled.</span>
  </div>
  <div class="item-sub">
  <span class="tag code-logic"><span class="tag-icon">🔧</span> code logic</span>
- <span class="sub-name code">Balanced Pool</span>: <span class="sub-desc">8 hints for medium-length writing: decisive action, different structures, unexpected events.</span>
+ <span class="sub-name code">Topic Check</span>: <span class="sub-desc">Detects when the assistant keeps circling the same dialogue or descriptive focus across recent assistant outputs.</span>
  </div>
  <div class="item-sub">
  <span class="tag code-logic"><span class="tag-icon">🔧</span> code logic</span>
- <span class="sub-name code">Detailed Pool</span>: <span class="sub-desc">8 hints for longer writing: sensory detail, tension building, slow atmospheric moments.</span>
+ <span class="sub-name code">Repair Pass</span>: <span class="sub-desc">After generation, normal send, regenerate, and continue each get one hidden retry if the draft repeats the recent assistant pattern.</span>
  </div>
  </div>
  </div>
@@ -933,7 +933,7 @@ src/services/llm.ts (injected at line ~856)</div>
  <span class="sub-name core">Regen Directive</span>: <span class="sub-desc">~180 tokens of "write a different take" rules: only added if the user hit the Regenerate button instead of sending a new message</span>
  </div>
  <div class="item-sub">
- <span class="ref-badge" data-tooltip="Created in → Phase 1 → Random Style Hint Selection">3</span>
+ <span class="ref-badge" data-tooltip="Created in → Phase 1 → Adaptive Style Directive">3</span>
  <span class="tag context-injection"><span class="tag-icon">📥</span> context injection</span>
  <span class="sub-name injection">Style Hint</span>: <span class="sub-desc">The random writing tip picked above: always present</span>
  </div>
@@ -2119,29 +2119,29 @@ src/services/llm.ts (injected at line ~856)</div>
  </div>
  </div>
 
- <!-- ═══ RANDOM STYLE HINT ═══ -->
+ <!-- ═══ ADAPTIVE STYLE DIRECTIVE ═══ -->
  <div class="item-row">
  <div class="item-name-row">
  <span class="ref-badge" data-tooltip="Lands in → Phase 1 → User Message Assembly → position 5">3</span>
  <span class="tag code-logic"><span class="tag-icon">🔧</span> code logic</span>
- <span class="item-name code">Random Style Hint Selection</span>
- <span class="tag source">llm.ts</span>
+ <span class="item-name code">Adaptive Style Directive</span>
+ <span class="tag source">assistant-style-directive.ts</span>
  </div>
- <!-- LLM FILE REFERENCE: src/services/llm.ts (getRandomStyleHint, lines ~814-825) -->
- <div class="file-ref">src/services/llm.ts (getRandomStyleHint, lines ~814-825)</div>
- <div class="item-desc">Picks one random writing tip from a pool that matches the user's verbosity setting. Keeps the AI's writing style from getting stale.</div>
+ <!-- LLM FILE REFERENCE: src/lib/assistant-style-directive.ts (buildAssistantStyleDirective / buildDetailedCollapseDirective) -->
+ <div class="file-ref">src/lib/assistant-style-directive.ts (buildAssistantStyleDirective / buildDetailedCollapseDirective)</div>
+ <div class="item-desc">Checks recent assistant output for repeated structure, repeated topic focus, weak external dialogue, and response-length collapse, then injects a narrow one-turn correction only when needed.</div>
  <div class="item-subs">
  <div class="item-sub">
  <span class="tag code-logic"><span class="tag-icon">🔧</span> code logic</span>
- <span class="sub-name code">Concise Pool</span>: <span class="sub-desc">8 hints focused on short, punchy writing: dialogue-forward, action-first, punchy sentences.</span>
+ <span class="sub-name code">Structure Check</span>: <span class="sub-desc">Detects repeated assistant block order, action-first dialogue cadence, and front-loaded narration before the next API Call 1 request is assembled.</span>
  </div>
  <div class="item-sub">
  <span class="tag code-logic"><span class="tag-icon">🔧</span> code logic</span>
- <span class="sub-name code">Balanced Pool</span>: <span class="sub-desc">8 hints for medium-length writing: decisive action, different structures, unexpected events.</span>
+ <span class="sub-name code">Topic Check</span>: <span class="sub-desc">Detects when the assistant keeps circling the same dialogue or descriptive focus across recent assistant outputs.</span>
  </div>
  <div class="item-sub">
  <span class="tag code-logic"><span class="tag-icon">🔧</span> code logic</span>
- <span class="sub-name code">Detailed Pool</span>: <span class="sub-desc">8 hints for longer writing: sensory detail, tension building, slow atmospheric moments.</span>
+ <span class="sub-name code">Repair Pass</span>: <span class="sub-desc">After generation, normal send, regenerate, and continue each get one hidden retry if the draft repeats the recent assistant pattern.</span>
  </div>
  </div>
  </div>
@@ -2175,7 +2175,7 @@ src/services/llm.ts (injected at line ~856)</div>
  <span class="sub-name core">Regen Directive</span>: <span class="sub-desc">~180 tokens of "write a different take" rules: only added if the user hit the Regenerate button instead of sending a new message</span>
  </div>
  <div class="item-sub">
- <span class="ref-badge" data-tooltip="Created in → Phase 1 → Random Style Hint Selection">3</span>
+ <span class="ref-badge" data-tooltip="Created in → Phase 1 → Adaptive Style Directive">3</span>
  <span class="tag context-injection"><span class="tag-icon">📥</span> context injection</span>
  <span class="sub-name injection">Style Hint</span>: <span class="sub-desc">The random writing tip picked above: always present</span>
  </div>

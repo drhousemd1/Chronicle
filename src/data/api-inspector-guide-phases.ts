@@ -83,32 +83,36 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
             ]
           },
           {
-            "id": "item-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-random-style-hint-selection",
-            "title": "Random Style Hint Selection",
+            "id": "item-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-adaptive-style-directive",
+            "title": "Adaptive Style Directive",
             "tagType": "code-logic",
             "icon": "🔧",
-            "purpose": "Picks one random writing tip from a pool that matches the user's verbosity setting. Keeps the AI's writing style from getting stale.",
+            "purpose": "Checks recent assistant output for repeated structure, repeated topical focus, weak external dialogue, and response-length collapse, then injects a narrow one-turn correction only when needed.",
             "fileRefs": [
               {
-                "path": "src/services/llm.ts",
-                "lines": "getRandomStyleHint, lines ~814-825"
+                "path": "src/lib/assistant-style-directive.ts",
+                "lines": "buildAssistantStyleDirective / buildDetailedCollapseDirective"
+              },
+              {
+                "path": "src/components/chronicle/ChatInterfaceTab.tsx",
+                "lines": "getAdaptiveStyleDirective"
               }
             ],
             "subItems": [
               {
-                "id": "sub-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-concise-pool",
-                "title": "Concise Pool",
-                "description": "8 hints focused on short, punchy writing: dialogue-forward, action-first, punchy sentences."
+                "id": "sub-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-structure-check",
+                "title": "Structure Check",
+                "description": "Detects repeated assistant block order, action-first dialogue cadence, and front-loaded narration before the next API Call 1 request is assembled."
               },
               {
-                "id": "sub-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-balanced-pool",
-                "title": "Balanced Pool",
-                "description": "8 hints for medium-length writing: decisive action, different structures, unexpected events."
+                "id": "sub-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-topic-check",
+                "title": "Topic Check",
+                "description": "Detects when the assistant keeps circling the same dialogue or descriptive focus across recent assistant outputs."
               },
               {
-                "id": "sub-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-detailed-pool",
-                "title": "Detailed Pool",
-                "description": "8 hints for longer writing: sensory detail, tension building, slow atmospheric moments."
+                "id": "sub-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-repair-pass",
+                "title": "Repair Pass",
+                "description": "After generation, normal send, regenerate, and continue each get one hidden retry if the draft repeats the recent assistant pattern."
               }
             ]
           },
@@ -1178,7 +1182,7 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
             "title": "Character AI Fill / Generate / Enhance Runtime",
             "tagType": "code-logic",
             "icon": "🔧",
-            "purpose": "Runs per-field enhance prompts, empty-field fill, and full character generation using canonical section mappings and structured patch application.",
+            "purpose": "Runs per-field enhance prompts, empty-field fill, and full character generation using source-backed section mappings and structured patch application.",
             "fileRefs": [
               {
                 "path": "src/services/character-ai.ts",

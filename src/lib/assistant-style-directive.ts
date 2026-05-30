@@ -9,6 +9,7 @@ type CadenceAnalysis = {
   shapes: string[];
   blockCadences: CadenceMarker[][];
   repeatedTriadBlocks: number;
+  actionFirstDialogueBlocks: number;
   narrationHeavyBlocks: number;
   lowDialogueBlocks: number;
   frontLoadedNarrationBlocks: number;
@@ -19,6 +20,7 @@ type AssistantMessageStyle = CadenceAnalysis & {
   wordCount: number;
   shortQuotes: string[];
   descriptiveTerms: string[];
+  contentTerms: string[];
 };
 
 const DESCRIPTIVE_STOPWORDS = new Set([
@@ -43,6 +45,22 @@ const DESCRIPTIVE_STOPWORDS = new Set([
   'under',
   'while',
   'would',
+]);
+
+const CONTENT_STOPWORDS = new Set([
+  ...DESCRIPTIVE_STOPWORDS,
+  'because',
+  'being',
+  'close',
+  'going',
+  'right',
+  'something',
+  'still',
+  'think',
+  'thing',
+  'things',
+  'want',
+  'wants',
 ]);
 
 function normalizeQuote(value: string): string {
@@ -81,6 +99,17 @@ function extractDescriptiveTerms(value: string): string[] {
   return (withoutDialogue.match(/[a-z][a-z'-]{4,}/g) || [])
     .map((term) => term.replace(/'s$/, ''))
     .filter((term) => !DESCRIPTIVE_STOPWORDS.has(term));
+}
+
+function extractContentTerms(value: string): string[] {
+  const normalized = (value || '')
+    .replace(/(?:^|\n{2,})([^:\n]{1,80}):\s*/g, ' ')
+    .replace(/[*()"]/g, ' ')
+    .toLowerCase();
+
+  return (normalized.match(/[a-z][a-z'-]{4,}/g) || [])
+    .map((term) => term.replace(/'s$/, ''))
+    .filter((term) => !CONTENT_STOPWORDS.has(term));
 }
 
 function splitTaggedBlocks(text: string): string[] {
@@ -122,6 +151,10 @@ function hasActionDialogueThoughtCadence(cadence: CadenceMarker[]): boolean {
   return thoughtIndex >= 0;
 }
 
+function hasActionFirstDialogueCadence(cadence: CadenceMarker[]): boolean {
+  return cadence[0] === 'action' && cadence.includes('dialogue');
+}
+
 function analyzeAssistantCadence(messages: AssistantStyleMessage[]): CadenceAnalysis {
   const shapes: string[] = [];
   const blockCadences: CadenceMarker[][] = [];
@@ -149,11 +182,13 @@ function analyzeAssistantCadence(messages: AssistantStyleMessage[]): CadenceAnal
   }
 
   const repeatedTriadBlocks = blockCadences.filter(hasActionDialogueThoughtCadence).length;
+  const actionFirstDialogueBlocks = blockCadences.filter(hasActionFirstDialogueCadence).length;
 
   return {
     shapes,
     blockCadences,
     repeatedTriadBlocks,
+    actionFirstDialogueBlocks,
     narrationHeavyBlocks,
     lowDialogueBlocks,
     frontLoadedNarrationBlocks,
@@ -172,6 +207,7 @@ function analyzeAssistantMessage(text: string): AssistantMessageStyle {
     wordCount: countWords(text),
     shortQuotes: Array.from(new Set(shortQuotes)),
     descriptiveTerms: Array.from(new Set(extractDescriptiveTerms(text))),
+    contentTerms: Array.from(new Set(extractContentTerms(text))),
   };
 }
 
@@ -199,6 +235,9 @@ export function buildAssistantStyleDirective(
   const hasRepeatedTriadCadence = cadenceAnalysis.totalBlocks >= 2
     && cadenceAnalysis.repeatedTriadBlocks >= 2
     && cadenceAnalysis.repeatedTriadBlocks / cadenceAnalysis.totalBlocks >= 0.5;
+  const hasRepeatedActionDialogueCadence = cadenceAnalysis.totalBlocks >= 2
+    && cadenceAnalysis.actionFirstDialogueBlocks >= 2
+    && cadenceAnalysis.actionFirstDialogueBlocks / cadenceAnalysis.totalBlocks >= 0.5;
 
   const quotedLineCounts = new Map<string, number>();
   recentAssistantMessages.forEach((message) => {
@@ -221,6 +260,17 @@ export function buildAssistantStyleDirective(
     .map(([term]) => term)
     .slice(0, 5);
   const hasRepeatedDescriptiveTerms = repeatedDescriptiveTerms.length > 0;
+  const contentTermCounts = new Map<string, number>();
+  recentAssistantMessages.forEach((message) => {
+    new Set(extractContentTerms(message.text || '')).forEach((term) => {
+      contentTermCounts.set(term, (contentTermCounts.get(term) || 0) + 1);
+    });
+  });
+  const repeatedContentTerms = Array.from(contentTermCounts.entries())
+    .filter(([, count]) => count >= 2)
+    .map(([term]) => term)
+    .slice(0, 4);
+  const hasRepeatedContentFocus = repeatedContentTerms.length >= 3;
   const hasNarrationHeavyOutput = cadenceAnalysis.totalBlocks >= 1 && cadenceAnalysis.narrationHeavyBlocks > 0;
   const hasLowDialogueOutput = cadenceAnalysis.totalBlocks >= 1 && cadenceAnalysis.lowDialogueBlocks > 0;
   const hasFrontLoadedNarration = cadenceAnalysis.totalBlocks >= 1 && cadenceAnalysis.frontLoadedNarrationBlocks > 0;
@@ -229,8 +279,10 @@ export function buildAssistantStyleDirective(
     !hasLockedLength
     && !hasLockedShape
     && !hasRepeatedTriadCadence
+    && !hasRepeatedActionDialogueCadence
     && !hasRepeatedShortQuote
     && !hasRepeatedDescriptiveTerms
+    && !hasRepeatedContentFocus
     && !hasNarrationHeavyOutput
     && !hasLowDialogueOutput
     && !hasFrontLoadedNarration
@@ -242,15 +294,17 @@ export function buildAssistantStyleDirective(
     hasLockedLength ? 'similar assistant response lengths' : '',
     hasLockedShape ? 'the same assistant block order' : '',
     hasRepeatedTriadCadence ? 'repeated action -> dialogue -> internal thought cadence' : '',
+    hasRepeatedActionDialogueCadence ? 'repeated action-first dialogue cadence' : '',
     hasRepeatedShortQuote ? 'reused short assistant dialogue phrasing' : '',
     hasRepeatedDescriptiveTerms ? `repeated descriptive terms (${repeatedDescriptiveTerms.join(', ')})` : '',
+    hasRepeatedContentFocus ? `repeated dialogue or topic focus (${repeatedContentTerms.join(', ')})` : '',
     hasNarrationHeavyOutput ? 'narration-heavy responses' : '',
     hasLowDialogueOutput ? 'missing or very low external dialogue' : '',
     hasFrontLoadedNarration ? 'external dialogue appearing too late after a long narration opening' : '',
   ].filter(Boolean).join(', ');
 
   return `[STYLE ADJUSTMENT FOR THIS TURN]
-Your own recent assistant responses are repeating ${reasons}. Compare against your own previous 2-3 assistant character blocks, not the user's message. Vary the next response naturally. Do not force every character block into the same action -> dialogue -> internal thought sequence, do not bury external dialogue behind a long narration opening, and do not reuse recent descriptive terms, body/clothing focus, object focus, location focus, distinctive sentence shapes, or short reactive lines unless the scene specifically calls for that repetition.`;
+Your own recent assistant responses are repeating ${reasons}. Compare against your own previous 2-3 assistant character blocks, not the user's message. Vary the next response naturally. If your recent blocks keep opening with narration before speech, start with external dialogue when that fits the current exchange and let action support the conversation instead of repeating the same opening shape. Do not reuse the same descriptive focus, topic focus, sentence shape, or short reactive line unless the current scene specifically calls for that repetition.`;
 }
 
 export function buildDetailedCollapseDirective(
@@ -294,13 +348,18 @@ export function buildAssistantRepetitionRepairDirective(
   const previousShapes = new Set(previous.flatMap((analysis) => analysis.shapes));
   const previousShortQuotes = new Set(previous.flatMap((analysis) => analysis.shortQuotes));
   const previousTerms = new Set(previous.flatMap((analysis) => analysis.descriptiveTerms));
+  const previousContentTerms = new Set(previous.flatMap((analysis) => analysis.contentTerms));
 
   const repeatedTerms = candidate.descriptiveTerms.filter((term) => previousTerms.has(term)).slice(0, 5);
+  const repeatedContentTerms = candidate.contentTerms.filter((term) => previousContentTerms.has(term)).slice(0, 4);
   const repeatedQuotes = candidate.shortQuotes.filter((quote) => previousShortQuotes.has(quote));
   const repeatedShape = candidate.shapes.some((shape) => previousShapes.has(shape));
   const repeatedTriad = candidate.totalBlocks > 0
     && candidate.repeatedTriadBlocks / candidate.totalBlocks >= 0.5
     && previous.some((analysis) => analysis.totalBlocks > 0 && analysis.repeatedTriadBlocks / analysis.totalBlocks >= 0.5);
+  const repeatedActionFirstDialogue = candidate.totalBlocks > 0
+    && candidate.actionFirstDialogueBlocks / candidate.totalBlocks >= 0.5
+    && previous.some((analysis) => analysis.totalBlocks > 0 && analysis.actionFirstDialogueBlocks / analysis.totalBlocks >= 0.5);
   const frontLoaded = candidate.frontLoadedNarrationBlocks > 0 || candidate.narrationHeavyBlocks > 0 || candidate.lowDialogueBlocks > 0;
   const lockedLength = recentLengths.length > 0 && (() => {
     const lastLength = recentLengths[recentLengths.length - 1];
@@ -314,8 +373,10 @@ export function buildAssistantRepetitionRepairDirective(
   const reasons = [
     repeatedShape ? 'same structure as a recent assistant response' : '',
     repeatedTriad ? 'same action -> dialogue -> internal thought cadence' : '',
+    repeatedActionFirstDialogue ? 'same action-first dialogue cadence' : '',
     repeatedQuotes.length > 0 ? 'reused short dialogue phrasing' : '',
     repeatedTerms.length >= 3 ? `reused descriptive focus (${repeatedTerms.join(', ')})` : '',
+    repeatedContentTerms.length >= 3 ? `reused dialogue or topic focus (${repeatedContentTerms.join(', ')})` : '',
     frontLoaded ? 'front-loaded narration or weak dialogue balance' : '',
     lockedLength ? 'same response length band' : '',
   ].filter(Boolean);
@@ -323,5 +384,5 @@ export function buildAssistantRepetitionRepairDirective(
   if (reasons.length === 0) return '';
 
   return `[OUTPUT REVISION REQUIRED]
-The draft response repeated ${reasons.join(', ')}. Regenerate the response once. Keep the same established facts, speaker tags, user-character boundaries, and emotional direction, but do not rewrite the same exchange with swapped wording. The new response must develop the AI-controlled character's side of the current exchange while preserving the user's control of their character. Use meaningful external dialogue when the character can speak, and avoid reusing the same descriptive focus, sentence shape, or closing internal thought pattern.`;
+The draft response repeated ${reasons.join(', ')}. Regenerate the response once. Keep the same established facts, speaker tags, user-character boundaries, and emotional direction, but do not rewrite the same exchange with swapped wording. The new response must develop the AI-controlled character's side of the current exchange while preserving the user's control of their character. Use meaningful external dialogue when the character can speak, and avoid reusing the same descriptive focus, topic focus, sentence shape, or closing pattern.`;
 }

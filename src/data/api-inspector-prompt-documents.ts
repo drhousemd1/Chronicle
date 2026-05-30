@@ -409,35 +409,54 @@ const goalProgressSystemPrompt = `You are a precise story goal classifier. Respo
 const goalProgressUserPrompt = `You are a story goal progress evaluator. Analyze how the latest exchange relates to each pending story step.
 {{timeContext}}
 PENDING STEPS:
-{{pendingSteps.map((step, index) => 'Step ' + (index + 1) + ' (ID: ' + step.stepId + '): "' + step.description + '"').join('\\n')}}
+{{pendingSteps rendered with step_id, goal_id, goal_title, goal_desired_outcome, goal_current_status, guidance_strength, and step_description}}
 
 USER MESSAGE:
 {{userMessage}}
 
-AI RESPONSE (for context):
+AI RESPONSE:
 {{aiResponse}}
 
-For EACH step, determine if the exchange ADVANCES or COMPLETES the step's objective. Consider the current day and time when evaluating deadline-based or pacing-sensitive goals. Classify as:
-- ALIGNED: The exchange moves toward or completes the step's objective
-- NOT_ALIGNED: The exchange does not advance this step
+Evaluate each pending step from the latest exchange only, using the existing goal context to understand what the step means. A step is completed only when the latest exchange establishes the lasting condition described by that step as true in the story state. Discussion, intention, pressure, preparation, partial movement, or a temporary scene action can be partial progress, but it is not completion.
+
+Goal guidance strength affects how cautious you should be. Rigid goals can remain important background direction, but their steps still require direct support before completion. Flexible goals may drift or pause, but they should not be completed from weak evidence.
+
+For each step, return a result:
+- no_progress: the latest exchange does not materially advance this step
+- partial_progress: the latest exchange moves toward the step but does not make it true yet
+- completed: the lasting condition is now true
+- unsupported: the step cannot be evaluated from this exchange
+
+Evidence must be a short quote or close paraphrase from the latest user message or AI response. Confidence is 0 to 1. Use high confidence only when the evidence directly supports the result.
 
 Respond in JSON format ONLY:
 {
   "classifications": [
-    { "stepId": "...", "completed": true/false, "summary": "Brief 1-sentence explanation" }
+    {
+      "stepId": "...",
+      "result": "no_progress|partial_progress|completed|unsupported",
+      "completed": true/false,
+      "confidence": 0.0,
+      "evidence": "Short quote or close paraphrase from this exchange.",
+      "summary": "Brief explanation."
+    }
   ]
 }
 
-Set "completed" to true only when the lasting condition described by the step is fully true in the story state. If the latest exchange only moves toward that condition, keep "completed" false and summarize the progress instead.`;
+Set "completed" to true only when result is "completed", confidence is at least 0.75, and evidence directly supports the lasting condition. Empty or conservative results are valid.`;
 
-const characterStateSyncFallbackSystemPrompt = `Extract only non-explicit character state metadata from the latest exchange. Return JSON with {updates:[{character,field,value}]}. Use only supported field paths and omit low-confidence changes.`;
+const characterStateSyncFallbackSystemPrompt = `Extract only non-explicit character state metadata from the latest exchange. Return JSON with {updates:[{character,field,value,evidence,confidence}]}. Use only supported field paths. Include evidence from the latest exchange and confidence from 0 to 1. Omit weak or unsupported changes.`;
 
 const characterStateSyncFallbackUserPrompt = `Eligible characters: {{eligibleCharacterNames}}
 
-Text:
-{{userMessage}}
+Supported fields:
+{{supportedFields}}
 
-{{aiResponse}}`;
+Current character state:
+{{characterContext || 'No eligible character data provided'}}
+
+Analyze:
+{{combinedText}}`;
 
 const memoryCompressionSystemPrompt = `You are compressing a list of story memory bullet points from a single day of roleplay into a brief narrative synopsis for long-term storage.
 
@@ -567,6 +586,7 @@ Character goals:
 - Return no update when the existing card is still accurate or when the evidence is weak.
 - Use the real field path from SUPPORTED FIELD PATHS. Never create fake containers such as sections.Goals.* when goals.* exists.
 - Preserve current card information unless the latest exchange gives a clear reason to change it.
+- Every returned update must include evidence from the latest exchange and a confidence score from 0 to 1. If you cannot point to the exchange text that supports the change, omit the update.
 
 --- FIELD GUIDANCE ---
 - currentMood: emotional/psychological state only, max 12 words. No body-part prose, clothing, objects, or action sequences.
@@ -603,11 +623,11 @@ Character goals:
 Return only this JSON shape:
 {
   "updates": [
-    { "character": "CharacterName", "field": "currentMood", "value": "Nervous but determined" },
-    { "character": "CharacterName", "field": "scenePosition", "value": "beside the relevant scene object" },
-    { "character": "CharacterName", "field": "relationships._extras", "value": "OtherCharacter: Trusted after sharing important information" },
-    { "character": "CharacterName", "field": "goals.Rebuild Trust", "value": "current_status: First honest conversation happened. | progress: 25 | complete_steps: 1" },
-    { "character": "CharacterName", "field": "goals.Establish Lasting Dynamic", "value": "desired_outcome: CharacterName and OtherCharacter establish a sustained relationship dynamic that changes how they make decisions, communicate, and behave together. | current_status: Goal newly established. | progress: 0 | new_steps: Step 1: CharacterName tests whether OtherCharacter is receptive to the dynamic through low-pressure conversation or behavior. Step 2: CharacterName creates a repeated pattern that makes the dynamic part of their normal interactions. Step 3: CharacterName deepens the dynamic through a more meaningful commitment, ritual, agreement, or recurring behavior. Step 4: The characters confront the main resistance, uncertainty, or consequence preventing the dynamic from becoming stable. Step 5: The dynamic becomes an accepted part of the ongoing relationship and affects future choices." }
+    { "character": "CharacterName", "field": "currentMood", "value": "Nervous but determined", "evidence": "Short quote or close paraphrase from this exchange.", "confidence": 0.86 },
+    { "character": "CharacterName", "field": "scenePosition", "value": "beside the relevant scene object", "evidence": "Short quote or close paraphrase from this exchange.", "confidence": 0.9 },
+    { "character": "CharacterName", "field": "relationships._extras", "value": "OtherCharacter: Trusted after sharing important information", "evidence": "Short quote or close paraphrase from this exchange.", "confidence": 0.82 },
+    { "character": "CharacterName", "field": "goals.Rebuild Trust", "value": "current_status: First honest conversation happened. | progress: 25 | complete_steps: 1", "evidence": "Short quote or close paraphrase from this exchange.", "confidence": 0.8 },
+    { "character": "CharacterName", "field": "goals.Establish Lasting Dynamic", "value": "desired_outcome: CharacterName and OtherCharacter establish a sustained relationship dynamic that changes how they make decisions, communicate, and behave together. | current_status: Goal newly established. | progress: 0 | new_steps: Step 1: CharacterName tests whether OtherCharacter is receptive to the dynamic through low-pressure conversation or behavior. Step 2: CharacterName creates a repeated pattern that makes the dynamic part of their normal interactions. Step 3: CharacterName deepens the dynamic through a more meaningful commitment, ritual, agreement, or recurring behavior. Step 4: The characters confront the main resistance, uncertainty, or consequence preventing the dynamic from becoming stable. Step 5: The dynamic becomes an accepted part of the ongoing relationship and affects future choices.", "evidence": "Short quote or close paraphrase from this exchange.", "confidence": 0.78 }
   ]
 }
 
@@ -1080,6 +1100,21 @@ ${characterStateSyncFallbackSystemPrompt}
 FALLBACK USER MESSAGE
 ${characterStateSyncFallbackUserPrompt}
 
+EDGE RESPONSE SHAPE
+{
+  "updates": [
+    {
+      "character": "{{character name}}",
+      "field": "{{supported field path}}",
+      "value": "{{proposed saved value}}",
+      "evidence": "{{short exchange evidence}}",
+      "confidence": 0.82
+    }
+  ],
+  "acceptedUpdates": "{{debug export annotation added by browser before applying state}}",
+  "rejectedUpdates": "{{debug export annotation added by browser before applying state}}"
+}
+
 ================================================================================
 SUPPORT CALL: GOAL PROGRESS EVALUATION
 ================================================================================
@@ -1094,9 +1129,16 @@ BROWSER-TO-EDGE REQUEST BODY SHAPE
   "userMessage": "{{latest user message}}",
   "aiResponse": "{{latest assistant response}}",
   "pendingSteps": [
-    { "stepId": "{{story goal step id}}", "description": "{{open story goal milestone description}}" }
+    {
+      "stepId": "{{story goal step id}}",
+      "goalId": "{{story goal id}}",
+      "goalTitle": "{{story goal title}}",
+      "goalDesiredOutcome": "{{story goal desired outcome}}",
+      "goalCurrentStatus": "{{story goal current status}}",
+      "description": "{{open story goal milestone description}}",
+      "flexibility": "{{goal guidance strength}}"
+    }
   ],
-  "flexibility": "{{first pending step goal flexibility; currently accepted by request type but not used by the edge prompt}}",
   "currentDay": "{{currentDay}}",
   "currentTimeOfDay": "{{currentTimeOfDay}}",
   "debugTrace": "{{true only when requested}}"
@@ -1126,8 +1168,17 @@ ${goalProgressUserPrompt}
 EDGE RESPONSE SHAPE
 {
   "stepUpdates": [
-    { "stepId": "{{story goal step id}}", "completed": true, "summary": "{{model summary}}" }
-  ]
+    {
+      "stepId": "{{story goal step id}}",
+      "result": "no_progress|partial_progress|completed|unsupported",
+      "completed": true,
+      "confidence": 0.82,
+      "evidence": "{{short exchange evidence}}",
+      "summary": "{{model summary}}"
+    }
+  ],
+  "acceptedStepCompletions": "{{debug export annotation added by browser before persistence}}",
+  "rejectedStepCompletions": "{{debug export annotation added by browser before persistence}}"
 }
 
 ================================================================================
@@ -1159,6 +1210,9 @@ ${goalAlignmentSystemPrompt}
 
 USER MESSAGE
 ${goalAlignmentUserPrompt}
+
+SHADOW-MODE NOTE
+Goal alignment currently runs for diagnostics only. Successful evaluations are attached to the debug export, but the browser does not persist them and does not inject alignment scores into API Call 1 while shadow mode is enabled.
 
 ================================================================================
 SUPPORT CALL: MEMORY EXTRACTION

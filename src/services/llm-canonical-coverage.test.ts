@@ -441,7 +441,7 @@ describe('llm canonical prompt coverage', () => {
     );
 
     for (const prompt of [thirdPersonPrompt, firstPersonPrompt]) {
-      expect(prompt).toContain('Format pattern: CharacterName');
+      expect(prompt).toContain('This POV setting controls pronouns only.');
       expect(prompt).not.toContain('Correct example: Ashley');
       expect(prompt).not.toContain("I'm here!");
       expect(prompt).not.toMatch(/\bAshley\b|\bSarah\b|\bJames\b/);

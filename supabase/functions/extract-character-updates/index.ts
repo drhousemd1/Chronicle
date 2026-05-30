@@ -53,6 +53,22 @@ interface ExtractedUpdate {
   character: string;
   field: string;
   value: string;
+  evidence?: string;
+  confidence?: number;
+}
+
+function clampConfidence(value: unknown): number {
+  const numeric = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(numeric)) return 0;
+  return Math.max(0, Math.min(1, numeric));
+}
+
+function summarize(value: unknown, max = 320): string {
+  return String(value || "").replace(/\s+/g, " ").trim().slice(0, max);
+}
+
+function isGenericEvidence(value: string): boolean {
+  return /^(short quote|close paraphrase|supported by|evidence from|latest exchange)/i.test(value.trim());
 }
 
 function sanitizeCurrentMood(value: string): string {
@@ -95,6 +111,34 @@ function isAllowedUpdateField(field: string): boolean {
 function isAllowedUpdateValue(field: string, value: string): boolean {
   if (field.startsWith("goals.") && value.trim().toUpperCase() === "REMOVE") return false;
   return true;
+}
+
+function normalizeUpdateCandidate(candidate: any): ExtractedUpdate | null {
+  if (
+    typeof candidate?.character !== "string" ||
+    typeof candidate?.field !== "string" ||
+    typeof candidate?.value !== "string"
+  ) {
+    return null;
+  }
+
+  const character = candidate.character.trim();
+  const field = candidate.field.trim();
+  const value = candidate.value.trim();
+  const evidence = summarize(candidate.evidence, 280);
+  const confidence = clampConfidence(candidate.confidence);
+
+  if (!character || !field || !value) return null;
+  if (!isAllowedUpdateField(field) || !isAllowedUpdateValue(field, value)) return null;
+  if (!evidence || isGenericEvidence(evidence) || confidence < 0.72) return null;
+
+  if (field === "currentMood") {
+    const sanitizedMood = sanitizeCurrentMood(value);
+    if (!sanitizedMood) return null;
+    return { character, field, value: sanitizedMood, evidence, confidence };
+  }
+
+  return { character, field, value, evidence, confidence };
 }
 
 function normalizeText(value: string): string {
@@ -559,6 +603,7 @@ ${supportedFields}
 - Return no update when the existing card is still accurate or when the evidence is weak.
 - Use the real field path from SUPPORTED FIELD PATHS. Never create fake containers such as sections.Goals.* when goals.* exists.
 - Preserve current card information unless the latest exchange gives a clear reason to change it.
+- Every returned update must include evidence from the latest exchange and a confidence score from 0 to 1. If you cannot point to the exchange text that supports the change, omit the update.
 
 --- FIELD GUIDANCE ---
 - currentMood: emotional/psychological state only, max 12 words. No body-part prose, clothing, objects, or action sequences.
@@ -595,11 +640,11 @@ ${supportedFields}
 Return only this JSON shape:
 {
   "updates": [
-    { "character": "CharacterName", "field": "currentMood", "value": "Nervous but determined" },
-    { "character": "CharacterName", "field": "scenePosition", "value": "beside the relevant scene object" },
-    { "character": "CharacterName", "field": "relationships._extras", "value": "OtherCharacter: Trusted after sharing important information" },
-    { "character": "CharacterName", "field": "goals.Rebuild Trust", "value": "current_status: First honest conversation happened. | progress: 25 | complete_steps: 1" },
-    { "character": "CharacterName", "field": "goals.Establish Lasting Dynamic", "value": "desired_outcome: CharacterName and OtherCharacter establish a sustained relationship dynamic that changes how they make decisions, communicate, and behave together. | current_status: Goal newly established. | progress: 0 | new_steps: Step 1: CharacterName tests whether OtherCharacter is receptive to the dynamic through low-pressure conversation or behavior. Step 2: CharacterName creates a repeated pattern that makes the dynamic part of their normal interactions. Step 3: CharacterName deepens the dynamic through a more meaningful commitment, ritual, agreement, or recurring behavior. Step 4: The characters confront the main resistance, uncertainty, or consequence preventing the dynamic from becoming stable. Step 5: The dynamic becomes an accepted part of the ongoing relationship and affects future choices." }
+    { "character": "CharacterName", "field": "currentMood", "value": "Nervous but determined", "evidence": "Short quote or close paraphrase from this exchange.", "confidence": 0.86 },
+    { "character": "CharacterName", "field": "scenePosition", "value": "beside the relevant scene object", "evidence": "Short quote or close paraphrase from this exchange.", "confidence": 0.9 },
+    { "character": "CharacterName", "field": "relationships._extras", "value": "OtherCharacter: Trusted after sharing important information", "evidence": "Short quote or close paraphrase from this exchange.", "confidence": 0.82 },
+    { "character": "CharacterName", "field": "goals.Rebuild Trust", "value": "current_status: First honest conversation happened. | progress: 25 | complete_steps: 1", "evidence": "Short quote or close paraphrase from this exchange.", "confidence": 0.8 },
+    { "character": "CharacterName", "field": "goals.Establish Lasting Dynamic", "value": "desired_outcome: CharacterName and OtherCharacter establish a sustained relationship dynamic that changes how they make decisions, communicate, and behave together. | current_status: Goal newly established. | progress: 0 | new_steps: Step 1: CharacterName tests whether OtherCharacter is receptive to the dynamic through low-pressure conversation or behavior. Step 2: CharacterName creates a repeated pattern that makes the dynamic part of their normal interactions. Step 3: CharacterName deepens the dynamic through a more meaningful commitment, ritual, agreement, or recurring behavior. Step 4: The characters confront the main resistance, uncertainty, or consequence preventing the dynamic from becoming stable. Step 5: The dynamic becomes an accepted part of the ongoing relationship and affects future choices.", "evidence": "Short quote or close paraphrase from this exchange.", "confidence": 0.78 }
   ]
 }
 
@@ -685,8 +730,8 @@ Return ONLY valid JSON. No explanations.`;
         const safeRequestBody = {
           model: 'grok-4.3',
           messages: [
-            { role: "system", content: "Extract only non-explicit character state metadata from the latest exchange. Return JSON with {updates:[{character,field,value}]}. Use only supported field paths and omit low-confidence changes." },
-            { role: "user", content: `Characters: ${filteredCharacters.map((c: CharacterData) => c.name).join(', ')}. Analyze:\n${combinedText}` }
+            { role: "system", content: "Extract only non-explicit character state metadata from the latest exchange. Return JSON with {updates:[{character,field,value,evidence,confidence}]}. Use only supported field paths. Include evidence from the latest exchange and confidence from 0 to 1. Omit weak or unsupported changes." },
+            { role: "user", content: `Eligible characters: ${filteredCharacters.map((c: CharacterData) => c.name).join(', ')}.\n\nSupported fields:\n${supportedFields}\n\nCurrent character state:\n${characterContext || 'No eligible character data provided'}\n\nAnalyze:\n${combinedText}` }
           ],
           temperature: 0.2,
           max_tokens: 4096,
@@ -716,15 +761,7 @@ Return ONLY valid JSON. No explanations.`;
             if (jsonMatch) {
               const parsed = JSON.parse(jsonMatch[0]);
               const safeUpdates = (parsed.updates || [])
-                .filter((u: any) =>
-                  typeof u.character === 'string' && typeof u.field === 'string' && typeof u.value === 'string' &&
-                  u.character.trim() && u.field.trim() && u.value.trim() && isAllowedUpdateField(u.field.trim()) && isAllowedUpdateValue(u.field.trim(), u.value)
-                )
-                .map((u: ExtractedUpdate) => {
-                  if (u.field !== 'currentMood') return u;
-                  const sanitizedMood = sanitizeCurrentMood(u.value);
-                  return sanitizedMood ? { ...u, value: sanitizedMood } : null;
-                })
+                .map(normalizeUpdateCandidate)
                 .filter((u: ExtractedUpdate | null): u is ExtractedUpdate => Boolean(u));
               const reconciledSafeUpdates = reconcileStructuredUpdates(safeUpdates, filteredCharacters as CharacterData[]);
               console.log(`[extract-character-updates] Safe retry yielded ${reconciledSafeUpdates.length} updates`);
@@ -758,21 +795,7 @@ Return ONLY valid JSON. No explanations.`;
 
     // Validate, sanitize, and filter updates
     extractedUpdates = extractedUpdates
-      .filter((u: any) =>
-        typeof u.character === 'string' &&
-        typeof u.field === 'string' &&
-        typeof u.value === 'string' &&
-        u.character.trim() &&
-        u.field.trim() &&
-        u.value.trim() &&
-        isAllowedUpdateField(u.field.trim()) &&
-        isAllowedUpdateValue(u.field.trim(), u.value)
-      )
-      .map((u: ExtractedUpdate) => {
-        if (u.field !== 'currentMood') return u;
-        const sanitizedMood = sanitizeCurrentMood(u.value);
-        return sanitizedMood ? { ...u, value: sanitizedMood } : null;
-      })
+      .map(normalizeUpdateCandidate)
       .filter((u): u is ExtractedUpdate => Boolean(u));
 
     extractedUpdates = reconcileStructuredUpdates(extractedUpdates, filteredCharacters as CharacterData[]);

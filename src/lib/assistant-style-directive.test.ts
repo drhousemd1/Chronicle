@@ -53,7 +53,7 @@ describe('buildAssistantStyleDirective', () => {
 
     expect(directive).toContain('narration-heavy responses');
     expect(directive).toContain('missing or very low external dialogue');
-    expect(directive).toContain('do not bury external dialogue behind a long narration opening');
+    expect(directive).toContain('start with external dialogue when that fits the current exchange');
   });
 
   it('detects repeated descriptive terms across recent assistant outputs', () => {
@@ -69,7 +69,39 @@ describe('buildAssistantStyleDirective', () => {
     ]);
 
     expect(directive).toContain('repeated descriptive terms');
-    expect(directive).toContain('do not reuse recent descriptive terms');
+    expect(directive).toContain('Do not reuse the same descriptive focus');
+  });
+
+  it('detects repeated action-first dialogue blocks without requiring internal thoughts', () => {
+    const directive = buildAssistantStyleDirective([
+      {
+        role: 'assistant',
+        text: 'Ashley: *She crossed the room and adjusted the folded fabric in her hands while watching him closely.* "Keep that on for now. We can talk about the rest once you settle down."',
+      },
+      {
+        role: 'assistant',
+        text: 'Ashley: *She stepped closer and smoothed the fabric against his shoulder while keeping her voice gentle.* "Keep wearing it for me. No one else needs to know about this yet."',
+      },
+    ]);
+
+    expect(directive).toContain('repeated action-first dialogue cadence');
+    expect(directive).toContain('start with external dialogue when that fits the current exchange');
+  });
+
+  it('detects repeated dialogue or topic focus even when wording changes', () => {
+    const directive = buildAssistantStyleDirective([
+      {
+        role: 'assistant',
+        text: 'Ashley: *She lowered her voice.* "Keep wearing it for now. This can stay our private secret."',
+      },
+      {
+        role: 'assistant',
+        text: 'Ashley: *She smiled softly.* "You should keep wearing this, and our private secret can stay between us."',
+      },
+    ]);
+
+    expect(directive).toContain('repeated dialogue or topic focus');
+    expect(directive).toContain('topic focus');
   });
 
   it('builds a repair directive when a candidate output repeats recent assistant cadence and phrasing', () => {
@@ -93,5 +125,27 @@ describe('buildAssistantStyleDirective', () => {
     expect(directive).toContain('[OUTPUT REVISION REQUIRED]');
     expect(directive).toContain('do not rewrite the same exchange with swapped wording');
     expect(directive).toContain("develop the AI-controlled character's side of the current exchange");
+  });
+
+  it('builds a repair directive when a candidate repeats the action-first dialogue cadence', () => {
+    const previousMessages = [
+      {
+        role: 'assistant',
+        text: 'Ashley: *She moved to the dresser and picked up the folded garment with a careful smile.* "Keep it on for me. This stays between us."',
+      },
+      {
+        role: 'assistant',
+        text: 'Ashley: *She stepped back and watched the garment settle against him with visible approval.* "Keep wearing it. No one needs to know yet."',
+      },
+    ];
+
+    const directive = buildAssistantRepetitionRepairDirective(
+      previousMessages,
+      'Ashley: *She reached forward and smoothed the garment against him with the same careful smile.* "Keep it on for me. This can stay secret."',
+      [31, 34],
+    );
+
+    expect(directive).toContain('[OUTPUT REVISION REQUIRED]');
+    expect(directive).toContain('same action-first dialogue cadence');
   });
 });

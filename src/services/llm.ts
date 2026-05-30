@@ -504,8 +504,8 @@ These rules are critical for Chronicle to display character blocks, dialogue, av
 - External dialogue must have a clear conversational purpose in the current exchange. It should give the listener something understandable to respond to, resist, accept, clarify, or act on.
 - If a spoken line sounds vague, circular, or semantically unclear, rewrite it before output.
 
-Required speaker tag pattern:
-CharacterName: *Visible action or narration when needed.* "Spoken dialogue when needed." (Private internal thought when needed.)
+Required speaker tag rule:
+Start each character block with CharacterName: using the exact card name. After the colon, write natural prose using the marker rules above; the first marked element may be dialogue, action, or thought when that is what the current exchange needs.
 
 ${appData.world.core.dialogFormatting ? `--- USER-DEFINED DIALOG FORMATTING FROM STORY BUILDER ---
 
@@ -610,9 +610,9 @@ When the next meaningful moment depends on the user character's response, stop w
   const renderNarrativePov = (): string => {
     const narrativePov = appData.uiSettings?.narrativePov || 'third';
     if (narrativePov === 'first') {
-      return `NARRATIVE POV: First Person\n- In each tagged character block, narration, action prose, and internal thoughts use first-person from that speaking character's perspective ("I", "me", "my").\n- Quoted dialogue remains natural spoken dialogue and may use whatever person the character would naturally speak in.\n- Keep POV consistent within the block. Do not slide into third-person narration or third-person thought about the focal character inside their own block unless they are consciously thinking about themself that way.\n- Format pattern: CharacterName: *I describe my visible action from my own perspective.* (My private thought stays in first person.) "Spoken dialogue stays natural."`;
+      return `NARRATIVE POV: First Person\n- In each tagged character block, narration, action prose, and internal thoughts use first-person from that speaking character's perspective ("I", "me", "my").\n- Quoted dialogue remains natural spoken dialogue and may use whatever person the character would naturally speak in.\n- Keep POV consistent within the block. Do not slide into third-person narration or third-person thought about the focal character inside their own block unless they are consciously thinking about themself that way.\n- This POV setting controls pronouns only. It does not require action, dialogue, or thought to appear in any fixed order.`;
     }
-    return `NARRATIVE POV: Third Person\n- In each tagged character block, narration, action prose, and internal thoughts use third-person for that speaking character.\n- Quoted dialogue remains natural spoken dialogue and may use first-person naturally inside speech.\n- Keep POV consistent within the block. Do not slide into first-person narration or first-person thought outside quoted dialogue.\n- Format pattern: CharacterName: *Visible action or narration uses third-person for that character.* (Private thought also stays in third-person unless quoted dialogue naturally uses "I".) "Spoken dialogue stays natural."`;
+    return `NARRATIVE POV: Third Person\n- In each tagged character block, narration, action prose, and internal thoughts use third-person for that speaking character.\n- Quoted dialogue remains natural spoken dialogue and may use first-person naturally inside speech.\n- Keep POV consistent within the block. Do not slide into first-person narration or first-person thought outside quoted dialogue.\n- This POV setting controls pronouns only. It does not require action, dialogue, or thought to appear in any fixed order.`;
   };
 
   const renderCharacterDiscovery = (): string => {
@@ -671,45 +671,6 @@ When the next meaningful moment depends on the user character's response, stop w
     renderDialogRules(),
     renderChatSettings(),
   ].filter(Boolean).join('\n\n');
-}
-
-export const conciseStyleHints = [
-  '[Style: lean into dialogue this time, keep narration minimal]',
-  '[Style: stay lean, but make each line feel complete and natural]',
-  '[Style: lead with a character DOING something, not describing]',
-  '[Style: keep it lean, but let the moment breathe long enough to feel complete]',
-  '[Style: dialogue-forward, minimal description]',
-  '[Style: start with action; something physically changes in the scene]',
-  '[Style: character makes a snap decision and acts on it immediately]',
-  '[Style: character makes a snap decision and follows through immediately]',
-];
-
-export const balancedStyleHints = [
-  '[Style: one character drives this moment; others react briefly in narration]',
-  '[Style: try a different paragraph structure than your last response]',
-  '[Style: character takes a decisive action that changes the scene dynamics]',
-  '[Style: open with something happening; movement or sound changes the scene]',
-  '[Style: open with dialogue, weave action through it]',
-  '[Style: lead with a character making a choice, then show the fallout]',
-  '[Style: skip internal thoughts this time; show everything through action and speech]',
-  '[Style: something unexpected happens; surprise the reader]',
-];
-
-export const detailedStyleHints = [
-  '[Style: draw out this moment with sensory detail -- what does it feel like?]',
-  '[Style: build tension through a sequence of escalating physical actions]',
-  '[Style: focus on physical sensations and sounds, not just actions]',
-  '[Style: character initiates something new that shifts the power dynamic]',
-  '[Style: extend the scene -- layer senses and emotion]',
-  '[Style: lead with an environmental change that forces a reaction]',
-  '[Style: build a slow, deliberate moment; let tension simmer through silence and gesture]',
-  '[Style: character reveals something through action, not words or thoughts]',
-];
-
-export function getRandomStyleHint(verbosity: 'concise' | 'balanced' | 'detailed' = 'balanced'): string {
-  const hintMap = { concise: conciseStyleHints, balanced: balancedStyleHints, detailed: detailedStyleHints };
-  const hints = hintMap[verbosity] || balancedStyleHints;
-  return hints[Math.floor(Math.random() * hints.length)];
 }
 
 export async function* generateRoleplayResponseStream(

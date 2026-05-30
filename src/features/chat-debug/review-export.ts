@@ -231,6 +231,8 @@ function renderSupportCallSummary(call: NonNullable<StoredChatDebugTrace['suppor
   if (endpoint.includes('evaluate-goal-progress')) {
     const updates = asArray(response?.stepUpdates);
     const completedCount = updates.filter((entry) => !!asRecord(entry)?.completed).length;
+    const accepted = asArray(response?.acceptedStepCompletions);
+    const rejected = asArray(response?.rejectedStepCompletions);
     return `
       <div class="support-summary">
         <div class="support-summary-title">Goal progress summary</div>
@@ -238,12 +240,21 @@ function renderSupportCallSummary(call: NonNullable<StoredChatDebugTrace['suppor
           ${renderKeyValueRows([
             ['Returned steps', updates.length],
             ['Marked complete', completedCount],
+            ['Accepted completions', accepted.length],
+            ['Rejected completion candidates', rejected.length],
           ])}
         </div>
         ${updates.length ? `<ul>${updates.map((entry) => {
           const item = asRecord(entry) || {};
-          return `<li><strong>${escapeHtml(String(item.stepId || 'unknown step'))}</strong> ${item.completed ? 'completed' : 'not completed'}${item.summary ? ` — ${escapeHtml(String(item.summary))}` : ''}</li>`;
+          const confidence = item.confidence == null ? '' : ` / confidence ${escapeHtml(String(item.confidence))}`;
+          const result = item.result ? ` / ${escapeHtml(String(item.result))}` : '';
+          const evidence = item.evidence ? ` Evidence: ${escapeHtml(String(item.evidence))}` : '';
+          return `<li><strong>${escapeHtml(String(item.stepId || 'unknown step'))}</strong> ${item.completed ? 'completed' : 'not completed'}${result}${confidence}${item.summary ? ` — ${escapeHtml(String(item.summary))}` : ''}${evidence}</li>`;
         }).join('')}</ul>` : '<p>No step updates returned.</p>'}
+        ${rejected.length ? `<p><strong>Rejected candidates:</strong></p><ul>${rejected.map((entry) => {
+          const item = asRecord(entry) || {};
+          return `<li><strong>${escapeHtml(String(item.stepId || 'unknown step'))}</strong> rejected: ${escapeHtml(String(item.reason || 'unknown'))}${item.evidence ? ` — ${escapeHtml(String(item.evidence))}` : ''}</li>`;
+        }).join('')}</ul>` : ''}
         ${notes}
       </div>
     `;
@@ -251,12 +262,16 @@ function renderSupportCallSummary(call: NonNullable<StoredChatDebugTrace['suppor
 
   if (endpoint.includes('extract-character-updates')) {
     const updates = asArray(response?.updates);
+    const accepted = asArray(response?.acceptedUpdates);
+    const rejected = asArray(response?.rejectedUpdates);
     return `
       <div class="support-summary">
         <div class="support-summary-title">Character state sync summary</div>
         <div class="support-summary-grid">
           ${renderKeyValueRows([
             ['Proposed updates', updates.length],
+            ['Accepted updates', accepted.length],
+            ['Rejected updates', rejected.length],
           ])}
         </div>
         ${updates.length ? `<ul>${updates.map((entry) => {
@@ -264,8 +279,14 @@ function renderSupportCallSummary(call: NonNullable<StoredChatDebugTrace['suppor
           const character = String(item.character || 'Unknown character');
           const field = String(item.field || 'unknown field');
           const value = item.value == null ? '' : String(item.value);
-          return `<li><strong>${escapeHtml(character)}.${escapeHtml(field)}</strong>${value ? ` -> ${escapeHtml(textPreview(value, 180))}` : ''}</li>`;
+          const confidence = item.confidence == null ? '' : ` / confidence ${escapeHtml(String(item.confidence))}`;
+          const evidence = item.evidence ? ` Evidence: ${escapeHtml(String(item.evidence))}` : '';
+          return `<li><strong>${escapeHtml(character)}.${escapeHtml(field)}</strong>${value ? ` -> ${escapeHtml(textPreview(value, 180))}` : ''}${confidence}${evidence}</li>`;
         }).join('')}</ul>` : '<p>No character-card updates returned.</p>'}
+        ${rejected.length ? `<p><strong>Rejected updates:</strong></p><ul>${rejected.map((entry) => {
+          const item = asRecord(entry) || {};
+          return `<li><strong>${escapeHtml(String(item.character || 'Unknown character'))}.${escapeHtml(String(item.field || 'unknown field'))}</strong> rejected: ${escapeHtml(String(item.reason || 'unknown'))}${item.evidence ? ` — ${escapeHtml(String(item.evidence))}` : ''}</li>`;
+        }).join('')}</ul>` : ''}
         ${notes}
       </div>
     `;
@@ -279,6 +300,8 @@ function renderSupportCallSummary(call: NonNullable<StoredChatDebugTrace['suppor
         <div class="support-summary-grid">
           ${renderKeyValueRows([
             ['Evaluations', evaluations.length],
+            ['Shadow mode', response?.shadowMode],
+            ['Persistence', response?.persistence],
             ['Error', response?.error],
           ])}
         </div>
@@ -1163,7 +1186,7 @@ export function buildChatReviewHtml(input: ChatReviewExportInput): string {
     ${liveCommentIndex}
     ${cards}
 
-    <p class="footer-note">Dialogue debug notes are saved to this playthrough for testing only. They are not sent to the roleplay model and are not story canon.</p>
+    <p class="footer-note">Dialogue debug notes are saved to this playthrough for testing only. They are not sent to the roleplay model and are not saved story state.</p>
     <script type="application/json" id="chronicle-session-review-comments">${safeJsonScript(liveComments)}</script>
     <script type="application/json" id="chronicle-session-review-data">${safeJsonScript(embeddedDebugData)}</script>
   </main>
