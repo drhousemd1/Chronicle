@@ -12,6 +12,11 @@ import { architectureExtraPaths } from "@/data/architecture-extra-paths";
 import { architectureFileMetrics } from "@/data/architecture-file-metrics";
 import { architectureFileAnalysis } from "@/data/architecture-file-analysis";
 import { databaseSchemaInventory } from "@/data/database-schema-inventory";
+import {
+  AppArchitectureExportFile,
+  AppArchitectureExportNavSection,
+  buildAppArchitectureMarkdown,
+} from "@/lib/app-architecture-export";
 import securityShieldIcon from "@/assets/admin/security-shield-v2-cropped.png";
 
 const STATIC_ARCHITECTURE_PATHS = [
@@ -3867,12 +3872,19 @@ const architectureStyles = `
   flex: 0 0 auto;
 }
 
+.app-architecture-page .header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
 .app-architecture-page .legend-toggle-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0;
-  margin-left: auto;
+  margin-left: 0;
   height: 40px;
   padding: 0 20px;
   border-radius: 14px;
@@ -5018,6 +5030,18 @@ function prefixValues(prefix: string, values: string[]): string[] {
   return (values ?? []).map((value) => `${prefix}: ${value}`);
 }
 
+function downloadMarkdownFile(filename: string, source: string) {
+  const blob = new Blob([source], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 function toTitleWords(input: string): string {
   return input
     .replace(/\.[^.]+$/, "")
@@ -5240,6 +5264,33 @@ function resolveFileDescription(node: ArchitectureNode) {
 
 function resolveLineCount(path: string, metrics: Record<string, { lineCount: number }>) {
   return metrics[path]?.lineCount ?? STATIC_LINE_COUNT_OVERRIDES[path] ?? 0;
+}
+
+function getEmptyFileAnalysis(): FileAnalysis {
+  return {
+    imports: [],
+    importedBy: [],
+    tables: [],
+    tableReads: [],
+    tableWrites: [],
+    rpcs: [],
+    edgeFunctions: [],
+    storageBuckets: [],
+    storageReads: [],
+    storageWrites: [],
+    localStorageReads: [],
+    localStorageWrites: [],
+    sessionStorageReads: [],
+    sessionStorageWrites: [],
+  };
+}
+
+function flattenNavEntries(entries: NavSnapshotEntry[], depth = 0): string[] {
+  return entries.flatMap((entry) => {
+    const prefix = `${"  ".repeat(depth)}-`;
+    if (entry.kind === "file") return [`${prefix} ${entry.path}`];
+    return [`${prefix} ${entry.path}`, ...flattenNavEntries(entry.children, depth + 1)];
+  });
 }
 
 function isRenderableUiImport(path: string) {
@@ -5675,6 +5726,135 @@ function fileMatchesFilter(
   if (currentFilter === "security") return rows.some((row) => row.security);
   const headerBadge = resolveHeaderBadge(node);
   return headerBadge.filterValue === currentFilter || rows.some((row) => rowMatchesFilter(row, currentFilter));
+}
+
+function buildArchitectureDownloadFile(
+  node: ArchitectureNode,
+  knownTables: Set<string>,
+  knownRpcs: Set<string>,
+  knownEdgeFunctions: Set<string>,
+  knownBuckets: Set<string>,
+): AppArchitectureExportFile {
+  const analysis = architectureFileAnalysis[node.path] ?? getEmptyFileAnalysis();
+  const headerBadge = resolveHeaderBadge(node);
+  const lineCount = resolveLineCount(node.path, architectureFileMetrics);
+  const lineState = getLineCountState(node.path, lineCount);
+  const triageOverride = REFACTOR_TRIAGE_OVERRIDES[node.path];
+  const rows = buildFileRows(node, analysis, lineState, knownTables, knownRpcs, knownEdgeFunctions, knownBuckets);
+
+  return {
+    path: node.path,
+    name: node.name,
+    type: headerBadge.label,
+    description: resolveFileDescription(node),
+    lineCount,
+    lineCountStatus: lineState.description,
+    fileNote: triageOverride?.fileNote ?? (lineState.fileSignal === "refactor" ? "File needs refactoring due to being too large." : undefined),
+    fileSignal: lineState.fileSignal,
+    imports: analysis.imports,
+    importedBy: analysis.importedBy,
+    tables: analysis.tables,
+    tableReads: analysis.tableReads,
+    tableWrites: analysis.tableWrites,
+    rpcs: analysis.rpcs,
+    edgeFunctions: analysis.edgeFunctions,
+    storageBuckets: analysis.storageBuckets,
+    storageReads: analysis.storageReads,
+    storageWrites: analysis.storageWrites,
+    browserStorageReads: uniqueStrings([
+      ...prefixValues("localStorage", analysis.localStorageReads),
+      ...prefixValues("sessionStorage", analysis.sessionStorageReads),
+    ]),
+    browserStorageWrites: uniqueStrings([
+      ...prefixValues("localStorage", analysis.localStorageWrites),
+      ...prefixValues("sessionStorage", analysis.sessionStorageWrites),
+    ]),
+    rows: rows.map((row) => ({
+      title: row.title,
+      type: row.badgeLabel,
+      summary: row.summary,
+      note: row.note,
+      signal: row.signal,
+      security: row.security,
+      details: row.details.map((detail) => ({
+        label: detail.label,
+        values: detail.values,
+      })),
+    })),
+  };
+}
+
+function buildAppArchitectureDownloadMarkdown(
+  registry: ArchitectureRegistry,
+  schemaTables: Array<[string, SchemaTable]>,
+  schemaFunctions: SchemaFunction[],
+  storageBuckets: SchemaBucket[],
+  edgeFunctions: SchemaEdgeFunction[],
+  tableUsageMap: Map<string, string[]>,
+  rpcUsageMap: Map<string, string[]>,
+  bucketUsageMap: Map<string, string[]>,
+  edgeUsageMap: Map<string, string[]>,
+  knownTables: Set<string>,
+  knownRpcs: Set<string>,
+  knownEdgeFunctions: Set<string>,
+  knownBuckets: Set<string>,
+) {
+  const files = Object.values(registry.nodes)
+    .filter((node): node is ArchitectureNode & { type: "file" } => node.type === "file")
+    .sort((a, b) => a.path.localeCompare(b.path))
+    .map((node) => buildArchitectureDownloadFile(node, knownTables, knownRpcs, knownEdgeFunctions, knownBuckets));
+
+  const navSections: AppArchitectureExportNavSection[] = CURATED_NAV_SECTIONS.map((section) => ({
+    title: section.title,
+    path: section.path,
+    entries: flattenNavEntries(section.children),
+  }));
+
+  return buildAppArchitectureMarkdown({
+    generatedAt: new Date().toISOString(),
+    repoName: "Chronicle-main",
+    rootPath: "/Users/thomashall/Documents/New project/Chronicle-main",
+    sourcePathCount: GENERATED_PATHS.length,
+    staticPaths: STATIC_ARCHITECTURE_PATHS,
+    navSections,
+    files,
+    schema: {
+      exportedAt: databaseSchemaInventory.exported_at,
+      tables: schemaTables.map(([name, table]) => ({
+        name,
+        columns: table.columns.map((column) => ({
+          name: column.name,
+          type: column.type,
+          nullable: column.nullable,
+          default: column.default,
+          primaryKey: "primary_key" in column ? column.primary_key : undefined,
+        })),
+        indexes: [...table.indexes],
+        policies: table.rls_policies.map((policy) => ({
+          name: policy.name,
+          command: policy.command,
+        })),
+        usedBy: tableUsageMap.get(name) ?? [],
+      })),
+      databaseFunctions: schemaFunctions.map((item) => ({
+        name: item.name,
+        returns: "returns" in item && item.returns !== undefined ? String(item.returns) : undefined,
+        language: "language" in item && item.language !== undefined ? String(item.language) : undefined,
+        usedBy: rpcUsageMap.get(item.name) ?? [],
+      })),
+      storageBuckets: storageBuckets.map((item) => ({
+        name: item.name,
+        public: item.public,
+        usedBy: bucketUsageMap.get(item.name) ?? [],
+      })),
+      edgeFunctions: edgeFunctions.map((item) => ({
+        name: item.name,
+        tablesReferenced: [...item.tables_referenced],
+        usedBy: edgeUsageMap.get(item.name) ?? [],
+        paidAiPath: PAID_AI_EDGE_FUNCTIONS.has(item.name),
+      })),
+    },
+  });
 }
 
 function folderMatchesFilter(
@@ -6580,6 +6760,41 @@ export default function AppArchitecturePage() {
     return map;
   }, []);
 
+  const handleDownloadArchitecture = useCallback(() => {
+    downloadMarkdownFile(
+      "chronicle-app-architecture.md",
+      buildAppArchitectureDownloadMarkdown(
+        registry,
+        schemaTables,
+        schemaFunctions,
+        storageBuckets,
+        edgeFunctions,
+        tableUsageMap,
+        rpcUsageMap,
+        bucketUsageMap,
+        edgeUsageMap,
+        knownTables,
+        knownRpcs,
+        knownEdgeFunctions,
+        knownBuckets,
+      ),
+    );
+  }, [
+    registry,
+    schemaTables,
+    schemaFunctions,
+    storageBuckets,
+    edgeFunctions,
+    tableUsageMap,
+    rpcUsageMap,
+    bucketUsageMap,
+    edgeUsageMap,
+    knownTables,
+    knownRpcs,
+    knownEdgeFunctions,
+    knownBuckets,
+  ]);
+
   useEffect(() => {
     if (!highlightedId) return;
     const timeout = window.setTimeout(() => setHighlightedId(null), 1800);
@@ -6768,15 +6983,25 @@ export default function AppArchitecturePage() {
         </div>
         </div>
 
-        <button
-          type="button"
-          className="legend-toggle-btn"
-          aria-expanded={showLegend}
-          aria-controls="legend"
-          onClick={() => setShowLegend((value) => !value)}
-        >
-          {showLegend ? "Hide Legend" : "View Legend"}
-        </button>
+        <div className="header-actions">
+          <button
+            type="button"
+            className="legend-toggle-btn"
+            onClick={handleDownloadArchitecture}
+          >
+            Download Architecture
+          </button>
+
+          <button
+            type="button"
+            className="legend-toggle-btn"
+            aria-expanded={showLegend}
+            aria-controls="legend"
+            onClick={() => setShowLegend((value) => !value)}
+          >
+            {showLegend ? "Hide Legend" : "View Legend"}
+          </button>
+        </div>
       </header>
 
       <div className="page-shell">
