@@ -62,7 +62,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
         fileRefs: [
           { path: "src/features/story-builder/StoryBuilderScreen.tsx" },
           { path: "src/types.ts", lines: "113-124" },
-          { path: "src/services/llm.ts", lines: "348-350, 752-759" },
+          { path: "src/services/llm.ts", lines: "462-471, 660-671" },
         ],
         codeSource:
           "WORLD CONTEXT includes STORY NAME + BRIEF DESCRIPTION + STORY PREMISE in the primary system message.",
@@ -90,7 +90,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
         fileRefs: [
           { path: "src/features/story-builder/StoryBuilderScreen.tsx" },
           { path: "src/types.ts", lines: "113-124" },
-          { path: "src/services/llm.ts", lines: "86-545" },
+          { path: "src/services/llm.ts", lines: "118-604, 660-671" },
         ],
         codeSource:
           "STORY PREMISE\nLOCATIONS (structuredLocations)\nCUSTOM WORLD CONTENT (structured + freeform)\nSTORY GOALS (title/outcome/currentStatus/steps)\nADDITIONAL LORE ENTRIES\nSTORY THEMES (selected tags only)",
@@ -134,7 +134,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
         fileRefs: [
           { path: "src/components/chronicle/StoryGoalsSection.tsx" },
           { path: "src/types.ts", lines: "95-111" },
-          { path: "src/services/llm.ts", lines: "97-123" },
+          { path: "src/services/llm.ts", lines: "263-289, 462-471" },
         ],
         codeSource:
           "[RIGID|NORMAL|FLEXIBLE] Goal + Desired Outcome + Steps + computed Progress + directive text",
@@ -176,7 +176,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
         fileRefs: [
           { path: "src/features/story-builder/StoryBuilderScreen.tsx" },
           { path: "src/types.ts", lines: "22-32" },
-          { path: "src/services/llm.ts", lines: "272-290" },
+          { path: "src/services/llm.ts", lines: "439-457" },
         ],
         fields: [
           {
@@ -218,7 +218,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
           "Scene images/tags used for background switching and scene context cues.",
         fileRefs: [
           { path: "src/features/story-builder/StoryBuilderScreen.tsx" },
-          { path: "src/services/llm.ts", lines: "275, 651" },
+          { path: "src/services/llm.ts", lines: "423-435, 660-671" },
         ],
         fields: [
           {
@@ -264,7 +264,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
         description:
           "Formatting and behavior directives injected through dialog formatting + instruction stack.",
         fileRefs: [
-          { path: "src/services/llm.ts", lines: "450-540" },
+          { path: "src/services/llm.ts", lines: "485-604" },
           { path: "src/types.ts", lines: "113-124" },
         ],
         fields: [
@@ -288,7 +288,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
           "Theme/tag selection transformed into directive text via tag-injection registry.",
         fileRefs: [
           { path: "src/constants/tag-injection-registry.ts" },
-          { path: "src/services/llm.ts", lines: "623-625, 643" },
+          { path: "src/services/llm.ts", lines: "462" },
         ],
         fields: [
           {
@@ -339,7 +339,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
         fileRefs: [
           { path: "src/features/character-builder/CharacterBuilderScreen.tsx" },
           { path: "src/types.ts", lines: "228-266" },
-          { path: "src/services/llm.ts", lines: "219-268" },
+          { path: "src/services/llm.ts", lines: "324-358" },
         ],
         codeSource:
           "CHARACTER: name (sexType) + NICKNAMES + SEXUAL ORIENTATION\nROLE\nCONTROL + LOCATION + MOOD\n...",
@@ -378,7 +378,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
         fileRefs: [
           { path: "src/types.ts", lines: "159-172" },
           { path: "src/features/character-builder/utils/section-progress.ts", lines: "63-78" },
-          { path: "src/services/llm.ts", lines: "227-236" },
+          { path: "src/services/llm.ts", lines: "345-347" },
         ],
         fields: [
           {
@@ -407,7 +407,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
         fileRefs: [
           { path: "src/types.ts", lines: "174-180" },
           { path: "src/features/character-builder/utils/section-progress.ts", lines: "80-88" },
-          { path: "src/services/llm.ts", lines: "232-236" },
+          { path: "src/services/llm.ts", lines: "345-347" },
         ],
         fields: [
           { label: "Top", status: "connected", detail: "Base field serialized via labeled pair formatter." },
@@ -425,7 +425,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
         fileRefs: [
           { path: "src/types.ts", lines: "182-189" },
           { path: "src/features/character-builder/utils/section-progress.ts", lines: "90-99" },
-          { path: "src/services/llm.ts", lines: "233-236" },
+          { path: "src/services/llm.ts", lines: "345-347" },
         ],
         fields: [
           { label: "Casual", status: "connected", detail: "Base field serialized via labeled pair formatter." },
@@ -443,23 +443,23 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
           "Personality split/standard traits are serialized and used by trait adherence rules in instruction stack.",
         fileRefs: [
           { path: "src/components/chronicle/PersonalitySection.tsx" },
-          { path: "src/services/llm.ts", lines: "145-201, 757-784" },
+          { path: "src/services/llm.ts", lines: "291-321, 348" },
         ],
         fields: [
           {
             label: "Standard traits (label/value/flexibility/score/trend)",
             status: "connected",
-            detail: "Serialized through personalityContext formatter.",
+            detail: "Serialized through renderPersonalityBlock.",
           },
           {
             label: "Split mode outward traits",
             status: "connected",
-            detail: "Serialized and weighted with outward visibility bonus in code logic.",
+            detail: "Serialized when present in outward personality rows.",
           },
           {
             label: "Split mode inward traits",
             status: "connected",
-            detail: "Serialized and weighted with inward suppression offset in code logic.",
+            detail: "Serialized when present in inward personality rows.",
           },
         ],
       },
@@ -470,7 +470,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
           "Tone section is serialized from authored rows; there is no separate dedicated example-dialogue field in current schema.",
         fileRefs: [
           { path: "src/features/character-builder/utils/section-progress.ts", lines: "112-115" },
-          { path: "src/services/llm.ts", lines: "249-250, 769-774" },
+          { path: "src/services/llm.ts", lines: "349" },
         ],
         fields: [
           {
@@ -482,7 +482,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
             label: "Example Dialogue field",
             status: "code-handled",
             detail:
-              "Not a canonical field in current Character Builder schema. API Inspector tracks only live UI/runtime fields.",
+              "Not a dedicated field in the current Character Builder schema. API Inspector tracks only live UI/runtime fields.",
           },
         ],
       },
@@ -493,7 +493,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
           "Background core fields are serialized, plus extra rows.",
         fileRefs: [
           { path: "src/types.ts", lines: "193-205" },
-          { path: "src/services/llm.ts", lines: "238-248" },
+          { path: "src/services/llm.ts", lines: "350" },
         ],
         fields: [
           { label: "Job / Occupation", status: "connected", detail: "Serialized in BACKGROUND line." },
@@ -511,7 +511,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
         description:
           "All four containers are currently serialized via extras rows.",
         fileRefs: [
-          { path: "src/services/llm.ts", lines: "252-262" },
+          { path: "src/services/llm.ts", lines: "351-354" },
           { path: "src/features/character-builder/utils/section-progress.ts", lines: "128-142" },
         ],
         fields: [
@@ -528,7 +528,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
           "Character goals are serialized with flexibility directives and step progress summary.",
         fileRefs: [
           { path: "src/components/chronicle/CharacterGoalsSection.tsx" },
-          { path: "src/services/llm.ts", lines: "124-143" },
+          { path: "src/services/llm.ts", lines: "324-358" },
         ],
         fields: [
           { label: "Goal Name", status: "connected", detail: "Serialized from goal title." },
@@ -554,7 +554,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
           "Custom sections (structured + freeform) are serialized through the custom traits/context mapping.",
         fileRefs: [
           { path: "src/types.ts", lines: "138-156" },
-          { path: "src/services/llm.ts", lines: "220-221, 268" },
+          { path: "src/services/llm.ts", lines: "328-339, 342-357" },
         ],
         fields: [
           {
@@ -575,7 +575,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
         description:
           "CAST block currently filters to AI-controlled characters only; user-controlled names are listed as exclusion guard.",
         fileRefs: [
-          { path: "src/services/llm.ts", lines: "214-218, 647-649" },
+          { path: "src/services/llm.ts", lines: "401-420, 568-575" },
           { path: "src/types.ts", lines: "227-231" },
         ],
         fields: [

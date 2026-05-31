@@ -26,6 +26,10 @@ describe("api-inspector prompt document registry", () => {
     expect(document.body).toContain("store is not currently sent by Chronicle");
     expect(document.body).toContain("CONTENT-REDIRECT FALLBACK BRANCH");
     expect(document.body).toContain("If the retry is also blocked, the edge function returns a structured content-filter notice over HTTP 200");
+    expect(document.body).toContain("STREAMING DOUBLE-BLOCK EDGE EVENTS");
+    expect(document.body).toContain("NON-STREAM DOUBLE-BLOCK EDGE RESPONSE");
+    expect(document.body).toContain("chronicle_content_filter");
+    expect(document.body).toContain("Local notice messages are not included in later API Call 1 history.");
     expect(document.body).toContain('"temperature": 0.6');
     expect(document.body).toContain("{{up to 9 prior roleplay messages before the current turn; local notices excluded}}");
 	    expect(document.body).toContain("{{current scene snapshot when prior assistant context exists}}");
@@ -44,6 +48,7 @@ describe("api-inspector prompt document registry", () => {
     expect(document.body).toContain("BACKGROUND USER-AUTHORED SCENE TURN FOR FACTS AND USER-CONTROL BOUNDARIES ONLY");
     expect(document.body).toContain("Develop the AI-controlled character's side of the current exchange enough that it follows the active RESPONSE DETAIL setting");
     expect(document.body).toContain("OUTPUT REVISION REQUIRED APPENDED ONLY TO ONE-TIME REPAIR RETRY");
+    expect(document.body).toContain("The first draft is discarded unless the retry fails");
     expect(document.body).toContain("do not rewrite the same exchange with swapped wording");
     expect(document.body).toContain("--- SECTION 1 - CORE ROLE LOGIC ---");
     expect(document.body).toContain("--- SECTION 7 - DIALOG FORMATTING AND ROLEPLAY RULES ---");
@@ -85,6 +90,8 @@ describe("api-inspector prompt document registry", () => {
     expect(document.buttonLabel).toBe("API Call 2 + Support Calls");
     expect(document.body).toContain("API CALL 2: CHARACTER STATE SYNC");
     expect(document.body).toContain("BROWSER -> SUPABASE EDGE HEADERS");
+    expect(document.body).toContain('"eligibleCharacters": "{{speaker/mention-filtered character names}}"');
+    expect(document.body).toContain('"recentContext": "{{up to 10 recent roleplay messages for pattern detection}}"');
     expect(document.body).toContain("EDGE -> xAI CHAT HEADERS");
     expect(document.body).toContain("REQUEST POLICY NOTES");
 	    expect(document.body).toContain("top_p is not currently sent by Chronicle");
@@ -92,6 +99,8 @@ describe("api-inspector prompt document registry", () => {
 	    expect(document.body).toContain('"response_format"');
 	    expect(document.body).toContain('"chronicle_character_updates"');
 	    expect(document.body).toContain("403 CONTENT-REDIRECT FALLBACK");
+    expect(document.body).toContain("The fallback still uses structured output, but it is deliberately restricted to non-explicit metadata");
+    expect(document.body).toContain("primaryModelRequest");
     expect(document.body).toContain("Return ONLY valid JSON. No explanations.");
     expect(document.body).toContain("scenePosition: short factual snapshot of the character's immediate physical situation inside the current location");
     expect(document.body).toContain('"candidateReviews"');
@@ -110,6 +119,8 @@ describe("api-inspector prompt document registry", () => {
     expect(document.body).toContain('"stepCompletionReviews"');
     expect(document.body).toContain("SUPPORT CALL: GOAL ALIGNMENT EVALUATION");
     expect(document.body).toContain("/functions/v1/evaluate-goal-alignment");
+    expect(document.body).toContain('"goals": [');
+    expect(document.body).toContain('"openStep": "{{first open milestone description}}"');
 	    expect(document.body).toContain("support|resistance|drift|neutral|not_applicable");
 	    expect(document.body).toContain("these results may remain diagnostic until the app explicitly enables adaptive goal pressure");
 	    expect(document.body).toContain('"chronicle_goal_alignment"');
@@ -126,14 +137,22 @@ describe("api-inspector prompt document registry", () => {
     expect(document.body).toContain("DAY MEMORY COMPRESSION");
     expect(document.body).toContain("/functions/v1/compress-day-memories");
     expect(document.body).toContain("SIDE-CHARACTER GENERATION");
+    expect(document.body).toContain('"dialogContext": "{{first appearance dialogue that triggered discovery}}"');
     expect(document.body).toContain("SIDE-CHARACTER AVATAR PROMPT OPTIMIZATION");
+    expect(document.body).toContain('"avatarPrompt": "{{source avatar prompt from side-character profile or character UI}}"');
     expect(document.body).toContain("used by the side-character portrait path and by other character/avatar UI surfaces");
     expect(document.body).toContain("CHARACTER FIELD ENHANCEMENT / AI FILL / AI GENERATE");
     expect(document.body).toContain("/functions/v1/chat with stream=false");
+    expect(document.body).toContain("SECTION-SPECIFIC GUIDANCE MATRIX USED WHEN sectionHint MATCHES");
+    expect(document.body).toContain("character tone/voice detail: Generate a tone/voice trait describing HOW this character speaks");
+    expect(document.body).toContain("background detail: Generate an additional background detail");
     expect(document.body).toContain("STORY/WORLD FIELD ENHANCEMENT");
     expect(document.body).toContain("IMAGE GENERATION CALLS");
     expect(document.body).toContain("This section is only for scene and cover image generation.");
+    expect(document.body).toContain('{ "role": "user|assistant", "text": "{{up to 5 recent roleplay messages used as visual context}}" }');
+    expect(document.body).toContain("the current browser payload uses the text property shown above");
     expect(document.body).toContain("SCENE IMAGE TEXT ANALYSIS REQUEST BODY SENT TO xAI");
+    expect(document.body).toContain('"prompt": "{{cover image source prompt}}"');
     expect(document.body).toContain("COVER IMAGE GENERATION REQUEST BODY SENT TO xAI");
     expect(document.body).not.toContain("{{eligible character cards only}}");
   });

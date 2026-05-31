@@ -149,6 +149,23 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                 ],
 	                meta: ["established-fact note", "session wrapper", "no runtime directive"],
               },
+              {
+                id: "hidden-repair-retry",
+                title: "Hidden repair retry capture",
+                tag: "validation",
+                summary:
+                  "When the client detects a narrow repetition or response-shape failure after a completed draft, it can discard that draft, retry once with a repair instruction, and keep the discarded attempt visible in debug review data.",
+                fileRefs: [
+                  ref("/src/components/chronicle/ChatInterfaceTab.tsx", "hidden repair retry"),
+                  ref("/src/lib/assistant-style-directive.ts", "candidate-output repetition analysis"),
+                  ref("/src/features/chat-debug/review-export.ts", "hidden repair attempt rendering"),
+                ],
+                bullets: [
+                  bullet("Runtime effect", "The visible chat only keeps the accepted retry, but the review export can still show the discarded draft and repair reason."),
+                  bullet("Scope", "This is a one-attempt local repair path, not a durable state update and not a separate user-visible message."),
+                ],
+                meta: ["hidden repair", "debug export", "repetition guard"],
+              },
             ],
           },
         ],
@@ -250,6 +267,39 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                 ],
                 meta: ["roleplay_v2 alias", "direct mode"],
               },
+              {
+                id: "edge-normalization",
+                title: "Provider stream normalization",
+                tag: "code-logic",
+                summary:
+                  "The edge function reads the provider stream, applies deterministic cleanup to the generated text, and re-streams the normalized result to the browser.",
+                fileRefs: [
+                  ref("/supabase/functions/chat/index.ts", "deterministic cleanup / normalization"),
+                  ref("/src/services/llm.ts", "SSE stream parser"),
+                ],
+                bullets: [
+                  bullet("Why it matters", "The browser is not receiving a raw untouched provider stream; backend cleanup can affect the exact text that becomes the accepted assistant response."),
+                  bullet("Debug trace", "The admin debug surface records that deterministic cleanup is part of the edge path, but it does not currently retain a raw-versus-cleaned text diff."),
+                ],
+                meta: ["normalization", "SSE relay", "debug trace"],
+              },
+              {
+                id: "content-filter-notice",
+                title: "Content-filter notice path",
+                tag: "validation",
+                summary:
+                  "When the provider blocks both the primary request and the safer retry, the edge function emits a structured local-notice event instead of surfacing a runtime 422 to the chat UI.",
+                fileRefs: [
+                  ref("/supabase/functions/chat/index.ts", "chronicle_content_filter SSE event"),
+                  ref("/src/services/llm.ts", "content-filter SSE handling"),
+                  ref("/src/components/chronicle/ChatInterfaceTab.tsx", "local content-filter notice"),
+                ],
+                bullets: [
+                  bullet("UI behavior", "The chat UI saves a local Chronicle notice for the user but excludes that notice from future roleplay history."),
+                  bullet("Review behavior", "The provider block and retry path remain visible in debug data so testers can see what actually happened."),
+                ],
+                meta: ["content filter", "local notice", "history exclusion"],
+              },
             ],
           },
         ],
@@ -332,7 +382,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                 summary:
                   "The character extractor reads the latest exchange plus a small recent context slice and proposes only allowed state updates.",
                 settingsGate:
-                  "Runs when the turn qualifies for deeper reconciliation or when the periodic backstop forces an extraction pass.",
+                  "Runs after each accepted assistant response in the post-turn support lane.",
                 fileRefs: [
                   ref("/supabase/functions/extract-character-updates/index.ts", "serve"),
                   ref("/src/components/chronicle/ChatInterfaceTab.tsx", "extractCharacterUpdatesFromDialogue"),
@@ -612,31 +662,31 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
       },
       {
         id: "support-extraction-lineage",
-        title: "Support Group 3: Extraction Gates and Refresh Safety",
-        subtitle: "Chronicle does not treat every turn the same. Deeper extraction is gated, and stale regenerate branches are filtered out by generation lineage.",
+        title: "Support Group 3: Post-Turn Support Lane and Refresh Safety",
+        subtitle: "Chronicle runs post-turn support work after accepted assistant responses, while generation lineage prevents stale regenerate branches from becoming active state.",
         groups: [
           {
             id: "support-extraction-gates",
             title: "ChatInterfaceTab.tsx",
-            description: "Heuristics that decide when deeper extraction runs and which generation branch still counts as current truth.",
+            description: "Support-lane orchestration that queues memory extraction, goal progress, goal alignment diagnostics, and character extraction after accepted assistant output.",
             ownerTone: "component",
-            primaryRef: ref("/src/components/chronicle/ChatInterfaceTab.tsx", "shouldRunCharacterExtraction / buildActiveGoalCompletionIds"),
+            primaryRef: ref("/src/components/chronicle/ChatInterfaceTab.tsx", "post-turn support lane / buildActiveGoalCompletionIds"),
             items: [
               {
                 id: "extraction-gates",
-                title: "Hard-event triggers and the six-turn backstop",
+                title: "Accepted-message support queue",
                 tag: "code-logic",
                 summary:
-                  "Character extraction can fire because the latest turn contains hard events, or because the periodic backstop forces a deeper scan every six assistant turns.",
+                  "After an assistant response is accepted, Chronicle queues support calls against that accepted message and its generation id instead of running them against drafts or stale branches.",
                 fileRefs: [
-                  ref("/src/components/chronicle/ChatInterfaceTab.tsx", "EXTRACTION_BACKSTOP_INTERVAL / shouldRunCharacterExtraction"),
+                  ref("/src/components/chronicle/ChatInterfaceTab.tsx", "post-turn character extraction queue"),
                 ],
                 bullets: [
-                  bullet("Hard events", "Some turns trigger extraction immediately because they clearly change state in a way the app should not wait to capture."),
-                  bullet("Backstop", "Even without those triggers, Chronicle forces a deeper extraction every sixth assistant turn so state does not quietly drift stale."),
+                  bullet("Queue", "The accepted assistant response schedules memory, goal, alignment, and character-state workers."),
+                  bullet("State guard", "Character updates are applied only after the worker returns accepted updates for the same source message context."),
                 ],
                 review: ROLEPLAY_PIPELINE_REVIEW_20260515,
-                meta: ["heuristic gate", "backstop=6"],
+                meta: ["post-turn lane", "accepted message"],
               },
               {
                 id: "generation-lineage",
@@ -897,6 +947,22 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                 ],
                 review: ROLEPLAY_PIPELINE_REVIEW_20260515,
                 meta: ["analysis + image", "byte-aware prompt"],
+              },
+              {
+                id: "cover-image-edge",
+                title: "Cover image generation",
+                tag: "edge-function",
+                summary:
+                  "The cover-image lane creates a story/character cover asset from compact scenario context and image settings, separate from chat turn generation and scene-image chat tools.",
+                fileRefs: [
+                  ref("/supabase/functions/generate-cover-image/index.ts", "serve"),
+                ],
+                bullets: [
+                  bullet("Separation", "This is an adjacent image call and should not be read as part of API Call 1 or API Call 2 roleplay state reconciliation."),
+                  bullet("Result", "The returned image URL is used as media/cover output rather than a text-roleplay response."),
+                ],
+                review: ROLEPLAY_PIPELINE_REVIEW_20260515,
+                meta: ["cover image", "adjacent AI call"],
               },
             ],
           },

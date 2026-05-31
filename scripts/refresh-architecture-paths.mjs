@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
+import { execSync } from "node:child_process";
 import ts from "typescript";
 
 const projectRoot = process.cwd();
@@ -54,6 +55,27 @@ function walk(dir, options = {}) {
   }
 
   return files;
+}
+
+function getTrackedPathSet() {
+  try {
+    const output = execSync("git ls-files -z", {
+      cwd: projectRoot,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    return new Set(output.split("\0").filter(Boolean));
+  } catch {
+    return null;
+  }
+}
+
+const trackedPathSet = getTrackedPathSet();
+
+function isTrackedRepoPath(absPath) {
+  if (!trackedPathSet) return true;
+  const relative = path.relative(projectRoot, absPath).split(path.sep).join("/");
+  return trackedPathSet.has(relative);
 }
 
 function toWebPath(absPath) {
@@ -765,7 +787,9 @@ const sourcePaths = sourceAbsPaths
   .sort((a, b) => a.localeCompare(b));
 
 const extraAbsPaths = [
-  ...walk(docsRoot).filter((abs) => extraExtensions.has(path.extname(abs).toLowerCase())),
+  ...walk(docsRoot)
+    .filter((abs) => extraExtensions.has(path.extname(abs).toLowerCase()))
+    .filter(isTrackedRepoPath),
   ...walk(scriptsRoot).filter((abs) => extraExtensions.has(path.extname(abs).toLowerCase())),
   ...walk(e2eRoot).filter((abs) => extraExtensions.has(path.extname(abs).toLowerCase())),
   ...walk(supabaseRoot).filter((abs) => extraExtensions.has(path.extname(abs).toLowerCase())),

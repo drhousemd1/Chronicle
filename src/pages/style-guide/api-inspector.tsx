@@ -20,6 +20,7 @@ import {
 } from "@/data/api-inspector-live-map";
 import { apiInspectorLineMap } from "@/data/api-inspector-line-map";
 import type { ApiInspectorReview } from "@/data/api-inspector-review";
+import { buildRoleplayPipelineMarkdown } from "@/lib/api-inspector-pipeline-export";
 
 const HEADER_HEIGHT = 76;
 const ROOT_ID = "api-inspector-root";
@@ -2883,6 +2884,20 @@ const ApiInspectorPage: React.FC = () => {
               </button>
             ))}
           </div>
+          <button
+            type="button"
+            className="prompt-review-btn"
+            onClick={() =>
+              downloadPromptSource({
+                title: "Chronicle Roleplay Pipeline",
+                source: buildRoleplayPipelineMarkdown(inspectorModel),
+                label: "Roleplay Pipeline Export",
+                filename: "chronicle-roleplay-pipeline.md",
+              })
+            }
+          >
+            Download Pipeline
+          </button>
           <button
             className="legend-toggle-btn"
             type="button"

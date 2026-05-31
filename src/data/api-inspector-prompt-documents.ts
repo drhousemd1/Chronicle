@@ -811,6 +811,21 @@ RULES:
 4. Stay consistent with the character's established identity
 5. NO purple prose. Be factual and story-relevant.
 {{SECTION-SPECIFIC GUIDANCE}}
+
+SECTION-SPECIFIC GUIDANCE MATRIX USED WHEN sectionHint MATCHES:
+character tone/voice detail: Generate a tone/voice trait describing HOW this character speaks — e.g. speech rhythm, vocabulary, verbal habits, emotional register, formality level. Good label examples: "Dry Wit", "Formal Register", "Nervous Stammer", "Warm Drawl", "Clipped Authority". The description should explain how this specific character exhibits that tone trait, based on their personality, background, and context. Do NOT generate personality traits — focus strictly on how they SOUND and EXPRESS themselves vocally.
+personality trait: Generate a personality trait describing a core behavioral pattern, emotional tendency, or character quality. Good label examples: "Stubborn", "Empathetic", "Reckless Courage", "Quiet Ambition", "People-Pleaser". The description should explain how this trait manifests in the character's behavior and decisions. Do NOT generate tone/voice traits — focus on personality and behavior.
+outward personality trait: Generate an OUTWARD personality trait — something other characters would notice and experience. Good label examples: "Charming Deflector", "Stoic Composure", "Infectious Optimism", "Cold Professionalism", "Disarming Humor". Focus on projected behavior, social demeanor, and how they present themselves. Do NOT describe internal feelings or speech patterns.
+inward personality trait: Generate an INWARD personality trait — something the character experiences internally but may hide. Good label examples: "Chronic Self-Doubt", "Suppressed Rage", "Secret Tenderness", "Fear of Abandonment", "Hidden Guilt". Focus on private thoughts, inner contradictions, and emotional patterns they don't show others. Do NOT describe outward behavior or speech patterns.
+key life event: Generate a formative past event. Good label examples: "Mother's Disappearance", "First Kill", "Academy Expulsion", "The Betrayal", "Childhood Fire". The description should explain what happened and how it shaped the character. Ground it in their established background.
+relationship: Generate a relationship with another character or figure. Good label examples: "Rival — Marcus Cole", "Mentor — Old Gregor", "Ex-Lover — Diana", "Estranged Father". The description should explain the dynamic, current state, and story significance.
+secret: Generate a secret the character keeps hidden. Good label examples: "True Parentage", "The Incident at Millbrook", "Hidden Addiction", "Double Agent". The description should explain what the secret is, why they hide it, and what would happen if revealed.
+fear: Generate a specific fear. Good label examples: "Abandonment", "Loss of Control", "Deep Water", "Becoming Like Father", "Public Failure". The description should explain how this fear manifests in behavior and connects to the character's past.
+character goal: Generate a character goal. Good label examples: "Find the Lost Heir", "Earn Father's Approval", "Escape the Guild", "Protect the Family Secret". The description should explain motivation and obstacles.
+physical appearance detail: Generate an additional physical detail. Good label examples: "Crooked Nose", "Calloused Hands", "Distinctive Gait", "Faded Scar". The description should be visually specific and complement existing appearance traits.
+currently wearing detail: Generate an additional clothing item. Good label examples: "Worn Leather Gloves", "Silver Locket", "Mud-Stained Boots", "Concealed Holster". Include type, appearance, and any significance.
+preferred clothing detail: Generate a preferred outfit for a specific occasion. Good label examples: "Date Night", "Formal Events", "Training Gear", "Disguise Kit". Describe the style and aesthetic.
+background detail: Generate an additional background detail. Good label examples: "Military Service", "Orphaned at 12", "Speaks Three Languages", "Former Street Performer". The description should enrich the character's history.
 WORLD & SCENARIO CONTEXT:
 {{fullContext}}
 
@@ -981,9 +996,36 @@ ${requestPolicyNotes}
 CONTENT-REDIRECT FALLBACK BRANCH
 If the primary xAI chat completion request returns HTTP 403, the chat edge function retries once with an additional system message inserted immediately before the final user message.
 If the retry is also blocked, the edge function returns a structured content-filter notice over HTTP 200 instead of throwing a 422 runtime error.
+The frontend saves that notice as a local Chronicle system message so the user sees an in-chat interruption instead of a Lovable runtime overlay. Local notice messages are not included in later API Call 1 history.
 
 Fallback system message:
 ${contentRedirectDirective}
+
+STREAMING DOUBLE-BLOCK EDGE EVENTS
+When streaming is enabled, the edge function emits the debug trace and local content-filter notice as separate SSE data events before [DONE].
+
+Event 1, only when debugTrace is enabled:
+{
+  "chronicle_debug_trace": "{{debug trace when requested, including primary and retry model requests}}"
+}
+
+Event 2:
+{
+  "chronicle_content_filter": {
+    "message": "{{local Chronicle notice text}}",
+    "reason": "provider_content_filter"
+  }
+}
+
+NON-STREAM DOUBLE-BLOCK EDGE RESPONSE
+{
+  "ok": false,
+  "skipped": true,
+  "error": "Content filtered by provider",
+  "error_type": "content_filtered",
+  "message": "{{local Chronicle notice text}}",
+  "chronicle_debug_trace": "{{debug trace when requested, including primary and retry model requests}}"
+}
 
 ================================================================================
 FULL SYSTEM MESSAGE GENERATED BY getSystemInstruction()
@@ -1065,6 +1107,8 @@ ${EXECUTION_BRIEF_TEXT}
 OUTPUT REVISION REQUIRED APPENDED ONLY TO ONE-TIME REPAIR RETRY FOR SEND, REGENERATE, OR CONTINUE WHEN THE FIRST DRAFT REPEATS RECENT ASSISTANT OUTPUT
 ================================================================================
 
+// This is a hidden local retry. The first draft is discarded unless the retry fails, and both attempts are attached to the debug export for the source assistant message.
+
 [OUTPUT REVISION REQUIRED]
 The draft response repeated {{runtime reasons from buildAssistantRepetitionRepairDirective()}}. Regenerate the response once. Keep the same established facts, speaker tags, user-character boundaries, and emotional direction, but do not rewrite the same exchange with swapped wording. The new response must develop the AI-controlled character's side of the current exchange while preserving the user's control of their character. Use meaningful external dialogue when the character can speak, and avoid reusing the same descriptive focus, topic focus, sentence shape, or closing pattern.
 
@@ -1093,6 +1137,19 @@ EDGE FUNCTION
 /functions/v1/extract-character-updates
 
 ${browserToEdgeHeaders}
+
+BROWSER-TO-EDGE REQUEST BODY SHAPE
+{
+  "userMessage": "{{latest user message}}",
+  "aiResponse": "{{latest assistant response}}",
+  "recentContext": "{{up to 10 recent roleplay messages for pattern detection}}",
+  "characters": "{{current session-merged character cards eligible for state sync}}",
+  "eligibleCharacters": "{{speaker/mention-filtered character names}}",
+  "currentDay": "{{currentDay}}",
+  "currentTimeOfDay": "{{currentTimeOfDay}}",
+  "modelId": "grok-4.3",
+  "debugTrace": "{{true only when requested}}"
+}
 
 REQUEST BODY SHAPE SENT TO xAI
 {
@@ -1125,6 +1182,7 @@ ${characterStateSyncUserPrompt}
 
 403 CONTENT-REDIRECT FALLBACK
 If the primary xAI request returns HTTP 403, the function retries once with this shorter fallback request.
+The fallback still uses structured output, but it is deliberately restricted to non-explicit metadata and cannot create, remove, or advance goals.
 
 FALLBACK SYSTEM MESSAGE
 ${characterStateSyncFallbackSystemPrompt}
@@ -1156,7 +1214,8 @@ EDGE RESPONSE SHAPE
     }
   ],
   "rejectedCandidates": "{{candidateReviews rows rejected by deterministic edge gates}}",
-  "parseError": "{{present only when the model response was malformed}}"
+  "parseError": "{{present only when the model response was malformed}}",
+  "chronicle_debug_payload": "{{present when debugTrace=true; includes modelRequest and, for safe retries, the primaryModelRequest}}"
 }
 
 BROWSER DEBUG ANNOTATIONS ADDED BEFORE STATE APPLICATION
@@ -1269,6 +1328,30 @@ EDGE FUNCTION
 /functions/v1/evaluate-goal-alignment
 
 ${browserToEdgeHeaders}
+
+BROWSER-TO-EDGE REQUEST BODY SHAPE
+{
+  "userMessage": "{{latest user message}}",
+  "aiResponse": "{{latest assistant response}}",
+  "recentContext": "{{up to 10 recent roleplay messages excluding local notices}}",
+  "goals": [
+    {
+      "goalId": "{{story or character goal id}}",
+      "goalKind": "story|character",
+      "characterId": "{{character id for character goals, otherwise null}}",
+      "characterName": "{{character name for character goals}}",
+      "title": "{{goal title}}",
+      "desiredOutcome": "{{goal desired outcome}}",
+      "currentStatus": "{{goal current status}}",
+      "flexibility": "{{goal guidance strength}}",
+      "openStep": "{{first open milestone description}}",
+      "alignment": "{{current diagnostic alignment snapshot when present}}"
+    }
+  ],
+  "currentDay": "{{currentDay}}",
+  "currentTimeOfDay": "{{currentTimeOfDay}}",
+  "debugTrace": "{{true only when requested}}"
+}
 
 REQUEST BODY SHAPE SENT TO xAI
 {
@@ -1412,6 +1495,16 @@ EDGE FUNCTION
 
 ${browserToEdgeHeaders}
 
+BROWSER-TO-EDGE REQUEST BODY SHAPE
+{
+  "name": "{{new side-character name}}",
+  "dialogContext": "{{first appearance dialogue that triggered discovery}}",
+  "extractedTraits": "{{currently empty object from the frontend}}",
+  "worldContext": "{{story premise}}",
+  "modelId": "grok-4.3",
+  "debugTrace": "{{true only when requested}}"
+}
+
 REQUEST BODY SHAPE SENT TO xAI
 {
   "model": "grok-4.3",
@@ -1444,6 +1537,16 @@ EDGE FUNCTION
 /functions/v1/generate-side-character-avatar
 
 ${browserToEdgeHeaders}
+
+BROWSER-TO-EDGE REQUEST BODY SHAPE
+{
+  "avatarPrompt": "{{source avatar prompt from side-character profile or character UI}}",
+  "characterName": "{{character name}}",
+  "modelId": "grok-4.3",
+  "stylePrompt": "{{optional selected style prompt}}",
+  "negativePrompt": "{{optional negative prompt}}",
+  "debugTrace": "{{true only when requested}}"
+}
 
 TEXT OPTIMIZATION REQUEST BODY SENT TO xAI
 {
@@ -1518,6 +1621,20 @@ SCENE IMAGE EDGE FUNCTION
 
 ${browserToEdgeHeaders}
 
+BROWSER-TO-EDGE REQUEST BODY SHAPE
+{
+  "recentMessages": [
+    { "role": "user|assistant", "text": "{{up to 5 recent roleplay messages used as visual context}}" }
+  ],
+  "characters": "{{current character appearance and clothing summaries}}",
+  "sceneLocation": "{{active scene tag or undefined}}",
+  "timeOfDay": "{{currentTimeOfDay}}",
+  "artStylePrompt": "{{selected art style backend prompt}}",
+  "modelId": "grok-4.3"
+}
+
+Known implementation note: the current browser payload uses the text property shown above, while the edge function's dialogue-context builder currently reads a content property. That runtime contract should be reconciled in a focused scene-image patch; this document reflects what the browser sends today.
+
 SCENE IMAGE TEXT ANALYSIS REQUEST BODY SENT TO xAI
 {
   "model": "{{modelId if grok-4.3, otherwise grok-4.3 fallback}}",
@@ -1547,6 +1664,14 @@ COVER IMAGE EDGE FUNCTION
 /functions/v1/generate-cover-image
 
 ${browserToEdgeHeaders}
+
+BROWSER-TO-EDGE REQUEST BODY SHAPE
+{
+  "prompt": "{{cover image source prompt}}",
+  "stylePrompt": "{{optional selected style prompt}}",
+  "negativePrompt": "{{optional negative prompt}}",
+  "scenarioTitle": "{{optional scenario title for logging}}"
+}
 
 COVER IMAGE GENERATION REQUEST BODY SENT TO xAI
 {

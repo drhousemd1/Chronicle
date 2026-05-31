@@ -201,7 +201,7 @@ const REFACTOR_TRIAGE_OVERRIDES: Record<string, RefactorTriageOverride> = {
   },
   "/src/components/chronicle/ChatInterfaceTab.tsx": {
     fileNote:
-      "Refactor target: separate message rendering/composer UI, effective canonical-state resolution, AI request orchestration, and modal/tool launchers into smaller units. This file now carries both the visible chat UX and the generation-safe continuity engine, which makes safe iteration harder than it should be.",
+      "Refactor target: separate message rendering/composer UI, effective story-state resolution, AI request orchestration, and modal/tool launchers into smaller units. This file now carries both the visible chat UX and the generation-safe continuity engine, which makes safe iteration harder than it should be.",
   },
   "/src/features/story-builder/StoryBuilderScreen.tsx": {
     fileNote:
@@ -326,6 +326,7 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
         path: "/src/services",
         children: [
           { kind: "file", path: "/src/services/llm.ts" },
+          { kind: "file", path: "/src/services/review-ratings.ts" },
           { kind: "file", path: "/src/services/supabase-data.ts" },
           { kind: "file", path: "/src/services/app-settings.ts" },
           { kind: "file", path: "/src/services/api-usage-test-session.ts" },
@@ -408,6 +409,7 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
             children: [
               { kind: "file", path: "/src/components/chronicle/ChatInterfaceTab.tsx" },
               { kind: "file", path: "/src/components/chronicle/ChatSpellcheckTextarea.tsx" },
+              { kind: "file", path: "/src/components/chronicle/ReviewModal.tsx" },
               { kind: "file", path: "/src/components/chronicle/ModelSettingsTab.tsx" },
               { kind: "file", path: "/src/components/chronicle/CharacterCreationModal.tsx" },
               { kind: "file", path: "/src/components/chronicle/MemoriesModal.tsx" },
@@ -421,8 +423,15 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
         children: [
           { kind: "file", path: "/src/data/database-schema-inventory.ts" },
           { kind: "file", path: "/src/data/ui-audit-findings.ts" },
+          { kind: "file", path: "/src/data/api-inspector-code-truth-registry.ts" },
+          { kind: "file", path: "/src/data/api-inspector-guide-phases.ts" },
+          { kind: "file", path: "/src/data/api-inspector-guide-template.ts" },
+          { kind: "file", path: "/src/data/api-inspector-line-map.ts" },
           { kind: "file", path: "/src/data/api-inspector-live-map.ts" },
           { kind: "file", path: "/src/data/api-inspector-map-registry.ts" },
+          { kind: "file", path: "/src/data/api-inspector-phase1-audit.ts" },
+          { kind: "file", path: "/src/data/api-inspector-prompt-documents.ts" },
+          { kind: "file", path: "/src/data/api-inspector-review.ts" },
         ],
       },
       {
@@ -433,6 +442,12 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
           { kind: "file", path: "/src/lib/chat-spellcheck.ts" },
           { kind: "file", path: "/src/lib/canonical-field-registry.ts" },
           { kind: "file", path: "/src/lib/api-inspector-schema.ts" },
+          { kind: "file", path: "/src/lib/api-inspector-utils.ts" },
+          { kind: "file", path: "/src/lib/assistant-style-directive.ts" },
+          { kind: "file", path: "/src/lib/goal-alignment.ts" },
+          { kind: "file", path: "/src/lib/goal-state-guard.ts" },
+          { kind: "file", path: "/src/lib/ui-audit-schema.ts" },
+          { kind: "file", path: "/src/lib/ui-audit-utils.ts" },
         ],
       },
       {
@@ -550,6 +565,11 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
           },
           {
             kind: "folder",
+            path: "/supabase/functions/evaluate-goal-alignment",
+            children: [{ kind: "file", path: "/supabase/functions/evaluate-goal-alignment/index.ts" }],
+          },
+          {
+            kind: "folder",
             path: "/supabase/functions/generate-side-character",
             children: [{ kind: "file", path: "/supabase/functions/generate-side-character/index.ts" }],
           },
@@ -623,6 +643,11 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
           { kind: "file", path: "/supabase/migrations/20260329112000_finance_live_wiring_tables.sql" },
           { kind: "file", path: "/supabase/migrations/20260404133000_add_side_character_custom_sections.sql" },
           { kind: "file", path: "/supabase/migrations/20260417041136_297c107c-c7f2-49be-9458-9f4502ee75a7.sql" },
+          { kind: "file", path: "/supabase/migrations/20260506224500_add_conversation_dialog_debug_comments.sql" },
+          { kind: "file", path: "/supabase/migrations/20260507031244_0c84d7a0-7fd0-4da9-b8a7-867e48406529.sql" },
+          { kind: "file", path: "/supabase/migrations/20260507032313_e4496cef-ad79-47c3-872d-e361ce149dae.sql" },
+          { kind: "file", path: "/supabase/migrations/20260509061600_1e750646-4b80-40be-ab44-7a8f56c8301a.sql" },
+          { kind: "file", path: "/supabase/migrations/20260521044256_424aa268-34cd-41aa-a2ea-dc2779b01344.sql" },
         ],
       },
     ],
@@ -635,6 +660,7 @@ const PAID_AI_EDGE_FUNCTIONS = new Set([
   "extract-memory-events",
   "compress-day-memories",
   "evaluate-goal-progress",
+  "evaluate-goal-alignment",
   "generate-cover-image",
   "generate-scene-image",
   "generate-side-character",
@@ -1334,7 +1360,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       {
         id: "side-character-discovery-service",
         title: "Side Character Discovery and Parsing",
-        summary: "Owns the message-segmentation and character-name resolution logic that both chat rendering and review/export workflows reuse when they need to understand who spoke which beat.",
+        summary: "Owns the message-segmentation and character-name resolution logic that both chat rendering and review/export workflows reuse when they need to understand who owns each response segment.",
         badgeLabel: "SERVICE",
         badgeClass: "code-logic",
         details: [
@@ -1358,12 +1384,12 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
     ],
   },
   "/src/features/chat-debug/review-export.ts": {
-    description: "Admin review-export formatter that converts a full conversation into a standalone HTML review artifact with segment-by-segment speaker attribution and live debug notes.",
+    description: "Debug export assembler for roleplay review packets, including API Call 1 payloads, provider request bodies, backend traces, support-call request/response bodies, hidden repair attempts, applied update summaries, live comments, and per-message speaker attribution.",
     rows: [
       {
         id: "chat-review-export-builder",
         title: "Standalone Chat Review Export Builder",
-        summary: "Builds the rich admin review export, including segmented speaker blocks, continue/regenerate markers, live debug comments, and post-turn state change annotations for human audit passes.",
+        summary: "Builds the rich admin review export, including segmented speaker blocks, continue/regenerate markers, API call dropdowns, support-call summaries, live debug comments, and post-turn state change annotations for audit passes.",
         badgeLabel: "CODE LOGIC",
         badgeClass: "code-logic",
         details: [
@@ -1374,7 +1400,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
           },
           {
             label: "Mutates",
-            values: ["downloaded HTML review artifact content only; it does not change runtime canon or backend rows"],
+            values: ["downloaded HTML review artifact content only; it does not change runtime story state or backend rows"],
             kind: "plain",
           },
           {
@@ -1473,6 +1499,136 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       },
     ],
   },
+  "/src/data/api-inspector-map-registry.ts": {
+    description: "Registry compositor that merges guide-derived phase content with code-truth runtime sections so the Roleplay Pipeline page shows one combined flow instead of competing historical and live maps.",
+    rows: [
+      {
+        id: "api-inspector-map-registry-compositor",
+        title: "Roleplay Pipeline Registry Compositor",
+        summary: "Combines dense guide phases with current runtime sections before the inspector page renders navigation, cards, review notes, and source references.",
+        badgeLabel: "DATA BLOCK",
+        badgeClass: "data-block",
+        details: [
+          { label: "Uses", values: ["/src/data/api-inspector-live-map.ts", "/src/data/api-inspector-guide-phases.ts"], kind: "files" },
+          { label: "Used By", values: ["/src/pages/style-guide/api-inspector.tsx"], kind: "files" },
+          { label: "Requires", values: ["merged inspector content stays clear about which sections describe live code and which sections come from imported guide material"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/src/data/api-inspector-code-truth-registry.ts": {
+    description: "Code-truth Roleplay Pipeline registry containing runtime-verified phases, source refs, provider facts, support-call behavior, and change history for debugging roleplay request flow.",
+    rows: [
+      {
+        id: "api-inspector-code-truth-registry",
+        title: "Runtime Code-Truth Registry",
+        summary: "Stores the inspector’s source-backed narrative for live roleplay request assembly, streaming, support-call behavior, debug export coverage, and recent runtime changes.",
+        badgeLabel: "DATA BLOCK",
+        badgeClass: "data-block",
+        details: [
+          { label: "Used By", values: ["/src/data/api-inspector-live-map.ts", "/src/data/api-inspector-prompt-documents.ts"], kind: "files" },
+          { label: "Requires", values: ["runtime descriptions stay synchronized with src/services/llm.ts, ChatInterfaceTab.tsx, and Supabase roleplay edge functions"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/src/data/api-inspector-prompt-documents.ts": {
+    description: "Roleplay Pipeline prompt review source that renders current API Call 1 and API Call 2/support-call prompt documents from live helper text and review fixtures.",
+    rows: [
+      {
+        id: "api-inspector-prompt-documents",
+        title: "Downloadable Prompt Review Documents",
+        summary: "Builds the Markdown documents behind the API Call 1 and API Call 2 + Support Calls buttons, including request envelopes, runtime placeholders, support-call contracts, and debug-review notes.",
+        badgeLabel: "DATA BLOCK",
+        badgeClass: "data-block",
+        details: [
+          { label: "Uses", values: ["/src/services/llm.ts", "/src/data/api-inspector-code-truth-registry.ts"], kind: "files" },
+          { label: "Used By", values: ["/src/pages/style-guide/api-inspector.tsx"], kind: "files" },
+          { label: "Requires", values: ["manual request-shape text stays aligned with the real browser-to-edge and edge-to-provider bodies"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/src/data/api-inspector-guide-template.ts": {
+    description: "Imported legacy guide/template payload for API Inspector layout and dense phase content. Treat this as source material and presentation scaffolding, not as the final authority when it conflicts with live code-truth registries.",
+    rows: [
+      {
+        id: "api-inspector-guide-template",
+        title: "Legacy Guide Template Payload",
+        summary: "Supplies long-form guide content that the inspector can reuse, while newer code-truth registries remain responsible for current runtime facts.",
+        badgeLabel: "DOCUMENTATION",
+        badgeClass: "documentation",
+        details: [
+          { label: "Used By", values: ["/src/data/api-inspector-guide-phases.ts", "/src/pages/style-guide/api-inspector.tsx"], kind: "files" },
+          { label: "Requires", values: ["historical provider/model notes are clearly refreshed or overridden when current implementation details change"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/src/data/api-inspector-guide-phases.ts": {
+    description: "Typed guide-phase data converted from the rework guide; supplies dense lifecycle detail that api-inspector-map-registry.ts merges with live runtime sections.",
+    rows: [
+      {
+        id: "api-inspector-guide-phases",
+        title: "Guide Phase Registry",
+        summary: "Carries imported phase descriptions, grouping, and explanatory copy used by the Roleplay Pipeline page when a section needs more context than the live map alone.",
+        badgeLabel: "DATA BLOCK",
+        badgeClass: "data-block",
+        details: [
+          { label: "Used By", values: ["/src/data/api-inspector-map-registry.ts", "/src/pages/style-guide/api-inspector.tsx"], kind: "files" },
+          { label: "Requires", values: ["guide-derived phase content does not contradict source-backed runtime sections"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/src/data/api-inspector-line-map.ts": {
+    description: "Roleplay Pipeline source-location map that attaches file/line references to visual cards and downloadable review notes.",
+    rows: [
+      {
+        id: "api-inspector-line-map",
+        title: "Pipeline Line Reference Map",
+        summary: "Provides the jump targets used by the inspector to connect human-readable pipeline cards to the current files that implement each behavior.",
+        badgeLabel: "DATA BLOCK",
+        badgeClass: "data-block",
+        details: [
+          { label: "Used By", values: ["/src/pages/style-guide/api-inspector.tsx", "/src/data/api-inspector-prompt-documents.ts"], kind: "files" },
+          { label: "Requires", values: ["line references are refreshed after major runtime or edge-function rewrites"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/src/data/api-inspector-phase1-audit.ts": {
+    description: "Roleplay Pipeline audit registry for earlier prompt/data coverage checks. It remains useful only when its source references are kept current with the live prompt renderer.",
+    rows: [
+      {
+        id: "api-inspector-phase1-audit",
+        title: "Prompt Coverage Audit Registry",
+        summary: "Stores coverage notes and checklist-style findings for prompt/data injection areas that the inspector renders as part of its supporting-systems view.",
+        badgeLabel: "DATA BLOCK",
+        badgeClass: "data-block",
+        details: [
+          { label: "Used By", values: ["/src/pages/style-guide/api-inspector.tsx"], kind: "files" },
+          { label: "Requires", values: ["old source references are refreshed or the audit becomes misleading"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/src/data/api-inspector-review.ts": {
+    description: "Small review metadata registry for the Roleplay Pipeline page, separate from the larger map and prompt-document sources.",
+    rows: [
+      {
+        id: "api-inspector-review-metadata",
+        title: "Pipeline Review Metadata",
+        summary: "Supplies high-level review annotations that the inspector can render without mixing them into runtime map definitions.",
+        badgeLabel: "DATA BLOCK",
+        badgeClass: "data-block",
+        details: [
+          { label: "Used By", values: ["/src/pages/style-guide/api-inspector.tsx"], kind: "files" },
+          { label: "Requires", values: ["review notes stay scoped to documentation status, not live runtime behavior"], kind: "plain" },
+        ],
+      },
+    ],
+  },
   "/src/pages/Index.tsx": {
     description: "Main Chronicle workspace shell that owns tab routing, auth-aware app bootstrap, scenario state, and lazy loading for the primary app surfaces.",
     rows: [
@@ -1492,12 +1648,12 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
     ],
   },
   "/src/types.ts": {
-    description: "Shared Chronicle runtime contract file defining scenario, character, conversation, message, snapshot, and derivation shapes used across UI, persistence, and backend boundaries.",
+    description: "Shared Chronicle runtime contract file defining scenario, character, conversation, message, snapshot, derivation, and goal-alignment shapes used across UI, persistence, and backend boundaries.",
     rows: [
       {
         id: "types-continuity-contract",
         title: "Continuity Contract Types",
-        summary: "Defines the canonical app-level types for generation-aware messages, main/side-character snapshots, goal derivations, and scenario payloads so the UI, persistence layer, and backend pipeline all speak the same language.",
+        summary: "Defines the shared app-level types for generation-aware messages, main/side-character snapshots, goal derivations, goal-alignment evaluations, and scenario payloads so the UI, persistence layer, and backend pipeline all speak the same language.",
         badgeLabel: "CODE LOGIC",
         badgeClass: "code-logic",
         details: [
@@ -1508,6 +1664,8 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
               "CharacterStateMessageSnapshot",
               "SideCharacterMessageSnapshot",
               "StoryGoalStepDerivation",
+              "GoalAlignmentState",
+              "GoalAlignmentEvaluation",
               "ScenarioData",
             ],
             kind: "plain",
@@ -1643,7 +1801,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
           },
           {
             label: "Requires",
-            values: ["world-core migration and canonical field rules stay aligned with current Story Builder terminology"],
+            values: ["world-core migration and field naming rules stay aligned with current Story Builder terminology"],
             kind: "plain",
           },
         ],
@@ -1651,18 +1809,18 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
     ],
   },
   "/src/services/persistence/conversations.ts": {
-    description: "Conversation and continuity persistence module for messages, session state, memories, and generation-scoped derivation ledgers.",
+    description: "Conversation and continuity persistence module for messages, session state, memories, generation-scoped derivation ledgers, and goal-alignment state.",
     rows: [
       {
         id: "persistence-conversations-module",
         title: "Conversation Persistence",
-        summary: "Owns conversation/message loading and save flows, along with the durable memory and session-state records that Chronicle's live chat depends on.",
+        summary: "Owns conversation/message loading and save flows, along with durable memory, session-state, dialog-debug, and goal-alignment records that Chronicle's live chat depends on.",
         badgeLabel: "CODE LOGIC",
         badgeClass: "code-logic",
         details: [
           {
             label: "Uses Tables",
-            values: ["conversations", "messages", "character_session_states", "conversation_dialog_debug_comments", "memories"],
+            values: ["conversations", "messages", "character_session_states", "conversation_dialog_debug_comments", "goal_alignment_states", "memories"],
             kind: "tables",
           },
           {
@@ -1672,12 +1830,12 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
           },
           {
             label: "Mutates",
-            values: ["conversation history", "message rows and generation IDs", "manual session overrides", "admin dialog-debug notes", "memory visibility"],
+            values: ["conversation history", "message rows and generation IDs", "manual session overrides", "admin dialog-debug notes", "goal-alignment state", "memory visibility"],
             kind: "plain",
           },
           {
             label: "Requires",
-            values: ["message IDs, generation IDs, and conversation-scoped queries stay aligned before the chat runtime resolves current canon"],
+            values: ["message IDs, generation IDs, and conversation-scoped queries stay aligned before the chat runtime resolves current story state"],
             kind: "plain",
           },
         ],
@@ -1685,7 +1843,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       {
         id: "persistence-generation-ledger",
         title: "Generation Ledger Persistence",
-        summary: "Stores and filters message-scoped snapshot and derivation rows so only records whose `source_generation_id` still matches the active message branch survive into live canon.",
+        summary: "Stores and filters message-scoped snapshot and derivation rows so only records whose `source_generation_id` still matches the active message branch survive into live story state.",
         badgeLabel: "DATA BLOCK",
         badgeClass: "data-block",
         details: [
@@ -1701,7 +1859,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
           },
           {
             label: "Requires",
-            values: ["active message generation filters stay aligned with ChatInterfaceTab's effective-state resolver so stale regenerate/continue branches cannot leak back into canon"],
+            values: ["active message generation filters stay aligned with ChatInterfaceTab's effective-state resolver so stale regenerate/continue branches cannot leak back into the active story state"],
             kind: "plain",
           },
         ],
@@ -1709,7 +1867,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
     ],
   },
   "/src/services/persistence/side-characters.ts": {
-    description: "Side-character persistence module for roster CRUD plus generation-scoped canonical snapshot storage.",
+    description: "Side-character persistence module for roster CRUD plus generation-scoped snapshot storage.",
     rows: [
       {
         id: "persistence-side-character-roster",
@@ -1743,7 +1901,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       {
         id: "persistence-side-character-snapshots",
         title: "Side Character Snapshot Ledger",
-        summary: "Stores AI-derived side-character canon per message generation with an `(side_character_id, source_message_id, source_generation_id)` uniqueness contract so stale branches cannot overwrite the active side-character state.",
+        summary: "Stores AI-derived side-character story state per message generation with an `(side_character_id, source_message_id, source_generation_id)` uniqueness contract so stale branches cannot overwrite the active side-character state.",
         badgeLabel: "DATA BLOCK",
         badgeClass: "data-block",
         details: [
@@ -1767,7 +1925,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
     ],
   },
   "/src/components/chronicle/ChatInterfaceTab.tsx": {
-    description: "Primary Chronicle chat workspace that renders the live conversation while resolving effective canonical state, orchestrating generation side effects, and launching adjacent chat tools.",
+    description: "Primary Chronicle chat workspace that renders the live conversation, resolves effective story state, orchestrates API Call 1, schedules post-turn support calls, stores debug traces, and launches adjacent chat tools.",
     rows: [
       {
         id: "chat-interface-live-workspace",
@@ -1803,8 +1961,8 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
         ],
       },
       {
-        id: "chat-interface-effective-canon",
-        title: "Effective Canonical State Resolver",
+        id: "chat-interface-effective-story-state",
+        title: "Effective Story State Resolver",
         summary: "Builds the active main-character, side-character, memory, and goal state from the current message generation before anything is rendered or sent back to the AI.",
         badgeLabel: "CODE LOGIC",
         badgeClass: "code-logic",
@@ -1825,7 +1983,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
           },
           {
             label: "Requires",
-            values: ["generation IDs, snapshot tables, and message ordering all resolve to the same active canon branch"],
+            values: ["generation IDs, snapshot tables, and message ordering all resolve to the same active story branch"],
             kind: "plain",
           },
         ],
@@ -1833,7 +1991,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       {
         id: "chat-interface-roleplay-runtime-path",
         title: "Direct Chat Runtime Path",
-        summary: "Packages the effective chat runtime into Chronicle's direct streaming Grok request path and then applies the returned generation's post-response derivations back into the continuity ledger.",
+        summary: "Packages the effective chat runtime into Chronicle's direct streaming Grok request path, handles send/regenerate/Continue branches, records hidden repair attempts, then applies post-response derivations back into the continuity ledger.",
         badgeLabel: "API CALL",
         badgeClass: "api-call",
         details: [
@@ -2001,18 +2159,23 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
     ],
   },
   "/src/services/llm.ts": {
-    description: "Chronicle's main prompt-assembly and AI transport layer for paid roleplay chat, prompt serialization, and response-stream handling.",
+    description: "Chronicle's main prompt-assembly and AI transport layer for paid roleplay chat, prompt serialization, response-stream handling, debug capture, style guidance, and prompt-document source exports.",
     rows: [
       {
         id: "llm-chat-request-assembly",
         title: "Chronicle Chat Request Assembly",
-        summary: "Builds the recurring system instruction, current transcript slice, and final wrapped user turn before Chronicle fires the paid direct chat request.",
+        summary: "Builds the recurring system instruction, current transcript slice, final wrapped user turn, response-detail guidance, goal context, and optional style directive before Chronicle fires the paid direct chat request.",
         badgeLabel: "API CALL",
         badgeClass: "api-call",
         details: [
           {
             label: "Used By",
-            values: ["/src/components/chronicle/ChatInterfaceTab.tsx", "/scripts/verify-prompt-serialization.ts"],
+            values: [
+              "/src/components/chronicle/ChatInterfaceTab.tsx",
+              "/src/lib/assistant-style-directive.ts",
+              "/src/data/api-inspector-prompt-documents.ts",
+              "/scripts/verify-prompt-serialization.ts",
+            ],
             kind: "files",
           },
           {
@@ -2030,7 +2193,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       {
         id: "llm-roleplay-v2-context",
         title: "Roleplay Context Injection",
-        summary: "Attaches the current conversation, temporal state, active scene, AI/user speaker lists, and per-character scene state so the backend direct lane reasons against the right live canon.",
+        summary: "Attaches the current conversation, temporal state, active scene, AI/user speaker lists, and per-character scene state so the backend direct lane reasons against the right live story state.",
         badgeLabel: "CONTEXT INJECTION",
         badgeClass: "context-injection",
         details: [
@@ -2131,7 +2294,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
           {
             label: "Requires",
             values: [
-              "the latest user turn, roleplay context metadata, and direct provider response stay aligned before the streamed text becomes canon",
+              "the latest user turn, roleplay context metadata, and direct provider response stay aligned before the streamed text becomes visible story state",
               "compatibility aliasing never lies about the active runtime when debug traces or docs describe the lane",
             ],
             kind: "plain",
@@ -2141,7 +2304,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       {
         id: "chat-edge-debug-trace-emission",
         title: "Admin Debug Trace Emission",
-        summary: "Builds a structured admin-only trace describing roleplay context, selected supporting excerpts, compatibility planner/validator fields, normalization changes, and fallback reasons, then emits it alongside the normal chat response payload.",
+        summary: "Builds a structured admin-only trace describing roleplay context, selected supporting excerpts, compatibility planner/validator fields, deterministic cleanup timing, and fallback reasons, then emits it alongside the normal chat response payload.",
         badgeLabel: "CODE LOGIC",
         badgeClass: "code-logic",
         details: [
@@ -2176,12 +2339,12 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
     ],
   },
   "/supabase/migrations/20260417041136_297c107c-c7f2-49be-9458-9f4502ee75a7.sql": {
-    description: "Continuity migration that introduced Chronicle's generation ledger schema for rollback-safe chat canon, message-scoped snapshots, and goal derivations.",
+    description: "Continuity migration that introduced Chronicle's generation ledger schema for rollback-safe chat state, message-scoped snapshots, and goal derivations.",
     rows: [
       {
         id: "message-generation-ledger-schema",
         title: "Message Generation Ledger Schema",
-        summary: "Adds the backend schema that lets chat refresh/regenerate branch safely instead of overwriting canon in place, including message generation IDs and per-message snapshot/derivation tables.",
+        summary: "Adds the backend schema that lets chat refresh/regenerate branch safely instead of overwriting story state in place, including message generation IDs and per-message snapshot/derivation tables.",
         badgeLabel: "DB MIGRATION",
         badgeClass: "db-migration",
         details: [
@@ -2211,6 +2374,102 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
             values: ["typed Supabase metadata and runtime active-generation filtering stay aligned with this schema contract"],
             kind: "plain",
           },
+        ],
+      },
+    ],
+  },
+  "/supabase/migrations/20260506224500_add_conversation_dialog_debug_comments.sql": {
+    description: "Dialog-debug migration that adds per-message tester/commentary storage for exported roleplay review sessions.",
+    rows: [
+      {
+        id: "conversation-dialog-debug-comments-schema",
+        title: "Dialog Debug Comment Schema",
+        summary: "Adds the backend table used by the chat testing/comment tool so reviewer comments can stay attached to the relevant message in downloaded HTML exports.",
+        badgeLabel: "DB MIGRATION",
+        badgeClass: "db-migration",
+        details: [
+          { label: "Used By", values: ["/src/services/persistence/conversations.ts", "/src/components/chronicle/ChatInterfaceTab.tsx", "/src/features/chat-debug/review-export.ts"], kind: "files" },
+          { label: "Requires", values: ["comment rows remain tied to the correct conversation message and user"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/supabase/migrations/20260507031244_0c84d7a0-7fd0-4da9-b8a7-867e48406529.sql": {
+    description: "Dialog-debug migration variant that creates the per-message tester/commentary table, indexes, row-level security policies, and update trigger.",
+    rows: [
+      {
+        id: "conversation-dialog-debug-comments-schema-variant",
+        title: "Dialog Debug Comment Schema Variant",
+        summary: "Creates the same roleplay-review comment storage contract used by the test-session HTML export and the live comment tool. It is included here because the repo contains both May dialog-comment migrations and the architecture page should show the real file set.",
+        badgeLabel: "DB MIGRATION",
+        badgeClass: "db-migration",
+        details: [
+          { label: "Defines", values: ["conversation_dialog_debug_comments"], kind: "plain" },
+          { label: "Requires", values: ["migration history should be reviewed before changing this table because the repo currently contains overlapping dialog-comment migrations"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/supabase/migrations/20260507032313_e4496cef-ad79-47c3-872d-e361ce149dae.sql": {
+    description: "Follow-up dialog-debug migration that recreates the updated-at trigger for conversation_dialog_debug_comments.",
+    rows: [
+      {
+        id: "conversation-dialog-debug-comments-trigger-refresh",
+        title: "Dialog Debug Comment Trigger Refresh",
+        summary: "Drops and recreates the table update trigger so dialog-review comments keep their updated_at timestamp current after edits.",
+        badgeLabel: "DB MIGRATION",
+        badgeClass: "db-migration",
+        details: [
+          { label: "Defines", values: ["update_conversation_dialog_debug_comments_updated_at"], kind: "plain" },
+          { label: "Requires", values: ["public.update_updated_at_column must exist before this migration runs"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/supabase/migrations/20260509061600_1e750646-4b80-40be-ab44-7a8f56c8301a.sql": {
+    description: "Conversation state/debug migration that adds API call traces, world-state snapshots, and state-change event ledgers for roleplay reviewability.",
+    rows: [
+      {
+        id: "conversation-debug-ledger-schema",
+        title: "Conversation Debug Ledger Schema",
+        summary: "Adds durable trace and snapshot tables so roleplay state changes can be inspected after a test run instead of reconstructed from visible text alone.",
+        badgeLabel: "DB MIGRATION",
+        badgeClass: "db-migration",
+        details: [
+          { label: "Defines", values: ["conversation_state_change_events", "conversation_world_state_snapshots", "conversation_api_call_traces"], kind: "plain" },
+          { label: "Requires", values: ["frontend debug capture and backend row policies stay aligned before these tables can be trusted for audit work"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/supabase/migrations/20260521044256_424aa268-34cd-41aa-a2ea-dc2779b01344.sql": {
+    description: "Goal-alignment state migration that adds the persistence table for tracking how roleplay exchanges relate to existing goals over time.",
+    rows: [
+      {
+        id: "goal-alignment-state-schema",
+        title: "Goal Alignment State Schema",
+        summary: "Adds goal_alignment_states so support-call diagnostics can store per-goal alignment state separately from step-completion updates.",
+        badgeLabel: "DB MIGRATION",
+        badgeClass: "db-migration",
+        details: [
+          { label: "Used By", values: ["/src/lib/goal-alignment.ts", "/src/services/persistence/conversations.ts", "/supabase/functions/evaluate-goal-alignment/index.ts"], kind: "files" },
+          { label: "Requires", values: ["table policy, TypeScript types, and shadow-mode persistence expectations stay synchronized"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/src/data/database-schema-inventory.ts": {
+    description: "Generated backend contract snapshot used by App Architecture to render table, RPC, storage, and edge-function panels, and to validate whether scanned code references known backend resources.",
+    rows: [
+      {
+        id: "database-schema-inventory",
+        title: "Backend Schema Inventory",
+        summary: "Documents the backend tables, functions, storage buckets, and edge functions known to the architecture page. This file must be refreshed from the latest backend export whenever migrations add backend resources.",
+        badgeLabel: "DATA BLOCK",
+        badgeClass: "data-block",
+        details: [
+          { label: "Used By", values: ["/src/pages/style-guide/app-architecture.tsx"], kind: "files" },
+          { label: "Requires", values: ["schema export freshness stays aligned with committed migrations and generated Supabase TypeScript types"], kind: "plain" },
         ],
       },
     ],
@@ -2246,6 +2505,214 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
           { label: "Used By", values: ["/src/pages/style-guide/app-architecture.tsx"], kind: "files" },
           { label: "Defines", values: ["node typing", "file-kind inference", "folder/file descriptions", "registry assembly", "descendant counting"], kind: "plain" },
           { label: "Requires", values: ["path normalization and file-kind inference rules stay aligned with the repo's actual ownership patterns"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/src/lib/api-inspector-schema.ts": {
+    description: "Type contract for phases, groups, items, file refs, cross refs, review metadata, and change-log records rendered by the Roleplay Pipeline page.",
+    rows: [
+      {
+        id: "api-inspector-schema-contract",
+        title: "Roleplay Pipeline Type Contract",
+        summary: "Defines the shared data shapes that keep the pipeline registries, page renderer, and downloadable review documents compatible.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          { label: "Used By", values: ["/src/pages/style-guide/api-inspector.tsx", "/src/data/api-inspector-live-map.ts"], kind: "files" },
+          { label: "Requires", values: ["registry data changes stay type-compatible with the inspector renderer"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/src/lib/api-inspector-utils.ts": {
+    description: "Validation and transformation helpers for API Inspector registries, including integrity checks that protect map structure and source references.",
+    rows: [
+      {
+        id: "api-inspector-utils-validation",
+        title: "Roleplay Pipeline Registry Utilities",
+        summary: "Provides helper logic for checking and transforming Roleplay Pipeline registry data before it is trusted by the page or tests.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          { label: "Used By", values: ["/src/lib/api-inspector-utils.test.ts"], kind: "files" },
+          { label: "Requires", values: ["integrity checks are expanded when new registry sections or source-reference shapes are added"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/src/lib/assistant-style-directive.ts": {
+    description: "Turn-local repetition and response-shape guard that inspects recent assistant output and returns narrow one-response style guidance or one hidden repair instruction without changing durable story state.",
+    rows: [
+      {
+        id: "assistant-style-directive-guard",
+        title: "Assistant Style Directive Guard",
+        summary: "Analyzes recent assistant messages for repeated structure, repeated descriptive focus, weak dialogue balance, and response-length collapse, then emits bounded guidance for the next generation attempt.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          { label: "Used By", values: ["/src/components/chronicle/ChatInterfaceTab.tsx", "/src/services/llm.ts"], kind: "files" },
+          { label: "Requires", values: ["style guidance stays narrow enough to avoid becoming another competing roleplay prompt"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/src/lib/goal-alignment.ts": {
+    description: "Goal-alignment scoring helper that normalizes evaluator output, applies flexibility-aware score deltas, derives status and trend, and decides whether a goal remains eligible for writer-facing background guidance.",
+    rows: [
+      {
+        id: "goal-alignment-scoring",
+        title: "Goal Alignment Scoring",
+        summary: "Converts post-turn alignment evaluation into stable goal state so the app can distinguish support, resistance, drift, and neutral movement over time.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          { label: "Used By", values: ["/src/components/chronicle/ChatInterfaceTab.tsx", "/src/services/persistence/conversations.ts"], kind: "files" },
+          { label: "Requires", values: ["alignment scoring remains diagnostic until its persistence and prompt-injection behavior are intentionally enabled"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/src/lib/goal-state-guard.ts": {
+    description: "Goal update parser and guard for separating durable goal-state updates from immediate task-level instructions so support calls do not save short-term actions as long-term goals.",
+    rows: [
+      {
+        id: "goal-state-guard",
+        title: "Goal State Guard",
+        summary: "Parses support-call goal updates and filters out unsupported, too-granular, or weakly evidenced state changes before persistence.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          { label: "Used By", values: ["/src/components/chronicle/ChatInterfaceTab.tsx", "/supabase/functions/evaluate-goal-progress/index.ts"], kind: "files" },
+          { label: "Requires", values: ["support-call outputs are treated as candidates until the guard accepts them"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/src/lib/ui-audit-schema.ts": {
+    description: "Quality Hub contract for findings, scan modules, scan runs, review units, change-log entries, registry metadata, statuses, severities, and checklist logging targets.",
+    rows: [
+      {
+        id: "quality-hub-schema-contract",
+        title: "Quality Hub Type Contract",
+        summary: "Defines the data shapes used by the Quality Hub seed registry, import/export package, and operator UI.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          { label: "Used By", values: ["/src/data/ui-audit-findings.ts", "/src/pages/style-guide/ui-audit.tsx", "/src/lib/ui-audit-utils.ts"], kind: "files" },
+          { label: "Requires", values: ["seed data, UI rendering, and import/export utilities stay compatible whenever registry fields change"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/src/lib/ui-audit-utils.ts": {
+    description: "Quality Hub helper layer for sorting and grouping findings, summarizing runs, merging imported registries, deduplicating agents and comments, and generating IDs and timestamps.",
+    rows: [
+      {
+        id: "quality-hub-utils",
+        title: "Quality Hub Registry Utilities",
+        summary: "Keeps Quality Hub import/export, filtering, sorting, and merge behavior consistent across persisted and seed registries.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          { label: "Used By", values: ["/src/pages/style-guide/ui-audit.tsx"], kind: "files" },
+          { label: "Requires", values: ["merge behavior remains safe when seed registry versions add new findings, runs, and changelog entries"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/src/services/review-ratings.ts": {
+    description: "Creator review scoring contract with weighted category ratings, rounded display score, star breakdown, and DB-column mapping shared by ReviewModal and gallery review persistence.",
+    rows: [
+      {
+        id: "review-ratings-contract",
+        title: "Creator Review Rating Contract",
+        summary: "Centralizes how review categories become weighted score values so the modal, database writes, and gallery display stay aligned.",
+        badgeLabel: "SERVICE",
+        badgeClass: "code-logic",
+        details: [
+          { label: "Used By", values: ["/src/components/chronicle/ReviewModal.tsx", "/src/services/gallery-data.ts"], kind: "files" },
+          { label: "Requires", values: ["rating math and database column mappings remain synchronized"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/src/components/chronicle/ReviewModal.tsx": {
+    description: "Nested gallery review modal that keeps quick story/spice rating low-friction, hides optional category feedback behind an expandable section, and submits or deletes through gallery data services without closing the parent story detail modal unexpectedly.",
+    rows: [
+      {
+        id: "review-modal",
+        title: "Gallery Review Modal",
+        summary: "Collects creator feedback, category ratings, and delete/submit actions while preserving the surrounding story-detail workflow.",
+        badgeLabel: "REACT COMPONENT",
+        badgeClass: "component",
+        details: [
+          { label: "Uses", values: ["/src/services/review-ratings.ts", "/src/services/gallery-data.ts"], kind: "files" },
+          { label: "Known cleanup", values: ["review submit/delete paths currently double-log caught errors and should be cleaned up in a small follow-up patch"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/supabase/functions/evaluate-goal-alignment/index.ts": {
+    description: "Structured-output goal-alignment classifier for post-turn diagnostics. It scores support, resistance, drift, and neutral signals against existing story and character goals, returning reviewed JSON for debug and shadow-mode handling.",
+    rows: [
+      {
+        id: "goal-alignment-edge-function",
+        title: "Goal Alignment Evaluation Worker",
+        summary: "Runs after roleplay turns to classify how the latest exchange relates to existing goals without directly writing visible chat text.",
+        badgeLabel: "EDGE FUNCTION",
+        badgeClass: "edge-fn",
+        details: [
+          { label: "Used By", values: ["/src/components/chronicle/ChatInterfaceTab.tsx", "/src/lib/goal-alignment.ts"], kind: "files" },
+          { label: "Requires", values: ["structured output schema and frontend review handling stay aligned"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/supabase/functions/evaluate-goal-progress/index.ts": {
+    description: "Structured-output story-step completion evaluator that checks pending steps against the latest exchange, requires direct evidence and confidence before completion, and stays separate from softer goal-alignment diagnostics.",
+    rows: [
+      {
+        id: "goal-progress-edge-function",
+        title: "Goal Progress Evaluation Worker",
+        summary: "Evaluates whether pending story-goal steps actually completed and returns reviewed candidates for frontend persistence.",
+        badgeLabel: "EDGE FUNCTION",
+        badgeClass: "edge-fn",
+        details: [
+          { label: "Used By", values: ["/src/components/chronicle/ChatInterfaceTab.tsx", "/src/lib/goal-state-guard.ts"], kind: "files" },
+          { label: "Requires", values: ["step-completion output stays conservative and evidence-backed before the client saves it"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/supabase/functions/extract-character-updates/index.ts": {
+    description: "Structured character-state sync worker that reviews the latest exchange against supported character fields, filters unsupported or weak updates, and returns accepted/rejected review rows for debug export and persistence.",
+    rows: [
+      {
+        id: "character-state-sync-edge-function",
+        title: "Character State Sync Worker",
+        summary: "Turns the latest exchange into reviewed character-state update candidates so the frontend can save only supported, evidenced changes.",
+        badgeLabel: "EDGE FUNCTION",
+        badgeClass: "edge-fn",
+        details: [
+          { label: "Used By", values: ["/src/components/chronicle/ChatInterfaceTab.tsx"], kind: "files" },
+          { label: "Requires", values: ["browser-to-edge request shape, structured provider request, fallback retry, and review rows remain documented together"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/supabase/functions/extract-memory-events/index.ts": {
+    description: "Structured memory extraction worker that returns memory-worthy events from the latest exchange with schema-constrained output for post-turn memory updates.",
+    rows: [
+      {
+        id: "memory-extraction-edge-function",
+        title: "Memory Extraction Worker",
+        summary: "Identifies durable memory candidates after a turn and returns structured rows that the frontend can dedupe before saving.",
+        badgeLabel: "EDGE FUNCTION",
+        badgeClass: "edge-fn",
+        details: [
+          { label: "Used By", values: ["/src/components/chronicle/ChatInterfaceTab.tsx"], kind: "files" },
+          { label: "Requires", values: ["recent-memory context and dedupe behavior stay aligned with the frontend save path"], kind: "plain" },
         ],
       },
     ],
@@ -5112,13 +5579,13 @@ function buildFileRows(
     rows.push(
       applyRowOverride("mismatch", {
         id: `${node.id}-mismatch`,
-        title: "Backend contract mismatch",
-        summary: "Code in this file references backend resources that do not appear in the latest live schema inventory.",
+        title: "Schema inventory mismatch",
+        summary: "Code in this file references backend resources that do not appear in the current architecture schema inventory snapshot. Refresh the schema export before treating this as a missing-table problem.",
         badgeLabel: "CODE LOGIC",
         badgeClass: "code-logic",
         details: mismatchDetails,
         signal: "issue",
-        note: "This usually means the code is expecting an old name, a missing migration, or a backend resource that was never created.",
+        note: "This can mean the schema inventory snapshot is stale, the code is expecting an old name, a migration is missing, or a backend resource was never created.",
         security: false,
       }),
     );
@@ -5301,7 +5768,7 @@ function ArchitectureFileCard({
 
         {hasIssue && (
           <div className="inline-error-text">
-            At least one backend contract in this file does not match the latest schema inventory.
+            At least one backend contract in this file does not match the current schema inventory snapshot.
           </div>
         )}
 
