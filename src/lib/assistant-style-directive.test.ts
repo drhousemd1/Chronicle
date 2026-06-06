@@ -20,7 +20,7 @@ describe('buildAssistantStyleDirective', () => {
     ]);
 
     expect(directive).toContain('[STYLE ADJUSTMENT FOR THIS TURN]');
-    expect(directive).toContain("Compare against your own previous 2-3 assistant character blocks, not the user's message.");
+    expect(directive).toContain('Use recent assistant messages for story state, not as a style template.');
     expect(directive).toContain('repeated action -> dialogue -> internal thought cadence');
   });
 
@@ -53,7 +53,7 @@ describe('buildAssistantStyleDirective', () => {
 
     expect(directive).toContain('narration-heavy responses');
     expect(directive).toContain('missing or very low external dialogue');
-    expect(directive).toContain('start with external dialogue when that fits the current exchange');
+    expect(directive).toContain('Vary the next response with a natural structure');
   });
 
   it('detects repeated descriptive terms across recent assistant outputs', () => {
@@ -69,7 +69,7 @@ describe('buildAssistantStyleDirective', () => {
     ]);
 
     expect(directive).toContain('repeated descriptive terms');
-    expect(directive).toContain('Do not reuse the same descriptive focus');
+    expect(directive).toContain('Use recent assistant messages for story state, not as a style template.');
   });
 
   it('detects repeated action-first dialogue blocks without requiring internal thoughts', () => {
@@ -85,7 +85,7 @@ describe('buildAssistantStyleDirective', () => {
     ]);
 
     expect(directive).toContain('repeated action-first dialogue cadence');
-    expect(directive).toContain('start with external dialogue when that fits the current exchange');
+    expect(directive).toContain('Vary the next response with a natural structure');
   });
 
   it('detects repeated dialogue or topic focus even when wording changes', () => {
@@ -123,8 +123,9 @@ describe('buildAssistantStyleDirective', () => {
     );
 
     expect(directive).toContain('[OUTPUT REVISION REQUIRED]');
-    expect(directive).toContain('do not rewrite the same exchange with swapped wording');
-    expect(directive).toContain("develop the AI-controlled character's side of the current exchange");
+    expect(directive).toContain('The draft needs revision because:');
+    expect(directive).toContain('Use established details as causes or consequences');
+    expect(directive).toContain('Add concrete AI-controlled development instead of restating');
   });
 
   it('builds a repair directive when a candidate repeats the action-first dialogue cadence', () => {
@@ -180,5 +181,63 @@ describe('buildAssistantStyleDirective', () => {
 
     expect(directive).toContain('[OUTPUT REVISION REQUIRED]');
     expect(directive).toContain('reused short dialogue phrasing');
+  });
+
+  it('repairs offloading questions when the draft does not develop the AI-controlled side', () => {
+    const directive = buildAssistantRepetitionRepairDirective(
+      [{ role: 'assistant', text: 'Ashley: *She looked over from the doorway.* "I heard you."' }],
+      'Ashley: "What do you want me to do?"',
+    );
+
+    expect(directive).toContain('[OUTPUT REVISION REQUIRED]');
+    expect(directive).toContain('offloaded the scene to the user');
+    expect(directive).toContain('asking the user to carry the scene');
+  });
+
+  it('repairs meta handoff phrasing even when it is not quoted dialogue', () => {
+    const directive = buildAssistantRepetitionRepairDirective(
+      [{ role: 'assistant', text: 'Ashley: *She folded the letter and stepped back from the desk.* "You should read this."' }],
+      'Ashley: *She holds the letter out.* What do you do next?',
+    );
+
+    expect(directive).toContain('[OUTPUT REVISION REQUIRED]');
+    expect(directive).toContain('offloaded the scene to the user');
+  });
+
+  it('repairs shallow multi-character handoff drafts instead of counting block count as development', () => {
+    const directive = buildAssistantRepetitionRepairDirective(
+      [{ role: 'assistant', text: 'Ashley: *She folded the letter and stepped back from the desk.* "You should read this."' }],
+      'Ashley: "What do you do next?"\n\nSarah: "Your move."',
+    );
+
+    expect(directive).toContain('[OUTPUT REVISION REQUIRED]');
+    expect(directive).toContain('offloaded the scene to the user');
+  });
+
+  it('does not repair normal in-character consent or boundary questions by treating them as offloading', () => {
+    const previousMessages = [
+      { role: 'assistant', text: 'Ashley: *She stayed near the window with the letter pressed flat in both hands.* "You know why I came here."' },
+    ];
+
+    const kissDirective = buildAssistantRepetitionRepairDirective(
+      previousMessages,
+      'Ashley: "Can I kiss you?"',
+    );
+    const stopDirective = buildAssistantRepetitionRepairDirective(
+      previousMessages,
+      'Ashley: "Should I stop?"',
+    );
+
+    expect(kissDirective).toBe('');
+    expect(stopDirective).toBe('');
+  });
+
+  it('does not repair a purposeful in-character question when the AI side is developed', () => {
+    const directive = buildAssistantRepetitionRepairDirective(
+      [{ role: 'assistant', text: 'Ashley: *She folded the letter and watched his face.* "You already know why this matters."' }],
+      'Ashley: "Are you okay with hearing the truth now?" *She set the sealed letter on the table, keeping her hand over the crest while she studied his reaction. The silence stretched long enough for the choice to feel deliberate rather than accidental, and her voice lowered instead of softening.*',
+    );
+
+    expect(directive).toBe('');
   });
 });

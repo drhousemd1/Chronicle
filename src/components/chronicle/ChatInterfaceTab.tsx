@@ -17,7 +17,7 @@ import { uid, now, uuid } from '@/utils';
 import {
   CONTENT_FILTER_NOTICE_TEXT,
   ContentFilteredChatError,
-  buildCanonNote,
+  buildEstablishedFactNote,
   generateRoleplayResponseStream,
   isLocalRoleplayNoticeMessage,
   renderGoalMilestoneTarget,
@@ -113,9 +113,7 @@ interface ChatInterfaceTabProps {
     transparentBubbles?: boolean;
     darkMode?: boolean;
     offsetBubbles?: boolean;
-    proactiveCharacterDiscovery?: boolean;
     dynamicText?: boolean;
-    proactiveNarrative?: boolean;
     narrativePov?: 'first' | 'third';
     nsfwIntensity?: 'normal' | 'high';
     realismMode?: boolean;
@@ -169,6 +167,151 @@ function splitEdgeDebugPayload(data: unknown): {
     responseBody,
     modelRequest: payload.modelRequest,
     modelRequests: modelRequests.length ? modelRequests : undefined,
+  };
+}
+
+function cleanGeneratedProfileString(value: unknown): string {
+  return typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
+}
+
+function normalizeGeneratedProfileSupport(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function generatedProfileSourceSupportsValue(value: unknown, sourceText: string): boolean {
+  const normalizedValue = normalizeGeneratedProfileSupport(cleanGeneratedProfileString(value));
+  if (!normalizedValue) return false;
+  const normalizedSource = normalizeGeneratedProfileSupport(sourceText);
+  return normalizedSource.includes(normalizedValue);
+}
+
+function sourceSupportedGeneratedProfileValue(value: unknown, sourceText: string): string {
+  const cleaned = cleanGeneratedProfileString(value);
+  return generatedProfileSourceSupportsValue(cleaned, sourceText) ? cleaned : '';
+}
+
+function buildSanitizedSideCharacterAvatarPrompt(profile: any, name: string): string {
+  const appearance = profile?.physicalAppearance || {};
+  const clothing = profile?.currentlyWearing || {};
+  const parts = [
+    cleanGeneratedProfileString(name),
+    cleanGeneratedProfileString(profile?.age),
+    cleanGeneratedProfileString(profile?.sexType),
+    cleanGeneratedProfileString(appearance.hairColor),
+    cleanGeneratedProfileString(appearance.eyeColor),
+    cleanGeneratedProfileString(appearance.build),
+    cleanGeneratedProfileString(appearance.height),
+    cleanGeneratedProfileString(appearance.skinTone),
+    cleanGeneratedProfileString(appearance.makeup),
+    cleanGeneratedProfileString(appearance.bodyMarkings),
+    cleanGeneratedProfileString(appearance.temporaryConditions),
+    cleanGeneratedProfileString(clothing.top),
+    cleanGeneratedProfileString(clothing.bottom),
+  ].filter(Boolean);
+  const uniqueParts = Array.from(new Set(parts));
+  return uniqueParts.length
+    ? `Portrait of ${uniqueParts.join(', ')}.`
+    : `Portrait of ${cleanGeneratedProfileString(name) || 'supporting character'}.`;
+}
+
+function sanitizeGeneratedSideCharacterProfile(profile: unknown, name: string, sourceText: string): any {
+  const raw = profile && typeof profile === 'object' ? profile as any : {};
+  const physicalAppearance = raw.physicalAppearance || {};
+  const currentlyWearing = raw.currentlyWearing || {};
+  const background = raw.background || {};
+  const personality = raw.personality || {};
+
+  const sanitized = {
+    nicknames: sourceSupportedGeneratedProfileValue(raw.nicknames, sourceText),
+    age: cleanGeneratedProfileString(raw.age),
+    sexType: cleanGeneratedProfileString(raw.sexType),
+    sexualOrientation: sourceSupportedGeneratedProfileValue(raw.sexualOrientation, sourceText),
+    roleDescription: cleanGeneratedProfileString(raw.roleDescription),
+    physicalAppearance: {
+      ...defaultPhysicalAppearance,
+      hairColor: cleanGeneratedProfileString(physicalAppearance.hairColor),
+      eyeColor: cleanGeneratedProfileString(physicalAppearance.eyeColor),
+      build: cleanGeneratedProfileString(physicalAppearance.build),
+      bodyHair: sourceSupportedGeneratedProfileValue(physicalAppearance.bodyHair, sourceText),
+      height: cleanGeneratedProfileString(physicalAppearance.height),
+      breastSize: sourceSupportedGeneratedProfileValue(physicalAppearance.breastSize, sourceText),
+      genitalia: sourceSupportedGeneratedProfileValue(physicalAppearance.genitalia, sourceText),
+      skinTone: cleanGeneratedProfileString(physicalAppearance.skinTone),
+      makeup: cleanGeneratedProfileString(physicalAppearance.makeup),
+      bodyMarkings: cleanGeneratedProfileString(physicalAppearance.bodyMarkings),
+      temporaryConditions: cleanGeneratedProfileString(physicalAppearance.temporaryConditions),
+    },
+    currentlyWearing: {
+      ...defaultCurrentlyWearing,
+      top: cleanGeneratedProfileString(currentlyWearing.top),
+      bottom: cleanGeneratedProfileString(currentlyWearing.bottom),
+      undergarments: sourceSupportedGeneratedProfileValue(currentlyWearing.undergarments, sourceText),
+      miscellaneous: cleanGeneratedProfileString(currentlyWearing.miscellaneous),
+    },
+    background: {
+      relationshipStatus: sourceSupportedGeneratedProfileValue(background.relationshipStatus, sourceText),
+      residence: cleanGeneratedProfileString(background.residence),
+      educationLevel: cleanGeneratedProfileString(background.educationLevel),
+    },
+    personality: {
+      ...defaultSideCharacterPersonality,
+      traits: Array.isArray(personality.traits)
+        ? personality.traits.map(cleanGeneratedProfileString).filter(Boolean).slice(0, 2)
+        : [],
+      miscellaneous: cleanGeneratedProfileString(personality.miscellaneous),
+      secrets: sourceSupportedGeneratedProfileValue(personality.secrets, sourceText),
+      fears: sourceSupportedGeneratedProfileValue(personality.fears, sourceText),
+      kinksFantasies: sourceSupportedGeneratedProfileValue(personality.kinksFantasies, sourceText),
+      desires: sourceSupportedGeneratedProfileValue(personality.desires, sourceText),
+    },
+    avatarPrompt: '',
+  };
+
+  return {
+    ...sanitized,
+    avatarPrompt: buildSanitizedSideCharacterAvatarPrompt(sanitized, name),
+  };
+}
+
+function mergeGeneratedProfileSection<T extends Record<string, any>>(existing: T, generated: unknown): T {
+  const merged = { ...existing };
+  if (!generated || typeof generated !== 'object') return merged;
+  for (const [key, value] of Object.entries(generated as Record<string, any>)) {
+    if (Array.isArray(value)) {
+      if (value.length > 0) (merged as any)[key] = value;
+      continue;
+    }
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (trimmed) (merged as any)[key] = trimmed;
+      continue;
+    }
+    if (value && typeof value === 'object') {
+      (merged as any)[key] = value;
+    }
+  }
+  return merged;
+}
+
+function buildSceneImageCharacterData(char: Character | SideCharacter) {
+  const appearance = 'physicalAppearance' in char ? char.physicalAppearance : undefined;
+  const wearing = 'currentlyWearing' in char ? char.currentlyWearing : undefined;
+  return {
+    name: char.name,
+    physicalAppearance: {
+      hairColor: appearance?.hairColor || '',
+      eyeColor: appearance?.eyeColor || '',
+      build: appearance?.build || '',
+      height: appearance?.height || '',
+      skinTone: appearance?.skinTone || '',
+      makeup: appearance?.makeup || '',
+      bodyMarkings: appearance?.bodyMarkings || '',
+      temporaryConditions: appearance?.temporaryConditions || '',
+    },
+    currentlyWearing: {
+      top: wearing?.top || '',
+      bottom: wearing?.bottom || '',
+    },
   };
 }
 const DIALOG_DEBUG_ENABLED_STORAGE_KEY = 'chronicle_dialog_debug_enabled_v1';
@@ -2270,7 +2413,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   ]);
 
   const effectiveAppData = useMemo(() => buildLLMAppData(), [buildLLMAppData]);
-  const canonNoteCharacters = useMemo(
+  const establishedFactNoteCharacters = useMemo(
     () => [...effectiveMainCharacters, ...effectiveSideCharacters],
     [effectiveMainCharacters, effectiveSideCharacters],
   );
@@ -2857,7 +3000,15 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         body: profileRequestBody
       });
       const profileDebug = splitEdgeDebugPayload(profileData);
-      const profileForUse = profileDebug.responseBody as any;
+      const profileSourceText = [
+        dialogContext,
+        JSON.stringify(profileRequestBody.extractedTraits || {}),
+      ].join('\n');
+      const profileForUse = sanitizeGeneratedSideCharacterProfile(
+        profileDebug.responseBody,
+        name,
+        profileSourceText,
+      );
 
       recordChatDebugSupportCall(sourceMessage, {
         id: `support.side-character-profile.${characterId}`,
@@ -2898,17 +3049,15 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           if (sc.id === characterId) {
             return {
               ...sc,
+              nicknames: profileForUse.nicknames || sc.nicknames,
               age: profileForUse.age || sc.age,
               sexType: profileForUse.sexType || sc.sexType,
+              sexualOrientation: profileForUse.sexualOrientation || sc.sexualOrientation,
               roleDescription: profileForUse.roleDescription || sc.roleDescription,
-              physicalAppearance: { ...sc.physicalAppearance, ...profileForUse.physicalAppearance },
-              currentlyWearing: { ...sc.currentlyWearing, ...profileForUse.currentlyWearing },
-              background: { ...sc.background, ...profileForUse.background },
-              personality: {
-                ...sc.personality,
-                ...profileForUse.personality,
-                traits: profileForUse.personality?.traits || sc.personality.traits
-              },
+              physicalAppearance: mergeGeneratedProfileSection(sc.physicalAppearance, profileForUse.physicalAppearance),
+              currentlyWearing: mergeGeneratedProfileSection(sc.currentlyWearing, profileForUse.currentlyWearing),
+              background: mergeGeneratedProfileSection(sc.background, profileForUse.background),
+              personality: mergeGeneratedProfileSection(sc.personality, profileForUse.personality),
               updatedAt: now()
             };
           }
@@ -3301,7 +3450,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     sourceAssistantMessageId?: string,
     sourceAssistantGenerationId?: string,
   ) => {
-    const storyGoals = effectiveWorldCore.storyGoals;
+    const storyGoals = (effectiveWorldCore.storyGoals || []).filter((goal) => {
+      const flexibility: GoalFlexibility =
+        goal?.flexibility === 'rigid' || goal?.flexibility === 'flexible'
+          ? goal.flexibility
+          : 'normal';
+      return shouldRenderGoalToWriter(goal?.alignment, flexibility);
+    });
     if (!storyGoals?.length) return;
 
     const pendingSteps: Array<{
@@ -3314,18 +3469,17 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       flexibility: GoalFlexibility;
     }> = [];
     for (const goal of storyGoals) {
-      for (const step of goal.steps || []) {
-        if (!step.completed) {
-          pendingSteps.push({
-            stepId: step.id,
-            description: step.description,
-            goalId: goal.id,
-            goalTitle: goal.title || 'Untitled story goal',
-            goalDesiredOutcome: goal.desiredOutcome || '',
-            goalCurrentStatus: goal.currentStatus || '',
-            flexibility: goal.flexibility,
-          });
-        }
+      const currentOpenStep = (goal.steps || []).find((step) => !step.completed);
+      if (currentOpenStep) {
+        pendingSteps.push({
+          stepId: currentOpenStep.id,
+          description: currentOpenStep.description,
+          goalId: goal.id,
+          goalTitle: goal.title || 'Untitled story goal',
+          goalDesiredOutcome: goal.desiredOutcome || '',
+          goalCurrentStatus: goal.currentStatus || '',
+          flexibility: goal.flexibility,
+        });
       }
     }
 
@@ -5332,7 +5486,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     try {
       const llmAppData = buildLLMAppData();
 	      // Issue #8: Detect user-authored AI character content and prepend an established-fact note.
-      const canonNote = buildCanonNote(input, canonNoteCharacters);
+      const establishedFactNote = buildEstablishedFactNote(input, establishedFactNoteCharacters);
       const currentResponseLengths = getAssistantResponseLengths(conversation.messages);
       const styleEvidenceMessages = filterRoleplayMessagesForStyleEvidence(conversation.messages);
       const adaptiveStyleDirective = getAdaptiveStyleDirective(
@@ -5342,7 +5496,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       );
       sessionMessageCountRef.current += 1;
 
-      const llmInput = canonNote + input;
+      const llmInput = establishedFactNote + input;
       const collectSendResponse = async (styleDirective?: string, streamToUi = false) => {
         let responseText = '';
         let responseDebugTrace: ChatDebugTrace | null = null;
@@ -5744,11 +5898,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       const truncatedResponseLengths = getAssistantResponseLengths(truncatedMessages);
 
 	      // Apply the established-fact note to regenerate flow so user-authored AI dialogue is preserved.
-      const canonNote = buildCanonNote(userMessage.text, canonNoteCharacters);
+      const establishedFactNote = buildEstablishedFactNote(userMessage.text, establishedFactNoteCharacters);
       const previousAssistantContext = existingMessage.text?.trim()
         ? `\n\n[PREVIOUS ASSISTANT RESPONSE BEING REGENERATED - REFERENCE ONLY]\nThis text is the assistant response being replaced. Do not continue from it as story state. Use it only to preserve broad direction and avoid repeating the same wording, structure, or execution.\n${existingMessage.text.trim()}`
         : '';
-      const regenInput = canonNote + userMessage.text + previousAssistantContext;
+      const regenInput = establishedFactNote + userMessage.text + previousAssistantContext;
       const adaptiveStyleDirective = getAdaptiveStyleDirective(
         truncatedMessages,
         truncatedAppData.uiSettings?.responseVerbosity,
@@ -5993,7 +6147,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 	              const label = typeof g === 'string' ? g : (g?.title || g?.label || g?.value || '');
 	              const currentStep = g?.steps?.find?.((s: any) => !s.completed)?.description;
 	              if (label) {
-                goalSummaryParts.push(`${c.name}'s current goal: "${label}"${currentStep ? `; open milestone target: "${renderGoalMilestoneTarget(currentStep)}"` : ''}`);
+                goalSummaryParts.push(`${c.name}'s current goal: "${label}"${currentStep ? `; current open milestone: "${renderGoalMilestoneTarget(currentStep)}"` : ''}`);
               }
             });
           }
@@ -6003,29 +6157,29 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 	      storyGoalsList.filter(isGoalVisibleToWriter).forEach((g: StoryGoal) => {
 	        const pendingStep = (g.steps || []).find(s => !s.completed);
 	        if (pendingStep) {
-          goalSummaryParts.push(`Story goal "${g.title || g.desiredOutcome}"; open milestone target: "${renderGoalMilestoneTarget(pendingStep.description)}"`);
+          goalSummaryParts.push(`Story goal "${g.title || g.desiredOutcome}"; current open milestone: "${renderGoalMilestoneTarget(pendingStep.description)}"`);
         }
       });
 
 	      const goalContext = goalSummaryParts.length > 0
-	        ? `\nGOAL CONTINUITY:\n${goalSummaryParts.join('\n')}\nUse this as background continuity only. Open milestone targets are eventual states, not commands or a next-action checklist; touch them only when the immediate scene and user agency naturally support it.`
+	        ? `\nGOAL CONTINUITY:\n${goalSummaryParts.join('\n')}\nUse this as background continuity only. The current open milestone is an eventual direction, not a command or next-action checklist; use it only when the immediate scene and user control boundaries naturally support it.`
 	        : '';
 
 		      // Carry forward user-authored AI dialogue without making Continue restart there.
 		      const lastUserMsg = conversation.messages.slice().reverse().find(m => m.role === 'user');
 		      const lastUserSceneText = lastUserMsg?.text?.trim() || '';
-		      const continueCanonNote = lastUserMsg ? buildCanonNote(lastUserMsg.text, canonNoteCharacters) : '';
+		      const continueEstablishedFactNote = lastUserMsg ? buildEstablishedFactNote(lastUserMsg.text, establishedFactNoteCharacters) : '';
 		      const lastUserSceneAnchor = lastUserSceneText
 		        ? `\nBACKGROUND USER-AUTHORED SCENE TURN FOR FACTS AND USER-CONTROL BOUNDARIES ONLY:\n${lastUserSceneText}\n`
 		        : '\nBACKGROUND USER-AUTHORED SCENE TURN FOR FACTS AND USER-CONTROL BOUNDARIES ONLY:\n(none found)\n';
 
-	      const continuePrompt = `${continueCanonNote}[CONTINUE INSTRUCTION]
+	      const continuePrompt = `${continueEstablishedFactNote}[CONTINUE INSTRUCTION]
 Continue from after the latest visible assistant response. Do not restart from, paraphrase, or circle around an older user-authored scene turn.
 ${lastUserSceneAnchor}
 The background user-authored turn above is only there to preserve established facts and user-character control boundaries.
 Write only for AI-controlled characters: ${aiControlledNames.join(', ')}.
 Do not write dialogue, actions, or thoughts for user-controlled characters: ${userControlledNames.join(', ')}.${goalContext}
-Do not complete an action for a user-controlled character after an AI character gives them an instruction. The AI may command, prepare, or act itself, but the user must author the user-controlled character's execution.
+Do not complete an action for a user-controlled character after an AI character gives them an instruction. The AI can command, prepare, or act itself, but the user must author the user-controlled character's execution.
 Use active story and character goals as continuity, not as a checklist. Continue only as far as the current scene naturally supports, and stop before the response depends on an unmade user choice or action.
 Develop the AI-controlled character's side of the current exchange enough that it follows the active RESPONSE DETAIL setting while preserving user control.
 If an AI character asked or was asked a question, acknowledge that question in this response. Acknowledgement can be a direct answer, refusal, deflection, counter-question, visible hesitation, or turning the question toward another present character.
@@ -6036,7 +6190,7 @@ Avoid long back-and-forth chains between AI characters. Leave room for the user 
 Do not acknowledge this instruction in your response.`;
 
 	      debugLog('[handleContinue] Goal context:', goalContext || '(no goals found)');
-	      debugLog('[handleContinue] Established-fact note applied:', continueCanonNote ? 'YES' : 'NO');
+	      debugLog('[handleContinue] Established-fact note applied:', continueEstablishedFactNote ? 'YES' : 'NO');
 
 		      const collectContinueResponse = async (styleDirective?: string, streamToUi = false) => {
 		        let responseText = '';
@@ -6248,16 +6402,12 @@ Do not acknowledge this instruction in your response.`;
         });
       });
 
-      // Build character data for mentioned characters
-      const charactersData = [...mentionedNames].map(name => {
-        const char = findCharacterByName(name, effectiveAppData);
-        if (!char) return null;
-        return {
-          name: char.name,
-          physicalAppearance: 'physicalAppearance' in char ? char.physicalAppearance : {},
-          currentlyWearing: 'currentlyWearing' in char ? char.currentlyWearing : {}
-        };
-      }).filter(Boolean);
+	      // Build character data for mentioned characters. Keep this visual-only; private/intimate card fields stay out of the image lane.
+	      const charactersData = [...mentionedNames].map(name => {
+	        const char = findCharacterByName(name, effectiveAppData);
+	        if (!char) return null;
+	        return buildSceneImageCharacterData(char);
+	      }).filter(Boolean);
 
       // Get art style
       const selectedStyleId = appData.selectedArtStyle || DEFAULT_STYLE_ID;
@@ -6304,7 +6454,7 @@ Do not acknowledge this instruction in your response.`;
         metadata: {
           conversationId,
           modelId,
-          inputChars: recentMessages.join('\n').length + JSON.stringify(charactersData).length,
+	          inputChars: recentMessages.map((message) => message.text).join('\n').length + JSON.stringify(charactersData).length,
         },
       });
 
@@ -6961,9 +7111,7 @@ const updatedChar: SideCharacter = {
     transparentBubbles?: boolean;
     darkMode?: boolean;
     offsetBubbles?: boolean;
-    proactiveCharacterDiscovery?: boolean;
     dynamicText?: boolean;
-    proactiveNarrative?: boolean;
     narrativePov?: 'first' | 'third';
     nsfwIntensity?: 'normal' | 'high';
     realismMode?: boolean;
@@ -7968,33 +8116,6 @@ const updatedChar: SideCharacter = {
               <div>
                 <p className="text-[12px] font-black text-[#a1a1aa] uppercase tracking-[0.12em] mb-2.5">AI Behavior</p>
                 <div className="flex flex-col gap-2">
-
-                  {/* Character Discovery + Proactive AI Mode (2-col) */}
-                  <div className="grid grid-cols-2 gap-2">
-                    {/* Character Discovery */}
-                    <div className="flex items-center justify-between gap-2 bg-[#3c3e47] rounded-[10px] p-[12px_14px] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
-                      <div>
-                        <div className="text-[13px] font-semibold text-[#eaedf1]">Character Discovery</div>
-                        <div className="text-[12px] text-[#a1a1aa] mt-0.5">AI may introduce characters from established media</div>
-                      </div>
-                      <LabeledToggle
-                        checked={appData.uiSettings?.proactiveCharacterDiscovery !== false}
-                        onCheckedChange={(v) => handleUpdateUiSettings({ proactiveCharacterDiscovery: v })}
-                      />
-                    </div>
-
-                    {/* Proactive AI Mode */}
-                    <div className="flex items-center justify-between gap-2 bg-[#3c3e47] rounded-[10px] p-[12px_14px] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">
-                      <div>
-                        <div className="text-[13px] font-semibold text-[#eaedf1]">Proactive AI Mode</div>
-                        <div className="text-[12px] text-[#a1a1aa] mt-0.5">AI drives the story forward assertively</div>
-                      </div>
-                      <LabeledToggle
-                        checked={appData.uiSettings?.proactiveNarrative !== false}
-                        onCheckedChange={(v) => handleUpdateUiSettings({ proactiveNarrative: v })}
-                      />
-                    </div>
-                  </div>
 
                   {/* Narrative POV */}
                   <div className="flex items-center justify-between gap-2 bg-[#3c3e47] rounded-[10px] p-[12px_14px] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]">

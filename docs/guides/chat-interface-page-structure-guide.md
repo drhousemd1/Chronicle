@@ -124,26 +124,22 @@ The character column is intentionally kept as a fixed session sidebar and does *
 Primary function: `generateRoleplayResponseStream()` in `src/services/llm.ts` (~1070 lines)
 
 **System Prompt Construction** (`getSystemInstruction()`):
-1. Builds world context from `ScenarioData.world.core`
-2. Builds character state blocks for AI-controlled characters only; user-controlled listed as names-only reference
-3. Injects story arc/goal directives with flexibility levels (rigid/normal/flexible)
-4. Injects content theme directives via `buildContentThemeDirectives()`
-5. Injects memory context if enabled
-6. Injects dialog formatting rules based on POV setting (first/third person)
-7. Injects time-of-day context
-8. INSTRUCTIONS block includes DO NOT GENERATE FOR quick-reference, IN-SESSION TRAIT DYNAMICS, and forward momentum AI-character canon rule
+1. Builds SECTION 1 core role logic for adult collaborative fiction and AI-controlled character authorship.
+2. Builds SECTION 2 story/world context from populated world fields, custom world sections, story goals, lore, and selected story themes.
+3. Adds the story/card reference rule, then full AI and user-controlled character reference sections.
+4. Injects memory, current scene state, active scene tags, and temporal context when available.
+5. Injects dialog formatting, user-control, internal-thought, multi-character, continuity, authenticity, and character-introduction rules.
+6. Injects only the selected chat-setting branches for POV, NSFW intensity, response detail, and realism mode.
 
 **Streaming**: Uses backend Edge Function `chat` with streaming response.
 
 **Adaptive Style Control**: `responseLengthsRef` tracks recent assistant word counts while `getAdaptiveStyleDirective()` also inspects recent assistant structure and short quoted lines. It injects a narrow one-turn style directive only when recent assistant responses lock into the same length band, action/dialogue/thought order, or repeated short dialogue phrasing.
 
-**Final Priority Check**: Every normal roleplay request appends `RESPONSE_PRIORITY_CHECK_TEXT` to the final user wrapper. This is a short recency-weighted reminder that the immediate user message and current scene beat outrank dormant card, memory, and goal details unless the beat gives those details a clear reason to surface.
+**Final User Wrapper**: Every normal roleplay request sends one final user-role message split into `[APP TURN CONTROLS]` and `[PLAYER TURN]`. App controls contain the optional session position, current-scene snapshot, adaptive repair text, regeneration text, and compact execution brief. The actual player-authored text is separated under `[PLAYER TURN]`. API Call 1 keeps only five prior roleplay messages before that final wrapped user turn.
 
-**Assistant Structure Reminder**: Every normal roleplay request also appends `ASSISTANT_STRUCTURE_REMINDER_TEXT` after the priority check. This keeps repetition comparison scoped to prior assistant outputs, not the user's latest message, so the model does not treat a user-authored turn as proof that its own repeated action-dialogue-thought cadence is varied.
+**AI-Character Established-Fact Detection**: `buildEstablishedFactNote()` (exported from `llm.ts`) checks if user input contains `CharacterName:` prefixes matching AI-controlled characters. If detected, returns a `[ESTABLISHED FACT NOTE: ...]` prefix to prevent re-narration. Applied in all three generation paths: `handleSend`, `handleRegenerateMessage`, and `handleContinueConversation` (continue checks the most recent user message in history).
 
-**AI-Character Canon Detection**: `buildCanonNote()` (exported from `llm.ts`) checks if user input contains `CharacterName:` prefixes matching AI-controlled characters. If detected, returns a `[CANON NOTE]` prefix to prevent re-narration. Applied in all three generation paths: `handleSend`, `handleRegenerateMessage`, and `handleContinueConversation` (continue checks the most recent user message in history).
-
-**Session Depth**: `sessionMessageCountRef` increments per exchange and is injected as `[SESSION: Message N]` for precise trait evolution guidance.
+**Session Depth**: `sessionMessageCountRef` increments per exchange and is injected inside the final `[APP TURN CONTROLS]` block as `[SESSION: Message N]` for precise trait evolution guidance.
 
 ### 6b. Character State Tracking
 
@@ -159,7 +155,7 @@ After each AI response, the system can extract character updates:
 Service: `src/services/side-character-generator.ts`
 - Parses AI responses for new character names
 - Auto-creates side character entries in `side_characters` table
-- Configurable via `proactiveCharacterDiscovery` UI setting
+- Runs as the default side-character discovery path; there is no longer a chat UI toggle for this behavior
 
 ### 6d. Memory System
 
@@ -236,12 +232,12 @@ Service: `src/services/side-character-generator.ts`
 | `currentDay` | `number` | In-story day counter |
 | `currentTimeOfDay` | `TimeOfDay` | sunrise/day/sunset/night |
 | `responseLengthsRef` | `useRef<number[]>` | Tracks word counts of recent AI responses for adaptive length directives |
-| `sessionMessageCountRef` | `useRef<number>` | Increments per exchange; injected as `[SESSION: Message N]` for trait evolution |
+| `sessionMessageCountRef` | `useRef<number>` | Increments per exchange; injected inside the final `[APP TURN CONTROLS]` block as `[SESSION: Message N]` for trait evolution |
 | `previousDayRef` | `useRef<number>` | Tracks previous day value; reset on conversation switch; used by compression effect to detect real day increments |
 | `memoriesLoaded` | `boolean` | Guards compression effect — prevents firing before conversation memories are fetched |
 | `extractionCountRef` | `useRef<number>` | Counts AI responses; extraction fires when `count % 5 === 0`; reset on conversation switch |
 | `narrativeDirectiveRef` | `useRef<string \| null>` | Pass 14 — Stores the narrative director's tactical directive for the next turn. Generated async after each AI response by `generate-narrative-directive` edge function. Injected as `[DIRECTOR: ...]` tag in next `handleSend`, then cleared (one-shot). Reset on conversation switch. |
-| `outwardScoreOffset` | N/A (code-side in `llm.ts`) | Outward traits receive +15 effective score bonus during prompt formatting; inward traits receive -10 penalty. This ensures outward presentation (e.g., shy/reserved) dominates visible expression by default. As inward scores rise through adherence scoring, they naturally catch up. At raw 75%: outward → 90% (Primary), inward → 65% (Moderate). |
+| Personality trait rendering | N/A (code-side in `llm.ts`) | Outward, inward, legacy, and fallback personality fields render as character-card reference text. The current prompt path does not apply score weighting, visibility offsets, or trend brackets. Durable personality changes come from persisted character state and support-call updates. |
 | `sidebarBgIsLight` | `boolean` | Detected via canvas pixel luminosity (threshold > 128). Drives adaptive frosted glass theming on character cards, scroll indicators, and "Exit Scenario" text color |
 
 ---
@@ -272,9 +268,7 @@ Configurable via `onUpdateUiSettings`:
 | Transparent bubbles | `transparentBubbles` | boolean | `stories.ui_settings` |
 | Dark mode | `darkMode` | boolean | `stories.ui_settings` |
 | Offset bubbles | `offsetBubbles` | boolean | `stories.ui_settings` |
-| Character discovery | `proactiveCharacterDiscovery` | boolean | `stories.ui_settings` |
 | Dynamic text | `dynamicText` | boolean | `stories.ui_settings` |
-| Proactive narrative | `proactiveNarrative` | boolean | `stories.ui_settings` |
 | Narrative POV | `narrativePov` | 'first' \| 'third' | `stories.ui_settings` |
 | NSFW intensity | `nsfwIntensity` | 'normal' \| 'high' | `stories.ui_settings` |
 | Realism mode | `realismMode` | boolean | `stories.ui_settings` |
@@ -321,14 +315,14 @@ Applied in both `renderCharacterCard()` (main characters) and `SideCharacterCard
 
 ## 12. Known Issues & Gotchas
 
-- **RESOLVED — Bug #1**: `buildCharacterStateBlock()` omits empty sections — 13/16 section types invisible to AI when empty. (2026-03-01)
+- **RESOLVED — Bug #1**: Empty character/world sections no longer create misleading placeholder text in API Call 1. The live prompt sends populated reference fields and omits blank scaffolding. (Updated 2026-06-05)
 - **RESOLVED — Bug #4**: Wrong AI model used for character extraction. Current extraction model is `grok-4.3`. (2026-03-01, updated 2026-05-09)
 - **RESOLVED — Bug #5**: Extraction prompt lacks analytical depth — shallow analysis. (2026-03-01)
 - **RESOLVED — Bug #7**: Response/style anchoring — responses can lock into the same length, block shape, or repeated short line. Fixed with adaptive `responseLengthsRef` + `getAdaptiveStyleDirective()` style checks. (Updated 2026-05-16)
-- **RESOLVED — Bug #8**: Forward momentum — AI re-narrates user-authored AI character content. Fixed with canon note detection in `handleSend` + system prompt rule. (2026-03-01)
+- **RESOLVED — Bug #8**: Forward momentum — AI re-narrates user-authored AI character content. Fixed with established-fact note detection in send, regenerate, and continue flows. (2026-03-01)
 - **RESOLVED — Bug #9**: Control rule reliability — AI generates for user-controlled characters. Fixed by filtering CAST to AI-only + high-authority quick-reference. (2026-03-01)
-- **RESOLVED — Bug #10**: No in-session trait evolution guidance. Fixed with IN-SESSION TRAIT DYNAMICS block + `sessionMessageCountRef` + personality-driven NSFW pacing. (2026-03-01)
-- **RESOLVED — Bug #11**: NSFW intensity and verbosity instruction overlap. Fixed by moving sensory detail lines from nsfwRules to verbosityRules. (2026-03-01)
+- **RESOLVED — Bug #10**: Session position now flows through `[APP TURN CONTROLS]` via `sessionMessageCountRef`, while trait and goal evolution are handled through current card state, memories, and support-call updates. (Updated 2026-06-05)
+- **RESOLVED — Bug #11**: NSFW intensity and verbosity instruction overlap. Fixed by moving sensory detail lines from NSFW response branch to response-detail branch. (2026-03-01)
 - **RESOLVED — Bug #6**: Memory system incomplete — no long-term accumulation. Fixed with auto-extraction in `handleSend`, `previousDayRef` (reset on conversation switch) + day-compression `useEffect` (guarded by `memoriesLoaded`, dependency array: `[currentDay, memories, memoriesEnabled, conversationId]`), `entryType` field on Memory type, split `memoriesContext` builder in `llm.ts`, and `compress-day-memories` edge function (`grok-4.3`). (2026-03-01, model updated 2026-05-09)
 - **ACTIVE**: `ChatInterfaceTab.tsx` is ~5000 lines — extremely large single component. (2026-03-01)
 - **ACTIVE**: Message parsing regex may miss edge cases with nested formatting markers. (2026-03-01)

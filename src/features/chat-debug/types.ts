@@ -48,7 +48,7 @@ export type ChatDebugPlannerPlan = {
   maxSpeakerBlocks: number;
   directQuestionsToAnswer: string[];
   mentionedAiCharacters: string[];
-  immediateBeat: string;
+  immediateSceneFocus: string;
   mustInclude: string[];
   mustAvoid: string[];
   continuityNotes: string[];

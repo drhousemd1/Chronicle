@@ -31,7 +31,7 @@ import {
   defaultPreferredClothing,
 } from '@/types';
 import { getTagInjection } from '@/constants/tag-injection-registry';
-import { now, uid, uuid } from '@/utils';
+import { now, sanitizeUiSettings, uid, uuid } from '@/utils';
 import TurndownService from 'turndown';
 
 const MACHINE_START = '--- BEGIN CHRONICLE MACHINE DATA v1 ---';
@@ -339,6 +339,7 @@ const buildScenarioForTransfer = (
   options?: StoryTransferExportOptions
 ): ScenarioData => {
   const scenario = clone(data);
+  scenario.uiSettings = sanitizeUiSettings(scenario.uiSettings);
   const themes = cloneContentThemes(options?.contentThemes ?? data.contentThemes);
   if (themes) scenario.contentThemes = themes;
   if (options?.includeConversations !== true) {
@@ -579,7 +580,7 @@ const toTransferPayload = (data: ScenarioData): TransferPayloadV1 => ({
         isStartingScene: !!scene.isStartingScene,
       })),
     },
-    uiSettings: data.uiSettings ? clone(data.uiSettings) : undefined,
+    uiSettings: data.uiSettings ? sanitizeUiSettings(data.uiSettings) : undefined,
     openingDialog: {
       enabled: data.story.openingDialog.enabled,
       text: data.story.openingDialog.text || '',
@@ -2170,13 +2171,14 @@ const mergePayloadIntoScenario = (
     );
   }
   if (payload.storyBuilder.uiSettings) {
+    const uiSettings = sanitizeUiSettings(payload.storyBuilder.uiSettings);
     next.uiSettings =
       mode === 'rewrite' || !next.uiSettings
-        ? clone(payload.storyBuilder.uiSettings)
-        : {
-            ...clone(payload.storyBuilder.uiSettings),
+        ? uiSettings
+        : sanitizeUiSettings({
+            ...uiSettings,
             ...next.uiSettings,
-          };
+          });
   }
 
   const beforeLocations = JSON.stringify(next.world.core.structuredLocations || []);

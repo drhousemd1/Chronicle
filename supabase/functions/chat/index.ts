@@ -55,7 +55,7 @@ type PlannerPlan = {
   maxSpeakerBlocks: number;
   directQuestionsToAnswer: string[];
   mentionedAiCharacters: string[];
-  immediateBeat: string;
+  immediateSceneFocus: string;
   mustInclude: string[];
   mustAvoid: string[];
   continuityNotes: string[];
@@ -165,7 +165,7 @@ const FALLBACK_PLAN: PlannerPlan = {
   maxSpeakerBlocks: 1,
   directQuestionsToAnswer: [],
   mentionedAiCharacters: [],
-  immediateBeat: '',
+  immediateSceneFocus: '',
   mustInclude: [],
   mustAvoid: [],
   continuityNotes: [],

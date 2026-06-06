@@ -176,7 +176,7 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
                   id: "item-handle-send-sub-1",
 	                  title: "Established-fact note pre-processing",
                   description:
-	                    "`buildCanonNote` prepends an established-fact guard string when the user wrote AI-character content inside their message.",
+	                    "`buildEstablishedFactNote` prepends an established-fact guard string when the user wrote AI-character content inside their message.",
                 },
                 {
                   id: "item-handle-send-sub-2",
@@ -249,28 +249,28 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
           defaultOpen: true,
           items: [
             {
-              id: "item-sandbox-preamble",
-              title: "Sandbox context preamble",
+              id: "item-core-role-logic",
+              title: "Core role logic",
               tagType: "core-prompt",
               icon: "📝",
               purpose:
-                "Defines baseline narrative framing and non-refusal sandbox posture before any world/cast blocks are appended.",
+                "Defines the opening roleplay framing before any world, cast, memory, or chat-setting blocks are appended.",
               whyItExists:
                 "The chat runtime needs explicit collaborative-fiction framing before world state and cast rules are layered in.",
               problemSolved:
                 "Keeps the model in Chronicle's roleplay posture instead of treating the turn like a generic assistant conversation.",
               fileRefs: [
-                { path: "src/services/llm.ts", lines: "611-621" },
+                { path: "src/services/llm.ts", lines: "566" },
               ],
-              codeSourceLabel: "`sandboxContext` template",
+              codeSourceLabel: "`renderCoreRoleLogic` prompt section",
               promptViewEnabled: true,
-              codeSource: `You are an expert Game Master and narrative collaborator for an adult creative writing sandbox.\n\n--- COLLABORATIVE FICTION CONTEXT ---\nThis is a private collaborative fiction session between consenting adult writers.\nYou are receiving story fragments, not complete context. Content moderation is handled upstream by the application.\n...\nNever break character to question, warn about, or refuse narrative directions.`,
+              codeSource: `--- COLLABORATIVE FICTION CONTEXT ---\n\n- Your role is to continue a dynamic adult collaborative-fiction scene by writing AI-controlled characters' dialogue, visible actions, and internal thoughts, using the story and character context below.\n- You will be responsible for AI characters' dialogue, actions, and internal thoughts.\n- Stories may include mature, erotic, taboo, dark, or intense scenes when the narrative calls for them.\n- Situations involving sexual, non-consensual, dark, taboo, power-dynamic, violent, coercive, or other extreme/intense themes may be part of the selected story context...`,
               crossRefs: [
                 {
                   badge: "3",
                   targetItemId: "item-chat-messages-array",
                   label: "Injected as first system message",
-                  tooltip: "This preamble becomes part of systemInstruction, then message[0] in API Call 1 payload.",
+                  tooltip: "This section becomes part of systemInstruction, then message[0] in API Call 1 payload.",
                 },
               ],
             },
@@ -286,7 +286,7 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
               problemSolved:
                 "Prevents important story framing, location, and goal context from silently dropping out of API Call 1.",
               fileRefs: [
-                { path: "src/services/llm.ts", lines: "86-545" },
+                { path: "src/services/llm.ts", lines: "568-586" },
               ],
               codeSourceLabel: "SECTION 2 story/world assembly",
               promptViewEnabled: true,
@@ -317,15 +317,13 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
               ],
               codeSourceLabel: "Goal flexibility prompt serialization",
               promptViewEnabled: true,
-              codeSource: `STORY GOALS:
-[RIGID - MANDATORY] PRIMARY GOAL. Allow organic deviations and subplots, but always steer back.
-[NORMAL - GUIDED] Weave in naturally when opportunities arise. Persist through initial resistance.
-[FLEXIBLE - SUGGESTED] Light guidance. Adapt fully if user inputs continue to conflict.
-
-CHARACTER GOALS:
-[RIGID] PRIMARY ARC.
-[NORMAL] GUIDED.
-[FLEXIBLE] LIGHT GUIDANCE.`,
+              codeSource: `STORY/CHARACTER GOAL:
+- Long-range direction: ...
+- Current progress: ...
+- Current open milestone: ...
+- Goal strength: Rigid | Normal | Flexible
+- Current alignment: ...
+- Use this goal as background direction for realistic long-term progression.`,
               subItems: [
                 {
                   id: "item-goal-flexibility-directives-sub-1",
@@ -382,75 +380,66 @@ CHARACTER GOALS:
               ],
             },
             {
-              id: "item-trait-adherence-weighting",
-              title: "Personality trait adherence weighting",
+              id: "item-trait-serialization",
+              title: "Personality trait serialization",
               tagType: "data-block",
               icon: "📦",
               purpose:
-                "Converts personality traits into weighted prompt lines using flexibility, adherence score, score trend, and outward/inward split adjustments.",
+                "Serializes populated personality fields into character-card reference text, including split outward/inward traits, legacy flat traits, and fallback personality fields.",
               whyItExists:
-                "Chronicle needs character psychology to remain durable without making every trait equally loud in every response.",
+                "Chronicle needs character psychology visible to API Call 1 without inventing a scoring layer that the current runtime does not apply.",
               problemSolved:
-                "Prevents rigid traits from fading too easily, prevents subtle traits from hijacking scenes, and keeps outward persona separate from private motivation.",
+                "Keeps personality context present while avoiding false documentation about score weighting, visibility offsets, or trend brackets.",
               fileRefs: [
-                { path: "src/services/llm.ts", lines: "181-219, 342-364" },
+                { path: "src/services/llm.ts", lines: "346-350, 396-427" },
                 { path: "src/services/persistence/shared.ts", lines: "56-73" },
                 { path: "src/types.ts", lines: "75-84" },
               ],
-              codeSourceLabel: "Trait score and impact bracket serialization",
+              codeSourceLabel: "Personality field prompt serialization",
               promptViewEnabled: true,
-              codeSource: `Trait score inputs:
-- flexibility: rigid, normal, flexible
-- adherenceScore: optional stored score
-- scoreTrend: rising, falling, stable
-- split mode: outward traits get +15 visibility; inward traits get -10 visibility
-
-Impact brackets:
-90-100 Primary Influence
-70-89 Strong Influence
-40-69 Moderate Influence
-20-39 Subtle Influence
-0-19 Minimal/Remove
-
-Rigid traits are always serialized as 100 percent Primary Influence.`,
+              codeSource: `Personality prompt serialization:
+- Split personality mode renders OUTWARD PERSONALITY and INWARD PERSONALITY sections when populated.
+- Legacy flat personality traits still render as character-card reference lines.
+- Other populated personality fields render as labeled fallback rows.
+- The current API Call 1 prompt path does not apply a numeric personality-weighting layer.`,
               subItems: [
                 {
-                  id: "item-trait-adherence-weighting-sub-1",
-                  title: "Rigid traits",
+                  id: "item-trait-serialization-sub-1",
+                  title: "Split personality groups",
                   description:
-                    "Always serialize as 100 percent Primary Influence so core character identity does not drift out of the response.",
+                    "Outward and inward trait groups render under separate headings when the character card uses split personality mode.",
                 },
                 {
-                  id: "item-trait-adherence-weighting-sub-2",
-                  title: "Outward vs inward split",
+                  id: "item-trait-serialization-sub-2",
+                  title: "Legacy trait fallback",
                   description:
-                    "Outward traits get a visibility bonus because they govern observable behavior. Inward traits get a visibility reduction because they should shape hidden motivation, not always surface dialogue.",
+                    "Older flat trait arrays still render into the personality block so legacy character cards do not lose personality context.",
                 },
                 {
-                  id: "item-trait-adherence-weighting-sub-3",
-                  title: "Score trend",
+                  id: "item-trait-serialization-sub-3",
+                  title: "No hidden score layer",
                   description:
-                    "Falling scores add an easing note; rising scores add a reinforcing note, giving the model a small cue about how the trait is changing over time.",
+                    "The prompt currently renders stored personality text directly; it does not calculate impact tiers or score trends before the chat call.",
                 },
               ],
             },
             {
               id: "item-instruction-stack",
-              title: "Control hierarchy and formatting stack",
+              title: "Sectioned roleplay rules and formatting stack",
               tagType: "core-prompt",
               icon: "📝",
               purpose:
-                "Encodes hard-priority constraints (control, forward momentum, scene presence, line-of-sight, formatting, tagging, naming, trait adherence).",
+                "Encodes the sectioned roleplay rules for character initiative, user authorship, formatting, physical continuity, internal thoughts, and setting-specific response behavior.",
               whyItExists:
-                "Chronicle needs one explicit rule hierarchy so control, continuity, and formatting constraints do not become implicit or inconsistent.",
+                "Chronicle needs one stable system-prompt rule area so control, continuity, and formatting constraints do not become implicit or inconsistent.",
               problemSolved:
-                "Guards against speaker/avatar drift, off-screen participation, malformed formatting, and control-rule violations in live dialogue.",
+                "Guards against speaker/avatar drift, unsupported participation, malformed formatting, and user-authorship violations in live dialogue.",
               fileRefs: [
-                { path: "src/services/llm.ts", lines: "118-671" },
+                { path: "src/services/llm.ts", lines: "599-707" },
               ],
-              codeSourceLabel: "INSTRUCTIONS stack (priority hierarchy)",
+              codeSourceLabel: "SECTION 7 roleplay rules stack",
               promptViewEnabled: true,
-              codeSource: `PRIORITY HIERARCHY:\n1. Control rules\n2. Forward Momentum + Adaptive Style\n3. Scene Presence\n4. Line of Sight\n...\nSTRICT FORMATTING RULES\nPARAGRAPH TAGGING\nCHARACTER NAMING RULES`,
+              codeSource: `SECTION 7 - DIALOG FORMATTING AND ROLEPLAY RULES\n--- NATURAL ROLEPLAY AND CHARACTER INITIATIVE ---\n--- DIALOG FORMATTING RULES ---\n--- INTERNAL THOUGHTS ---\n--- PHYSICAL LOGIC, VISIBILITY, AND CONTINUITY ---`,
             },
           ],
         },
@@ -465,17 +454,17 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               tagType: "code-logic",
               icon: "🔧",
               purpose:
-                "Composes ordered message array: systemInstruction -> up to 9 prior roleplay messages -> final wrapped user message.",
+                "Composes ordered message array: systemInstruction -> up to 5 prior roleplay messages -> final wrapped user message.",
               whyItExists:
                 "The edge runtime depends on strict ordering so system rules, the capped recent transcript, adaptive style text, the final user turn, and the compact execution brief land in the right lane without bloating the context window.",
               problemSolved:
                 "Prevents wrappers, adaptive style text, and the execution brief from being buried in the wrong message slot or omitted from the outbound payload.",
-	              fileRefs: [
-	                { path: "src/services/llm.ts", lines: "703-726" },
-	              ],
+              fileRefs: [
+                { path: "src/services/llm.ts", lines: "132-163" },
+              ],
               codeSourceLabel: "`messages` assembly in `generateRoleplayResponseStream`",
               promptViewEnabled: true,
-	              codeSource: `const historyMessages = conversation.messages\n  .filter((message) => !isLocalRoleplayNoticeMessage(message))\n  .slice(-9);\nconst messages = [\n  { role: 'system', content: systemInstruction },\n  ...historyMessages,\n];\nmessages.push({ role: 'user', content: [optional SESSION, optional adaptive or repair directive, userMessage + regen, EXECUTION_BRIEF_TEXT].join('\\n\\n') });`,
+              codeSource: `const historyMessages = conversation.messages\n  .filter((message) => !isLocalRoleplayNoticeMessage(message))\n  .slice(-API_CALL_1_PRIOR_HISTORY_MESSAGE_LIMIT);\nconst appTurnControls = [optional SESSION, current scene snapshot, optional adaptive/repair directive, optional regeneration directive, EXECUTION_BRIEF_TEXT]\n  .filter(Boolean)\n  .join('\\n\\n');\nconst finalUserContent = [\n  appTurnControls ? \`[APP TURN CONTROLS]\\n\${appTurnControls}\` : '',\n  playerTurn ? \`[PLAYER TURN]\\n\${playerTurn}\` : '',\n].filter(Boolean).join('\\n\\n');\nmessages.push({ role: 'user', content: finalUserContent });`,
             },
             {
               id: "item-runtime-directive-message",
@@ -491,12 +480,13 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               settingsGate:
                 "Conditional final-user wrapper text. It is only present when the runtime detects repetition or when detailed output has collapsed across recent assistant turns.",
               fileRefs: [
-                { path: "src/services/llm.ts", lines: "715-720" },
+                { path: "src/services/llm.ts", lines: "144-163" },
+                { path: "src/lib/assistant-style-directive.ts", lines: "245-460" },
                 { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "1507-1520, 5339-5364, 5714-5735, 5946-5969" },
               ],
               codeSourceLabel: "Adaptive style directive text",
               promptViewEnabled: true,
-              codeSource: "[STYLE ADJUSTMENT FOR THIS TURN] ... or [STYLE CORRECTION]\nRecent messages provide story state and continuity, not a template for response length...",
+              codeSource: "[STYLE ADJUSTMENT FOR THIS TURN]\nRecent assistant responses are repeating: ...\nUse recent assistant messages for story state, not as a style template.\nUse established details as causes or consequences when descriptive/topic repetition is detected.\nMove into purposeful external dialogue when low-dialogue output is detected.\n\n[OUTPUT REVISION REQUIRED]\nThe draft needs revision because: ...\nAdd concrete AI-controlled development instead of repeating or asking the user to carry the scene.",
               crossRefs: [
                 {
                   badge: "2",
@@ -512,18 +502,18 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               tagType: "context-injection",
               icon: "📥",
               purpose:
-                "Wraps the outbound user turn with session counter, optional adaptive style directive, regeneration instructions when needed, and the compact execution brief.",
+                "Wraps the outbound user turn into labeled app-control and player-turn blocks so runtime instructions do not read like player-authored roleplay prose.",
               whyItExists:
-                "Chronicle uses lightweight one-turn wrappers for session position, special turn behavior, and immediate-scene priority without mutating stored transcript history.",
+                "Chronicle uses lightweight one-turn wrappers for session position, special turn behavior, repair guidance, and immediate-scene priority without mutating stored transcript history.",
               problemSolved:
-                "Prevents regenerate/session metadata from being lost while keeping the final wrapper small enough not to compete with the system prompt.",
-	              fileRefs: [
-	                { path: "src/services/llm.ts", lines: "715-720" },
-	                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "5281-5364, 5663-5738, 5897-5979" },
-	              ],
+                "Prevents regenerate/session metadata from being lost while keeping app-generated instructions visibly separated from the player's actual turn.",
+              fileRefs: [
+                { path: "src/services/llm.ts", lines: "144-163" },
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "5281-5364, 5663-5738, 5897-5979" },
+              ],
               codeSourceLabel: "Final user wrapper expression",
               promptViewEnabled: true,
-	              codeSource: "[optional SESSION] + optional adaptive style or repair directive + userMessage + optional REGENERATION_DIRECTIVE_TEXT + EXECUTION_BRIEF_TEXT",
+              codeSource: "[APP TURN CONTROLS]\\n[optional SESSION]\\noptional current scene snapshot\\noptional adaptive/repair directive\\noptional REGENERATION_DIRECTIVE_TEXT\\nEXECUTION_BRIEF_TEXT\\n\\n[PLAYER TURN]\\nuserMessage",
               crossRefs: [
                 {
                   badge: "1",
@@ -717,12 +707,12 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               problemSolved:
                 "Prevents prompt bloat, skips repeated memory facts, and stops low-value flavor text from polluting the continuity layer.",
               fileRefs: [
-                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "4973-5126" },
-                { path: "supabase/functions/extract-memory-events/index.ts", lines: "27-143" },
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "5116-5283" },
+                { path: "supabase/functions/extract-memory-events/index.ts", lines: "69-121, 153-189" },
               ],
               codeSourceLabel: "Memory curator system prompt",
               promptViewEnabled: true,
-              codeSource: `You are a story memory curator...\nRECENT SAVED MEMORIES: {{recentExistingMemories}}\nIgnore events already captured by recent saved memory.\nReturn JSON matching the events-array schema.`,
+              codeSource: `You are a story memory curator...\nExtract only durable facts that would cause future inconsistency if forgotten.\nInclude durable facts introduced by the USER even if the AI response did not repeat them.\nReturn 0-3 events maximum, normalized to short past-tense memory points.`,
             },
             {
               id: "item-compress-day-memories",
@@ -739,11 +729,11 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
                 "Conditional maintenance lane. It runs only when the tracked day advanced and completed-day bullet memories exist.",
               fileRefs: [
                 { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "893-920" },
-                { path: "supabase/functions/compress-day-memories/index.ts", lines: "42-70" },
+                { path: "supabase/functions/compress-day-memories/index.ts", lines: "64-92, 101-112" },
               ],
               codeSourceLabel: "Memory compression prompt",
               promptViewEnabled: true,
-              codeSource: `You are compressing a list of story memory bullet points...\nOUTPUT: single plain-text synopsis (2-3 sentences).`,
+              codeSource: `You are compressing a list of story memory bullet points...\nOUTPUT: single plain-text synopsis (2-3 sentences).\nmax_tokens: 350, then deterministic cleanup caps output to 3 sentences and 900 characters.`,
             },
           ],
         },
@@ -764,12 +754,12 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               problemSolved:
                 "Keeps completed goal steps tied to evidence-gated post-turn evaluation rather than loose prose interpretation alone.",
               fileRefs: [
-                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3275-3507" },
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3447-3684" },
                 { path: "supabase/functions/evaluate-goal-progress/index.ts", lines: "154-181, 243-305" },
               ],
               codeSourceLabel: "Goal classification prompt",
               promptViewEnabled: true,
-              codeSource: `You are a story goal progress evaluator...\nReturn no_progress, partial_progress, completed, or unsupported with evidence and confidence. The client only persists accepted completions.`,
+              codeSource: `You are a story goal progress evaluator...\nThe client sends only the current open milestone for each incomplete story goal.\nReturn no_progress, partial_progress, completed, or unsupported with evidence and confidence. The client only persists accepted completions.`,
               subItems: [
                 {
                   id: "item-evaluate-goals-sub-1",
@@ -811,7 +801,7 @@ Rigid traits are always serialized as 100 percent Primary Influence.`,
               problemSolved:
                 "Collects alignment diagnostics for review without letting unproven scores steer live generation while shadow mode is enabled.",
               fileRefs: [
-                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3509-3723" },
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3686-3902" },
                 { path: "supabase/functions/evaluate-goal-alignment/index.ts", lines: "1-272" },
                 { path: "src/lib/goal-alignment.ts", lines: "1-211" },
               ],
@@ -920,7 +910,7 @@ Only completed steps are persisted. Each row is tied to the source assistant gen
               problemSolved:
                 "Prevents every assistant turn from blindly mutating character state without an explicit eligibility and context pass.",
               fileRefs: [
-	                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3970-4298" },
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "4113-4441" },
               ],
               crossRefs: [
                 {
@@ -942,9 +932,9 @@ Only completed steps are persisted. Each row is tied to the source assistant gen
                 "The follow-up call should keep durable character state current without adding a second writing system or broad psychological lecture.",
               problemSolved:
                 "Reduces stale cards, speculative rewrites, fake field paths, and prompt bloat in the post-turn state-sync pass.",
-	              fileRefs: [
-		                { path: "supabase/functions/extract-character-updates/index.ts", lines: "790-839, 885-894" },
-	              ],
+              fileRefs: [
+                { path: "supabase/functions/extract-character-updates/index.ts", lines: "821-883" },
+              ],
               codeSourceLabel: "extract-character-updates system prompt (abridged)",
               promptViewEnabled: true,
               codeSource: `--- CURRENT STORY CLOCK ---\n--- CURRENT CHARACTER STATE ---\n--- SUPPORTED FIELD PATHS ---\n--- CORE TASK ---\n--- FIELD GUIDANCE ---\n--- CHARACTER GOALS ---\n--- CONSERVATIVE UPDATE RULES ---\n--- OUTPUT JSON ---`,
@@ -959,10 +949,10 @@ Only completed steps are persisted. Each row is tied to the source assistant gen
               whyItExists:
                 "Character cards still need durable evolution, but the follow-up worker should behave like a conservative state reconciler rather than a free-form author.",
               problemSolved:
-                "Prevents unsupported custom containers, duplicate traits/goals, runaway step lists, weak evidence, and low-confidence edits from becoming saved state.",
-	              fileRefs: [
-		                { path: "supabase/functions/extract-character-updates/index.ts", lines: "810-831" },
-	              ],
+                "Prevents unsupported custom containers, duplicate traits/goals, runaway step lists, weak evidence, evidence that does not appear in the latest exchange, and low-confidence edits from becoming saved state.",
+              fileRefs: [
+                { path: "supabase/functions/extract-character-updates/index.ts", lines: "835-877" },
+              ],
               codeSourceLabel: "Character extractor field guidance",
               promptViewEnabled: true,
 	              codeSource: `Field guidance:
@@ -1011,12 +1001,12 @@ Character goals:
               problemSolved:
                 "Prevents unsupported fields, duplicate structured values, and malformed retry outputs from corrupting saved character data.",
               fileRefs: [
-                { path: "supabase/functions/extract-character-updates/index.ts", lines: "61-112, 357-445, 480-540, 871-975" },
-                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "4159-4208, 4241-4247, 4827-4915" },
+                { path: "supabase/functions/extract-character-updates/index.ts", lines: "118-209, 357-445, 454-555, 887-1099" },
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "4156-4283, 4312-4397, 4977-5114" },
               ],
               codeSourceLabel: "Validation/reconciliation checkpoints",
               promptViewEnabled: true,
-              codeSource: `isAllowedUpdateField(...)\nreconcileStructuredUpdates(...)\nsanitizeCurrentMood(...)\n403 -> safe extraction retry prompt`,
+              codeSource: `isAllowedUpdateField(...)\nevidenceAppearsInLatestExchange(...)\nreconcileStructuredUpdates(...)\nsanitizeCurrentMood(...)\n403 -> safe extraction retry prompt`,
             },
           ],
         },
@@ -1048,7 +1038,7 @@ Character goals:
                 "Builder-helper lane. It only fires when the user clicks a Character Builder AI enhance control and chooses a mode.",
               fileRefs: [
                 { path: "src/features/character-builder/CharacterBuilderScreen.tsx", lines: "443-469, 1272-1585, 1958-1973" },
-                { path: "src/components/chronicle/EnhanceModeModal.tsx", lines: "1-120" },
+                { path: "src/components/chronicle/EnhanceModeModal.tsx", lines: "1-44" },
               ],
             },
             {
@@ -1092,7 +1082,6 @@ Character goals:
                 "Builder-helper lane. It runs only when the user explicitly invokes AI Fill or AI Generate in the character builder.",
               fileRefs: [
                 { path: "src/services/character-ai.ts", lines: "711-980, 981-1320" },
-                { path: "src/pages/Index.tsx", lines: "1605-1637" },
               ],
               codeSourceLabel: "AI Fill/Generate JSON contract",
               promptViewEnabled: true,
@@ -1137,7 +1126,7 @@ Character goals:
               settingsGate:
                 "Builder-helper lane. It only runs when a Story Builder world-field sparkle or enhance control is used.",
               fileRefs: [
-                { path: "src/features/story-builder/StoryBuilderScreen.tsx", lines: "186-228, 666-890, 1558-1590" },
+                { path: "src/features/story-builder/StoryBuilderScreen.tsx", lines: "161-205, 360-405, 560-585, 1031-1042" },
               ],
             },
             {
@@ -1213,12 +1202,12 @@ Character goals:
               settingsGate:
                 "Optional image lane. This only fires when the user asks the chat interface to generate a scene image.",
               fileRefs: [
-                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "6165-6280" },
-                { path: "supabase/functions/generate-scene-image/index.ts", lines: "47-162, 168-236" },
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "6375-6460" },
+                { path: "supabase/functions/generate-scene-image/index.ts", lines: "34-140, 218-321, 327-474" },
               ],
               codeSourceLabel: "Scene image analysis prompt",
               promptViewEnabled: true,
-              codeSource: `You are an Image Prompt Optimizer...\nOutput JSON schema with characters/bodyDescription/pose/expression/clothing/scene/cameraAngle`,
+              codeSource: `You are an Image Prompt Optimizer...\nOutput JSON schema with sparse visual fields, relevant visible weighted traits, neutral fallbacks, and no private nonvisual inference.`,
             },
             {
               id: "item-cover-image-pipeline",
@@ -1268,19 +1257,19 @@ Character goals:
     {
       id: "changelog-2026-04-25-01",
       timestamp: "2026-04-25T00:00:00.000Z",
-      title: "Documented goal weighting and extractor lifecycle systems",
+      title: "Documented goal direction and extractor lifecycle systems",
       author: "ChatGPT Codex",
       problem:
-        "API Inspector did not make several active roleplay-control systems obvious enough, especially goal flexibility, personality adherence weighting, goal-step derivations, and deep character extractor lifecycle rules.",
+        "API Inspector did not make several active roleplay-control systems obvious enough, especially goal flexibility, personality prompt serialization, goal-step derivations, and deep character extractor lifecycle rules.",
       previousAttempt:
         "The systems were partly visible through scattered prompt/card details, but their purpose and relationship to API Call 1 and API Call 2 were easy to miss during dialogue debugging.",
       changeMade:
-        "Added explicit API Inspector items for story/character goal flexibility directives, personality trait adherence weighting, story-goal derivation persistence, and deep psychology/goal lifecycle extraction.",
+        "Added explicit API Inspector items for story/character goal flexibility directives, personality trait serialization, story-goal derivation persistence, and deep psychology/goal lifecycle extraction.",
       filesTouched: [
         "src/data/api-inspector-code-truth-registry.ts",
       ],
       expectedOutcome:
-        "Agents can audit the live roleplay request and post-turn extraction flow without forgetting how weighting, rigidity, goal completion, and character evolution feed into dialogue behavior.",
+        "Agents can audit the live roleplay request and post-turn extraction flow without forgetting how goal strength, personality serialization, goal completion, and character evolution feed into dialogue behavior.",
       actualOutcome:
         "API Inspector now surfaces these systems in the existing detail-card flow with purpose, why-it-exists, problem-risk coverage, source paths, and prompt/source snippets.",
     },

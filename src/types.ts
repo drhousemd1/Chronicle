@@ -437,9 +437,7 @@ export type ScenarioData = {
     transparentBubbles: boolean;
     darkMode: boolean;
     offsetBubbles?: boolean;
-    proactiveCharacterDiscovery?: boolean;  // When enabled, AI may introduce characters from established media
     dynamicText?: boolean;  // When enabled, applies color styling to dialogue/actions/thoughts. When off, all text is white like a book.
-    proactiveNarrative?: boolean;  // AI leads story, avoids passive deferrals
     narrativePov?: 'first' | 'third';  // First-person or third-person narration
     nsfwIntensity?: 'normal' | 'high';  // How proactively AI engages in mature content
     realismMode?: boolean;  // Physical actions have realistic consequences

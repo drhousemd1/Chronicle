@@ -50,9 +50,10 @@ const buildScenario = () => {
     transparentBubbles: baseUiSettings.transparentBubbles,
     darkMode: baseUiSettings.darkMode,
     realismMode: true,
-    proactiveNarrative: false,
     responseVerbosity: 'detailed',
-  };
+    proactiveCharacterDiscovery: true,
+    proactiveNarrative: true,
+  } as any;
   scenario.contentThemes = {
     storyType: 'NSFW',
     characterTypes: ['Female', 'Male'],
@@ -222,7 +223,7 @@ describe('story-transfer import/export', () => {
     expect(text).toContain('- Entry: Winter Notes');
     expect(text).toContain('- Content Themes');
     expect(text).toContain('- Story Type: NSFW');
-    expect(text).toContain('- BDSM: Incorporate BDSM dynamics');
+    expect(text).toContain('- BDSM: May incorporate BDSM dynamics');
     expect(text).toContain('- Builder Assets');
     expect(text).toContain('- Cover Image: https://example.com/covers/chronicle-test-story.webp');
     expect(text).toContain('- Selected Art Style: dark-fantasy-oil');
@@ -313,6 +314,8 @@ describe('story-transfer import/export', () => {
     expect(imported.data.contentThemes).toEqual(source.contentThemes);
     expect(imported.data.selectedArtStyle).toBe(source.selectedArtStyle);
     expect(imported.data.uiSettings?.responseVerbosity).toBe(source.uiSettings?.responseVerbosity);
+    expect((imported.data.uiSettings as any).proactiveCharacterDiscovery).toBeUndefined();
+    expect((imported.data.uiSettings as any).proactiveNarrative).toBeUndefined();
     expect(imported.data.story.openingDialog.timeProgressionMode).toBe(source.story.openingDialog.timeProgressionMode);
     expect(imported.data.story.openingDialog.timeProgressionInterval).toBe(source.story.openingDialog.timeProgressionInterval);
     expect(imported.data.scenes?.[0]?.url).toBe(source.scenes?.[0]?.url);
@@ -328,6 +331,46 @@ describe('story-transfer import/export', () => {
     expect(importedCaptain?.avatarDataUrl).toBe('https://example.com/captain-rowan.png');
     expect(imported.editorState?.coverImage).toBe('https://example.com/covers/chronicle-test-story.webp');
     expect(imported.editorState?.coverImagePosition).toEqual({ x: 38, y: 34 });
+  });
+
+  it('sanitizes removed UI setting keys from story-transfer exports and imports', () => {
+    const source = buildScenario();
+    const exportedJson = exportScenarioToJson(source, buildExportOptions(source));
+    const exportedMarkdown = exportScenarioToText(source, buildExportOptions(source));
+    const exportedWord = exportScenarioToWordDocument(source, buildExportOptions(source));
+
+    expect(exportedJson).not.toContain('proactiveCharacterDiscovery');
+    expect(exportedJson).not.toContain('proactiveNarrative');
+    expect(exportedMarkdown).not.toContain('Proactive Character Discovery');
+    expect(exportedMarkdown).not.toContain('Proactive Narrative');
+    expect(exportedWord).not.toContain('Proactive Character Discovery');
+    expect(exportedWord).not.toContain('Proactive Narrative');
+
+    const imported = importScenarioFromAny(
+      {
+        text: JSON.stringify({
+          version: 1,
+          storyBuilder: {
+            storyCard: {},
+            worldCore: {},
+            uiSettings: {
+              responseVerbosity: 'concise',
+              proactiveCharacterDiscovery: true,
+              proactiveNarrative: true,
+            },
+            openingDialog: {},
+          },
+          characters: [],
+        }),
+        fileName: 'legacy-settings.json',
+      },
+      createDefaultScenarioData(),
+      'rewrite',
+    );
+
+    expect(imported.data.uiSettings?.responseVerbosity).toBe('concise');
+    expect((imported.data.uiSettings as any).proactiveCharacterDiscovery).toBeUndefined();
+    expect((imported.data.uiSettings as any).proactiveNarrative).toBeUndefined();
   });
 
   it('omits conversations from default story exports', () => {

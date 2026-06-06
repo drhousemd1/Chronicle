@@ -38,16 +38,16 @@
 
 ## 3. Frontend AI Services
 
-### `src/services/llm.ts` (~1054 lines)
+### `src/services/llm.ts` (~1076 lines)
 
 Core LLM integration service.
 
 | Export | Purpose |
 |--------|--------|
-| `generateRoleplayResponseStream()` | Streams AI responses for chat. Sends the system prompt, up to 9 prior roleplay messages, and the current wrapped user turn. Accepts optional `adaptiveStyleDirective` text, `sessionMessageCount` (precise session depth), and appends `RESPONSE_PRIORITY_CHECK_TEXT` plus `ASSISTANT_STRUCTURE_REMINDER_TEXT` so the latest scene beat outranks dormant card/goal details and structure repetition is compared against prior assistant outputs instead of the user's message. |
-| `getSystemInstruction()` | Builds the complete system prompt. Includes IN-SESSION TRAIT DYNAMICS, personality-driven NSFW pacing, control quick-reference at top of INSTRUCTIONS, and forward momentum AI-character canon rule. |
-| `buildCharacterStateBlock()` | Constructs character context for prompt injection |
-| `getCriticalDialogRules()` | Dialog formatting rules (first/third person POV) |
+| `generateRoleplayResponseStream()` | Streams AI responses for chat. Sends the system prompt, up to 5 prior roleplay messages, and one final wrapped user turn containing optional session position, current-scene snapshot, adaptive or repair text, regeneration text, and the compact execution brief. |
+| `getSystemInstruction()` | Builds the complete system prompt, including story/world context, full card reference context, goal guidance, memory context, roleplay rules, response-detail settings, NSFW intensity, and realism mode. |
+| `buildRoleplayApiMessages()` | Builds the ordered API Call 1 message array and splits the final user-role message into `[APP TURN CONTROLS]` and `[PLAYER TURN]`. |
+| `renderResponseDetailInstruction()` | Renders the selected response-detail branch and the review-document matrix. |
 | `buildContentThemeDirectives()` | Imported from `tag-injection-registry.ts` |
 
 ### `src/services/character-ai.ts` (~1266 lines)
@@ -85,26 +85,15 @@ Side character discovery and creation.
 The system prompt in `getSystemInstruction()` is constructed in this order:
 
 ```
-1. Role definition + world context
-2. Character state blocks (AI-controlled characters only; user-controlled listed as names-only reference)
-3. Story arc/goal directives (with flexibility levels)
-4. Content theme directives (genres, character types, trigger warnings)
-5. Custom world sections
-6. Structured locations
-7. Dialog formatting rules (POV-dependent)
-8. Time of day context
-9. Memory context (if enabled)
-10. Opening dialog (if first message)
-11. INSTRUCTIONS block:
-    a. DO NOT GENERATE FOR quick-reference (user-controlled characters, top of block)
-    b. Priority hierarchy
-    c. Control context + scene presence
-    d. Forward momentum (includes AI-character canon rule)
-    e. Anti-repetition (shape variation only, no length rules)
-    f. NSFW rules (intensity/permissiveness only, no verbosity overlap)
-    g. Verbosity rules (includes intimate scene detail lines for detailed mode)
-    h. IN-SESSION TRAIT DYNAMICS (trait softening over session depth)
-    i. Personality trait adherence
+1. SECTION 1 - Core role logic
+2. SECTION 2 - Story and world context
+3. Story and character card reference rule
+4. SECTION 3 - Main AI character card information
+5. SECTION 4 - Side AI character card information, when side characters exist
+6. SECTION 5 - User-controlled character card information, when user characters exist
+7. SECTION 6 - Memories and current scene state
+8. SECTION 7 - Dialog formatting and roleplay rules
+9. SECTION 8 - Selected chat settings
 ```
 
 ---
@@ -113,17 +102,17 @@ The system prompt in `getSystemInstruction()` is constructed in this order:
 
 | Bug # | Description | Affected Files | Status |
 |-------|-------------|----------------|--------|
-| #1 | `buildCharacterStateBlock()` now outputs scaffolding placeholders for all section types when empty | `supabase/functions/extract-character-updates/index.ts` | RESOLVED — 2026-03-01 |
+| #1 | Empty prompt scaffolding made blank or missing fields look like meaningful content | `src/services/llm.ts` | RESOLVED — Updated 2026-06-05 — API Call 1 now sends populated reference fields and omits blank placeholder sections. |
 | #2 | `personality.traits` added to TRACKABLE FIELDS for unified mode | `supabase/functions/extract-character-updates/index.ts` | RESOLVED — 2026-03-01 |
 | #3 | `preferredClothing` field name mismatch (underwear vs undergarments) | `supabase/functions/extract-character-updates/index.ts` | RESOLVED — 2026-03-01 — preferredClothing.underwear renamed to preferredClothing.undergarments in TRACKABLE FIELDS |
 | #4 | Default model migrated to `grok-4.3` | `supabase/functions/extract-character-updates/index.ts` | RESOLVED — 2026-05-09 |
 | #5 | Extraction prompt lacks analytical depth | `supabase/functions/extract-character-updates/index.ts` | RESOLVED — 2026-03-01 — Added 7-block analytical depth framework: psychological inference, progressive refinement, conflict resolution, split mode detection, tone inference, cross-field coherence, complete trait lifecycle |
 | #6 | Memory system incomplete — no long-term accumulation | `supabase/functions/extract-memory-events/index.ts`, `supabase/functions/compress-day-memories/index.ts`, `src/services/llm.ts`, `src/services/supabase-data.ts`, `src/types.ts`, `src/components/chronicle/ChatInterfaceTab.tsx` | RESOLVED — 2026-03-01 — Auto-extraction fires after every AI response, day-transition compression via compress-day-memories edge function (`grok-4.3`), entryType field distinguishes bullets from synopses, previousDayRef reset on conversation switch, memoriesLoaded guard prevents stale-state compression |
 | #7 | Response/style anchoring — responses repeat length, structure, or short dialogue phrasing | `src/services/llm.ts`, `src/components/chronicle/ChatInterfaceTab.tsx` | RESOLVED — Updated 2026-05-16 — Adaptive style directive now watches recent word counts, action/dialogue/thought order, and reused short quoted lines |
-| #8 | Forward momentum — AI re-narrates user-authored AI character content | `src/services/llm.ts`, `src/components/chronicle/ChatInterfaceTab.tsx` | RESOLVED — 2026-03-01 — Added AI-character canon rule to FORWARD MOMENTUM, canon note detection in handleSend |
+| #8 | Forward momentum — AI re-narrates user-authored AI character content | `src/services/llm.ts`, `src/components/chronicle/ChatInterfaceTab.tsx` | RESOLVED — 2026-03-01 — Added established-fact note detection in handleSend |
 | #9 | Control rule reliability — AI generates for user-controlled characters | `src/services/llm.ts` | RESOLVED — 2026-03-01 — CAST filtered to AI-only, DO NOT GENERATE FOR quick-reference at top of INSTRUCTIONS |
-| #10 | No in-session trait evolution guidance | `src/services/llm.ts`, `src/types.ts` | RESOLVED — 2026-03-01 — Added IN-SESSION TRAIT DYNAMICS block, personality-driven NSFW pacing, adherenceScore/scoreTrend on PersonalityTrait |
-| #11 | NSFW intensity and verbosity instruction overlap | `src/services/llm.ts` | RESOLVED — 2026-03-01 — Moved sensory detail lines from nsfwRules to verbosityRules detailed block |
+| #10 | No session-position context for gradual state evolution | `src/services/llm.ts`, `src/components/chronicle/ChatInterfaceTab.tsx` | RESOLVED — Updated 2026-06-05 — `sessionMessageCountRef` is injected inside `[APP TURN CONTROLS]`; durable trait and goal changes are handled through current card state, memories, and support-call updates. |
+| #11 | NSFW intensity and verbosity instruction overlap | `src/services/llm.ts` | RESOLVED — 2026-03-01 — Moved sensory detail lines from NSFW response branch to response-detail branch detailed block |
 | #12 | Dialogue loops — AI re-asks confirmed questions, defers action with "later/soon/tomorrow," rehashes prior dialogue | `src/services/llm.ts`, `src/components/chronicle/ChatInterfaceTab.tsx`, `supabase/functions/chat/index.ts` | RESOLVED — 2026-03-07 — Added Confirmation Closure Protocol, No Deferral Loop, No Rehash rules to system prompt. Priority hierarchy updated: forward-momentum rules rank #2, never overridden. Runtime anti-loop micro-directives injected before send/regenerate. |
 | #13 | Regeneration context duplication — user message included twice (in truncated history + as new message) reinforcing repetition | `src/components/chronicle/ChatInterfaceTab.tsx` | RESOLVED — 2026-03-07 — Truncation now excludes the triggering user message from history since generateRoleplayResponseStream re-adds it |
 | #14 | Detailed mode verbosity uncapped — 7-9 paragraph responses | `src/services/llm.ts` | RESOLVED — 2026-03-07 — Hard paragraph caps: concise 1-2, balanced 1-3, detailed 2-3 (max 4 exceptional). Verbosity-based max_tokens: concise=1024, balanced=2048, detailed=3072 |
@@ -171,9 +160,9 @@ See Section 5 above for comprehensive bug list.
 - **RESOLVED — 2026-03-15**: Pass 8 — Anti-stagnation & initiative. TURN PROGRESSION CONTRACT mandates concrete scene delta + proactive AI move each turn. STRUCTURE VARIETY GUARD forbids repeating same output skeleton. Internal thoughts made optional with frequency caps. Runtime detectors added for structural triad repetition and low-initiative drift. Style hints diversified with action-led and decision-driven variants. Continue prompt rewritten to demand decisive forward action.
 - **RESOLVED — 2026-03-15**: Pass 9 — Multi-character block flooding & prompt declutter. Block count cap added to MULTI-CHARACTER RESPONSES (1-3 blocks, max 4 detailed). PROACTIVE NARRATIVE DRIVE merged into TURN PROGRESSION CONTRACT. RESPONSE SHAPE VARIATION merged into STRUCTURE VARIETY GUARD. Duplicate NO REHASH removed (kept in FORWARD MOMENTUM). "Dialogue-heavy: rapid exchanges" removed from valid shapes. Ping-pong-encouraging style hints replaced.
 - **RESOLVED — 2026-03-15**: Pass 10 — Goal-directedness added to TURN PROGRESSION CONTRACT. Every response must now advance at least one active goal, desire, story arc, or core motivation. Non-directional responses explicitly forbidden. AI characters must drive scenes toward their defined goals rather than taking generic action.
-- **RESOLVED — 2026-03-15**: Pass 11 — Block-count-as-target fix & paragraph cap clarification. Block count default changed from "1-3" to "1 (default), 2 only for meaningful reactions, 3 only for pivotal moments." Paragraph caps now explicitly state they count TOTAL paragraphs across all character blocks combined. TURN PROGRESSION CONTRACT strengthened with measurable-progress quality bar (vague circling dialogue no longer counts). Style hint encouraging "mix several short dialogue exchanges" replaced with single-character-driven beat.
+- **RESOLVED — 2026-03-15**: Pass 11 — Block-count-as-target fix & paragraph cap clarification. Block count default changed from "1-3" to "1 (default), 2 only for meaningful reactions, 3 only for pivotal moments." Paragraph caps now explicitly state they count TOTAL paragraphs across all character blocks combined. TURN PROGRESSION CONTRACT strengthened with measurable-progress quality bar (vague circling dialogue no longer counts). Style hint encouraging "mix several short dialogue exchanges" replaced with single-character-driven response.
 - **RESOLVED — 2026-03-15**: Pass 12 — Runtime enforcement & prompt restructuring. BLOCK COUNT CAP and TURN PROGRESSION CONTRACT moved from mid-prompt to top of INSTRUCTIONS block (immediately after priority hierarchy) for maximum attention weight. Runtime ping-pong detector added to getAntiLoopDirective: detects 3+ alternating blocks between same 2 characters, injects [ANTI-PING-PONG] directive forcing single-character perspective. Emotional-loop detector added: detects stasis reactions without scene-change verbs, injects [ANTI-STAGNATION] directive forcing external event. BLOCK COUNT CAP removed from MULTI-CHARACTER RESPONSES (now standalone top-level rule).
-- **RESOLVED — 2026-03-15**: Pass 13 — Prompt surgery & narrative director fix. Fixed narrative director model from `grok-3-mini` (dead) to `grok-4-1-fast-reasoning`. Compressed INSTRUCTIONS block by ~50%: removed all VIOLATION CHECK paragraphs (model doesn't self-check), merged RESISTANCE HANDLING and DIALOGUE REQUIREMENTS into existing sections, compressed ANTI-REPETITION (25→3 lines), FORWARD MOMENTUM (28→5 lines), CONFIRMATION CLOSURE + NO DEFERRAL (32→7 lines), STRUCTURE VARIETY + INTERNAL THOUGHT USAGE (52→12 lines). Added thought-tail rule: thoughts may NOT be final beat. Fixed regeneration hint removing "more internal thought". Runtime directives (anti-loop + DIRECTOR) now injected as dedicated system message instead of prepended to user text for higher attention weight. Added thought-tail detector to getAntiLoopDirective.
+- **RESOLVED — 2026-03-15**: Pass 13 — Prompt surgery & narrative director fix. Fixed narrative director model from `grok-3-mini` (dead) to `grok-4-1-fast-reasoning`. Compressed INSTRUCTIONS block by ~50%: removed all VIOLATION CHECK paragraphs (model doesn't self-check), merged RESISTANCE HANDLING and DIALOGUE REQUIREMENTS into existing sections, compressed ANTI-REPETITION (25→3 lines), FORWARD MOMENTUM (28→5 lines), CONFIRMATION CLOSURE + NO DEFERRAL (32→7 lines), STRUCTURE VARIETY + INTERNAL THOUGHT USAGE (52→12 lines). Added thought-tail rule: thoughts may NOT be final moment. Fixed regeneration hint removing "more internal thought". Runtime directives (anti-loop + DIRECTOR) now injected as dedicated system message instead of prepended to user text for higher attention weight. Added thought-tail detector to getAntiLoopDirective.
 
 - **RESOLVED — 2026-03-15**: Pass 13 (continued) — Narrative director deployment fix & continue button rewire. Confirmed zero edge function logs for `generate-narrative-directive` (never fired). Added explicit invocation logging to `generateNarrativeDirective()` and error/warn branches. Wired `handleContinueConversation` to consume `narrativeDirectiveRef.current` as `[DIRECTOR]` tag (was previously ignored). Added `generateNarrativeDirective()` call after continue response completes to prime next click. Continue prompt rewritten from generic "DECISIVE FORWARD ACTION" to goal-aware prompt that injects active character goals, pending arc steps, and demands EXECUTION not preparation. Continue handler now also tracks extraction count and response lengths (was missing both).
 

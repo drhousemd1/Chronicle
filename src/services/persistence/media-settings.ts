@@ -1,4 +1,5 @@
 import type { UserBackground } from '@/types';
+import { sanitizeUiSettings } from '@/utils';
 import { supabase, toTimestamp } from './shared';
 
 function dbToUserBackground(row: any): UserBackground {
@@ -252,7 +253,11 @@ export async function updateStoryUiSettings(
   scenarioId: string,
   uiSettings: Record<string, any>,
 ): Promise<void> {
-  await supabase.from('stories').update({ ui_settings: uiSettings }).eq('id', scenarioId);
+  const { error } = await supabase
+    .from('stories')
+    .update({ ui_settings: sanitizeUiSettings(uiSettings) })
+    .eq('id', scenarioId);
+  if (error) throw error;
 }
 
 export async function updateNavButtonImages(navButtonImages: Record<string, any>): Promise<void> {

@@ -1133,9 +1133,11 @@ const IndexContent = () => {
                     darkMode: patch.darkMode ?? currentSettings.darkMode,
                   };
                   handleUpdateActive({ uiSettings: merged });
-                  // Persist to DB (fire-and-forget)
+                  // Persist to DB without blocking the UI; catch failures so they do not become unhandled rejections.
                   if (activeId) {
-                    supabaseData.updateStoryUiSettings(activeId, merged);
+                    void supabaseData.updateStoryUiSettings(activeId, merged).catch((error) => {
+                      console.error("Failed to persist story UI settings:", error);
+                    });
                   }
                 }}
                 onUpdateSideCharacters={(sideCharacters) => handleUpdateActive({ sideCharacters })}

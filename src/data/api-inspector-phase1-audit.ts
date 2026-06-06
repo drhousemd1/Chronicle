@@ -90,7 +90,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
         fileRefs: [
           { path: "src/features/story-builder/StoryBuilderScreen.tsx" },
           { path: "src/types.ts", lines: "113-124" },
-          { path: "src/services/llm.ts", lines: "118-604, 660-671" },
+          { path: "src/services/llm.ts", lines: "173-756" },
         ],
         codeSource:
           "STORY PREMISE\nLOCATIONS (structuredLocations)\nCUSTOM WORLD CONTENT (structured + freeform)\nSTORY GOALS (title/outcome/currentStatus/steps)\nADDITIONAL LORE ENTRIES\nSTORY THEMES (selected tags only)",

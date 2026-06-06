@@ -129,6 +129,23 @@ function isGenericEvidence(value: string): boolean {
     normalized.includes("from this exchange");
 }
 
+function normalizeEvidenceForMatching(value: unknown): string {
+  return String(value || "")
+    .replace(/[“”]/g, "\"")
+    .replace(/[‘’]/g, "'")
+    .toLowerCase()
+    .replace(/[*_`~()[\]{}<>]/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function evidenceAppearsInLatestExchange(evidence: string, latestExchangeText: string): boolean {
+  const normalizedEvidence = normalizeEvidenceForMatching(evidence);
+  if (normalizedEvidence.length < 6) return false;
+  return normalizeEvidenceForMatching(latestExchangeText).includes(normalizedEvidence);
+}
+
 function sanitizeCurrentMood(value: string): string {
   const cleaned = value
     .replace(/[*"()[\]{}]/g, " ")
@@ -171,7 +188,7 @@ function isAllowedUpdateValue(field: string, value: string): boolean {
   return true;
 }
 
-function normalizeUpdateCandidate(candidate: any): ExtractedUpdate | null {
+function normalizeUpdateCandidate(candidate: any, latestExchangeText: string): ExtractedUpdate | null {
   if (
     typeof candidate?.character !== "string" ||
     typeof candidate?.field !== "string" ||
@@ -189,6 +206,7 @@ function normalizeUpdateCandidate(candidate: any): ExtractedUpdate | null {
   if (!character || !field || !value) return null;
   if (!isAllowedUpdateField(field) || !isAllowedUpdateValue(field, value)) return null;
   if (!evidence || isGenericEvidence(evidence) || confidence < 0.72) return null;
+  if (!evidenceAppearsInLatestExchange(evidence, latestExchangeText)) return null;
 
   if (field === "currentMood") {
     const sanitizedMood = sanitizeCurrentMood(value);
@@ -454,7 +472,7 @@ function reconcileStructuredUpdates(
 function getCandidateRejectionReason(
   candidate: any,
   charIndex: CharacterIndex,
-  options: { disallowGoals?: boolean } = {},
+  options: { disallowGoals?: boolean; latestExchangeText?: string } = {},
 ): string {
   if (
     typeof candidate?.character !== "string" ||
@@ -478,6 +496,7 @@ function getCandidateRejectionReason(
   if (!isAllowedUpdateValue(field, value)) return "unsupported_value";
   if (options.disallowGoals && field.startsWith("goals.")) return "goals_disabled_in_safe_retry";
   if (!evidence || isGenericEvidence(evidence)) return "missing_evidence";
+  if (!evidenceAppearsInLatestExchange(evidence, options.latestExchangeText || "")) return "evidence_not_in_latest_exchange";
   if (confidence < 0.72) return "low_confidence";
   if (field === "currentMood" && !sanitizeCurrentMood(value)) return "invalid_current_mood";
   return "filtered_by_state_guard";
@@ -486,11 +505,16 @@ function getCandidateRejectionReason(
 function reviewUpdateCandidates(
   rawCandidates: any[],
   characters: CharacterData[],
-  options: { disallowGoals?: boolean } = {},
+  options: { disallowGoals?: boolean; latestExchangeText?: string } = {},
 ): { updates: ExtractedUpdate[]; candidateReviews: CandidateReview[]; rejectedCandidates: CandidateReview[] } {
   const charIndex = buildCharacterIndex(characters);
-  const normalizedCandidates = rawCandidates.map((candidate, index) => {
-    const normalized = normalizeUpdateCandidate(candidate);
+  const normalizedCandidates: Array<{
+    index: number;
+    raw: any;
+    normalized: ExtractedUpdate | null;
+    preRejectionReason: string;
+  }> = rawCandidates.map((candidate, index) => {
+    const normalized = normalizeUpdateCandidate(candidate, options.latestExchangeText || "");
     const disallowedByOptions = normalized && options.disallowGoals && normalized.field.startsWith("goals.");
     return {
       index,
@@ -800,12 +824,15 @@ ${characterContext || 'No eligible character data provided'}
 ${supportedFields}
 
 --- CORE TASK ---
-- Review the latest user message and AI response against every supported field for each eligible character.
-- Return an update when the latest exchange changes, reveals, corrects, progresses, completes, or contradicts a supported field.
-- Return no update when the existing card is still accurate or when the evidence is weak.
+- Review the latest exchange against every supported field for each eligible character.
+- Treat user-established facts and mutually visible outcomes as stronger evidence than unsupported assistant-only assumptions.
+- Return an update only when the latest exchange directly supports a material change to a supported field.
+- Use recent context only to confirm continuity or conflict with the proposed update.
+- If the only support is an assistant-generated assumption that conflicts with current saved state, physical continuity, or the user's latest message, omit the update.
+- Return no update when the existing card is still accurate, the evidence is weak, or the proposed value only rewords existing information.
 - Use the real field path from SUPPORTED FIELD PATHS. Never create fake containers such as sections.Goals.* when goals.* exists.
 - Preserve current card information unless the latest exchange gives a clear reason to change it.
-- Every returned update must include evidence from the latest exchange and a confidence score from 0 to 1. If you cannot point to the exchange text that supports the change, omit the update.
+- Every returned update must include a short exact phrase from the latest exchange as evidence and a confidence score from 0 to 1. If you cannot quote the exchange text that supports the change, omit the update.
 
 --- FIELD GUIDANCE ---
 - currentMood: emotional/psychological state only, max 12 words. No body-part prose, clothing, objects, or action sequences.
@@ -842,21 +869,29 @@ ${supportedFields}
 Return only this JSON shape:
 {
   "updates": [
-    { "character": "CharacterName", "field": "currentMood", "value": "Nervous but determined", "evidence": "Short quote or close paraphrase from this exchange.", "confidence": 0.86 },
-    { "character": "CharacterName", "field": "scenePosition", "value": "beside the relevant scene object", "evidence": "Short quote or close paraphrase from this exchange.", "confidence": 0.9 },
-    { "character": "CharacterName", "field": "relationships._extras", "value": "OtherCharacter: Trusted after sharing important information", "evidence": "Short quote or close paraphrase from this exchange.", "confidence": 0.82 },
-    { "character": "CharacterName", "field": "goals.Rebuild Trust", "value": "current_status: First honest conversation happened. | progress: 25 | complete_steps: 1", "evidence": "Short quote or close paraphrase from this exchange.", "confidence": 0.8 },
-    { "character": "CharacterName", "field": "goals.Establish Lasting Dynamic", "value": "desired_outcome: CharacterName and OtherCharacter establish a sustained relationship dynamic that changes how they make decisions, communicate, and behave together. | current_status: Goal newly established. | progress: 0 | new_steps: Step 1: CharacterName tests whether OtherCharacter is receptive to the dynamic through low-pressure conversation or behavior. Step 2: CharacterName creates a repeated pattern that makes the dynamic part of their normal interactions. Step 3: CharacterName deepens the dynamic through a more meaningful commitment, ritual, agreement, or recurring behavior. Step 4: The characters confront the main resistance, uncertainty, or consequence preventing the dynamic from becoming stable. Step 5: The dynamic becomes an accepted part of the ongoing relationship and affects future choices.", "evidence": "Short quote or close paraphrase from this exchange.", "confidence": 0.78 }
+    {
+      "character": "CharacterName",
+      "field": "supported.fieldPath",
+      "value": "Proposed saved value",
+      "evidence": "Short exact phrase from the latest exchange.",
+      "confidence": 0.0
+    }
   ]
 }
 
+Examples are structural only. Do not copy example field paths, labels, goal names, relationship types, settings, genres, or wording into real updates.
+
 Return ONLY valid JSON. No explanations.`;
 
-    // Build combined text including recent context for pattern detection
+    // Build combined text including recent context for continuity and conflict checking.
     const combinedText = [
-      recentContext ? `RECENT CONVERSATION CONTEXT (for pattern detection):\n${recentContext}` : '',
+      recentContext ? `RECENT CONVERSATION CONTEXT (for continuity and conflict checking only):\n${recentContext}` : '',
       userMessage ? `LATEST USER MESSAGE:\n${userMessage}` : '',
       aiResponse ? `LATEST AI RESPONSE:\n${aiResponse}` : ''
+    ].filter(Boolean).join('\n\n---\n\n');
+    const latestExchangeText = [
+      userMessage ? `LATEST USER MESSAGE:\n${userMessage}` : '',
+      aiResponse ? `LATEST AI RESPONSE:\n${aiResponse}` : '',
     ].filter(Boolean).join('\n\n---\n\n');
 
     // Only grok-4.3 is used app-wide; reject anything else
@@ -978,7 +1013,7 @@ Return ONLY valid JSON. No explanations.`;
               const reviewedSafeUpdates = reviewUpdateCandidates(
                 parsedUpdates,
                 filteredCharacters as CharacterData[],
-                { disallowGoals: true },
+                { disallowGoals: true, latestExchangeText },
               );
               console.log(`[extract-character-updates] Safe retry yielded ${reviewedSafeUpdates.updates.length} updates`);
               return new Response(JSON.stringify({
@@ -1049,7 +1084,7 @@ Return ONLY valid JSON. No explanations.`;
           candidateReviews: [buildMalformedCandidateReview(parseError, parseErrorContent || content)],
           rejectedCandidates: [buildMalformedCandidateReview(parseError, parseErrorContent || content)],
         }
-      : reviewUpdateCandidates(extractedUpdates, filteredCharacters as CharacterData[]);
+      : reviewUpdateCandidates(extractedUpdates, filteredCharacters as CharacterData[], { latestExchangeText });
     extractedUpdates = reviewedUpdates.updates;
 
     console.log(`[extract-character-updates] Extracted ${extractedUpdates.length} updates from dialogue`);

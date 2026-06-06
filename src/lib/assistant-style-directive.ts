@@ -77,6 +77,12 @@ function extractDialogueText(value: string): string {
     .join(' ');
 }
 
+function extractDialogueSegments(value: string): string[] {
+  return Array.from(value.matchAll(/"([^"]+)"|“([^”]+)”/g))
+    .map((match) => (match[1] || match[2] || '').trim())
+    .filter(Boolean);
+}
+
 function stripDialogueText(value: string): string {
   return value.replace(/"[^"]+"|“[^”]+”/g, ' ');
 }
@@ -211,6 +217,30 @@ function analyzeAssistantMessage(text: string): AssistantMessageStyle {
   };
 }
 
+function hasOffloadingQuestion(value: string): boolean {
+  const normalizedDialogue = extractDialogueSegments(value).map(normalizeQuote);
+  const normalizedFullText = normalizeQuote(
+    (value || '')
+      .replace(/(?:^|\n{2,})([^:\n]{1,80}):\s*/g, ' ')
+      .replace(/[*()"]/g, ' '),
+  );
+
+  const offloadingPattern = /\b(what do you want me to do|what should i do|what do you do next|how do you respond|what happens next|tell me what happens|tell me what to do|your move)\b/i;
+
+  return normalizedDialogue.some((line) => line.includes('?') && offloadingPattern.test(line))
+    || offloadingPattern.test(normalizedFullText);
+}
+
+function hasSubstantialAiDevelopment(value: string): boolean {
+  const actionOrThoughtWords = countWords(
+    stripDialogueText(value)
+      .replace(/\([^)]*\)/g, ' ')
+      .replace(/(?:^|\n{2,})([^:\n]{1,80}):\s*/g, ' '),
+  );
+  const dialogueWords = countWords(extractDialogueText(value));
+  return actionOrThoughtWords >= 40 || dialogueWords >= 24;
+}
+
 export function buildAssistantStyleDirective(
   messages: AssistantStyleMessage[],
   recentLengths: number[] = [],
@@ -303,8 +333,20 @@ export function buildAssistantStyleDirective(
     hasFrontLoadedNarration ? 'external dialogue appearing too late after a long narration opening' : '',
   ].filter(Boolean).join(', ');
 
+  const correctiveLines = [
+    'Use recent assistant messages for story state, not as a style template.',
+    hasRepeatedDescriptiveTerms || hasRepeatedContentFocus
+      ? 'Use established details as causes or consequences, not repeated description or topic recycling.'
+      : '',
+    hasNarrationHeavyOutput || hasLowDialogueOutput || hasFrontLoadedNarration
+      ? 'Move into purposeful external dialogue when present AI-controlled characters can naturally speak.'
+      : '',
+    'Vary the next response with a natural structure that fits the current exchange and active Response Detail setting.',
+  ].filter(Boolean);
+
   return `[STYLE ADJUSTMENT FOR THIS TURN]
-Your own recent assistant responses are repeating ${reasons}. Compare against your own previous 2-3 assistant character blocks, not the user's message. Vary the next response naturally. If your recent blocks keep opening with narration before speech, start with external dialogue when that fits the current exchange and let action support the conversation instead of repeating the same opening shape. Do not reuse the same descriptive focus, topic focus, sentence shape, or short reactive line unless the current scene specifically calls for that repetition.`;
+Recent assistant responses are repeating: ${reasons}.
+${correctiveLines.join('\n')}`;
 }
 
 export function buildDetailedCollapseDirective(
@@ -329,7 +371,9 @@ export function buildDetailedCollapseDirective(
   if (!collapsedTwoTurns && !collapsedWindow) return '';
 
   return `[STYLE CORRECTION]
-Recent messages provide story state and continuity, not a template for response length. The active Response Detail setting calls for a developed response, so write the AI-controlled character's side of the current exchange with substantial external dialogue when speech is natural and enough action or description to make the moment clear. Do not pad with repeated details.`;
+Recent assistant responses are shorter or less developed than the active Response Detail setting calls for.
+Use recent messages for story state, not as a response-length template.
+Develop the AI-controlled side of the current exchange with meaningful external dialogue when speech is natural and enough action or description to make the moment clear before stopping for the user.`;
 }
 
 export function buildAssistantRepetitionRepairDirective(
@@ -368,6 +412,7 @@ export function buildAssistantRepetitionRepairDirective(
     && candidate.actionFirstDialogueBlocks / candidate.totalBlocks >= 0.5
     && previous.some((analysis) => analysis.totalBlocks > 0 && analysis.actionFirstDialogueBlocks / analysis.totalBlocks >= 0.5);
   const frontLoaded = candidate.frontLoadedNarrationBlocks > 0 || candidate.narrationHeavyBlocks > 0 || candidate.lowDialogueBlocks > 0;
+  const offloadedScene = hasOffloadingQuestion(candidateText) && !hasSubstantialAiDevelopment(candidateText);
   const lockedLength = recentLengths.length > 0 && (() => {
     const lastLength = recentLengths[recentLengths.length - 1];
     const candidateLength = candidate.wordCount;
@@ -390,6 +435,7 @@ export function buildAssistantRepetitionRepairDirective(
   ].filter(Boolean);
   const qualityReasons = [
     frontLoaded ? 'front-loaded narration or weak dialogue balance' : '',
+    offloadedScene ? 'offloaded the scene to the user instead of developing the AI-controlled side' : '',
   ].filter(Boolean);
 
   const reasonGroupsPresent = [
@@ -400,12 +446,15 @@ export function buildAssistantRepetitionRepairDirective(
   const hasDirectCopyRisk = repeatedQuotes.length > 0
     && (repeatedTerms.length >= 2 || repeatedContentTerms.length >= 2);
   const hasRegenerationQuoteReuse = repeatedQuotes.length > 0 && comparisonMessages.length > 0;
-  const shouldRepair = reasonGroupsPresent >= 2 || hasDirectCopyRisk || hasRegenerationQuoteReuse;
+  const shouldRepair = reasonGroupsPresent >= 2 || hasDirectCopyRisk || hasRegenerationQuoteReuse || offloadedScene;
 
   const reasons = [...structureReasons, ...wordingReasons, ...qualityReasons];
 
   if (!shouldRepair || reasons.length === 0) return '';
 
   return `[OUTPUT REVISION REQUIRED]
-The draft response repeated ${reasons.join(', ')}. Regenerate the response once. Keep the same established facts, speaker tags, user-character boundaries, and emotional direction, but do not rewrite the same exchange with swapped wording. The new response must develop the AI-controlled character's side of the current exchange while preserving the user's control of their character. Use meaningful external dialogue when the character can speak, and avoid reusing the same descriptive focus, topic focus, sentence shape, or closing pattern.`;
+The draft needs revision because: ${reasons.join(', ')}.
+Rewrite once while preserving the current story facts, speaker tags, user-control boundaries, and user input.
+Use established details as causes or consequences, not repeated description.
+Add concrete AI-controlled development instead of restating the same structure, topic focus, closing pattern, or asking the user to carry the scene.`;
 }

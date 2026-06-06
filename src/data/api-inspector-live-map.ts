@@ -138,7 +138,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                 summary:
                   "The client still adds small turn-local wrappers, but the old runtime anti-loop system-message lane has been removed.",
                 fileRefs: [
-	                  ref("/src/components/chronicle/ChatInterfaceTab.tsx", "buildCanonNote"),
+	                  ref("/src/components/chronicle/ChatInterfaceTab.tsx", "buildEstablishedFactNote"),
                   ref("/src/components/chronicle/ChatInterfaceTab.tsx", "sessionMessageCountRef"),
                   ref("/src/services/llm.ts", "generateRoleplayResponseStream"),
                 ],
@@ -190,7 +190,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                   "The first system message serializes story state, cast state, memories, time, scene context, and the current roleplay rules into one instruction block.",
                 fileRefs: [
                   ref("/src/services/llm.ts", "getSystemInstruction"),
-                  ref("/src/services/llm.ts", "sandboxContext / coreMission"),
+                  ref("/src/services/llm.ts", "core role logic / core mission"),
                   ref("/src/constants/tag-injection-registry.ts", "content theme injection registry"),
                 ],
                 bullets: [
@@ -346,14 +346,14 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                 title: "Memory extraction",
                 tag: "edge-function",
                 summary:
-                  "The memory extractor converts the latest assistant reply into durable short-term and long-term continuity events.",
+                  "The memory extractor converts the latest user+assistant exchange into a few durable continuity facts that would create future inconsistency if forgotten.",
                 fileRefs: [
                   ref("/supabase/functions/extract-memory-events/index.ts", "serve"),
                   ref("/src/components/chronicle/ChatInterfaceTab.tsx", "queueAssistantMemoryExtraction"),
                 ],
                 bullets: [
-                  bullet("Input scope", "This pass is intentionally narrow: it focuses on the new assistant turn and the current conversation/session metadata."),
-                  bullet("Purpose", "It keeps old but still relevant events alive after the raw transcript window eventually stops carrying them."),
+                  bullet("Input scope", "This pass is intentionally narrow: it compares the newest exchange against recent saved memories and returns 0-3 short past-tense memory points."),
+                  bullet("Purpose", "It keeps old but still relevant facts alive after the raw transcript window eventually stops carrying them, without saving routine prose as memory."),
                 ],
                 review: ROLEPLAY_PIPELINE_REVIEW_20260515,
                 meta: ["memory extraction", "continuity"],
@@ -370,7 +370,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                 ],
                 bullets: [
                   bullet("Ledgered output", "Completed steps are persisted with source message and source generation lineage instead of being treated like fuzzy ambient progress."),
-                  bullet("Current limitation", "The evaluator uses an ALIGNED vs NOT_ALIGNED concept internally, but only completion gets persisted today."),
+                  bullet("Current open milestone", "The client sends only the first incomplete step for each writer-visible incomplete story goal, so the evaluator sees the active milestone without the full remaining checklist."),
                 ],
                 review: ROLEPLAY_PIPELINE_REVIEW_20260515,
                 meta: ["goal derivation", "completion ledger"],
@@ -389,7 +389,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                 ],
                 bullets: [
                   bullet("Recent slice", "The local working tree currently rereads only the freshest 10 filtered messages instead of re-chewing a much larger transcript every turn."),
-                  bullet("Allowlist", "Only supported character fields are allowed through, both on the edge side and again before client-side application."),
+                  bullet("Allowlist", "Only supported character fields are allowed through, and model-claimed evidence must match text from the latest exchange before the edge accepts an update."),
                 ],
                 review: ROLEPLAY_PIPELINE_REVIEW_20260515,
                 meta: ["state reconciliation", "last 10 messages", "allowlist"],
@@ -524,7 +524,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                   ref("/supabase/functions/generate-side-character-avatar/index.ts", "serve"),
                 ],
                 bullets: [
-                  bullet("Inputs", "The generator uses dialogue context, extracted trait scaffolding, and world context rather than trying to infer a side character from nothing."),
+                  bullet("Inputs", "The generator uses dialogue context, extracted trait scaffolding, and world context for setting fit; private generated fields must be supported by first-appearance evidence and are rechecked before persistence."),
                   bullet("Why optional", "This is a conditional follow-up lane, not part of the baseline chat request path."),
                 ],
                 review: ROLEPLAY_PIPELINE_REVIEW_20260515,
@@ -547,35 +547,35 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
       "Non-call systems that still materially change what Grok writes, what state gets preserved, and how regeneration or extraction stays branch-safe.",
     phases: [
       {
-        id: "support-trait-weighting",
-        title: "Support Group 1: Trait Weighting and Personality Adherence",
-        subtitle: "Traits are not serialized flatly. Chronicle applies weighting, visibility bias, and trend language before the model ever sees them.",
+        id: "support-trait-serialization",
+        title: "Support Group 1: Personality Trait Serialization",
+        subtitle: "Traits are serialized as character-card reference text. The current prompt path does not apply a numeric personality-weighting layer.",
         groups: [
           {
-            id: "support-trait-weighting-service",
+            id: "support-trait-serialization-service",
             title: "llm.ts + persistence/shared.ts",
-            description: "Trait normalization and the prompt-side wording that turns stored traits into live behavioral steering.",
+            description: "Trait normalization and the prompt-side wording that turns stored personality fields into live character-card reference text.",
             ownerTone: "service",
-            primaryRef: ref("/src/services/llm.ts", "formatTrait / getDefaultScore / buildTraitDescription"),
+            primaryRef: ref("/src/services/llm.ts", "renderPersonalityBlock / buildTraitDescription"),
             items: [
               {
-                id: "trait-weighting-rules",
-                title: "Flexibility defaults, outward/inward weighting, and trend shaping",
+                id: "trait-serialization-rules",
+                title: "Outward, inward, legacy, and fallback trait rendering",
                 tag: "core-prompt",
                 summary:
-                  "Chronicle assigns default adherence scores, makes outward traits more visible, softens inward traits in visible behavior, and includes trend language for changing traits.",
+                  "Chronicle renders populated personality fields into prompt reference text without applying score brackets, visibility offsets, or trend shaping.",
                 fileRefs: [
-                  ref("/src/services/llm.ts", "formatTrait / getDefaultScore / describeTrendShift"),
+                  ref("/src/services/llm.ts", "personality trait serialization"),
                   ref("/src/services/persistence/shared.ts", "asPersonalityTraits"),
                   ref("/src/types.ts", "PersonalityTrait / scoreTrend / outwardTraits / inwardTraits"),
                 ],
                 bullets: [
-                  bullet("Defaults", "Rigid traits default to 100 while normal and flexible traits default to 75 unless a stored adherence score overrides them."),
-                  bullet("Visibility bias", "Outward traits get a +15 boost and inward traits get a -10 drag before prompt wording is generated."),
-                  bullet("Trend", "scoreTrend can mark a trait as rising, falling, or stable so the prompt can talk about a personality shift instead of pretending traits are frozen forever."),
+                  bullet("Split mode", "Outward and inward traits render under separate headings when the card uses split personality mode."),
+                  bullet("Legacy fallback", "Older flat trait arrays still render as personality reference text."),
+                  bullet("No score math", "The current runtime renders trait fields directly before API Call 1 instead of converting them into numeric influence tiers."),
                 ],
                 review: ROLEPLAY_PIPELINE_REVIEW_20260515,
-                meta: ["rigid=100", "normal/flexible=75", "outward +15", "inward -10"],
+                meta: ["outward/inward headings", "legacy trait fallback", "no score math"],
               },
             ],
           },
@@ -915,7 +915,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                   ref("/src/components/chronicle/ChatInterfaceTab.tsx", "generate-scene-image invoke"),
                 ],
                 bullets: [
-                  bullet("Scoped context", "This lane uses a small recent message window rather than the full roleplay transcript."),
+                  bullet("Scoped context", "This lane uses a small recent message window and visual-only character descriptors rather than the full roleplay transcript or private character-card fields."),
                   bullet("Result", "A returned image URL is appended back into chat as an image message instead of changing the narrative state directly."),
                 ],
                 review: ROLEPLAY_PIPELINE_REVIEW_20260515,
@@ -942,7 +942,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                   ref("/supabase/functions/generate-scene-image/index.ts", "generateImage"),
                 ],
                 bullets: [
-                  bullet("Two-step lane", "It uses a text-model analysis pass before the actual image-model request so the prompt can stay compact but still scene-aware."),
+                  bullet("Two-step lane", "It uses visual-field whitelisting and a schema-bound text-model analysis pass before the actual image-model request so the prompt can stay compact, visual, and scene-aware."),
                   bullet("Separation", "This lane is roleplay-adjacent, not part of the core chat turn loop that writes and reconciles dialogue."),
                 ],
                 review: ROLEPLAY_PIPELINE_REVIEW_20260515,

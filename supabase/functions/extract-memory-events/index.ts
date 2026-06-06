@@ -6,6 +6,21 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
 
+const MEMORY_POINT_MAX_CHARS = 140;
+
+function trimAtWordBoundary(value: string, maxChars: number): string {
+  if (value.length <= maxChars) return value;
+  const clipped = value.slice(0, Math.max(0, maxChars - 3)).trimEnd();
+  const lastSpace = clipped.lastIndexOf(" ");
+  const base = lastSpace > 80 ? clipped.slice(0, lastSpace).trimEnd() : clipped;
+  return `${base}...`;
+}
+
+function normalizeMemoryPoint(value: string): string {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  return trimAtWordBoundary(normalized, MEMORY_POINT_MAX_CHARS);
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: getCorsHeaders(req) });
@@ -59,8 +74,8 @@ RECENT SAVED MEMORIES:
 ${existingMemoryText}
 
 --- EXTRACT ---
-- Relationship milestones, intimacy milestones, durable agreements, promises, rules, secrets revealed, major decisions, injuries, pregnancy/status changes, persistent location changes, appearance changes, or new backstory that would cause a future inconsistency if forgotten.
-- Include facts introduced by the USER even if the AI response did not repeat them.
+- Extract only durable facts that would cause future inconsistency if forgotten.
+- Include durable facts introduced by the USER even if the AI response did not repeat them.
 - Use past tense and include character names.
 
 --- IGNORE ---
@@ -70,7 +85,7 @@ ${existingMemoryText}
 --- RULES ---
 - Return 0-3 events maximum.
 - Empty array is valid when nothing durable happened.
-- Keep each point under 90 characters.
+- Keep each point under 140 characters when possible, but preserve why the fact matters.
 - For preferences, intentions, rules, or secrets, state who they belong to.
 - If a recent saved memory already preserves the same durable fact, do not return it again.
 
@@ -169,6 +184,8 @@ Empty events are acceptable.`;
 
     extractedEvents = extractedEvents
       .filter((e: any) => typeof e === 'string' && e.trim().length > 0)
+      .map((e: string) => normalizeMemoryPoint(e))
+      .filter((e: string) => e.length > 0)
       .slice(0, 3);
 
     console.log(`[extract-memory-events] Extracted ${extractedEvents.length} events from latest exchange`);

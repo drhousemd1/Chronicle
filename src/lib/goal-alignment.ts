@@ -107,7 +107,7 @@ export function applyGoalAlignmentEvaluation(
 
 export function shouldRenderGoalToWriter(alignment?: GoalAlignmentState, flexibility: GoalFlexibility = 'normal'): boolean {
   if (!alignment) return true;
-  return !(alignment.status === 'dropped' && flexibility !== 'rigid');
+  return alignment.status !== 'dropped';
 }
 
 export function describeGoalAlignmentForPrompt(
@@ -117,7 +117,7 @@ export function describeGoalAlignmentForPrompt(
   if (!alignment) return '';
 
   const score = clampScore(alignment.score);
-  if (alignment.status === 'dropped' && flexibility !== 'rigid') {
+  if (alignment.status === 'dropped') {
     return `Current alignment: dropped, score ${score}/100. The user and scene have repeatedly moved away from this goal; do not pursue it unless the user reintroduces it.`;
   }
   if (alignment.status === 'resisted') {
@@ -127,7 +127,7 @@ export function describeGoalAlignmentForPrompt(
     return `Current alignment: drifting, score ${score}/100, trend ${alignment.trend}. The scene has been carrying away from this goal; keep it in background unless a natural opening returns.`;
   }
   if (alignment.status === 'supported') {
-    return `Current alignment: supported, score ${score}/100, trend ${alignment.trend}. The user and scene have been receptive; keep momentum natural without forcing the next beat.`;
+    return `Current alignment: supported, score ${score}/100, trend ${alignment.trend}. The user and scene have been receptive; keep momentum natural without forcing the next response.`;
   }
   if (alignment.status === 'dormant') {
     return `Current alignment: dormant, score ${score}/100. Keep this as background context and wait for a relevant opening.`;

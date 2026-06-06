@@ -107,7 +107,7 @@ export function formatChatDebugTraceForSessionLog(
   lines.push(`- Focus character: ${trace.planner.plan.focusCharacter || 'none'}`);
   lines.push(`- Allowed speakers: ${joinOrFallback(trace.planner.plan.allowedSpeakers, '(none)')}`);
   lines.push(`- Max speaker blocks: ${trace.planner.plan.maxSpeakerBlocks}`);
-  lines.push(`- Immediate beat: ${trace.planner.plan.immediateBeat || '(none)'}`);
+  lines.push(`- Immediate scene focus: ${trace.planner.plan.immediateSceneFocus || '(none)'}`);
   lines.push(`- Direct questions to answer: ${joinOrFallback(trace.planner.plan.directQuestionsToAnswer, '(none)')}`);
   lines.push(`- Mentioned AI characters: ${joinOrFallback(trace.planner.plan.mentionedAiCharacters, '(none)')}`);
   lines.push(`- Must include: ${joinOrFallback(trace.planner.plan.mustInclude, '(none)')}`);

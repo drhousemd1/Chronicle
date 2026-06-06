@@ -152,9 +152,7 @@ const defaultUiSettings: UiSettings = {
   transparentBubbles: false,
   darkMode: true,
   offsetBubbles: false,
-  proactiveCharacterDiscovery: true,
   dynamicText: true,
-  proactiveNarrative: true,
   narrativePov: "third",
   nsfwIntensity: "high",
   realismMode: false,
@@ -244,8 +242,8 @@ function makeScenario(uiOverrides: Partial<UiSettings> = {}): ScenarioData {
         id: "{{conversation.id}}",
         title: "{{conversation.title}}",
         messages: [
-          { id: "history-user", role: "user", text: "{{prior user message inside the 9-message API Call 1 history cap}}", createdAt: now, day: 1, timeOfDay: "sunrise" },
-          { id: "history-ai", role: "assistant", text: "{{prior assistant message inside the 9-message API Call 1 history cap}}", createdAt: now, day: 1, timeOfDay: "sunrise" },
+          { id: "history-user", role: "user", text: "{{prior user message inside the five-prior-message API Call 1 history cap}}", createdAt: now, day: 1, timeOfDay: "sunrise" },
+          { id: "history-ai", role: "assistant", text: "{{prior assistant message inside the five-prior-message API Call 1 history cap}}", createdAt: now, day: 1, timeOfDay: "sunrise" },
         ],
         currentDay: 1,
         currentTimeOfDay: "sunrise",
@@ -287,8 +285,6 @@ function extractSection(fullPrompt: string, sectionHeading: string): string {
 const defaultCall1System = call1System();
 const chatSettingBlockHeadings = [
   "NARRATIVE POV:",
-  "CHARACTER DISCOVERY:",
-  "PROACTIVE AI MODE:",
   "NSFW INTENSITY:",
   "RESPONSE DETAIL:",
   "REALISM MODE:",
@@ -313,20 +309,6 @@ const call1SettingGroups = [
     branches: [
       ["First Person", extractChatSettingBlock(call1System({ narrativePov: "first" }), "NARRATIVE POV:")],
       ["Third Person", extractChatSettingBlock(call1System({ narrativePov: "third" }), "NARRATIVE POV:")],
-    ],
-  },
-  {
-    label: "Character Discovery",
-    branches: [
-      ["Proactive / On", extractChatSettingBlock(call1System({ proactiveCharacterDiscovery: true }), "CHARACTER DISCOVERY:")],
-      ["Strict / Off", extractChatSettingBlock(call1System({ proactiveCharacterDiscovery: false }), "CHARACTER DISCOVERY:")],
-    ],
-  },
-  {
-    label: "Proactive AI Mode",
-    branches: [
-      ["On", extractChatSettingBlock(call1System({ proactiveNarrative: true }), "PROACTIVE AI MODE:")],
-      ["Off", extractChatSettingBlock(call1System({ proactiveNarrative: false }), "PROACTIVE AI MODE:")],
     ],
   },
   {
@@ -412,7 +394,7 @@ const goalProgressSystemPrompt = `You are a precise story goal classifier. Respo
 const goalProgressUserPrompt = `You are a story goal progress evaluator. Analyze how the latest exchange relates to each pending story step.
 {{timeContext}}
 PENDING STEPS:
-{{pendingSteps rendered with step_id, goal_id, goal_title, goal_desired_outcome, goal_current_status, guidance_strength, and step_description}}
+{{one current open milestone per writer-visible story goal, rendered with step_id, goal_id, goal_title, goal_desired_outcome, goal_current_status, guidance_strength, and step_description}}
 
 USER MESSAGE:
 {{userMessage}}
@@ -494,38 +476,27 @@ const sceneImageAnalysisPrompt = `You are an Image Prompt Optimizer. Analyze the
     {
       "name": "string",
       "genderPresentation": "feminine" | "masculine" | "androgynous",
-      "weightedTraits": "string with (trait:weight) format for physical/sexual traits only, or null if none",
-      "bodyDescription": "short phrase: age, hair color, skin tone, figure type - under 30 chars",
-      "pose": "body position inferred from dialogue actions - under 25 chars",
-      "expression": "facial expression inferred from dialogue emotion - under 15 chars",
-      "clothing": "what they're wearing, simplified - under 40 chars"
+      "weightedTraits": "string with (trait:weight) format for explicit relevant visible traits, or null if none",
+      "bodyDescription": "short visible appearance phrase from established data, or generic adult character if unavailable",
+      "pose": "body position established by dialogue actions, or empty string",
+      "expression": "facial expression established by dialogue emotion, or empty string",
+      "clothing": "established visible clothing, simplified, or empty string"
     }
   ],
   "scene": "one or two words for location",
   "cameraAngle": "medium shot" | "full body" | "close-up"
 }
 
-===== WEIGHTING RULES (MANDATORY) =====
-Add weights ONLY to physical/sexual traits. Use (trait:weight) format.
-- Large breasts: (extreme bust size:1.4) (very large bust:1.3) (heavy breasts:1.2)
-- Small breasts: (petite bust:1.3) (small chest:1.2) (flat chest:1.3)
-- Hips/waist: (wide hips:1.2) (slim waist:1.1) (hourglass figure:1.15)
-- Muscles: (muscular build:1.2) (toned physique:1.15) (broad shoulders:1.2)
-- Use 1.3-1.4 for exaggerated features, 1.1-1.2 for subtle emphasis
-- If character has NO notable physical/sexual traits mentioned, set weightedTraits to null
+===== WEIGHTING RULES =====
+Use weightedTraits sparingly. Add weights only for visual traits that are explicitly present in character data and relevant to the requested image. Prefer distinctive non-sensitive visible traits before body or sexual emphasis. Apply body or sexual weights only when those traits are explicit and visually relevant to this image. If unsure, set weightedTraits to null.
 
 ===== GENDER PRESENTATION RULES =====
-Analyze the character's PHYSICAL DESCRIPTION, not just their sex field.
-- "feminine": breasts mentioned, soft features, curves, long hair, feminine clothing, developing female traits
-- "masculine": flat chest, defined muscles, facial hair, short hair, masculine clothing, broad build
-- "androgynous": mixed traits, non-binary presentation, or traits are unclear/unspecified
-A character with sex="male" but developing breasts/feminine traits = "feminine"
-A character with sex="female" but muscular/masculine presentation = "masculine"
+Base genderPresentation on visible presentation from established character data or recent dialogue. Consider styling, clothing, build, and described appearance. Use "androgynous" when presentation is mixed, unclear, or not visually established. Do not infer private anatomy or identity from sparse cues.
 
 ===== INFERENCE RULES =====
 If character data is sparse:
-- Infer reasonable defaults (adult, average build unless stated otherwise)
-- Do NOT invent sexual traits not mentioned - only weight what exists
+- Use null, empty, or generic values when visual data is not established by character data or recent dialogue.
+- Do not fill visual fields by guessing from story genre, sexual content, or private character data.
 - bodyDescription should capture the essence in minimal words
 
 If character data is verbose:
@@ -584,12 +555,15 @@ Character goals:
 - goals.GoalTitle
 
 --- CORE TASK ---
-- Review the latest user message and AI response against every supported field for each eligible character.
-- Return an update when the latest exchange changes, reveals, corrects, progresses, completes, or contradicts a supported field.
-- Return no update when the existing card is still accurate or when the evidence is weak.
+- Review the latest exchange against every supported field for each eligible character.
+- Treat user-established facts and mutually visible outcomes as stronger evidence than unsupported assistant-only assumptions.
+- Return an update only when the latest exchange directly supports a material change to a supported field.
+- Use recent context only to confirm continuity or conflict with the proposed update.
+- If the only support is an assistant-generated assumption that conflicts with current saved state, physical continuity, or the user's latest message, omit the update.
+- Return no update when the existing card is still accurate, the evidence is weak, or the proposed value only rewords existing information.
 - Use the real field path from SUPPORTED FIELD PATHS. Never create fake containers such as sections.Goals.* when goals.* exists.
 - Preserve current card information unless the latest exchange gives a clear reason to change it.
-- Every returned update must include evidence from the latest exchange and a confidence score from 0 to 1. If you cannot point to the exchange text that supports the change, omit the update.
+- Every returned update must include a short exact phrase from the latest exchange as evidence and a confidence score from 0 to 1. If you cannot quote the exchange text that supports the change, omit the update.
 
 --- FIELD GUIDANCE ---
 - currentMood: emotional/psychological state only, max 12 words. No body-part prose, clothing, objects, or action sequences.
@@ -626,19 +600,23 @@ Character goals:
 Return only this JSON shape:
 {
   "updates": [
-    { "character": "CharacterName", "field": "currentMood", "value": "Nervous but determined", "evidence": "Short quote or close paraphrase from this exchange.", "confidence": 0.86 },
-    { "character": "CharacterName", "field": "scenePosition", "value": "beside the relevant scene object", "evidence": "Short quote or close paraphrase from this exchange.", "confidence": 0.9 },
-    { "character": "CharacterName", "field": "relationships._extras", "value": "OtherCharacter: Trusted after sharing important information", "evidence": "Short quote or close paraphrase from this exchange.", "confidence": 0.82 },
-    { "character": "CharacterName", "field": "goals.Rebuild Trust", "value": "current_status: First honest conversation happened. | progress: 25 | complete_steps: 1", "evidence": "Short quote or close paraphrase from this exchange.", "confidence": 0.8 },
-    { "character": "CharacterName", "field": "goals.Establish Lasting Dynamic", "value": "desired_outcome: CharacterName and OtherCharacter establish a sustained relationship dynamic that changes how they make decisions, communicate, and behave together. | current_status: Goal newly established. | progress: 0 | new_steps: Step 1: CharacterName tests whether OtherCharacter is receptive to the dynamic through low-pressure conversation or behavior. Step 2: CharacterName creates a repeated pattern that makes the dynamic part of their normal interactions. Step 3: CharacterName deepens the dynamic through a more meaningful commitment, ritual, agreement, or recurring behavior. Step 4: The characters confront the main resistance, uncertainty, or consequence preventing the dynamic from becoming stable. Step 5: The dynamic becomes an accepted part of the ongoing relationship and affects future choices.", "evidence": "Short quote or close paraphrase from this exchange.", "confidence": 0.78 }
+    {
+      "character": "CharacterName",
+      "field": "supported.fieldPath",
+      "value": "Proposed saved value",
+      "evidence": "Short exact phrase from the latest exchange.",
+      "confidence": 0.0
+    }
   ]
 }
+
+Examples are structural only. Do not copy example field paths, labels, goal names, relationship types, settings, genres, or wording into real updates.
 
 Return ONLY valid JSON. No explanations.`;
 
 const characterStateSyncUserPrompt = `Analyze the latest exchange and return only material supported character-card deltas.
 
-{{recentContext ? "RECENT CONVERSATION CONTEXT (for pattern detection):\\n" + recentContext : ""}}
+{{recentContext ? "RECENT CONVERSATION CONTEXT (for continuity and conflict checking only):\\n" + recentContext : ""}}
 
 ---
 
@@ -713,7 +691,7 @@ RECENT SAVED MEMORIES:
 {{recentExistingMemories as bullet list, or "(none)"}}
 
 --- EXTRACT ---
-- Relationship milestones, intimacy milestones, durable agreements, promises, rules, secrets revealed, major decisions, injuries, pregnancy/status changes, persistent location changes, appearance changes, or new backstory that would cause a future inconsistency if forgotten.
+- Extract only durable facts that would cause future inconsistency if forgotten.
 - Include facts introduced by the USER even if the AI response did not repeat them.
 - Use past tense and include character names.
 
@@ -724,56 +702,24 @@ RECENT SAVED MEMORIES:
 --- RULES ---
 - Return 0-3 events maximum.
 - Empty array is valid when nothing durable happened.
-- Keep each point under 90 characters.
+- Keep each point under 140 characters when possible, but preserve why the fact matters.
 - For preferences, intentions, rules, or secrets, state who they belong to.
 - If a recent saved memory already preserves the same durable fact, do not return it again.
 
 Return ONLY JSON matching the requested schema. Empty events are acceptable.`;
 
-const sideCharacterSystemPrompt = `You are a creative writing assistant specialized in character creation for roleplay stories. You generate detailed, consistent character profiles. Return ONLY valid JSON with no markdown code blocks or extra formatting.`;
+const sideCharacterSystemPrompt = `You generate source-supported starter profiles for side characters in roleplay stories. Return only the requested JSON object. Do not invent private or hidden details from thin context.`;
 
-const sideCharacterUserPrompt = `Based on this character's first appearance in a roleplay story, generate a detailed profile.
+const sideCharacterUserPrompt = `Based on this character's first appearance in a roleplay story, generate a starter side-character profile.
 
 CHARACTER NAME: {{name}}
 FIRST APPEARANCE DIALOG: {{dialogContext}}
 EXTRACTED TRAITS: {{JSON.stringify(extractedTraits || {})}}
 WORLD CONTEXT: {{worldContext || 'Modern setting'}}
 
-Generate a JSON object with these fields (be creative but consistent with the dialog context):
-- nicknames: comma-separated string of alternative names, pet names, or aliases this character might be called (can be empty if none)
-- age: estimated age as string (e.g., "25", "mid-30s")
-- sexType: sex/gender identity (e.g., "Female", "Male", "Non-binary")
-- sexualOrientation: sexual orientation (e.g., "Heterosexual", "Bisexual", "Homosexual", "Pansexual")
-- roleDescription: their role in the story - what they do or their relationship to other characters (1 sentence)
-- physicalAppearance: object with these fields (fill in what can be inferred, leave empty string if unknown):
-  - hairColor: string
-  - eyeColor: string
-  - build: string (e.g., "Athletic", "Slim", "Curvy")
-  - height: string (e.g., "Tall", "Average", "Short")
-  - skinTone: string
-  - bodyHair: string
-  - breastSize: string (if applicable)
-  - genitalia: string (if mentioned)
-  - makeup: string
-  - bodyMarkings: string
-  - temporaryConditions: string
-- currentlyWearing: object with:
-  - top: string
-  - bottom: string
-  - undergarments: string
-  - miscellaneous: string
-- background: object with:
-  - relationshipStatus: string (e.g., "Single", "Married", "Unknown")
-  - residence: string (where they live)
-  - educationLevel: string
-- personality: object with:
-  - traits: array of 1-2 personality traits as strings
-  - miscellaneous: string (other personality notes)
-  - secrets: string (a secret they might have)
-  - fears: string
-  - kinksFantasies: string (if applicable to adult content)
-  - desires: string (what they want)
-- avatarPrompt: a detailed image generation prompt for creating their portrait (describe their appearance for an AI image generator)
+Generate the requested JSON object using only the supplied first appearance, extracted traits, and world context. Be creative only where the supplied context supports a reasonable public-facing inference. Leave private or hidden details empty unless the first appearance directly establishes them. Do not infer private sexuality, intimate anatomy, undergarments, secrets, fears, kinks, or hidden desires from name, role, genre, or story tone alone.
+
+Public visible fields may be estimated cautiously from the first appearance. Private fields must stay empty unless directly supported. The avatarPrompt must describe public visible appearance only.
 
 Return ONLY valid JSON, no markdown formatting.`;
 
@@ -959,9 +905,9 @@ REQUEST BODY SHAPE
 {
   "messages": [
     { "role": "system", "content": "<the full system message below>" },
-    { "role": "user", "content": "{{up to 9 prior roleplay messages before the current turn; local notices excluded}}" },
-    { "role": "assistant", "content": "{{up to 9 prior roleplay messages before the current turn; local notices excluded}}" },
-    { "role": "user", "content": "{{optional session counter}}\\n\\n{{current scene snapshot when prior assistant context exists}}\\n\\n{{optional one-turn adaptive style, detailed-collapse, or repair directive}}\\n\\n{{latest user text OR continue instruction wrapper}}{{optional previous assistant response reference appended after triggering user text during regeneration}}{{optional regeneration request}}\\n\\n{{executionBrief}}" }
+    { "role": "user", "content": "{{up to 5 prior roleplay messages before the current turn; local notices excluded}}" },
+    { "role": "assistant", "content": "{{up to 5 prior roleplay messages before the current turn; local notices excluded}}" },
+    { "role": "user", "content": "[APP TURN CONTROLS]\\n{{optional session counter}}\\n\\n{{current scene snapshot when prior assistant context exists}}\\n\\n{{optional one-turn adaptive style, detailed-collapse, or repair directive}}\\n\\n{{optional regeneration request}}\\n\\n{{executionBrief}}\\n\\n[PLAYER TURN]\\n{{latest user text OR continue instruction wrapper}}{{optional previous assistant response reference appended after triggering user text during regeneration}}" }
   ],
   "modelId": "grok-4.3",
   "stream": true,
@@ -1034,7 +980,31 @@ FULL SYSTEM MESSAGE GENERATED BY getSystemInstruction()
 ${defaultCall1SystemForReview}
 
 ================================================================================
-CURRENT SCENE SNAPSHOT APPENDED TO FINAL USER MESSAGE WHEN PRIOR ASSISTANT CONTEXT EXISTS
+FINAL USER MESSAGE STRUCTURE SENT TO xAI
+================================================================================
+
+The final role:user message is split into labeled blocks so app controls do not read like player-authored roleplay prose.
+
+[APP TURN CONTROLS]
+[SESSION: Message {{sessionMessageCount}} of current session] when supplied
+
+[CURRENT SCENE SNAPSHOT] when prior assistant context exists
+The previous assistant response is already in the conversation history. Use it only to preserve story state; do not copy its opening structure or continue from it unless the final instruction below says to continue.
+
+[STYLE ADJUSTMENT FOR THIS TURN] only when runtime detectors trigger
+{{adaptiveStyleDirective}}
+
+[REGENERATION REQUEST] only when regenerating
+{{regenerationDirective}}
+
+[EXECUTION BRIEF]
+{{executionBrief}}
+
+[PLAYER TURN]
+{{latest user text}}
+
+================================================================================
+CURRENT SCENE SNAPSHOT INSIDE [APP TURN CONTROLS] WHEN PRIOR ASSISTANT CONTEXT EXISTS
 ================================================================================
 
 [CURRENT SCENE SNAPSHOT]
@@ -1065,7 +1035,7 @@ The background user-authored turn above is only there to preserve established fa
 Write only for AI-controlled characters: {{AI-controlled character names}}.
 Do not write dialogue, actions, or thoughts for user-controlled characters: {{User-controlled character names}}.
 {{GOAL CONTINUITY block when visible goals have open milestones}}
-Do not complete an action for a user-controlled character after an AI character gives them an instruction. The AI may command, prepare, or act itself, but the user must author the user-controlled character's execution.
+Do not complete an action for a user-controlled character after an AI character gives them an instruction. The AI can command, prepare, or act itself, but the user must author the user-controlled character's execution.
 Use active story and character goals as continuity, not as a checklist. Continue only as far as the current scene naturally supports, and stop before the response depends on an unmade user choice or action.
 Develop the AI-controlled character's side of the current exchange enough that it follows the active RESPONSE DETAIL setting while preserving user control.
 If an AI character asked or was asked a question, acknowledge that question in this response. Acknowledgement can be a direct answer, refusal, deflection, counter-question, visible hesitation, or turning the question toward another present character.
@@ -1098,29 +1068,38 @@ NSFW INTENSITY RULES ARE PART OF THE SYSTEM MESSAGE, NOT REPEATED IN THE FINAL U
 // The selected NSFW Intensity branch appears in SECTION 8 of the system message.
 // The final user message does not append a separate active NSFW context reminder.
 
-EXECUTION BRIEF APPENDED TO FINAL USER MESSAGE ON EVERY LIVE ROLEPLAY CALL
+EXECUTION BRIEF APPENDED INSIDE [APP TURN CONTROLS] ON EVERY LIVE ROLEPLAY CALL
 ================================================================================
 
 ${EXECUTION_BRIEF_TEXT}
 
 ================================================================================
-OUTPUT REVISION REQUIRED APPENDED ONLY TO ONE-TIME REPAIR RETRY FOR SEND, REGENERATE, OR CONTINUE WHEN THE FIRST DRAFT REPEATS RECENT ASSISTANT OUTPUT
+OUTPUT REVISION REQUIRED APPENDED ONLY TO ONE-TIME REPAIR RETRY FOR SEND, REGENERATE, OR CONTINUE WHEN THE FIRST DRAFT REPEATS OR OFFLOADS
 ================================================================================
 
 // This is a hidden local retry. The first draft is discarded unless the retry fails, and both attempts are attached to the debug export for the source assistant message.
 
 [OUTPUT REVISION REQUIRED]
-The draft response repeated {{runtime reasons from buildAssistantRepetitionRepairDirective()}}. Regenerate the response once. Keep the same established facts, speaker tags, user-character boundaries, and emotional direction, but do not rewrite the same exchange with swapped wording. The new response must develop the AI-controlled character's side of the current exchange while preserving the user's control of their character. Use meaningful external dialogue when the character can speak, and avoid reusing the same descriptive focus, topic focus, sentence shape, or closing pattern.
+The draft needs revision because: {{runtime reasons}}.
+Rewrite once while preserving the current story facts, speaker tags, user-control boundaries, and user input.
+Use established details as causes or consequences, not repeated description.
+Add concrete AI-controlled development instead of restating the same structure, topic focus, closing pattern, or asking the user to carry the scene.
 
 ================================================================================
 STYLE ADJUSTMENT AND DETAILED-COLLAPSE DIRECTIVES APPENDED ONLY WHEN RUNTIME DETECTORS TRIGGER
 ================================================================================
 
 [STYLE ADJUSTMENT FOR THIS TURN]
-Your own recent assistant responses are repeating {{runtime reasons from buildAssistantStyleDirective()}}. Compare against your own previous 2-3 assistant character blocks, not the user's message. Vary the next response naturally. If your recent blocks keep opening with narration before speech, start with external dialogue when that fits the current exchange and let action support the conversation instead of repeating the same opening shape. Do not reuse the same descriptive focus, topic focus, sentence shape, or short reactive line unless the current scene specifically calls for that repetition.
+Recent assistant responses are repeating: {{runtime reasons}}.
+Use recent assistant messages for story state, not as a style template.
+Use established details as causes or consequences, not repeated description or topic recycling, when repeated descriptive or content focus is detected.
+Move into purposeful external dialogue when present AI-controlled characters can naturally speak, when narration-heavy or low-dialogue output is detected.
+Vary the next response with a natural structure that fits the current exchange and active Response Detail setting.
 
 [STYLE CORRECTION]
-Recent messages provide story state and continuity, not a template for response length. The active Response Detail setting calls for a developed response, so write the AI-controlled character's side of the current exchange with substantial external dialogue when speech is natural and enough action or description to make the moment clear. Do not pad with repeated details.`;
+Recent assistant responses are shorter or less developed than the active Response Detail setting calls for.
+Use recent messages for story state, not as a response-length template.
+Develop the AI-controlled side of the current exchange with meaningful external dialogue when speech is natural and enough action or description to make the moment clear before stopping for the user.`;
 }
 
 function buildApiCall2SupportDocument() {
@@ -1142,7 +1121,7 @@ BROWSER-TO-EDGE REQUEST BODY SHAPE
 {
   "userMessage": "{{latest user message}}",
   "aiResponse": "{{latest assistant response}}",
-  "recentContext": "{{up to 10 recent roleplay messages for pattern detection}}",
+  "recentContext": "{{up to 10 recent roleplay messages for continuity/conflict checking}}",
   "characters": "{{current session-merged character cards eligible for state sync}}",
   "eligibleCharacters": "{{speaker/mention-filtered character names}}",
   "currentDay": "{{currentDay}}",
@@ -1184,6 +1163,9 @@ ${characterStateSyncUserPrompt}
 If the primary xAI request returns HTTP 403, the function retries once with this shorter fallback request.
 The fallback still uses structured output, but it is deliberately restricted to non-explicit metadata and cannot create, remove, or advance goals.
 
+EDGE VALIDATION NOTE
+The edge function does not trust model-claimed evidence by itself. Candidate evidence is normalized and must match text from the latest user message or latest assistant response. Recent context can help identify continuity conflicts, but it cannot by itself authorize a new saved update.
+
 FALLBACK SYSTEM MESSAGE
 ${characterStateSyncFallbackSystemPrompt}
 
@@ -1205,7 +1187,7 @@ EDGE RESPONSE SHAPE
     {
       "index": 0,
       "accepted": true,
-      "reason": "accepted|invalid_candidate_shape|missing_required_value|unknown_character|ambiguous_character_alias|unsupported_field|unsupported_value|invalid_current_mood|low_confidence|missing_evidence|filtered_by_state_guard|superseded_by_refinement|goals_disabled_in_safe_retry|parse_error|updates_not_array|missing_json_object|no_json_object",
+      "reason": "accepted|invalid_candidate_shape|missing_required_value|unknown_character|ambiguous_character_alias|unsupported_field|unsupported_value|invalid_current_mood|low_confidence|missing_evidence|evidence_not_in_latest_exchange|filtered_by_state_guard|superseded_by_refinement|goals_disabled_in_safe_retry|parse_error|updates_not_array|missing_json_object|no_json_object",
       "character": "{{resolved character name}}",
       "field": "{{supported field path}}",
       "value": "{{proposed value}}",
@@ -1319,6 +1301,9 @@ BROWSER DEBUG ANNOTATIONS ADDED BEFORE PERSISTENCE
   "acceptedStepCompletions": "{{accepted review rows that can persist}}",
   "rejectedStepCompletions": "{{rejected review rows}}"
 }
+
+GOAL STEP DISCLOSURE NOTE
+The browser sends only the first incomplete milestone for each writer-visible story goal to this support call. Future milestones inside that same goal are withheld until the current milestone is completed.
 
 ================================================================================
 SUPPORT CALL: GOAL ALIGNMENT EVALUATION
@@ -1450,6 +1435,9 @@ EDGE RESPONSE SHAPE
   "parseError": "{{present only when the model response was malformed}}"
 }
 
+MEMORY OUTPUT CLEANUP NOTE
+The edge function collapses whitespace, removes empty entries, trims overlong memory strings at a word boundary, and returns at most three events before browser-side duplicate filtering runs.
+
 	================================================================================
 SUPPORT CALL: DAY MEMORY COMPRESSION
 ================================================================================
@@ -1473,7 +1461,8 @@ REQUEST BODY SHAPE SENT TO xAI
     { "role": "system", "content": "<system prompt below>" },
     { "role": "user", "content": "<user prompt below>" }
   ],
-  "temperature": 0.3
+  "temperature": 0.3,
+  "max_tokens": 350
 }
 
 ${edgeToXaiChatHeaders}
@@ -1485,6 +1474,9 @@ ${memoryCompressionSystemPrompt}
 
 USER MESSAGE
 ${memoryCompressionUserPrompt}
+
+OUTPUT CLEANUP NOTE
+The edge function collapses whitespace, removes obvious list-prefix formatting if present, limits the synopsis to at most three sentences, and caps the final saved string before returning it.
 
 ================================================================================
 SUPPORT CALL: SIDE-CHARACTER GENERATION
@@ -1512,12 +1504,23 @@ REQUEST BODY SHAPE SENT TO xAI
     { "role": "system", "content": "<system prompt below>" },
     { "role": "user", "content": "<user prompt below>" }
   ],
-  "temperature": 0.8
+  "temperature": 0.55,
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "chronicle_side_character_profile",
+      "schema": "{{starter side-character profile subset schema used for generated profile fields}}"
+    }
+  }
 }
 
 ${edgeToXaiChatHeaders}
 
 ${requestPolicyNotes}
+${supportJsonSchemaPolicyNote}
+
+PROFILE SANITATION NOTE
+The edge function sanitizes the parsed profile before returning it. The browser sanitizes again before merging into saved side-character state and before sending avatarPrompt to the avatar path. Unsupported private or hidden details are blanked rather than persisted from thin first-appearance context. World context may shape public setting fit, but it does not prove private generated fields; private-field support must come from the first appearance or extracted first-appearance traits. Empty generated nested fields do not overwrite existing extracted side-character details.
 
 SYSTEM MESSAGE
 ${sideCharacterSystemPrompt}
@@ -1626,14 +1629,14 @@ BROWSER-TO-EDGE REQUEST BODY SHAPE
   "recentMessages": [
     { "role": "user|assistant", "text": "{{up to 5 recent roleplay messages used as visual context}}" }
   ],
-  "characters": "{{current character appearance and clothing summaries}}",
+  "characters": "{{visual-only current character appearance and outer-clothing summaries}}",
   "sceneLocation": "{{active scene tag or undefined}}",
   "timeOfDay": "{{currentTimeOfDay}}",
   "artStylePrompt": "{{selected art style backend prompt}}",
   "modelId": "grok-4.3"
 }
 
-Known implementation note: the current browser payload uses the text property shown above, while the edge function's dialogue-context builder currently reads a content property. That runtime contract should be reconciled in a focused scene-image patch; this document reflects what the browser sends today.
+Runtime note: the browser sends only visual-safe character fields to this image lane, and the edge function whitelists those visual fields again before analysis. The edge function accepts either text or content for recent message text so browser review payloads and edge analysis stay aligned.
 
 SCENE IMAGE TEXT ANALYSIS REQUEST BODY SENT TO xAI
 {
@@ -1641,13 +1644,24 @@ SCENE IMAGE TEXT ANALYSIS REQUEST BODY SENT TO xAI
   "messages": [
     { "role": "user", "content": "<analysis prompt below>" }
   ],
-  "temperature": 0.3
+  "temperature": 0.3,
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "chronicle_scene_image_analysis",
+      "schema": "{{characters, scene, and cameraAngle schema with nullable weightedTraits}}"
+    }
+  }
 }
 
 ${edgeToXaiChatHeaders}
+${supportJsonSchemaPolicyNote}
 
 SCENE IMAGE ANALYSIS PROMPT
 ${sceneImageAnalysisPrompt}
+
+SCENE IMAGE NORMALIZATION NOTE
+The edge function normalizes parsed analysis before prompt assembly. Missing or malformed analysis falls back to generic adult character, androgynous presentation, null weighted traits, and empty pose/expression/clothing unless visual data is established.
 
 SCENE IMAGE GENERATION REQUEST BODY SENT TO xAI
 {

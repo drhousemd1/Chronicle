@@ -324,7 +324,7 @@ This is a **critical section** — every field in the Scenario Builder ultimatel
 | `dialogFormatting` | `DIALOG FORMATTING:` section | Hard-coded critical rules (quotes for speech, asterisks for actions, parentheses for thoughts, POV rules) are **prepended and immutable**; user's additional rules are **appended** |
 | `customWorldSections` | `CUSTOM WORLD CONTENT:\n[Section Title]:\n- Label: Value` per item | Nested structured injection; supports both structured rows and freeform section notes |
 | `storyGoals` | `STORY GOALS:\n[Goal Name] (RIGID/NORMAL/FLEXIBLE)` | Complex structured injection with desired outcome, current status, steps, and directive behavior |
-| Content Themes tags | Injected via `buildContentThemeDirectives()` from `tag-injection-registry.ts` | Three tiers: **Strong** (Mandatory Content Directives), **Moderate** (Emphasized Themes), **Subtle** (Narrative Flavor) |
+| Content Themes tags | Injected via `buildContentThemeDirectives()` from `tag-injection-registry.ts` | Selected themes render as one `STORY THEMES` reference block with creator-approved direction and permission, not strength-tier grouping |
 | `selectedArtStyle` | Used by `generate-cover-image` and `generate-scene-image` edge functions | The style's `backendPrompt` is sent alongside the user's image prompt. **Not injected into the chat LLM** — only affects image generation. |
 | Opening Dialog | Inserted as the **first assistant message** in a new conversation | Direct text insertion, not part of the system prompt |
 
@@ -368,10 +368,9 @@ Includes retry counts and resistance history per step for the AI to reason about
 
 Tags selected in the Content Themes section are processed through `tag-injection-registry.ts`:
 - Each tag maps to a specific narrative directive
-- Directives are grouped into three strength tiers that affect how strongly the AI incorporates them
-- **Strong (Mandatory)**: Core content directives the AI must follow
-- **Moderate (Emphasized)**: Themes the AI should actively incorporate
-- **Subtle (Flavor)**: Light narrative seasoning the AI may weave in naturally
+- Runtime emits one selected-theme block without strength-tier grouping
+- Selected themes are framed as creator-approved story direction, permission, and background emphasis
+- Theme tags should influence the scenario naturally instead of acting as per-turn mandatory checklist items
 
 ---
 
@@ -405,7 +404,7 @@ Tags selected in the Content Themes section are processed through `tag-injection
 
 ### Bug Report Items (Added 2026-03-01)
 
-- **RESOLVED — Bug #1**: `buildCharacterStateBlock()` omits empty sections — fixed, empty sections now included in system prompt. (Resolved 2026-03-01)
+- **RESOLVED — Bug #1**: Empty story/world fields no longer produce misleading placeholder text in API Call 1. Populated fields are sent; blank scaffolding is omitted. (Updated 2026-06-05)
 - **RESOLVED — Bug #4**: Wrong AI model — now uses `grok-4.3` for extraction. (Updated 2026-05-09)
 - **RESOLVED — Bug #5**: Extraction prompt lacks analytical depth — prompt rewritten with deeper analysis. (Resolved 2026-03-01)
 - **RESOLVED — Bug #6**: Memory system architecture incomplete — fixed with auto-extraction, day-compression, and synopsis system. (Resolved 2026-03-01)

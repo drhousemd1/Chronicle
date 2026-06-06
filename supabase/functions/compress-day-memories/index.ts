@@ -6,6 +6,28 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
 
+const DAY_SYNOPSIS_MAX_CHARS = 900;
+
+function trimAtWordBoundary(value: string, maxChars: number): string {
+  if (value.length <= maxChars) return value;
+  const clipped = value.slice(0, Math.max(0, maxChars - 3)).trimEnd();
+  const lastSpace = clipped.lastIndexOf(" ");
+  const base = lastSpace > 160 ? clipped.slice(0, lastSpace).trimEnd() : clipped;
+  return `${base}...`;
+}
+
+function normalizeSynopsis(value: string): string {
+  const withoutListMarkers = value
+    .split(/\r?\n/)
+    .map((line) => line.replace(/^\s*[-*]\s+/, "").trim())
+    .filter(Boolean)
+    .join(" ");
+  const collapsed = withoutListMarkers.replace(/\s+/g, " ").trim();
+  const sentences = collapsed.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [collapsed];
+  const limitedSentences = sentences.slice(0, 3).join(" ").replace(/\s+/g, " ").trim();
+  return trimAtWordBoundary(limitedSentences, DAY_SYNOPSIS_MAX_CHARS);
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: getCorsHeaders(req) });
@@ -66,6 +88,7 @@ Rules:
           { role: "user", content: userMessage }
         ],
         temperature: 0.3,
+        max_tokens: 350,
       }),
     });
 
@@ -76,7 +99,7 @@ Rules:
     }
 
     const data = await response.json();
-    const synopsis = data.choices?.[0]?.message?.content?.trim() || '';
+    const synopsis = normalizeSynopsis(data.choices?.[0]?.message?.content || '');
 
     if (!synopsis) {
       throw new Error("Empty synopsis returned from model");

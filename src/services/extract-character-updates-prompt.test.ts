@@ -20,11 +20,22 @@ describe('extract-character-updates prompt guidance', () => {
     );
   });
 
-  it('keeps the structural example generic rather than story-specific', () => {
-    expect(source).toContain('goals.Establish Lasting Dynamic');
-    expect(source).toContain('CharacterName and OtherCharacter establish a sustained relationship dynamic');
+  it('uses structural-only output shape instead of story-flavored examples', () => {
+    expect(source).toContain('"field": "supported.fieldPath"');
+    expect(source).toContain('"evidence": "Short exact phrase from the latest exchange."');
+    expect(source).toContain('Examples are structural only. Do not copy example field paths, labels, goal names, relationship types, settings, genres, or wording into real updates.');
+    expect(source).not.toContain('goals.Establish Lasting Dynamic');
+    expect(source).not.toContain('CharacterName and OtherCharacter establish a sustained relationship dynamic');
     expect(source).not.toContain('goals.Long-Term Objective');
     expect(source).not.toContain('Reach the sustained outcome.');
+  });
+
+  it('frames state sync around supported exchange evidence and continuity checking', () => {
+    expect(source).toContain('Treat user-established facts and mutually visible outcomes as stronger evidence than unsupported assistant-only assumptions.');
+    expect(source).toContain("If the only support is an assistant-generated assumption that conflicts with current saved state, physical continuity, or the user's latest message, omit the update.");
+    expect(source).toContain('RECENT CONVERSATION CONTEXT (for continuity and conflict checking only)');
+    expect(source).toContain('evidence_not_in_latest_exchange');
+    expect(source).not.toContain('RECENT CONVERSATION CONTEXT (for pattern detection)');
   });
 
   it('requires scenePosition updates when immediate placement is clear', () => {

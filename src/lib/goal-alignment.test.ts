@@ -51,6 +51,19 @@ describe('goal-alignment scoring', () => {
     expect(shouldRenderGoalToWriter(rigid, 'rigid')).toBe(true);
   });
 
+  it('keeps dropped goals out of writer guidance even if flexibility later changes', () => {
+    const dropped = normalizeGoalAlignmentState({
+      goalId: 'g1',
+      goalKind: 'story',
+      score: 5,
+      status: 'dropped',
+    });
+
+    expect(shouldRenderGoalToWriter(dropped, 'rigid')).toBe(false);
+    expect(describeGoalAlignmentForPrompt(dropped, 'rigid')).toContain('dropped');
+    expect(describeGoalAlignmentForPrompt(dropped, 'rigid')).toContain('do not pursue it');
+  });
+
   it('drops normal goals only after sustained strong negative evidence', () => {
     let normal = normalizeGoalAlignmentState({ goalId: 'g1', goalKind: 'story' });
     for (let i = 0; i < 4; i += 1) {

@@ -12,7 +12,7 @@ import type {
   Scene,
   WorldCore,
 } from '@/types';
-import { uuid } from '@/utils';
+import { sanitizeUiSettings, uuid } from '@/utils';
 import { characterToDb, dbToCharacter } from './characters';
 import { dbToConversation } from './conversations';
 import {
@@ -68,6 +68,32 @@ async function backfillScenarioWorldCoreById(scenarioId: string, canonicalWorldC
     .eq('id', scenarioId);
   if (error) {
     console.warn(`[supabase-data] Failed to backfill canonical world_core for scenario ${scenarioId}:`, error);
+  }
+}
+
+function shouldBackfillScenarioUiSettings(
+  raw: unknown,
+  sanitized: NonNullable<ScenarioData['uiSettings']>,
+): boolean {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return true;
+  const rawRecord = raw as Record<string, unknown>;
+  const sanitizedRecord = sanitized as Record<string, unknown>;
+  const allowedKeys = new Set(Object.keys(sanitizedRecord));
+
+  if (Object.keys(rawRecord).some((key) => !allowedKeys.has(key))) return true;
+  return Object.keys(sanitizedRecord).some((key) => rawRecord[key] !== sanitizedRecord[key]);
+}
+
+async function backfillScenarioUiSettingsById(
+  scenarioId: string,
+  uiSettings: NonNullable<ScenarioData['uiSettings']>,
+): Promise<void> {
+  const { error } = await supabase
+    .from('stories')
+    .update({ ui_settings: uiSettings })
+    .eq('id', scenarioId);
+  if (error) {
+    console.warn(`[supabase-data] Failed to backfill sanitized ui_settings for scenario ${scenarioId}:`, error);
   }
 }
 
@@ -171,12 +197,10 @@ export async function fetchScenarioById(id: string): Promise<{
     timeProgressionInterval: rawOpeningDialog?.timeProgressionInterval ?? 15,
   };
 
-  const uiSettings =
-    (scenario.ui_settings as { showBackgrounds: boolean; transparentBubbles: boolean; darkMode: boolean }) || {
-      showBackgrounds: true,
-      transparentBubbles: false,
-      darkMode: false,
-    };
+  const uiSettings = sanitizeUiSettings(scenario.ui_settings);
+  if (shouldBackfillScenarioUiSettings(scenario.ui_settings, uiSettings)) {
+    void backfillScenarioUiSettingsById(scenario.id, uiSettings);
+  }
 
   return {
     data: {
@@ -239,12 +263,10 @@ export async function fetchScenarioForPlay(id: string): Promise<{
     timeProgressionInterval: rawOpeningDialog?.timeProgressionInterval ?? 15,
   };
 
-  const uiSettings =
-    (scenario.ui_settings as { showBackgrounds: boolean; transparentBubbles: boolean; darkMode: boolean }) || {
-      showBackgrounds: true,
-      transparentBubbles: false,
-      darkMode: false,
-    };
+  const uiSettings = sanitizeUiSettings(scenario.ui_settings);
+  if (shouldBackfillScenarioUiSettings(scenario.ui_settings, uiSettings)) {
+    void backfillScenarioUiSettingsById(scenario.id, uiSettings);
+  }
 
   return {
     data: {
@@ -295,7 +317,7 @@ export async function saveScenario(
     cover_image_position: metadata.coverImagePosition || { x: 50, y: 50 },
     tags: metadata.tags,
     world_core: migrateWorldCoreToCanonical(data.world.core as any),
-    ui_settings: data.uiSettings,
+    ui_settings: sanitizeUiSettings(data.uiSettings),
     opening_dialog: data.story.openingDialog,
     selected_model: data.selectedModel,
     selected_art_style: data.selectedArtStyle || 'cinematic-2-5d',

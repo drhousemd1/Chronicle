@@ -381,7 +381,7 @@ The `character-ai.ts` service provides per-field AI enhancement:
 
 ### Bug Report Items (Added 2026-03-01)
 
-- **RESOLVED — Bug #1 — 2026-03-01**: `buildCharacterStateBlock()` now outputs scaffolding placeholders for all section types when empty, including `currentlyWearing`, `physicalAppearance`, `preferredClothing`, `background`, `personality`, and all extras-only sections (tone, keyLifeEvents, relationships, secrets, fears). AI can now see and populate all 16 section types.
+- **RESOLVED — Bug #1 — Updated 2026-06-05**: API Call 1 now sends populated character-card fields and omits blank scaffolding so empty sections do not look like meaningful prompt content.
 - **RESOLVED — Bug #2 — 2026-03-01**: `personality.traits` added to TRACKABLE FIELDS for unified personality mode. Characters not using split mode will now have traits extracted correctly.
 - **RESOLVED — Bug #3 — 2026-03-01**: Extraction prompt now uses correct field name `undergarments`.
 - **RESOLVED — Bug #4 — 2026-05-09**: Default extraction and Deep Scan model migrated to `grok-4.3`.

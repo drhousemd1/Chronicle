@@ -30,12 +30,12 @@ export function isLocalRoleplayNoticeMessage(message: Pick<Message, 'text' | 'lo
   return message.localNotice === 'content_filter' || message.text.startsWith('Chronicle: The model provider blocked this turn.');
 }
 
-export function buildCanonNote(
+export function buildEstablishedFactNote(
   userText: string,
   characters: Array<{ name: string; controlledBy?: string }>,
 ): string {
   const aiCharNames = characters.filter(c => c.controlledBy === 'AI').map(c => c.name);
-  const hasCanonContent = aiCharNames.some(name => {
+  const hasEstablishedFactContent = aiCharNames.some(name => {
     const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const taggedBlock = new RegExp(`(?:^|\\n)\\s*${escapedName}\\s*:`, 'i');
     const authoredAction = new RegExp(
@@ -44,7 +44,7 @@ export function buildCanonNote(
     );
     return taggedBlock.test(userText) || authoredAction.test(userText);
   });
-  return hasCanonContent
+  return hasEstablishedFactContent
     ? '[ESTABLISHED FACT NOTE: User wrote content for AI character(s) in this message. That content is already true in the scene -- do not re-narrate it. Continue the story from after those events.] '
     : '';
 }
@@ -63,22 +63,22 @@ Do not replay the same exchange with synonym swaps, invert character stance, add
 If a present AI-controlled character was directly asked something they can answer now, address it in this version.`;
 
 export const EXECUTION_BRIEF_TEXT = `[EXECUTION BRIEF]
-Continue from the latest visible scene change.
+Continue from the latest established scene change.
 Preserve user-written facts, character awareness, and the current physical state.
-Recent messages provide story state and continuity, not a template for response length. Follow the active Response Detail setting even if recent messages were short.
-If a present AI-controlled character can naturally speak, use clear external dialogue.
-Every spoken line must have a clear conversational purpose instead of vague tension, filler, or circular wording.
-Develop the AI-controlled character's side of the current exchange enough that it feels complete under the active Response Detail setting. Direct contact is allowed when the scene supports it.
+Recent messages provide story state and continuity, not a template for response length or structure.
+Follow the active Response Detail setting.
+Use clear external dialogue when a present AI-controlled character can naturally speak.
+Develop the AI-controlled character's side of the current exchange before stopping for the user.
 Stop before narrating any user-owned response, decision, voluntary follow-up, or interpretation.`;
 
 export function renderResponseDetailInstruction(responseVerbosity: string = 'balanced'): string {
   if (responseVerbosity === 'concise') {
-    return `RESPONSE DETAIL: Concise\n- Keep the overall response tight and direct. Prioritize clear actions, external dialogue, or internal thoughts.\n- Use sensory, emotional, or environmental descriptions at key points to emphasize importance, but otherwise keep back-and-forth dialogue within the same scene more concise. Focus descriptive detail on moments when something new or important is happening.\n- Follow-up responses between AI characters can be simple one-sentence responses.`;
+    return `RESPONSE DETAIL: Concise\n- Keep the overall response tight and direct while still writing active roleplay.\n- Prioritize clear external dialogue, visible action, and only the internal thoughts that add necessary character meaning.\n- Use sensory, emotional, or environmental description only when it clarifies something important that is happening now.\n- Follow-up responses between AI-controlled characters can be brief when a longer block would only repeat known information.`;
   }
   if (responseVerbosity === 'detailed') {
-    return `RESPONSE DETAIL: Detailed\n- Write rich, immersive responses with lengthy sensory, emotional, and environmental description where that detail adds new information, consequence, tension, or character meaning.\n- Do not concentrate most of the detail in one opening narration section while leaving external dialogue short or underdeveloped. External dialogue should be substantial when characters are able to speak, carrying emotion, conflict, decisions, questions, reassurance, resistance, escalation, or relationship tension.\n- Description should support what is currently changing or being interacted with. Do not repeat already-established body, clothing, room, weather, or object details unless those details have changed, are being directly interacted with, or create a new consequence.\n- Build out the AI-controlled character's action and dialogue fully before stopping for the user. Stopping before the user response does not mean cutting the AI character's action, dialogue, or sensory description short.\n- Some character responses may be longer than others, but the response should still feel like active roleplay rather than a descriptive summary.`;
+    return `RESPONSE DETAIL: Detailed\n- Develop the AI-controlled side of the current exchange fully, with richer sensory, emotional, environmental, physical, and relational detail where that detail adds new information, consequence, tension, or character meaning.\n- Do not concentrate most of the detail in one opening narration section while leaving external dialogue short or underdeveloped. When characters can naturally speak, external dialogue should carry meaningful emotion, conflict, decision-making, reassurance, resistance, escalation, or relationship tension.\n- Description should support what is changing, being interacted with, being decided, or being felt now. Do not repeat already-established details unless they have changed, are being directly interacted with, or create a new consequence.\n- Build out the AI-controlled character's action and dialogue before stopping for the user. Stopping before the user response does not mean cutting the AI-controlled character's side short.\n- Some character responses may be longer than others, but the response should still feel like active roleplay rather than a descriptive summary.`;
   }
-  return `RESPONSE DETAIL: Balanced\n- Use a natural balance of scene description, character voice, action, external dialogue, and internal thought.\n- Responses should include some sensory, emotional, or environmental descriptions, but should remain more concise with a focus on external dialogue, actions, or internal thoughts.\n- Follow-up responses between AI characters can be more concise if additional descriptive details would not add new context to the situation or would only repeat details already established in another text block.`;
+  return `RESPONSE DETAIL: Balanced\n- Develop the current exchange with a natural mix of scene description, character voice, visible action, external dialogue, and internal thoughts.\n- Include enough sensory, emotional, or environmental description to make the moment vivid, while keeping focus on what characters are doing, saying, deciding, or privately processing.\n- Let character block length vary by narrative importance. One AI-controlled character may carry the main response while another reacts briefly.\n- Do not pad every character block to the same size.`;
 }
 
 export type GenerateRoleplayResponseStreamOptions = {
@@ -87,9 +87,10 @@ export type GenerateRoleplayResponseStreamOptions = {
   onRequestPayload?: (request: ChatDebugRequestRecord) => void;
 };
 
+export type RoleplayApiMessage = { role: 'system' | 'user' | 'assistant'; content: string };
+
 const CHAT_RESPONSE_TIMEOUT_MS = 90_000;
-const API_CALL_1_TOTAL_MESSAGE_WINDOW = 10;
-const API_CALL_1_HISTORY_MESSAGE_LIMIT = API_CALL_1_TOTAL_MESSAGE_WINDOW - 1;
+const API_CALL_1_PRIOR_HISTORY_MESSAGE_LIMIT = 5;
 
 export function buildCurrentSceneSnapshotForPrompt(
   historyMessages: Array<Pick<Message, 'role' | 'text'>>,
@@ -115,6 +116,60 @@ export function renderGoalMilestoneTarget(description: string): string {
   return ensurePromptSentence(target);
 }
 
+export function buildRoleplayApiMessages(input: {
+  conversationMessages: Message[];
+  systemInstruction: string;
+  userMessage: string;
+  isRegeneration?: boolean;
+  adaptiveStyleDirective?: string;
+  sessionMessageCount?: number;
+}): {
+  messages: RoleplayApiMessage[];
+  historyMessages: Message[];
+  finalUserContent: string;
+  historyLimit: number;
+} {
+  const historyMessages = input.conversationMessages
+    .filter((message) => !isLocalRoleplayNoticeMessage(message))
+    .slice(-API_CALL_1_PRIOR_HISTORY_MESSAGE_LIMIT);
+  const regenerationDirective = input.isRegeneration ? REGENERATION_DIRECTIVE_TEXT : '';
+  const messages: RoleplayApiMessage[] = [
+    { role: 'system', content: input.systemInstruction },
+    ...historyMessages.map(m => ({
+      role: m.role === 'assistant' ? 'assistant' as const : 'user' as const,
+      content: m.text
+    })),
+  ];
+
+  const appTurnControls = [
+    input.sessionMessageCount != null ? `[SESSION: Message ${input.sessionMessageCount} of current session]` : '',
+    buildCurrentSceneSnapshotForPrompt(historyMessages),
+    input.adaptiveStyleDirective || '',
+    regenerationDirective,
+    EXECUTION_BRIEF_TEXT,
+  ]
+    .filter(Boolean)
+    .join('\n\n')
+    .trim();
+  const playerTurn = input.userMessage.trim();
+  const finalUserContent = [
+    appTurnControls ? `[APP TURN CONTROLS]\n${appTurnControls}` : '',
+    playerTurn ? `[PLAYER TURN]\n${playerTurn}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n\n')
+    .trim();
+
+  messages.push({ role: 'user', content: finalUserContent });
+
+  return {
+    messages,
+    historyMessages,
+    finalUserContent,
+    historyLimit: API_CALL_1_PRIOR_HISTORY_MESSAGE_LIMIT,
+  };
+}
+
 export function getSystemInstruction(
   appData: ScenarioData,
   currentDay?: number,
@@ -130,6 +185,17 @@ export function getSystemInstruction(
         .map((entry) => (typeof entry === 'string' ? entry.trim() : ''))
         .filter(Boolean)
         .join(', ');
+    }
+    return '';
+  };
+
+  const blockText = (value: unknown): string => {
+    if (typeof value === 'string') return value.trim();
+    if (Array.isArray(value)) {
+      return value
+        .map(blockText)
+        .filter(Boolean)
+        .join('\n');
     }
     return '';
   };
@@ -188,7 +254,7 @@ export function getSystemInstruction(
     const sectionTitle = text(customSection?.title);
     const rawItems = Array.isArray(customSection?.items) ? customSection.items : [];
     const items = rawItems
-      .map((item: any) => ({ label: text(item?.label), value: text(item?.value) }))
+      .map((item: any) => ({ label: text(item?.label), value: blockText(item?.value) }))
       .filter((item: any) => item.label || item.value)
       .map((item: any) => ({
         label: item.label || (sectionTitle ? `${sectionTitle} Details` : 'Details'),
@@ -197,7 +263,7 @@ export function getSystemInstruction(
 
     if (items.length > 0) return items;
 
-    const freeform = text(customSection?.freeformValue);
+    const freeform = blockText(customSection?.freeformValue);
     if (freeform) {
       return [{
         label: sectionTitle ? `${sectionTitle} Notes` : 'Details',
@@ -209,7 +275,30 @@ export function getSystemInstruction(
   };
 
   const renderRows = (rows: Array<{ label: string; value: string }>): string =>
-    rows.map((row) => `- ${row.label}: ${row.value}`).join('\n');
+    uniqueRows(rows).map((row) => `- ${row.label}: ${row.value}`).join('\n');
+
+  const normalizeForDedupe = (value: string): string =>
+    text(value).toLowerCase().replace(/\s+/g, ' ');
+
+  const uniqueRows = (rows: Array<{ label: string; value: string }>): Array<{ label: string; value: string }> => {
+    const seen = new Set<string>();
+    return rows.filter((row) => {
+      const key = `${normalizeForDedupe(row.label)}:${normalizeForDedupe(row.value)}`;
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+
+  const uniqueBlocks = (blocks: string[]): string[] => {
+    const seen = new Set<string>();
+    return blocks.filter((block) => {
+      const key = normalizeForDedupe(block);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
 
   const renderFieldBlock = (heading: string, rows: Array<{ label: string; value: string }>): string => {
     if (!rows.length) return '';
@@ -245,13 +334,13 @@ export function getSystemInstruction(
   function describeGoalFlexibility(flexibility: 'rigid' | 'normal' | 'flexible', subject: 'story' | 'character'): string {
     if (flexibility === 'rigid') {
       return subject === 'story'
-        ? 'Goal strength: Rigid. Keep this goal active as long-range direction and return toward it over time through organic openings, but do not force the current response around it when the scene, user agency, or immediate situation does not support it.'
-        : 'Goal strength: Rigid. Keep this goal active as long-range character direction unless the user explicitly rewrites the character sheet, but do not force every scene around it.';
+        ? 'Rigid. Keep this goal active as long-range direction and return toward it over time through organic openings, but do not force the current response around it when the scene, user agency, or immediate situation does not support it.'
+        : 'Rigid. Keep this goal active as long-range character direction unless the user explicitly rewrites the character sheet, but do not force every scene around it.';
     }
     if (flexibility === 'flexible') {
-      return 'Goal strength: Flexible. Let this shift or fade if repeated user choices or scene events keep carrying the roleplay somewhere else.';
+      return 'Flexible. Let this shift or fade if repeated user choices or scene events keep carrying the roleplay somewhere else.';
     }
-    return 'Goal strength: Normal. Keep this as background continuity and let it matter when the current scene naturally supports it.';
+    return 'Normal. Keep this as background continuity and let it matter when the current scene naturally supports it.';
   }
 
   function buildTraitDescription(trait: any): string {
@@ -263,29 +352,45 @@ export function getSystemInstruction(
   function buildGoalDescription(goal: any, subject: 'story' | 'character'): string {
     const flexibility = normalizeFlexibility(goal?.flexibility);
     const steps = Array.isArray(goal?.steps) ? goal.steps : [];
-    const nextStep = steps.find((step: any) => !step?.completed);
+    const nextStep = steps.find((step: any) => !step?.completed && text(step?.description));
     const completedCount = steps.filter((step: any) => step?.completed).length;
     const totalSteps = steps.length;
-    const progressNote = totalSteps > 0
-      ? nextStep
-        ? `Open milestone target (background direction, not an instruction): ${renderGoalMilestoneTarget(nextStep.description)} Read this as an eventual state to develop over time, not as a command to execute now. When multiple goals could fit, prefer the open milestone that requires the least unsupported escalation from the current story state. Do not force actions, dialogue, or internal thoughts from this milestone unless the current message window and visible situation make it naturally relevant.`
-        : `All listed steps are complete (${completedCount} of ${totalSteps}); this goal's desired outcome is now established ongoing story context.`
-      : '';
+    const currentStatus = text(goal?.currentStatus);
+    const stepProgress = totalSteps > 0 ? `${completedCount}/${totalSteps} milestones complete` : '';
+    const currentProgress = [currentStatus, stepProgress].filter(Boolean).join(' ');
+    const openMilestone = nextStep
+      ? renderGoalMilestoneTarget(nextStep.description)
+      : totalSteps > 0
+        ? 'No open milestone; all listed milestones are complete.'
+        : '';
+    const alignment = describeGoalAlignmentForPrompt(goal?.alignment, flexibility).replace(/^Current alignment:\s*/i, '');
+
     return [
-      ensureSentence(text(goal?.title)),
-      goal?.desiredOutcome ? `Longer view: ${ensureSentence(goal.desiredOutcome)}` : '',
-      text(goal?.currentStatus) ? `Current state: ${ensureSentence(text(goal.currentStatus))}` : '',
-      progressNote,
-      describeGoalFlexibility(flexibility, subject),
-      describeGoalAlignmentForPrompt(goal?.alignment, flexibility),
-    ].filter(Boolean).join(' ');
+      goal?.desiredOutcome ? `- Long-range direction: ${ensureSentence(goal.desiredOutcome)}` : '',
+      currentProgress ? `- Current progress: ${ensureSentence(currentProgress)}` : '',
+      openMilestone ? `- Current open milestone: ${openMilestone}` : '',
+      `- Goal strength: ${describeGoalFlexibility(flexibility, subject)}`,
+      alignment ? `- Current alignment: ${alignment}` : '',
+      '- Use this goal as background direction for realistic long-term progression. Do not treat the open milestone as a required action for the current response. Advance it only when the current scene and recent messages already make that progression feel natural.',
+    ].filter(Boolean).join('\n');
   }
 
-  const renderGoalBlock = (heading: string, goals: any[] | undefined, subject: 'story' | 'character'): string => {
+  const renderGoalBlock = (
+    heading: string,
+    goals: any[] | undefined,
+    subject: 'story' | 'character',
+    ownerControlledBy?: string,
+  ): string => {
     if (!Array.isArray(goals) || goals.length === 0) return '';
     const visibleGoals = goals.filter((goal) => shouldRenderGoalToWriter(goal?.alignment, normalizeFlexibility(goal?.flexibility)));
     if (visibleGoals.length === 0) return '';
-    return `${heading}\n${visibleGoals.map((goal) => `${subject === 'story' ? 'STORY' : 'CHARACTER'} GOAL: ${text(goal?.title) || 'Untitled'}\n- ${buildGoalDescription(goal, subject)}`).join('\n\n')}`;
+    return `${heading}\n${visibleGoals.map((goal) => [
+      `${subject === 'story' ? 'STORY' : 'CHARACTER'} GOAL: ${text(goal?.title) || 'Untitled'}`,
+      buildGoalDescription(goal, subject),
+      subject === 'character' && ownerControlledBy === 'User'
+        ? "- User-controlled character goals can inform story direction, but they do not authorize writing the user-controlled character's dialogue, internal thoughts, voluntary response, or next choice."
+        : '',
+    ].filter(Boolean).join('\n')).join('\n\n')}`;
   };
 
   const renderPersonalityBlock = (character: any): string => {
@@ -352,7 +457,7 @@ export function getSystemInstruction(
       renderFieldBlock(`${name} RELATIONSHIPS`, toLabeledPairs(character?.relationships)),
       renderFieldBlock(`${name} SECRETS`, toLabeledPairs(character?.secrets)),
       renderFieldBlock(`${name} FEARS`, toLabeledPairs(character?.fears)),
-      renderGoalBlock(`${name} GOALS`, character?.goals, 'character'),
+      renderGoalBlock(`${name} GOALS`, character?.goals, 'character', text(character?.controlledBy)),
       renderCustomSections(`${name} CUSTOM CONTENT`, character?.sections),
     ].filter(Boolean).join('\n\n');
   };
@@ -363,30 +468,31 @@ export function getSystemInstruction(
       .filter((location) => text(location?.label) || text(location?.description))
       .map((location) => `- ${text(location.label) || 'Location'}: ${text(location.description) || 'No description provided.'}`)
       .join('\n');
-    return rendered || '- Not specified';
+    return rendered;
   };
 
   const renderCustomWorldContent = (): string => {
     const sections = appData.world.core.customWorldSections || [];
     if (!sections.length) return '';
-    return sections
+    const rendered = sections
       .map((customSection) => {
         const title = text(customSection?.title) || 'Untitled';
         const items = normalizeCustomSectionItems(customSection);
         if (!items.length) return '';
         return `${title}\n${renderRows(items)}`;
       })
-      .filter(Boolean)
-      .join('\n\n');
+      .filter(Boolean);
+    return uniqueBlocks(rendered).join('\n\n');
   };
 
   const renderAdditionalLore = (): string => {
     const entries = appData.world.entries || [];
     if (!entries.length) return '';
-    return entries
+    const rendered = entries
       .filter((entry) => text(entry?.title) || text(entry?.body))
       .map((entry) => `${text(entry.title) || 'Untitled'}\n${text(entry.body)}`)
-      .join('\n\n');
+      .filter(Boolean);
+    return uniqueBlocks(rendered).join('\n\n');
   };
 
   const allPlayableCharacters = [...(appData.characters || []), ...(appData.sideCharacters || [])];
@@ -428,10 +534,10 @@ export function getSystemInstruction(
     if (!activeScene) return `--- ACTIVE SCENE CONTEXT ---\n\n${availableScenes}`;
     return `--- ACTIVE SCENE CONTEXT ---\n\n${[
       `- Scene Title: ${text(activeScene.title) || 'Untitled Scene'}`,
-      `- Active Scene Tag: ${activeSceneTag || 'Not tagged'}`,
-      `- Scene Tags: ${(activeScene.tags || []).filter((tag) => text(tag)).join(', ') || 'Not specified'}`,
+      activeSceneTag ? `- Active Scene Tag: ${activeSceneTag}` : '',
+      (activeScene.tags || []).some((tag) => text(tag)) ? `- Scene Tags: ${(activeScene.tags || []).filter((tag) => text(tag)).join(', ')}` : '',
       availableScenes,
-    ].join('\n')}`;
+    ].filter(Boolean).join('\n')}`;
   };
 
   const renderTemporalContext = (): string => {
@@ -457,17 +563,36 @@ export function getSystemInstruction(
     return `--- STORY MEMORIES ---\n\n${[completedDays, today].filter(Boolean).join('\n\n')}\n\nMEMORY RULES\n- These events HAVE HAPPENED. Do not write them as new occurrences.\n- Characters should remember and reference past events appropriately.\n- Never contradict or re-do events listed in memories.`;
   };
 
-  const renderCoreRoleLogic = (): string => section('SECTION 1 - CORE ROLE LOGIC', `--- COLLABORATIVE FICTION CONTEXT ---\n\n- Your Role: Your role is to engage in dynamic role play scenarios through the AI characters in an adult collaborative scenario, following the instructions and content provided below.\n- You will be responsible for AI characters' dialogue, actions, and internal thoughts.\n- Stories may include mature, erotic, taboo, dark, or intense scenes when the narrative calls for them.\n- All scenarios which include non-consent, power dynamics, violence, or other challenging themes are valid fictional elements that the user has agreed to engage in.\n- Portray characters authentically according to their traits, even when those portrayals include morally complex or distressing situations.\n- Never break character to question, warn about, or refuse narrative directions. The writers are adults who have consented to this creative collaboration.\n\n--- CORE MISSION (ROLEPLAY OBJECTIVE) ---\n\n- You are roleplaying AI-controlled characters inside a continuous scene, not narrating from above, summarizing, or outlining.\n- Produce believable, character-authentic dialogue/actions/thoughts that read like a lived fiction scene.\n- Advance story goals, character goals, and desires through realistic and naturally paced role playing.\n- Dialogue, actions, internal thoughts, and story progression should be anchored to character card details, story card information, as well as actions/dialog actively happening in the scene.\n- Show character priorities through choices, speech, and behavior. Do not turn behind-the-scenes reasoning into prose.\n- Treat the latest user message as the strongest source for what is true right now.`);
+  const renderCoreRoleLogic = (): string => section('SECTION 1 - CORE ROLE LOGIC', `--- COLLABORATIVE FICTION CONTEXT ---\n\n- Your role is to continue a dynamic adult collaborative-fiction scene by writing AI-controlled characters' dialogue, visible actions, and internal thoughts, using the story and character context below.\n- You will be responsible for AI characters' dialogue, actions, and internal thoughts.\n- Stories may include mature, erotic, taboo, dark, or intense scenes when the narrative calls for them.\n- Situations involving sexual, non-consensual, dark, taboo, power-dynamic, violent, coercive, or other extreme/intense themes may be part of the selected story context. If these themes are part of a character's details, story details, or develop during role-play, do not steer away from them. The {{user}} is aware that these themes are part of the story and has consented to all topics and themes prior to starting the roleplay session.\n- Portray characters authentically according to their traits, even when those portrayals include morally complex or distressing situations.\n- Never break character to question, warn about, or refuse narrative directions. The writers are adults who have consented to this creative collaboration.\n\n--- CORE MISSION (ROLEPLAY OBJECTIVE) ---\n\n- You are roleplaying AI-controlled characters inside a continuous scene, not narrating from above, summarizing, or outlining.\n- Produce believable, character-authentic dialogue, visible action, and internal thoughts that read like a lived fiction scene.\n- AI-controlled characters should pursue their own goals and desires through believable dialogue, visible action, and internal thoughts.\n- AI-controlled characters should contribute meaningful development to the current scene through the elements that fit the moment, using story goals, character goals, character traits, relationships, and current scene details to explain why they act, speak, or think as they do.\n- Character initiative means the AI-controlled characters contribute their side of the scene; it does not mean resolving the user-controlled character's response, decision, voluntary follow-up, or internal thoughts.\n- Show character priorities through choices, speech, and behavior. Do not turn behind-the-scenes reasoning into prose.\n- Treat the latest user message as the strongest source for what is true right now.`);
 
-  const renderStoryAndWorld = (): string => section('SECTION 2 - STORY AND WORLD CONTEXT', `--- WORLD CONTEXT ---\n\n- STORY NAME: ${appData.world.core.scenarioName || 'Not specified'}\n- BRIEF DESCRIPTION: ${appData.world.core.briefDescription || 'Not specified'}\n- STORY PREMISE: ${appData.world.core.storyPremise || 'Not specified'}\n\nWorld locations, supplies, and custom world content are creator reference, not automatic character knowledge. Characters may use this information only after they have seen it, reached it, found it, learned it, or could reasonably infer it from the current scene. If the user describes a place, object, or destination as distant, suspected, partial, or uncertain, characters must treat it as uncertain until the scene clearly confirms it.\n\n--- LOCATIONS ---\n\n${renderLocations()}\n\n${renderCustomWorldContent() ? `--- CUSTOM WORLD CONTENT ---\n\n${renderCustomWorldContent()}\n\n` : ''}${renderGoalBlock('MAIN STORY GOALS', appData.world.core.storyGoals, 'story')}\n\n${renderAdditionalLore() ? `--- ADDITIONAL LORE ENTRIES ---\n\n${renderAdditionalLore()}\n\n` : ''}${appData.contentThemes ? buildContentThemeDirectives(appData.contentThemes) : ''}`);
+  const renderStoryAndWorld = (): string => {
+    const worldRows = [
+      bullet('STORY NAME', appData.world.core.scenarioName),
+      bullet('BRIEF DESCRIPTION', appData.world.core.briefDescription),
+      bullet('STORY PREMISE', appData.world.core.storyPremise),
+    ].filter(Boolean).join('\n');
+    const locations = renderLocations();
+    const customWorldContent = renderCustomWorldContent();
+    const additionalLore = renderAdditionalLore();
 
-  const renderCardReferenceFraming = (): string => section('STORY AND CHARACTER CARD REFERENCE RULE', `The complete story and character card details below are provided as reference context. They define what is true about the world, characters, relationships, history, and each character's current state. Use this information to keep every action, line of dialogue, and internal thought authentic and consistent with the roleplay.\n\nSpecific card details may appear when they matter to what is happening, but do not keep restating an established detail with the same wording or the same descriptive focus. If a detail remains relevant after it has already been shown, write the new action, contact, reaction, decision, or consequence it creates instead of repeating the detail itself.`);
+    return section('SECTION 2 - STORY AND WORLD CONTEXT', [
+      worldRows ? `--- WORLD CONTEXT ---\n\n${worldRows}` : '',
+      'World locations, supplies, and custom world content are creator reference, not automatic character knowledge. Characters may use this information only after they have seen it, reached it, found it, learned it, or could reasonably infer it from the current scene. If the user describes a place, object, or destination as distant, suspected, partial, or uncertain, characters must treat it as uncertain until the scene clearly confirms it.',
+      locations ? `--- LOCATIONS ---\n\n${locations}` : '',
+      customWorldContent ? `--- CUSTOM WORLD CONTENT ---\n\n${customWorldContent}` : '',
+      renderGoalBlock('MAIN STORY GOALS', appData.world.core.storyGoals, 'story'),
+      additionalLore ? `--- ADDITIONAL LORE ENTRIES ---\n\n${additionalLore}` : '',
+      appData.contentThemes ? buildContentThemeDirectives(appData.contentThemes) : '',
+    ].filter(Boolean).join('\n\n'));
+  };
+
+  const renderCardReferenceFraming = (): string => section('STORY AND CHARACTER CARD REFERENCE RULE', `The complete story and character card details below are provided as reference context. They define what is true about the world, characters, relationships, history, and each character's current state. Use this information to keep every action, line of dialogue, and internal thought authentic and consistent with the roleplay.\n\nSpecific card details may appear when they matter to what is happening, but do not keep restating an established detail with the same wording or descriptive focus. If a detail remains relevant after it has already been shown, write what changes, what it causes, or how characters respond to it instead of repeating the detail itself.`);
 
   const renderMainAiCharacters = (): string => section('SECTION 3 - MAIN AI CHARACTER CARD INFORMATION', `Main character should be the focal point of the story's role-playing.\n\n${renderCharacterList(mainAiCharacters)}`);
 
   const renderSideAiCharacters = (): string => {
     if (sideAiCharacters.length === 0) return '';
-    return section('SECTION 4 - SIDE AI CHARACTER CARD INFORMATION', `Side characters, while important, do take somewhat of a back seat to the main characters, appearing only when appropriate to further the story along and provide meaningful interaction. They may come and go throughout the story, whereas main characters remain more persistent as the story evolves.\n\n${renderCharacterList(sideAiCharacters)}`);
+    return section('SECTION 4 - SIDE AI CHARACTER CARD INFORMATION', `Side characters are supporting participants, not passive background. Keep the main AI character as the default focus, but let present side characters speak or act when their established role in the current scene gives them a clear reason to contribute. Do not let side characters take over the response unless the current scene has naturally shifted focus to them.\n\n${renderCharacterList(sideAiCharacters)}`);
   };
 
   const renderUserCharacters = (): string => {
@@ -484,7 +609,7 @@ export function getSystemInstruction(
 
   const renderDialogRules = (): string => section('SECTION 7 - DIALOG FORMATTING AND ROLEPLAY RULES', `--- DIALOG FORMATTING RULES ---
 
-These rules are critical for Chronicle to display character blocks, dialogue, avatars, and UI correctly.
+These rules are critical for Chronicle to display character blocks, dialogue, avatars, and UI styling correctly.
 
 - Every AI-written character block must begin with that character's exact card NAME followed by a colon.
 - For any character that already exists in character cards, always use that card's exact NAME field as the speaker tag.
@@ -492,11 +617,10 @@ These rules are critical for Chronicle to display character blocks, dialogue, av
 - Only use alternate names when they are explicitly listed in that character's nicknames.
 - Do not write untagged paragraphs or bare prose outside a character block.
 - Do not write actions, dialogue, or internal thoughts for one character inside another character's block when that content belongs to the other character.
-- Within a character block, use * * for visible action or narration, " " for spoken dialogue, and ( ) for private internal thought. These are formatting tools, not required ingredients.
-- Use only the elements the moment genuinely needs. A block may contain multiple actions, multiple dialogue lines, or multiple internal thoughts, and those elements may alternate in the order that best fits the scene.
-- Do not default to action -> dialogue -> internal thought, and do not include all three elements in every block unless the scene actually calls for all three.
-- Vary the presence, order, and emphasis of action, dialogue, and thought across your own recent assistant outputs. Compare against your own previous 2-3 assistant character blocks, not the user's message, and break any repeating cadence when the scene allows it.
-- A character block should follow one clear conversational thread. Multiple actions, spoken lines, or thoughts can appear in the same block, but they should connect to each other instead of reading like separate response attempts stitched together.
+- Within a character block, use * * for visible action or narration, " " for external dialogue, and ( ) for internal thoughts. These are formatting tools, not required ingredients.
+- Use the elements that fit the moment. A block may contain multiple actions, multiple dialogue lines, multiple internal thoughts, or only the subset that makes sense.
+- Do not default to the same action -> dialogue -> internal thought order. Vary structure across your own recent assistant character blocks when the current scene allows it.
+- A character block should follow one clear conversational thread. If the block contains multiple actions, spoken lines, or thoughts, they should connect as one coherent response rather than separate attempts stitched together.
 - When at least one present AI-controlled character is conscious and able to speak, the response should include external dialogue. Do not answer spoken user dialogue with narration only unless the character is physically unable to speak or is intentionally refusing to answer.
 - External dialogue must have a clear conversational purpose in the current exchange. It should give the listener something understandable to respond to, resist, accept, clarify, or act on.
 - If a spoken line sounds vague, circular, or semantically unclear, rewrite it before output.
@@ -510,9 +634,9 @@ ${appData.world.core.dialogFormatting}
 
 ` : ''}--- USER CONTROL AND ESTABLISHED FACTS ---
 
-User control is about authorship, not contact. AI-controlled characters may create AI-owned actions that externally affect a user-controlled character when the current scene supports it.
+User control is about authorship, not contact. AI-controlled characters can create AI-owned actions that externally affect a user-controlled character when the current scene supports it.
 
-Do not author the user character's response to that change. The user character owns their speech, private thoughts, choices, voluntary follow-up, emotional interpretation, compliance, resistance, and next action.
+Do not author the user character's response to that change. The user character owns their speech, internal thoughts, choices, voluntary follow-up, emotional interpretation, compliance, resistance, and next action.
 
 Continue from the user's last established facts without re-describing, paraphrasing, or expanding what the user already wrote. If the user writes dialogue, action, or thought for an AI-controlled character, treat it as already occurred exactly as written.
 
@@ -525,23 +649,19 @@ When the next meaningful moment depends on the user character's response, stop w
 - Do not repeat, quote, or mirror distinctive words from the user's private thoughts.
 - If the user writes a private thought, react only to visible emotional cues the user also gave on the page.
 
---- NATURAL ROLEPLAY AND SCENE PROGRESSION ---
+--- NATURAL ROLEPLAY AND CHARACTER INITIATIVE ---
 
-- AI characters drive their own goals through dialogue, action, and internal thought. They speak, act, and think on their own initiative without needing the user to script their lines, behavior, or inner life.
+- AI-controlled characters should speak, act, and think from their own motives without needing the user to script their lines, behavior, or inner life.
 - If the user has already answered, agreed, refused, consented, or confirmed something, treat that as settled and continue from it without re-asking in a different form.
-- AI characters should not push known plans to a later day or time when the current scene already affords the time and conditions to act. They should not announce future actions as a substitute for being present in the current scene. This is about timing, not pace; the action does not need to be completed in this turn.
-- Continue the scene only as far as feels natural for the current response. Do not rush to complete the moment, resolve the situation, or move every character into the next stage of the action. Leave a natural opening for the user character to engage while the scene is still actively unfolding.
-- If you are uncertain whether to continue the scene or pause for the user, pause. A scene can always continue on the next turn. A missed user moment cannot be recovered.
-- Do not use permission-checking or user-direction questions as a substitute for character initiative. If the user has already established interest, agreement, or story direction, respond through the AI character's own choice, action, or dialogue instead of asking the user to restate the next move.
+- Do not use permission-checking or user-direction questions as a substitute for character initiative. In-character questions are fine when they have a clear purpose, but they should not replace meaningful AI-controlled action, dialogue, or decision-making.
+- Continue only as far as the current response can naturally support while leaving the user-controlled character's response for the user.
 
 --- NATURAL WRITING ---
 
-- External dialogue, actions, or internal thoughts should always align with the character's card details and be appropriate for something that character would realistically do, say, or think.
-- Dialogue, actions, or internal thoughts should be anchored by what is occurring in the scene and how it applies to the story or character card details and have logical events that spur on their reactions, dialogue, or what they're thinking internally.
-- Ground role playing dialogue, actions, or internal thoughts in character card details so that they remain authentic to what that character would realistically say, do, or think.
-- Do not use verbatim labels inside of dialogue. Instead, elaborate descriptively to express information that is provided inside of the character cards or story cards.
+- External dialogue, visible actions, and internal thoughts should fit the character's card details, current scene state, relationships, and what has happened in the recent exchange.
+- Use story and character card information as the reason behind what characters notice, choose, avoid, desire, fear, say, or do.
 - Do not use card labels, trope labels, goal labels, scene labels, or prompt language as story prose.
-- Translate card information into lived behavior, body language, physical detail, speech rhythm, desire, fear, restraint, decision, or reaction.
+- Translate card information into lived behavior, physical presence, speech style, motive, restraint, decision, or reaction.
 
 --- INTERNAL THOUGHTS ---
 
@@ -555,15 +675,12 @@ When the next meaningful moment depends on the user character's response, stop w
 
 --- MULTI-CHARACTER FLOW ---
 
-- If multiple AI characters are acting, speaking, or having dialogue in a single response back to the user, their dialogue actions or thoughts should flow naturally in a realistic timeline and not jump back and forth.
-- Lead with the AI character most directly engaged by the user's turn.
-- Add another AI character's block only when their dialogue, action, or internal thought genuinely changes what is happening in the current scene, not to round out the scene. Any of those three modalities, or any combination of them, is welcome in a follow-up block.
-- Brief follow-up responses are welcome. AI-only back-and-forth must end at the point where the user character has a natural reason to step in.
-- Do not force dialogue for all characters in every response. If characters are not actively in the scene or actively involved in discussions or actions that are occurring, it is okay for them to be omitted from that particular response to the user.
-- Include a character when they are present and their words, action, reaction, refusal, decision, or information meaningfully affects the scene.
-- Keep each character block chronologically aligned. Dialogue, action, and internal thought should appear at the point in the sequence where they naturally occur, not after the moment that caused them has already passed. When needed, break a character block into shorter responses so dialogue and internal thoughts align with the events that immediately preceded them or explain why that dialogue or thought occurred.
-- Do not finish an event in one character's block and then restart the same event from another character's point of view.
-- If a second character reacts after the first character's action, write that reaction from the point where the first character's block ended.
+- When multiple AI-controlled characters appear in one response, their blocks should follow one clear timeline.
+- Lead with the AI-controlled character most directly engaged by the user's turn.
+- Add another AI-controlled character only when their dialogue, action, internal thought, or information meaningfully changes the current scene.
+- Brief follow-up blocks are welcome. Do not pad every present character into the response.
+- Do not finish an event in one character's block and restart the same event from another character's point of view. If a second character reacts, write that reaction from where the previous character's block ended.
+- AI-only back-and-forth should stop when the user-controlled character has a natural reason to respond.
 
 --- PHYSICAL LOGIC, VISIBILITY, AND CONTINUITY ---
 
@@ -581,16 +698,13 @@ When the next meaningful moment depends on the user character's response, stop w
 - Do not force every trait into every response.
 - Let non-rigid traits shift gradually only when repeated story events earn that change.
 
---- NEW CHARACTER GENERATION DURING ROLEPLAY ---
+--- CHARACTER INTRODUCTION DURING ROLEPLAY ---
 
-- When a new named character is established, keep using that exact name consistently in future speaker tags and references.
-- Once a named character is established in-scene, refer to them by name or a clear pronoun. Do not rotate into descriptor-subject substitutions like "the petite blonde" or "the taller woman" just to avoid name repetition.
-- Ongoing dialogue and actions from these characters should follow the same formatting as other characters. Do not rename the same character with slight variations.
-- Never use generic placeholder labels as speaker names. Forbidden labels include but are not limited to "Man 1," "Woman 1," "Guy," "Girl," "Stranger," "Person," or role-based labels like "Cashier," "Doctor," "Nurse," "Guard," "Bartender," "Waiter," "Driver," "Officer," "Clerk," or "Customer."
-- Role-based labels can be used as descriptions for established characters. However, once those characters have dialogue or actions, they should be given an actual name so their dialogue formats correctly and the app can maintain one consistent character record.
-- When introducing any new character, immediately invent a realistic first name.
-- On first appearance, put role info in the action text.
-- Keep invented names consistent throughout the entire conversation.
+- Keep focus on established characters unless the current scene genuinely requires another participant to make the situation coherent.
+- If the user introduces a secondary character, create a plausible name when needed and keep it consistent.
+- For stories based on established media, use established source characters only when the story setup already makes them part of the active situation.
+- Once a named character speaks or acts as their own character block, use proper CharacterName: tagging and keep that exact name consistent.
+- On first appearance, include enough role or presence information in action text for the user to understand who the character is.
 
 --- SCENE TAGGING ---
 
@@ -612,22 +726,6 @@ When the next meaningful moment depends on the user character's response, stop w
     return `NARRATIVE POV: Third Person\n- In each tagged character block, narration, action prose, and internal thoughts use third-person for that speaking character.\n- Quoted dialogue remains natural spoken dialogue and may use first-person naturally inside speech.\n- Keep POV consistent within the block. Do not slide into first-person narration or first-person thought outside quoted dialogue.\n- This POV setting controls pronouns only. It does not require action, dialogue, or thought to appear in any fixed order.`;
   };
 
-  const renderCharacterDiscovery = (): string => {
-    const proactiveDiscovery = appData.uiSettings?.proactiveCharacterDiscovery !== false;
-    if (proactiveDiscovery) {
-      return `CHARACTER DISCOVERY: Proactive\n- You may introduce new characters when narratively appropriate.\n- For stories based on established media, you may introduce established source characters at fitting moments.\n- Always use proper CharacterName: tagging when introducing new characters.\n- Include descriptive physical traits in their first appearance using *action* format.`;
-    }
-    return `CHARACTER DISCOVERY: Strict\n- Do not proactively introduce characters from source material or your training data.\n- Only introduce new named characters when the user has explicitly mentioned or described them, or when the scene absolutely requires a minor NPC interaction.\n- For required NPCs, invent a simple first name. Do not use known characters from books, movies, or other media unless the user has established them.\n- Wait for the user to introduce major characters they want in the story.`;
-  };
-
-  const renderProactiveMode = (): string => {
-    const proactiveNarrative = appData.uiSettings?.proactiveNarrative !== false;
-    if (proactiveNarrative) {
-      return `PROACTIVE AI MODE: On\n- AI characters pursue their own goals and desires through believable dialogue, action, and internal thought. "Proactive" means character initiative, not scene completion.\n- When the next meaningful development depends on the user character's answer, choice, or action, end the response there.`;
-    }
-    return `PROACTIVE AI MODE: Off\n- AI characters should respond to the user's current turn and maintain continuity without aggressively initiating unrelated new story developments.\n- They may still answer, react, follow through, and take sensible immediate actions when the scene calls for it.`;
-  };
-
   const renderNsfwIntensity = (): string => {
     const nsfwIntensity = appData.uiSettings?.nsfwIntensity || 'normal';
     if (nsfwIntensity === 'high') {
@@ -637,7 +735,7 @@ When the next meaningful moment depends on the user character's response, stop w
   };
 
   const renderResponseDetail = (): string => {
-    return renderResponseDetailInstruction(appData.uiSettings?.responseVerbosity || 'balanced');
+    return `--- RESPONSE DETAIL / DEVELOPMENT LEVEL ---\n\n${renderResponseDetailInstruction(appData.uiSettings?.responseVerbosity || 'balanced')}`;
   };
 
   const renderRealismMode = (): string => {
@@ -650,8 +748,6 @@ When the next meaningful moment depends on the user character's response, stop w
 
   const renderChatSettings = (): string => section('SECTION 8 - CHAT SETTINGS PER USER PREFERENCE', [
     renderNarrativePov(),
-    renderCharacterDiscovery(),
-    renderProactiveMode(),
     renderNsfwIntensity(),
     renderResponseDetail(),
     renderRealismMode(),
@@ -697,33 +793,19 @@ export async function* generateRoleplayResponseStream(
     activeScene
   );
   
-  // Regeneration request - tells AI to provide a different take on the same scene
-  const regenerationDirective = isRegeneration ? '\n\n' + REGENERATION_DIRECTIVE_TEXT : '';
-
-  // Build messages array for xAI Grok API
-  const historyMessages = conversation.messages
-    .filter((message) => !isLocalRoleplayNoticeMessage(message))
-    .slice(-API_CALL_1_HISTORY_MESSAGE_LIMIT);
-  const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
-    { role: 'system', content: systemInstruction },
-    ...historyMessages.map(m => ({
-      role: m.role === 'assistant' ? 'assistant' as const : 'user' as const,
-      content: m.text
-    })),
-  ];
-
-  const finalUserContent = [
-    sessionMessageCount != null ? `[SESSION: Message ${sessionMessageCount} of current session]` : '',
-    buildCurrentSceneSnapshotForPrompt(historyMessages),
-    adaptiveStyleDirective || '',
-    `${userMessage}${regenerationDirective}`.trim(),
-    EXECUTION_BRIEF_TEXT,
-  ]
-    .filter(Boolean)
-    .join('\n\n')
-    .trim();
-
-  messages.push({ role: 'user', content: finalUserContent });
+  const {
+    messages,
+    historyMessages,
+    finalUserContent,
+    historyLimit,
+  } = buildRoleplayApiMessages({
+    conversationMessages: conversation.messages,
+    systemInstruction,
+    userMessage,
+    isRegeneration,
+    adaptiveStyleDirective,
+    sessionMessageCount,
+  });
 
   if (import.meta.env.DEV) {
     console.debug(`[llm.ts] Calling chat edge function with model: ${modelId}`);
@@ -787,7 +869,7 @@ export async function* generateRoleplayResponseStream(
         messageCount: messages.length,
         historyCount: historyMessages.length,
         totalConversationHistoryCount: conversation.messages.length,
-        historyLimit: API_CALL_1_HISTORY_MESSAGE_LIMIT,
+        historyLimit,
         systemChars,
         finalUserChars,
       },

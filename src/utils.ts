@@ -62,6 +62,33 @@ export function clamp(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, n));
 }
 
+type ScenarioUiSettings = NonNullable<ScenarioData["uiSettings"]>;
+
+const isHexColor = (value: unknown): value is string =>
+  typeof value === "string" && /^#([0-9a-fA-F]{6})$/.test(value);
+
+export function sanitizeUiSettings(raw: unknown): ScenarioUiSettings {
+  const source = raw && typeof raw === "object" ? raw as Record<string, unknown> : {};
+
+  return {
+    showBackgrounds: typeof source.showBackgrounds === "boolean" ? source.showBackgrounds : true,
+    transparentBubbles: typeof source.transparentBubbles === "boolean" ? source.transparentBubbles : false,
+    darkMode: typeof source.darkMode === "boolean" ? source.darkMode : false,
+    offsetBubbles: typeof source.offsetBubbles === "boolean" ? source.offsetBubbles : false,
+    chatCanvasColor: isHexColor(source.chatCanvasColor) ? source.chatCanvasColor : '#1a1b20',
+    chatBubbleColor: isHexColor(source.chatBubbleColor) ? source.chatBubbleColor : '#1a1b20',
+    dynamicText: typeof source.dynamicText === "boolean" ? source.dynamicText : true,
+    narrativePov: source.narrativePov === 'first' || source.narrativePov === 'third' ? source.narrativePov : 'third',
+    nsfwIntensity: source.nsfwIntensity === 'normal' || source.nsfwIntensity === 'high' ? source.nsfwIntensity : 'normal',
+    realismMode: typeof source.realismMode === "boolean" ? source.realismMode : false,
+    responseVerbosity:
+      source.responseVerbosity === 'concise' || source.responseVerbosity === 'balanced' || source.responseVerbosity === 'detailed'
+        ? source.responseVerbosity
+        : 'balanced',
+    apiUsageTestTracking: typeof source.apiUsageTestTracking === "boolean" ? source.apiUsageTestTracking : false,
+  };
+}
+
 export function truncateLine(s: string, max = 90): string {
   const t = (s || "").replace(/\s+/g, " ").trim();
   if (t.length <= max) return t;
@@ -278,14 +305,15 @@ export function createDefaultScenarioData(): ScenarioData {
       showBackgrounds: true,
       transparentBubbles: false,
       darkMode: false,
+      offsetBubbles: false,
       chatCanvasColor: '#1a1b20',
       chatBubbleColor: '#1a1b20',
-      proactiveCharacterDiscovery: true,  // Default enabled for creative freedom
       dynamicText: true,  // Default enabled for visual text styling
-      proactiveNarrative: true,  // Default ON - AI drives story forward
       narrativePov: 'third' as const,  // Default third-person narration
       nsfwIntensity: 'normal' as const,  // Default natural flow for mature content
       realismMode: false,  // Default flexible mode for narrative flow
+      responseVerbosity: 'balanced' as const,
+      apiUsageTestTracking: false,
     },
     story: { 
       openingDialog: {
@@ -411,26 +439,7 @@ export function normalizeScenarioData(raw: any): ScenarioData {
       }))
     : [];
 
-  const uiSettings = {
-    showBackgrounds: typeof raw?.uiSettings?.showBackgrounds === "boolean" ? raw.uiSettings.showBackgrounds : true,
-    transparentBubbles: typeof raw?.uiSettings?.transparentBubbles === "boolean" ? raw.uiSettings.transparentBubbles : false,
-    darkMode: typeof raw?.uiSettings?.darkMode === "boolean" ? raw.uiSettings.darkMode : false,
-    chatCanvasColor:
-      typeof raw?.uiSettings?.chatCanvasColor === "string" && /^#([0-9a-fA-F]{6})$/.test(raw.uiSettings.chatCanvasColor)
-        ? raw.uiSettings.chatCanvasColor
-        : '#1a1b20',
-    chatBubbleColor:
-      typeof raw?.uiSettings?.chatBubbleColor === "string" && /^#([0-9a-fA-F]{6})$/.test(raw.uiSettings.chatBubbleColor)
-        ? raw.uiSettings.chatBubbleColor
-        : '#1a1b20',
-    proactiveCharacterDiscovery: typeof raw?.uiSettings?.proactiveCharacterDiscovery === "boolean" ? raw.uiSettings.proactiveCharacterDiscovery : true,
-    dynamicText: typeof raw?.uiSettings?.dynamicText === "boolean" ? raw.uiSettings.dynamicText : true,
-    proactiveNarrative: typeof raw?.uiSettings?.proactiveNarrative === "boolean" ? raw.uiSettings.proactiveNarrative : true,
-    narrativePov: (raw?.uiSettings?.narrativePov === 'first' || raw?.uiSettings?.narrativePov === 'third') ? raw.uiSettings.narrativePov : 'third' as const,
-    nsfwIntensity: (raw?.uiSettings?.nsfwIntensity === 'normal' || raw?.uiSettings?.nsfwIntensity === 'high') ? raw.uiSettings.nsfwIntensity : 'normal' as const,
-    realismMode: typeof raw?.uiSettings?.realismMode === "boolean" ? raw.uiSettings.realismMode : false,
-    responseVerbosity: (['concise', 'balanced', 'detailed'].includes(raw?.uiSettings?.responseVerbosity)) ? raw.uiSettings.responseVerbosity : 'balanced' as const,
-  };
+  const uiSettings = sanitizeUiSettings(raw?.uiSettings);
 
   // Normalize TimeOfDay value
   const normTimeOfDay = (val: any): 'sunrise' | 'day' | 'sunset' | 'night' => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildCurrentSceneSnapshotForPrompt, EXECUTION_BRIEF_TEXT, getSystemInstruction, REGENERATION_DIRECTIVE_TEXT } from '@/services/llm';
+import { buildCurrentSceneSnapshotForPrompt, buildRoleplayApiMessages, EXECUTION_BRIEF_TEXT, getSystemInstruction, REGENERATION_DIRECTIVE_TEXT } from '@/services/llm';
 import { createDefaultScenarioData, getHardcodedTestCharacters, now, uid } from '@/utils';
 
 describe('llm canonical prompt coverage', () => {
@@ -83,14 +83,17 @@ describe('llm canonical prompt coverage', () => {
       {
         id: uid('wsec'),
         title: 'Political Stakes',
-        items: [{ id: uid('witem'), label: 'Treaty', value: 'One breach means war.' }],
+        items: [
+          { id: uid('witem'), label: 'Treaty', value: 'One breach means war.' },
+          { id: uid('witem'), label: 'Legacy Notes', value: ['First pressure point.', 'Second pressure point.'] as any },
+        ],
       },
       {
         id: uid('wsec'),
         title: 'Atmosphere',
         items: [],
         type: 'freeform',
-        freeformValue: 'Moonlit dread with restrained courtly etiquette.',
+        freeformValue: ['Moonlit dread.', 'Restrained courtly etiquette.'] as any,
       },
     ];
     appData.world.core.storyGoals = [
@@ -138,21 +141,27 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('- Spring Court: Palace with hidden corridors.');
     expect(prompt).toContain('--- CUSTOM WORLD CONTENT ---');
     expect(prompt).toContain('Treaty: One breach means war.');
-    expect(prompt).toContain('Moonlit dread with restrained courtly etiquette.');
+    expect(prompt).toContain('Legacy Notes: First pressure point.\nSecond pressure point.');
+    expect(prompt).toContain('Moonlit dread.\nRestrained courtly etiquette.');
+    expect(prompt).toContain('Political Stakes\n- Treaty: One breach means war.\n- Legacy Notes: First pressure point.\nSecond pressure point.\n\nAtmosphere\n- Atmosphere Notes: Moonlit dread.\nRestrained courtly etiquette.');
+    expect(prompt).not.toContain('war.,Atmosphere');
+    expect(prompt).not.toContain('First pressure point., Second pressure point.');
+    expect(prompt).not.toContain('Moonlit dread., Restrained courtly etiquette.');
 
     expect(prompt).toContain('MAIN STORY GOALS');
-    expect(prompt).toContain('Secure lasting peace.');
-    expect(prompt).toContain('Longer view: Both courts ratify treaty without bloodshed.');
-    expect(prompt).toContain('Current state: Negotiations stalled by mistrust.');
-    expect(prompt).toContain('Open milestone target (background direction, not an instruction): Hold midnight summit.');
-    expect(prompt).toContain('Read this as an eventual state to develop over time, not as a command to execute now.');
+    expect(prompt).toContain('STORY GOAL: Secure lasting peace');
+    expect(prompt).toContain('Long-range direction: Both courts ratify treaty without bloodshed.');
+    expect(prompt).toContain('Current progress: Negotiations stalled by mistrust. 0/1 milestones complete.');
+    expect(prompt).toContain('Current open milestone: Hold midnight summit.');
+    expect(prompt).toContain('Use this goal as background direction for realistic long-term progression.');
     expect(prompt).toContain('--- STORY THEMES ---');
     expect(prompt).toContain('Treat these as content permission, background emphasis, and thematic direction, not as a checklist to force into every response.');
     expect(prompt).toContain("Selected story themes are creator-approved direction for the scenario.");
     expect(prompt).toContain('- NSFW: This is an ADULT (NSFW) scenario.');
-    expect(prompt).toContain('- Romance: Center the narrative around romantic relationships.');
-    expect(prompt).toContain('- BDSM: Incorporate BDSM dynamics');
+    expect(prompt).toContain('- Romance: May center the narrative around romantic relationships.');
+    expect(prompt).toContain('- BDSM: May incorporate BDSM dynamics');
     expect(prompt).toContain('- forbidden attraction: Treat this as a welcomed story element when it fits naturally in the scene.');
+    expect(prompt).not.toContain('Canon events');
     expect(prompt).not.toContain('--- STORY THEMES THE WRITERS HAVE OPTED INTO ---');
     expect(prompt).not.toContain('CORE INVITED CONTENT / BOUNDARIES:');
     expect(prompt).not.toContain('WELCOMED THEMES TO LEAN INTO WHEN NATURAL:');
@@ -164,8 +173,8 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('STORY AND CHARACTER CARD REFERENCE RULE');
     expect(prompt).toContain('provided as reference context');
     expect(prompt).toContain("relationships, history, and each character's current state");
-    expect(prompt).toContain('do not keep restating an established detail with the same wording or the same descriptive focus');
-    expect(prompt).toContain('write the new action, contact, reaction, decision, or consequence it creates');
+    expect(prompt).toContain('do not keep restating an established detail with the same wording or descriptive focus');
+    expect(prompt).toContain('write what changes, what it causes, or how characters respond to it');
     expect(prompt).toContain('World locations, supplies, and custom world content are creator reference, not automatic character knowledge.');
 
     expect(prompt).toContain('SECTION 3 - MAIN AI CHARACTER CARD INFORMATION');
@@ -182,9 +191,9 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('Tamlin CUSTOM CONTENT');
     expect(prompt).toContain('Control dynamics and slow-burn teasing.');
     expect(prompt).toContain('Tamlin GOALS');
-    expect(prompt).toContain('Protect Feyre.');
-    expect(prompt).toContain('Longer view: Keep her away from political threats.');
-    expect(prompt).toContain('Current state: Actively watching court movements.');
+    expect(prompt).toContain('CHARACTER GOAL: Protect Feyre');
+    expect(prompt).toContain('Long-range direction: Keep her away from political threats.');
+    expect(prompt).toContain('Current progress: Actively watching court movements. 1/1 milestones complete.');
     expect(prompt).toContain('SECTION 5 - USER-CONTROLLED CHARACTER CARD INFORMATION');
     expect(prompt).toContain('USER-CONTROLLED CHARACTERS DO NOT GENERATE FOR');
     expect(prompt).toContain('- Feyre');
@@ -193,9 +202,8 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('--- DIALOG FORMATTING RULES ---');
     expect(prompt).toContain("Every AI-written character block must begin with that character's exact card NAME followed by a colon.");
     expect(prompt).toContain("These are formatting tools, not required ingredients.");
-    expect(prompt).toContain("Compare against your own previous 2-3 assistant character blocks, not the user's message");
+    expect(prompt).toContain('Do not default to the same action -> dialogue -> internal thought order.');
     expect(prompt).not.toContain('Avoid repetitive formatting from one message to another.');
-    expect(prompt).toContain("Do not default to action -> dialogue -> internal thought");
     expect(prompt).toContain('the response should include external dialogue');
     expect(prompt).toContain('External dialogue must have a clear conversational purpose in the current exchange.');
     expect(prompt).toContain('If a spoken line sounds vague, circular, or semantically unclear, rewrite it before output.');
@@ -213,13 +221,13 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('Covered, concealed, off-screen, or otherwise unperceived details cannot be named as exact facts');
     expect(prompt).toContain('When the latest user message establishes a physical change, the next response must continue from that established physical state.');
     expect(prompt).toContain('User control is about authorship, not contact.');
-    expect(prompt).toContain('AI-controlled characters may create AI-owned actions that externally affect a user-controlled character');
+    expect(prompt).toContain('AI-controlled characters can create AI-owned actions that externally affect a user-controlled character');
     expect(prompt).toContain("Do not author the user character's response to that change.");
     expect(prompt).toContain("When the next meaningful moment depends on the user character's response");
-    expect(EXECUTION_BRIEF_TEXT).toContain('Continue from the latest visible scene change.');
-    expect(EXECUTION_BRIEF_TEXT).toContain('Every spoken line must have a clear conversational purpose');
-    expect(EXECUTION_BRIEF_TEXT).toContain('Recent messages provide story state and continuity, not a template for response length.');
-    expect(EXECUTION_BRIEF_TEXT).toContain('Direct contact is allowed when the scene supports it.');
+    expect(EXECUTION_BRIEF_TEXT).toContain('Continue from the latest established scene change.');
+    expect(EXECUTION_BRIEF_TEXT).toContain('Recent messages provide story state and continuity, not a template for response length or structure.');
+    expect(EXECUTION_BRIEF_TEXT).toContain('Follow the active Response Detail setting.');
+    expect(EXECUTION_BRIEF_TEXT).toContain("Develop the AI-controlled character's side of the current exchange before stopping for the user.");
     expect(EXECUTION_BRIEF_TEXT).toContain('Stop before narrating any user-owned response');
     expect(REGENERATION_DIRECTIVE_TEXT).toContain('Change the execution rather than the situation');
     expect(REGENERATION_DIRECTIVE_TEXT).not.toContain('action-led opening');
@@ -311,6 +319,68 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).not.toContain('SECTION 4 - SIDE AI CHARACTER CARD INFORMATION');
   });
 
+  it('frames AI-controlled side characters as active supporting participants', () => {
+    const appData = createDefaultScenarioData();
+    const [aiCharacter, userCharacter] = getHardcodedTestCharacters();
+
+    aiCharacter.name = 'Mara';
+    aiCharacter.controlledBy = 'AI';
+    aiCharacter.characterRole = 'Main';
+    userCharacter.name = 'Theo';
+    userCharacter.controlledBy = 'User';
+    userCharacter.characterRole = 'Main';
+
+    appData.characters = [aiCharacter, userCharacter];
+    appData.sideCharacters = [
+      {
+        id: uid('side'),
+        name: 'Iris',
+        nicknames: '',
+        age: '31',
+        sexType: 'Female',
+        sexualOrientation: '',
+        location: 'Roadside',
+        currentMood: 'Watchful',
+        controlledBy: 'AI',
+        characterRole: 'Side',
+        roleDescription: 'A scout traveling with the group.',
+        physicalAppearance: { ...aiCharacter.physicalAppearance },
+        currentlyWearing: { ...aiCharacter.currentlyWearing },
+        preferredClothing: { ...aiCharacter.preferredClothing },
+        background: {
+          relationshipStatus: '',
+          residence: '',
+          educationLevel: '',
+        },
+        personality: {
+          traits: ['observant'],
+          miscellaneous: '',
+          secrets: '',
+          fears: '',
+          kinksFantasies: '',
+          desires: '',
+        },
+        sections: [],
+        avatarDataUrl: '',
+        firstMentionedIn: uid('conversation'),
+        extractedTraits: [],
+        createdAt: now(),
+        updatedAt: now(),
+      },
+    ];
+
+    const prompt = getSystemInstruction(appData, 1, 'night', [], true, null);
+
+    expect(prompt).toContain('SECTION 4 - SIDE AI CHARACTER CARD INFORMATION');
+    expect(prompt).toContain('Side characters are supporting participants, not passive background.');
+    expect(prompt).toContain('Keep the main AI character as the default focus');
+    expect(prompt).toContain('let present side characters speak or act when their established role in the current scene gives them a clear reason to contribute');
+    expect(prompt).toContain('Do not let side characters take over the response unless the current scene has naturally shifted focus to them.');
+    expect(prompt).toContain('CHARACTER: Iris');
+    expect(prompt).toContain('CONTROLLED BY: AI');
+    expect(prompt).not.toContain('do take somewhat of a back seat');
+  });
+
   it('does not inject trait weighting explanations into the writer-facing personality block', () => {
     const appData = createDefaultScenarioData();
     const [aiCharacter] = getHardcodedTestCharacters();
@@ -348,8 +418,6 @@ describe('llm canonical prompt coverage', () => {
     appData.uiSettings = {
       ...appData.uiSettings!,
       narrativePov: 'first',
-      proactiveCharacterDiscovery: false,
-      proactiveNarrative: false,
       nsfwIntensity: 'high',
       responseVerbosity: 'detailed',
       realismMode: true,
@@ -358,20 +426,22 @@ describe('llm canonical prompt coverage', () => {
     const prompt = getSystemInstruction(appData, 1, 'night', [], true, null);
 
     expect(prompt).toContain('NARRATIVE POV: First Person');
-    expect(prompt).toContain('CHARACTER DISCOVERY: Strict');
-    expect(prompt).toContain('PROACTIVE AI MODE: Off');
+    expect(prompt).toContain('CHARACTER INTRODUCTION DURING ROLEPLAY');
+    expect(prompt).toContain('Keep focus on established characters unless the current scene genuinely requires another participant to make the situation coherent.');
+    expect(prompt).toContain('For stories based on established media, use established source characters only when the story setup already makes them part of the active situation.');
+    expect(prompt).not.toContain('makes their presence useful');
+    expect(prompt).not.toContain('make their presence fitting');
     expect(prompt).toContain('NSFW INTENSITY: High');
     expect(prompt).toContain('Use explicit, profane, anatomical, and erotic language when it fits the character and moment.');
     expect(prompt).toContain('RESPONSE DETAIL: Detailed');
-    expect(prompt).toContain('Write rich, immersive responses with lengthy sensory, emotional, and environmental description');
+    expect(prompt).toContain('RESPONSE DETAIL / DEVELOPMENT LEVEL');
+    expect(prompt).toContain('Develop the AI-controlled side of the current exchange fully');
     expect(prompt).toContain('Do not concentrate most of the detail in one opening narration section');
-    expect(prompt).toContain('Description should support what is currently changing or being interacted with.');
-    expect(prompt).toContain("Build out the AI-controlled character's action and dialogue fully before stopping for the user.");
+    expect(prompt).toContain('Description should support what is changing, being interacted with, being decided, or being felt now.');
+    expect(prompt).toContain("Build out the AI-controlled character's action and dialogue before stopping for the user.");
     expect(prompt).not.toContain('Target: usually 3-5 paragraphs per character block.');
     expect(prompt).toContain('REALISM MODE: On');
     expect(prompt).not.toContain('NARRATIVE POV: Third Person');
-    expect(prompt).not.toContain('CHARACTER DISCOVERY: Proactive');
-    expect(prompt).not.toContain('PROACTIVE AI MODE: On');
     expect(prompt).not.toContain('NSFW INTENSITY: Normal');
     expect(prompt).not.toContain('RESPONSE DETAIL: Concise');
     expect(prompt).not.toContain('RESPONSE DETAIL: Balanced');
@@ -487,10 +557,10 @@ describe('llm canonical prompt coverage', () => {
 
     const prompt = getSystemInstruction(appData, 1, 'sunset', [], true, null);
 
-    expect(prompt).toContain('Survive the storm.');
-    expect(prompt).toContain('Longer view: Reach shelter and keep everyone alive.');
-    expect(prompt).toContain('Current state: Searching for warmth.');
-    expect(prompt).toContain('Open milestone target (background direction, not an instruction): Make the shelter safe enough to rest.');
+    expect(prompt).toContain('STORY GOAL: Survive the storm');
+    expect(prompt).toContain('Long-range direction: Reach shelter and keep everyone alive.');
+    expect(prompt).toContain('Current progress: Searching for warmth. 0/1 milestones complete.');
+    expect(prompt).toContain('Current open milestone: Make the shelter safe enough to rest.');
     expect(prompt).toContain('Goal strength: Rigid.');
     expect(prompt).not.toContain('Next open step');
     expect(prompt).not.toContain('ACTIVE GOALS & STEPS');
@@ -504,5 +574,272 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).not.toContain('Priority is');
     expect(prompt).not.toContain('The desired outcome is');
     expect(prompt).not.toContain('Right now,');
+  });
+
+  it('renders all eligible goals while exposing only each goal next unfinished milestone', () => {
+    const appData = createDefaultScenarioData();
+    const [aiCharacter, userCharacter] = getHardcodedTestCharacters();
+
+    aiCharacter.name = 'Rowan';
+    aiCharacter.controlledBy = 'AI';
+    aiCharacter.goals = [
+      {
+        id: uid('cgoal-a'),
+        title: 'Build trust',
+        desiredOutcome: 'Earn enough trust for honest cooperation.',
+        currentStatus: 'They are still guarded around each other.',
+        progress: 0,
+        flexibility: 'normal',
+        steps: [
+          { id: uid('cstep-a1'), description: 'First character open milestone', completed: false },
+          { id: uid('cstep-a2'), description: 'Second character milestone that should stay hidden', completed: false },
+        ],
+        createdAt: now(),
+        updatedAt: now(),
+      },
+      {
+        id: uid('cgoal-b'),
+        title: 'Hold boundaries',
+        desiredOutcome: 'Keep emotional pressure from becoming reckless.',
+        currentStatus: 'Boundaries have been stated once.',
+        progress: 20,
+        flexibility: 'rigid',
+        steps: [
+          { id: uid('cstep-b1'), description: 'Completed character milestone', completed: true },
+          { id: uid('cstep-b2'), description: 'Next character open milestone', completed: false },
+          { id: uid('cstep-b3'), description: 'Later character milestone that should stay hidden', completed: false },
+        ],
+        createdAt: now(),
+        updatedAt: now(),
+      },
+    ];
+
+    userCharacter.name = 'Mira';
+    userCharacter.controlledBy = 'User';
+    appData.characters = [aiCharacter, userCharacter];
+    appData.world.core.storyGoals = [
+      {
+        id: uid('sgoal-a'),
+        title: 'Stabilize the city',
+        desiredOutcome: 'Keep the city from collapsing into faction conflict.',
+        currentStatus: 'The first negotiations are incomplete.',
+        flexibility: 'normal',
+        steps: [
+          { id: uid('sstep-a1'), description: 'First story open milestone', completed: false },
+          { id: uid('sstep-a2'), description: 'Second story milestone that should stay hidden', completed: false },
+        ],
+        createdAt: now(),
+        updatedAt: now(),
+      },
+      {
+        id: uid('sgoal-b'),
+        title: 'Expose the conspiracy',
+        desiredOutcome: 'Reveal the hidden faction without rushing the investigation.',
+        currentStatus: 'One clue has been confirmed.',
+        flexibility: 'flexible',
+        steps: [
+          { id: uid('sstep-b1'), description: 'Completed story milestone', completed: true },
+          { id: uid('sstep-b2'), description: 'Next story open milestone', completed: false },
+          { id: uid('sstep-b3'), description: 'Later story milestone that should stay hidden', completed: false },
+        ],
+        createdAt: now(),
+        updatedAt: now(),
+      },
+    ];
+
+    const prompt = getSystemInstruction(appData, 1, 'day', [], true, null);
+
+    expect(prompt).toContain('STORY GOAL: Stabilize the city');
+    expect(prompt).toContain('STORY GOAL: Expose the conspiracy');
+    expect(prompt).toContain('CHARACTER GOAL: Build trust');
+    expect(prompt).toContain('CHARACTER GOAL: Hold boundaries');
+    expect(prompt).toContain('Current open milestone: First story open milestone.');
+    expect(prompt).toContain('Current open milestone: Next story open milestone.');
+    expect(prompt).toContain('Current open milestone: First character open milestone.');
+    expect(prompt).toContain('Current open milestone: Next character open milestone.');
+    expect(prompt).not.toContain('Second story milestone that should stay hidden');
+    expect(prompt).not.toContain('Later story milestone that should stay hidden');
+    expect(prompt).not.toContain('Second character milestone that should stay hidden');
+    expect(prompt).not.toContain('Later character milestone that should stay hidden');
+  });
+
+  it('omits dropped goals from the rendered writer prompt and skips blank open milestones', () => {
+    const appData = createDefaultScenarioData();
+    const [aiCharacter, userCharacter] = getHardcodedTestCharacters();
+
+    aiCharacter.name = 'Rowan';
+    aiCharacter.controlledBy = 'AI';
+    aiCharacter.goals = [
+      {
+        id: uid('dropped-character-goal'),
+        title: 'Dropped character goal',
+        desiredOutcome: 'This should not reach the writer.',
+        currentStatus: '',
+        progress: 0,
+        flexibility: 'rigid',
+        alignment: {
+          goalId: 'dropped-character-goal',
+          goalKind: 'character',
+          characterId: aiCharacter.id,
+          score: 0,
+          status: 'dropped',
+          trend: 'falling',
+          supportCount: 0,
+          resistanceCount: 6,
+          driftCount: 0,
+          lastSignal: 'resistance',
+        },
+        steps: [{ id: uid('hidden-cstep'), description: 'Hidden dropped character milestone', completed: false }],
+        createdAt: now(),
+        updatedAt: now(),
+      },
+      {
+        id: uid('blank-character-goal'),
+        title: 'Blank first character step',
+        desiredOutcome: 'Keep the valid milestone visible.',
+        currentStatus: '',
+        progress: 0,
+        flexibility: 'normal',
+        steps: [
+          { id: uid('blank-cstep'), description: '   ', completed: false },
+          { id: uid('valid-cstep'), description: 'Valid character milestone after blank step', completed: false },
+        ],
+        createdAt: now(),
+        updatedAt: now(),
+      },
+    ];
+
+    userCharacter.name = 'Mira';
+    userCharacter.controlledBy = 'User';
+    appData.characters = [aiCharacter, userCharacter];
+    appData.world.core.storyGoals = [
+      {
+        id: uid('dropped-story-goal'),
+        title: 'Dropped story goal',
+        desiredOutcome: 'This should not reach the writer.',
+        currentStatus: '',
+        flexibility: 'rigid',
+        alignment: {
+          goalId: 'dropped-story-goal',
+          goalKind: 'story',
+          score: 0,
+          status: 'dropped',
+          trend: 'falling',
+          supportCount: 0,
+          resistanceCount: 6,
+          driftCount: 0,
+          lastSignal: 'resistance',
+        },
+        steps: [{ id: uid('hidden-sstep'), description: 'Hidden dropped story milestone', completed: false }],
+        createdAt: now(),
+        updatedAt: now(),
+      },
+      {
+        id: uid('blank-story-goal'),
+        title: 'Blank first story step',
+        desiredOutcome: 'Keep the valid story milestone visible.',
+        currentStatus: '',
+        flexibility: 'normal',
+        steps: [
+          { id: uid('blank-sstep'), description: '', completed: false },
+          { id: uid('valid-sstep'), description: 'Valid story milestone after blank step', completed: false },
+        ],
+        createdAt: now(),
+        updatedAt: now(),
+      },
+    ];
+
+    const prompt = getSystemInstruction(appData, 1, 'day', [], true, null);
+
+    expect(prompt).not.toContain('Dropped story goal');
+    expect(prompt).not.toContain('Hidden dropped story milestone');
+    expect(prompt).not.toContain('Dropped character goal');
+    expect(prompt).not.toContain('Hidden dropped character milestone');
+    expect(prompt).toContain('STORY GOAL: Blank first story step');
+    expect(prompt).toContain('Current open milestone: Valid story milestone after blank step.');
+    expect(prompt).toContain('CHARACTER GOAL: Blank first character step');
+    expect(prompt).toContain('Current open milestone: Valid character milestone after blank step.');
+  });
+
+  it('builds API Call 1 messages with five prior roleplay messages and excludes local notices', () => {
+    const messages = Array.from({ length: 8 }, (_, index) => ({
+      id: uid('msg'),
+      role: index % 2 === 0 ? 'user' as const : 'assistant' as const,
+      text: `history ${index + 1}`,
+      createdAt: now() + index,
+    }));
+    messages.splice(5, 0, {
+      id: uid('notice'),
+      role: 'assistant',
+      text: 'Chronicle: The model provider blocked this turn. Try editing.',
+      localNotice: 'content_filter',
+      createdAt: now() + 99,
+    } as any);
+
+    const built = buildRoleplayApiMessages({
+      conversationMessages: messages as any,
+      systemInstruction: 'SYSTEM',
+      userMessage: 'latest user text',
+      sessionMessageCount: 12,
+      adaptiveStyleDirective: '[STYLE]',
+    });
+
+    expect(built.historyLimit).toBe(5);
+    expect(built.historyMessages.map((message) => message.text)).toEqual([
+      'history 4',
+      'history 5',
+      'history 6',
+      'history 7',
+      'history 8',
+    ]);
+    expect(built.messages).toHaveLength(7);
+    expect(built.messages[0]).toEqual({ role: 'system', content: 'SYSTEM' });
+    expect(built.messages.slice(1, 6).map((message) => message.content)).toEqual([
+      'history 4',
+      'history 5',
+      'history 6',
+      'history 7',
+      'history 8',
+    ]);
+    expect(built.finalUserContent).toContain('[SESSION: Message 12 of current session]');
+    expect(built.finalUserContent).toContain('[CURRENT SCENE SNAPSHOT]');
+    expect(built.finalUserContent).toContain('[STYLE]');
+    expect(built.finalUserContent).toContain('[APP TURN CONTROLS]');
+    expect(built.finalUserContent).toContain('[PLAYER TURN]');
+    expect(built.finalUserContent).toContain('latest user text');
+    expect(built.finalUserContent).toContain('[EXECUTION BRIEF]');
+    expect(built.finalUserContent.indexOf('[APP TURN CONTROLS]')).toBeLessThan(built.finalUserContent.indexOf('[PLAYER TURN]'));
+    expect(built.finalUserContent.indexOf('[EXECUTION BRIEF]')).toBeLessThan(built.finalUserContent.indexOf('[PLAYER TURN]'));
+    expect(built.messages[6]).toEqual({ role: 'user', content: built.finalUserContent });
+    expect(built.messages.map((message) => message.content).join('\n')).not.toContain('Chronicle: The model provider blocked');
+  });
+
+  it('omits empty world placeholders from API Call 1 prompt output', () => {
+    const appData = createDefaultScenarioData();
+    const [aiCharacter, userCharacter] = getHardcodedTestCharacters();
+    appData.characters = [aiCharacter, userCharacter];
+    appData.world.core.scenarioName = '';
+    appData.world.core.briefDescription = '';
+    appData.world.core.storyPremise = '';
+    appData.world.core.structuredLocations = [];
+    appData.world.core.customWorldSections = [];
+    appData.world.entries = [];
+    appData.scenes = [{
+      id: uid('scene'),
+      url: '',
+      tags: [],
+      isStartingScene: true,
+      title: 'Untitled Scene',
+      createdAt: now(),
+    }];
+
+    const prompt = getSystemInstruction(appData, 1, 'day', [], true, appData.scenes[0]);
+
+    expect(prompt).not.toContain('STORY NAME: Not specified');
+    expect(prompt).not.toContain('BRIEF DESCRIPTION: Not specified');
+    expect(prompt).not.toContain('STORY PREMISE: Not specified');
+    expect(prompt).not.toContain('--- LOCATIONS ---\n\n- Not specified');
+    expect(prompt).not.toContain('Active Scene Tag: Not tagged');
+    expect(prompt).not.toContain('Scene Tags: Not specified');
   });
 });
