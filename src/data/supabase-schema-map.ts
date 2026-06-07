@@ -6,6 +6,7 @@
  * mirrors /mnt/documents/supabase-schema-snapshot.json.
  *
  * Contains schema metadata only — no row contents, secrets, PII, or user data.
+ * Function definitions (pg_get_functiondef) are included to enable security-definer audits.
  * Items the introspection could not confirm are marked `needs_verification`.
  */
 
@@ -78,6 +79,7 @@ export interface SchemaFunction {
   securityDefiner: boolean;
   volatility: 'IMMUTABLE' | 'STABLE' | 'VOLATILE';
   config: string[] | null;
+  definition: string;
 }
 
 export interface SchemaEnum {
@@ -121,14 +123,14 @@ export interface SupabaseSchemaSnapshot {
     policies: SchemaStoragePolicy[];
   };
   edgeFunctions: SchemaEdgeFunction[];
-  verification: Record<string, number | string>;
+  verification: Record<string, number | string | boolean>;
 }
 
 export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
-  "generatedAt": "2026-06-07T05:30:12.308194Z",
+  "generatedAt": "2026-06-07T05:49:06.838680Z",
   "sourceProjectRef": "gialzvvswxadxolnwots",
   "sourceSchema": "public",
-  "generatorNotes": "Live introspection via psql against Lovable Cloud. No row contents, secrets, PII, or user data included. Items lacking confirmation are marked needs_verification.",
+  "generatorNotes": "Live introspection via psql against Lovable Cloud. Function definitions captured via pg_get_functiondef for security-definer audits. No row contents, secrets, PII, or user data included.",
   "tables": [
     {
       "name": "ad_spend",
@@ -389,10 +391,10 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "id"
       ],
       "rlsEnabled": true,
-      "foreignKeys": null,
+      "foreignKeys": [],
       "approxRowCount": -1,
-      "checkConstraints": null,
-      "uniqueConstraints": null
+      "checkConstraints": [],
+      "uniqueConstraints": []
     },
     {
       "name": "admin_notes",
@@ -565,10 +567,10 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "id"
       ],
       "rlsEnabled": true,
-      "foreignKeys": null,
+      "foreignKeys": [],
       "approxRowCount": -1,
-      "checkConstraints": null,
-      "uniqueConstraints": null
+      "checkConstraints": [],
+      "uniqueConstraints": []
     },
     {
       "name": "ai_usage_events",
@@ -721,15 +723,15 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         }
       ],
-      "triggers": null,
+      "triggers": [],
       "primaryKey": [
         "id"
       ],
       "rlsEnabled": true,
-      "foreignKeys": null,
+      "foreignKeys": [],
       "approxRowCount": 1456,
-      "checkConstraints": null,
-      "uniqueConstraints": null
+      "checkConstraints": [],
+      "uniqueConstraints": []
     },
     {
       "name": "ai_usage_test_events",
@@ -1020,7 +1022,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         }
       ],
-      "triggers": null,
+      "triggers": [],
       "primaryKey": [
         "id"
       ],
@@ -1031,8 +1033,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "session_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "ai_usage_test_sessions",
           "refSchema": "public",
           "refColumns": [
@@ -1041,8 +1043,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         }
       ],
       "approxRowCount": 1686,
-      "checkConstraints": null,
-      "uniqueConstraints": null
+      "checkConstraints": [],
+      "uniqueConstraints": []
     },
     {
       "name": "ai_usage_test_sessions",
@@ -1235,15 +1237,15 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         }
       ],
-      "triggers": null,
+      "triggers": [],
       "primaryKey": [
         "id"
       ],
       "rlsEnabled": true,
-      "foreignKeys": null,
+      "foreignKeys": [],
       "approxRowCount": -1,
-      "checkConstraints": null,
-      "uniqueConstraints": null
+      "checkConstraints": [],
+      "uniqueConstraints": []
     },
     {
       "name": "app_settings",
@@ -1390,7 +1392,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         }
       ],
-      "triggers": null,
+      "triggers": [],
       "primaryKey": [
         "id"
       ],
@@ -1401,8 +1403,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "updated_by"
           ],
-          "onDelete": "a",
-          "onUpdate": "a",
+          "onDelete": "NO ACTION",
+          "onUpdate": "NO ACTION",
           "refTable": "users",
           "refSchema": "auth",
           "refColumns": [
@@ -1411,7 +1413,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         }
       ],
       "approxRowCount": 4,
-      "checkConstraints": null,
+      "checkConstraints": [],
       "uniqueConstraints": [
         {
           "name": "app_settings_setting_key_key",
@@ -1612,10 +1614,10 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "id"
       ],
       "rlsEnabled": true,
-      "foreignKeys": null,
+      "foreignKeys": [],
       "approxRowCount": -1,
-      "checkConstraints": null,
-      "uniqueConstraints": null
+      "checkConstraints": [],
+      "uniqueConstraints": []
     },
     {
       "name": "character_session_states",
@@ -1992,8 +1994,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "character_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "characters",
           "refSchema": "public",
           "refColumns": [
@@ -2005,8 +2007,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "conversation_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "conversations",
           "refSchema": "public",
           "refColumns": [
@@ -2015,7 +2017,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         }
       ],
       "approxRowCount": 11,
-      "checkConstraints": null,
+      "checkConstraints": [],
       "uniqueConstraints": [
         {
           "name": "character_session_states_character_id_conversation_id_key",
@@ -2197,7 +2199,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         }
       ],
-      "triggers": null,
+      "triggers": [],
       "primaryKey": [
         "id"
       ],
@@ -2208,8 +2210,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "character_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "characters",
           "refSchema": "public",
           "refColumns": [
@@ -2221,8 +2223,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "conversation_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "conversations",
           "refSchema": "public",
           "refColumns": [
@@ -2234,8 +2236,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "source_message_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "messages",
           "refSchema": "public",
           "refColumns": [
@@ -2244,8 +2246,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         }
       ],
       "approxRowCount": 219,
-      "checkConstraints": null,
-      "uniqueConstraints": null
+      "checkConstraints": [],
+      "uniqueConstraints": []
     },
     {
       "name": "characters",
@@ -2624,8 +2626,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "scenario_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "stories",
           "refSchema": "public",
           "refColumns": [
@@ -2637,8 +2639,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "user_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "users",
           "refSchema": "auth",
           "refColumns": [
@@ -2657,7 +2659,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "expression": "CHECK ((controlled_by = ANY (ARRAY['AI'::text, 'User'::text])))"
         }
       ],
-      "uniqueConstraints": null
+      "uniqueConstraints": []
     },
     {
       "name": "codex_entries",
@@ -2842,8 +2844,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "scenario_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "stories",
           "refSchema": "public",
           "refColumns": [
@@ -2852,8 +2854,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         }
       ],
       "approxRowCount": -1,
-      "checkConstraints": null,
-      "uniqueConstraints": null
+      "checkConstraints": [],
+      "uniqueConstraints": []
     },
     {
       "name": "content_themes",
@@ -3050,8 +3052,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "scenario_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "stories",
           "refSchema": "public",
           "refColumns": [
@@ -3060,7 +3062,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         }
       ],
       "approxRowCount": 5,
-      "checkConstraints": null,
+      "checkConstraints": [],
       "uniqueConstraints": [
         {
           "name": "content_themes_scenario_id_key",
@@ -3273,7 +3275,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         }
       ],
-      "triggers": null,
+      "triggers": [],
       "primaryKey": [
         "id"
       ],
@@ -3284,8 +3286,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "conversation_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "conversations",
           "refSchema": "public",
           "refColumns": [
@@ -3297,8 +3299,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "source_message_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "messages",
           "refSchema": "public",
           "refColumns": [
@@ -3317,7 +3319,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "expression": "CHECK ((status = ANY (ARRAY['ok'::text, 'skipped'::text, 'error'::text])))"
         }
       ],
-      "uniqueConstraints": null
+      "uniqueConstraints": []
     },
     {
       "name": "conversation_dialog_debug_comments",
@@ -3518,8 +3520,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "conversation_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "conversations",
           "refSchema": "public",
           "refColumns": [
@@ -3531,8 +3533,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "message_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "messages",
           "refSchema": "public",
           "refColumns": [
@@ -3541,8 +3543,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         }
       ],
       "approxRowCount": 68,
-      "checkConstraints": null,
-      "uniqueConstraints": null
+      "checkConstraints": [],
+      "uniqueConstraints": []
     },
     {
       "name": "conversation_state_change_events",
@@ -3771,7 +3773,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         }
       ],
-      "triggers": null,
+      "triggers": [],
       "primaryKey": [
         "id"
       ],
@@ -3782,8 +3784,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "conversation_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "conversations",
           "refSchema": "public",
           "refColumns": [
@@ -3795,8 +3797,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "source_message_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "messages",
           "refSchema": "public",
           "refColumns": [
@@ -3811,7 +3813,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "expression": "CHECK ((entity_type = ANY (ARRAY['character'::text, 'side_character'::text, 'world'::text, 'story_goal'::text, 'memory'::text])))"
         }
       ],
-      "uniqueConstraints": null
+      "uniqueConstraints": []
     },
     {
       "name": "conversation_world_state_snapshots",
@@ -4004,8 +4006,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "conversation_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "conversations",
           "refSchema": "public",
           "refColumns": [
@@ -4017,8 +4019,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "source_message_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "messages",
           "refSchema": "public",
           "refColumns": [
@@ -4027,7 +4029,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         }
       ],
       "approxRowCount": -1,
-      "checkConstraints": null,
+      "checkConstraints": [],
       "uniqueConstraints": [
         {
           "name": "conversation_world_state_snap_conversation_id_source_messag_key",
@@ -4254,8 +4256,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "scenario_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "stories",
           "refSchema": "public",
           "refColumns": [
@@ -4267,8 +4269,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "user_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "users",
           "refSchema": "auth",
           "refColumns": [
@@ -4277,8 +4279,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         }
       ],
       "approxRowCount": 83,
-      "checkConstraints": null,
-      "uniqueConstraints": null
+      "checkConstraints": [],
+      "uniqueConstraints": []
     },
     {
       "name": "creator_follows",
@@ -4417,14 +4419,14 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         }
       ],
-      "triggers": null,
+      "triggers": [],
       "primaryKey": [
         "id"
       ],
       "rlsEnabled": true,
-      "foreignKeys": null,
+      "foreignKeys": [],
       "approxRowCount": -1,
-      "checkConstraints": null,
+      "checkConstraints": [],
       "uniqueConstraints": [
         {
           "name": "creator_follows_follower_id_creator_id_key",
@@ -4614,9 +4616,9 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "id"
       ],
       "rlsEnabled": true,
-      "foreignKeys": null,
+      "foreignKeys": [],
       "approxRowCount": -1,
-      "checkConstraints": null,
+      "checkConstraints": [],
       "uniqueConstraints": [
         {
           "name": "finance_documents_storage_path_key",
@@ -4937,8 +4939,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "character_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "characters",
           "refSchema": "public",
           "refColumns": [
@@ -4950,8 +4952,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "conversation_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "conversations",
           "refSchema": "public",
           "refColumns": [
@@ -4963,8 +4965,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "source_message_id"
           ],
-          "onDelete": "n",
-          "onUpdate": "a",
+          "onDelete": "SET NULL",
+          "onUpdate": "NO ACTION",
           "refTable": "messages",
           "refSchema": "public",
           "refColumns": [
@@ -4999,7 +5001,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "expression": "CHECK ((trend = ANY (ARRAY['rising'::text, 'falling'::text, 'stable'::text])))"
         }
       ],
-      "uniqueConstraints": null
+      "uniqueConstraints": []
     },
     {
       "name": "guide_documents",
@@ -5186,10 +5188,10 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "id"
       ],
       "rlsEnabled": true,
-      "foreignKeys": null,
+      "foreignKeys": [],
       "approxRowCount": 15,
-      "checkConstraints": null,
-      "uniqueConstraints": null
+      "checkConstraints": [],
+      "uniqueConstraints": []
     },
     {
       "name": "image_folders",
@@ -5374,8 +5376,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "thumbnail_image_id"
           ],
-          "onDelete": "n",
-          "onUpdate": "a",
+          "onDelete": "SET NULL",
+          "onUpdate": "NO ACTION",
           "refTable": "library_images",
           "refSchema": "public",
           "refColumns": [
@@ -5384,8 +5386,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         }
       ],
       "approxRowCount": -1,
-      "checkConstraints": null,
-      "uniqueConstraints": null
+      "checkConstraints": [],
+      "uniqueConstraints": []
     },
     {
       "name": "library_images",
@@ -5566,7 +5568,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         }
       ],
-      "triggers": null,
+      "triggers": [],
       "primaryKey": [
         "id"
       ],
@@ -5577,8 +5579,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "folder_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "image_folders",
           "refSchema": "public",
           "refColumns": [
@@ -5587,8 +5589,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         }
       ],
       "approxRowCount": -1,
-      "checkConstraints": null,
-      "uniqueConstraints": null
+      "checkConstraints": [],
+      "uniqueConstraints": []
     },
     {
       "name": "memories",
@@ -5807,10 +5809,10 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "id"
       ],
       "rlsEnabled": true,
-      "foreignKeys": null,
+      "foreignKeys": [],
       "approxRowCount": 97,
-      "checkConstraints": null,
-      "uniqueConstraints": null
+      "checkConstraints": [],
+      "uniqueConstraints": []
     },
     {
       "name": "messages",
@@ -5983,7 +5985,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         }
       ],
-      "triggers": null,
+      "triggers": [],
       "primaryKey": [
         "id"
       ],
@@ -5994,8 +5996,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "conversation_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "conversations",
           "refSchema": "public",
           "refColumns": [
@@ -6010,7 +6012,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "expression": "CHECK ((role = ANY (ARRAY['system'::text, 'user'::text, 'assistant'::text])))"
         }
       ],
-      "uniqueConstraints": null
+      "uniqueConstraints": []
     },
     {
       "name": "profiles",
@@ -6229,8 +6231,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "users",
           "refSchema": "auth",
           "refColumns": [
@@ -6239,8 +6241,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         }
       ],
       "approxRowCount": -1,
-      "checkConstraints": null,
-      "uniqueConstraints": null
+      "checkConstraints": [],
+      "uniqueConstraints": []
     },
     {
       "name": "published_scenarios",
@@ -6505,8 +6507,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "scenario_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "stories",
           "refSchema": "public",
           "refColumns": [
@@ -6515,7 +6517,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         }
       ],
       "approxRowCount": 3,
-      "checkConstraints": null,
+      "checkConstraints": [],
       "uniqueConstraints": [
         {
           "name": "published_scenarios_scenario_id_key",
@@ -6672,14 +6674,14 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         }
       ],
-      "triggers": null,
+      "triggers": [],
       "primaryKey": [
         "id"
       ],
       "rlsEnabled": true,
-      "foreignKeys": null,
+      "foreignKeys": [],
       "approxRowCount": 1,
-      "checkConstraints": null,
+      "checkConstraints": [],
       "uniqueConstraints": [
         {
           "name": "quality_hub_registries_user_id_key",
@@ -6824,7 +6826,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         }
       ],
-      "triggers": null,
+      "triggers": [],
       "primaryKey": [
         "id"
       ],
@@ -6835,8 +6837,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "original_published_id"
           ],
-          "onDelete": "n",
-          "onUpdate": "a",
+          "onDelete": "SET NULL",
+          "onUpdate": "NO ACTION",
           "refTable": "published_scenarios",
           "refSchema": "public",
           "refColumns": [
@@ -6848,8 +6850,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "remixed_scenario_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "stories",
           "refSchema": "public",
           "refColumns": [
@@ -6858,8 +6860,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         }
       ],
       "approxRowCount": -1,
-      "checkConstraints": null,
-      "uniqueConstraints": null
+      "checkConstraints": [],
+      "uniqueConstraints": []
     },
     {
       "name": "reports",
@@ -7084,10 +7086,10 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "id"
       ],
       "rlsEnabled": true,
-      "foreignKeys": null,
+      "foreignKeys": [],
       "approxRowCount": -1,
-      "checkConstraints": null,
-      "uniqueConstraints": null
+      "checkConstraints": [],
+      "uniqueConstraints": []
     },
     {
       "name": "saved_scenarios",
@@ -7234,7 +7236,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         }
       ],
-      "triggers": null,
+      "triggers": [],
       "primaryKey": [
         "id"
       ],
@@ -7245,8 +7247,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "published_scenario_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "published_scenarios",
           "refSchema": "public",
           "refColumns": [
@@ -7255,7 +7257,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         }
       ],
       "approxRowCount": -1,
-      "checkConstraints": null,
+      "checkConstraints": [],
       "uniqueConstraints": [
         {
           "name": "saved_scenarios_user_id_published_scenario_id_key",
@@ -7403,7 +7405,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         }
       ],
-      "triggers": null,
+      "triggers": [],
       "primaryKey": [
         "id"
       ],
@@ -7414,8 +7416,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "published_scenario_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "published_scenarios",
           "refSchema": "public",
           "refColumns": [
@@ -7424,7 +7426,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         }
       ],
       "approxRowCount": -1,
-      "checkConstraints": null,
+      "checkConstraints": [],
       "uniqueConstraints": [
         {
           "name": "scenario_likes_published_scenario_id_user_id_key",
@@ -7717,8 +7719,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "published_scenario_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "published_scenarios",
           "refSchema": "public",
           "refColumns": [
@@ -7727,7 +7729,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         }
       ],
       "approxRowCount": -1,
-      "checkConstraints": null,
+      "checkConstraints": [],
       "uniqueConstraints": [
         {
           "name": "scenario_reviews_published_scenario_id_user_id_key",
@@ -7861,7 +7863,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         }
       ],
-      "triggers": null,
+      "triggers": [],
       "primaryKey": [
         "id"
       ],
@@ -7872,8 +7874,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "published_scenario_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "published_scenarios",
           "refSchema": "public",
           "refColumns": [
@@ -7882,8 +7884,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         }
       ],
       "approxRowCount": -1,
-      "checkConstraints": null,
-      "uniqueConstraints": null
+      "checkConstraints": [],
+      "uniqueConstraints": []
     },
     {
       "name": "scenes",
@@ -8056,7 +8058,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         }
       ],
-      "triggers": null,
+      "triggers": [],
       "primaryKey": [
         "id"
       ],
@@ -8067,8 +8069,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "scenario_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "stories",
           "refSchema": "public",
           "refColumns": [
@@ -8077,8 +8079,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         }
       ],
       "approxRowCount": 9,
-      "checkConstraints": null,
-      "uniqueConstraints": null
+      "checkConstraints": [],
+      "uniqueConstraints": []
     },
     {
       "name": "side_character_message_snapshots",
@@ -8251,7 +8253,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         }
       ],
-      "triggers": null,
+      "triggers": [],
       "primaryKey": [
         "id"
       ],
@@ -8262,8 +8264,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "conversation_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "conversations",
           "refSchema": "public",
           "refColumns": [
@@ -8275,8 +8277,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "side_character_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "side_characters",
           "refSchema": "public",
           "refColumns": [
@@ -8288,8 +8290,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "source_message_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "messages",
           "refSchema": "public",
           "refColumns": [
@@ -8298,8 +8300,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         }
       ],
       "approxRowCount": -1,
-      "checkConstraints": null,
-      "uniqueConstraints": null
+      "checkConstraints": [],
+      "uniqueConstraints": []
     },
     {
       "name": "side_characters",
@@ -8628,8 +8630,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "conversation_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "conversations",
           "refSchema": "public",
           "refColumns": [
@@ -8638,8 +8640,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         }
       ],
       "approxRowCount": 0,
-      "checkConstraints": null,
-      "uniqueConstraints": null
+      "checkConstraints": [],
+      "uniqueConstraints": []
     },
     {
       "name": "sidebar_backgrounds",
@@ -8820,15 +8822,15 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         }
       ],
-      "triggers": null,
+      "triggers": [],
       "primaryKey": [
         "id"
       ],
       "rlsEnabled": true,
-      "foreignKeys": null,
+      "foreignKeys": [],
       "approxRowCount": 7,
-      "checkConstraints": null,
-      "uniqueConstraints": null
+      "checkConstraints": [],
+      "uniqueConstraints": []
     },
     {
       "name": "stories",
@@ -9101,8 +9103,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "user_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "users",
           "refSchema": "auth",
           "refColumns": [
@@ -9111,8 +9113,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         }
       ],
       "approxRowCount": 7,
-      "checkConstraints": null,
-      "uniqueConstraints": null
+      "checkConstraints": [],
+      "uniqueConstraints": []
     },
     {
       "name": "story_goal_step_derivations",
@@ -9309,7 +9311,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         }
       ],
-      "triggers": null,
+      "triggers": [],
       "primaryKey": [
         "id"
       ],
@@ -9320,8 +9322,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "conversation_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "conversations",
           "refSchema": "public",
           "refColumns": [
@@ -9333,8 +9335,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "source_message_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "messages",
           "refSchema": "public",
           "refColumns": [
@@ -9343,8 +9345,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         }
       ],
       "approxRowCount": -1,
-      "checkConstraints": null,
-      "uniqueConstraints": null
+      "checkConstraints": [],
+      "uniqueConstraints": []
     },
     {
       "name": "user_backgrounds",
@@ -9533,15 +9535,15 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         }
       ],
-      "triggers": null,
+      "triggers": [],
       "primaryKey": [
         "id"
       ],
       "rlsEnabled": true,
-      "foreignKeys": null,
+      "foreignKeys": [],
       "approxRowCount": 1,
-      "checkConstraints": null,
-      "uniqueConstraints": null
+      "checkConstraints": [],
+      "uniqueConstraints": []
     },
     {
       "name": "user_roles",
@@ -9662,7 +9664,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         }
       ],
-      "triggers": null,
+      "triggers": [],
       "primaryKey": [
         "id"
       ],
@@ -9673,8 +9675,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "columns": [
             "user_id"
           ],
-          "onDelete": "c",
-          "onUpdate": "a",
+          "onDelete": "CASCADE",
+          "onUpdate": "NO ACTION",
           "refTable": "users",
           "refSchema": "auth",
           "refColumns": [
@@ -9683,7 +9685,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         }
       ],
       "approxRowCount": -1,
-      "checkConstraints": null,
+      "checkConstraints": [],
       "uniqueConstraints": [
         {
           "name": "user_roles_user_id_role_key",
@@ -9907,10 +9909,10 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "id"
       ],
       "rlsEnabled": true,
-      "foreignKeys": null,
+      "foreignKeys": [],
       "approxRowCount": -1,
-      "checkConstraints": null,
-      "uniqueConstraints": null
+      "checkConstraints": [],
+      "uniqueConstraints": []
     }
   ],
   "functions": [
@@ -9921,6 +9923,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       ],
       "language": "plpgsql",
       "arguments": "published_id uuid",
+      "definition": "CREATE OR REPLACE FUNCTION public.decrement_like_count(published_id uuid)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  -- After deletion, the like record won't exist, so just validate user is authenticated\n  IF auth.uid() IS NULL THEN\n    RAISE EXCEPTION 'Unauthorized';\n  END IF;\n  UPDATE published_scenarios \n  SET like_count = GREATEST(0, like_count - 1), updated_at = now()\n  WHERE id = published_id;\nEND;\n$function$\n",
       "returnType": "void",
       "volatility": "VOLATILE",
       "securityDefiner": true
@@ -9932,6 +9935,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       ],
       "language": "plpgsql",
       "arguments": "published_id uuid",
+      "definition": "CREATE OR REPLACE FUNCTION public.decrement_save_count(published_id uuid)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF auth.uid() IS NULL THEN\n    RAISE EXCEPTION 'Unauthorized';\n  END IF;\n  UPDATE published_scenarios \n  SET save_count = GREATEST(0, save_count - 1), updated_at = now()\n  WHERE id = published_id;\nEND;\n$function$\n",
       "returnType": "void",
       "volatility": "VOLATILE",
       "securityDefiner": true
@@ -9943,6 +9947,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       ],
       "language": "plpgsql",
       "arguments": "p_search_text text DEFAULT NULL::text, p_search_tags text[] DEFAULT NULL::text[], p_sort_by text DEFAULT 'recent'::text, p_limit integer DEFAULT 20, p_offset integer DEFAULT 0, p_story_types text[] DEFAULT NULL::text[], p_genres text[] DEFAULT NULL::text[], p_origins text[] DEFAULT NULL::text[], p_trigger_warnings text[] DEFAULT NULL::text[], p_custom_tags text[] DEFAULT NULL::text[], p_publisher_ids uuid[] DEFAULT NULL::uuid[]",
+      "definition": "CREATE OR REPLACE FUNCTION public.fetch_gallery_scenarios(p_search_text text DEFAULT NULL::text, p_search_tags text[] DEFAULT NULL::text[], p_sort_by text DEFAULT 'recent'::text, p_limit integer DEFAULT 20, p_offset integer DEFAULT 0, p_story_types text[] DEFAULT NULL::text[], p_genres text[] DEFAULT NULL::text[], p_origins text[] DEFAULT NULL::text[], p_trigger_warnings text[] DEFAULT NULL::text[], p_custom_tags text[] DEFAULT NULL::text[], p_publisher_ids uuid[] DEFAULT NULL::uuid[])\n RETURNS json\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_result json;\nBEGIN\n  SELECT json_agg(row_data)\n  INTO v_result\n  FROM (\n    SELECT json_build_object(\n      'id', ps.id,\n      'scenario_id', ps.scenario_id,\n      'publisher_id', ps.publisher_id,\n      'allow_remix', ps.allow_remix,\n      'tags', ps.tags,\n      'like_count', ps.like_count,\n      'save_count', ps.save_count,\n      'play_count', ps.play_count,\n      'view_count', ps.view_count,\n      'avg_rating', ps.avg_rating,\n      'review_count', ps.review_count,\n      'is_published', ps.is_published,\n      'created_at', ps.created_at,\n      'updated_at', ps.updated_at,\n      'scenario', json_build_object(\n        'id', s.id,\n        'title', s.title,\n        'description', s.description,\n        'cover_image_url', s.cover_image_url,\n        'cover_image_position', s.cover_image_position\n      ),\n      'publisher', json_build_object(\n        'username', p.username,\n        'avatar_url', p.avatar_url,\n        'display_name', p.display_name\n      ),\n      'contentThemes', CASE WHEN ct.id IS NOT NULL THEN json_build_object(\n        'characterTypes', COALESCE(ct.character_types, ARRAY[]::text[]),\n        'storyType', ct.story_type,\n        'genres', COALESCE(ct.genres, ARRAY[]::text[]),\n        'origin', COALESCE(ct.origin, ARRAY[]::text[]),\n        'triggerWarnings', COALESCE(ct.trigger_warnings, ARRAY[]::text[]),\n        'customTags', COALESCE(ct.custom_tags, ARRAY[]::text[])\n      ) ELSE NULL END\n    ) AS row_data\n    FROM published_scenarios ps\n    JOIN stories s ON s.id = ps.scenario_id\n    LEFT JOIN profiles p ON p.id = ps.publisher_id\n    LEFT JOIN content_themes ct ON ct.scenario_id = ps.scenario_id\n    WHERE ps.is_published = true\n      AND ps.is_hidden = false\n      AND (p_search_tags IS NULL OR ps.tags && p_search_tags)\n      AND (p_publisher_ids IS NULL OR ps.publisher_id = ANY(p_publisher_ids))\n      AND (p_story_types IS NULL OR ct.story_type = ANY(p_story_types))\n      AND (p_genres IS NULL OR ct.genres && p_genres)\n      AND (p_origins IS NULL OR ct.origin && p_origins)\n      AND (p_trigger_warnings IS NULL OR ct.trigger_warnings && p_trigger_warnings)\n      AND (p_custom_tags IS NULL OR ct.custom_tags && p_custom_tags)\n      AND (\n        p_search_text IS NULL\n        OR p_search_text = ''\n        OR to_tsvector('english', COALESCE(s.title, '') || ' ' || COALESCE(s.description, '')) @@ plainto_tsquery('english', p_search_text)\n        OR s.title ILIKE '%' || p_search_text || '%'\n        OR s.description ILIKE '%' || p_search_text || '%'\n      )\n    ORDER BY\n      CASE WHEN p_sort_by = 'liked' THEN ps.like_count END DESC NULLS LAST,\n      CASE WHEN p_sort_by = 'saved' THEN ps.save_count END DESC NULLS LAST,\n      CASE WHEN p_sort_by = 'played' THEN ps.play_count END DESC NULLS LAST,\n      CASE WHEN p_sort_by IN ('recent', 'all') THEN ps.created_at END DESC NULLS LAST,\n      ps.created_at DESC\n    LIMIT p_limit\n    OFFSET p_offset\n  ) sub;\n\n  RETURN COALESCE(v_result, '[]'::json);\nEND;\n$function$\n",
       "returnType": "json",
       "volatility": "STABLE",
       "securityDefiner": true
@@ -9954,6 +9959,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       ],
       "language": "sql",
       "arguments": "creator_user_id uuid",
+      "definition": "CREATE OR REPLACE FUNCTION public.get_creator_stats(creator_user_id uuid)\n RETURNS TABLE(published_count bigint, total_likes bigint, total_saves bigint, total_views bigint, total_plays bigint, follower_count bigint)\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\n  SELECT\n    COUNT(*)::bigint as published_count,\n    COALESCE(SUM(like_count), 0)::bigint as total_likes,\n    COALESCE(SUM(save_count), 0)::bigint as total_saves,\n    COALESCE(SUM(view_count), 0)::bigint as total_views,\n    COALESCE(SUM(play_count), 0)::bigint as total_plays,\n    (SELECT COUNT(*)::bigint FROM creator_follows WHERE creator_id = creator_user_id) as follower_count\n  FROM published_scenarios\n  WHERE publisher_id = creator_user_id\n    AND is_published = true\n    AND is_hidden = false;\n$function$\n",
       "returnType": "TABLE(published_count bigint, total_likes bigint, total_saves bigint, total_views bigint, total_plays bigint, follower_count bigint)",
       "volatility": "STABLE",
       "securityDefiner": true
@@ -9965,6 +9971,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       ],
       "language": "sql",
       "arguments": "",
+      "definition": "CREATE OR REPLACE FUNCTION public.get_folders_with_details()\n RETURNS TABLE(id uuid, user_id uuid, name text, description text, thumbnail_image_id uuid, thumbnail_url text, image_count bigint, created_at timestamp with time zone, updated_at timestamp with time zone)\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\n  SELECT\n    f.id,\n    f.user_id,\n    f.name,\n    f.description,\n    f.thumbnail_image_id,\n    COALESCE(\n      thumb.image_url,\n      first_img.image_url\n    ) AS thumbnail_url,\n    COALESCE(cnt.c, 0) AS image_count,\n    f.created_at,\n    f.updated_at\n  FROM image_folders f\n  LEFT JOIN library_images thumb\n    ON thumb.id = f.thumbnail_image_id\n  LEFT JOIN LATERAL (\n    SELECT li.image_url\n    FROM library_images li\n    WHERE li.folder_id = f.id\n    ORDER BY li.created_at ASC\n    LIMIT 1\n  ) first_img ON f.thumbnail_image_id IS NULL\n  LEFT JOIN LATERAL (\n    SELECT count(*) AS c\n    FROM library_images li\n    WHERE li.folder_id = f.id\n  ) cnt ON true\n  WHERE f.user_id = auth.uid()\n  ORDER BY f.updated_at DESC;\n$function$\n",
       "returnType": "TABLE(id uuid, user_id uuid, name text, description text, thumbnail_image_id uuid, thumbnail_url text, image_count bigint, created_at timestamp with time zone, updated_at timestamp with time zone)",
       "volatility": "STABLE",
       "securityDefiner": true
@@ -9976,6 +9983,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       ],
       "language": "sql",
       "arguments": "p_user_id uuid",
+      "definition": "CREATE OR REPLACE FUNCTION public.get_folders_with_details(p_user_id uuid)\n RETURNS TABLE(id uuid, user_id uuid, name text, description text, thumbnail_image_id uuid, thumbnail_url text, image_count bigint, created_at timestamp with time zone, updated_at timestamp with time zone)\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\n  SELECT\n    f.id,\n    f.user_id,\n    f.name,\n    f.description,\n    f.thumbnail_image_id,\n    COALESCE(\n      thumb.image_url,\n      first_img.image_url\n    ) AS thumbnail_url,\n    COALESCE(cnt.c, 0) AS image_count,\n    f.created_at,\n    f.updated_at\n  FROM image_folders f\n  LEFT JOIN library_images thumb\n    ON thumb.id = f.thumbnail_image_id\n  LEFT JOIN LATERAL (\n    SELECT li.image_url\n    FROM library_images li\n    WHERE li.folder_id = f.id\n    ORDER BY li.created_at ASC\n    LIMIT 1\n  ) first_img ON f.thumbnail_image_id IS NULL\n  LEFT JOIN LATERAL (\n    SELECT count(*) AS c\n    FROM library_images li\n    WHERE li.folder_id = f.id\n  ) cnt ON true\n  WHERE f.user_id = p_user_id\n  ORDER BY f.updated_at DESC;\n$function$\n",
       "returnType": "TABLE(id uuid, user_id uuid, name text, description text, thumbnail_image_id uuid, thumbnail_url text, image_count bigint, created_at timestamp with time zone, updated_at timestamp with time zone)",
       "volatility": "STABLE",
       "securityDefiner": true
@@ -9987,6 +9995,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       ],
       "language": "plpgsql",
       "arguments": "",
+      "definition": "CREATE OR REPLACE FUNCTION public.handle_new_user()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  random_name text;\nBEGIN\n  random_name := 'User' || substr(md5(random()::text), 1, 8);\n  INSERT INTO public.profiles (id, username, display_name)\n  VALUES (NEW.id, NEW.raw_user_meta_data ->> 'username', random_name);\n  RETURN NEW;\nEND;\n$function$\n",
       "returnType": "trigger",
       "volatility": "VOLATILE",
       "securityDefiner": true
@@ -9998,6 +10007,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       ],
       "language": "sql",
       "arguments": "_user_id uuid, _role app_role",
+      "definition": "CREATE OR REPLACE FUNCTION public.has_role(_user_id uuid, _role app_role)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\n  SELECT EXISTS (\n    SELECT 1 FROM public.user_roles\n    WHERE user_id = _user_id AND role = _role\n  )\n$function$\n",
       "returnType": "boolean",
       "volatility": "STABLE",
       "securityDefiner": true
@@ -10009,6 +10019,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       ],
       "language": "plpgsql",
       "arguments": "published_id uuid",
+      "definition": "CREATE OR REPLACE FUNCTION public.increment_like_count(published_id uuid)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1 FROM scenario_likes \n    WHERE published_scenario_id = published_id AND user_id = auth.uid()\n  ) THEN\n    RAISE EXCEPTION 'Unauthorized: No like record found';\n  END IF;\n  UPDATE published_scenarios \n  SET like_count = like_count + 1, updated_at = now()\n  WHERE id = published_id;\nEND;\n$function$\n",
       "returnType": "void",
       "volatility": "VOLATILE",
       "securityDefiner": true
@@ -10020,6 +10031,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       ],
       "language": "plpgsql",
       "arguments": "published_id uuid",
+      "definition": "CREATE OR REPLACE FUNCTION public.increment_play_count(published_id uuid)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF auth.uid() IS NULL THEN\n    RAISE EXCEPTION 'Unauthorized';\n  END IF;\n  UPDATE published_scenarios \n  SET play_count = play_count + 1, updated_at = now()\n  WHERE id = published_id;\nEND;\n$function$\n",
       "returnType": "void",
       "volatility": "VOLATILE",
       "securityDefiner": true
@@ -10031,6 +10043,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       ],
       "language": "plpgsql",
       "arguments": "published_id uuid",
+      "definition": "CREATE OR REPLACE FUNCTION public.increment_save_count(published_id uuid)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1 FROM saved_scenarios \n    WHERE published_scenario_id = published_id AND user_id = auth.uid()\n  ) THEN\n    RAISE EXCEPTION 'Unauthorized: No save record found';\n  END IF;\n  UPDATE published_scenarios \n  SET save_count = save_count + 1, updated_at = now()\n  WHERE id = published_id;\nEND;\n$function$\n",
       "returnType": "void",
       "volatility": "VOLATILE",
       "securityDefiner": true
@@ -10042,6 +10055,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       ],
       "language": "plpgsql",
       "arguments": "published_id uuid",
+      "definition": "CREATE OR REPLACE FUNCTION public.increment_view_count(published_id uuid)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF auth.uid() IS NULL THEN\n    RAISE EXCEPTION 'Unauthorized';\n  END IF;\n  UPDATE published_scenarios \n  SET view_count = view_count + 1, updated_at = now()\n  WHERE id = published_id;\nEND;\n$function$\n",
       "returnType": "void",
       "volatility": "VOLATILE",
       "securityDefiner": true
@@ -10053,6 +10067,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       ],
       "language": "plpgsql",
       "arguments": "p_published_scenario_id uuid",
+      "definition": "CREATE OR REPLACE FUNCTION public.record_scenario_view(p_published_scenario_id uuid)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_user_id uuid := auth.uid();\nBEGIN\n  IF v_user_id IS NULL THEN\n    RAISE EXCEPTION 'Unauthorized';\n  END IF;\n\n  -- Check if user viewed this in the last 24 hours\n  IF EXISTS (\n    SELECT 1 FROM scenario_views\n    WHERE published_scenario_id = p_published_scenario_id\n      AND user_id = v_user_id\n      AND viewed_at > now() - interval '24 hours'\n  ) THEN\n    RETURN; -- Already viewed recently, do nothing\n  END IF;\n\n  -- Insert new view record\n  INSERT INTO scenario_views (published_scenario_id, user_id)\n  VALUES (p_published_scenario_id, v_user_id);\n\n  -- Increment the count\n  UPDATE published_scenarios\n  SET view_count = view_count + 1, updated_at = now()\n  WHERE id = p_published_scenario_id;\nEND;\n$function$\n",
       "returnType": "void",
       "volatility": "VOLATILE",
       "securityDefiner": true
@@ -10064,6 +10079,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       ],
       "language": "plpgsql",
       "arguments": "p_scenario_id uuid, p_user_id uuid, p_story jsonb, p_characters jsonb DEFAULT '[]'::jsonb, p_codex_entries jsonb DEFAULT '[]'::jsonb, p_scenes jsonb DEFAULT '[]'::jsonb",
+      "definition": "CREATE OR REPLACE FUNCTION public.save_scenario_atomic(p_scenario_id uuid, p_user_id uuid, p_story jsonb, p_characters jsonb DEFAULT '[]'::jsonb, p_codex_entries jsonb DEFAULT '[]'::jsonb, p_scenes jsonb DEFAULT '[]'::jsonb)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  char_record jsonb;\n  codex_record jsonb;\n  scene_record jsonb;\n  incoming_char_ids uuid[];\n  incoming_codex_ids uuid[];\n  incoming_scene_ids uuid[];\nBEGIN\n  -- Verify ownership\n  IF auth.uid() IS NULL OR auth.uid() != p_user_id THEN\n    RAISE EXCEPTION 'Unauthorized';\n  END IF;\n\n  -- 1. Upsert the story record\n  INSERT INTO stories (\n    id, user_id, title, description, cover_image_url, cover_image_position,\n    tags, world_core, ui_settings, opening_dialog, selected_model,\n    selected_art_style, version, is_draft, nav_button_images\n  ) VALUES (\n    p_scenario_id,\n    p_user_id,\n    COALESCE(p_story->>'title', 'Untitled Story'),\n    COALESCE(p_story->>'description', ''),\n    COALESCE(p_story->>'cover_image_url', ''),\n    COALESCE((p_story->'cover_image_position')::jsonb, '{\"x\":50,\"y\":50}'::jsonb),\n    COALESCE(ARRAY(SELECT jsonb_array_elements_text(p_story->'tags')), '{}'::text[]),\n    COALESCE((p_story->'world_core')::jsonb, '{}'::jsonb),\n    COALESCE((p_story->'ui_settings')::jsonb, '{\"darkMode\":false,\"showBackgrounds\":true,\"transparentBubbles\":false}'::jsonb),\n    COALESCE((p_story->'opening_dialog')::jsonb, '{\"text\":\"\",\"enabled\":true}'::jsonb),\n    p_story->>'selected_model',\n    COALESCE(p_story->>'selected_art_style', 'cinematic-2-5d'),\n    COALESCE((p_story->>'version')::int, 3),\n    COALESCE((p_story->>'is_draft')::boolean, false),\n    COALESCE((p_story->'nav_button_images')::jsonb, '{}'::jsonb)\n  )\n  ON CONFLICT (id) DO UPDATE SET\n    title = EXCLUDED.title,\n    description = EXCLUDED.description,\n    cover_image_url = EXCLUDED.cover_image_url,\n    cover_image_position = EXCLUDED.cover_image_position,\n    tags = EXCLUDED.tags,\n    world_core = EXCLUDED.world_core,\n    ui_settings = EXCLUDED.ui_settings,\n    opening_dialog = EXCLUDED.opening_dialog,\n    selected_model = EXCLUDED.selected_model,\n    selected_art_style = EXCLUDED.selected_art_style,\n    version = EXCLUDED.version,\n    is_draft = EXCLUDED.is_draft,\n    nav_button_images = EXCLUDED.nav_button_images,\n    updated_at = now();\n\n  -- 2. Sync characters: delete removed, upsert current\n  SELECT ARRAY(SELECT (elem->>'id')::uuid FROM jsonb_array_elements(p_characters) AS elem)\n    INTO incoming_char_ids;\n\n  DELETE FROM characters\n    WHERE scenario_id = p_scenario_id\n    AND id != ALL(incoming_char_ids);\n\n  FOR char_record IN SELECT * FROM jsonb_array_elements(p_characters) LOOP\n    INSERT INTO characters (\n      id, user_id, scenario_id, name, nicknames, age, sex_type, sexual_orientation,\n      location, current_mood, controlled_by, character_role, role_description,\n      tags, avatar_url, avatar_position, physical_appearance, currently_wearing,\n      preferred_clothing, personality, goals, background, tone, key_life_events,\n      relationships, secrets, fears, sections, is_library\n    ) VALUES (\n      (char_record->>'id')::uuid,\n      p_user_id,\n      p_scenario_id,\n      COALESCE(char_record->>'name', ''),\n      COALESCE(char_record->>'nicknames', ''),\n      COALESCE(char_record->>'age', ''),\n      char_record->>'sex_type',\n      COALESCE(char_record->>'sexual_orientation', ''),\n      COALESCE(char_record->>'location', ''),\n      COALESCE(char_record->>'current_mood', ''),\n      char_record->>'controlled_by',\n      char_record->>'character_role',\n      COALESCE(char_record->>'role_description', ''),\n      char_record->>'tags',\n      char_record->>'avatar_url',\n      COALESCE((char_record->'avatar_position')::jsonb, '{\"x\":50,\"y\":50}'::jsonb),\n      COALESCE((char_record->'physical_appearance')::jsonb, '{}'::jsonb),\n      COALESCE((char_record->'currently_wearing')::jsonb, '{}'::jsonb),\n      COALESCE((char_record->'preferred_clothing')::jsonb, '{}'::jsonb),\n      (char_record->'personality')::jsonb,\n      COALESCE((char_record->'goals')::jsonb, '[]'::jsonb),\n      COALESCE((char_record->'background')::jsonb, '{}'::jsonb),\n      COALESCE((char_record->'tone')::jsonb, '{}'::jsonb),\n      COALESCE((char_record->'key_life_events')::jsonb, '{}'::jsonb),\n      COALESCE((char_record->'relationships')::jsonb, '{}'::jsonb),\n      COALESCE((char_record->'secrets')::jsonb, '{}'::jsonb),\n      COALESCE((char_record->'fears')::jsonb, '{}'::jsonb),\n      COALESCE((char_record->'sections')::jsonb, '[]'::jsonb),\n      COALESCE((char_record->>'is_library')::boolean, false)\n    )\n    ON CONFLICT (id) DO UPDATE SET\n      name = EXCLUDED.name,\n      nicknames = EXCLUDED.nicknames,\n      age = EXCLUDED.age,\n      sex_type = EXCLUDED.sex_type,\n      sexual_orientation = EXCLUDED.sexual_orientation,\n      location = EXCLUDED.location,\n      current_mood = EXCLUDED.current_mood,\n      controlled_by = EXCLUDED.controlled_by,\n      character_role = EXCLUDED.character_role,\n      role_description = EXCLUDED.role_description,\n      tags = EXCLUDED.tags,\n      avatar_url = EXCLUDED.avatar_url,\n      avatar_position = EXCLUDED.avatar_position,\n      physical_appearance = EXCLUDED.physical_appearance,\n      currently_wearing = EXCLUDED.currently_wearing,\n      preferred_clothing = EXCLUDED.preferred_clothing,\n      personality = EXCLUDED.personality,\n      goals = EXCLUDED.goals,\n      background = EXCLUDED.background,\n      tone = EXCLUDED.tone,\n      key_life_events = EXCLUDED.key_life_events,\n      relationships = EXCLUDED.relationships,\n      secrets = EXCLUDED.secrets,\n      fears = EXCLUDED.fears,\n      sections = EXCLUDED.sections,\n      is_library = EXCLUDED.is_library,\n      updated_at = now();\n  END LOOP;\n\n  -- 3. Sync codex entries: delete removed, upsert current\n  SELECT ARRAY(SELECT (elem->>'id')::uuid FROM jsonb_array_elements(p_codex_entries) AS elem)\n    INTO incoming_codex_ids;\n\n  DELETE FROM codex_entries\n    WHERE scenario_id = p_scenario_id\n    AND id != ALL(incoming_codex_ids);\n\n  FOR codex_record IN SELECT * FROM jsonb_array_elements(p_codex_entries) LOOP\n    INSERT INTO codex_entries (id, scenario_id, title, body)\n    VALUES (\n      (codex_record->>'id')::uuid,\n      p_scenario_id,\n      COALESCE(codex_record->>'title', ''),\n      COALESCE(codex_record->>'body', '')\n    )\n    ON CONFLICT (id) DO UPDATE SET\n      title = EXCLUDED.title,\n      body = EXCLUDED.body,\n      updated_at = now();\n  END LOOP;\n\n  -- 4. Sync scenes: delete removed, upsert current\n  SELECT ARRAY(SELECT (elem->>'id')::uuid FROM jsonb_array_elements(p_scenes) AS elem)\n    INTO incoming_scene_ids;\n\n  DELETE FROM scenes\n    WHERE scenario_id = p_scenario_id\n    AND id != ALL(incoming_scene_ids);\n\n  FOR scene_record IN SELECT * FROM jsonb_array_elements(p_scenes) LOOP\n    INSERT INTO scenes (id, scenario_id, image_url, tags, is_starting_scene)\n    VALUES (\n      (scene_record->>'id')::uuid,\n      p_scenario_id,\n      scene_record->>'image_url',\n      COALESCE(ARRAY(SELECT jsonb_array_elements_text(scene_record->'tags')), '{}'::text[]),\n      COALESCE((scene_record->>'is_starting_scene')::boolean, false)\n    )\n    ON CONFLICT (id) DO UPDATE SET\n      image_url = EXCLUDED.image_url,\n      tags = EXCLUDED.tags,\n      is_starting_scene = EXCLUDED.is_starting_scene;\n  END LOOP;\nEND;\n$function$\n",
       "returnType": "void",
       "volatility": "VOLATILE",
       "securityDefiner": true
@@ -10075,6 +10091,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       ],
       "language": "plpgsql",
       "arguments": "_target_user_id uuid, _enabled boolean",
+      "definition": "CREATE OR REPLACE FUNCTION public.set_admin_access(_target_user_id uuid, _enabled boolean)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NOT public.has_role(auth.uid(), 'admin') THEN\n    RAISE EXCEPTION 'Only admins can modify admin access';\n  END IF;\n\n  IF _enabled THEN\n    INSERT INTO public.user_roles (user_id, role)\n    VALUES (_target_user_id, 'admin')\n    ON CONFLICT (user_id, role) DO NOTHING;\n  ELSE\n    DELETE FROM public.user_roles\n    WHERE user_id = _target_user_id\n      AND role = 'admin';\n  END IF;\n\n  INSERT INTO public.app_settings (setting_key, setting_value, updated_by)\n  VALUES ('user_admin_access_' || _target_user_id::text, to_jsonb(_enabled), auth.uid())\n  ON CONFLICT (setting_key) DO UPDATE\n  SET setting_value = EXCLUDED.setting_value,\n      updated_by = EXCLUDED.updated_by,\n      updated_at = now();\nEND;\n$function$\n",
       "returnType": "void",
       "volatility": "VOLATILE",
       "securityDefiner": true
@@ -10086,6 +10103,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       ],
       "language": "plpgsql",
       "arguments": "",
+      "definition": "CREATE OR REPLACE FUNCTION public.set_updated_at_finance_live_tables()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  NEW.updated_at = now();\n  RETURN NEW;\nEND;\n$function$\n",
       "returnType": "trigger",
       "volatility": "VOLATILE",
       "securityDefiner": false
@@ -10097,6 +10115,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       ],
       "language": "plpgsql",
       "arguments": "",
+      "definition": "CREATE OR REPLACE FUNCTION public.update_review_aggregates()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  target_id uuid;\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    target_id := OLD.published_scenario_id;\n  ELSE\n    target_id := NEW.published_scenario_id;\n  END IF;\n\n  UPDATE published_scenarios\n  SET\n    review_count = (SELECT COUNT(*) FROM scenario_reviews WHERE published_scenario_id = target_id),\n    avg_rating = COALESCE((SELECT AVG(raw_weighted_score) FROM scenario_reviews WHERE published_scenario_id = target_id), 0),\n    updated_at = now()\n  WHERE id = target_id;\n\n  IF TG_OP = 'DELETE' THEN\n    RETURN OLD;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
       "returnType": "trigger",
       "volatility": "VOLATILE",
       "securityDefiner": true
@@ -10108,6 +10127,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       ],
       "language": "plpgsql",
       "arguments": "",
+      "definition": "CREATE OR REPLACE FUNCTION public.update_updated_at_column()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  NEW.updated_at = NOW();\n  RETURN NEW;\nEND;\n$function$\n",
       "returnType": "trigger",
       "volatility": "VOLATILE",
       "securityDefiner": false
@@ -10119,6 +10139,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       ],
       "language": "plpgsql",
       "arguments": "",
+      "definition": "CREATE OR REPLACE FUNCTION public.validate_review_ratings()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NEW.concept_strength < 1 OR NEW.concept_strength > 5\n    OR NEW.initial_situation < 1 OR NEW.initial_situation > 5\n    OR NEW.role_clarity < 1 OR NEW.role_clarity > 5\n    OR NEW.motivation_tension < 1 OR NEW.motivation_tension > 5\n    OR NEW.tone_promise < 1 OR NEW.tone_promise > 5\n    OR NEW.low_friction_start < 1 OR NEW.low_friction_start > 5\n    OR NEW.worldbuilding_vibe < 1 OR NEW.worldbuilding_vibe > 5\n    OR NEW.replayability < 1 OR NEW.replayability > 5\n    OR NEW.character_details_complexity < 1 OR NEW.character_details_complexity > 5\n    OR NEW.spice_level < 1 OR NEW.spice_level > 5\n  THEN\n    RAISE EXCEPTION 'All ratings must be between 1 and 5';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
       "returnType": "trigger",
       "volatility": "VOLATILE",
       "securityDefiner": false
@@ -10506,8 +10527,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
     "storagePoliciesCount": 26,
     "edgeFunctionsCount": 20,
     "rowCountsNote": "approxRowCount from pg_class.reltuples; -1 means never analyzed (needs_verification)",
-    "grantsCount": 258
+    "grantsCount": 258,
+    "functionDefinitionsIncluded": true
   }
-};
-
-export default supabaseSchemaMap;
+} as const;
