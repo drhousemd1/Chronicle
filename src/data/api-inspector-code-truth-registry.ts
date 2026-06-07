@@ -87,7 +87,7 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
       rows: [
         {
           label: "Prompt size pressure",
-          value: "System prompt assembly is large; instruction drift can occur when adaptive guidance is weak or missing.",
+          value: "System prompt assembly is large; instruction drift can occur when current-turn state anchors are weak or missing.",
         },
         {
           label: "State drift risk",
@@ -160,11 +160,11 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
               tagType: "code-logic",
               icon: "🔧",
               purpose:
-                "Creates the user turn, applies established-fact note preservation, increments session message counter, appends any adaptive style guidance to the final user payload, and streams the response while preserving a one-retry repair path.",
+                "Creates the user turn, applies established-fact note preservation, increments the session message counter, streams one live response, and records local style telemetry after generation for debug review.",
               whyItExists:
                 "Chronicle needs one authoritative send path that assembles live turn state before any paid narrative request leaves the browser.",
               problemSolved:
-                "Prevents established-fact wrappers, session position, adaptive style guidance, and hidden repair retries from being applied inconsistently across normal sends.",
+                "Prevents established-fact wrappers, session position, current-turn state, and post-response debug telemetry from being applied inconsistently across normal sends.",
               fileRefs: [
 	                {
 	                  path: "src/components/chronicle/ChatInterfaceTab.tsx",
@@ -188,21 +188,21 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
                   id: "item-handle-send-sub-3",
 	                  title: "Streaming lifecycle",
 	                  description:
-	                    "Streams model chunks into the UI, retries once when a repair directive is truly warranted, then normalizes placeholder names and commits the accepted assistant message.",
+	                    "Streams one model response into the UI, normalizes placeholder names, commits the completed assistant message, and records local style telemetry for debug review.",
                 },
               ],
               crossRefs: [
                 {
                   badge: "1",
                   targetItemId: "item-final-user-wrapper",
-	                  label: "Session/style wrapper",
+	                  label: "Session/state wrapper",
                   tooltip: "Values created here are injected into the final user message payload.",
                 },
                 {
                   badge: "2",
                   targetItemId: "item-final-user-wrapper",
-                  label: "Adaptive guidance in final user message",
-                  tooltip: "Adaptive style guidance produced here is appended inside the final user message when triggered.",
+                  label: "Style telemetry after generation",
+                  tooltip: "Style telemetry produced here is recorded locally for debug review and is never appended to the final user message.",
                 },
               ],
             },
@@ -456,43 +456,43 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
               purpose:
                 "Composes ordered message array: systemInstruction -> up to 5 prior roleplay messages -> final wrapped user message.",
               whyItExists:
-                "The edge runtime depends on strict ordering so system rules, the capped recent transcript, adaptive style text, the final user turn, and the compact execution brief land in the right lane without bloating the context window.",
+                "The edge runtime depends on strict ordering so system rules, the capped recent transcript, current-turn state, the final user turn, and the compact execution brief land in the right lane without bloating the context window.",
               problemSolved:
-                "Prevents wrappers, adaptive style text, and the execution brief from being buried in the wrong message slot or omitted from the outbound payload.",
+                "Prevents wrappers, current-turn state, and the execution brief from being buried in the wrong message slot or omitted from the outbound payload.",
               fileRefs: [
                 { path: "src/services/llm.ts", lines: "132-163" },
               ],
               codeSourceLabel: "`messages` assembly in `generateRoleplayResponseStream`",
               promptViewEnabled: true,
-              codeSource: `const historyMessages = conversation.messages\n  .filter((message) => !isLocalRoleplayNoticeMessage(message))\n  .slice(-API_CALL_1_PRIOR_HISTORY_MESSAGE_LIMIT);\nconst appTurnControls = [optional SESSION, current scene snapshot, optional adaptive/repair directive, optional regeneration directive, EXECUTION_BRIEF_TEXT]\n  .filter(Boolean)\n  .join('\\n\\n');\nconst finalUserContent = [\n  appTurnControls ? \`[APP TURN CONTROLS]\\n\${appTurnControls}\` : '',\n  playerTurn ? \`[PLAYER TURN]\\n\${playerTurn}\` : '',\n].filter(Boolean).join('\\n\\n');\nmessages.push({ role: 'user', content: finalUserContent });`,
+              codeSource: `const historyMessages = conversation.messages\n  .filter((message) => !isLocalRoleplayNoticeMessage(message))\n  .slice(-API_CALL_1_PRIOR_HISTORY_MESSAGE_LIMIT);\nconst appTurnControls = [optional SESSION, current turn state digest, optional regeneration directive, EXECUTION_BRIEF_TEXT]\n  .filter(Boolean)\n  .join('\\n\\n');\nconst finalUserContent = [\n  appTurnControls ? \`[APP TURN CONTROLS]\\n\${appTurnControls}\` : '',\n  playerTurn ? \`[PLAYER TURN]\\n\${playerTurn}\` : '',\n].filter(Boolean).join('\\n\\n');\nmessages.push({ role: 'user', content: finalUserContent });`,
             },
             {
               id: "item-runtime-directive-message",
-              title: "Adaptive style directive",
-              tagType: "context-injection",
+              title: "Assistant style telemetry",
+              tagType: "validation-check",
               icon: "📥",
               purpose:
-                "Injects a narrow one-turn style directive into the final user wrapper only when recent assistant turns repeat the same length band, block cadence, exact block shape, short dialogue phrasing, or collapse below the selected detailed response setting.",
+                "Records local diagnostic findings after generation when recent assistant turns or the completed draft show repeated length, marker cadence, block shape, short dialogue phrasing, weak dialogue balance, or detail collapse.",
               whyItExists:
-                "The live writer needs a small corrective nudge when repetition is detected, but Chronicle should not add random style prompts or permanent extra rule blocks every turn.",
+                "The review export needs visibility into repetition/style detector signals without sending another instruction to Grok or discarding a completed live draft.",
               problemSolved:
-                "Prevents repeated response shape from continuing while keeping the intervention scoped to objective repetition signals.",
+                "Keeps detector evidence available for debugging without letting local style repair compete with the main roleplay prompt.",
               settingsGate:
-                "Conditional final-user wrapper text. It is only present when the runtime detects repetition or when detailed output has collapsed across recent assistant turns.",
+                "Local debug record only. It is never appended to the final user message and is never sent to Grok/xAI.",
               fileRefs: [
                 { path: "src/services/llm.ts", lines: "144-163" },
                 { path: "src/lib/assistant-style-directive.ts", lines: "245-460" },
                 { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "1507-1520, 5339-5364, 5714-5735, 5946-5969" },
               ],
-              codeSourceLabel: "Adaptive style directive text",
+              codeSourceLabel: "Assistant style telemetry shape",
               promptViewEnabled: true,
-              codeSource: "[STYLE ADJUSTMENT FOR THIS TURN]\nRecent assistant responses are repeating: ...\nUse recent assistant messages for story state, not as a style template.\nUse established details as causes or consequences when descriptive/topic repetition is detected.\nMove into purposeful external dialogue when low-dialogue output is detected.\n\n[OUTPUT REVISION REQUIRED]\nThe draft needs revision because: ...\nAdd concrete AI-controlled development instead of repeating or asking the user to carry the scene.",
+              codeSource: "local://assistant-style-telemetry\n{ recentTelemetry: { flags, reasons, metrics }, candidateTelemetry: { flags, reasons, metrics }, summary: 'Detector telemetry only. This was not sent to Grok/xAI and did not trigger a hidden retry or alter the visible response.' }",
               crossRefs: [
                 {
                   badge: "2",
                   targetItemId: "item-handle-send",
-                  label: "Produced in send/regen/continue",
-                  tooltip: "Directive text is computed in UI handlers and injected here.",
+                  label: "Recorded after send/regen/continue",
+                  tooltip: "Telemetry is computed in UI handlers after the draft is generated and saved only for debug review.",
                 },
               ],
             },
@@ -504,7 +504,7 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
               purpose:
                 "Wraps the outbound user turn into labeled app-control and player-turn blocks so runtime instructions do not read like player-authored roleplay prose.",
               whyItExists:
-                "Chronicle uses lightweight one-turn wrappers for session position, special turn behavior, repair guidance, and immediate-scene priority without mutating stored transcript history.",
+                "Chronicle uses lightweight one-turn wrappers for session position, special turn behavior, current-turn state, and immediate-scene priority without mutating stored transcript history.",
               problemSolved:
                 "Prevents regenerate/session metadata from being lost while keeping app-generated instructions visibly separated from the player's actual turn.",
               fileRefs: [
@@ -513,13 +513,13 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
               ],
               codeSourceLabel: "Final user wrapper expression",
               promptViewEnabled: true,
-              codeSource: "[APP TURN CONTROLS]\\n[optional SESSION]\\noptional current scene snapshot\\noptional adaptive/repair directive\\noptional REGENERATION_DIRECTIVE_TEXT\\nEXECUTION_BRIEF_TEXT\\n\\n[PLAYER TURN]\\nuserMessage",
+              codeSource: "[APP TURN CONTROLS]\\n[optional SESSION]\\noptional current turn state digest\\noptional REGENERATION_DIRECTIVE_TEXT\\nEXECUTION_BRIEF_TEXT\\n\\n[PLAYER TURN]\\nuserMessage",
               crossRefs: [
                 {
                   badge: "1",
                   targetItemId: "item-handle-send",
                   label: "Inputs originate in send pipeline",
-                  tooltip: "Session counter and adaptive style decisions originate in ChatInterfaceTab handleSend.",
+                  tooltip: "Session counter and local style telemetry originate in ChatInterfaceTab send/regenerate/continue handlers.",
                 },
               ],
             },

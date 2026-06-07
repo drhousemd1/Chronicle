@@ -1,5 +1,7 @@
 // Generated from the live backend schema export.
 // Refresh this file from the latest Lovable export when backend schema changes.
+// Keep this as schema metadata only: no row contents, secrets, auth tokens,
+// API keys, user emails, private chat/story text, images, or private NSFW user content.
 export const databaseSchemaInventory = {
   "exported_at": "2026-04-05",
   "project": "Chronicle",

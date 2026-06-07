@@ -1,6 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import {
+  buildPhysicalStateCompletenessReviews,
+  getMissingPhysicalStateReviewNames,
+  normalizePhysicalStateReviews,
+  type PhysicalStateReview,
+} from "../_shared/state-sync-completeness.ts";
 
 // GROK ONLY -- All AI calls use xAI Grok. No Gemini. No OpenAI.
 
@@ -82,8 +88,26 @@ const characterUpdateResponseFormat = {
             required: ["character", "field", "value", "evidence", "confidence"],
           },
         },
+        physicalStateReviews: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              character: { type: "string" },
+              reviewed: { type: "boolean" },
+              locationReviewed: { type: "boolean" },
+              scenePositionReviewed: { type: "boolean" },
+              changed: { type: "boolean" },
+              reason: { type: "string" },
+              evidence: { type: "string" },
+              confidence: { type: "number" },
+            },
+            required: ["character", "reviewed", "locationReviewed", "scenePositionReviewed", "changed", "reason", "evidence", "confidence"],
+          },
+        },
       },
-      required: ["updates"],
+      required: ["updates", "physicalStateReviews"],
     },
   },
 };
@@ -593,6 +617,49 @@ function buildMalformedCandidateReview(reason: string, content: string): Candida
   };
 }
 
+function parseCharacterSyncContent(content: string): {
+  updates: any[];
+  physicalStateReviews: any[];
+  parseError: string | null;
+  parseErrorContent: string;
+} {
+  try {
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      return {
+        updates: [],
+        physicalStateReviews: [],
+        parseError: "missing_json_object",
+        parseErrorContent: content,
+      };
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]);
+    if (!Array.isArray(parsed.updates)) {
+      return {
+        updates: [],
+        physicalStateReviews: Array.isArray(parsed.physicalStateReviews) ? parsed.physicalStateReviews : [],
+        parseError: "updates_not_array",
+        parseErrorContent: content,
+      };
+    }
+
+    return {
+      updates: parsed.updates,
+      physicalStateReviews: Array.isArray(parsed.physicalStateReviews) ? parsed.physicalStateReviews : [],
+      parseError: null,
+      parseErrorContent: "",
+    };
+  } catch (_parseError) {
+    return {
+      updates: [],
+      physicalStateReviews: [],
+      parseError: "parse_error",
+      parseErrorContent: content,
+    };
+  }
+}
+
 function buildCharacterStateBlock(c: CharacterData): string {
   const formatTraitEntry = (trait: unknown): string => {
     if (typeof trait === "string") {
@@ -825,6 +892,7 @@ ${supportedFields}
 
 --- CORE TASK ---
 - Review the latest exchange against every supported field for each eligible character.
+- For every eligible character, include one physicalStateReviews row that explicitly reviews location and scenePosition, even when neither field should change.
 - Treat user-established facts and mutually visible outcomes as stronger evidence than unsupported assistant-only assumptions.
 - Return an update only when the latest exchange directly supports a material change to a supported field.
 - Use recent context only to confirm continuity or conflict with the proposed update.
@@ -838,6 +906,7 @@ ${supportedFields}
 - currentMood: emotional/psychological state only, max 12 words. No body-part prose, clothing, objects, or action sequences.
 - location: broad place only. Do not change location to a destination merely because it was seen, mentioned, chosen, or approached. Update it only when the exchange clearly establishes that the character has actually arrived in, entered, left, or relocated to a different broad place.
 - scenePosition: short factual snapshot of the character's immediate physical situation inside the current location. Update it whenever the latest exchange materially changes that immediate situation, even if the broad location stays the same. Do not leave it blank when the latest exchange establishes a new physical state.
+- physicalStateReviews: one review row per eligible character. This row confirms whether location and scenePosition were considered for that character. A review row is required even when no update is returned because the existing saved state is still accurate or evidence is insufficient.
 - appearance/clothing/background: update when the exchange explicitly reveals or changes the fact.
 - personality/tone/relationships/secrets/fears/keyLifeEvents: write "Label: Description" as the value. Prefer refining a matching existing entry over adding a duplicate.
 - custom sections: use sections.SectionTitle.ItemLabel only when the information belongs in an existing or clearly appropriate custom section. Do not use custom sections to avoid the structured fields above.
@@ -874,6 +943,18 @@ Return only this JSON shape:
       "field": "supported.fieldPath",
       "value": "Proposed saved value",
       "evidence": "Short exact phrase from the latest exchange.",
+      "confidence": 0.0
+    }
+  ],
+  "physicalStateReviews": [
+    {
+      "character": "CharacterName",
+      "reviewed": true,
+      "locationReviewed": true,
+      "scenePositionReviewed": true,
+      "changed": false,
+      "reason": "Short reason why location/scenePosition did or did not change.",
+      "evidence": "Short exact phrase from the latest exchange when available.",
       "confidence": 0.0
     }
   ]
@@ -937,6 +1018,108 @@ Return ONLY valid JSON. No explanations.`;
           },
         }
       : null;
+    const additionalDebugModelRequests: NonNullable<typeof primaryDebugPayload>['modelRequest'][] = [];
+
+    const runFocusedPhysicalStateRetry = async (missingCharacterNames: string[]) => {
+      if (!missingCharacterNames.length) {
+        return { updates: [] as any[], physicalStateReviews: [] as PhysicalStateReview[], parseError: null as string | null };
+      }
+
+      const missingSet = new Set(missingCharacterNames.map((name) => name.toLowerCase()));
+      const missingCharacterContext = (filteredCharacters as CharacterData[])
+        .filter((character) => missingSet.has(character.name.toLowerCase()))
+        .map((character) => buildCharacterStateBlock(character))
+        .join('\n\n');
+
+      const focusedSystemPrompt = `You are the focused physical-state completeness reviewer for the Chronicle character-state sync worker.
+
+Review only these omitted eligible characters: ${missingCharacterNames.join(', ')}.
+
+Your job is limited to location and scenePosition. Return one physicalStateReviews row for every omitted character. Return an update only when the latest exchange directly supports a material location or scenePosition change for that character.
+
+Do not review goals, mood, appearance, clothing, personality, relationships, memories, or any other field. Do not fabricate missing movement. Empty updates are valid.
+
+--- CURRENT STORY CLOCK ---
+${storyClock}
+
+--- CURRENT CHARACTER STATE FOR OMITTED CHARACTERS ---
+${missingCharacterContext || 'No omitted character data provided'}
+
+--- OUTPUT JSON ---
+Return only this JSON shape:
+{
+  "updates": [
+    {
+      "character": "CharacterName",
+      "field": "location or scenePosition",
+      "value": "Proposed saved value",
+      "evidence": "Short exact phrase from the latest exchange.",
+      "confidence": 0.0
+    }
+  ],
+  "physicalStateReviews": [
+    {
+      "character": "CharacterName",
+      "reviewed": true,
+      "locationReviewed": true,
+      "scenePositionReviewed": true,
+      "changed": false,
+      "reason": "Short reason why location/scenePosition did or did not change.",
+      "evidence": "Short exact phrase from the latest exchange when available.",
+      "confidence": 0.0
+    }
+  ]
+}
+
+Return ONLY valid JSON. No explanations.`;
+
+      const focusedRequestBody = {
+        model: modelForRequest,
+        messages: [
+          { role: "system", content: focusedSystemPrompt },
+          { role: "user", content: `Review missing physical-state coverage for omitted characters only.\n\n${latestExchangeText}` },
+        ],
+        temperature: 0.05,
+        max_tokens: 2048,
+        response_format: characterUpdateResponseFormat,
+      };
+
+      if (debugTrace === true) {
+        additionalDebugModelRequests.push({
+          endpoint: apiUrl,
+          method: "POST",
+          capturedAt: Date.now(),
+          requestBody: focusedRequestBody,
+        });
+      }
+
+      const focusedResponse = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(focusedRequestBody),
+      });
+
+      if (!focusedResponse.ok) {
+        return { updates: [] as any[], physicalStateReviews: [] as PhysicalStateReview[], parseError: `focused_retry_http_${focusedResponse.status}` };
+      }
+
+      const focusedData = await focusedResponse.json();
+      const focusedContent = focusedData.choices?.[0]?.message?.content || '{"updates":[],"physicalStateReviews":[]}';
+      const parsedFocused = parseCharacterSyncContent(focusedContent);
+      const focusedUpdates = parsedFocused.updates.filter((update) => {
+        const character = typeof update?.character === "string" ? update.character.toLowerCase().trim() : "";
+        const field = typeof update?.field === "string" ? update.field.trim() : "";
+        return missingSet.has(character) && (field === "location" || field === "scenePosition");
+      });
+      return {
+        updates: focusedUpdates,
+        physicalStateReviews: normalizePhysicalStateReviews(parsedFocused.physicalStateReviews, missingCharacterNames, 'focused_retry'),
+        parseError: parsedFocused.parseError,
+      };
+    };
 
     const response = await fetch(apiUrl, {
       method: "POST",
@@ -968,7 +1151,7 @@ Return ONLY valid JSON. No explanations.`;
         const safeRequestBody = {
           model: 'grok-4.3',
           messages: [
-		            { role: "system", content: "Extract only non-explicit character state metadata from the latest exchange. Return JSON with {updates:[{character,field,value,evidence,confidence}]}. Use only supported field paths. Include evidence from the latest exchange and confidence from 0 to 1. Omit weak or unsupported changes. Do not create, remove, or advance goals in this fallback." },
+		            { role: "system", content: "Extract only non-explicit character state metadata from the latest exchange. Return JSON with {updates:[{character,field,value,evidence,confidence}], physicalStateReviews:[{character,reviewed,locationReviewed,scenePositionReviewed,changed,reason,evidence,confidence}]}. Use only supported field paths. Include one physicalStateReviews row for every eligible character. Include evidence from the latest exchange and confidence from 0 to 1. Omit weak or unsupported changes. Do not create, remove, or advance goals in this fallback." },
             { role: "user", content: `Eligible characters: ${filteredCharacters.map((c: CharacterData) => c.name).join(', ')}.\n\nSupported fields:\n${supportedFields}\n\nCurrent character state:\n${characterContext || 'No eligible character data provided'}\n\nAnalyze:\n${combinedText}` }
           ],
           temperature: 0.2,
@@ -982,7 +1165,7 @@ Return ONLY valid JSON. No explanations.`;
                 method: "POST",
                 capturedAt: Date.now(),
                 requestBody: safeRequestBody,
-                notes: ["Primary character-state sync request received 403; this safe retry was the final Grok request."],
+                notes: ["Primary character-state sync request received 403; this safe retry extracted non-explicit metadata before any missing physical-state coverage retry."],
               },
               primaryModelRequest: primaryDebugPayload?.modelRequest,
             }
@@ -994,57 +1177,59 @@ Return ONLY valid JSON. No explanations.`;
         });
         if (safeResponse.ok) {
           const safeData = await safeResponse.json();
-          const safeContent = safeData.choices?.[0]?.message?.content || '{"updates":[]}';
-          try {
-            const jsonMatch = safeContent.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-              const parsed = JSON.parse(jsonMatch[0]);
-              if (!Array.isArray(parsed.updates)) {
-                const candidateReviews = [buildMalformedCandidateReview("updates_not_array", safeContent)];
-                return new Response(JSON.stringify({
-                  updates: [],
-                  candidateReviews,
-                  rejectedCandidates: candidateReviews,
-                  parseError: "updates was not an array",
-                  ...(safeDebugPayload ? { chronicle_debug_payload: safeDebugPayload } : {}),
-                }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          const safeContent = safeData.choices?.[0]?.message?.content || '{"updates":[],"physicalStateReviews":[]}';
+          const parsedSafe = parseCharacterSyncContent(safeContent);
+          let safeExtractedUpdates: any[] = parsedSafe.updates;
+          let safePhysicalStateReviews = normalizePhysicalStateReviews(parsedSafe.physicalStateReviews, filteredCharacters as CharacterData[], 'primary');
+          const missingAfterSafe = getMissingPhysicalStateReviewNames(filteredCharacters as CharacterData[], safePhysicalStateReviews);
+          let safeFocusedRetryParseError: string | null = null;
+          if (missingAfterSafe.length > 0) {
+            console.log(`[extract-character-updates] Safe retry omitted physical-state reviews for: ${missingAfterSafe.join(', ')}; running focused retry`);
+            const focusedRetry = await runFocusedPhysicalStateRetry(missingAfterSafe);
+            safeFocusedRetryParseError = focusedRetry.parseError;
+            safeExtractedUpdates = [...safeExtractedUpdates, ...focusedRetry.updates];
+            safePhysicalStateReviews = [...safePhysicalStateReviews, ...focusedRetry.physicalStateReviews];
+          }
+          const safeCompletenessReviews = buildPhysicalStateCompletenessReviews(filteredCharacters as CharacterData[], safePhysicalStateReviews);
+          const reviewedSafeUpdates = parsedSafe.parseError
+            ? {
+                updates: [] as ExtractedUpdate[],
+                candidateReviews: [buildMalformedCandidateReview(parsedSafe.parseError, parsedSafe.parseErrorContent || safeContent)],
+                rejectedCandidates: [buildMalformedCandidateReview(parsedSafe.parseError, parsedSafe.parseErrorContent || safeContent)],
               }
-              const parsedUpdates = parsed.updates;
-              const reviewedSafeUpdates = reviewUpdateCandidates(
-                parsedUpdates,
+            : reviewUpdateCandidates(
+                safeExtractedUpdates,
                 filteredCharacters as CharacterData[],
                 { disallowGoals: true, latestExchangeText },
               );
-              console.log(`[extract-character-updates] Safe retry yielded ${reviewedSafeUpdates.updates.length} updates`);
-              return new Response(JSON.stringify({
-                updates: reviewedSafeUpdates.updates,
-                candidateReviews: reviewedSafeUpdates.candidateReviews,
-                rejectedCandidates: reviewedSafeUpdates.rejectedCandidates,
-                ...(safeDebugPayload ? { chronicle_debug_payload: safeDebugPayload } : {}),
-              }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-            }
-            const candidateReviews = [buildMalformedCandidateReview("no_json_object", safeContent)];
-            return new Response(JSON.stringify({
-              updates: [],
-              candidateReviews,
-              rejectedCandidates: candidateReviews,
-              parseError: "No JSON object found in safe extraction response",
-              ...(safeDebugPayload ? { chronicle_debug_payload: safeDebugPayload } : {}),
-            }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-          } catch {
-            const candidateReviews = [buildMalformedCandidateReview("parse_error", safeContent)];
-            return new Response(JSON.stringify({
-              updates: [],
-              candidateReviews,
-              rejectedCandidates: candidateReviews,
-              parseError: "Failed to parse safe extraction response",
-              ...(safeDebugPayload ? { chronicle_debug_payload: safeDebugPayload } : {}),
-            }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-          }
+          console.log(`[extract-character-updates] Safe retry yielded ${reviewedSafeUpdates.updates.length} updates`);
+          return new Response(JSON.stringify({
+            updates: reviewedSafeUpdates.updates,
+            physicalStateReviews: safePhysicalStateReviews,
+            physicalStateCompletenessReviews: safeCompletenessReviews,
+            missingPhysicalStateReviews: safeCompletenessReviews.filter((review) => !review.reviewed).map((review) => review.character),
+            candidateReviews: reviewedSafeUpdates.candidateReviews,
+            rejectedCandidates: reviewedSafeUpdates.rejectedCandidates,
+            ...(parsedSafe.parseError ? { parseError: parsedSafe.parseError } : {}),
+            ...(safeFocusedRetryParseError ? { focusedRetryParseError: safeFocusedRetryParseError } : {}),
+            ...(safeDebugPayload ? {
+              chronicle_debug_payload: {
+                ...safeDebugPayload,
+                ...(additionalDebugModelRequests.length ? { modelRequests: additionalDebugModelRequests } : {}),
+              },
+            } : {}),
+          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
         // If safe retry also fails, return empty
+        const missingPhysicalStateReviews = (filteredCharacters as CharacterData[]).map((character) => character.name);
         return new Response(
-          JSON.stringify({ updates: [], ...(safeDebugPayload ? { chronicle_debug_payload: safeDebugPayload } : {}) }),
+          JSON.stringify({
+            updates: [],
+            physicalStateReviews: [],
+            physicalStateCompletenessReviews: buildPhysicalStateCompletenessReviews(filteredCharacters as CharacterData[], []),
+            missingPhysicalStateReviews,
+            ...(safeDebugPayload ? { chronicle_debug_payload: safeDebugPayload } : {}),
+          }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
@@ -1052,31 +1237,27 @@ Return ONLY valid JSON. No explanations.`;
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || '{"updates":[]}';
-    
-    let extractedUpdates: any[] = [];
-    let parseError: string | null = null;
-    let parseErrorContent = "";
-    try {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        if (Array.isArray(parsed.updates)) {
-          extractedUpdates = parsed.updates;
-        } else {
-          parseError = "updates_not_array";
-          parseErrorContent = content;
-        }
-      } else {
-        parseError = "missing_json_object";
-        parseErrorContent = content;
-      }
-    } catch (_parseError) {
-      console.error("Failed to parse extraction response:", content);
-      extractedUpdates = [];
-      parseError = "parse_error";
-      parseErrorContent = content;
+    const content = data.choices?.[0]?.message?.content || '{"updates":[],"physicalStateReviews":[]}';
+    const parsedPrimary = parseCharacterSyncContent(content);
+    let extractedUpdates: any[] = parsedPrimary.updates;
+    let physicalStateReviews = normalizePhysicalStateReviews(parsedPrimary.physicalStateReviews, filteredCharacters as CharacterData[], 'primary');
+    const parseError: string | null = parsedPrimary.parseError;
+    const parseErrorContent = parsedPrimary.parseErrorContent;
+
+    const missingAfterPrimary = getMissingPhysicalStateReviewNames(filteredCharacters as CharacterData[], physicalStateReviews);
+    let focusedRetryParseError: string | null = null;
+    if (missingAfterPrimary.length > 0) {
+      console.log(`[extract-character-updates] Missing physical-state reviews for: ${missingAfterPrimary.join(', ')}; running focused retry`);
+      const focusedRetry = await runFocusedPhysicalStateRetry(missingAfterPrimary);
+      focusedRetryParseError = focusedRetry.parseError;
+      extractedUpdates = [...extractedUpdates, ...focusedRetry.updates];
+      physicalStateReviews = [...physicalStateReviews, ...focusedRetry.physicalStateReviews];
     }
+
+    const physicalStateCompletenessReviews = buildPhysicalStateCompletenessReviews(filteredCharacters as CharacterData[], physicalStateReviews);
+    const missingPhysicalStateReviews = physicalStateCompletenessReviews
+      .filter((review) => !review.reviewed)
+      .map((review) => review.character);
 
     const reviewedUpdates = parseError
       ? {
@@ -1095,10 +1276,19 @@ Return ONLY valid JSON. No explanations.`;
     return new Response(
       JSON.stringify({
         updates: extractedUpdates,
+        physicalStateReviews,
+        physicalStateCompletenessReviews,
+        missingPhysicalStateReviews,
         candidateReviews: reviewedUpdates.candidateReviews,
         rejectedCandidates: reviewedUpdates.rejectedCandidates,
         ...(parseError ? { parseError } : {}),
-        ...(primaryDebugPayload ? { chronicle_debug_payload: primaryDebugPayload } : {}),
+        ...(focusedRetryParseError ? { focusedRetryParseError } : {}),
+        ...(primaryDebugPayload ? {
+          chronicle_debug_payload: {
+            ...primaryDebugPayload,
+            ...(additionalDebugModelRequests.length ? { modelRequests: additionalDebugModelRequests } : {}),
+          },
+        } : {}),
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

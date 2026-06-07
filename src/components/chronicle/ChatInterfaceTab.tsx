@@ -12,7 +12,7 @@ import {
   normalizeGoalAlignmentState,
   shouldRenderGoalToWriter,
 } from '@/lib/goal-alignment';
-import { buildAssistantRepetitionRepairDirective, buildAssistantStyleDirective, buildDetailedCollapseDirective } from '@/lib/assistant-style-directive';
+import { analyzeAssistantCandidateStyle, analyzeRecentAssistantStyle, type AssistantStyleTelemetry } from '@/lib/assistant-style-directive';
 import { uid, now, uuid } from '@/utils';
 import {
   CONTENT_FILTER_NOTICE_TEXT,
@@ -1280,59 +1280,37 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     [conversation?.messages, dialogDebugComments],
   );
 
-  const buildDiscardedCall1Attempt = useCallback((
-    request: ChatDebugRequestRecord | null | undefined,
-    trace: ChatDebugTrace | null,
-    draftText: string,
-    repairDirective: string,
+  const buildAssistantStyleTelemetryCall = useCallback((
     source: 'send' | 'regenerate' | 'continue',
+    recentTelemetry: AssistantStyleTelemetry,
+    candidateTelemetry: AssistantStyleTelemetry,
   ): ChatDebugRequestRecord | null => {
-    if (!request) return null;
+    if (!isAdmin) return null;
 
     return {
-      ...request,
-      id: `${request.id}.discarded-${source}-first-draft-${Date.now()}`,
-      label: `${request.label} - First draft discarded before repair`,
-      apiCallGroup: 'call_1',
+      id: `local.assistant-style-telemetry.${source}.${Date.now()}`,
+      label: `Local assistant style telemetry - ${source}`,
+      apiCallGroup: 'support',
+      endpoint: 'local://assistant-style-telemetry',
+      method: 'LOCAL',
       capturedAt: Date.now(),
       status: 'completed',
-      modelRequest: trace?.modelRequest || request.modelRequest,
-      modelRequests: trace?.modelRequests || request.modelRequests,
+      requestBody: {
+        source,
+        diagnosticOnly: true,
+        grokFacing: false,
+      },
       responseBody: {
-        discardedDraftText: draftText,
-        discardedDraftCharacterCount: draftText.length,
-        discardedDraftWordCount: draftText.trim() ? draftText.trim().split(/\s+/).length : 0,
-        repairDirective,
+        recentTelemetry,
+        candidateTelemetry,
+        summary: 'Detector telemetry only. This was not sent to Grok/xAI and did not trigger a hidden retry or alter the visible response.',
       },
       notes: [
-        ...(request.notes || []),
-        'This API Call 1 attempt was discarded because the repetition repair guard triggered before the final assistant message was committed.',
+        'Style and repetition detectors now run as local debug telemetry only.',
+        'Chronicle commits the first completed API Call 1 draft unless the provider request itself fails.',
       ],
     };
-  }, []);
-
-  const buildFailedRepairCall1Attempt = useCallback((
-    request: ChatDebugRequestRecord | null | undefined,
-    error: unknown,
-    source: 'send' | 'regenerate' | 'continue',
-  ): ChatDebugRequestRecord | null => {
-    if (!request) return null;
-
-    const message = error instanceof Error ? error.message : String(error || 'Unknown repair retry failure');
-    return {
-      ...request,
-      id: `${request.id}.failed-${source}-repair-retry-${Date.now()}`,
-      label: `${request.label} - Hidden repair retry failed`,
-      apiCallGroup: 'call_1',
-      capturedAt: Date.now(),
-      status: 'error',
-      error: message,
-      notes: [
-        ...(request.notes || []),
-        'This hidden API Call 1 repair retry failed. Chronicle kept the first completed draft instead of surfacing an error to the roleplay session.',
-      ],
-    };
-  }, []);
+  }, [isAdmin]);
 
   const attachRequestDebugToError = (
     error: unknown,
@@ -1412,7 +1390,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     error: ContentFilteredChatError,
     trace: ChatDebugTrace | null,
     call1Request?: ChatDebugRequestRecord | null,
-    supportCalls: ChatDebugRequestRecord[] = [],
   ) => {
     const noticeMessage = buildContentFilterNoticeMessage(error.message, currentDay, currentTimeOfDay);
     const nextConversations = baseConversations.map(c =>
@@ -1429,10 +1406,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       trace,
       call1Request ? { ...call1Request, status: 'error', error: error.message } : null,
     );
-    supportCalls.forEach((call) => recordChatDebugSupportCall(noticeMessage, call));
 
     return nextConversations;
-  }, [conversationId, currentDay, currentTimeOfDay, onSaveScenario, onUpdate, recordChatDebugSupportCall, saveChatDebugTrace]);
+  }, [conversationId, currentDay, currentTimeOfDay, onSaveScenario, onUpdate, saveChatDebugTrace]);
 
   const buildMessageGenerationMap = useCallback((messages: Message[]): Map<string, string> => {
     const map = new Map<string, string>();
@@ -1654,7 +1630,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   // Persistent map for placeholder name replacements (ensures consistency across the conversation)
   const placeholderMapRef = useRef<PlaceholderNameMap>({});
 
-  // Issue #7: Response tracking for narrow adaptive style directives
+  // Issue #7: Response tracking for local style telemetry
   const responseLengthsRef = useRef<number[]>([]);
   const getAssistantResponseLengths = (messages: Message[]) => {
     return messages
@@ -1713,21 +1689,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     // Direct DB persist only for day/time — timer settings are NOT written here
     supabaseData.updateConversationMeta(conversationId, { currentDay: newDay, currentTimeOfDay: newTime });
   }, [conversationId, onUpdate, timeProgressionMode]);
-
-  // Issue #7: Compute narrow style directives only when recent AI turns lock into repeated output.
-  const getAdaptiveStyleDirective = (
-    messages: Message[] = conversation?.messages || [],
-    responseVerbosity?: string,
-    responseLengths: number[] = responseLengthsRef.current,
-  ): string => {
-    const styleEvidenceMessages = filterRoleplayMessagesForStyleEvidence(messages);
-    return [
-      buildAssistantStyleDirective(styleEvidenceMessages, responseLengths),
-      responseVerbosity === 'detailed'
-        ? buildDetailedCollapseDirective(styleEvidenceMessages, responseLengths)
-        : '',
-    ].filter(Boolean).join('\n\n');
-  };
 
   // Ref to always hold current sideCharacters - avoids stale closure in async callbacks
   const sideCharactersRef = useRef<SideCharacter[]>(appData.sideCharacters || []);
@@ -5481,7 +5442,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
     let pendingDebugTrace: ChatDebugTrace | null = null;
     let pendingCall1Request: ChatDebugRequestRecord | null = null;
-    const hiddenCall1Attempts: ChatDebugRequestRecord[] = [];
+    let pendingStyleTelemetryCall: ChatDebugRequestRecord | null = null;
 
     try {
       const llmAppData = buildLLMAppData();
@@ -5489,15 +5450,15 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       const establishedFactNote = buildEstablishedFactNote(input, establishedFactNoteCharacters);
       const currentResponseLengths = getAssistantResponseLengths(conversation.messages);
       const styleEvidenceMessages = filterRoleplayMessagesForStyleEvidence(conversation.messages);
-      const adaptiveStyleDirective = getAdaptiveStyleDirective(
-        conversation.messages,
-        llmAppData.uiSettings?.responseVerbosity,
+      const recentStyleTelemetry = analyzeRecentAssistantStyle(
+        styleEvidenceMessages,
         currentResponseLengths,
+        llmAppData.uiSettings?.responseVerbosity,
       );
       sessionMessageCountRef.current += 1;
 
       const llmInput = establishedFactNote + input;
-      const collectSendResponse = async (styleDirective?: string, streamToUi = false) => {
+      const collectSendResponse = async (streamToUi = false) => {
         let responseText = '';
         let responseDebugTrace: ChatDebugTrace | null = null;
         let responseCall1Request: ChatDebugRequestRecord | null = null;
@@ -5512,7 +5473,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           activeMemories,
           memoriesEnabled,
           undefined,
-          styleDirective || undefined,
           sessionMessageCountRef.current,
           canonicalActiveScene,
           {
@@ -5558,48 +5518,16 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         };
       };
 
-      let responseResult = await collectSendResponse(adaptiveStyleDirective || undefined, false);
-      let cleanedText = responseResult.cleanedText;
+      const responseResult = await collectSendResponse(false);
+      const cleanedText = responseResult.cleanedText;
       pendingDebugTrace = responseResult.debugTrace;
       pendingCall1Request = responseResult.call1Request;
-
-      const repairDirective = buildAssistantRepetitionRepairDirective(
+      const candidateStyleTelemetry = analyzeAssistantCandidateStyle(
         styleEvidenceMessages,
         cleanedText,
         currentResponseLengths,
       );
-
-      if (repairDirective) {
-        debugLog('[handleSend] Repetition repair retry triggered');
-        const firstDraftResult = responseResult;
-        const discardedAttempt = buildDiscardedCall1Attempt(
-          responseResult.call1Request,
-          responseResult.debugTrace,
-          cleanedText,
-          repairDirective,
-          'send',
-        );
-        try {
-          responseResult = await collectSendResponse(
-            [adaptiveStyleDirective, repairDirective].filter(Boolean).join('\n\n'),
-            false,
-          );
-          if (discardedAttempt) hiddenCall1Attempts.push(discardedAttempt);
-        } catch (repairError) {
-          console.warn('[handleSend] Hidden repetition repair retry failed; using the first completed draft.', repairError);
-          const repairDebug = readRequestDebugFromError(repairError, null, null);
-          const failedAttempt = buildFailedRepairCall1Attempt(
-            repairDebug.call1Request,
-            repairError,
-            'send',
-          );
-          if (failedAttempt) hiddenCall1Attempts.push(failedAttempt);
-          responseResult = firstDraftResult;
-        }
-        cleanedText = responseResult.cleanedText;
-        pendingDebugTrace = responseResult.debugTrace;
-        pendingCall1Request = responseResult.call1Request;
-      }
+      pendingStyleTelemetryCall = buildAssistantStyleTelemetryCall('send', recentStyleTelemetry, candidateStyleTelemetry);
 
       const liveConversation = latestConversationsRef.current.find(c => c.id === conversationId);
       const liveUserMessage = liveConversation?.messages.find(message => message.id === userMsg.id);
@@ -5633,7 +5561,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       onUpdate(nextConvsWithAi);
       onSaveScenario(nextConvsWithAi);
       saveChatDebugTrace(aiMsg, pendingDebugTrace, pendingCall1Request);
-      hiddenCall1Attempts.forEach((call) => recordChatDebugSupportCall(aiMsg, call));
+      if (pendingStyleTelemetryCall) recordChatDebugSupportCall(aiMsg, pendingStyleTelemetryCall);
       queueAssistantDerivedWorkAfterSourcePersist([userMsg, aiMsg], userInput, cleanedText, aiMsg);
 
       // Process AI response for new character detection
@@ -5654,7 +5582,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           err,
           errorDebug.trace,
           errorDebug.call1Request,
-          hiddenCall1Attempts,
         );
         return;
       }
@@ -5880,7 +5807,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
     let pendingDebugTrace: ChatDebugTrace | null = null;
     let pendingCall1Request: ChatDebugRequestRecord | null = null;
-    const hiddenCall1Attempts: ChatDebugRequestRecord[] = [];
+    let pendingStyleTelemetryCall: ChatDebugRequestRecord | null = null;
 
     try {
       // Strip the old AI response AND the triggering user message from context
@@ -5903,13 +5830,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         ? `\n\n[PREVIOUS ASSISTANT RESPONSE BEING REGENERATED - REFERENCE ONLY]\nThis text is the assistant response being replaced. Do not continue from it as story state. Use it only to preserve broad direction and avoid repeating the same wording, structure, or execution.\n${existingMessage.text.trim()}`
         : '';
       const regenInput = establishedFactNote + userMessage.text + previousAssistantContext;
-      const adaptiveStyleDirective = getAdaptiveStyleDirective(
-        truncatedMessages,
-        truncatedAppData.uiSettings?.responseVerbosity,
+      const recentStyleTelemetry = analyzeRecentAssistantStyle(
+        truncatedStyleEvidenceMessages,
         truncatedResponseLengths,
+        truncatedAppData.uiSettings?.responseVerbosity,
       );
 
-      const collectRegenerateResponse = async (styleDirective?: string, streamToUi = false) => {
+      const collectRegenerateResponse = async (streamToUi = false) => {
         let responseText = '';
         let responseDebugTrace: ChatDebugTrace | null = null;
         let responseCall1Request: ChatDebugRequestRecord | null = null;
@@ -5924,7 +5851,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           truncatedMemories,
           memoriesEnabled,
           true,
-          styleDirective || undefined,
           undefined,
           canonicalActiveScene,
           {
@@ -5972,49 +5898,17 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
       // Regeneration is text-variation only: avoid mutating persistent character state here.
 
-      let responseResult = await collectRegenerateResponse(adaptiveStyleDirective || undefined, false);
-      let cleanedText = responseResult.cleanedText;
+      const responseResult = await collectRegenerateResponse(false);
+      const cleanedText = responseResult.cleanedText;
       pendingDebugTrace = responseResult.debugTrace;
       pendingCall1Request = responseResult.call1Request;
-
-      const repairDirective = buildAssistantRepetitionRepairDirective(
+      const candidateStyleTelemetry = analyzeAssistantCandidateStyle(
         truncatedStyleEvidenceMessages,
         cleanedText,
         truncatedResponseLengths,
         [existingMessage.text],
       );
-
-      if (repairDirective) {
-        debugLog('[handleRegenerate] Repetition repair retry triggered');
-        const firstDraftResult = responseResult;
-        const discardedAttempt = buildDiscardedCall1Attempt(
-          responseResult.call1Request,
-          responseResult.debugTrace,
-          cleanedText,
-          repairDirective,
-          'regenerate',
-        );
-        try {
-          responseResult = await collectRegenerateResponse(
-            [adaptiveStyleDirective, repairDirective].filter(Boolean).join('\n\n'),
-            false,
-          );
-          if (discardedAttempt) hiddenCall1Attempts.push(discardedAttempt);
-        } catch (repairError) {
-          console.warn('[handleRegenerate] Hidden repetition repair retry failed; using the first completed draft.', repairError);
-          const repairDebug = readRequestDebugFromError(repairError, null, null);
-          const failedAttempt = buildFailedRepairCall1Attempt(
-            repairDebug.call1Request,
-            repairError,
-            'regenerate',
-          );
-          if (failedAttempt) hiddenCall1Attempts.push(failedAttempt);
-          responseResult = firstDraftResult;
-        }
-        cleanedText = responseResult.cleanedText;
-        pendingDebugTrace = responseResult.debugTrace;
-        pendingCall1Request = responseResult.call1Request;
-      }
+      pendingStyleTelemetryCall = buildAssistantStyleTelemetryCall('regenerate', recentStyleTelemetry, candidateStyleTelemetry);
 
       // UPDATE IN-PLACE: Replace the existing message instead of creating a new one
       const regeneratedMessage = {
@@ -6052,7 +5946,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       if (updatedConversation) syncAssistantResponseLengths(updatedConversation.messages);
       onUpdate(updatedConvs);
       saveChatDebugTrace(regeneratedMessage, pendingDebugTrace, pendingCall1Request);
-      hiddenCall1Attempts.forEach((call) => recordChatDebugSupportCall(regeneratedMessage, call));
+      if (pendingStyleTelemetryCall) recordChatDebugSupportCall(regeneratedMessage, pendingStyleTelemetryCall);
       regenerateEventsRef.current.push({
         messageId,
         generationId: regeneratedMessage.generationId || regeneratedMessage.id,
@@ -6078,7 +5972,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           err,
           errorDebug.trace,
           errorDebug.call1Request,
-          hiddenCall1Attempts,
         );
         return;
       }
@@ -6118,15 +6011,15 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
     let pendingDebugTrace: ChatDebugTrace | null = null;
     let pendingCall1Request: ChatDebugRequestRecord | null = null;
-    const hiddenCall1Attempts: ChatDebugRequestRecord[] = [];
+    let pendingStyleTelemetryCall: ChatDebugRequestRecord | null = null;
 
     try {
       const currentResponseLengths = getAssistantResponseLengths(conversation.messages);
       const styleEvidenceMessages = filterRoleplayMessagesForStyleEvidence(conversation.messages);
-      const adaptiveStyleDirective = getAdaptiveStyleDirective(
-        conversation.messages,
-        llmAppData.uiSettings?.responseVerbosity,
+      const recentStyleTelemetry = analyzeRecentAssistantStyle(
+        styleEvidenceMessages,
         currentResponseLengths,
+        llmAppData.uiSettings?.responseVerbosity,
       );
 
 	      // Build goal-aware continue prompt without turning goals into a task list.
@@ -6192,7 +6085,7 @@ Do not acknowledge this instruction in your response.`;
 	      debugLog('[handleContinue] Goal context:', goalContext || '(no goals found)');
 	      debugLog('[handleContinue] Established-fact note applied:', continueEstablishedFactNote ? 'YES' : 'NO');
 
-		      const collectContinueResponse = async (styleDirective?: string, streamToUi = false) => {
+	      const collectContinueResponse = async (streamToUi = false) => {
 		        let responseText = '';
 		        let responseDebugTrace: ChatDebugTrace | null = null;
 		        let responseCall1Request: ChatDebugRequestRecord | null = null;
@@ -6207,7 +6100,6 @@ Do not acknowledge this instruction in your response.`;
 	          activeMemories,
 	          memoriesEnabled,
 	          undefined,
-	          styleDirective || undefined,
 	          undefined,
 	          canonicalActiveScene,
 	          {
@@ -6251,48 +6143,16 @@ Do not acknowledge this instruction in your response.`;
 		        };
 		      };
 
-	      let responseResult = await collectContinueResponse(adaptiveStyleDirective || undefined, false);
-	      let cleanedText = responseResult.cleanedText;
+		      const responseResult = await collectContinueResponse(false);
+		      const cleanedText = responseResult.cleanedText;
 	      pendingDebugTrace = responseResult.debugTrace;
 	      pendingCall1Request = responseResult.call1Request;
-
-	      const repairDirective = buildAssistantRepetitionRepairDirective(
+	      const candidateStyleTelemetry = analyzeAssistantCandidateStyle(
 	        styleEvidenceMessages,
 	        cleanedText,
 	        currentResponseLengths,
 	      );
-
-		      if (repairDirective) {
-		        debugLog('[handleContinue] Repetition repair retry triggered');
-            const firstDraftResult = responseResult;
-			        const discardedAttempt = buildDiscardedCall1Attempt(
-			          responseResult.call1Request,
-			          responseResult.debugTrace,
-			          cleanedText,
-			          repairDirective,
-			          'continue',
-			        );
-			        try {
-			          responseResult = await collectContinueResponse(
-			            [adaptiveStyleDirective, repairDirective].filter(Boolean).join('\n\n'),
-			            false,
-			          );
-			          if (discardedAttempt) hiddenCall1Attempts.push(discardedAttempt);
-			        } catch (repairError) {
-		          console.warn('[handleContinue] Hidden repetition repair retry failed; using the first completed draft.', repairError);
-		          const repairDebug = readRequestDebugFromError(repairError, null, null);
-		          const failedAttempt = buildFailedRepairCall1Attempt(
-		            repairDebug.call1Request,
-		            repairError,
-		            'continue',
-		          );
-		          if (failedAttempt) hiddenCall1Attempts.push(failedAttempt);
-		          responseResult = firstDraftResult;
-		        }
-	        cleanedText = responseResult.cleanedText;
-		        pendingDebugTrace = responseResult.debugTrace;
-		        pendingCall1Request = responseResult.call1Request;
-			      }
+	      pendingStyleTelemetryCall = buildAssistantStyleTelemetryCall('continue', recentStyleTelemetry, candidateStyleTelemetry);
 
       const liveConversation = latestConversationsRef.current.find(c => c.id === conversationId);
       const liveLastMessage = liveConversation?.messages[liveConversation.messages.length - 1];
@@ -6327,7 +6187,7 @@ Do not acknowledge this instruction in your response.`;
 		      onUpdate(updatedConvs);
 		      onSaveScenario(updatedConvs);
 		      saveChatDebugTrace(aiMsg, pendingDebugTrace, pendingCall1Request);
-		      hiddenCall1Attempts.forEach((call) => recordChatDebugSupportCall(aiMsg, call));
+		      if (pendingStyleTelemetryCall) recordChatDebugSupportCall(aiMsg, pendingStyleTelemetryCall);
           if (lastMsg) {
             continueEventsRef.current.push({
               messageId: lastMsg.id,
@@ -6358,7 +6218,6 @@ Do not acknowledge this instruction in your response.`;
           err,
           errorDebug.trace,
           errorDebug.call1Request,
-          hiddenCall1Attempts,
         );
         return;
       }

@@ -430,7 +430,7 @@ Respond in JSON format ONLY:
 
 Set "completed" to true only when result is "completed", confidence is at least 0.75, and evidence directly supports the lasting condition. Empty or conservative results are valid.`;
 
-const characterStateSyncFallbackSystemPrompt = `Extract only non-explicit character state metadata from the latest exchange. Return JSON with {updates:[{character,field,value,evidence,confidence}]}. Use only supported field paths. Include evidence from the latest exchange and confidence from 0 to 1. Omit weak or unsupported changes. Do not create, remove, or advance goals in this fallback.`;
+const characterStateSyncFallbackSystemPrompt = `Extract only non-explicit character state metadata from the latest exchange. Return JSON with {updates:[{character,field,value,evidence,confidence}], physicalStateReviews:[{character,reviewed,locationReviewed,scenePositionReviewed,changed,reason,evidence,confidence}]}. Use only supported field paths. Include one physicalStateReviews row for every eligible character. Include evidence from the latest exchange and confidence from 0 to 1. Omit weak or unsupported changes. Do not create, remove, or advance goals in this fallback.`;
 
 const characterStateSyncFallbackUserPrompt = `Eligible characters: {{eligibleCharacterNames}}
 
@@ -556,6 +556,7 @@ Character goals:
 
 --- CORE TASK ---
 - Review the latest exchange against every supported field for each eligible character.
+- For every eligible character, include one physicalStateReviews row that explicitly reviews location and scenePosition, even when neither field should change.
 - Treat user-established facts and mutually visible outcomes as stronger evidence than unsupported assistant-only assumptions.
 - Return an update only when the latest exchange directly supports a material change to a supported field.
 - Use recent context only to confirm continuity or conflict with the proposed update.
@@ -569,6 +570,7 @@ Character goals:
 - currentMood: emotional/psychological state only, max 12 words. No body-part prose, clothing, objects, or action sequences.
 - location: broad place only. Do not change location to a destination merely because it was seen, mentioned, chosen, or approached. Update it only when the exchange clearly establishes that the character has actually arrived in, entered, left, or relocated to a different broad place.
 - scenePosition: short factual snapshot of the character's immediate physical situation inside the current location. Update it whenever the latest exchange materially changes that immediate situation, even if the broad location stays the same. Do not leave it blank when the latest exchange establishes a new physical state.
+- physicalStateReviews: one review row per eligible character. This row confirms whether location and scenePosition were considered for that character. A review row is required even when no update is returned because the existing saved state is still accurate or evidence is insufficient.
 - appearance/clothing/background: update when the exchange explicitly reveals or changes the fact.
 - personality/tone/relationships/secrets/fears/keyLifeEvents: write "Label: Description" as the value. Prefer refining a matching existing entry over adding a duplicate.
 - custom sections: use sections.SectionTitle.ItemLabel only when the information belongs in an existing or clearly appropriate custom section. Do not use custom sections to avoid the structured fields above.
@@ -605,6 +607,18 @@ Return only this JSON shape:
       "field": "supported.fieldPath",
       "value": "Proposed saved value",
       "evidence": "Short exact phrase from the latest exchange.",
+      "confidence": 0.0
+    }
+  ],
+  "physicalStateReviews": [
+    {
+      "character": "CharacterName",
+      "reviewed": true,
+      "locationReviewed": true,
+      "scenePositionReviewed": true,
+      "changed": false,
+      "reason": "Short reason why location/scenePosition did or did not change.",
+      "evidence": "Short exact phrase from the latest exchange when available.",
       "confidence": 0.0
     }
   ]
@@ -907,7 +921,7 @@ REQUEST BODY SHAPE
     { "role": "system", "content": "<the full system message below>" },
     { "role": "user", "content": "{{up to 5 prior roleplay messages before the current turn; local notices excluded}}" },
     { "role": "assistant", "content": "{{up to 5 prior roleplay messages before the current turn; local notices excluded}}" },
-    { "role": "user", "content": "[APP TURN CONTROLS]\\n{{optional session counter}}\\n\\n{{current scene snapshot when prior assistant context exists}}\\n\\n{{optional one-turn adaptive style, detailed-collapse, or repair directive}}\\n\\n{{optional regeneration request}}\\n\\n{{executionBrief}}\\n\\n[PLAYER TURN]\\n{{latest user text OR continue instruction wrapper}}{{optional previous assistant response reference appended after triggering user text during regeneration}}" }
+    { "role": "user", "content": "[APP TURN CONTROLS]\\n{{optional session counter}}\\n\\n{{current turn state digest}}\\n\\n{{optional regeneration request}}\\n\\n{{executionBrief}}\\n\\n[PLAYER TURN]\\n{{latest user text OR continue instruction wrapper}}{{optional previous assistant response reference appended after triggering user text during regeneration}}" }
   ],
   "modelId": "grok-4.3",
   "stream": true,
@@ -988,11 +1002,9 @@ The final role:user message is split into labeled blocks so app controls do not 
 [APP TURN CONTROLS]
 [SESSION: Message {{sessionMessageCount}} of current session] when supplied
 
-[CURRENT SCENE SNAPSHOT] when prior assistant context exists
-The previous assistant response is already in the conversation history. Use it only to preserve story state; do not copy its opening structure or continue from it unless the final instruction below says to continue.
-
-[STYLE ADJUSTMENT FOR THIS TURN] only when runtime detectors trigger
-{{adaptiveStyleDirective}}
+[CURRENT TURN STATE]
+Use this as the active scene anchor. It summarizes established state already supplied elsewhere. If the latest player turn changes any item, the latest player turn controls the next response.
+{{compact current day/time, active scene, character location/position/mood rows, and capped current-day memory anchors}}
 
 [REGENERATION REQUEST] only when regenerating
 {{regenerationDirective}}
@@ -1004,11 +1016,15 @@ The previous assistant response is already in the conversation history. Use it o
 {{latest user text}}
 
 ================================================================================
-CURRENT SCENE SNAPSHOT INSIDE [APP TURN CONTROLS] WHEN PRIOR ASSISTANT CONTEXT EXISTS
+CURRENT TURN STATE INSIDE [APP TURN CONTROLS]
 ================================================================================
 
-[CURRENT SCENE SNAPSHOT]
-The previous assistant response is already in the conversation history. Use it only to preserve story state; do not copy its opening structure or continue from it unless the final instruction below says to continue.
+[CURRENT TURN STATE]
+Use this as the active scene anchor. It summarizes established state already supplied elsewhere. If the latest player turn changes any item, the latest player turn controls the next response.
+- Story clock: {{current day/time when known}}
+- Active scene: {{active scene title and tags when known}}
+- {{CharacterName}} ({{AI/User}}): location={{broad location}}; position={{scenePosition}}; mood={{currentMood}}
+- Current-day memory anchors: {{up to 3 compact current-day memory anchors}}
 
 When regenerating, the final user message also includes the exact assistant response being replaced after the triggering user text:
 [PREVIOUS ASSISTANT RESPONSE BEING REGENERATED - REFERENCE ONLY]
@@ -1074,32 +1090,19 @@ EXECUTION BRIEF APPENDED INSIDE [APP TURN CONTROLS] ON EVERY LIVE ROLEPLAY CALL
 ${EXECUTION_BRIEF_TEXT}
 
 ================================================================================
-OUTPUT REVISION REQUIRED APPENDED ONLY TO ONE-TIME REPAIR RETRY FOR SEND, REGENERATE, OR CONTINUE WHEN THE FIRST DRAFT REPEATS OR OFFLOADS
+HIDDEN STYLE-REPAIR RETRY REMOVED FROM LIVE API CALL 1
 ================================================================================
 
-// This is a hidden local retry. The first draft is discarded unless the retry fails, and both attempts are attached to the debug export for the source assistant message.
-
-[OUTPUT REVISION REQUIRED]
-The draft needs revision because: {{runtime reasons}}.
-Rewrite once while preserving the current story facts, speaker tags, user-control boundaries, and user input.
-Use established details as causes or consequences, not repeated description.
-Add concrete AI-controlled development instead of restating the same structure, topic focus, closing pattern, or asking the user to carry the scene.
+// Removed. Chronicle no longer discards a completed live draft or sends a hidden style-repair API Call 1 retry during normal send, regenerate, or Continue.
+// The first completed draft is committed unless the provider request itself fails.
 
 ================================================================================
-STYLE ADJUSTMENT AND DETAILED-COLLAPSE DIRECTIVES APPENDED ONLY WHEN RUNTIME DETECTORS TRIGGER
+LOCAL STYLE DETECTOR TELEMETRY (DEBUG EXPORT ONLY, NOT SENT TO GROK)
 ================================================================================
 
-[STYLE ADJUSTMENT FOR THIS TURN]
-Recent assistant responses are repeating: {{runtime reasons}}.
-Use recent assistant messages for story state, not as a style template.
-Use established details as causes or consequences, not repeated description or topic recycling, when repeated descriptive or content focus is detected.
-Move into purposeful external dialogue when present AI-controlled characters can naturally speak, when narration-heavy or low-dialogue output is detected.
-Vary the next response with a natural structure that fits the current exchange and active Response Detail setting.
-
-[STYLE CORRECTION]
-Recent assistant responses are shorter or less developed than the active Response Detail setting calls for.
-Use recent messages for story state, not as a response-length template.
-Develop the AI-controlled side of the current exchange with meaningful external dialogue when speech is natural and enough action or description to make the moment clear before stopping for the user.`;
+Runtime style/repetition detectors may record local diagnostic telemetry after a draft is generated.
+This telemetry can flag repeated structure, repeated marker cadence, repeated short dialogue, weak dialogue balance, narration-heavy output, front-loaded narration, or detail collapse.
+Detector telemetry is saved only in the debug export as local://assistant-style-telemetry. It is not appended to the final user message, is not sent to Grok/xAI, and does not trigger a hidden retry.`;
 }
 
 function buildApiCall2SupportDocument() {
@@ -1183,6 +1186,21 @@ EDGE RESPONSE SHAPE
       "confidence": 0.82
     }
   ],
+  "physicalStateReviews": [
+    {
+      "character": "{{character name}}",
+      "reviewed": true,
+      "locationReviewed": true,
+      "scenePositionReviewed": true,
+      "changed": false,
+      "reason": "{{why location/scenePosition did or did not change}}",
+      "evidence": "{{short exchange evidence when available}}",
+      "confidence": 0.82,
+      "source": "primary|focused_retry"
+    }
+  ],
+  "physicalStateCompletenessReviews": "{{one row per eligible character showing reviewed vs missing physical-state coverage}}",
+  "missingPhysicalStateReviews": "{{eligible character names omitted from physical-state review after the focused retry, if any}}",
   "candidateReviews": [
     {
       "index": 0,
@@ -1197,7 +1215,7 @@ EDGE RESPONSE SHAPE
   ],
   "rejectedCandidates": "{{candidateReviews rows rejected by deterministic edge gates}}",
   "parseError": "{{present only when the model response was malformed}}",
-  "chronicle_debug_payload": "{{present when debugTrace=true; includes modelRequest and, for safe retries, the primaryModelRequest}}"
+  "chronicle_debug_payload": "{{present when debugTrace=true; includes modelRequest plus focused physical-state retry modelRequests or safe-retry primaryModelRequest when applicable}}"
 }
 
 BROWSER DEBUG ANNOTATIONS ADDED BEFORE STATE APPLICATION

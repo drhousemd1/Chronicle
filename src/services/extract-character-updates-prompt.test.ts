@@ -43,4 +43,15 @@ describe('extract-character-updates prompt guidance', () => {
     expect(source).toContain('Do not leave it blank when the latest exchange establishes a new physical state.');
     expect(source).toContain('Update it only when the exchange clearly establishes that the character has actually arrived in, entered, left, or relocated');
   });
+
+  it('requires physical-state review coverage for every eligible character', () => {
+    expect(source).toContain('physicalStateReviews');
+    expect(source).toContain('For every eligible character, include one physicalStateReviews row that explicitly reviews location and scenePosition');
+    expect(source).toContain('one review row per eligible character');
+    expect(source).toContain('getMissingPhysicalStateReviewNames');
+    expect(source).toContain('runFocusedPhysicalStateRetry');
+    expect(source).toContain('Safe retry omitted physical-state reviews');
+    expect(source).toContain('missingPhysicalStateReviews');
+    expect(source).toContain('physicalStateCompletenessReviews');
+  });
 });

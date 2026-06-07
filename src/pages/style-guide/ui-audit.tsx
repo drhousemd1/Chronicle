@@ -390,6 +390,15 @@ const severityBadgeClass: Record<string, string> = {
   low: "bg-[#2f3137] text-[#a5f3fc] border border-[#22B8C9]",
   stylistic: "bg-[#3f3f46] text-[#eaedf1] border border-[rgba(255,255,255,0.20)]",
 };
+
+const LOVABLE_SUPABASE_REQUIRED_TAG = "lovable-supabase-required";
+const lovableSupabaseBadgeClass =
+  "inline-flex max-w-full items-center rounded-full border border-[#34d399]/40 bg-[#5ee68c] px-2.5 py-1 text-[10px] font-black leading-none text-[#06351c] shadow-[0_0_18px_rgba(94,230,140,0.16)]";
+
+function requiresLovableSupabaseChange(finding: QualityFinding): boolean {
+  return finding.tags.includes(LOVABLE_SUPABASE_REQUIRED_TAG);
+}
+
 function cloneInitialRegistry(): QualityHubRegistry {
   return JSON.parse(JSON.stringify(qualityHubInitialRegistry)) as QualityHubRegistry;
 }
@@ -673,6 +682,15 @@ function QualityHubHowToModal({
                 <li><strong className="text-white">Scan Runs</strong>: who scanned, when, scope used, and output summary.</li>
                 <li><strong className="text-white">Change Log</strong>: what was changed in code/config/content and why.</li>
                 <li>Never mark an issue solved without a linked change entry and verification note.</li>
+              </ul>
+            </div>
+            <div className={cn(recessedBlockClass, "p-4")}>
+              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Supabase Snapshot Rule</div>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>After any live Supabase table, RLS, RPC, trigger, storage, policy, or grant change, refresh the approved repo-owned schema snapshot before marking Quality Hub entries current.</li>
+                <li>Use the approved snapshot source only; currently that is <strong className="text-white">src/data/database-schema-inventory.ts</strong> unless a newer dedicated Supabase Schema Map replaces it.</li>
+                <li>Include schema metadata, counts/grants/policies/functions/triggers/buckets when available, but never row contents, secrets, auth tokens, user emails, chat/story text, images, or private NSFW user content.</li>
+                <li>Mark unknown live details as unknown or needs_verification. Do not invent schema details or create alternate schema dump files unless explicitly requested.</li>
               </ul>
             </div>
             <div className={cn(recessedBlockClass, "p-4")}>
@@ -1363,6 +1381,14 @@ export default function UiAuditPage() {
                           <span className={cn("rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em]", severityBadgeClass[f.severity])}>{f.severity}</span>
                           <span className="rounded-full bg-[#4a5f7f] px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">{f.domain}</span>
                           <span className={cn("rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em]", f.status === "fixed" ? "bg-[#166534] text-white" : "bg-[#4a5f7f] text-[#eaedf1]")}>{f.status}</span>
+                          {requiresLovableSupabaseChange(f) && (
+                            <span
+                              className={lovableSupabaseBadgeClass}
+                              title="This finding requires Lovable to apply or verify live Supabase database, RLS, RPC, or storage changes."
+                            >
+                              Lovable Supabase Change Required
+                            </span>
+                          )}
                         </div>
                         <div className="mt-2 text-sm font-bold text-white">{f.title}</div>
                         <div className="mt-1 text-xs text-[#a1a1aa]">{f.page}{f.component ? ` • ${f.component}` : ""}</div>

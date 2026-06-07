@@ -236,6 +236,32 @@ function renderSupportCallSummary(call: NonNullable<StoredChatDebugTrace['suppor
     ? `<ul class="support-summary-notes">${call.notes.map((note) => `<li>${escapeHtml(note)}</li>`).join('')}</ul>`
     : '';
 
+  if (endpoint.includes('assistant-style-telemetry')) {
+    const recentTelemetry = asRecord(response?.recentTelemetry);
+    const candidateTelemetry = asRecord(response?.candidateTelemetry);
+    const recentFlags = asArray(recentTelemetry?.flags);
+    const candidateFlags = asArray(candidateTelemetry?.flags);
+    return `
+      <div class="support-summary">
+        <div class="support-summary-title">Assistant style telemetry summary</div>
+        <div class="support-summary-grid">
+          ${renderKeyValueRows([
+            ['Diagnostic only', 'yes'],
+            ['Sent to Grok/xAI', 'no'],
+            ['Recent-window flags', recentFlags.length],
+            ['Candidate-output flags', candidateFlags.length],
+          ])}
+        </div>
+        ${recentFlags.length || candidateFlags.length ? `<ul>
+          ${recentFlags.length ? `<li><strong>Recent assistant window</strong> ${recentFlags.map((flag) => escapeHtml(String(flag))).join(', ')}</li>` : ''}
+          ${candidateFlags.length ? `<li><strong>Candidate output</strong> ${candidateFlags.map((flag) => escapeHtml(String(flag))).join(', ')}</li>` : ''}
+        </ul>` : '<p>No style or repetition detector flags were raised.</p>'}
+        ${response?.summary ? `<p>${escapeHtml(String(response.summary))}</p>` : ''}
+        ${notes}
+      </div>
+    `;
+  }
+
   if (endpoint.includes('evaluate-goal-progress')) {
     const updates = asArray(response?.stepUpdates);
     const reviewRows = asArray(response?.stepCompletionReviews).length
@@ -292,6 +318,9 @@ function renderSupportCallSummary(call: NonNullable<StoredChatDebugTrace['suppor
     const accepted = reviewRows.filter((entry) => asRecord(entry)?.accepted === true);
     const rejected = reviewRows.filter((entry) => asRecord(entry)?.accepted === false);
     const proposedCandidateCount = reviewRows.length || updates.length;
+    const physicalStateReviews = asArray(response?.physicalStateReviews);
+    const physicalStateCompletenessReviews = asArray(response?.physicalStateCompletenessReviews);
+    const missingPhysicalStateReviews = asArray(response?.missingPhysicalStateReviews);
     return `
       <div class="support-summary">
         <div class="support-summary-title">Character state sync summary</div>
@@ -300,6 +329,8 @@ function renderSupportCallSummary(call: NonNullable<StoredChatDebugTrace['suppor
             ['Proposed candidates', proposedCandidateCount],
             ['Accepted update candidates', accepted.length],
             ['Rejected updates', rejected.length],
+            ['Physical state review rows', physicalStateReviews.length],
+            ['Missing physical state reviews', missingPhysicalStateReviews.length],
           ])}
         </div>
         ${reviewRows.length ? `<ul>${reviewRows.map((entry) => {
@@ -316,6 +347,14 @@ function renderSupportCallSummary(call: NonNullable<StoredChatDebugTrace['suppor
           const evidence = item.evidence ? ` Evidence: ${escapeHtml(String(item.evidence))}` : '';
           return `<li><strong>${escapeHtml(character)}.${escapeHtml(field)}</strong> [${escapeHtml(statusLabel)}]${value ? ` -> ${escapeHtml(textPreview(value, 180))}` : ''}${confidence}${evidence}</li>`;
         }).join('')}</ul>` : '<p>No character-card updates returned.</p>'}
+        ${physicalStateCompletenessReviews.length ? `<div class="support-summary-title">Physical state completeness review</div><ul>${physicalStateCompletenessReviews.map((entry) => {
+          const item = asRecord(entry) || {};
+          const character = String(item.character || 'Unknown character');
+          const status = item.reviewed === true ? 'reviewed' : 'missing';
+          const source = item.source ? ` / ${escapeHtml(String(item.source))}` : '';
+          const reason = item.reason ? ` — ${escapeHtml(String(item.reason))}` : '';
+          return `<li><strong>${escapeHtml(character)}</strong> [${escapeHtml(status)}${source}]${reason}</li>`;
+        }).join('')}</ul>` : ''}
         ${notes}
       </div>
     `;
@@ -487,7 +526,6 @@ function renderSupportCallDetails(segment: ReviewExportSegment): string {
     return `<details class="trace-details trace-empty"><summary>API Call 2 + Supporting API Call Data</summary><p>No post-turn or support-call records were captured for this message generation at export time.</p></details>`;
   }
 
-  const hasHiddenCall1Attempts = supportCalls.some((call) => call.apiCallGroup === 'call_1');
   const callsHtml = supportCalls.map((call) => `
     <section class="support-call-card">
       <div class="support-call-header">
@@ -505,7 +543,7 @@ function renderSupportCallDetails(segment: ReviewExportSegment): string {
       ${call.error ? `<p class="trace-error">${escapeHtml(call.error)}</p>` : ''}
       ${renderSupportCallSummary(call)}
       ${renderModelRequestBlocks(call)}
-      ${renderDebugJsonBlock(call.modelRequest || call.modelRequests?.length ? 'Browser-to-edge request body' : 'Request body sent', call.requestBody)}
+      ${renderDebugJsonBlock(call.modelRequest || call.modelRequests?.length ? 'Browser-to-edge request body' : call.endpoint?.startsWith('local://') ? 'Local diagnostic payload' : 'Request body sent', call.requestBody)}
       ${renderDebugJsonBlock('Response body received', call.responseBody ?? '(not captured yet)')}
     </section>
   `).join('');
@@ -513,7 +551,6 @@ function renderSupportCallDetails(segment: ReviewExportSegment): string {
   return `
     <details class="trace-details">
       <summary>API Call 2 + Supporting API Call Data (${supportCalls.length})</summary>
-      ${hasHiddenCall1Attempts ? '<p class="trace-note">This section also includes API Call 1 repair attempts that were discarded before the final assistant message was saved.</p>' : ''}
       ${callsHtml}
     </details>
   `;

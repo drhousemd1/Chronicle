@@ -48,15 +48,15 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
             ]
           },
           {
-            "id": "item-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-adaptive style-pattern-detection",
-            "title": "Adaptive Style Pattern Detection",
+            "id": "item-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-style-telemetry-detection",
+            "title": "Style Telemetry Detection",
             "tagType": "code-logic",
             "icon": "🔧",
-            "purpose": "Before building the next request, the app reads the AI's last response and checks if it's falling into repetitive patterns.",
+            "purpose": "After generation, the app records local diagnostic findings when recent assistant output or the completed draft shows repetitive structure, weak dialogue balance, or response collapse.",
             "fileRefs": [
               {
                 "path": "src/components/chronicle/ChatInterfaceTab.tsx",
-                "lines": "getAdaptiveStyleDirective, lines ~1513-1526"
+                "lines": "buildAssistantStyleTelemetryCall and analyzeRecentAssistantStyle call sites"
               }
             ],
             "subItems": [
@@ -78,24 +78,24 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
               {
                 "id": "sub-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-what-happens-if-a-pattern-is-found",
                 "title": "What Happens If a Pattern Is Found",
-                "description": "The app writes a narrow one-turn correction only when objective repetition, weak dialogue, response collapse, or offloading evidence is detected."
+                "description": "The app saves detector findings to local debug telemetry only; it does not write a corrective prompt or send a hidden retry."
               }
             ]
           },
           {
-            "id": "item-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-adaptive-style-directive",
-            "title": "Adaptive Style Directive",
+            "id": "item-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-style-telemetry-record",
+            "title": "Assistant Style Telemetry Record",
             "tagType": "code-logic",
             "icon": "🔧",
-            "purpose": "Checks recent assistant output for repeated structure, repeated topical focus, weak external dialogue, and response-length collapse, then injects a narrow one-turn correction only when needed.",
+            "purpose": "Checks recent assistant output and the completed draft for repeated structure, repeated topical focus, weak external dialogue, and response-length collapse, then records the findings for debug review only.",
             "fileRefs": [
               {
                 "path": "src/lib/assistant-style-directive.ts",
-                "lines": "buildAssistantStyleDirective / buildDetailedCollapseDirective"
+                "lines": "analyzeRecentAssistantStyle / analyzeAssistantCandidateStyle"
               },
               {
                 "path": "src/components/chronicle/ChatInterfaceTab.tsx",
-                "lines": "getAdaptiveStyleDirective"
+                "lines": "buildAssistantStyleTelemetryCall"
               }
             ],
             "subItems": [
@@ -110,9 +110,9 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
                 "description": "Detects when the assistant keeps circling the same dialogue or descriptive focus across recent assistant outputs."
               },
               {
-                "id": "sub-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-repair-pass",
-                "title": "Repair Pass",
-                "description": "After generation, normal send, regenerate, and continue each get one hidden retry if the draft repeats recent assistant output or offloads the scene back to the user."
+                "id": "sub-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-telemetry-record",
+                "title": "Telemetry Record",
+                "description": "After generation, normal send, regenerate, and continue record local detector findings for debug review only. The detector does not send a corrective prompt, discard the draft, or trigger a hidden retry."
               }
             ]
           },
@@ -135,14 +135,14 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
                 "description": "\"[SESSION: Message N]\": present on normal sends when the app supplies the session count; regenerate and continue may omit it"
               },
               {
-                "id": "sub-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-scene-snapshot",
-                "title": "Current Scene Snapshot",
-                "description": "A short guard note reminding the model that the previous assistant response is already in history and should not be copied as an opening pattern"
+                "id": "sub-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-current-turn-state",
+                "title": "Current Turn State",
+                "description": "A compact active scene anchor containing current day/time, active scene, character location/position/mood rows, and capped current-day memory anchors"
               },
               {
-                "id": "sub-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-style-hint",
-                "title": "Adaptive Style Guidance",
-                "description": "Only present when recent assistant output shows repeated style, structure, or length patterns, or when a hidden repair retry is being sent"
+                "id": "sub-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-style-telemetry",
+                "title": "Style Detector Telemetry",
+                "description": "Recorded locally after generation for debug review only; it is not appended to the final user message and is not sent to Grok/xAI"
               },
               {
                 "id": "sub-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-user-text",
@@ -928,22 +928,22 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
             ]
           },
           {
-            "id": "item-phase-system-prompt-assembly-section-phase-system-prompt-assembly-full-instructions-forward-progress-adaptive style",
-            "title": "Adaptive Style and Repair Guidance",
-            "tagType": "core-prompt",
+            "id": "item-phase-system-prompt-assembly-section-phase-system-prompt-assembly-full-instructions-style-telemetry",
+            "title": "Assistant Style Detector Telemetry",
+            "tagType": "validation-check",
             "icon": "📝",
-            "purpose": "Runtime style guidance is appended only when detectors find repeated structure, locked length, short repeated dialogue, or detailed-mode collapse.",
+            "purpose": "Runtime detectors record local telemetry when repeated structure, locked length, short repeated dialogue, weak dialogue balance, or detailed-mode collapse is observed.",
             "fileRefs": [
               {
-                "path": "src/services/llm.ts",
-                "lines": "adaptiveStyleDirective final user wrapper path"
+                "path": "src/lib/assistant-style-directive.ts",
+                "lines": "assistant style telemetry analysis"
               }
             ],
             "subItems": [
               {
                 "id": "sub-phase-system-prompt-assembly-section-phase-system-prompt-assembly-full-instructions-rehash-check",
-                "title": "Rehash Check",
-                "description": "Adaptive guidance compares recent assistant outputs and asks for a different structure or fuller development only when detectors trigger."
+                "title": "Detector-only check",
+                "description": "Detector findings are saved to local://assistant-style-telemetry for review and do not trigger hidden API Call 1 retries."
               }
             ]
           },
@@ -1043,7 +1043,7 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
 	              {
 	                "id": "sub-phase-api-call-1-fires-main-flow-3-runtime-directives",
 	                "title": "3. Final Wrapped User Message",
-	                "description": "One user-role message containing the optional session counter, current-scene snapshot, optional one-turn adaptive or repair text, the current user text or continue wrapper, optional previous assistant response reference for regeneration, optional regenerate request, and execution brief."
+	                "description": "One user-role message containing the optional session counter, current-turn state digest, the current user text or continue wrapper, optional previous assistant response reference for regeneration, optional regenerate request, and execution brief."
 	              }
             ]
           },

@@ -144,6 +144,8 @@ const GENERAL_PURPOSE_PROTOCOL = `\\~ (end) Prompt for all messages to LLM's (do
 1\\. Quality Hub: (Overview)  
 \\- Overview: scan entry point and module checklist selection.  
 \\- Issue Registry: diagnosed issues only (severity/confidence/evidence/files/status).  
+\\- Critical Supabase sync rule: if you inspect or fix any finding tagged Lovable Supabase Change Required, and you change live Supabase tables, columns, constraints, indexes, RLS policies, database functions/RPCs, triggers, storage buckets, storage policies, or grants, you must refresh the approved repo-owned schema snapshot before marking the finding current or solved. The current approved source is src/data/database-schema-inventory.ts unless a newer dedicated Supabase Schema Map is explicitly introduced.
+\\- Only update the approved schema snapshot/template. Include schema metadata, approximate row counts when available, role grants, RLS policies, functions/RPCs, triggers, storage buckets, and storage policies. Do not dump row contents, secrets, auth tokens, API keys, user emails, private chat/story text, images, or private NSFW user content. If a live detail cannot be verified, mark it unknown or needs_verification instead of inventing it.
 2 Quality Hub: (Scan Runs)  
 \\- Which "scan" was run  
 \\- "Profile" (I feel like this is useless. They all just say "deep". It doesn't provide any meaning. Remove?)  
@@ -189,7 +191,14 @@ const SCAN_ONLY_PROTOCOL = `~ Scan-only execution prompt (use this only for scan
 - Issue Registry = what is wrong
 - Change Log = what was changed
 
-6) Completion rule for scans:
+6) Supabase snapshot rule:
+- If you inspect or fix any issue tagged Lovable Supabase Change Required, and you change live Supabase tables, columns, constraints, indexes, RLS policies, database functions/RPCs, triggers, storage buckets, storage policies, or grants, refresh the approved repo-owned schema snapshot before marking the finding current or solved.
+- The current approved schema source is src/data/database-schema-inventory.ts unless a newer dedicated Supabase Schema Map is explicitly introduced.
+- Include schema metadata, approximate row counts when available, role grants, RLS policies, functions/RPCs, triggers, storage buckets, and storage policies.
+- Do not include row contents, secrets, auth tokens, API keys, user emails, private chat/story text, images, or private NSFW user content.
+- Mark unverifiable live details as unknown or needs_verification. Do not invent schema details and do not create alternate schema dump files unless explicitly requested.
+
+7) Completion rule for scans:
 - a scan is not complete until Scan Runs + Issue Registry (+ Change Log if fixes made) are all updated.`;
 
 

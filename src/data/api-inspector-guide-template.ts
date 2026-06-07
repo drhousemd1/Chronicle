@@ -642,7 +642,7 @@ export const apiInspectorGuideGrokHtml = `<div class="grok-ref" id="grokRefPanel
 
   <h4>Roles and Instruction Placement</h4>
   <div class="grok-ref-row">The <code>developer</code> role is supported as an alias for <code>system</code>. xAI recommends using a <span class="grok-ref-label">single system/developer message as the first message</span> in the conversation. The API accepts mixed role sequences, but single-system-first maximizes instruction stability.</div>
-  <div class="grok-ref-row"><span class="grok-ref-label">Chronicle's current approach:</span> Single system message (Phase 2) + conversation history + optional adaptive directive text inside the final user message + user message. This aligns with xAI's recommendation.</div>
+  <div class="grok-ref-row"><span class="grok-ref-label">Chronicle's current approach:</span> Single system message (Phase 2) + capped conversation history + final app controls + separate player turn. This aligns with xAI's recommendation.</div>
 
   <h4>Context Window</h4>
   <div class="grok-ref-row">Grok 4.20 and Grok 4 Fast variants: <span class="grok-ref-label">2,000,000 token context window</span>. Note: Grok's own self-audit incorrectly claimed 128k; this was outdated or confabulated.</div>
@@ -724,7 +724,7 @@ export const apiInspectorGuideGrokHtml = `<div class="grok-ref" id="grokRefPanel
   <div class="grok-ref-caveat"><strong>Caveat:</strong> The following observations come from asking Grok to describe its own processing. Specific numbers (e.g., "85-90% compliance," "30-40% retention improvement") are unverified self-reported estimates, not measured benchmarks. Treat as useful mental models, not specs. Several claims in the original self-audit were factually incorrect (e.g., context window size). Use Layer A above for hard facts.</div>
 
   <h4>Instruction Priority (self-reported)</h4>
-  <div class="grok-ref-row">System prompt receives strongest attention weighting. Developer/adaptive guidance treated as high-priority overrides. User messages processed chronologically with recency bias.</div>
+  <div class="grok-ref-row">System prompt receives strongest attention weighting. Developer/system guidance is treated as high-priority. User messages are processed chronologically with recency bias.</div>
   <div class="grok-ref-row"><span class="grok-ref-label">Enforcement language that works:</span> "VIOLATION CHECK: Before finalizing, scan for X and DELETE if present" — Grok reports this as among the most reliable enforcement mechanisms. "MUST", "NEVER" are treated literally; "try to", "ideally" become interpretive.</div>
   <div class="grok-ref-row"><span class="grok-ref-label">Conflicting instructions:</span> Resolved by recency + system-prompt strength. Last system-level rule wins unless an earlier rule has explicit "highest priority" language.</div>
 
@@ -765,8 +765,8 @@ export const apiInspectorGuideGrokHtml = `<div class="grok-ref" id="grokRefPanel
   <div class="grok-ref-row">2. Context data: world, characters, memories (structured, compact)</div>
   <div class="grok-ref-row">3. Behavioral rules and constraints (with clear section labels)</div>
   <div class="grok-ref-row">4. Conversation history (up to 5 prior roleplay messages; the current user turn is appended separately)</div>
-  <div class="grok-ref-row">5. Adaptive style guidance if needed (appended inside the final user message)</div>
-  <div class="grok-ref-row">6. User message (counter + text + optional regen request + optional adaptive style guidance)</div>
+  <div class="grok-ref-row">5. Final app controls: session counter, current-turn state digest, optional regeneration directive, and execution brief</div>
+  <div class="grok-ref-row">6. Player turn text in a separate [PLAYER TURN] block</div>
   <div class="grok-ref-row"><span class="grok-ref-label">Chronicle's current structure follows this pattern.</span></div>
 
   <h4>Delimiters and Formatting</h4>
@@ -849,13 +849,13 @@ src/services/llm.ts (buildRoleplayApiMessages, lines ~132-163)</div>
  <!-- ═══ ADAPTIVE STYLE PATTERN DETECTION ═══ -->
  <div class="item-row">
  <div class="item-name-row">
- <span class="ref-badge" data-tooltip="Lands in → Phase 3 → Message Array → position 3 (adaptive guidance)">2</span>
+ <span class="ref-badge" data-tooltip="Lands in → Phase 3 → Message Array → debug telemetry only">2</span>
  <span class="tag code-logic"><span class="tag-icon">🔧</span> code logic</span>
- <span class="item-name code">Adaptive Style Pattern Detection</span>
+ <span class="item-name code">Style Telemetry Detection</span>
  <span class="tag source">llm.ts</span>
  </div>
- <!-- LLM FILE REFERENCE: src/components/chronicle/ChatInterfaceTab.tsx (getAdaptiveStyleDirective, lines ~1513-1526) -->
- <div class="file-ref">src/components/chronicle/ChatInterfaceTab.tsx (getAdaptiveStyleDirective, lines ~1513-1526)</div>
+ <!-- LLM FILE REFERENCE: src/components/chronicle/ChatInterfaceTab.tsx (buildAssistantStyleTelemetryCall and telemetry call sites) -->
+ <div class="file-ref">src/components/chronicle/ChatInterfaceTab.tsx (buildAssistantStyleTelemetryCall and telemetry call sites)</div>
  <div class="item-desc">Before building the next request, the app reads the AI's last response and checks if it's falling into repetitive patterns.</div>
  <div class="item-subs">
  <div class="item-sub">
@@ -872,22 +872,22 @@ src/services/llm.ts (buildRoleplayApiMessages, lines ~132-163)</div>
  </div>
  <div class="item-sub">
  <span class="tag code-logic"><span class="tag-icon">🔧</span> code logic</span>
- <span class="sub-name code">What Happens If a Pattern Is Found</span>: <span class="sub-desc">The app writes a short corrective instruction (like "stop ping-ponging, try a different scene structure") that gets injected as a one-time instruction to the AI for the next response only.</span>
+ <span class="sub-name code">What Happens If a Pattern Is Found</span>: <span class="sub-desc">The app saves a local diagnostic record for review. It does not write a corrective instruction, send anything to the AI, discard the draft, or trigger a retry.</span>
  </div>
  </div>
  </div>
 
- <!-- ═══ ADAPTIVE STYLE DIRECTIVE ═══ -->
+ <!-- ═══ STYLE TELEMETRY RECORD ═══ -->
  <div class="item-row">
  <div class="item-name-row">
  <span class="ref-badge" data-tooltip="Lands in → Phase 1 → User Message Assembly → position 5">3</span>
  <span class="tag code-logic"><span class="tag-icon">🔧</span> code logic</span>
- <span class="item-name code">Adaptive Style Directive</span>
+ <span class="item-name code">Assistant Style Telemetry Record</span>
  <span class="tag source">assistant-style-directive.ts</span>
  </div>
- <!-- LLM FILE REFERENCE: src/lib/assistant-style-directive.ts (buildAssistantStyleDirective / buildDetailedCollapseDirective) -->
- <div class="file-ref">src/lib/assistant-style-directive.ts (buildAssistantStyleDirective / buildDetailedCollapseDirective)</div>
- <div class="item-desc">Checks recent assistant output for repeated structure, repeated topic focus, weak external dialogue, and response-length collapse, then injects a narrow one-turn correction only when needed.</div>
+ <!-- LLM FILE REFERENCE: src/lib/assistant-style-directive.ts (analyzeRecentAssistantStyle / analyzeAssistantCandidateStyle) -->
+ <div class="file-ref">src/lib/assistant-style-directive.ts (analyzeRecentAssistantStyle / analyzeAssistantCandidateStyle)</div>
+ <div class="item-desc">Checks recent assistant output for repeated structure, repeated topic focus, weak external dialogue, and response-length collapse, then records local detector telemetry for debug review only.</div>
  <div class="item-subs">
  <div class="item-sub">
  <span class="tag code-logic"><span class="tag-icon">🔧</span> code logic</span>
@@ -899,7 +899,7 @@ src/services/llm.ts (buildRoleplayApiMessages, lines ~132-163)</div>
  </div>
  <div class="item-sub">
  <span class="tag code-logic"><span class="tag-icon">🔧</span> code logic</span>
- <span class="sub-name code">Repair Pass</span>: <span class="sub-desc">After generation, normal send, regenerate, and continue each get one hidden retry if the draft repeats the recent assistant pattern.</span>
+ <span class="sub-name code">Telemetry Record</span>: <span class="sub-desc">After generation, normal send, regenerate, and continue record detector findings locally. The detector does not send a corrective prompt, discard the draft, or trigger a hidden retry.</span>
  </div>
  </div>
  </div>
@@ -929,9 +929,9 @@ src/services/llm.ts (buildRoleplayApiMessages, lines ~132-163)</div>
  <span class="sub-name core">Regen Directive</span>: <span class="sub-desc">~180 tokens of "write a different take" rules, placed inside [APP TURN CONTROLS] only when the user hit Regenerate</span>
  </div>
  <div class="item-sub">
- <span class="ref-badge" data-tooltip="Created in → Phase 1 → Adaptive Style Directive">3</span>
+ <span class="ref-badge" data-tooltip="Created in → Phase 1 → Assistant Style Telemetry Record">3</span>
  <span class="tag context-injection"><span class="tag-icon">📥</span> context injection</span>
- <span class="sub-name injection">Adaptive Style Guidance</span>: <span class="sub-desc">Only present when recent assistant output shows repeated style, structure, or length patterns</span>
+ <span class="sub-name injection">Style Detector Telemetry</span>: <span class="sub-desc">Recorded locally after generation for debug review only; not sent to Grok/xAI</span>
  </div>
  </div>
  </div>
@@ -1470,15 +1470,15 @@ src/services/supabase-data.ts (memory CRUD operations)</div>
  <div class="item-row">
  <div class="item-name-row">
  <span class="tag core-prompt"><span class="tag-icon">📝</span> core prompt</span>
- <span class="item-name core">Forward Progress &amp; Adaptive Style</span>
+ <span class="item-name core">Forward Progress &amp; Style Telemetry</span>
  </div>
- <!-- LLM FILE REFERENCE: src/services/llm.ts (adaptiveStyleDirective final user wrapper path) -->
- <div class="file-ref">src/services/llm.ts (adaptiveStyleDirective final user wrapper path)</div>
- <div class="item-desc">Runtime style guidance is appended only when detectors find repeated structure, locked length, short repeated dialogue, or detailed-mode collapse.</div>
+ <!-- LLM FILE REFERENCE: src/lib/assistant-style-directive.ts (assistant style telemetry analysis) -->
+ <div class="file-ref">src/lib/assistant-style-directive.ts (assistant style telemetry analysis)</div>
+ <div class="item-desc">Style detectors record local debug telemetry when recent or candidate assistant text shows repeated structure, locked length, short repeated dialogue, weak dialogue balance, or detail collapse.</div>
  <div class="item-subs">
  <div class="item-sub">
  <span class="tag check"><span class="tag-icon">✓</span> validation check</span>
- <span class="sub-name check">Rehash Check</span>: <span class="sub-desc">Adaptive guidance compares recent assistant outputs and asks for a different structure or fuller development only when detectors trigger.</span>
+ <span class="sub-name check">Rehash Check</span>: <span class="sub-desc">Telemetry compares recent assistant outputs and records structured findings only; it does not ask Grok for a rewrite or change the visible response.</span>
  </div>
  </div>
  </div>
@@ -1562,8 +1562,8 @@ src/services/supabase-data.ts (memory CRUD operations)</div>
  <div class="item-sub"><span class="sub-name code">1. System Message</span>: <span class="sub-desc">The entire system prompt (all of Phase 2: Context Data + Full Instructions combined into one block)</span></div>
  <div class="item-sub"><span class="sub-name code">2. Conversation History</span>: <span class="sub-desc">Up to 5 prior roleplay messages only; the current user turn is sent as the final wrapped user message</span></div>
  <div class="item-sub">
- <span class="ref-badge" data-tooltip="Created in → Phase 1 → Adaptive Style Pattern Detection">2</span>
- <span class="sub-name code">3. Final Wrapped User Message</span>: <span class="sub-desc">One user-role message containing the optional session counter, current-scene snapshot, optional one-turn adaptive or repair text, the current user text or continue wrapper, optional previous assistant response reference for regeneration, optional regenerate request, and execution brief.</span>
+ <span class="ref-badge" data-tooltip="Created in → Phase 1 → Style Telemetry Detection">2</span>
+ <span class="sub-name code">3. Final Wrapped User Message</span>: <span class="sub-desc">One user-role message containing the optional session counter, current-turn state digest, the current user text or continue wrapper, optional previous assistant response reference for regeneration, optional regenerate request, and execution brief.</span>
  </div>
  </div>
  </div>
@@ -1789,9 +1789,8 @@ HOW TO USE THIS DOCUMENT:
 7. KEY CONTEXT for prompt debugging:
    - Chronicle sends ONE large system message containing all of Phase 2
    - Conversation history is capped to up to 5 prior roleplay messages; the current user turn is sent separately as the final wrapped user message
-   - Adaptive style guidance is appended inside the final user message when triggered
-   - The user message is assembled in Phase 1 (counter + directive + text +
-     regen + optional adaptive style guidance)
+   - Style detection records local debug telemetry after generation and does not append guidance to the final user message
+   - The user message is assembled in Phase 1 as app controls (session, current-turn state, optional regeneration directive, execution brief) plus the separate player turn
    - Temperature is 0.6 for live roleplay
    - Model is grok-4.3
    - The app routes through a Supabase Edge Function to xAI's API
@@ -1879,7 +1878,7 @@ export const apiInspectorGuideCombinedHtml = `<div class="header">
 
   <h4>Roles and Instruction Placement</h4>
   <div class="grok-ref-row">The <code>developer</code> role is supported as an alias for <code>system</code>. xAI recommends using a <span class="grok-ref-label">single system/developer message as the first message</span> in the conversation. The API accepts mixed role sequences, but single-system-first maximizes instruction stability.</div>
-  <div class="grok-ref-row"><span class="grok-ref-label">Chronicle's current approach:</span> Single system message (Phase 2) + conversation history + optional adaptive directive text inside the final user message + user message. This aligns with xAI's recommendation.</div>
+  <div class="grok-ref-row"><span class="grok-ref-label">Chronicle's current approach:</span> Single system message (Phase 2) + capped conversation history + final app controls + separate player turn. This aligns with xAI's recommendation.</div>
 
   <h4>Context Window</h4>
   <div class="grok-ref-row">Grok 4.20 and Grok 4 Fast variants: <span class="grok-ref-label">2,000,000 token context window</span>. Note: Grok's own self-audit incorrectly claimed 128k; this was outdated or confabulated.</div>
@@ -1961,7 +1960,7 @@ export const apiInspectorGuideCombinedHtml = `<div class="header">
   <div class="grok-ref-caveat"><strong>Caveat:</strong> The following observations come from asking Grok to describe its own processing. Specific numbers (e.g., "85-90% compliance," "30-40% retention improvement") are unverified self-reported estimates, not measured benchmarks. Treat as useful mental models, not specs. Several claims in the original self-audit were factually incorrect (e.g., context window size). Use Layer A above for hard facts.</div>
 
   <h4>Instruction Priority (self-reported)</h4>
-  <div class="grok-ref-row">System prompt receives strongest attention weighting. Developer/adaptive guidance treated as high-priority overrides. User messages processed chronologically with recency bias.</div>
+  <div class="grok-ref-row">System prompt receives strongest attention weighting. Developer/system guidance is treated as high-priority. User messages are processed chronologically with recency bias.</div>
   <div class="grok-ref-row"><span class="grok-ref-label">Enforcement language that works:</span> "VIOLATION CHECK: Before finalizing, scan for X and DELETE if present" — Grok reports this as among the most reliable enforcement mechanisms. "MUST", "NEVER" are treated literally; "try to", "ideally" become interpretive.</div>
   <div class="grok-ref-row"><span class="grok-ref-label">Conflicting instructions:</span> Resolved by recency + system-prompt strength. Last system-level rule wins unless an earlier rule has explicit "highest priority" language.</div>
 
@@ -2002,8 +2001,8 @@ export const apiInspectorGuideCombinedHtml = `<div class="header">
   <div class="grok-ref-row">2. Context data: world, characters, memories (structured, compact)</div>
   <div class="grok-ref-row">3. Behavioral rules and constraints (with clear section labels)</div>
   <div class="grok-ref-row">4. Conversation history (up to 5 prior roleplay messages; the current user turn is appended separately)</div>
-  <div class="grok-ref-row">5. Adaptive style guidance if needed (appended inside the final user message)</div>
-  <div class="grok-ref-row">6. User message (counter + text + optional regen request + optional adaptive style guidance)</div>
+  <div class="grok-ref-row">5. Final app controls: session counter, current-turn state digest, optional regeneration directive, and execution brief</div>
+  <div class="grok-ref-row">6. Player turn text in a separate [PLAYER TURN] block</div>
   <div class="grok-ref-row"><span class="grok-ref-label">Chronicle's current structure follows this pattern.</span></div>
 
   <h4>Delimiters and Formatting</h4>
@@ -2085,13 +2084,13 @@ src/services/llm.ts (buildRoleplayApiMessages, lines ~132-163)</div>
  <!-- ═══ ADAPTIVE STYLE PATTERN DETECTION ═══ -->
  <div class="item-row">
  <div class="item-name-row">
- <span class="ref-badge" data-tooltip="Lands in → Phase 3 → Message Array → position 3 (adaptive guidance)">2</span>
+ <span class="ref-badge" data-tooltip="Lands in → Phase 3 → Message Array → debug telemetry only">2</span>
  <span class="tag code-logic"><span class="tag-icon">🔧</span> code logic</span>
- <span class="item-name code">Adaptive Style Pattern Detection</span>
+ <span class="item-name code">Style Telemetry Detection</span>
  <span class="tag source">llm.ts</span>
  </div>
- <!-- LLM FILE REFERENCE: src/components/chronicle/ChatInterfaceTab.tsx (getAdaptiveStyleDirective, lines ~1513-1526) -->
- <div class="file-ref">src/components/chronicle/ChatInterfaceTab.tsx (getAdaptiveStyleDirective, lines ~1513-1526)</div>
+ <!-- LLM FILE REFERENCE: src/components/chronicle/ChatInterfaceTab.tsx (buildAssistantStyleTelemetryCall and telemetry call sites) -->
+ <div class="file-ref">src/components/chronicle/ChatInterfaceTab.tsx (buildAssistantStyleTelemetryCall and telemetry call sites)</div>
  <div class="item-desc">Before building the next request, the app reads the AI's last response and checks if it's falling into repetitive patterns.</div>
  <div class="item-subs">
  <div class="item-sub">
@@ -2108,22 +2107,22 @@ src/services/llm.ts (buildRoleplayApiMessages, lines ~132-163)</div>
  </div>
  <div class="item-sub">
  <span class="tag code-logic"><span class="tag-icon">🔧</span> code logic</span>
- <span class="sub-name code">What Happens If a Pattern Is Found</span>: <span class="sub-desc">The app writes a short corrective instruction (like "stop ping-ponging, try a different scene structure") that gets injected as a one-time instruction to the AI for the next response only.</span>
+ <span class="sub-name code">What Happens If a Pattern Is Found</span>: <span class="sub-desc">The app saves a local diagnostic record for review. It does not write a corrective instruction, send anything to the AI, discard the draft, or trigger a retry.</span>
  </div>
  </div>
  </div>
 
- <!-- ═══ ADAPTIVE STYLE DIRECTIVE ═══ -->
+ <!-- ═══ STYLE TELEMETRY RECORD ═══ -->
  <div class="item-row">
  <div class="item-name-row">
  <span class="ref-badge" data-tooltip="Lands in → Phase 1 → User Message Assembly → position 5">3</span>
  <span class="tag code-logic"><span class="tag-icon">🔧</span> code logic</span>
- <span class="item-name code">Adaptive Style Directive</span>
+ <span class="item-name code">Assistant Style Telemetry Record</span>
  <span class="tag source">assistant-style-directive.ts</span>
  </div>
- <!-- LLM FILE REFERENCE: src/lib/assistant-style-directive.ts (buildAssistantStyleDirective / buildDetailedCollapseDirective) -->
- <div class="file-ref">src/lib/assistant-style-directive.ts (buildAssistantStyleDirective / buildDetailedCollapseDirective)</div>
- <div class="item-desc">Checks recent assistant output for repeated structure, repeated topic focus, weak external dialogue, and response-length collapse, then injects a narrow one-turn correction only when needed.</div>
+ <!-- LLM FILE REFERENCE: src/lib/assistant-style-directive.ts (analyzeRecentAssistantStyle / analyzeAssistantCandidateStyle) -->
+ <div class="file-ref">src/lib/assistant-style-directive.ts (analyzeRecentAssistantStyle / analyzeAssistantCandidateStyle)</div>
+ <div class="item-desc">Checks recent assistant output for repeated structure, repeated topic focus, weak external dialogue, and response-length collapse, then records local detector telemetry for debug review only.</div>
  <div class="item-subs">
  <div class="item-sub">
  <span class="tag code-logic"><span class="tag-icon">🔧</span> code logic</span>
@@ -2135,7 +2134,7 @@ src/services/llm.ts (buildRoleplayApiMessages, lines ~132-163)</div>
  </div>
  <div class="item-sub">
  <span class="tag code-logic"><span class="tag-icon">🔧</span> code logic</span>
- <span class="sub-name code">Repair Pass</span>: <span class="sub-desc">After generation, normal send, regenerate, and continue each get one hidden retry if the draft repeats the recent assistant pattern.</span>
+ <span class="sub-name code">Telemetry Record</span>: <span class="sub-desc">After generation, normal send, regenerate, and continue record detector findings locally. The detector does not send a corrective prompt, discard the draft, or trigger a hidden retry.</span>
  </div>
  </div>
  </div>
@@ -2165,9 +2164,9 @@ src/services/llm.ts (buildRoleplayApiMessages, lines ~132-163)</div>
  <span class="sub-name core">Regen Directive</span>: <span class="sub-desc">~180 tokens of "write a different take" rules, placed inside [APP TURN CONTROLS] only when the user hit Regenerate</span>
  </div>
  <div class="item-sub">
- <span class="ref-badge" data-tooltip="Created in → Phase 1 → Adaptive Style Directive">3</span>
+ <span class="ref-badge" data-tooltip="Created in → Phase 1 → Assistant Style Telemetry Record">3</span>
  <span class="tag context-injection"><span class="tag-icon">📥</span> context injection</span>
- <span class="sub-name injection">Adaptive Style Guidance</span>: <span class="sub-desc">Only present when recent assistant output shows repeated style, structure, or length patterns</span>
+ <span class="sub-name injection">Style Detector Telemetry</span>: <span class="sub-desc">Recorded locally after generation for debug review only; not sent to Grok/xAI</span>
  </div>
  </div>
  </div>
@@ -2706,15 +2705,15 @@ src/services/supabase-data.ts (memory CRUD operations)</div>
  <div class="item-row">
  <div class="item-name-row">
  <span class="tag core-prompt"><span class="tag-icon">📝</span> core prompt</span>
- <span class="item-name core">Forward Progress &amp; Adaptive Style</span>
+ <span class="item-name core">Forward Progress &amp; Style Telemetry</span>
  </div>
- <!-- LLM FILE REFERENCE: src/services/llm.ts (adaptiveStyleDirective final user wrapper path) -->
- <div class="file-ref">src/services/llm.ts (adaptiveStyleDirective final user wrapper path)</div>
- <div class="item-desc">Runtime style guidance is appended only when detectors find repeated structure, locked length, short repeated dialogue, or detailed-mode collapse.</div>
+ <!-- LLM FILE REFERENCE: src/lib/assistant-style-directive.ts (assistant style telemetry analysis) -->
+ <div class="file-ref">src/lib/assistant-style-directive.ts (assistant style telemetry analysis)</div>
+ <div class="item-desc">Style detectors record local debug telemetry when recent or candidate assistant text shows repeated structure, locked length, short repeated dialogue, weak dialogue balance, or detail collapse.</div>
  <div class="item-subs">
  <div class="item-sub">
  <span class="tag check"><span class="tag-icon">✓</span> validation check</span>
- <span class="sub-name check">Rehash Check</span>: <span class="sub-desc">Adaptive guidance compares recent assistant outputs and asks for a different structure or fuller development only when detectors trigger.</span>
+ <span class="sub-name check">Rehash Check</span>: <span class="sub-desc">Telemetry compares recent assistant outputs and records structured findings only; it does not ask Grok for a rewrite or change the visible response.</span>
  </div>
  </div>
  </div>
@@ -2798,8 +2797,8 @@ src/services/supabase-data.ts (memory CRUD operations)</div>
  <div class="item-sub"><span class="sub-name code">1. System Message</span>: <span class="sub-desc">The entire system prompt (all of Phase 2: Context Data + Full Instructions combined into one block)</span></div>
  <div class="item-sub"><span class="sub-name code">2. Conversation History</span>: <span class="sub-desc">Up to 5 prior roleplay messages only; the current user turn is sent as the final wrapped user message</span></div>
  <div class="item-sub">
- <span class="ref-badge" data-tooltip="Created in → Phase 1 → Adaptive Style Pattern Detection">2</span>
- <span class="sub-name code">3. Final Wrapped User Message</span>: <span class="sub-desc">One user-role message containing the optional session counter, current-scene snapshot, optional one-turn adaptive or repair text, the current user text or continue wrapper, optional previous assistant response reference for regeneration, optional regenerate request, and execution brief.</span>
+ <span class="ref-badge" data-tooltip="Created in → Phase 1 → Style Telemetry Detection">2</span>
+ <span class="sub-name code">3. Final Wrapped User Message</span>: <span class="sub-desc">One user-role message containing the optional session counter, current-turn state digest, the current user text or continue wrapper, optional previous assistant response reference for regeneration, optional regenerate request, and execution brief.</span>
  </div>
  </div>
  </div>

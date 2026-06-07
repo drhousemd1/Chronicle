@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildCurrentSceneSnapshotForPrompt, buildRoleplayApiMessages, EXECUTION_BRIEF_TEXT, getSystemInstruction, REGENERATION_DIRECTIVE_TEXT } from '@/services/llm';
+import { buildCurrentTurnStateDigest, buildRoleplayApiMessages, EXECUTION_BRIEF_TEXT, getSystemInstruction, REGENERATION_DIRECTIVE_TEXT } from '@/services/llm';
 import { createDefaultScenarioData, getHardcodedTestCharacters, now, uid } from '@/utils';
 
 describe('llm canonical prompt coverage', () => {
@@ -211,11 +211,12 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('--- USER-DEFINED DIALOG FORMATTING FROM STORY BUILDER ---');
     expect(prompt).toContain('--- INTERNAL THOUGHTS ---');
     expect(prompt).toContain('Use internal thoughts only when they reveal private conflict');
-    expect(prompt).toContain('Internal thoughts must be complete, coherent private cognition');
-    expect(prompt).toContain('Every internal thought must be logically tied to what is actively happening in the scene');
+    expect(prompt).toContain('Each internal thought should read as one coherent, private thought about only one particular issue or concern at a time');
+    expect(prompt).toContain('Do not combine or stitch multiple unrelated internal thoughts together inside one parenthetical.');
+    expect(prompt).toContain('If a character has more than one internal thought in one character block');
+    expect(prompt).toContain('Do not chain multiple internal thoughts back-to-back.');
     expect(prompt).toContain('Internal thoughts must follow the established facts of the current scene, character card data, and story card data');
-    expect(prompt).toContain('Internal thoughts must remain accurate to story and character card information, including what each character knows or does not know');
-    expect(prompt).toContain('Do not use internal thoughts to repeat obvious facts');
+    expect(prompt).toContain('Do not use thoughts to introduce unsupported facts, assume off-screen actions, summarize events that have not happened, repeat obvious facts');
     expect(prompt).toContain('--- PHYSICAL LOGIC, VISIBILITY, AND CONTINUITY ---');
     expect(prompt).toContain('Suspicion, possibility, fear, partial visibility, or hidden detail is not confirmation.');
     expect(prompt).toContain('Covered, concealed, off-screen, or otherwise unperceived details cannot be named as exact facts');
@@ -248,16 +249,39 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('- Active Scene Tag: palace');
   });
 
-  it('builds a compact current-scene snapshot from the prior assistant response only', () => {
-    const snapshot = buildCurrentSceneSnapshotForPrompt([
-      { role: 'user', text: 'James: *James steps closer.*' } as any,
-      { role: 'assistant', text: 'Sarah: *Sarah steadies herself.* "Stay with me."' } as any,
-    ]);
+  it('builds a compact current-turn state digest from known runtime state', () => {
+    const appData = createDefaultScenarioData();
+    const [aiCharacter, userCharacter] = getHardcodedTestCharacters();
+    aiCharacter.name = 'Sarah';
+    aiCharacter.controlledBy = 'AI';
+    aiCharacter.location = 'Abandoned cabin interior';
+    aiCharacter.scenePosition = 'Standing beside the hearth with one hand on the blanket';
+    aiCharacter.currentMood = 'focused and worried';
+    userCharacter.name = 'James';
+    userCharacter.controlledBy = 'User';
+    userCharacter.location = 'Abandoned cabin interior';
+    userCharacter.scenePosition = 'Near Sarah by the fireplace';
+    appData.characters = [aiCharacter, userCharacter];
 
-    expect(snapshot).toContain('[CURRENT SCENE SNAPSHOT]');
-    expect(snapshot).toContain('The previous assistant response is already in the conversation history.');
-    expect(snapshot).not.toContain('Sarah steadies herself');
-    expect(snapshot).not.toContain('James steps closer');
+    const digest = buildCurrentTurnStateDigest({
+      appData,
+      currentDay: 2,
+      currentTimeOfDay: 'night',
+      activeScene: { id: uid('scene'), url: '', title: 'Cabin Shelter', tags: ['cabin'], createdAt: now() },
+      memories: [
+        { id: uid('memory'), conversationId: 'conv', content: 'Sarah already knows the hidden clothing detail.', day: 2, timeOfDay: 'night', source: 'message', entryType: 'bullet', createdAt: 1, updatedAt: 1 },
+      ],
+      memoriesEnabled: true,
+    });
+
+    expect(digest).toContain('[CURRENT TURN STATE]');
+    expect(digest).toContain('Use this as the active scene anchor.');
+    expect(digest).toContain('Story clock: Day 2');
+    expect(digest).toContain('Active scene: Cabin Shelter tags=cabin');
+    expect(digest).toContain('Sarah (AI): location=Abandoned cabin interior; position=Standing beside the hearth');
+    expect(digest).toContain('James (User): location=Abandoned cabin interior; position=Near Sarah by the fireplace');
+    expect(digest).toContain('Current-day memory anchors: Sarah already knows the hidden clothing detail.');
+    expect(digest).not.toContain('[CURRENT SCENE SNAPSHOT]');
   });
 
   it('treats side-character control assignments as real prompt exclusions/reference context', () => {
@@ -781,7 +805,7 @@ describe('llm canonical prompt coverage', () => {
       systemInstruction: 'SYSTEM',
       userMessage: 'latest user text',
       sessionMessageCount: 12,
-      adaptiveStyleDirective: '[STYLE]',
+      currentTurnStateDigest: '[CURRENT TURN STATE]\n- Sarah: location=Room',
     });
 
     expect(built.historyLimit).toBe(5);
@@ -802,8 +826,12 @@ describe('llm canonical prompt coverage', () => {
       'history 8',
     ]);
     expect(built.finalUserContent).toContain('[SESSION: Message 12 of current session]');
-    expect(built.finalUserContent).toContain('[CURRENT SCENE SNAPSHOT]');
-    expect(built.finalUserContent).toContain('[STYLE]');
+    expect(built.finalUserContent).toContain('[CURRENT TURN STATE]');
+    expect(built.finalUserContent).toContain('Sarah: location=Room');
+    expect(built.finalUserContent).not.toContain('[CURRENT SCENE SNAPSHOT]');
+    expect(built.finalUserContent).not.toContain('[STYLE ADJUSTMENT FOR THIS TURN]');
+    expect(built.finalUserContent).not.toContain('[STYLE CORRECTION]');
+    expect(built.finalUserContent).not.toContain('[OUTPUT REVISION REQUIRED]');
     expect(built.finalUserContent).toContain('[APP TURN CONTROLS]');
     expect(built.finalUserContent).toContain('[PLAYER TURN]');
     expect(built.finalUserContent).toContain('latest user text');

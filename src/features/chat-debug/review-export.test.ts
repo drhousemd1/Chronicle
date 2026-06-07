@@ -107,20 +107,29 @@ describe('buildChatReviewHtml', () => {
           },
           supportCalls: [
             {
-              id: 'call1.roleplay-generation.discarded-send-first-draft',
-              label: 'API Call 1 - First draft discarded before repair',
-              apiCallGroup: 'call_1',
-              endpoint: '/functions/v1/chat',
-              method: 'POST',
+              id: 'local.assistant-style-telemetry.send',
+              label: 'Local assistant style telemetry - send',
+              apiCallGroup: 'support',
+              endpoint: 'local://assistant-style-telemetry',
+              method: 'LOCAL',
               capturedAt: 3,
               status: 'completed',
-              requestBody: { modelId: 'test-model', messages: [{ role: 'user', content: 'draft prompt' }] },
+              requestBody: { source: 'send', diagnosticOnly: true, grokFacing: false },
               responseBody: {
-                discardedDraftText: 'Sarah: "Fire first."',
-                repairDirective: 'Break the repeated structure.',
+                recentTelemetry: {
+                  triggered: true,
+                  flags: ['repeated_action_first_dialogue_cadence'],
+                  reasons: ['Recent assistant blocks repeatedly opened with action before dialogue.'],
+                },
+                candidateTelemetry: {
+                  triggered: false,
+                  flags: [],
+                  reasons: [],
+                },
+                summary: 'Detector telemetry only. This was not sent to Grok/xAI and did not trigger a hidden retry or alter the visible response.',
               },
               notes: [
-                'This API Call 1 attempt was discarded because the repetition repair guard triggered before the final assistant message was committed.',
+                'Style and repetition detectors now run as local debug telemetry only.',
               ],
             },
             {
@@ -149,6 +158,15 @@ describe('buildChatReviewHtml', () => {
                 rejectedCandidates: [
                   { index: 1, accepted: false, reason: 'unsupported_field', character: 'Sarah', field: 'unsupported.path', value: 'Nope', evidence: 'n/a', confidence: 0.5 },
                 ],
+                physicalStateReviews: [
+                  { character: 'Sarah', reviewed: true, locationReviewed: true, scenePositionReviewed: true, changed: false, reason: 'position unchanged', evidence: 'Sarah checks the hearth.', confidence: 0.9, source: 'primary' },
+                  { character: 'Ashley', reviewed: true, locationReviewed: true, scenePositionReviewed: true, changed: true, reason: 'review supplied by retry', evidence: 'Ashley moves beside Sarah.', confidence: 0.9, source: 'focused_retry' },
+                ],
+                physicalStateCompletenessReviews: [
+                  { character: 'Sarah', reviewed: true, reason: 'position unchanged', source: 'primary' },
+                  { character: 'Ashley', reviewed: true, reason: 'review supplied by retry', source: 'focused_retry' },
+                ],
+                missingPhysicalStateReviews: [],
               },
             },
 	            {
@@ -239,12 +257,18 @@ describe('buildChatReviewHtml', () => {
     expect(html).toContain('API Call 1 Data');
     expect(html).toContain('Exact request body sent to Grok');
     expect(html).toContain('API Call 2 + Supporting API Call Data');
-    expect(html).toContain('This section also includes API Call 1 repair attempts');
-    expect(html).toContain('First draft discarded before repair');
+    expect(html).not.toContain('This section also includes API Call 1 repair attempts');
+    expect(html).not.toContain('First draft discarded before repair');
+    expect(html).toContain('Assistant style telemetry summary');
+    expect(html).toContain('Sent to Grok/xAI');
+    expect(html).toContain('Local diagnostic payload');
+    expect(html).toContain('repeated_action_first_dialogue_cadence');
     expect(html).toContain('Character state sync summary');
     expect(html).toContain('Proposed candidates');
     expect(html).toContain('Accepted update candidates');
     expect(html).toContain('rejected: unsupported_field');
+    expect(html).toContain('Physical state completeness review');
+    expect(html).toContain('focused_retry');
 	    expect(html).toContain('Goal progress summary');
 	    expect(html).toContain('Model marked complete');
 	    expect(html).toContain('accepted by gate');

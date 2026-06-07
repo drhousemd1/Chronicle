@@ -91,15 +91,64 @@ export type RoleplayApiMessage = { role: 'system' | 'user' | 'assistant'; conten
 
 const CHAT_RESPONSE_TIMEOUT_MS = 90_000;
 const API_CALL_1_PRIOR_HISTORY_MESSAGE_LIMIT = 5;
+const CURRENT_TURN_MEMORY_ANCHOR_LIMIT = 3;
+const CURRENT_TURN_CHARACTER_STATE_LIMIT = 10;
 
-export function buildCurrentSceneSnapshotForPrompt(
-  historyMessages: Array<Pick<Message, 'role' | 'text'>>,
-): string {
-  const lastAssistant = [...historyMessages].reverse().find((message) => message.role === 'assistant' && message.text?.trim());
-  if (!lastAssistant?.text) return '';
+function compactPromptValue(value: unknown, max = 140): string {
+  const text = typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
+  if (!text) return '';
+  return text.length > max ? `${text.slice(0, max - 1).trim()}…` : text;
+}
 
-  return `[CURRENT SCENE SNAPSHOT]
-The previous assistant response is already in the conversation history. Use it only to preserve story state; do not copy its opening structure or continue from it unless the final instruction below says to continue.`;
+export function buildCurrentTurnStateDigest(input: {
+  appData: ScenarioData;
+  currentDay?: number;
+  currentTimeOfDay?: TimeOfDay;
+  memories?: Memory[];
+  memoriesEnabled?: boolean;
+  activeScene?: Scene | null;
+}): string {
+  const rows: string[] = [];
+  const clock = [
+    input.currentDay != null ? `Day ${input.currentDay}` : '',
+    input.currentTimeOfDay ? TIME_DESCRIPTIONS[input.currentTimeOfDay] : '',
+  ].filter(Boolean).join(', ');
+  if (clock) rows.push(`- Story clock: ${clock}`);
+
+  if (input.activeScene) {
+    const title = compactPromptValue(input.activeScene.title || '', 90);
+    const tags = input.activeScene.tags?.length ? ` tags=${input.activeScene.tags.join(', ')}` : '';
+    rows.push(`- Active scene: ${title || 'untitled scene'}${tags}`);
+  }
+
+  const playableCharacters = [...(input.appData.characters || []), ...(input.appData.sideCharacters || [])]
+    .slice(0, CURRENT_TURN_CHARACTER_STATE_LIMIT);
+  for (const character of playableCharacters) {
+    const stateParts = [
+      compactPromptValue(character.location, 80) ? `location=${compactPromptValue(character.location, 80)}` : '',
+      compactPromptValue(character.scenePosition, 110) ? `position=${compactPromptValue(character.scenePosition, 110)}` : '',
+      compactPromptValue(character.currentMood, 70) ? `mood=${compactPromptValue(character.currentMood, 70)}` : '',
+    ].filter(Boolean);
+    if (stateParts.length) {
+      rows.push(`- ${character.name}${character.controlledBy ? ` (${character.controlledBy})` : ''}: ${stateParts.join('; ')}`);
+    }
+  }
+
+  if (input.memoriesEnabled !== false && input.memories?.length) {
+    const currentDayMemories = input.memories
+      .filter((memory) => input.currentDay == null || memory.day === input.currentDay)
+      .sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0))
+      .slice(0, CURRENT_TURN_MEMORY_ANCHOR_LIMIT)
+      .map((memory) => compactPromptValue(memory.content, 130))
+      .filter(Boolean);
+    if (currentDayMemories.length) {
+      rows.push(`- Current-day memory anchors: ${currentDayMemories.join(' | ')}`);
+    }
+  }
+
+  return `[CURRENT TURN STATE]
+Use this as the active scene anchor. It summarizes established state already supplied elsewhere. If the latest player turn changes any item, the latest player turn controls the next response.
+${rows.length ? rows.join('\n') : '- No additional state rows available.'}`;
 }
 
 function ensurePromptSentence(value: unknown): string {
@@ -121,7 +170,7 @@ export function buildRoleplayApiMessages(input: {
   systemInstruction: string;
   userMessage: string;
   isRegeneration?: boolean;
-  adaptiveStyleDirective?: string;
+  currentTurnStateDigest?: string;
   sessionMessageCount?: number;
 }): {
   messages: RoleplayApiMessage[];
@@ -143,8 +192,7 @@ export function buildRoleplayApiMessages(input: {
 
   const appTurnControls = [
     input.sessionMessageCount != null ? `[SESSION: Message ${input.sessionMessageCount} of current session]` : '',
-    buildCurrentSceneSnapshotForPrompt(historyMessages),
-    input.adaptiveStyleDirective || '',
+    input.currentTurnStateDigest || '',
     regenerationDirective,
     EXECUTION_BRIEF_TEXT,
   ]
@@ -667,11 +715,12 @@ When the next meaningful moment depends on the user character's response, stop w
 
 - Internal thoughts are optional.
 - Use internal thoughts only when they reveal private conflict, withheld emotion, motive, uncertainty, desire, fear, shame, restraint, temptation, realization, or interpretation the character would not say aloud.
-- Internal thoughts must be complete, coherent private cognition, not vague slogans, random fragments, or generic priorities.
-- Every internal thought must be logically tied to what is actively happening in the scene. It should be clear what triggered the thought and why the character is thinking it at that moment.
-- If an internal thought follows intimate touch, danger, embarrassment, arousal, fear, secrecy, conflict, or relationship tension, the thought should focus around that trigger and clearly connect to what just occurred instead of drifting into unrelated logistics.
-- Internal thoughts must follow the established facts of the current scene, character card data, and story card data. Do not use thoughts to introduce unsupported facts, assume off-screen actions, or summarize events that have not happened. Internal thoughts must remain accurate to story and character card information, including what each character knows or does not know.
-- Do not use internal thoughts to repeat obvious facts, restate the current action, summarize known circumstances, or echo information already clear from dialogue or narration that preceded it.
+- Each internal thought should read as one coherent, private thought about only one particular issue or concern at a time, structured as a well-written sentence.
+- Do not combine or stitch multiple unrelated internal thoughts together inside one parenthetical.
+- If a character has more than one internal thought in one character block, place each thought at a separate moment in the response so it clearly connects to the scene detail or event that triggered it.
+- Do not chain multiple internal thoughts back-to-back.
+- Internal thoughts must follow the established facts of the current scene, character card data, and story card data.
+- Do not use thoughts to introduce unsupported facts, assume off-screen actions, summarize events that have not happened, repeat obvious facts, restate the current action, or echo information already clear from the preceding dialogue or narration.
 
 --- MULTI-CHARACTER FLOW ---
 
@@ -776,7 +825,6 @@ export async function* generateRoleplayResponseStream(
   memories?: Memory[],
   memoriesEnabled?: boolean,
   isRegeneration?: boolean,
-  adaptiveStyleDirective?: string,
   sessionMessageCount?: number,
   activeScene?: Scene | null,
   options?: GenerateRoleplayResponseStreamOptions,
@@ -792,6 +840,14 @@ export async function* generateRoleplayResponseStream(
     memoriesEnabled,
     activeScene
   );
+  const currentTurnStateDigest = buildCurrentTurnStateDigest({
+    appData,
+    currentDay,
+    currentTimeOfDay,
+    memories,
+    memoriesEnabled,
+    activeScene,
+  });
   
   const {
     messages,
@@ -803,7 +859,7 @@ export async function* generateRoleplayResponseStream(
     systemInstruction,
     userMessage,
     isRegeneration,
-    adaptiveStyleDirective,
+    currentTurnStateDigest,
     sessionMessageCount,
   });
 

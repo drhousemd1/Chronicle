@@ -39,6 +39,15 @@ Every Quality Hub module must include:
 - Log implemented code/doc/config changes.
 - Include problem, plan, changes, files affected, tags, and related issue IDs.
 
+## Supabase Snapshot Rule
+
+When a scan or fix changes live Supabase tables, columns, constraints, indexes, RLS policies, database functions/RPCs, triggers, storage buckets, storage policies, or grants, refresh the repo-owned schema inventory before marking the Quality Hub entries current.
+
+- Update the approved schema snapshot source only. The current approved file is `src/data/database-schema-inventory.ts`; if a dedicated Supabase Schema Map is later created, update that approved source instead.
+- Include schema metadata, approximate row counts when available, role grants, RLS policies, functions/RPCs, triggers, storage buckets, and storage policies.
+- Do not include row contents, secrets, auth tokens, API keys, user emails, private chat/story text, images, or private NSFW user content.
+- Mark unverifiable live details as `unknown` or `needs_verification`. Do not invent schema details and do not create alternate schema dump files unless the task explicitly asks for a new schema-map artifact.
+
 ## Completion Rule
 
 A scan pass is complete only when:

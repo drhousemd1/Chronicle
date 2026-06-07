@@ -241,36 +241,57 @@ function hasSubstantialAiDevelopment(value: string): boolean {
   return actionOrThoughtWords >= 40 || dialogueWords >= 24;
 }
 
-export function buildAssistantStyleDirective(
-  messages: AssistantStyleMessage[],
-  recentLengths: number[] = [],
-): string {
-  const recentAssistantMessages = messages
-    .filter((message) => message.role === 'assistant' && message.text?.trim())
-    .slice(-3);
 
-  if (recentAssistantMessages.length === 0) return '';
+export type AssistantStyleFlag =
+  | 'locked_response_length'
+  | 'locked_block_shape'
+  | 'repeated_action_dialogue_thought_cadence'
+  | 'repeated_action_first_dialogue_cadence'
+  | 'reused_short_dialogue_phrasing'
+  | 'repeated_descriptive_terms'
+  | 'repeated_dialogue_or_topic_focus'
+  | 'narration_heavy_output'
+  | 'low_external_dialogue'
+  | 'front_loaded_narration'
+  | 'detailed_response_collapse'
+  | 'same_candidate_structure'
+  | 'candidate_length_lock'
+  | 'offloaded_scene_to_user';
 
-  const recentAssistantLengths = recentLengths.slice(-3);
-  const hasLockedLength = recentAssistantLengths.length >= 3 && (() => {
-    const min = Math.min(...recentAssistantLengths);
-    const max = Math.max(...recentAssistantLengths);
-    return min > 0 && (max - min) / min <= 0.2;
-  })();
+export type AssistantStyleTelemetry = {
+  source: 'recent_assistant_window' | 'candidate_output';
+  diagnosticOnly: true;
+  hiddenRetryAllowed: false;
+  triggered: boolean;
+  flags: AssistantStyleFlag[];
+  reasons: string[];
+  repeatedDescriptiveTerms: string[];
+  repeatedContentTerms: string[];
+  repeatedShortDialogue: string[];
+  metrics: {
+    assistantMessageCount: number;
+    totalBlocks: number;
+    wordCount?: number;
+    recentLengths?: number[];
+  };
+};
 
-  const cadenceWindow = recentAssistantMessages.slice(-2);
-  const cadenceAnalysis = analyzeAssistantCadence(cadenceWindow);
-  const hasLockedShape = cadenceAnalysis.shapes.length >= 2
-    && cadenceAnalysis.shapes.every((shape) => shape === cadenceAnalysis.shapes[0]);
-  const hasRepeatedTriadCadence = cadenceAnalysis.totalBlocks >= 2
-    && cadenceAnalysis.repeatedTriadBlocks >= 2
-    && cadenceAnalysis.repeatedTriadBlocks / cadenceAnalysis.totalBlocks >= 0.5;
-  const hasRepeatedActionDialogueCadence = cadenceAnalysis.totalBlocks >= 2
-    && cadenceAnalysis.actionFirstDialogueBlocks >= 2
-    && cadenceAnalysis.actionFirstDialogueBlocks / cadenceAnalysis.totalBlocks >= 0.5;
+function buildTelemetry(input: Omit<AssistantStyleTelemetry, 'diagnosticOnly' | 'hiddenRetryAllowed' | 'triggered'>): AssistantStyleTelemetry {
+  const uniqueFlags = Array.from(new Set(input.flags));
+  const uniqueReasons = Array.from(new Set(input.reasons.filter(Boolean)));
+  return {
+    ...input,
+    diagnosticOnly: true,
+    hiddenRetryAllowed: false,
+    triggered: uniqueFlags.length > 0,
+    flags: uniqueFlags,
+    reasons: uniqueReasons,
+  };
+}
 
+function countRepeatedShortQuotes(messages: AssistantStyleMessage[]): Map<string, number> {
   const quotedLineCounts = new Map<string, number>();
-  recentAssistantMessages.forEach((message) => {
+  messages.forEach((message) => {
     const quotes = Array.from((message.text || '').matchAll(/"([^"]{3,120})"|“([^”]{3,120})”/g))
       .map((match) => normalizeQuote(match[1] || match[2] || ''))
       .filter((quote) => quote.split(/\s+/).length <= 14);
@@ -278,86 +299,123 @@ export function buildAssistantStyleDirective(
       quotedLineCounts.set(quote, (quotedLineCounts.get(quote) || 0) + 1);
     });
   });
-  const hasRepeatedShortQuote = Array.from(quotedLineCounts.values()).some((count) => count >= 2);
-  const descriptiveTermCounts = new Map<string, number>();
-  recentAssistantMessages.forEach((message) => {
-    new Set(extractDescriptiveTerms(message.text || '')).forEach((term) => {
-      descriptiveTermCounts.set(term, (descriptiveTermCounts.get(term) || 0) + 1);
-    });
-  });
-  const repeatedDescriptiveTerms = Array.from(descriptiveTermCounts.entries())
-    .filter(([, count]) => count >= 2)
-    .map(([term]) => term)
-    .slice(0, 5);
-  const hasRepeatedDescriptiveTerms = repeatedDescriptiveTerms.length > 0;
-  const contentTermCounts = new Map<string, number>();
-  recentAssistantMessages.forEach((message) => {
-    new Set(extractContentTerms(message.text || '')).forEach((term) => {
-      contentTermCounts.set(term, (contentTermCounts.get(term) || 0) + 1);
-    });
-  });
-  const repeatedContentTerms = Array.from(contentTermCounts.entries())
-    .filter(([, count]) => count >= 2)
-    .map(([term]) => term)
-    .slice(0, 4);
-  const hasRepeatedContentFocus = repeatedContentTerms.length >= 3;
-  const hasNarrationHeavyOutput = cadenceAnalysis.totalBlocks >= 1 && cadenceAnalysis.narrationHeavyBlocks > 0;
-  const hasLowDialogueOutput = cadenceAnalysis.totalBlocks >= 1 && cadenceAnalysis.lowDialogueBlocks > 0;
-  const hasFrontLoadedNarration = cadenceAnalysis.totalBlocks >= 1 && cadenceAnalysis.frontLoadedNarrationBlocks > 0;
-
-  if (
-    !hasLockedLength
-    && !hasLockedShape
-    && !hasRepeatedTriadCadence
-    && !hasRepeatedActionDialogueCadence
-    && !hasRepeatedShortQuote
-    && !hasRepeatedDescriptiveTerms
-    && !hasRepeatedContentFocus
-    && !hasNarrationHeavyOutput
-    && !hasLowDialogueOutput
-    && !hasFrontLoadedNarration
-  ) {
-    return '';
-  }
-
-  const reasons = [
-    hasLockedLength ? 'similar assistant response lengths' : '',
-    hasLockedShape ? 'the same assistant block order' : '',
-    hasRepeatedTriadCadence ? 'repeated action -> dialogue -> internal thought cadence' : '',
-    hasRepeatedActionDialogueCadence ? 'repeated action-first dialogue cadence' : '',
-    hasRepeatedShortQuote ? 'reused short assistant dialogue phrasing' : '',
-    hasRepeatedDescriptiveTerms ? `repeated descriptive terms (${repeatedDescriptiveTerms.join(', ')})` : '',
-    hasRepeatedContentFocus ? `repeated dialogue or topic focus (${repeatedContentTerms.join(', ')})` : '',
-    hasNarrationHeavyOutput ? 'narration-heavy responses' : '',
-    hasLowDialogueOutput ? 'missing or very low external dialogue' : '',
-    hasFrontLoadedNarration ? 'external dialogue appearing too late after a long narration opening' : '',
-  ].filter(Boolean).join(', ');
-
-  const correctiveLines = [
-    'Use recent assistant messages for story state, not as a style template.',
-    hasRepeatedDescriptiveTerms || hasRepeatedContentFocus
-      ? 'Use established details as causes or consequences, not repeated description or topic recycling.'
-      : '',
-    hasNarrationHeavyOutput || hasLowDialogueOutput || hasFrontLoadedNarration
-      ? 'Move into purposeful external dialogue when present AI-controlled characters can naturally speak.'
-      : '',
-    'Vary the next response with a natural structure that fits the current exchange and active Response Detail setting.',
-  ].filter(Boolean);
-
-  return `[STYLE ADJUSTMENT FOR THIS TURN]
-Recent assistant responses are repeating: ${reasons}.
-${correctiveLines.join('\n')}`;
+  return quotedLineCounts;
 }
 
-export function buildDetailedCollapseDirective(
+function collectRepeatedTerms(
+  messages: AssistantStyleMessage[],
+  extractor: (value: string) => string[],
+  minimumCount: number,
+  maxTerms: number,
+): string[] {
+  const counts = new Map<string, number>();
+  messages.forEach((message) => {
+    new Set(extractor(message.text || '')).forEach((term) => {
+      counts.set(term, (counts.get(term) || 0) + 1);
+    });
+  });
+  return Array.from(counts.entries())
+    .filter(([, count]) => count >= minimumCount)
+    .map(([term]) => term)
+    .slice(0, maxTerms);
+}
+
+export function analyzeRecentAssistantStyle(
   messages: AssistantStyleMessage[],
   recentLengths: number[] = [],
-): string {
+  responseVerbosity: string = 'balanced',
+): AssistantStyleTelemetry {
   const recentAssistantMessages = messages
     .filter((message) => message.role === 'assistant' && message.text?.trim())
     .slice(-3);
 
-  if (recentAssistantMessages.length < 2) return '';
+  if (recentAssistantMessages.length <= 1) {
+    return buildTelemetry({
+      source: 'recent_assistant_window',
+      flags: [],
+      reasons: [],
+      repeatedDescriptiveTerms: [],
+      repeatedContentTerms: [],
+      repeatedShortDialogue: [],
+      metrics: {
+        assistantMessageCount: recentAssistantMessages.length,
+        totalBlocks: 0,
+        recentLengths: recentLengths.slice(-3),
+      },
+    });
+  }
+
+  const flags: AssistantStyleFlag[] = [];
+  const reasons: string[] = [];
+  const recentAssistantLengths = recentLengths.slice(-3);
+  const hasLockedLength = recentAssistantLengths.length >= 3 && (() => {
+    const min = Math.min(...recentAssistantLengths);
+    const max = Math.max(...recentAssistantLengths);
+    return min > 0 && (max - min) / min <= 0.2;
+  })();
+  if (hasLockedLength) {
+    flags.push('locked_response_length');
+    reasons.push('Recent assistant responses stayed in the same length band.');
+  }
+
+  const cadenceWindow = recentAssistantMessages.slice(-2);
+  const cadenceAnalysis = analyzeAssistantCadence(cadenceWindow);
+  const hasLockedShape = cadenceAnalysis.shapes.length >= 2
+    && cadenceAnalysis.shapes.every((shape) => shape === cadenceAnalysis.shapes[0]);
+  if (hasLockedShape) {
+    flags.push('locked_block_shape');
+    reasons.push('Recent assistant character blocks used the same marker order.');
+  }
+
+  const hasRepeatedTriadCadence = cadenceAnalysis.totalBlocks >= 2
+    && cadenceAnalysis.repeatedTriadBlocks >= 2
+    && cadenceAnalysis.repeatedTriadBlocks / cadenceAnalysis.totalBlocks >= 0.5;
+  if (hasRepeatedTriadCadence) {
+    flags.push('repeated_action_dialogue_thought_cadence');
+    reasons.push('Recent assistant blocks repeatedly used action, dialogue, then internal thought.');
+  }
+
+  const hasRepeatedActionDialogueCadence = cadenceAnalysis.totalBlocks >= 2
+    && cadenceAnalysis.actionFirstDialogueBlocks >= 2
+    && cadenceAnalysis.actionFirstDialogueBlocks / cadenceAnalysis.totalBlocks >= 0.5;
+  if (hasRepeatedActionDialogueCadence) {
+    flags.push('repeated_action_first_dialogue_cadence');
+    reasons.push('Recent assistant blocks repeatedly opened with action before dialogue.');
+  }
+
+  const repeatedShortDialogue = Array.from(countRepeatedShortQuotes(recentAssistantMessages).entries())
+    .filter(([, count]) => count >= 2)
+    .map(([quote]) => quote)
+    .slice(0, 5);
+  if (repeatedShortDialogue.length > 0) {
+    flags.push('reused_short_dialogue_phrasing');
+    reasons.push('Recent assistant output reused short dialogue phrasing.');
+  }
+
+  const repeatedDescriptiveTerms = collectRepeatedTerms(recentAssistantMessages, extractDescriptiveTerms, 2, 5);
+  if (repeatedDescriptiveTerms.length > 0) {
+    flags.push('repeated_descriptive_terms');
+    reasons.push('Recent assistant output reused descriptive terms.');
+  }
+
+  const repeatedContentTerms = collectRepeatedTerms(recentAssistantMessages, extractContentTerms, 2, 4);
+  if (repeatedContentTerms.length >= 3) {
+    flags.push('repeated_dialogue_or_topic_focus');
+    reasons.push('Recent assistant output repeated the same dialogue or topic focus.');
+  }
+
+  if (cadenceAnalysis.totalBlocks >= 1 && cadenceAnalysis.narrationHeavyBlocks > 0) {
+    flags.push('narration_heavy_output');
+    reasons.push('Recent assistant output was narration-heavy.');
+  }
+  if (cadenceAnalysis.totalBlocks >= 1 && cadenceAnalysis.lowDialogueBlocks > 0) {
+    flags.push('low_external_dialogue');
+    reasons.push('Recent assistant output had very little external dialogue.');
+  }
+  if (cadenceAnalysis.totalBlocks >= 1 && cadenceAnalysis.frontLoadedNarrationBlocks > 0) {
+    flags.push('front_loaded_narration');
+    reasons.push('Recent assistant output delayed external dialogue behind a long narration opening.');
+  }
 
   const measuredLengths = recentLengths.length > 0
     ? recentLengths.slice(-3)
@@ -365,33 +423,57 @@ export function buildDetailedCollapseDirective(
   const lastTwo = measuredLengths.slice(-2);
   const sorted = [...measuredLengths].sort((a, b) => a - b);
   const median = sorted.length > 0 ? sorted[Math.floor(sorted.length / 2)] : 0;
-  const collapsedTwoTurns = lastTwo.length >= 2 && lastTwo.every((length) => length > 0 && length < 70);
-  const collapsedWindow = measuredLengths.length >= 3 && median > 0 && median < 90;
+  const collapsedTwoTurns = responseVerbosity === 'detailed' && lastTwo.length >= 2 && lastTwo.every((length) => length > 0 && length < 70);
+  const collapsedWindow = responseVerbosity === 'detailed' && measuredLengths.length >= 3 && median > 0 && median < 90;
+  if (collapsedTwoTurns || collapsedWindow) {
+    flags.push('detailed_response_collapse');
+    reasons.push('Recent assistant responses were shorter than expected for the selected detail setting.');
+  }
 
-  if (!collapsedTwoTurns && !collapsedWindow) return '';
-
-  return `[STYLE CORRECTION]
-Recent assistant responses are shorter or less developed than the active Response Detail setting calls for.
-Use recent messages for story state, not as a response-length template.
-Develop the AI-controlled side of the current exchange with meaningful external dialogue when speech is natural and enough action or description to make the moment clear before stopping for the user.`;
+  return buildTelemetry({
+    source: 'recent_assistant_window',
+    flags,
+    reasons,
+    repeatedDescriptiveTerms,
+    repeatedContentTerms,
+    repeatedShortDialogue,
+    metrics: {
+      assistantMessageCount: recentAssistantMessages.length,
+      totalBlocks: cadenceAnalysis.totalBlocks,
+      recentLengths: measuredLengths,
+    },
+  });
 }
 
-export function buildAssistantRepetitionRepairDirective(
+export function analyzeAssistantCandidateStyle(
   messages: AssistantStyleMessage[],
   candidateText: string,
   recentLengths: number[] = [],
   comparisonTexts: string[] = [],
-): string {
+): AssistantStyleTelemetry {
   const recentAssistantMessages = messages
     .filter((message) => message.role === 'assistant' && message.text?.trim())
     .slice(-3);
-
   const comparisonMessages = comparisonTexts
     .filter((text) => text?.trim())
     .map((text) => ({ role: 'assistant', text }));
 
-  if (recentAssistantMessages.length === 0 && comparisonMessages.length === 0) return '';
-  if (!candidateText.trim()) return '';
+  if ((recentAssistantMessages.length === 0 && comparisonMessages.length === 0) || !candidateText.trim()) {
+    return buildTelemetry({
+      source: 'candidate_output',
+      flags: [],
+      reasons: [],
+      repeatedDescriptiveTerms: [],
+      repeatedContentTerms: [],
+      repeatedShortDialogue: [],
+      metrics: {
+        assistantMessageCount: recentAssistantMessages.length + comparisonMessages.length,
+        totalBlocks: 0,
+        wordCount: countWords(candidateText),
+        recentLengths: recentLengths.slice(-3),
+      },
+    });
+  }
 
   const candidate = analyzeAssistantMessage(candidateText);
   const previous = [...recentAssistantMessages, ...comparisonMessages]
@@ -401,9 +483,9 @@ export function buildAssistantRepetitionRepairDirective(
   const previousTerms = new Set(previous.flatMap((analysis) => analysis.descriptiveTerms));
   const previousContentTerms = new Set(previous.flatMap((analysis) => analysis.contentTerms));
 
-  const repeatedTerms = candidate.descriptiveTerms.filter((term) => previousTerms.has(term)).slice(0, 5);
+  const repeatedDescriptiveTerms = candidate.descriptiveTerms.filter((term) => previousTerms.has(term)).slice(0, 5);
   const repeatedContentTerms = candidate.contentTerms.filter((term) => previousContentTerms.has(term)).slice(0, 4);
-  const repeatedQuotes = candidate.shortQuotes.filter((quote) => previousShortQuotes.has(quote));
+  const repeatedShortDialogue = candidate.shortQuotes.filter((quote) => previousShortQuotes.has(quote));
   const repeatedShape = candidate.shapes.some((shape) => previousShapes.has(shape));
   const repeatedTriad = candidate.totalBlocks > 0
     && candidate.repeatedTriadBlocks / candidate.totalBlocks >= 0.5
@@ -422,39 +504,86 @@ export function buildAssistantRepetitionRepairDirective(
     return (max - min) / min <= 0.15;
   })();
 
-  const structureReasons = [
-    repeatedShape ? 'same structure as a recent assistant response' : '',
-    repeatedTriad ? 'same action -> dialogue -> internal thought cadence' : '',
-    repeatedActionFirstDialogue ? 'same action-first dialogue cadence' : '',
-    lockedLength ? 'same response length band' : '',
-  ].filter(Boolean);
-  const wordingReasons = [
-    repeatedQuotes.length > 0 ? 'reused short dialogue phrasing' : '',
-    repeatedTerms.length >= 3 ? `reused descriptive focus (${repeatedTerms.join(', ')})` : '',
-    repeatedContentTerms.length >= 3 ? `reused dialogue or topic focus (${repeatedContentTerms.join(', ')})` : '',
-  ].filter(Boolean);
-  const qualityReasons = [
-    frontLoaded ? 'front-loaded narration or weak dialogue balance' : '',
-    offloadedScene ? 'offloaded the scene to the user instead of developing the AI-controlled side' : '',
-  ].filter(Boolean);
+  const flags: AssistantStyleFlag[] = [];
+  const reasons: string[] = [];
 
-  const reasonGroupsPresent = [
-    structureReasons.length > 0,
-    wordingReasons.length > 0,
-    qualityReasons.length > 0,
-  ].filter(Boolean).length;
-  const hasDirectCopyRisk = repeatedQuotes.length > 0
-    && (repeatedTerms.length >= 2 || repeatedContentTerms.length >= 2);
-  const hasRegenerationQuoteReuse = repeatedQuotes.length > 0 && comparisonMessages.length > 0;
-  const shouldRepair = reasonGroupsPresent >= 2 || hasDirectCopyRisk || hasRegenerationQuoteReuse || offloadedScene;
+  if (repeatedShape) {
+    flags.push('same_candidate_structure');
+    reasons.push('Candidate used the same block structure as recent assistant output.');
+  }
+  if (repeatedTriad) {
+    flags.push('repeated_action_dialogue_thought_cadence');
+    reasons.push('Candidate repeated action, dialogue, then internal thought cadence.');
+  }
+  if (repeatedActionFirstDialogue) {
+    flags.push('repeated_action_first_dialogue_cadence');
+    reasons.push('Candidate repeated action-first dialogue cadence.');
+  }
+  if (lockedLength) {
+    flags.push('candidate_length_lock');
+    reasons.push('Candidate stayed in the same length band as the prior assistant response.');
+  }
+  if (repeatedShortDialogue.length > 0) {
+    flags.push('reused_short_dialogue_phrasing');
+    reasons.push('Candidate reused short dialogue phrasing.');
+  }
+  if (repeatedDescriptiveTerms.length >= 3) {
+    flags.push('repeated_descriptive_terms');
+    reasons.push('Candidate reused descriptive focus.');
+  }
+  if (repeatedContentTerms.length >= 3) {
+    flags.push('repeated_dialogue_or_topic_focus');
+    reasons.push('Candidate reused dialogue or topic focus.');
+  }
+  if (frontLoaded) {
+    if (candidate.narrationHeavyBlocks > 0) flags.push('narration_heavy_output');
+    if (candidate.lowDialogueBlocks > 0) flags.push('low_external_dialogue');
+    if (candidate.frontLoadedNarrationBlocks > 0) flags.push('front_loaded_narration');
+    reasons.push('Candidate had front-loaded narration or weak dialogue balance.');
+  }
+  if (offloadedScene) {
+    flags.push('offloaded_scene_to_user');
+    reasons.push('Candidate asked the user to carry the scene instead of developing the AI-controlled side.');
+  }
 
-  const reasons = [...structureReasons, ...wordingReasons, ...qualityReasons];
+  const structureReasonsPresent = repeatedShape || repeatedTriad || repeatedActionFirstDialogue || lockedLength;
+  const wordingReasonsPresent = repeatedShortDialogue.length > 0 || repeatedDescriptiveTerms.length >= 3 || repeatedContentTerms.length >= 3;
+  const qualityReasonsPresent = frontLoaded || offloadedScene;
+  const reasonGroupsPresent = [structureReasonsPresent, wordingReasonsPresent, qualityReasonsPresent].filter(Boolean).length;
+  const hasDirectCopyRisk = repeatedShortDialogue.length > 0
+    && (repeatedDescriptiveTerms.length >= 2 || repeatedContentTerms.length >= 2);
+  const hasRegenerationQuoteReuse = repeatedShortDialogue.length > 0 && comparisonMessages.length > 0;
+  const shouldReport = reasonGroupsPresent >= 2 || hasDirectCopyRisk || hasRegenerationQuoteReuse || offloadedScene;
 
-  if (!shouldRepair || reasons.length === 0) return '';
+  if (!shouldReport) {
+    return buildTelemetry({
+      source: 'candidate_output',
+      flags: [],
+      reasons: [],
+      repeatedDescriptiveTerms: [],
+      repeatedContentTerms: [],
+      repeatedShortDialogue: [],
+      metrics: {
+        assistantMessageCount: recentAssistantMessages.length + comparisonMessages.length,
+        totalBlocks: candidate.totalBlocks,
+        wordCount: candidate.wordCount,
+        recentLengths: recentLengths.slice(-3),
+      },
+    });
+  }
 
-  return `[OUTPUT REVISION REQUIRED]
-The draft needs revision because: ${reasons.join(', ')}.
-Rewrite once while preserving the current story facts, speaker tags, user-control boundaries, and user input.
-Use established details as causes or consequences, not repeated description.
-Add concrete AI-controlled development instead of restating the same structure, topic focus, closing pattern, or asking the user to carry the scene.`;
+  return buildTelemetry({
+    source: 'candidate_output',
+    flags,
+    reasons,
+    repeatedDescriptiveTerms,
+    repeatedContentTerms,
+    repeatedShortDialogue,
+    metrics: {
+      assistantMessageCount: recentAssistantMessages.length + comparisonMessages.length,
+      totalBlocks: candidate.totalBlocks,
+      wordCount: candidate.wordCount,
+      recentLengths: recentLengths.slice(-3),
+    },
+  });
 }

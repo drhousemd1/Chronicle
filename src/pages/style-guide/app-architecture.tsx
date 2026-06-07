@@ -1389,7 +1389,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
     ],
   },
   "/src/features/chat-debug/review-export.ts": {
-    description: "Debug export assembler for roleplay review packets, including API Call 1 payloads, provider request bodies, backend traces, support-call request/response bodies, hidden repair attempts, applied update summaries, live comments, and per-message speaker attribution.",
+    description: "Debug export assembler for roleplay review packets, including API Call 1 payloads, provider request bodies, backend traces, support-call request/response bodies, local detector telemetry, applied update summaries, live comments, and per-message speaker attribution.",
     rows: [
       {
         id: "chat-review-export-builder",
@@ -1996,7 +1996,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       {
         id: "chat-interface-roleplay-runtime-path",
         title: "Direct Chat Runtime Path",
-        summary: "Packages the effective chat runtime into Chronicle's direct streaming Grok request path, handles send/regenerate/Continue branches, records hidden repair attempts, then applies post-response derivations back into the continuity ledger.",
+        summary: "Packages the effective chat runtime into Chronicle's direct streaming Grok request path, handles send/regenerate/Continue branches, records local style telemetry for debug review, then applies post-response derivations back into the continuity ledger.",
         badgeLabel: "API CALL",
         badgeClass: "api-call",
         details: [
@@ -2164,12 +2164,12 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
     ],
   },
   "/src/services/llm.ts": {
-    description: "Chronicle's main prompt-assembly and AI transport layer for paid roleplay chat, prompt serialization, response-stream handling, debug capture, style guidance, and prompt-document source exports.",
+    description: "Chronicle's main prompt-assembly and AI transport layer for paid roleplay chat, prompt serialization, response-stream handling, debug capture, style telemetry, and prompt-document source exports.",
     rows: [
       {
         id: "llm-chat-request-assembly",
         title: "Chronicle Chat Request Assembly",
-        summary: "Builds the recurring system instruction, current transcript slice, final wrapped user turn, response-detail guidance, goal context, and optional style directive before Chronicle fires the paid direct chat request.",
+        summary: "Builds the recurring system instruction, current transcript slice, final wrapped user turn, response-detail guidance, goal context, and current-turn state digest before Chronicle fires the paid direct chat request.",
         badgeLabel: "API CALL",
         badgeClass: "api-call",
         details: [
@@ -2547,17 +2547,17 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
     ],
   },
   "/src/lib/assistant-style-directive.ts": {
-    description: "Turn-local repetition and response-shape guard that inspects recent assistant output and returns narrow one-response style guidance or one hidden repair instruction without changing durable story state.",
+    description: "Turn-local repetition and response-shape detector that inspects recent assistant output and completed drafts, then returns structured local telemetry without changing the live response or sending prompt instructions.",
     rows: [
       {
         id: "assistant-style-directive-guard",
-        title: "Assistant Style Directive Guard",
-        summary: "Analyzes recent assistant messages for repeated structure, repeated descriptive focus, weak dialogue balance, and response-length collapse, then emits bounded guidance for the next generation attempt.",
+        title: "Assistant Style Telemetry Analyzer",
+        summary: "Analyzes recent assistant messages for repeated structure, repeated descriptive focus, weak dialogue balance, and response-length collapse, then records structured local telemetry for debug review.",
         badgeLabel: "CODE LOGIC",
         badgeClass: "code-logic",
         details: [
           { label: "Used By", values: ["/src/components/chronicle/ChatInterfaceTab.tsx", "/src/services/llm.ts"], kind: "files" },
-          { label: "Requires", values: ["style guidance stays narrow enough to avoid becoming another competing roleplay prompt"], kind: "plain" },
+          { label: "Requires", values: ["style telemetry remains diagnostic-only and never becomes another competing roleplay prompt"], kind: "plain" },
         ],
       },
     ],

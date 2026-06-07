@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   apiInspectorPromptDocumentList,
@@ -11,6 +12,33 @@ describe("api-inspector prompt document registry", () => {
   it("exposes exactly the two roleplay prompt review documents used by the header buttons", () => {
     expect(apiInspectorPromptDocumentList.map((document) => document.id)).toEqual(requiredDocumentIds);
     expect(Object.keys(apiInspectorPromptDocuments).sort()).toEqual([...requiredDocumentIds].sort());
+  });
+
+  it("keeps active review surfaces free of removed hidden-style-repair wording", () => {
+    const activeSourceTruth = [
+      "src/data/api-inspector-guide-phases.ts",
+      "src/data/api-inspector-guide-template.ts",
+      "src/data/api-inspector-code-truth-registry.ts",
+      "src/data/api-inspector-live-map.ts",
+      "src/pages/style-guide/app-architecture.tsx",
+    ].map((path) => readFileSync(path, "utf8")).join("\n\n");
+
+    [
+      "Repair Pass",
+      "one hidden retry",
+      "injects a narrow one-turn correction",
+      "optional style directive",
+      "emits bounded guidance",
+      "current-scene snapshot",
+      "optional one-turn adaptive or repair text",
+      "adaptive style guidance",
+      "short corrective instruction",
+      "gets injected",
+      "one-time instruction",
+      "ADAPTIVE STYLE DIRECTIVE",
+    ].forEach((stalePhrase) => {
+      expect(activeSourceTruth).not.toContain(stalePhrase);
+    });
   });
 
   it("keeps API Call 1 documented as source-backed current prompt text", () => {
@@ -34,8 +62,8 @@ describe("api-inspector prompt document registry", () => {
     expect(document.body).toContain("{{up to 5 prior roleplay messages before the current turn; local notices excluded}}");
     expect(document.body).not.toContain("9-message API Call 1 history cap");
     expect(document.body).not.toContain("{{up to 9 prior roleplay messages");
-	    expect(document.body).toContain("{{current scene snapshot when prior assistant context exists}}");
-	    expect(document.body).toContain("{{optional one-turn adaptive style, detailed-collapse, or repair directive}}");
+    expect(document.body).toContain("{{compact current day/time, active scene, character location/position/mood rows, and capped current-day memory anchors}}");
+    expect(document.body).not.toContain("{{optional one-turn adaptive style, detailed-collapse, or repair directive}}");
     expect(document.body).toContain("{{executionBrief}}");
     expect(document.body).toContain("RESPONSE DETAIL RULES ARE PART OF THE SYSTEM MESSAGE, NOT REPEATED IN THE FINAL USER MESSAGE");
     expect(document.body).toContain("NSFW INTENSITY RULES ARE PART OF THE SYSTEM MESSAGE, NOT REPEATED IN THE FINAL USER MESSAGE");
@@ -53,19 +81,19 @@ describe("api-inspector prompt document registry", () => {
     expect(document.body).toContain("Continue from after the latest visible assistant response.");
     expect(document.body).toContain("BACKGROUND USER-AUTHORED SCENE TURN FOR FACTS AND USER-CONTROL BOUNDARIES ONLY");
     expect(document.body).toContain("Develop the AI-controlled character's side of the current exchange enough that it follows the active RESPONSE DETAIL setting");
-    expect(document.body).toContain("OUTPUT REVISION REQUIRED APPENDED ONLY TO ONE-TIME REPAIR RETRY");
-    expect(document.body).toContain("The first draft is discarded unless the retry fails");
-    expect(document.body).toContain("The draft needs revision because:");
-    expect(document.body).toContain("Add concrete AI-controlled development instead of restating the same structure");
-    expect(document.body).toContain("asking the user to carry the scene");
+    expect(document.body).toContain("HIDDEN STYLE-REPAIR RETRY REMOVED FROM LIVE API CALL 1");
+    expect(document.body).toContain("The first completed draft is committed unless the provider request itself fails.");
+    expect(document.body).toContain("LOCAL STYLE DETECTOR TELEMETRY (DEBUG EXPORT ONLY, NOT SENT TO GROK)");
+    expect(document.body).toContain("local://assistant-style-telemetry");
+    expect(document.body).not.toContain("The draft needs revision because:");
     expect(document.body).toContain("--- SECTION 1 - CORE ROLE LOGIC ---");
     expect(document.body).toContain("--- SECTION 7 - DIALOG FORMATTING AND ROLEPLAY RULES ---");
 	    expect(document.body).toContain("REGENERATION REQUEST APPENDED TO FINAL USER MESSAGE ONLY WHEN REGENERATING");
 	    expect(document.body).toContain("Change the execution rather than the situation");
-	    expect(document.body).toContain("CURRENT SCENE SNAPSHOT INSIDE [APP TURN CONTROLS] WHEN PRIOR ASSISTANT CONTEXT EXISTS");
-	    expect(document.body).toContain("The previous assistant response is already in the conversation history.");
+	    expect(document.body).toContain("CURRENT TURN STATE INSIDE [APP TURN CONTROLS]");
+	    expect(document.body).toContain("Use this as the active scene anchor.");
 	    expect(document.body).toContain("PREVIOUS ASSISTANT RESPONSE BEING REGENERATED");
-	    expect(document.body).toContain("STYLE ADJUSTMENT AND DETAILED-COLLAPSE DIRECTIVES APPENDED ONLY WHEN RUNTIME DETECTORS TRIGGER");
+	    expect(document.body).not.toContain("STYLE ADJUSTMENT AND DETAILED-COLLAPSE DIRECTIVES APPENDED ONLY WHEN RUNTIME DETECTORS TRIGGER");
 	    expect(document.body).toContain("CONTINUE REQUEST FINAL USER MESSAGE ONLY WHEN PRESSING CONTINUE");
     expect(document.body).toContain("--- SECTION 8 - CHAT SETTINGS PER USER PREFERENCE ---");
     expect(document.body).toContain("This review document shows every possible chat-setting injection branch grouped under its setting.");
