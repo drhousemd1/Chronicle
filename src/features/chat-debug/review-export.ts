@@ -1,5 +1,6 @@
 import type { Character, Conversation, Message, ScenarioData, SideCharacter, TimeOfDay } from '@/types';
 import { parseMessageSegments, type MessageSegment } from '@/services/side-character-generator';
+import { buildReviewDebugMetrics, type ReviewDebugMetrics, type ReviewSegmentDebugMetrics } from './review-metrics';
 import {
   CHAT_DEBUG_ISSUE_TAGS,
   type ChatDebugIssueTag,
@@ -38,6 +39,8 @@ type ReviewExportSegment = {
   liveComment?: ChatReviewLiveComment;
   postTurnStateChanges?: string[];
   debugRecord?: StoredChatDebugTrace | null;
+  debugMetrics?: ReviewSegmentDebugMetrics;
+  localNotice?: Message['localNotice'] | null;
 };
 
 export type ChatReviewLiveComment = {
@@ -572,6 +575,88 @@ function renderAppliedUpdatesDetails(segment: ReviewExportSegment): string {
   `;
 }
 
+function renderCountList(entries: Array<{ value: string; count: number }>, emptyText: string): string {
+  if (!entries.length) return `<p>${escapeHtml(emptyText)}</p>`;
+  return `<ul>${entries.map((entry) => `<li><strong>${escapeHtml(entry.value)}</strong> repeated ${entry.count}x</li>`).join('')}</ul>`;
+}
+
+function renderDebugMetricsDetails(segment: ReviewExportSegment): string {
+  if (segment.role !== 'assistant' || !segment.debugMetrics) return '';
+
+  const metrics = segment.debugMetrics;
+  const modalitySequence = metrics.modalitySequence.length
+    ? metrics.modalitySequence.join(' -> ')
+    : 'none detected';
+  const compressedSequence = metrics.compressedModalitySequence.length
+    ? metrics.compressedModalitySequence.join(' -> ')
+    : 'none detected';
+  const repeatedPreviousTerms = metrics.repeatedTermsFromEarlierAssistantBlocks.length
+    ? metrics.repeatedTermsFromEarlierAssistantBlocks.join(', ')
+    : 'none detected';
+  const thoughtDiagnostics = metrics.internalThoughtDiagnostics.length
+    ? `<ul>${metrics.internalThoughtDiagnostics.map((thought) => {
+      const warnings = [
+        thought.possibleMultiTopicWarning ? 'possible multi-topic thought' : '',
+        thought.backToBackThoughtWarning ? 'back-to-back thought' : '',
+        thought.repeatsVisibleActionTerms.length ? `repeats action terms: ${thought.repeatsVisibleActionTerms.join(', ')}` : '',
+      ].filter(Boolean);
+      return `<li><strong>Thought ${thought.index}</strong> ${thought.wordCount} words / ${thought.sentenceCount} sentence(s)${warnings.length ? ` — ${escapeHtml(warnings.join('; '))}` : ''}<br><span>${escapeHtml(thought.preview)}</span></li>`;
+    }).join('')}</ul>`
+    : '<p>No internal thoughts detected in this character block.</p>';
+  const sourceOverlap = metrics.sourceOverlap.length
+    ? `<ul>${metrics.sourceOverlap.map((entry) => (
+      `<li><strong>${escapeHtml(entry.source)}</strong> ${entry.matchCount} matched term(s)${entry.matchedTerms.length ? ` — ${escapeHtml(entry.matchedTerms.join(', '))}` : ''}</li>`
+    )).join('')}</ul>`
+    : '<p>No source-overlap scan was run for this block.</p>';
+
+  return `
+    <details class="trace-details metrics-details">
+      <summary>Deterministic Debug Metrics</summary>
+      <div class="support-summary">
+        <div class="support-summary-title">Response structure counts</div>
+        <div class="support-summary-grid">
+          ${renderKeyValueRows([
+            ['Words', metrics.wordCount],
+            ['Sentences', metrics.sentenceCount],
+            ['Actions', metrics.actionSegmentCount],
+            ['External dialogue', metrics.dialogueSegmentCount],
+            ['Internal thoughts', metrics.internalThoughtCount],
+            ['Plain text spans', metrics.plainTextSegmentCount],
+            ['Dialogue words', metrics.dialogueWordCount],
+            ['Narration/action/thought words', metrics.actionWordCount + metrics.internalThoughtWordCount + metrics.plainTextWordCount],
+            ['Dialogue-to-narration ratio', metrics.dialogueToNarrationRatio],
+          ])}
+        </div>
+        <p><strong>Full modality sequence:</strong> ${escapeHtml(modalitySequence)}</p>
+        <p><strong>Compressed modality sequence:</strong> ${escapeHtml(compressedSequence)}</p>
+      </div>
+      <div class="support-summary">
+        <div class="support-summary-title">Repetition hints</div>
+        <p><strong>Repeated terms from earlier assistant blocks:</strong> ${escapeHtml(repeatedPreviousTerms)}</p>
+        <div class="metrics-columns">
+          <div>
+            <strong>Repeated terms inside this block</strong>
+            ${renderCountList(metrics.topRepeatedTerms, 'No repeated descriptive/content terms detected inside this block.')}
+          </div>
+          <div>
+            <strong>Repeated phrases inside this block</strong>
+            ${renderCountList(metrics.repeatedPhrases, 'No repeated 2-5 word phrases detected inside this block.')}
+          </div>
+        </div>
+      </div>
+      <div class="support-summary">
+        <div class="support-summary-title">Internal thought diagnostics</div>
+        ${thoughtDiagnostics}
+      </div>
+      <div class="support-summary">
+        <div class="support-summary-title">Source overlap hints</div>
+        <p>Local term overlap only, checked against the current exported app/story state and recent transcript text. This does not prove why the model wrote something or guarantee that every source bucket was present in this exact historical request.</p>
+        ${sourceOverlap}
+      </div>
+    </details>
+  `;
+}
+
 function renderStyledText(text: string): string {
   const cleanText = text.replace(/\[SCENE:\s*.*?\]/g, '').trim();
   const tokenRegex = /(\*[\s\S]*?\*)|([“"][\s\S]*?[”"][,.!?;:]?)|(\([\s\S]*?\))/g;
@@ -686,6 +771,7 @@ function buildSegments(input: ChatReviewExportInput): ReviewExportSegment[] {
         avatarUrl: speaker?.avatarUrl || '',
         text: segment.content,
         rawMessageText,
+        localNotice: message.localNotice ?? null,
         day: message.day,
         timeOfDay: message.timeOfDay,
         createdAt: message.createdAt,
@@ -725,7 +811,7 @@ function renderSegmentCard(segment: ReviewExportSegment, index: number): string 
     ? `<img class="scene-image" src="${escapeAttribute(segment.imageUrl)}" alt="Generated scene image" loading="lazy" />`
     : '';
   const traceBlocks = segment.role === 'assistant'
-    ? `<div class="trace-stack">${renderApiCall1Details(segment)}${renderSupportCallDetails(segment)}${renderAppliedUpdatesDetails(segment)}</div>`
+    ? `<div class="trace-stack">${renderDebugMetricsDetails(segment)}${renderApiCall1Details(segment)}${renderSupportCallDetails(segment)}${renderAppliedUpdatesDetails(segment)}</div>`
     : '';
 
   return `
@@ -831,6 +917,34 @@ function renderIssueSummary(
             <span>${entry.count} tagged ${entry.count === 1 ? 'note' : 'notes'}</span>
           </div>
         `).join('')}
+      </div>
+    </section>
+  `;
+}
+
+function renderTranscriptMetricsSummary(metrics: ReviewDebugMetrics): string {
+  const transcript = metrics.transcript;
+  return `
+    <section class="issue-summary metrics-summary">
+      <div class="issue-summary-header">
+        <div class="eyebrow">Deterministic debug metrics</div>
+        <p>Computed locally from the exported transcript and app state. These measurements are not sent to Grok and do not affect roleplay output.</p>
+      </div>
+      <div class="issue-summary-grid">
+        <div class="issue-summary-card"><strong>${transcript.assistantBlockCount}</strong><span>Assistant character blocks</span></div>
+        <div class="issue-summary-card"><strong>${transcript.averageAssistantWords}</strong><span>Average assistant words per block</span></div>
+        <div class="issue-summary-card"><strong>${transcript.assistantWordCountVariance}</strong><span>Assistant word-count variance</span></div>
+        <div class="issue-summary-card"><strong>${transcript.assistantSimilarLengthWarning ? 'Yes' : 'No'}</strong><span>Similar-length block warning</span></div>
+      </div>
+      <div class="metrics-columns metrics-summary-columns">
+        <div>
+          <strong>Repeated terms across assistant blocks</strong>
+          ${renderCountList(transcript.repeatedTermsAcrossAssistant, 'No terms repeated across assistant blocks above the threshold.')}
+        </div>
+        <div>
+          <strong>Repeated phrases across assistant blocks</strong>
+          ${renderCountList(transcript.repeatedPhrasesAcrossAssistant, 'No repeated 2-5 word phrases detected across assistant blocks.')}
+        </div>
       </div>
     </section>
   `;
@@ -1199,6 +1313,41 @@ function reviewStyles(): string {
       color: #d8e2f2;
       font-size: 12px;
     }
+    .metrics-columns {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .metrics-columns > div {
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      background: rgba(0,0,0,0.14);
+      padding: 10px;
+    }
+    .metrics-columns strong {
+      display: block;
+      color: var(--text);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+    .metrics-summary-columns {
+      margin-top: 14px;
+    }
+    .metrics-summary-columns ul,
+    .metrics-details ul {
+      margin: 0;
+      padding: 0 0 0 20px;
+      color: #d8e2f2;
+      font-size: 12px;
+    }
+    .metrics-summary-columns li,
+    .metrics-details li {
+      margin: 5px 0;
+    }
+    .metrics-details li span {
+      color: var(--muted);
+    }
     .support-summary-notes {
       border-top: 1px solid rgba(255,255,255,0.08);
       margin-top: 8px;
@@ -1226,10 +1375,32 @@ function reviewStyles(): string {
 export function buildChatReviewHtml(input: ChatReviewExportInput): string {
   const characters = getCharacters(input.appData);
   const segments = buildSegments(input);
+  const debugMetrics = buildReviewDebugMetrics({
+    appData: input.appData,
+    conversation: input.conversation,
+    segments: segments.map((segment) => ({
+      reviewId: segment.reviewId,
+      messageId: segment.messageId,
+      generationId: segment.generationId,
+      turnNumber: segment.turnNumber,
+      segmentNumber: segment.segmentNumber,
+      role: segment.role,
+      speakerName: segment.speakerName,
+      text: segment.text,
+      rawMessageText: segment.rawMessageText,
+      localNotice: segment.localNotice ?? null,
+    })),
+  });
+  const metricsByReviewId = new Map(debugMetrics.segments.map((metrics) => [metrics.reviewId, metrics]));
+  const segmentsWithMetrics = segments.map((segment) => ({
+    ...segment,
+    debugMetrics: metricsByReviewId.get(segment.reviewId),
+  }));
   const exportedAt = formatExportDate(input.exportedAt);
-  const cards = segments.map((segment, index) => renderSegmentCard(segment, index)).join('\n');
+  const cards = segmentsWithMetrics.map((segment, index) => renderSegmentCard(segment, index)).join('\n');
   const issueSummary = renderIssueSummary(input.messageComments);
-  const liveCommentIndex = renderLiveCommentIndex(input.messageComments, segments);
+  const transcriptMetricsSummary = renderTranscriptMetricsSummary(debugMetrics);
+  const liveCommentIndex = renderLiveCommentIndex(input.messageComments, segmentsWithMetrics);
   const liveComments = Object.values(input.messageComments || {}).map((comment) => ({
     messageId: comment.messageId,
     generationId: comment.generationId || comment.messageId,
@@ -1237,7 +1408,7 @@ export function buildChatReviewHtml(input: ChatReviewExportInput): string {
     tags: uniqueIssueTags(comment.tags),
     createdAt: comment.createdAt,
     updatedAt: comment.updatedAt,
-    renderedSegments: segments
+    renderedSegments: segmentsWithMetrics
       .filter((segment) => (
         segment.messageId === comment.messageId
         && (!comment.generationId || segment.generationId === comment.generationId)
@@ -1260,13 +1431,16 @@ export function buildChatReviewHtml(input: ChatReviewExportInput): string {
       generationId: message.generationId || message.id,
       role: message.role,
       text: message.text,
+      localNotice: message.localNotice ?? null,
       day: message.day ?? null,
       timeOfDay: message.timeOfDay ?? null,
       createdAt: message.createdAt,
       comment: input.messageComments?.[message.id] || null,
       appliedUpdates: input.postTurnStateChanges?.[message.id] || [],
       debugRecord: input.debugRecords?.[debugTraceKey(message.id, message.generationId || message.id)] || null,
+      deterministicMetrics: debugMetrics.segments.filter((metrics) => metrics.messageId === message.id),
     })),
+    deterministicMetrics: debugMetrics,
   };
 
   return `<!doctype html>
@@ -1286,13 +1460,14 @@ export function buildChatReviewHtml(input: ChatReviewExportInput): string {
       <div class="meta-grid">
         <div class="meta-card"><strong>${escapeHtml(input.conversation.title || 'Untitled conversation')}</strong><span>Conversation</span></div>
         <div class="meta-card"><strong>${escapeHtml(input.modelId)}</strong><span>Model</span></div>
-        <div class="meta-card"><strong>${segments.length}</strong><span>Rendered message blocks</span></div>
+        <div class="meta-card"><strong>${segmentsWithMetrics.length}</strong><span>Rendered message blocks</span></div>
         <div class="meta-card"><strong>${escapeHtml(exportedAt)}</strong><span>Exported</span></div>
       </div>
       <div class="character-grid">${renderCharacterSummary(characters)}</div>
     </section>
 
     ${issueSummary}
+    ${transcriptMetricsSummary}
     ${liveCommentIndex}
     ${cards}
 

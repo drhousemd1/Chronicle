@@ -53,6 +53,7 @@ const qualityHubHousekeepingScanTimestamp = "2026-05-30T19:22:16.000-06:00";
 const qualityHubSecurityDeep20260607Timestamp = "2026-06-07T04:06:28.000Z";
 const qualityHubLovableSupabaseBadgeTimestamp = "2026-06-07T04:51:02.000Z";
 const qualityHubSupabaseSnapshotRuleTimestamp = "2026-06-07T05:33:26.000Z";
+const qualityHubAppArchitectureAudit20260607Timestamp = "2026-06-07T12:18:00.000-06:00";
 
 function stamp(runId: string) {
   return {
@@ -4712,7 +4713,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
     registryVersion: 36,
     project: "Chronicle",
     createdAt,
-    lastUpdatedAt: qualityHubSupabaseSnapshotRuleTimestamp,
+    lastUpdatedAt: qualityHubAppArchitectureAudit20260607Timestamp,
     lastRunId: runIds.securityDeep20260607,
   },
   scanModules: [
@@ -5619,6 +5620,31 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
     },
   ],
   changeLog: [
+    {
+      id: "cl-20260607-004",
+      title: "Refresh App Architecture map against current repo truth",
+      summary: "App Architecture · Regenerated architecture inventories and deepened the curated map for app shell actions, Markdown export, story transfer, Supabase schema snapshots, and support-call/state-sync boundaries.",
+      severity: "patch" as const,
+      status: "completed" as const,
+      problem: "The App Architecture page had fallen behind recent repo changes. Several new or high-risk files were relying on generic generated descriptions, expected generated/static files were being surfaced as refactor debt, and the map did not make newer story-transfer, app-shell, architecture-export, and physical-state completeness contracts obvious enough for future audit threads.",
+      plan: "Refresh generated architecture data, re-audit current high-risk files against code truth, update only architecture metadata and Quality Hub history, and keep runtime behavior unchanged.",
+      changes: "Updated App Architecture:\n- Regenerated architecture source/extra path, metrics, and relationship inventories from the current repo.\n- Added curated navigation coverage for App Shell components, architecture export helpers/tests, story transfer, support-call contract tests, media-settings persistence tests, and the shared state-sync completeness helper.\n- Added code-truth cards for AppShellTopBar, app-architecture Markdown export, story-transfer import/export, Supabase schema map, media-settings persistence, support-call hardening tests, extract-character-updates completeness/prompt tests, and state-sync completeness helper.\n- Updated refactor triage notes for Index, ChatInterfaceTab, llm.ts, character editor modal, story-transfer, and extract-character-updates.\n- Suppressed false-positive refactor signals for generated/static large files where size is expected: Supabase schema map and style-guide component reference HTML.",
+      filesAffected: [
+        "src/pages/style-guide/app-architecture.tsx",
+        "src/data/architecture-source-paths.ts",
+        "src/data/architecture-extra-paths.ts",
+        "src/data/architecture-file-metrics.ts",
+        "src/data/architecture-file-analysis.ts",
+        "src/data/ui-audit-findings.ts",
+      ],
+      agent: "ChatGPT Codex",
+      relatedFindingIds: [],
+      relatedRunIds: [],
+      tags: ["app-architecture", "architecture-refresh", "quality-hub", "state-sync", "story-transfer"],
+      comments: [],
+      createdAt: qualityHubAppArchitectureAudit20260607Timestamp,
+      updatedAt: qualityHubAppArchitectureAudit20260607Timestamp,
+    },
     {
       id: "cl-20260607-003",
       title: "Add Supabase schema snapshot refresh rule to Quality Hub instructions",

@@ -3,6 +3,26 @@ import type { Conversation, ScenarioData } from '@/types';
 import { buildChatReviewHtml } from './review-export';
 
 const appData = {
+  world: {
+    core: {
+      scenarioName: 'Lost',
+      briefDescription: 'A survival test near an abandoned cabin.',
+      storyPremise: 'The hearth, fire, storm, and shelter matter to the current survival scene.',
+      dialogFormatting: '',
+      storyGoals: [
+        {
+          id: 'goal-1',
+          title: 'Reach shelter',
+          desiredOutcome: 'The group reaches safe shelter and starts a fire.',
+          steps: [],
+          flexibility: 'normal',
+          createdAt: 1,
+          updatedAt: 1,
+        },
+      ],
+    },
+    entries: [],
+  },
   characters: [
     {
       name: 'James',
@@ -284,6 +304,15 @@ describe('buildChatReviewHtml', () => {
 	    expect(html).toContain('Applied Updates Summary');
     expect(html).toContain('Sarah.currentMood updated at Day 1, sunset');
     expect(html).toContain('chronicle-session-review-v2');
+    expect(html).toContain('Deterministic debug metrics');
+    expect(html).toContain('Response structure counts');
+    expect(html).toContain('External dialogue');
+    expect(html).toContain('Full modality sequence');
+    expect(html).toContain('action -&gt; dialogue');
+    expect(html).toContain('Source overlap hints');
+    expect(html).toContain('story_card_data');
+    expect(html).toContain('chronicle-session-deterministic-metrics-v1');
+    expect(html).toContain('deterministicMetrics');
     expect(html).toContain('Regenerated');
   });
 

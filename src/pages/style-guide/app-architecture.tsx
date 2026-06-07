@@ -198,7 +198,7 @@ type StaticFileOverride = {
 const REFACTOR_TRIAGE_OVERRIDES: Record<string, RefactorTriageOverride> = {
   "/src/pages/Index.tsx": {
     fileNote:
-      "Refactor target: split the workspace shell into smaller ownership layers for auth/bootstrap, tab routing, scenario state, modal orchestration, and page-specific loaders. Right now one change to app navigation or startup flow can easily collide with unrelated chat, builder, or admin behavior.",
+      "Refactor target: continue shrinking the workspace shell after the use-index-* hook split. Index still owns tab routing, active-scenario handoff, modal orchestration, AppShellTopBar wiring, and lazy page loading, so one navigation/bootstrap change can still collide with chat, builder, gallery, or admin behavior.",
   },
   "/src/components/admin/finance/FinanceDashboardTool.tsx": {
     fileNote:
@@ -206,7 +206,7 @@ const REFACTOR_TRIAGE_OVERRIDES: Record<string, RefactorTriageOverride> = {
   },
   "/src/components/chronicle/ChatInterfaceTab.tsx": {
     fileNote:
-      "Refactor target: separate message rendering/composer UI, effective story-state resolution, AI request orchestration, and modal/tool launchers into smaller units. This file now carries both the visible chat UX and the generation-safe continuity engine, which makes safe iteration harder than it should be.",
+      "Refactor target: separate message rendering/composer UI, effective story-state resolution, AI request orchestration, post-turn support-call scheduling, and modal/tool launchers into smaller units. This file now carries both the visible chat UX and generation-safe continuity contracts for conversations, messages, snapshots, memories, goals, and side-character state.",
   },
   "/src/features/story-builder/StoryBuilderScreen.tsx": {
     fileNote:
@@ -222,7 +222,7 @@ const REFACTOR_TRIAGE_OVERRIDES: Record<string, RefactorTriageOverride> = {
   },
   "/src/services/llm.ts": {
     fileNote:
-      "Refactor target: separate recurring prompt assembly, direct chat transport/SSE parsing, validation instrumentation, and post-turn helper logic. This file is still one of the highest-risk points in Chronicle because one change can destabilize the live roleplay request contract, debug-trace capture, and prompt serialization guarantees at the same time.",
+      "Refactor target: separate recurring prompt assembly, direct chat transport/SSE parsing, debug-trace bridging, local style-telemetry serialization, and prompt-document source exports. This file is still one of Chronicle's highest-risk points because one edit can destabilize the live roleplay request contract, admin trace capture, and prompt serialization guarantees at the same time.",
   },
   "/src/pages/style-guide/app-architecture.tsx": {
     fileNote:
@@ -243,10 +243,32 @@ const REFACTOR_TRIAGE_OVERRIDES: Record<string, RefactorTriageOverride> = {
     fileNote:
       "Refactor target: split phase definitions by lifecycle segment or API-call family instead of one shared registry. This file is already dense enough that keeping all phases together is starting to work against clarity.",
   },
+  "/src/features/character-editor-modal/CharacterEditorModalScreen.tsx": {
+    fileNote:
+      "Refactor target: split scenario-card editing, character-section rendering, modal navigation, AI-enhance/media actions, and save/cancel flows. This modal now mirrors much of the builder surface, so a targeted editor fix can touch unrelated character, scenario, or media behavior.",
+  },
+  "/src/lib/story-transfer.ts": {
+    fileNote:
+      "Refactor target: split machine-data export/import, markdown parsing, character merge rules, world-core merge rules, and warning generation into smaller modules. The file is currently both the transfer format contract and the merge engine, so import/export changes carry broad story-builder and scenario-persistence risk.",
+  },
+  "/supabase/functions/extract-character-updates/index.ts": {
+    fileNote:
+      "Refactor target: split prompt construction, provider transport, candidate review, physical-state completeness retry, safe fallback, and debug payload assembly. This edge function is a high-risk continuity boundary because unsupported or stale state updates can leak into durable character state if the review contracts drift.",
+  },
   "/src/data/database-schema-inventory.ts": {
     suppressAutoRefactor: true,
     lineBadgeClass: "is-large",
     lineBadgeDescription: "Large generated schema inventory file. Size alone is expected here and should not be treated as refactor debt.",
+  },
+  "/src/data/supabase-schema-map.ts": {
+    suppressAutoRefactor: true,
+    lineBadgeClass: "is-large",
+    lineBadgeDescription: "Large generated Supabase schema snapshot. Size is expected here and should not be treated as refactor debt.",
+  },
+  "/public/style-guide-component-example.html": {
+    suppressAutoRefactor: true,
+    lineBadgeClass: "is-large",
+    lineBadgeDescription: "Large static style-guide reference artifact. Size is expected here and should not be treated as refactor debt.",
   },
   "/src/integrations/supabase/types.ts": {
     suppressAutoRefactor: true,
@@ -331,6 +353,8 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
         path: "/src/services",
         children: [
           { kind: "file", path: "/src/services/llm.ts" },
+          { kind: "file", path: "/src/services/llm-canonical-coverage.test.ts" },
+          { kind: "file", path: "/src/services/support-call-hardening.test.ts" },
           { kind: "file", path: "/src/services/review-ratings.ts" },
           { kind: "file", path: "/src/services/supabase-data.ts" },
           { kind: "file", path: "/src/services/app-settings.ts" },
@@ -340,6 +364,8 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
           { kind: "file", path: "/src/services/world-ai.ts" },
           { kind: "file", path: "/src/services/character-ai.ts" },
           { kind: "file", path: "/src/services/side-character-generator.ts" },
+          { kind: "file", path: "/src/services/extract-character-updates-completeness.test.ts" },
+          { kind: "file", path: "/src/services/extract-character-updates-prompt.test.ts" },
           {
             kind: "folder",
             path: "/src/services/persistence",
@@ -351,6 +377,7 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
               { kind: "file", path: "/src/services/persistence/side-characters.ts" },
               { kind: "file", path: "/src/services/persistence/content-themes.ts" },
               { kind: "file", path: "/src/services/persistence/media-settings.ts" },
+              { kind: "file", path: "/src/services/persistence/media-settings.test.ts" },
             ],
           },
           { kind: "file", path: "/src/services/usage-tracking.ts" },
@@ -386,6 +413,17 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
         kind: "folder",
         path: "/src/components",
         children: [
+          {
+            kind: "folder",
+            path: "/src/components/app-shell",
+            children: [
+              { kind: "file", path: "/src/components/app-shell/AppShellHeader.tsx" },
+              { kind: "file", path: "/src/components/app-shell/AppShellTopBar.tsx" },
+              { kind: "file", path: "/src/components/app-shell/AppShellTopBar.test.tsx" },
+              { kind: "file", path: "/src/components/app-shell/AppShellWorkspace.tsx" },
+              { kind: "file", path: "/src/components/app-shell/AppSidebar.tsx" },
+            ],
+          },
           {
             kind: "folder",
             path: "/src/components/admin",
@@ -427,6 +465,7 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
         path: "/src/data",
         children: [
           { kind: "file", path: "/src/data/database-schema-inventory.ts" },
+          { kind: "file", path: "/src/data/supabase-schema-map.ts" },
           { kind: "file", path: "/src/data/ui-audit-findings.ts" },
           { kind: "file", path: "/src/data/api-inspector-code-truth-registry.ts" },
           { kind: "file", path: "/src/data/api-inspector-guide-phases.ts" },
@@ -443,9 +482,13 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
         kind: "folder",
         path: "/src/lib",
         children: [
+          { kind: "file", path: "/src/lib/app-architecture-export.ts" },
+          { kind: "file", path: "/src/lib/app-architecture-export.test.ts" },
           { kind: "file", path: "/src/lib/app-architecture-utils.ts" },
           { kind: "file", path: "/src/lib/chat-spellcheck.ts" },
           { kind: "file", path: "/src/lib/canonical-field-registry.ts" },
+          { kind: "file", path: "/src/lib/story-transfer.ts" },
+          { kind: "file", path: "/src/lib/story-transfer.test.ts" },
           { kind: "file", path: "/src/lib/api-inspector-schema.ts" },
           { kind: "file", path: "/src/lib/api-inspector-utils.ts" },
           { kind: "file", path: "/src/lib/assistant-style-directive.ts" },
@@ -541,6 +584,7 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
             children: [
               { kind: "file", path: "/supabase/functions/_shared/cors.ts" },
               { kind: "file", path: "/supabase/functions/_shared/rate-limit.ts" },
+              { kind: "file", path: "/supabase/functions/_shared/state-sync-completeness.ts" },
             ],
           },
           {
@@ -704,7 +748,7 @@ const STATIC_LINE_COUNT_OVERRIDES: Record<string, number> = {
   "/eslint.config.js": 39,
   "/tsconfig.json": 24,
   "/components.json": 20,
-  "/scripts/refresh-architecture-paths.mjs": 873,
+  "/scripts/refresh-architecture-paths.mjs": 897,
   "/scripts/run-quality-hub-scan.mjs": 49,
   "/scripts/verify-prompt-serialization.ts": 291,
   "/e2e/smoke.spec.ts": 12,
@@ -911,6 +955,69 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       },
     ],
   },
+  "/src/components/app-shell/AppShellTopBar.tsx": {
+    description: "Shared top-bar action router for Chronicle's workspace tabs, builders, admin tools, gallery/image-library controls, and Story Builder settings dropdown.",
+    rows: [
+      {
+        id: "app-shell-top-bar-action-router",
+        title: "Workspace Top-Bar Action Router",
+        summary: "Chooses the correct header actions for the active workspace state, including Story Builder import/export/finalize/save controls, admin-only API usage tracking, gallery filters, image-library upload controls, and character-editor save/cancel actions.",
+        badgeLabel: "REACT COMPONENT",
+        badgeClass: "component",
+        details: [
+          {
+            label: "Used By",
+            values: ["/src/pages/Index.tsx"],
+            kind: "files",
+          },
+          {
+            label: "Uses",
+            values: [
+              "/src/components/app-shell/AppShellHeader.tsx",
+              "/src/components/ui/dropdown-menu.tsx",
+              "/src/components/ui/labeled-toggle.tsx",
+              "/src/components/chronicle/GalleryNsfwToggle.tsx",
+            ],
+            kind: "files",
+          },
+          {
+            label: "Mutates",
+            values: ["no durable state directly; delegates every save, import, export, tracking-toggle, filter, and navigation action through props owned by Index or the active page"],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["active-tab prop contracts stay synchronized with Index state and builder/admin handlers so the right header action fires for the right workspace surface"],
+            kind: "plain",
+          },
+        ],
+      },
+      {
+        id: "story-builder-settings-dropdown-contract",
+        title: "Story Builder Settings Dropdown",
+        summary: "Renders the admin-only cogwheel dropdown in Story Builder and delegates the API usage tracking toggle to the active story's persistence flow and Finance Dashboard telemetry path.",
+        badgeLabel: "REACT COMPONENT",
+        badgeClass: "component",
+        details: [
+          {
+            label: "Defines",
+            values: ["Story Builder settings trigger", "Track API Usage toggle row", "story transfer status/warning notice"],
+            kind: "plain",
+          },
+          {
+            label: "Used By",
+            values: ["/src/features/story-builder/StoryBuilderScreen.tsx", "/src/services/persistence/media-settings.ts", "/src/components/admin/finance/FinanceDashboardTool.tsx"],
+            kind: "files",
+          },
+          {
+            label: "Requires",
+            values: ["DropdownMenuTrigger remains attached to the forwarded SurfaceButton ref and the API-usage toggle stays scoped to the current story so finance test tracking cannot bleed across stories"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
   "/src/pages/style-guide/app-architecture.tsx": {
     description: "Standalone operator page that renders Chronicle's repository map, curated ownership cards, schema inventory, and refactor/contract warnings as the main architecture source of truth.",
     rows: [
@@ -930,12 +1037,13 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
               "/src/data/architecture-file-metrics.ts",
               "/src/data/architecture-file-analysis.ts",
               "/src/data/database-schema-inventory.ts",
+              "/src/lib/app-architecture-export.ts",
             ],
             kind: "files",
           },
           {
             label: "Defines",
-            values: ["curated nav sections", "static file overrides", "refactor triage rules", "detail-row rendering and filter behavior"],
+            values: ["curated nav sections", "static file overrides", "refactor triage rules", "detail-row rendering", "filter behavior", "downloadable Markdown architecture export"],
             kind: "plain",
           },
           {
@@ -948,6 +1056,39 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
             values: ["generated architecture inventories, curated descriptions, and schema inventory stay concurrent with the live repo before this page can be trusted"],
             kind: "plain",
           },
+        ],
+      },
+    ],
+  },
+  "/src/lib/app-architecture-export.ts": {
+    description: "Markdown export builder for App Architecture, converting the same rendered repository/schema model into a pasteable audit packet.",
+    rows: [
+      {
+        id: "app-architecture-markdown-export",
+        title: "Architecture Markdown Export",
+        summary: "Formats curated navigation, file cards, generated relationship data, line-count/refactor signals, and backend schema inventory into one downloadable Markdown document for code reviews and future Codex research packets.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          { label: "Used By", values: ["/src/pages/style-guide/app-architecture.tsx", "/src/lib/app-architecture-export.test.ts"], kind: "files" },
+          { label: "Defines", values: ["AppArchitectureExportModel", "file export rows", "schema export rows", "buildAppArchitectureMarkdown"], kind: "plain" },
+          { label: "Requires", values: ["export model fields stay aligned with the page renderer so downloaded architecture packets do not omit relationships visible in the UI"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/src/lib/app-architecture-export.test.ts": {
+    description: "Vitest coverage for the App Architecture Markdown export contract.",
+    rows: [
+      {
+        id: "app-architecture-export-contract-test",
+        title: "Architecture Export Contract Test",
+        summary: "Verifies that the Markdown export includes file architecture rows and backend schema details instead of producing a shallow repository list.",
+        badgeLabel: "TEST",
+        badgeClass: "test",
+        details: [
+          { label: "Uses", values: ["/src/lib/app-architecture-export.ts"], kind: "files" },
+          { label: "Requires", values: ["test fixtures cover any new required export sections when the architecture page adds new relationship data"], kind: "plain" },
         ],
       },
     ],
@@ -1446,6 +1587,75 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       },
     ],
   },
+  "/src/lib/story-transfer.ts": {
+    description: "Story import/export format engine that serializes Chronicle scenarios into Markdown or machine-data packages and merges imported story/character/world data back into the current builder state.",
+    rows: [
+      {
+        id: "story-transfer-format-contract",
+        title: "Story Transfer Format Contract",
+        summary: "Defines the transfer payload versions, Markdown sections, machine-data markers, editor-state fields, and warning summary shape used when creators import or export stories.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          {
+            label: "Used By",
+            values: ["/src/hooks/use-index-scenario-persistence.ts", "/src/hooks/use-index-dialog-state.ts", "/src/components/chronicle/StoryImportModeModal.tsx"],
+            kind: "files",
+          },
+          {
+            label: "Defines",
+            values: ["chronicle-story-transfer package v2", "Markdown transfer rows", "merge vs rewrite import mode", "StoryTransferResult warnings"],
+            kind: "plain",
+          },
+          {
+            label: "Mutates",
+            values: ["in-memory ScenarioData returned to Index for save/import flows; durable writes happen later through scenario persistence"],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["field normalization, canonical world-core names, custom-section IDs, and content-theme sanitation stay aligned with Story Builder and persistence modules"],
+            kind: "plain",
+          },
+        ],
+      },
+      {
+        id: "story-transfer-isolation-boundary",
+        title: "Import Isolation Boundary",
+        summary: "Keeps imported story data from accidentally replacing unrelated local state by warning on skipped/unsupported lines and requiring explicit merge or rewrite behavior.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          {
+            label: "Requires",
+            values: ["import mode stays explicit and warnings remain visible in AppShellTopBar so creators can see when transfer data was skipped instead of silently trusting a partial import"],
+            kind: "plain",
+          },
+          {
+            label: "Used By",
+            values: ["/src/components/app-shell/AppShellTopBar.tsx", "/src/lib/story-transfer.test.ts"],
+            kind: "files",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/lib/story-transfer.test.ts": {
+    description: "Vitest coverage for Story Transfer export/import normalization, merge behavior, and warning contracts.",
+    rows: [
+      {
+        id: "story-transfer-contract-tests",
+        title: "Story Transfer Contract Tests",
+        summary: "Protects the story transfer format from losing canonical fields, custom sections, content-theme settings, or import warnings while the builder and persistence contracts evolve.",
+        badgeLabel: "TEST",
+        badgeClass: "test",
+        details: [
+          { label: "Uses", values: ["/src/lib/story-transfer.ts", "/src/utils.ts"], kind: "files" },
+          { label: "Requires", values: ["fixtures are refreshed when Story Builder adds durable fields that should survive export/import"], kind: "plain" },
+        ],
+      },
+    ],
+  },
   "/public/spellcheck/en-words.txt": {
     description: "Plain-text dictionary asset fetched by Chronicle's chat composer spellcheck layer at runtime.",
     rows: [
@@ -1929,6 +2139,41 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       },
     ],
   },
+  "/src/services/persistence/media-settings.ts": {
+    description: "Story UI/media settings persistence module for writing sanitized per-story display and testing preferences to the `stories.ui_settings` JSON field.",
+    rows: [
+      {
+        id: "persistence-media-settings",
+        title: "Story UI Settings Persistence",
+        summary: "Saves display-related story settings such as backgrounds, bubble styling, narrative POV, NSFW intensity, response verbosity, realism mode, and API usage test tracking while dropping unsupported keys before persistence.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          { label: "Uses Table", values: ["stories"], kind: "tables" },
+          { label: "Used By", values: ["/src/components/app-shell/AppShellTopBar.tsx", "/src/features/story-builder/StoryBuilderScreen.tsx", "/src/services/supabase-data.ts"], kind: "files" },
+          { label: "Mutates", values: ["stories.ui_settings for the current story only"], kind: "plain" },
+          { label: "Requires", values: ["sanitization stays strict so experimental UI flags or unrelated per-session settings do not become durable story data"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/src/services/persistence/media-settings.test.ts": {
+    description: "Vitest coverage for the media-settings persistence boundary and story UI setting sanitization.",
+    rows: [
+      {
+        id: "media-settings-persistence-contract-test",
+        title: "Media Settings Persistence Contract Test",
+        summary: "Verifies `updateStoryUiSettings` writes only supported UI settings to the current story row and throws on failed writes so callers can handle background-save errors.",
+        badgeLabel: "TEST",
+        badgeClass: "test",
+        details: [
+          { label: "Uses", values: ["/src/services/persistence/media-settings.ts"], kind: "files" },
+          { label: "Uses Table", values: ["stories"], kind: "tables" },
+          { label: "Requires", values: ["allowed setting keys stay synchronized with Story Builder and AppShellTopBar tracking controls"], kind: "plain" },
+        ],
+      },
+    ],
+  },
   "/src/components/chronicle/ChatInterfaceTab.tsx": {
     description: "Primary Chronicle chat workspace that renders the live conversation, resolves effective story state, orchestrates API Call 1, schedules post-turn support calls, stores debug traces, and launches adjacent chat tools.",
     rows: [
@@ -2245,6 +2490,37 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       },
     ],
   },
+  "/src/services/support-call-hardening.test.ts": {
+    description: "Source-contract test suite that guards Chronicle's fragile post-turn support-call and prompt/state hardening rules.",
+    rows: [
+      {
+        id: "support-call-hardening-contract-tests",
+        title: "Support-Call Hardening Contract Tests",
+        summary: "Asserts that goal progress sends only the current open step, character-state updates require latest-exchange evidence, memory/day-summary extraction stays bounded, and side-character/scene-image generation keep their sanitation contracts.",
+        badgeLabel: "TEST",
+        badgeClass: "test",
+        details: [
+          {
+            label: "Uses",
+            values: [
+              "/src/components/chronicle/ChatInterfaceTab.tsx",
+              "/supabase/functions/extract-character-updates/index.ts",
+              "/supabase/functions/extract-memory-events/index.ts",
+              "/supabase/functions/compress-day-memories/index.ts",
+              "/supabase/functions/generate-side-character/index.ts",
+              "/supabase/functions/generate-scene-image/index.ts",
+            ],
+            kind: "files",
+          },
+          {
+            label: "Requires",
+            values: ["source-level assertions are updated intentionally when prompt/support-call contracts change, because these tests are guarding behavior that can leak stale or unsupported story state into durable records"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
   "/supabase/functions/chat/index.ts": {
     description: "Server-side Chronicle chat edge function that receives the assembled request and routes it through Chronicle's direct paid chat runtime, while still accepting older pipeline labels as compatibility aliases.",
     rows: [
@@ -2479,6 +2755,23 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       },
     ],
   },
+  "/src/data/supabase-schema-map.ts": {
+    description: "Generated live Supabase schema snapshot containing table, RLS policy, grant, trigger, function-definition, storage, and edge-function metadata for security and architecture audits.",
+    rows: [
+      {
+        id: "supabase-schema-map-live-snapshot",
+        title: "Live Supabase Schema Snapshot",
+        summary: "Records the Lovable Cloud schema state without row contents so architecture and security work can compare committed code against actual backend tables, policies, grants, triggers, functions, storage buckets, and edge functions.",
+        badgeLabel: "DATA BLOCK",
+        badgeClass: "data-block",
+        details: [
+          { label: "Defines", values: ["SupabaseSchemaSnapshot", "table/policy/grant metadata", "function definitions", "storage bucket metadata", "edge function presence markers"], kind: "plain" },
+          { label: "Requires", values: ["Lovable/Supabase schema changes refresh this snapshot before Codex marks backend findings current or fixed"], kind: "plain" },
+          { label: "Access", values: ["schema metadata only; no private rows, secrets, user content, or NSFW media contents are stored here"], kind: "plain" },
+        ],
+      },
+    ],
+  },
   "/src/data/ui-audit-findings.ts": {
     description: "Quality Hub source-of-truth registry containing issue entries, scan-run records, overview row metadata, and implementation change-log history.",
     rows: [
@@ -2696,12 +2989,74 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       {
         id: "character-state-sync-edge-function",
         title: "Character State Sync Worker",
-        summary: "Turns the latest exchange into reviewed character-state update candidates so the frontend can save only supported, evidenced changes.",
+        summary: "Turns the latest exchange into reviewed character-state update candidates so the frontend can save only supported, evidenced changes and inspect rejected candidates in debug output.",
         badgeLabel: "EDGE FUNCTION",
         badgeClass: "edge-fn",
         details: [
           { label: "Used By", values: ["/src/components/chronicle/ChatInterfaceTab.tsx"], kind: "files" },
-          { label: "Requires", values: ["browser-to-edge request shape, structured provider request, fallback retry, and review rows remain documented together"], kind: "plain" },
+          { label: "Uses", values: ["/supabase/functions/_shared/cors.ts", "/supabase/functions/_shared/state-sync-completeness.ts"], kind: "files" },
+          { label: "Requires", values: ["browser-to-edge request shape, structured provider request, evidence filtering, fallback retry, and review rows remain documented together"], kind: "plain" },
+        ],
+      },
+      {
+        id: "character-state-physical-completeness",
+        title: "Physical State Completeness Boundary",
+        summary: "Normalizes physical-state review rows, detects omitted eligible characters, runs a focused retry for missing location/scene-position coverage, and returns explicit missing-review rows instead of silently treating absent review data as safe.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          { label: "Uses", values: ["/supabase/functions/_shared/state-sync-completeness.ts"], kind: "files" },
+          { label: "Used By", values: ["/src/services/extract-character-updates-completeness.test.ts", "/src/services/support-call-hardening.test.ts"], kind: "files" },
+          { label: "Requires", values: ["eligible-character lists stay scoped to the latest exchange and current conversation so physical state from one story, branch, or stale retry cannot masquerade as current state"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/supabase/functions/_shared/state-sync-completeness.ts": {
+    description: "Shared Supabase edge helper for character-state sync completeness, focused on normalizing physical-state review rows and detecting missing eligible-character coverage.",
+    rows: [
+      {
+        id: "state-sync-completeness-helper",
+        title: "State Sync Completeness Helper",
+        summary: "Centralizes the logic that turns provider physical-state review output into normalized rows and explicit missing-character reviews for the extract-character-updates edge function.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          { label: "Used By", values: ["/supabase/functions/extract-character-updates/index.ts", "/src/services/extract-character-updates-completeness.test.ts"], kind: "files" },
+          { label: "Defines", values: ["normalizePhysicalStateReviews", "getMissingPhysicalStateReviewNames", "buildPhysicalStateCompletenessReviews"], kind: "plain" },
+          { label: "Requires", values: ["normalization accepts both character objects and focused retry names without losing which characters were omitted by the model"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/src/services/extract-character-updates-completeness.test.ts": {
+    description: "Vitest coverage for the shared character-state completeness helper used by the extract-character-updates edge function.",
+    rows: [
+      {
+        id: "extract-character-updates-completeness-test",
+        title: "Character State Completeness Contract Test",
+        summary: "Verifies physical-state review normalization, missing eligible-character detection, focused retry name handling, and explicit missing-review rows.",
+        badgeLabel: "TEST",
+        badgeClass: "test",
+        details: [
+          { label: "Uses", values: ["/supabase/functions/_shared/state-sync-completeness.ts"], kind: "files" },
+          { label: "Requires", values: ["test cases stay aligned with extract-character-updates response fields so debug exports and persistence logic can distinguish reviewed, changed, unchanged, and missing physical state"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/src/services/extract-character-updates-prompt.test.ts": {
+    description: "Source-contract test suite for extract-character-updates prompt guidance and physical-state review requirements.",
+    rows: [
+      {
+        id: "extract-character-updates-prompt-contract-test",
+        title: "Character State Prompt Contract Test",
+        summary: "Guards prompt wording that keeps generated goal steps durable, examples structural-only, latest-exchange evidence required, scenePosition updates concrete, and physical-state review coverage explicit for every eligible character.",
+        badgeLabel: "TEST",
+        badgeClass: "test",
+        details: [
+          { label: "Uses", values: ["/supabase/functions/extract-character-updates/index.ts"], kind: "files" },
+          { label: "Requires", values: ["prompt wording remains scenario-agnostic and evidence-scoped so test-story objects, relationships, or NSFW dynamics do not become hardcoded model behavior"], kind: "plain" },
         ],
       },
     ],
