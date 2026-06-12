@@ -248,7 +248,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                 bullets: [
                   bullet("Auth", "Requires a signed-in user and resolves that user through Supabase auth before any provider call leaves the backend."),
                   bullet("Model gate", "Chronicle chat is still pinned to the Grok lane rather than being allowed to fan out across unrelated providers."),
-                  bullet("Streaming contract", "The edge function returns SSE so the client can reveal the turn as it is generated instead of waiting for one opaque blob."),
+                  bullet("Streaming contract", "The edge function returns browser-compatible SSE while preserving Chronicle's completed-message commit flow; the UI commits the final parsed assistant message after collection and cleanup."),
                 ],
                 meta: ["auth", "rate limit", "xAI relay"],
               },

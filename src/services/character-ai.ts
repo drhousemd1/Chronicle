@@ -624,7 +624,12 @@ async function callAIWithRetry(
 ): Promise<string> {
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     const { data, error } = await supabase.functions.invoke('chat', {
-      body: { messages, modelId, stream },
+      body: {
+        messages,
+        modelId,
+        stream,
+        providerTransport: 'chat_completions',
+      },
     });
 
     if (error) {

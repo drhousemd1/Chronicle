@@ -7,6 +7,14 @@ import {
   normalizePhysicalStateReviews,
   type PhysicalStateReview,
 } from "../_shared/state-sync-completeness.ts";
+import {
+  callXaiResponses,
+  extractXaiResponsesText,
+  getXaiResponsesBodyError,
+  type XaiMessage,
+  type XaiResponsesDebugModelRequest,
+  type XaiResponsesReasoningEffort,
+} from "../_shared/xai-responses.ts";
 
 // GROK ONLY -- All AI calls use xAI Grok. No Gemini. No OpenAI.
 
@@ -111,6 +119,10 @@ const characterUpdateResponseFormat = {
     },
   },
 };
+
+const SUPPORT_REASONING_EFFORT: XaiResponsesReasoningEffort = "medium";
+const SUPPORT_STORE = false;
+const EMPTY_CHARACTER_SYNC_JSON = '{"updates":[],"physicalStateReviews":[]}';
 
 type CharacterIndex = {
   map: Map<string, CharacterData>;
@@ -982,43 +994,21 @@ Return ONLY valid JSON. No explanations.`;
       console.warn(`[extract-character-updates] Rejected non-Grok model "${modelId}", using "${effectiveModelId}"`);
     }
 
-    let apiKey: string | undefined;
-    let apiUrl: string;
-    let modelForRequest: string;
-
-    {
-      apiKey = Deno.env.get("XAI_API_KEY");
-      if (!apiKey) {
-        return new Response(
-          JSON.stringify({ error: "XAI_API_KEY not configured. Please add your Grok API key in settings.", updates: [] }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      apiUrl = "https://api.x.ai/v1/chat/completions";
-      modelForRequest = effectiveModelId;
+    const apiKey = Deno.env.get("XAI_API_KEY");
+    if (!apiKey) {
+      return new Response(
+        JSON.stringify({ error: "XAI_API_KEY not configured. Please add your Grok API key in settings.", updates: [] }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
+    const modelForRequest = effectiveModelId;
 
-    const xaiRequestBody = {
-      model: modelForRequest,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: `Analyze the latest exchange and return only material supported character-card deltas.\n\n${combinedText}` }
-      ],
-      temperature: 0.15,
-      max_tokens: 8192,
-      response_format: characterUpdateResponseFormat,
-    };
-    const primaryDebugPayload = debugTrace === true
-      ? {
-          modelRequest: {
-            endpoint: apiUrl,
-            method: "POST",
-            capturedAt: Date.now(),
-            requestBody: xaiRequestBody,
-          },
-        }
-      : null;
-    const additionalDebugModelRequests: NonNullable<typeof primaryDebugPayload>['modelRequest'][] = [];
+    const xaiMessages: XaiMessage[] = [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: `Analyze the latest exchange and return only material supported character-card deltas.\n\n${combinedText}` },
+    ];
+    let primaryDebugPayload: { modelRequest: XaiResponsesDebugModelRequest } | null = null;
+    const additionalDebugModelRequests: XaiResponsesDebugModelRequest[] = [];
 
     const runFocusedPhysicalStateRetry = async (missingCharacterNames: string[]) => {
       if (!missingCharacterNames.length) {
@@ -1073,41 +1063,35 @@ Return only this JSON shape:
 
 Return ONLY valid JSON. No explanations.`;
 
-      const focusedRequestBody = {
+      const focusedResult = await callXaiResponses({
+        apiKey,
         model: modelForRequest,
         messages: [
           { role: "system", content: focusedSystemPrompt },
           { role: "user", content: `Review missing physical-state coverage for omitted characters only.\n\n${latestExchangeText}` },
         ],
         temperature: 0.05,
-        max_tokens: 2048,
-        response_format: characterUpdateResponseFormat,
-      };
-
-      if (debugTrace === true) {
-        additionalDebugModelRequests.push({
-          endpoint: apiUrl,
-          method: "POST",
-          capturedAt: Date.now(),
-          requestBody: focusedRequestBody,
-        });
-      }
-
-      const focusedResponse = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(focusedRequestBody),
+        maxOutputTokens: 2048,
+        textFormat: characterUpdateResponseFormat,
+        store: SUPPORT_STORE,
+        reasoningEffort: SUPPORT_REASONING_EFFORT,
+        notes: ["Focused retry for omitted physical-state review coverage."],
       });
 
-      if (!focusedResponse.ok) {
-        return { updates: [] as any[], physicalStateReviews: [] as PhysicalStateReview[], parseError: `focused_retry_http_${focusedResponse.status}` };
+      if (debugTrace === true) {
+        additionalDebugModelRequests.push(focusedResult.modelRequest);
       }
 
-      const focusedData = await focusedResponse.json();
-      const focusedContent = focusedData.choices?.[0]?.message?.content || '{"updates":[],"physicalStateReviews":[]}';
+      if (!focusedResult.ok) {
+        return { updates: [] as any[], physicalStateReviews: [] as PhysicalStateReview[], parseError: `focused_retry_http_${focusedResult.status}` };
+      }
+
+      const focusedData = await focusedResult.response.json();
+      const focusedBodyError = getXaiResponsesBodyError(focusedData, { requireOutputText: true });
+      if (focusedBodyError) {
+        return { updates: [] as any[], physicalStateReviews: [] as PhysicalStateReview[], parseError: `focused_retry_body_error:${focusedBodyError}` };
+      }
+      const focusedContent = extractXaiResponsesText(focusedData) || EMPTY_CHARACTER_SYNC_JSON;
       const parsedFocused = parseCharacterSyncContent(focusedContent);
       const focusedUpdates = parsedFocused.updates.filter((update) => {
         const character = typeof update?.character === "string" ? update.character.toLowerCase().trim() : "";
@@ -1121,63 +1105,74 @@ Return ONLY valid JSON. No explanations.`;
       };
     };
 
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(xaiRequestBody),
+    const result = await callXaiResponses({
+      apiKey,
+      model: modelForRequest,
+      messages: xaiMessages,
+      temperature: 0.15,
+      maxOutputTokens: 8192,
+      textFormat: characterUpdateResponseFormat,
+      store: SUPPORT_STORE,
+      reasoningEffort: SUPPORT_REASONING_EFFORT,
     });
+    primaryDebugPayload = debugTrace === true ? { modelRequest: result.modelRequest } : null;
 
-    if (!response.ok) {
-      if (response.status === 429) {
+    if (!result.ok) {
+      if (result.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please try again later.", updates: [] }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (response.status === 402) {
+      if (result.status === 402) {
         return new Response(
           JSON.stringify({ error: "Payment required. Please add credits to continue.", updates: [] }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
-      if (response.status === 403) {
+      console.error("AI gateway error:", result.status, result.errorText);
+      if (result.status === 403) {
         console.log("[extract-character-updates] Content safety rejection (403), retrying with safe extraction mode");
         // Retry with a sanitized prompt focused on non-explicit metadata only
-        const safeRequestBody = {
-          model: 'grok-4.3',
+        const safeResult = await callXaiResponses({
+          apiKey,
+          model: "grok-4.3",
           messages: [
-		            { role: "system", content: "Extract only non-explicit character state metadata from the latest exchange. Return JSON with {updates:[{character,field,value,evidence,confidence}], physicalStateReviews:[{character,reviewed,locationReviewed,scenePositionReviewed,changed,reason,evidence,confidence}]}. Use only supported field paths. Include one physicalStateReviews row for every eligible character. Include evidence from the latest exchange and confidence from 0 to 1. Omit weak or unsupported changes. Do not create, remove, or advance goals in this fallback." },
-            { role: "user", content: `Eligible characters: ${filteredCharacters.map((c: CharacterData) => c.name).join(', ')}.\n\nSupported fields:\n${supportedFields}\n\nCurrent character state:\n${characterContext || 'No eligible character data provided'}\n\nAnalyze:\n${combinedText}` }
+            { role: "system", content: "Extract only non-explicit character state metadata from the latest exchange. Return JSON with {updates:[{character,field,value,evidence,confidence}], physicalStateReviews:[{character,reviewed,locationReviewed,scenePositionReviewed,changed,reason,evidence,confidence}]}. Use only supported field paths. Include one physicalStateReviews row for every eligible character. Include evidence from the latest exchange and confidence from 0 to 1. Omit weak or unsupported changes. Do not create, remove, or advance goals in this fallback." },
+            { role: "user", content: `Eligible characters: ${filteredCharacters.map((c: CharacterData) => c.name).join(', ')}.\n\nSupported fields:\n${supportedFields}\n\nCurrent character state:\n${characterContext || 'No eligible character data provided'}\n\nAnalyze:\n${combinedText}` },
           ],
           temperature: 0.2,
-          max_tokens: 4096,
-          response_format: characterUpdateResponseFormat,
-        };
+          maxOutputTokens: 4096,
+          textFormat: characterUpdateResponseFormat,
+          store: SUPPORT_STORE,
+          reasoningEffort: SUPPORT_REASONING_EFFORT,
+          notes: ["Primary character-state sync request received 403; this safe retry extracted non-explicit metadata before any missing physical-state coverage retry."],
+        });
         const safeDebugPayload = debugTrace === true
           ? {
-              modelRequest: {
-                endpoint: apiUrl,
-                method: "POST",
-                capturedAt: Date.now(),
-                requestBody: safeRequestBody,
-                notes: ["Primary character-state sync request received 403; this safe retry extracted non-explicit metadata before any missing physical-state coverage retry."],
-              },
+              modelRequest: safeResult.modelRequest,
               primaryModelRequest: primaryDebugPayload?.modelRequest,
             }
           : null;
-        const safeResponse = await fetch(apiUrl, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify(safeRequestBody),
-        });
-        if (safeResponse.ok) {
-          const safeData = await safeResponse.json();
-          const safeContent = safeData.choices?.[0]?.message?.content || '{"updates":[],"physicalStateReviews":[]}';
+        if (safeResult.ok) {
+          const safeData = await safeResult.response.json();
+          const safeBodyError = getXaiResponsesBodyError(safeData, { requireOutputText: true });
+          if (safeBodyError) {
+            console.error("[extract-character-updates] Safe retry Responses body error:", safeBodyError);
+            const missingPhysicalStateReviews = (filteredCharacters as CharacterData[]).map((character) => character.name);
+            return new Response(
+              JSON.stringify({
+                updates: [],
+                physicalStateReviews: [],
+                physicalStateCompletenessReviews: buildPhysicalStateCompletenessReviews(filteredCharacters as CharacterData[], []),
+                missingPhysicalStateReviews,
+                providerBodyError: safeBodyError,
+                ...(safeDebugPayload ? { chronicle_debug_payload: safeDebugPayload } : {}),
+              }),
+              { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+          const safeContent = extractXaiResponsesText(safeData) || EMPTY_CHARACTER_SYNC_JSON;
           const parsedSafe = parseCharacterSyncContent(safeContent);
           let safeExtractedUpdates: any[] = parsedSafe.updates;
           let safePhysicalStateReviews = normalizePhysicalStateReviews(parsedSafe.physicalStateReviews, filteredCharacters as CharacterData[], 'primary');
@@ -1220,10 +1215,13 @@ Return ONLY valid JSON. No explanations.`;
             } : {}),
           }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
         }
-        // If safe retry also fails, return empty
+        // If safe retry also fails, expose the failure so debug exports do not treat it as completed empty state.
         const missingPhysicalStateReviews = (filteredCharacters as CharacterData[]).map((character) => character.name);
+        const safeRetryError = `Safe character-state retry failed: HTTP ${safeResult.status}`;
         return new Response(
           JSON.stringify({
+            error: safeRetryError,
+            providerBodyError: safeRetryError,
             updates: [],
             physicalStateReviews: [],
             physicalStateCompletenessReviews: buildPhysicalStateCompletenessReviews(filteredCharacters as CharacterData[], []),
@@ -1236,8 +1234,23 @@ Return ONLY valid JSON. No explanations.`;
       throw new Error("Failed to extract character updates");
     }
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || '{"updates":[],"physicalStateReviews":[]}';
+    const data = await result.response.json();
+    const bodyError = getXaiResponsesBodyError(data, { requireOutputText: true });
+    if (bodyError) {
+      console.error("[extract-character-updates] xAI Responses body error:", bodyError);
+      return new Response(
+        JSON.stringify({
+          updates: [],
+          physicalStateReviews: [],
+          physicalStateCompletenessReviews: buildPhysicalStateCompletenessReviews(filteredCharacters as CharacterData[], []),
+          missingPhysicalStateReviews: (filteredCharacters as CharacterData[]).map((character) => character.name),
+          providerBodyError: bodyError,
+          ...(primaryDebugPayload ? { chronicle_debug_payload: primaryDebugPayload } : {}),
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const content = extractXaiResponsesText(data) || EMPTY_CHARACTER_SYNC_JSON;
     const parsedPrimary = parseCharacterSyncContent(content);
     let extractedUpdates: any[] = parsedPrimary.updates;
     let physicalStateReviews = normalizePhysicalStateReviews(parsedPrimary.physicalStateReviews, filteredCharacters as CharacterData[], 'primary');

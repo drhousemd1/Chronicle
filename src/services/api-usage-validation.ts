@@ -107,8 +107,13 @@ export function buildCall1ValidationPresence(input: {
   systemInstruction: string;
   messages: Array<{ role: "system" | "user" | "assistant"; content: string }>;
   finalUserInput: string;
+  transport?: {
+    providerTransport?: string;
+    store?: boolean;
+    reasoningEffort?: string;
+  };
 }): Record<string, ValidationPresence> {
-  const { appData, conversation, systemInstruction, messages, finalUserInput } = input;
+  const { appData, conversation, systemInstruction, messages, finalUserInput, transport } = input;
   const world = appData.world?.core;
   const aiCharacters = appData.characters.filter((character) => character.controlledBy === "AI");
   const userControlledCharacters = appData.characters.filter((character) => character.controlledBy === "User");
@@ -134,6 +139,12 @@ export function buildCall1ValidationPresence(input: {
   detail["call1.meta.final_user_wrapper"] =
     finalMessage?.role === "user" &&
     normalizedIncludes(finalMessage?.content || "", finalUserInput);
+
+  if (transport) {
+    detail["call1.transport.responses"] = transport.providerTransport === "responses";
+    detail["call1.transport.store_false"] = transport.store === false;
+    detail["call1.transport.reasoning_medium"] = transport.reasoningEffort === "medium";
+  }
 
   if (normalizeText(world?.scenarioName)) {
     detail["call1.story.scenario_name"] =

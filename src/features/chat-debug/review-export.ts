@@ -480,6 +480,9 @@ function renderModelRequestBlocks(call: StoredChatDebugTrace['call1Request']): s
         <span><strong>Captured</strong>${escapeHtml(formatDebugDate(request.capturedAt))}</span>
       </div>
       ${request.notes?.length ? `<ul class="trace-note-list">${request.notes.map((note) => `<li>${escapeHtml(note)}</li>`).join('')}</ul>` : ''}
+      ${request.providerStreamError ? `<div class="trace-warning"><strong>Provider stream error</strong>${escapeHtml(request.providerStreamError)}</div>` : ''}
+      ${request.responseUsage ? renderDebugJsonBlock('Provider response usage', request.responseUsage) : ''}
+      ${request.reasoningSummaries?.length ? renderDebugJsonBlock('Provider reasoning summaries', request.reasoningSummaries) : ''}
       ${renderDebugJsonBlock('Exact request body sent to Grok/xAI', request.requestBody)}
     </div>
   `).join('');
@@ -1231,6 +1234,23 @@ function reviewStyles(): string {
       font-size: 12px;
     }
     .trace-note-list li { margin: 5px 0; }
+    .trace-warning {
+      color: #ffd7a3;
+      background: rgba(255, 168, 88, 0.12);
+      border: 1px solid rgba(255, 168, 88, 0.24);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin: 10px 0;
+      font-size: 12px;
+    }
+    .trace-warning strong {
+      display: block;
+      color: #ffbf7b;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-size: 10px;
+    }
     .trace-note {
       color: #d8e2f2;
       background: rgba(120,220,202,0.07);

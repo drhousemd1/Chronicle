@@ -72,7 +72,8 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
       title: "Layer A - Verified Integration Facts",
       description: "Concrete implementation facts traced directly from Chronicle code.",
       rows: [
-        { label: "Primary chat endpoint", value: "https://api.x.ai/v1/chat/completions" },
+        { label: "Primary roleplay endpoint", value: "https://api.x.ai/v1/responses" },
+        { label: "Legacy helper text endpoint", value: "https://api.x.ai/v1/chat/completions" },
         { label: "Primary chat model", value: "grok-4.3" },
         { label: "Scene/Cover/Avatar image model", value: "grok-imagine-image" },
         { label: "Chronicle frontend chat gateway", value: "Supabase edge function: /functions/v1/chat" },
@@ -529,14 +530,14 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
     },
     {
       id: "phase-api-call-1",
-      title: "API Call 1 - Narrative Chat Completion",
-      subtitle: "Frontend /functions/v1/chat -> xAI chat completions",
+      title: "API Call 1 - Narrative Responses Generation",
+      subtitle: "Frontend /functions/v1/chat -> xAI Responses",
       defaultOpen: true,
       sections: [
         {
           id: "section-chat-edge-gateway",
           title: "Supabase Chat Edge Gateway",
-          description: "Auth, model gatekeeping, xAI request dispatch, stream proxying.",
+          description: "Auth, model gatekeeping, xAI Responses dispatch, and the browser-facing SSE compatibility bridge.",
           defaultOpen: true,
           items: [
             {
@@ -551,7 +552,7 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
               problemSolved:
                 "Prevents the frontend from bypassing Chronicle-specific runtime logic or calling the provider directly without app-level safeguards.",
               fileRefs: [
-                { path: "src/services/llm.ts", lines: "885-898" },
+                { path: "src/services/llm.ts", lines: "987-998" },
               ],
             },
             {
@@ -566,26 +567,26 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
               problemSolved:
                 "Prevents unauthorized chat calls and model drift away from the supported Chronicle runtime lane.",
               fileRefs: [
-                { path: "supabase/functions/chat/index.ts", lines: "71-92" },
+                { path: "supabase/functions/chat/index.ts", lines: "1184-1234" },
               ],
             },
             {
               id: "item-chat-xai-request",
-              title: "xAI chat request payload",
+              title: "xAI Responses request payload",
               tagType: "data-block",
               icon: "📦",
               purpose:
-                "Forwards normalized model + messages + stream + max_tokens into xAI `chat/completions` API.",
+                "Forwards normalized model + input + stream + max_output_tokens + store:false + reasoning.effort into xAI Responses for live roleplay generation.",
               whyItExists:
                 "All Chronicle chat passes ultimately need one normalized provider request contract once the edge runtime decides which path to run.",
               problemSolved:
-                "Prevents frontend/backend payload drift and keeps xAI request shape consistent across direct, planner, and writer passes.",
+                "Prevents frontend/backend payload drift and keeps the roleplay runtime on the reasoning-enabled Responses lane while preserving the browser-facing SSE contract.",
               fileRefs: [
-                { path: "supabase/functions/chat/index.ts", lines: "33-54" },
+                { path: "supabase/functions/chat/index.ts", lines: "818-827" },
               ],
-              codeSourceLabel: "`callXAI` request body",
+              codeSourceLabel: "`handleResponsesDirect` request body",
               promptViewEnabled: true,
-              codeSource: `fetch("https://api.x.ai/v1/chat/completions", {\n  body: JSON.stringify({ model, messages, stream, temperature, max_tokens })\n})`,
+              codeSource: `callXaiResponses({\n  model: "grok-4.3",\n  messages,\n  stream: true,\n  temperature: 0.6,\n  maxOutputTokens,\n  store: false,\n  reasoningEffort: "medium"\n})`,
             },
             {
               id: "item-content-redirect-retry",
@@ -601,7 +602,7 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
               settingsGate:
                 "Failure-only fallback. This retry path only runs after a 403 content-filter block in direct mode.",
               fileRefs: [
-                { path: "supabase/functions/chat/index.ts", lines: "24-30, 124-162" },
+                { path: "supabase/functions/chat/index.ts", lines: "156-160, 888-1044" },
               ],
               codeSourceLabel: "CONTENT_REDIRECT_DIRECTIVE",
               promptViewEnabled: true,
@@ -609,18 +610,18 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
             },
             {
               id: "item-stream-pass-through",
-              title: "SSE streaming pass-through",
+              title: "SSE compatibility bridge",
               tagType: "code-logic",
               icon: "🔧",
               purpose:
-                "Streams xAI response body through edge function and frontend parser to render token-by-token narrative output.",
+                "Reads the provider stream at the edge, normalizes the completed text, and re-emits Chat Completions-shaped SSE chunks for the existing frontend parser.",
               whyItExists:
-                "Live roleplay UX depends on streamed turn delivery rather than waiting for one opaque final blob.",
+                "The browser parser expects Chat Completions-style SSE events, while the roleplay provider call now uses Responses.",
               problemSolved:
-                "Prevents dead-feeling wait states and keeps SSE-compatible debug handling aligned with visible text streaming.",
+                "Preserves the existing completed-message commit contract without exposing raw Responses events or changing chat rendering mid-migration.",
               fileRefs: [
-                { path: "supabase/functions/chat/index.ts", lines: "106-121, 137-153" },
-                { path: "src/services/llm.ts", lines: "915-964" },
+                { path: "supabase/functions/chat/index.ts", lines: "710-779, 823-839" },
+                { path: "src/services/llm.ts", lines: "1082-1180" },
               ],
             },
           ],
@@ -708,7 +709,7 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
                 "Prevents prompt bloat, skips repeated memory facts, and stops low-value flavor text from polluting the continuity layer.",
               fileRefs: [
                 { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "5116-5283" },
-                { path: "supabase/functions/extract-memory-events/index.ts", lines: "69-121, 153-189" },
+                { path: "supabase/functions/extract-memory-events/index.ts", lines: "69-129, 153-190" },
               ],
               codeSourceLabel: "Memory curator system prompt",
               promptViewEnabled: true,
@@ -728,12 +729,12 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
               settingsGate:
                 "Conditional maintenance lane. It runs only when the tracked day advanced and completed-day bullet memories exist.",
               fileRefs: [
-                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "893-920" },
-                { path: "supabase/functions/compress-day-memories/index.ts", lines: "64-92, 101-112" },
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "1948-2049" },
+                { path: "supabase/functions/compress-day-memories/index.ts", lines: "64-96, 105-130" },
               ],
               codeSourceLabel: "Memory compression prompt",
               promptViewEnabled: true,
-              codeSource: `You are compressing a list of story memory bullet points...\nOUTPUT: single plain-text synopsis (2-3 sentences).\nmax_tokens: 350, then deterministic cleanup caps output to 3 sentences and 900 characters.`,
+              codeSource: `You are compressing a list of story memory bullet points...\nOUTPUT: single plain-text synopsis (2-3 sentences).\nResponses max_output_tokens: 350 with store:false and medium reasoning; deterministic cleanup caps output to 3 sentences and 900 characters.`,
             },
           ],
         },
@@ -1171,7 +1172,7 @@ Character goals:
               ],
               codeSourceLabel: "world-ai invoke call",
               promptViewEnabled: true,
-              codeSource: "supabase.functions.invoke('chat', { messages:[system,user], modelId, stream:false }) -> trim and normalize precise-mode separators",
+              codeSource: "supabase.functions.invoke('chat', { messages:[system,user], modelId, stream:false, providerTransport:'chat_completions' }) -> trim and normalize precise-mode separators",
             },
           ],
         },

@@ -5,8 +5,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { callXaiResponses, extractXaiResponsesText, getXaiResponsesBodyError } from "../_shared/xai-responses.ts";
 
 const MEMORY_POINT_MAX_CHARS = 140;
+const SUPPORT_REASONING_EFFORT = "medium" as const;
+const SUPPORT_STORE = false;
 
 function trimAtWordBoundary(value: string, maxChars: number): string {
   if (value.length <= maxChars) return value;
@@ -92,66 +95,69 @@ ${existingMemoryText}
 Return ONLY JSON matching the requested schema.
 Empty events are acceptable.`;
 
-    // GROK ONLY -- call xAI API directly
     const effectiveModel = modelId === "grok-4.3" ? modelId : "grok-4.3";
-    const xaiRequestBody = {
-      model: effectiveModel,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: `Extract durable story-memory events from this latest exchange:\n\n${exchangeText}` }
-      ],
-      temperature: 0.3,
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "chronicle_memory_events",
-          schema: {
-            type: "object",
-            additionalProperties: false,
-            properties: {
-              events: {
-                type: "array",
-                items: { type: "string" },
-              },
+    const messages = [
+      { role: "system" as const, content: systemPrompt },
+      { role: "user" as const, content: `Extract durable story-memory events from this latest exchange:\n\n${exchangeText}` },
+    ];
+    const responseFormat = {
+      type: "json_schema",
+      json_schema: {
+        name: "chronicle_memory_events",
+        schema: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            events: {
+              type: "array",
+              items: { type: "string" },
             },
-            required: ["events"],
           },
+          required: ["events"],
         },
       },
     };
+    const result = await callXaiResponses({
+      apiKey: XAI_API_KEY,
+      model: effectiveModel,
+      messages,
+      temperature: 0.3,
+      maxOutputTokens: 1024,
+      store: SUPPORT_STORE,
+      reasoningEffort: SUPPORT_REASONING_EFFORT,
+      textFormat: responseFormat,
+    });
     const debugPayload = debugTrace === true
       ? {
-          modelRequest: {
-            endpoint: "https://api.x.ai/v1/chat/completions",
-            method: "POST",
-            capturedAt: Date.now(),
-            requestBody: xaiRequestBody,
-          },
+          modelRequest: result.modelRequest,
         }
       : null;
-    const response = await fetch("https://api.x.ai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${XAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(xaiRequestBody),
-    });
 
-    if (!response.ok) {
-      if (response.status === 429) {
+    if (!result.ok) {
+      if (result.status === 429) {
         return new Response(
-          JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
+          JSON.stringify({ error: "Rate limit exceeded. Please try again later.", ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}) }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      const errorText = await response.text();
-      console.error("xAI error:", response.status, errorText);
+      console.error("xAI Responses error:", result.status, result.errorText);
       throw new Error("Failed to extract memory events");
     }
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || '[]';
+    const data = await result.response.json();
+    const bodyError = getXaiResponsesBodyError(data, { requireOutputText: true });
+    if (bodyError) {
+      console.error("xAI Responses body error:", bodyError);
+      return new Response(
+        JSON.stringify({
+          extractedEvents: [],
+          providerBodyError: bodyError,
+          ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const content = extractXaiResponsesText(data);
     
     let extractedEvents: string[] = [];
     let parseError: string | null = null;
@@ -167,13 +173,8 @@ Empty events are acceptable.`;
           malformedContent = content;
         }
       } else {
-        const arrayMatch = content.match(/\[[\s\S]*?\]/);
-        if (arrayMatch) {
-          extractedEvents = JSON.parse(arrayMatch[0]);
-        } else {
-          parseError = "missing_json";
-          malformedContent = content;
-        }
+        parseError = "missing_json_object";
+        malformedContent = content;
       }
     } catch (_parseError) {
       console.error("Failed to parse extraction response:", content);

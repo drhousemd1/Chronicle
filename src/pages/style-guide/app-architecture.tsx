@@ -30,6 +30,10 @@ const STATIC_ARCHITECTURE_PATHS = [
   "/scripts/refresh-architecture-paths.mjs",
   "/scripts/run-quality-hub-scan.mjs",
   "/scripts/verify-prompt-serialization.ts",
+  "/src/services/roleplay-runtime-responses.test.ts",
+  "/src/services/support-call-responses-migration.test.ts",
+  "/src/services/xai-responses-adapter.test.ts",
+  "/supabase/functions/_shared/xai-responses.ts",
   "/e2e/smoke.spec.ts",
 ];
 
@@ -218,7 +222,7 @@ const REFACTOR_TRIAGE_OVERRIDES: Record<string, RefactorTriageOverride> = {
   },
   "/src/services/character-ai.ts": {
     fileNote:
-      "Refactor target: split section prompt construction, enhance request execution, response parsing, and persistence/update helpers into focused modules. The current file is carrying too much end-to-end responsibility for the character-enhance pipeline.",
+      "Refactor target: split section prompt construction, enhance request execution, response parsing, and persistence/update helpers into focused modules. The current file is carrying too much end-to-end responsibility for the character-enhance pipeline. Builder enhancement calls intentionally set providerTransport='chat_completions' so they do not inherit the roleplay runtime Responses reasoning default.",
   },
   "/src/services/llm.ts": {
     fileNote:
@@ -354,8 +358,11 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
         children: [
           { kind: "file", path: "/src/services/llm.ts" },
           { kind: "file", path: "/src/services/llm-canonical-coverage.test.ts" },
-          { kind: "file", path: "/src/services/support-call-hardening.test.ts" },
-          { kind: "file", path: "/src/services/review-ratings.ts" },
+              { kind: "file", path: "/src/services/support-call-hardening.test.ts" },
+              { kind: "file", path: "/src/services/roleplay-runtime-responses.test.ts" },
+              { kind: "file", path: "/src/services/support-call-responses-migration.test.ts" },
+              { kind: "file", path: "/src/services/xai-responses-adapter.test.ts" },
+              { kind: "file", path: "/src/services/review-ratings.ts" },
           { kind: "file", path: "/src/services/supabase-data.ts" },
           { kind: "file", path: "/src/services/app-settings.ts" },
           { kind: "file", path: "/src/services/api-usage-test-session.ts" },
@@ -585,6 +592,7 @@ const CURATED_NAV_SECTIONS: NavSnapshotSection[] = [
               { kind: "file", path: "/supabase/functions/_shared/cors.ts" },
               { kind: "file", path: "/supabase/functions/_shared/rate-limit.ts" },
               { kind: "file", path: "/supabase/functions/_shared/state-sync-completeness.ts" },
+              { kind: "file", path: "/supabase/functions/_shared/xai-responses.ts" },
             ],
           },
           {
@@ -1472,7 +1480,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
     ],
   },
   "/src/services/world-ai.ts": {
-    description: "Story/world builder AI service for enhancing scenario fields, custom world content, goals, and arc-step prose before those values are saved into story state.",
+    description: "Story/world builder AI service for enhancing scenario fields, custom world content, goals, and arc-step prose before those values are saved into story state. Its chat edge calls explicitly request the legacy Chat Completions compatibility lane so builder helpers stay out of the roleplay Responses migration.",
     rows: [
       {
         id: "world-ai-enhance-service",
@@ -1493,7 +1501,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
           },
           {
             label: "Requires",
-            values: ["selected tag directives, world context serialization, and builder field targeting stay aligned so AI-enhanced output matches the authored story model"],
+            values: ["selected tag directives, world context serialization, explicit providerTransport='chat_completions', and builder field targeting stay aligned so AI-enhanced output matches the authored story model without using the live roleplay reasoning lane"],
             kind: "plain",
           },
         ],
@@ -2241,7 +2249,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       {
         id: "chat-interface-roleplay-runtime-path",
         title: "Direct Chat Runtime Path",
-        summary: "Packages the effective chat runtime into Chronicle's direct streaming Grok request path, handles send/regenerate/Continue branches, records local style telemetry for debug review, then applies post-response derivations back into the continuity ledger.",
+        summary: "Packages the effective chat runtime into Chronicle's direct streaming Grok Responses request path, handles send/regenerate/Continue branches, records local style telemetry for debug review, then applies post-response derivations back into the continuity ledger.",
         badgeLabel: "API CALL",
         badgeClass: "api-call",
         details: [
@@ -2257,7 +2265,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
           },
           {
             label: "Requires",
-            values: ["the frontend request contract and backend direct chat edge contract stay in sync, including generation IDs and optional debug-trace packets"],
+            values: ["the frontend request contract and backend direct chat edge contract stay in sync, including providerTransport, store:false, reasoning effort, generation IDs, and optional debug-trace packets"],
             kind: "plain",
           },
         ],
@@ -2442,8 +2450,8 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       },
       {
         id: "llm-roleplay-v2-context",
-        title: "Roleplay Context Injection",
-        summary: "Attaches the current conversation, temporal state, active scene, AI/user speaker lists, and per-character scene state so the backend direct lane reasons against the right live story state.",
+        title: "Roleplay Context and Responses Transport Envelope",
+        summary: "Attaches the current conversation, temporal state, active scene, AI/user speaker lists, per-character scene state, and Responses transport flags so the backend direct lane reasons against the right live story state.",
         badgeLabel: "CONTEXT INJECTION",
         badgeClass: "context-injection",
         details: [
@@ -2459,7 +2467,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
           },
           {
             label: "Requires",
-            values: ["effective character resolution and active scene metadata are correct before the request is sent"],
+            values: ["effective character resolution, active scene metadata, providerTransport=responses, store=false, and reasoningEffort=medium are correct before the request is sent"],
             kind: "plain",
           },
         ],
@@ -2521,8 +2529,67 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       },
     ],
   },
+  "/src/services/roleplay-runtime-responses.test.ts": {
+    description: "Source-contract test suite that verifies API Call 1 stays on xAI Responses without changing the frontend's completed-message commit contract.",
+    rows: [
+      {
+        id: "roleplay-runtime-responses-contract-test",
+        title: "Roleplay Responses Runtime Contract",
+        summary: "Asserts that llm.ts requests providerTransport=responses, store=false, medium reasoning, and a Responses-shaped debug mirror while preserving the browser-facing chat response contract.",
+        badgeLabel: "TEST",
+        badgeClass: "test",
+        details: [
+          { label: "Uses", values: ["/src/services/llm.ts", "/supabase/functions/chat/index.ts"], kind: "files" },
+          { label: "Requires", values: ["the source-level contract stays synchronized with the live chat transport settings before any Lovable redeploy"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/src/services/support-call-responses-migration.test.ts": {
+    description: "Source-contract test suite that verifies the core roleplay support calls use xAI Responses while out-of-scope helper lanes remain on their existing transport.",
+    rows: [
+      {
+        id: "support-call-responses-migration-contract-test",
+        title: "Support-Call Responses Migration Contract",
+        summary: "Checks character sync, memory extraction, goal progress, goal alignment, and day-memory compression for Responses request shape, store=false, medium reasoning, body-level provider failure handling, and preserved legacy helper lanes.",
+        badgeLabel: "TEST",
+        badgeClass: "test",
+        details: [
+          {
+            label: "Uses",
+            values: [
+              "/supabase/functions/extract-character-updates/index.ts",
+              "/supabase/functions/extract-memory-events/index.ts",
+              "/supabase/functions/evaluate-goal-progress/index.ts",
+              "/supabase/functions/evaluate-goal-alignment/index.ts",
+              "/supabase/functions/compress-day-memories/index.ts",
+              "/supabase/functions/_shared/xai-responses.ts",
+            ],
+            kind: "files",
+          },
+          { label: "Requires", values: ["support-call provider migrations remain visible in tests so future prompt or transport edits do not silently fall back to the old request shape"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/src/services/xai-responses-adapter.test.ts": {
+    description: "Unit coverage for the shared xAI Responses adapter used by live roleplay generation and migrated roleplay support calls.",
+    rows: [
+      {
+        id: "xai-responses-adapter-test",
+        title: "xAI Responses Adapter Unit Test",
+        summary: "Verifies request-body construction, Chat Completions JSON schema conversion, visible-text extraction, reasoning-summary extraction, usage normalization, stream-event normalization, and body-level provider failure detection.",
+        badgeLabel: "TEST",
+        badgeClass: "test",
+        details: [
+          { label: "Uses", values: ["/supabase/functions/_shared/xai-responses.ts"], kind: "files" },
+          { label: "Requires", values: ["adapter tests stay aligned with official xAI Responses payload shape before shared transport behavior is reused by additional edge functions"], kind: "plain" },
+        ],
+      },
+    ],
+  },
   "/supabase/functions/chat/index.ts": {
-    description: "Server-side Chronicle chat edge function that receives the assembled request and routes it through Chronicle's direct paid chat runtime, while still accepting older pipeline labels as compatibility aliases.",
+    description: "Server-side Chronicle chat edge function that receives the assembled request and routes the live roleplay path through xAI Responses with store:false and medium reasoning, while still accepting older pipeline labels and a legacy Chat Completions compatibility lane.",
     rows: [
       {
         id: "chat-edge-entry",
@@ -2550,8 +2617,8 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       },
       {
         id: "chat-edge-roleplay-v2",
-        title: "Direct Streaming Chat Relay",
-        summary: "Runs Chronicle chat through the current direct streaming xAI lane, preserving compatibility-shaped debug metadata and deterministic cleanup without the older multi-pass planner/writer orchestration wait.",
+        title: "Direct Responses Chat Relay",
+        summary: "Runs Chronicle chat through the current direct streaming xAI Responses lane, preserving the browser-facing SSE commit contract, compatibility-shaped debug metadata, and deterministic cleanup without the older multi-pass planner/writer orchestration wait.",
         badgeLabel: "API CALL",
         badgeClass: "api-call",
         details: [
@@ -2560,12 +2627,18 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
             values: [
               "auth + rate-limit gate",
               "compatibility alias from roleplay_v2 -> direct",
-              "direct xAI call",
+              "Responses transport for live roleplay by default",
+              "legacy Chat Completions transport only for explicit compatibility callers",
               "403 content redirect retry",
               "deterministic cleanup / normalization",
-              "SSE streaming relay",
+              "SSE compatibility bridge",
             ],
             kind: "plain",
+          },
+          {
+            label: "Uses",
+            values: ["/supabase/functions/_shared/xai-responses.ts"],
+            kind: "files",
           },
           {
             label: "Used By",
@@ -2575,7 +2648,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
           {
             label: "Requires",
             values: [
-              "the latest user turn, roleplay context metadata, and direct provider response stay aligned before the streamed text becomes visible story state",
+              "the latest user turn, roleplay context metadata, Responses request body, and direct provider response stay aligned before the completed text is committed as visible story state",
               "compatibility aliasing never lies about the active runtime when debug traces or docs describe the lane",
             ],
             kind: "plain",
@@ -2952,7 +3025,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
     ],
   },
   "/supabase/functions/evaluate-goal-alignment/index.ts": {
-    description: "Structured-output goal-alignment classifier for post-turn diagnostics. It scores support, resistance, drift, and neutral signals against existing story and character goals, returning reviewed JSON for debug and shadow-mode handling.",
+    description: "Responses-based structured-output goal-alignment classifier for post-turn diagnostics. It scores support, resistance, drift, and neutral signals against existing story and character goals, returning reviewed JSON for debug and shadow-mode handling.",
     rows: [
       {
         id: "goal-alignment-edge-function",
@@ -2962,13 +3035,14 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
         badgeClass: "edge-fn",
         details: [
           { label: "Used By", values: ["/src/components/chronicle/ChatInterfaceTab.tsx", "/src/lib/goal-alignment.ts"], kind: "files" },
-          { label: "Requires", values: ["structured output schema and frontend review handling stay aligned"], kind: "plain" },
+          { label: "Uses", values: ["/supabase/functions/_shared/xai-responses.ts"], kind: "files" },
+          { label: "Requires", values: ["Responses text.format schema, provider body-error checks, and frontend review handling stay aligned"], kind: "plain" },
         ],
       },
     ],
   },
   "/supabase/functions/evaluate-goal-progress/index.ts": {
-    description: "Structured-output story-step completion evaluator that checks pending steps against the latest exchange, requires direct evidence and confidence before completion, and stays separate from softer goal-alignment diagnostics.",
+    description: "Responses-based structured-output story-step completion evaluator that checks pending steps against the latest exchange, requires direct evidence and confidence before completion, and stays separate from softer goal-alignment diagnostics.",
     rows: [
       {
         id: "goal-progress-edge-function",
@@ -2978,13 +3052,14 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
         badgeClass: "edge-fn",
         details: [
           { label: "Used By", values: ["/src/components/chronicle/ChatInterfaceTab.tsx", "/src/lib/goal-state-guard.ts"], kind: "files" },
-          { label: "Requires", values: ["step-completion output stays conservative and evidence-backed before the client saves it"], kind: "plain" },
+          { label: "Uses", values: ["/supabase/functions/_shared/xai-responses.ts"], kind: "files" },
+          { label: "Requires", values: ["Responses text.format schema, provider body-error checks, and step-completion output stay conservative and evidence-backed before the client saves anything"], kind: "plain" },
         ],
       },
     ],
   },
   "/supabase/functions/extract-character-updates/index.ts": {
-    description: "Structured character-state sync worker that reviews the latest exchange against supported character fields, filters unsupported or weak updates, and returns accepted/rejected review rows for debug export and persistence.",
+    description: "Responses-based structured character-state sync worker that reviews the latest exchange against supported character fields, filters unsupported or weak updates, verifies physical-state review completeness, and returns accepted/rejected review rows for debug export and persistence.",
     rows: [
       {
         id: "character-state-sync-edge-function",
@@ -2994,8 +3069,8 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
         badgeClass: "edge-fn",
         details: [
           { label: "Used By", values: ["/src/components/chronicle/ChatInterfaceTab.tsx"], kind: "files" },
-          { label: "Uses", values: ["/supabase/functions/_shared/cors.ts", "/supabase/functions/_shared/state-sync-completeness.ts"], kind: "files" },
-          { label: "Requires", values: ["browser-to-edge request shape, structured provider request, evidence filtering, fallback retry, and review rows remain documented together"], kind: "plain" },
+          { label: "Uses", values: ["/supabase/functions/_shared/cors.ts", "/supabase/functions/_shared/state-sync-completeness.ts", "/supabase/functions/_shared/xai-responses.ts"], kind: "files" },
+          { label: "Requires", values: ["browser-to-edge request shape, Responses structured provider request, evidence filtering, fallback retry, and review rows remain documented together"], kind: "plain" },
         ],
       },
       {
@@ -3025,6 +3100,70 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
           { label: "Used By", values: ["/supabase/functions/extract-character-updates/index.ts", "/src/services/extract-character-updates-completeness.test.ts"], kind: "files" },
           { label: "Defines", values: ["normalizePhysicalStateReviews", "getMissingPhysicalStateReviewNames", "buildPhysicalStateCompletenessReviews"], kind: "plain" },
           { label: "Requires", values: ["normalization accepts both character objects and focused retry names without losing which characters were omitted by the model"], kind: "plain" },
+        ],
+      },
+    ],
+  },
+  "/supabase/functions/_shared/xai-responses.ts": {
+    description: "Shared Supabase edge helper for xAI Responses transport, request-shape normalization, structured JSON schema conversion, visible-text extraction, reasoning-summary extraction, usage parsing, stream-event normalization, and provider body-error detection.",
+    rows: [
+      {
+        id: "xai-responses-shared-adapter",
+        title: "xAI Responses Transport Adapter",
+        summary: "Centralizes the Responses API request shape used by the migrated roleplay runtime and core roleplay support calls so store:false, medium reasoning, max_output_tokens, text.format JSON schema, and debug-safe model-request metadata stay consistent.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          {
+            label: "Used By",
+            values: [
+              "/supabase/functions/chat/index.ts",
+              "/supabase/functions/extract-character-updates/index.ts",
+              "/supabase/functions/extract-memory-events/index.ts",
+              "/supabase/functions/evaluate-goal-progress/index.ts",
+              "/supabase/functions/evaluate-goal-alignment/index.ts",
+              "/supabase/functions/compress-day-memories/index.ts",
+            ],
+            kind: "files",
+          },
+          {
+            label: "Defines",
+            values: [
+              "callXaiResponses",
+              "buildXaiResponsesRequest",
+              "extractXaiResponsesText",
+              "extractXaiResponsesReasoningSummaries",
+              "extractXaiResponsesUsage",
+              "normalizeResponsesStreamEvent",
+              "getXaiResponsesBodyError",
+            ],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: [
+              "no Supabase schema changes; this is shared edge transport code and must be included when the importing edge functions are redeployed",
+              "Lovable redeploy set for this migration: chat, extract-character-updates, extract-memory-events, evaluate-goal-progress, evaluate-goal-alignment, and compress-day-memories",
+            ],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/supabase/functions/compress-day-memories/index.ts": {
+    description: "Responses-based day-memory compression worker that turns a day's saved memory bullets into a compact synopsis while preserving deterministic output cleanup and debug-visible provider failure reporting.",
+    rows: [
+      {
+        id: "day-memory-compression-edge-function",
+        title: "Day Memory Compression Worker",
+        summary: "Runs on day change to compress accumulated memory bullets into a short synopsis using xAI Responses, then caps and cleans the output before the frontend stores the summary.",
+        badgeLabel: "EDGE FUNCTION",
+        badgeClass: "edge-fn",
+        details: [
+          { label: "Used By", values: ["/src/components/chronicle/ChatInterfaceTab.tsx"], kind: "files" },
+          { label: "Uses", values: ["/supabase/functions/_shared/xai-responses.ts"], kind: "files" },
+          { label: "Requires", values: ["Responses max_output_tokens, provider body-error checks, debugTrace payload handling, and deterministic sentence/character caps stay aligned so memory summaries remain compact and failures remain visible in support-call debug exports"], kind: "plain" },
         ],
       },
     ],
@@ -3062,7 +3201,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
     ],
   },
   "/supabase/functions/extract-memory-events/index.ts": {
-    description: "Structured memory extraction worker that returns memory-worthy events from the latest exchange with schema-constrained output for post-turn memory updates.",
+    description: "Responses-based structured memory extraction worker that returns memory-worthy events from the latest exchange with schema-constrained output for post-turn memory updates.",
     rows: [
       {
         id: "memory-extraction-edge-function",
@@ -3072,6 +3211,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
         badgeClass: "edge-fn",
         details: [
           { label: "Used By", values: ["/src/components/chronicle/ChatInterfaceTab.tsx"], kind: "files" },
+          { label: "Uses", values: ["/supabase/functions/_shared/xai-responses.ts"], kind: "files" },
           { label: "Requires", values: ["recent-memory context and dedupe behavior stay aligned with the frontend save path"], kind: "plain" },
         ],
       },

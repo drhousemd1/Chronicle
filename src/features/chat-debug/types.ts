@@ -135,6 +135,9 @@ export type ChatDebugRequestRecord = {
     requestBody: unknown;
     capturedAt?: number;
     notes?: string[];
+    responseUsage?: unknown;
+    reasoningSummaries?: string[];
+    providerStreamError?: string | null;
   };
   modelRequests?: Array<{
     label?: string;
@@ -143,6 +146,9 @@ export type ChatDebugRequestRecord = {
     requestBody: unknown;
     capturedAt?: number;
     notes?: string[];
+    responseUsage?: unknown;
+    reasoningSummaries?: string[];
+    providerStreamError?: string | null;
   }>;
   responseBody?: unknown;
   error?: string;

@@ -1,6 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { callXaiResponses, extractXaiResponsesText, getXaiResponsesBodyError } from "../_shared/xai-responses.ts";
+
+const SUPPORT_REASONING_EFFORT = "medium" as const;
+const SUPPORT_STORE = false;
 
 type StepInput = {
   stepId: string;
@@ -190,74 +194,76 @@ Respond in JSON format ONLY:
 
 Set "completed" to true only when result is "completed", confidence is at least 0.75, and evidence directly supports the lasting condition. Empty or conservative results are valid.`;
 
-    const xaiRequestBody = {
-      model: "grok-4.3",
-      messages: [
-        { role: "system", content: "You are a precise story goal classifier. Respond only in valid JSON." },
-        { role: "user", content: classificationPrompt },
-      ],
-      temperature: 0.3,
-      max_tokens: 1024,
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "chronicle_goal_progress",
-          schema: {
-            type: "object",
-            additionalProperties: false,
-            properties: {
-              classifications: {
-                type: "array",
-                items: {
-                  type: "object",
-                  additionalProperties: false,
-                  properties: {
-                    stepId: { type: "string" },
-                    result: { type: "string", enum: ["no_progress", "partial_progress", "completed", "unsupported"] },
-                    completed: { type: "boolean" },
-                    confidence: { type: "number" },
-                    evidence: { type: "string" },
-                    summary: { type: "string" },
-                  },
-                  required: ["stepId", "result", "completed", "confidence", "evidence", "summary"],
+    const messages = [
+      { role: "system" as const, content: "You are a precise story goal classifier. Respond only in valid JSON." },
+      { role: "user" as const, content: classificationPrompt },
+    ];
+    const responseFormat = {
+      type: "json_schema",
+      json_schema: {
+        name: "chronicle_goal_progress",
+        schema: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            classifications: {
+              type: "array",
+              items: {
+                type: "object",
+                additionalProperties: false,
+                properties: {
+                  stepId: { type: "string" },
+                  result: { type: "string", enum: ["no_progress", "partial_progress", "completed", "unsupported"] },
+                  completed: { type: "boolean" },
+                  confidence: { type: "number" },
+                  evidence: { type: "string" },
+                  summary: { type: "string" },
                 },
+                required: ["stepId", "result", "completed", "confidence", "evidence", "summary"],
               },
             },
-            required: ["classifications"],
           },
+          required: ["classifications"],
         },
       },
     };
+    const result = await callXaiResponses({
+      apiKey: XAI_API_KEY,
+      model: "grok-4.3",
+      messages,
+      temperature: 0.3,
+      maxOutputTokens: 1024,
+      store: SUPPORT_STORE,
+      reasoningEffort: SUPPORT_REASONING_EFFORT,
+      textFormat: responseFormat,
+    });
     const debugPayload = debugTrace === true
       ? {
-          modelRequest: {
-            endpoint: "https://api.x.ai/v1/chat/completions",
-            method: "POST",
-            capturedAt: Date.now(),
-            requestBody: xaiRequestBody,
-          },
+          modelRequest: result.modelRequest,
         }
       : null;
 
-    const response = await fetch("https://api.x.ai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${XAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(xaiRequestBody),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[evaluate-goal-progress] xAI error: ${response.status} - ${errorText}`);
+    if (!result.ok) {
+      console.error(`[evaluate-goal-progress] xAI Responses error: ${result.status} - ${result.errorText}`);
       return new Response(JSON.stringify({ stepUpdates: [], error: 'Classification failed', ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}) }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || '';
+    const data = await result.response.json();
+    const bodyError = getXaiResponsesBodyError(data, { requireOutputText: true });
+    if (bodyError) {
+      console.error(`[evaluate-goal-progress] xAI Responses body error: ${bodyError}`);
+      return new Response(JSON.stringify({
+        stepUpdates: [],
+        error: "Classification failed",
+        providerBodyError: bodyError,
+        ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const content = extractXaiResponsesText(data) || '';
     
     let parsed: {
       classifications: Array<{

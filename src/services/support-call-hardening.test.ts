@@ -40,7 +40,7 @@ describe('support-call hardening source contracts', () => {
     const source = read('supabase/functions/compress-day-memories/index.ts');
 
     expect(source).toContain('const DAY_SYNOPSIS_MAX_CHARS = 900;');
-    expect(source).toContain('max_tokens: 350');
+    expect(source).toContain('maxOutputTokens: 350');
     expect(source).toContain('normalizeSynopsis');
     expect(source).toContain('sentences.slice(0, 3)');
   });

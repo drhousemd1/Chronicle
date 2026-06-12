@@ -24,10 +24,24 @@ export class ContentFilteredChatError extends Error {
   }
 }
 
+class ProviderStreamChatError extends Error {
+  constructor(message = "The AI provider failed while generating this turn. Please try again.") {
+    super(message);
+    this.name = 'ProviderStreamChatError';
+  }
+}
+
 export const CONTENT_FILTER_NOTICE_TEXT = 'Chronicle: The model provider blocked this turn. This can happen because of your latest message or because the previous AI response is included in the request. Try editing the last user or AI message, then send again.';
+export const PROVIDER_ERROR_NOTICE_TEXT = 'Chronicle: The AI provider failed while generating this turn. Please try again.';
 
 export function isLocalRoleplayNoticeMessage(message: Pick<Message, 'text' | 'localNotice'>): boolean {
-  return message.localNotice === 'content_filter' || message.text.startsWith('Chronicle: The model provider blocked this turn.');
+  return (
+    message.localNotice === 'content_filter'
+    || message.localNotice === 'provider_error'
+    || message.text.startsWith('Chronicle: The model provider blocked this turn.')
+    || message.text.startsWith('Chronicle: The AI provider failed while generating this turn.')
+    || message.text.startsWith('The AI provider failed while generating this turn.')
+  );
 }
 
 export function buildEstablishedFactNote(
@@ -89,10 +103,13 @@ export type GenerateRoleplayResponseStreamOptions = {
 
 export type RoleplayApiMessage = { role: 'system' | 'user' | 'assistant'; content: string };
 
-const CHAT_RESPONSE_TIMEOUT_MS = 90_000;
+const CHAT_RESPONSE_TIMEOUT_MS = 180_000;
 const API_CALL_1_PRIOR_HISTORY_MESSAGE_LIMIT = 5;
 const CURRENT_TURN_MEMORY_ANCHOR_LIMIT = 3;
 const CURRENT_TURN_CHARACTER_STATE_LIMIT = 10;
+const ROLEPLAY_PROVIDER_TRANSPORT = 'responses';
+const ROLEPLAY_REASONING_EFFORT = 'medium';
+const ROLEPLAY_STORE = false;
 
 function compactPromptValue(value: unknown, max = 140): string {
   const text = typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
@@ -878,6 +895,8 @@ export async function* generateRoleplayResponseStream(
   const callStartedAt = Date.now();
   let outputChars = 0;
   let traceEmitted = false;
+  let providerResponseUsage: Record<string, unknown> | null = null;
+  let providerRequestCount = 1;
 
   const emitCall1Trace = (status: string, extraMetadata: Record<string, unknown> = {}) => {
     if (!shouldTrackCall1 || traceEmitted) return;
@@ -885,12 +904,17 @@ export async function* generateRoleplayResponseStream(
     const outputTokensEst = Math.ceil(outputChars / 4);
     const totalTokensEst = inputTokensEst + outputTokensEst;
     const estCostUsd = ((inputTokensEst / 1_000_000) * 0.2) + ((outputTokensEst / 1_000_000) * 0.5);
+    const providerUsage = providerResponseUsage || undefined;
     void trackAiUsageEvent({
       eventType: "chat_call_1",
       eventSource: "llm.generateRoleplayResponseStream",
       metadata: {
         modelId,
         status,
+        providerTransport: ROLEPLAY_PROVIDER_TRANSPORT,
+        reasoningEffort: ROLEPLAY_REASONING_EFFORT,
+        store: ROLEPLAY_STORE,
+        providerRequestCount,
         latencyMs: Date.now() - callStartedAt,
         messageCount: messages.length,
         systemChars,
@@ -898,9 +922,15 @@ export async function* generateRoleplayResponseStream(
         finalUserChars,
         inputChars,
         outputChars,
+        tokenEstimateMethod: "local_chars_div_4",
         inputTokensEst,
         outputTokensEst,
         totalTokensEst,
+        providerInputTokens: providerUsage?.input_tokens,
+        providerOutputTokens: providerUsage?.output_tokens,
+        providerTotalTokens: providerUsage?.total_tokens,
+        providerReasoningTokens: providerUsage?.reasoning_tokens,
+        providerResponseUsage: providerUsage,
         estCostUsd,
         ...extraMetadata,
       },
@@ -919,6 +949,11 @@ export async function* generateRoleplayResponseStream(
       systemInstruction,
       messages,
       finalUserInput: userMessage,
+      transport: {
+        providerTransport: ROLEPLAY_PROVIDER_TRANSPORT,
+        store: ROLEPLAY_STORE,
+        reasoningEffort: ROLEPLAY_REASONING_EFFORT,
+      },
     }),
       diagnostics: {
         modelId,
@@ -975,6 +1010,9 @@ export async function* generateRoleplayResponseStream(
     stream: true,
     max_tokens: maxTokens,
     pipeline: 'direct',
+    providerTransport: ROLEPLAY_PROVIDER_TRANSPORT,
+    reasoningEffort: ROLEPLAY_REASONING_EFFORT,
+    store: ROLEPLAY_STORE,
     debugTrace: options?.debugTrace === true,
     roleplayContext,
   };
@@ -990,18 +1028,21 @@ export async function* generateRoleplayResponseStream(
       status: 'sent',
       requestBody,
       modelRequest: {
-        endpoint: 'https://api.x.ai/v1/chat/completions',
+        endpoint: 'https://api.x.ai/v1/responses',
         method: 'POST',
         capturedAt: Date.now(),
         requestBody: {
           model: modelId,
-          messages,
+          input: messages,
           stream: true,
+          store: ROLEPLAY_STORE,
+          reasoning: { effort: ROLEPLAY_REASONING_EFFORT },
           temperature: 0.6,
-          max_tokens: maxTokens,
+          max_output_tokens: maxTokens,
         },
         notes: [
-          'The chat edge function forwards this body to xAI in the normal direct path.',
+          'The chat edge function routes API Call 1 through xAI Responses for the normal direct roleplay path.',
+          'The Responses request explicitly sends store:false and reasoning.effort:medium.',
           'If the edge function receives a provider safety retry, the backend debug trace records the fallback path.',
         ],
       },
@@ -1041,6 +1082,10 @@ export async function* generateRoleplayResponseStream(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+    const debugTrace = errorData?.chronicle_debug_trace as ChatDebugTrace | undefined;
+    if (debugTrace) {
+      options?.onDebugTrace?.(debugTrace);
+    }
     if (response.status === 422 && errorData.error_type === 'content_filtered') {
       emitCall1Trace("error_content_filtered");
       throw new ContentFilteredChatError(errorData.message || CONTENT_FILTER_NOTICE_TEXT);
@@ -1084,6 +1129,10 @@ export async function* generateRoleplayResponseStream(
         const parsed = JSON.parse(jsonStr);
         const debugTrace = parsed?.chronicle_debug_trace as ChatDebugTrace | undefined;
         if (debugTrace) {
+          providerResponseUsage = (debugTrace.modelRequest?.responseUsage && typeof debugTrace.modelRequest.responseUsage === 'object')
+            ? debugTrace.modelRequest.responseUsage as Record<string, unknown>
+            : null;
+          providerRequestCount = 1 + (debugTrace.modelRequests?.length || 0);
           options?.onDebugTrace?.(debugTrace);
           continue;
         }
@@ -1091,6 +1140,11 @@ export async function* generateRoleplayResponseStream(
         if (contentFilter) {
           emitCall1Trace("error_content_filtered", { reason: contentFilter.reason || 'provider_content_filter' });
           throw new ContentFilteredChatError(contentFilter.message);
+        }
+        const providerError = parsed?.chronicle_provider_error as { message?: string; reason?: string } | undefined;
+        if (providerError) {
+          emitCall1Trace("error_provider_stream", { reason: providerError.reason || 'provider_stream_error' });
+          throw new ProviderStreamChatError(providerError.message);
         }
 
         const content = parsed.choices?.[0]?.delta?.content as string | undefined;
@@ -1100,6 +1154,7 @@ export async function* generateRoleplayResponseStream(
         }
       } catch (error) {
         if (error instanceof ContentFilteredChatError) throw error;
+        if (error instanceof ProviderStreamChatError) throw error;
         // Incomplete or malformed JSON chunk - skip and continue
         continue;
       }
@@ -1119,6 +1174,10 @@ export async function* generateRoleplayResponseStream(
         const parsed = JSON.parse(jsonStr);
         const debugTrace = parsed?.chronicle_debug_trace as ChatDebugTrace | undefined;
         if (debugTrace) {
+          providerResponseUsage = (debugTrace.modelRequest?.responseUsage && typeof debugTrace.modelRequest.responseUsage === 'object')
+            ? debugTrace.modelRequest.responseUsage as Record<string, unknown>
+            : null;
+          providerRequestCount = 1 + (debugTrace.modelRequests?.length || 0);
           options?.onDebugTrace?.(debugTrace);
           continue;
         }
@@ -1127,6 +1186,11 @@ export async function* generateRoleplayResponseStream(
           emitCall1Trace("error_content_filtered", { reason: contentFilter.reason || 'provider_content_filter' });
           throw new ContentFilteredChatError(contentFilter.message);
         }
+        const providerError = parsed?.chronicle_provider_error as { message?: string; reason?: string } | undefined;
+        if (providerError) {
+          emitCall1Trace("error_provider_stream", { reason: providerError.reason || 'provider_stream_error' });
+          throw new ProviderStreamChatError(providerError.message);
+        }
         const content = parsed.choices?.[0]?.delta?.content as string | undefined;
         if (content) {
           outputChars += content.length;
@@ -1134,6 +1198,7 @@ export async function* generateRoleplayResponseStream(
         }
       } catch (error) {
         if (error instanceof ContentFilteredChatError) throw error;
+        if (error instanceof ProviderStreamChatError) throw error;
         // Ignore malformed leftover stream fragments only.
       }
     }
@@ -1168,7 +1233,8 @@ Respond ONLY with valid JSON.`;
           { role: 'user', content: userPrompt }
         ],
         modelId,
-        stream: false
+        stream: false,
+        providerTransport: 'chat_completions'
       }
     });
 

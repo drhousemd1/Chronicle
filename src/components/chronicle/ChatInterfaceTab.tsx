@@ -17,6 +17,7 @@ import { uid, now, uuid } from '@/utils';
 import {
   CONTENT_FILTER_NOTICE_TEXT,
   ContentFilteredChatError,
+  PROVIDER_ERROR_NOTICE_TEXT,
   buildEstablishedFactNote,
   generateRoleplayResponseStream,
   isLocalRoleplayNoticeMessage,
@@ -167,6 +168,54 @@ function splitEdgeDebugPayload(data: unknown): {
     responseBody,
     modelRequest: payload.modelRequest,
     modelRequests: modelRequests.length ? modelRequests : undefined,
+  };
+}
+
+function stringifySupportCallError(error: unknown): string | undefined {
+  if (!error) return undefined;
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
+}
+
+function getSupportCallResponseError(responseBody: unknown): string | undefined {
+  if (!responseBody || typeof responseBody !== 'object') return undefined;
+  const raw = responseBody as Record<string, unknown>;
+  const providerBodyError = typeof raw.providerBodyError === 'string' && raw.providerBodyError.trim()
+    ? raw.providerBodyError.trim()
+    : '';
+  if (providerBodyError) return `providerBodyError: ${providerBodyError}`;
+
+  const parseError = typeof raw.parseError === 'string' && raw.parseError.trim()
+    ? raw.parseError.trim()
+    : '';
+  if (parseError) return `parseError: ${parseError}`;
+
+  const focusedRetryParseError = typeof raw.focusedRetryParseError === 'string' && raw.focusedRetryParseError.trim()
+    ? raw.focusedRetryParseError.trim()
+    : '';
+  if (focusedRetryParseError) return `focusedRetryParseError: ${focusedRetryParseError}`;
+
+  const responseError = typeof raw.error === 'string' && raw.error.trim()
+    ? raw.error.trim()
+    : '';
+  if (responseError) return responseError;
+
+  return undefined;
+}
+
+function buildSupportCallDebugStatus(
+  edgeError: unknown,
+  responseBody: unknown,
+): Pick<ChatDebugRequestRecord, 'status' | 'error'> {
+  const error = stringifySupportCallError(edgeError) || getSupportCallResponseError(responseBody);
+  return {
+    status: error ? 'error' : 'completed',
+    error,
   };
 }
 
@@ -387,6 +436,26 @@ function buildContentFilterNoticeMessage(message: string, day?: number, timeOfDa
     role: 'assistant',
     text: message || CONTENT_FILTER_NOTICE_TEXT,
     localNotice: 'content_filter',
+    day,
+    timeOfDay,
+    createdAt: now(),
+  };
+}
+
+function buildProviderErrorNoticeMessage(message: string, day?: number, timeOfDay?: TimeOfDay): Message {
+  const trimmedMessage = message.trim();
+  const unprefixedStandardNotice = PROVIDER_ERROR_NOTICE_TEXT.replace(/^Chronicle:\s*/, '');
+  const normalizedMessage = !trimmedMessage || trimmedMessage === unprefixedStandardNotice
+    ? PROVIDER_ERROR_NOTICE_TEXT
+    : trimmedMessage.startsWith('Chronicle:')
+    ? trimmedMessage
+    : `${PROVIDER_ERROR_NOTICE_TEXT} ${trimmedMessage}`.trim();
+  return {
+    id: uuid(),
+    generationId: uuid(),
+    role: 'assistant',
+    text: normalizedMessage || PROVIDER_ERROR_NOTICE_TEXT,
+    localNotice: 'provider_error',
     day,
     timeOfDay,
     createdAt: now(),
@@ -1410,6 +1479,31 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     return nextConversations;
   }, [conversationId, currentDay, currentTimeOfDay, onSaveScenario, onUpdate, saveChatDebugTrace]);
 
+  const appendProviderErrorNotice = useCallback((
+    baseConversations: Conversation[],
+    message: string,
+    trace: ChatDebugTrace | null,
+    call1Request?: ChatDebugRequestRecord | null,
+  ) => {
+    const noticeMessage = buildProviderErrorNoticeMessage(message, currentDay, currentTimeOfDay);
+    const nextConversations = baseConversations.map(c =>
+      c.id === conversationId
+        ? { ...c, messages: [...c.messages, noticeMessage], updatedAt: now() }
+        : c
+    );
+
+    latestConversationsRef.current = nextConversations;
+    onUpdate(nextConversations);
+    onSaveScenario(nextConversations);
+    saveChatDebugTrace(
+      noticeMessage,
+      trace,
+      call1Request ? { ...call1Request, status: 'error', error: message } : null,
+    );
+
+    return nextConversations;
+  }, [conversationId, currentDay, currentTimeOfDay, onSaveScenario, onUpdate, saveChatDebugTrace]);
+
   const buildMessageGenerationMap = useCallback((messages: Message[]): Map<string, string> => {
     const map = new Map<string, string>();
     for (const message of messages) {
@@ -1879,6 +1973,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       if (bulletMemories.length === 0) return;
 
       const bullets = bulletMemories.map(m => m.content);
+      const compressionSourceMessage = conversation?.messages
+        .filter((message) => message.role === 'assistant' && !isLocalRoleplayNoticeMessage(message))
+        .slice(-1)[0];
+      const requestBody = { bullets, day: completedDay, conversationId, debugTrace: isAdmin };
 
       void trackAiUsageEvent({
         eventType: 'memory_day_compression_call',
@@ -1907,10 +2005,42 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         },
       });
 
+      recordChatDebugSupportCall(compressionSourceMessage, {
+        id: 'call2.memory-compress',
+        label: 'Supporting Call - Day memory compression',
+        apiCallGroup: 'call_2',
+        endpoint: '/functions/v1/compress-day-memories',
+        method: 'POST',
+        capturedAt: Date.now(),
+        status: 'sent',
+        requestBody,
+      });
+
       supabase.functions.invoke('compress-day-memories', {
-        body: { bullets, day: completedDay, conversationId }
+        body: requestBody
       }).then(async ({ data, error }) => {
-        if (!error && data?.synopsis) {
+        const compressionDebug = splitEdgeDebugPayload(data);
+        const compressionDebugStatus = buildSupportCallDebugStatus(error, compressionDebug.responseBody);
+        recordChatDebugSupportCall(compressionSourceMessage, {
+          id: 'call2.memory-compress',
+          label: 'Supporting Call - Day memory compression',
+          apiCallGroup: 'call_2',
+          endpoint: '/functions/v1/compress-day-memories',
+          method: 'POST',
+          capturedAt: Date.now(),
+          status: compressionDebugStatus.status,
+          error: compressionDebugStatus.error,
+          requestBody,
+          responseBody: compressionDebug.responseBody,
+          modelRequest: compressionDebug.modelRequest,
+          modelRequests: compressionDebug.modelRequests,
+        });
+
+        const compressionResponseBody = compressionDebug.responseBody as { synopsis?: unknown } | null | undefined;
+        const synopsis = typeof compressionResponseBody?.synopsis === 'string'
+          ? compressionResponseBody.synopsis
+          : '';
+        if (!error && synopsis) {
           void trackAiUsageEvent({
             eventType: 'memory_bullets_compressed',
             eventSource: 'chat-interface',
@@ -1918,10 +2048,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             metadata: {
               conversationId,
               day: completedDay,
-              outputChars: data.synopsis.length,
+              outputChars: synopsis.length,
             },
           });
-          await handleCreateMemory(data.synopsis, completedDay, null, undefined, undefined, 'synopsis');
+          await handleCreateMemory(synopsis, completedDay, null, undefined, undefined, 'synopsis');
           for (const bm of bulletMemories) {
             await handleDeleteMemory(bm.id);
           }
@@ -1930,7 +2060,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         console.error('[Day compression] Failed:', err);
       });
     }
-  }, [activeMemories, currentDay, memoriesEnabled, memoriesLoaded, conversationId, modelId, handleCreateMemory, handleDeleteMemory]);
+  }, [activeMemories, currentDay, memoriesEnabled, memoriesLoaded, conversation?.messages, conversationId, isAdmin, modelId, handleCreateMemory, handleDeleteMemory, recordChatDebugSupportCall]);
 
   // Sidebar background handlers
   const selectedSidebarBgUrl = useMemo(() => {
@@ -2970,6 +3100,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         name,
         profileSourceText,
       );
+      const profileDebugStatus = buildSupportCallDebugStatus(profileError, profileDebug.responseBody);
 
       recordChatDebugSupportCall(sourceMessage, {
         id: `support.side-character-profile.${characterId}`,
@@ -2978,12 +3109,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         endpoint: '/functions/v1/generate-side-character',
         method: 'POST',
         capturedAt: Date.now(),
-        status: profileError ? 'error' : 'completed',
+        status: profileDebugStatus.status,
         requestBody: profileRequestBody,
         modelRequest: profileDebug.modelRequest,
         modelRequests: profileDebug.modelRequests,
         responseBody: profileDebug.responseBody ?? null,
-        error: profileError ? JSON.stringify(profileError) : undefined,
+        error: profileDebugStatus.error,
       });
 
       if (profileError) {
@@ -3079,6 +3210,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           });
           const avatarDebug = splitEdgeDebugPayload(avatarData);
           const avatarResponseBody = avatarDebug.responseBody as any;
+          const avatarDebugStatus = buildSupportCallDebugStatus(avatarError, avatarResponseBody);
 
           recordChatDebugSupportCall(sourceMessage, {
             id: `support.side-character-avatar.${characterId}`,
@@ -3087,12 +3219,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             endpoint: '/functions/v1/generate-side-character-avatar',
             method: 'POST',
             capturedAt: Date.now(),
-            status: avatarError ? 'error' : 'completed',
+            status: avatarDebugStatus.status,
             requestBody: avatarRequestBody,
             modelRequest: avatarDebug.modelRequest,
             modelRequests: avatarDebug.modelRequests,
             responseBody: avatarResponseBody ? { ...avatarResponseBody, imageUrl: avatarResponseBody.imageUrl ? '[image data url omitted from summary]' : undefined } : null,
-            error: avatarError ? JSON.stringify(avatarError) : undefined,
+            error: avatarDebugStatus.error,
           });
 
           if (avatarError) {
@@ -3570,6 +3702,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             rejectedStepCompletions,
           }
         : goalDebug.responseBody ?? null;
+      const goalDebugStatus = buildSupportCallDebugStatus(error, reviewedGoalResponseBody);
 
       recordChatDebugSupportCall(sourceMessage, {
         id: 'call2.goal-progress-eval',
@@ -3578,12 +3711,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         endpoint: '/functions/v1/evaluate-goal-progress',
         method: 'POST',
         capturedAt: Date.now(),
-        status: error ? 'error' : 'completed',
+        status: goalDebugStatus.status,
         requestBody,
         modelRequest: goalDebug.modelRequest,
         modelRequests: goalDebug.modelRequests,
         responseBody: reviewedGoalResponseBody,
-        error: error ? JSON.stringify(error) : undefined,
+        error: goalDebugStatus.error,
       });
 
       if (error || !returnedStepUpdates.length) return;
@@ -3758,6 +3891,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             persistence: GOAL_ALIGNMENT_SHADOW_MODE ? 'diagnostic_only' : 'eligible',
           }
         : alignmentDebug.responseBody ?? null;
+      const alignmentDebugStatus = buildSupportCallDebugStatus(error, reviewedAlignmentResponseBody);
 
       recordChatDebugSupportCall(sourceMessage, {
         id: 'call2.goal-alignment-eval',
@@ -3766,7 +3900,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         endpoint: '/functions/v1/evaluate-goal-alignment',
         method: 'POST',
         capturedAt: Date.now(),
-        status: error ? 'error' : 'completed',
+        status: alignmentDebugStatus.status,
         requestBody,
         modelRequest: alignmentDebug.modelRequest,
         modelRequests: alignmentDebug.modelRequests,
@@ -3774,7 +3908,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         notes: GOAL_ALIGNMENT_SHADOW_MODE
           ? ['Goal alignment shadow mode is enabled; evaluations are shown for review but are not persisted or injected into API Call 1.']
           : undefined,
-        error: error ? JSON.stringify(error) : undefined,
+        error: alignmentDebugStatus.error,
       });
 
       if (error || !data?.evaluations?.length) return;
@@ -4355,6 +4489,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             rejectedUpdates: characterUpdateReviews.filter((review) => !review.accepted),
           }
         : characterDebug.responseBody ?? null;
+      const characterDebugStatus = buildSupportCallDebugStatus(error, reviewedCharacterResponseBody);
 
       recordChatDebugSupportCall(sourceMessage, {
         id: 'call2.character-state-sync',
@@ -4363,12 +4498,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         endpoint: '/functions/v1/extract-character-updates',
         method: 'POST',
         capturedAt: Date.now(),
-        status: error ? 'error' : 'completed',
+        status: characterDebugStatus.status,
         requestBody,
         modelRequest: characterDebug.modelRequest,
         modelRequests: characterDebug.modelRequests,
         responseBody: reviewedCharacterResponseBody,
-        error: error ? JSON.stringify(error) : undefined,
+        error: characterDebugStatus.error,
       });
 
       if (error) {
@@ -5197,6 +5332,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       body: requestBody
     }).then(({ data, error }) => {
       const memoryDebug = splitEdgeDebugPayload(data);
+      const memoryDebugStatus = buildSupportCallDebugStatus(error, memoryDebug.responseBody);
       recordChatDebugSupportCall(sourceMessage, {
         id: 'call2.memory-extraction',
         label: 'Supporting Call - Memory extraction',
@@ -5204,12 +5340,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         endpoint: '/functions/v1/extract-memory-events',
         method: 'POST',
         capturedAt: Date.now(),
-        status: error ? 'error' : 'completed',
+        status: memoryDebugStatus.status,
         requestBody,
         modelRequest: memoryDebug.modelRequest,
         modelRequests: memoryDebug.modelRequests,
         responseBody: memoryDebug.responseBody ?? null,
-        error: error ? JSON.stringify(error) : undefined,
+        error: memoryDebugStatus.error,
       });
       if (error || !data?.extractedEvents?.length) return;
       if (!isMessageGenerationStillCurrent(sourceMessage.id, sourceMessage.generationId)) {
@@ -5585,9 +5721,21 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         );
         return;
       }
-      onSaveScenario(nextConvsWithUser);
       const message = err instanceof Error ? err.message : "Dialogue stream failed. Check your connection or model settings.";
-      alert(message);
+      const errorDebug = readRequestDebugFromError(err, pendingDebugTrace, pendingCall1Request);
+      const latestBase = latestConversationsRef.current;
+      const liveConversation = latestBase.find(c => c.id === conversationId);
+      const liveUserMessage = liveConversation?.messages.find(message => message.id === userMsg.id);
+      if (!liveConversation || !liveUserMessage || (liveUserMessage.generationId || liveUserMessage.id) !== (userMsg.generationId || userMsg.id)) {
+        debugLog('[handleSend] Skipping provider-error notice because the triggering user message changed before completion.');
+        return;
+      }
+      appendProviderErrorNotice(
+        latestBase,
+        message,
+        errorDebug.trace,
+        errorDebug.call1Request,
+      );
     } finally {
       setIsStreaming(false);
       setStreamingContent('');
@@ -5976,7 +6124,20 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         return;
       }
       const message = err instanceof Error ? err.message : "Regeneration failed. Check your connection or model settings.";
-      alert(message);
+      const errorDebug = readRequestDebugFromError(err, pendingDebugTrace, pendingCall1Request);
+      const latestBase = latestConversationsRef.current;
+      const liveConversation = latestBase.find(c => c.id === conversationId);
+      const liveTargetMessage = liveConversation?.messages.find(m => m.id === messageId);
+      if (!liveConversation || !liveTargetMessage || (liveTargetMessage.generationId || liveTargetMessage.id) !== expectedGenerationId) {
+        debugLog('[handleRegenerate] Skipping provider-error notice because the target message changed before completion.');
+        return;
+      }
+      appendProviderErrorNotice(
+        latestBase,
+        message,
+        errorDebug.trace,
+        errorDebug.call1Request,
+      );
     } finally {
       setRegeneratingMessageId(null);
       setIsRegenerating(false);
@@ -5988,9 +6149,21 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
   const handleContinueConversation = async () => {
     if (!conversation || isStreaming || !canUseCanonicalChatState) return;
-    const lastMsg = conversation.messages[conversation.messages.length - 1];
-    const continueAnchorMessageId = lastMsg?.id || null;
-    const continueAnchorGenerationId = lastMsg ? (lastMsg.generationId || lastMsg.id) : null;
+    const lastRoleplayMessage = conversation.messages
+      .filter((message) => !isLocalRoleplayNoticeMessage(message))
+      .slice(-1)[0];
+    const continueAnchorMessageId = lastRoleplayMessage?.id || null;
+    const continueAnchorGenerationId = lastRoleplayMessage
+      ? (lastRoleplayMessage.generationId || lastRoleplayMessage.id)
+      : null;
+    const isContinueAnchorStillCurrent = (messages: Message[] | undefined): boolean => {
+      const liveRoleplayTail = (messages || [])
+        .filter((message) => !isLocalRoleplayNoticeMessage(message))
+        .slice(-1)[0];
+      return continueAnchorMessageId
+        ? liveRoleplayTail?.id === continueAnchorMessageId && (liveRoleplayTail.generationId || liveRoleplayTail.id) === continueAnchorGenerationId
+        : !liveRoleplayTail;
+    };
 
     setIsStreaming(true);
     setStreamingContent('');
@@ -6155,11 +6328,7 @@ Do not acknowledge this instruction in your response.`;
 	      pendingStyleTelemetryCall = buildAssistantStyleTelemetryCall('continue', recentStyleTelemetry, candidateStyleTelemetry);
 
       const liveConversation = latestConversationsRef.current.find(c => c.id === conversationId);
-      const liveLastMessage = liveConversation?.messages[liveConversation.messages.length - 1];
-      const continueAnchorStillCurrent = continueAnchorMessageId
-        ? liveLastMessage?.id === continueAnchorMessageId && (liveLastMessage.generationId || liveLastMessage.id) === continueAnchorGenerationId
-        : !liveLastMessage;
-      if (!liveConversation || !continueAnchorStillCurrent) {
+      if (!liveConversation || !isContinueAnchorStillCurrent(liveConversation.messages)) {
         debugLog('[handleContinue] Skipping assistant commit because the conversation tail changed before completion.');
         return;
       }
@@ -6188,9 +6357,9 @@ Do not acknowledge this instruction in your response.`;
 		      onSaveScenario(updatedConvs);
 		      saveChatDebugTrace(aiMsg, pendingDebugTrace, pendingCall1Request);
 		      if (pendingStyleTelemetryCall) recordChatDebugSupportCall(aiMsg, pendingStyleTelemetryCall);
-          if (lastMsg) {
+          if (lastRoleplayMessage) {
             continueEventsRef.current.push({
-              messageId: lastMsg.id,
+              messageId: lastRoleplayMessage.id,
               generationId: continueAnchorGenerationId || undefined,
               timestamp: Date.now(),
             });
@@ -6205,11 +6374,7 @@ Do not acknowledge this instruction in your response.`;
         const errorDebug = readRequestDebugFromError(err, pendingDebugTrace, pendingCall1Request);
         const latestBase = latestConversationsRef.current;
         const liveConversation = latestBase.find(c => c.id === conversationId);
-        const liveLastMessage = liveConversation?.messages[liveConversation.messages.length - 1];
-        const continueAnchorStillCurrent = continueAnchorMessageId
-          ? liveLastMessage?.id === continueAnchorMessageId && (liveLastMessage.generationId || liveLastMessage.id) === continueAnchorGenerationId
-          : !liveLastMessage;
-        if (!liveConversation || !continueAnchorStillCurrent) {
+        if (!liveConversation || !isContinueAnchorStillCurrent(liveConversation.messages)) {
           debugLog('[handleContinue] Skipping content-filter notice because the conversation tail changed before completion.');
           return;
         }
@@ -6222,7 +6387,19 @@ Do not acknowledge this instruction in your response.`;
         return;
       }
       const message = err instanceof Error ? err.message : "Continue failed. Check your connection or model settings.";
-      alert(message);
+      const errorDebug = readRequestDebugFromError(err, pendingDebugTrace, pendingCall1Request);
+      const latestBase = latestConversationsRef.current;
+      const liveConversation = latestBase.find(c => c.id === conversationId);
+      if (!liveConversation || !isContinueAnchorStillCurrent(liveConversation.messages)) {
+        debugLog('[handleContinue] Skipping provider-error notice because the conversation tail changed before completion.');
+        return;
+      }
+      appendProviderErrorNotice(
+        latestBase,
+        message,
+        errorDebug.trace,
+        errorDebug.call1Request,
+      );
     } finally {
       setIsStreaming(false);
       setStreamingContent('');

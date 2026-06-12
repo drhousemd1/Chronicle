@@ -637,7 +637,7 @@ export const apiInspectorGuideGrokHtml = `<div class="grok-ref" id="grokRefPanel
   <div class="grok-ref-section-title">Layer A: Verified API Mechanics (from xAI documentation)</div>
 
   <h4>Endpoints and Statefulness</h4>
-  <div class="grok-ref-row">Chronicle uses the <span class="grok-ref-label">Chat Completions API</span>, which is stateless: you must include prior turns yourself. xAI also offers a newer Responses API that supports continuing conversations via <code>previous_response_id</code> with server-side storage for 30 days.</div>
+  <div class="grok-ref-row">Chronicle primary roleplay generation and core roleplay state support calls use the <span class="grok-ref-label">Responses API</span> with <code>store:false</code> and medium reasoning. Chronicle still sends prior turns explicitly; provider-side <code>previous_response_id</code> chaining remains out of scope for this migration, and some helper lanes still use Chat Completions.</div>
   <div class="grok-ref-row"><span class="grok-ref-label">Debugging implication:</span> "Grok forgot earlier state" is frequently an integration issue (history not sent, truncated, or exceeding retention window), not a model failure.</div>
 
   <h4>Roles and Instruction Placement</h4>
@@ -675,7 +675,7 @@ export const apiInspectorGuideGrokHtml = `<div class="grok-ref" id="grokRefPanel
   <div class="grok-ref-row"><span class="grok-ref-label">Max tools per request:</span> 128. When tool-heavy orchestration fails, check: tool count exceeded, malformed schema, or tool results returned in wrong role/structure.</div>
 
   <h4>Privacy and Data Retention</h4>
-  <div class="grok-ref-row">xAI does not train on API inputs/outputs without explicit permission. Requests and responses are stored for 30 days for abuse auditing, then deleted. Chronicle currently uses Chat Completions without sending a <code>store</code> flag; if the app later migrates sensitive roleplay calls to the Responses API, explicitly set storage controls there after verifying xAI endpoint support.</div>
+  <div class="grok-ref-row">xAI does not train on API inputs/outputs without explicit permission. Requests and responses may be retained for abuse auditing according to provider policy. Chronicle explicitly sends <code>store:false</code> on migrated Responses roleplay and core support calls; legacy helper lanes that still use Chat Completions remain documented separately.</div>
  </div>
 
  <hr class="legend-rule">
@@ -689,7 +689,7 @@ export const apiInspectorGuideGrokHtml = `<div class="grok-ref" id="grokRefPanel
   <div class="grok-ref-row">Having a large context window does not guarantee quality retention across the full window. Peer-reviewed research shows:</div>
   <div class="grok-ref-row"><span class="grok-ref-label">"Lost in the middle" effect:</span> LLMs perform best when relevant information is at the beginning or end of context. Information buried in the middle of long contexts degrades substantially, even for explicitly long-context models.</div>
   <div class="grok-ref-row"><span class="grok-ref-label">Length alone hurts:</span> Input length can reduce performance even when the extra tokens aren't meaningfully distracting. Stuffing more context in can reduce quality even if the model accepts it.</div>
-  <div class="grok-ref-row"><span class="grok-ref-label">Practical guidance for Chronicle:</span> Keep prompts structured and compact. Place critical constraints at the very top (system prompt) and briefly restate them near the end. Use the Responses API's <code>previous_response_id</code> to reduce prompt bloat. Chronicle's memory summarization system (day synopses + bullet points) is the right pattern.</div>
+  <div class="grok-ref-row"><span class="grok-ref-label">Practical guidance for Chronicle:</span> Keep prompts structured and compact. Place critical constraints at the very top (system prompt) and briefly restate them near the end. Provider-side <code>previous_response_id</code> chaining is intentionally out of scope while Chronicle uses <code>store:false</code>. Chronicle's memory summarization system (day synopses + bullet points) remains the active state-compression pattern.</div>
  </div>
 
  <hr class="legend-rule">
@@ -702,7 +702,7 @@ export const apiInspectorGuideGrokHtml = `<div class="grok-ref" id="grokRefPanel
 
   <table>
    <tbody><tr><th>Symptom</th><th>Likely Grok Cause</th><th>Likely Integration Cause</th><th>How to Distinguish</th><th>Fix</th></tr>
-   <tr><td>"Grok forgot earlier state"</td><td>Context decay in long prompts</td><td>History not sent; wrong previous_response_id; storage disabled</td><td>Log the exact request body including prior messages</td><td>Verify full history in payload; consider Responses API</td></tr>
+   <tr><td>"Grok forgot earlier state"</td><td>Context decay in long prompts</td><td>History or state anchors not sent, over-trimmed, stale, or buried in the wrong part of the request</td><td>Log the exact Responses input, final app controls, and current-turn state digest</td><td>Verify explicit history/state payloads before blaming model memory; do not rely on provider-side chaining in this migration</td></tr>
    <tr><td>"Output is not valid JSON"</td><td>Using prompted JSON instead of Structured Outputs</td><td>Streaming parser receiving incomplete chunks</td><td>Re-run with Structured Outputs; compare parse success</td><td>Use Structured Outputs with supported schema subset</td></tr>
    <tr><td>"Structured output request errors"</td><td>N/A</td><td>Unsupported JSON Schema keywords (allOf, string length, array constraints)</td><td>Inspect the schema payload being sent</td><td>Remove unsupported keywords; validate constraints in app code</td></tr>
    <tr><td>"System instructions ignored in long prompts"</td><td>"Lost in the middle" position effect</td><td>Rules placed mid-prompt or buried in huge state blocks</td><td>Move rules to top and restate at end; check if compliance improves</td><td>Single system message first; compact state; re-pin critical constraints near end</td></tr>
@@ -1498,9 +1498,9 @@ src/services/supabase-data.ts (memory CRUD operations)</div>
  <span class="tag core-prompt"><span class="tag-icon">📝</span> core prompt (conditional)</span>
  <span class="item-name core">Verbosity Toggle</span>
  </div>
- <!-- LLM FILE REFERENCE: src/services/llm.ts (renderResponseDetailInstruction() and max_tokens selection) -->
- <div class="file-ref">src/services/llm.ts (renderResponseDetailInstruction() and max_tokens selection)</div>
- <div class="item-desc">Controls response detail and development style for the whole response while the request max_tokens cap remains Concise = 1024, Balanced = 2048, Detailed = 3072.</div>
+ <!-- LLM FILE REFERENCE: src/services/llm.ts (renderResponseDetailInstruction(), browser max_tokens, and provider max_output_tokens selection) -->
+ <div class="file-ref">src/services/llm.ts (renderResponseDetailInstruction(), browser max_tokens, and provider max_output_tokens selection)</div>
+ <div class="item-desc">Controls response detail and development style for the whole response while the browser request max_tokens cap maps to Responses max_output_tokens: Concise = 1024, Balanced = 2048, Detailed = 3072.</div>
  </div>
 
  <div class="item-row">
@@ -1545,7 +1545,7 @@ src/services/supabase-data.ts (memory CRUD operations)</div>
  <div class="meta-chip">Model <strong>grok-4.3</strong></div>
  <div class="meta-chip">Temp <strong>0.6</strong></div>
  <div class="meta-chip">Stream <strong>true</strong></div>
- <div class="meta-chip">Route <strong>llm.ts → /functions/v1/chat → api.x.ai/v1/chat/completions</strong></div>
+ <div class="meta-chip">Route <strong>llm.ts → /functions/v1/chat → api.x.ai/v1/responses</strong></div>
  </div>
 
  <div class="children">
@@ -1574,8 +1574,8 @@ src/services/supabase-data.ts (memory CRUD operations)</div>
  <span class="item-name check">403 Content Filter Retry</span>
  <span class="tag source">chat/index.ts</span>
  </div>
- <!-- LLM FILE REFERENCE: supabase/functions/v1/chat/index.ts (retry logic) -->
- <div class="file-ref">supabase/functions/v1/chat/index.ts (retry logic)</div>
+ <!-- LLM FILE REFERENCE: supabase/functions/chat/index.ts (retry logic) -->
+ <div class="file-ref">supabase/functions/chat/index.ts (retry logic)</div>
  <div class="item-desc">If xAI's content filter blocks the request (returns a 403 error), the app automatically adds a redirect instruction and tries again. If the retry also fails, the edge function returns a structured content-filter notice over HTTP 200 so the app can show an in-chat notice without a runtime overlay.</div>
  </div>
 
@@ -1873,7 +1873,7 @@ export const apiInspectorGuideCombinedHtml = `<div class="header">
   <div class="grok-ref-section-title">Layer A: Verified API Mechanics (from xAI documentation)</div>
 
   <h4>Endpoints and Statefulness</h4>
-  <div class="grok-ref-row">Chronicle uses the <span class="grok-ref-label">Chat Completions API</span>, which is stateless: you must include prior turns yourself. xAI also offers a newer Responses API that supports continuing conversations via <code>previous_response_id</code> with server-side storage for 30 days.</div>
+  <div class="grok-ref-row">Chronicle primary roleplay generation and core roleplay state support calls use the <span class="grok-ref-label">Responses API</span> with <code>store:false</code> and medium reasoning. Chronicle still sends prior turns explicitly; provider-side <code>previous_response_id</code> chaining remains out of scope for this migration, and some helper lanes still use Chat Completions.</div>
   <div class="grok-ref-row"><span class="grok-ref-label">Debugging implication:</span> "Grok forgot earlier state" is frequently an integration issue (history not sent, truncated, or exceeding retention window), not a model failure.</div>
 
   <h4>Roles and Instruction Placement</h4>
@@ -1911,7 +1911,7 @@ export const apiInspectorGuideCombinedHtml = `<div class="header">
   <div class="grok-ref-row"><span class="grok-ref-label">Max tools per request:</span> 128. When tool-heavy orchestration fails, check: tool count exceeded, malformed schema, or tool results returned in wrong role/structure.</div>
 
   <h4>Privacy and Data Retention</h4>
-  <div class="grok-ref-row">xAI does not train on API inputs/outputs without explicit permission. Requests and responses are stored for 30 days for abuse auditing, then deleted. Chronicle currently uses Chat Completions without sending a <code>store</code> flag; if the app later migrates sensitive roleplay calls to the Responses API, explicitly set storage controls there after verifying xAI endpoint support.</div>
+  <div class="grok-ref-row">xAI does not train on API inputs/outputs without explicit permission. Requests and responses may be retained for abuse auditing according to provider policy. Chronicle explicitly sends <code>store:false</code> on migrated Responses roleplay and core support calls; legacy helper lanes that still use Chat Completions remain documented separately.</div>
  </div>
 
  <hr class="legend-rule">
@@ -1925,7 +1925,7 @@ export const apiInspectorGuideCombinedHtml = `<div class="header">
   <div class="grok-ref-row">Having a large context window does not guarantee quality retention across the full window. Peer-reviewed research shows:</div>
   <div class="grok-ref-row"><span class="grok-ref-label">"Lost in the middle" effect:</span> LLMs perform best when relevant information is at the beginning or end of context. Information buried in the middle of long contexts degrades substantially, even for explicitly long-context models.</div>
   <div class="grok-ref-row"><span class="grok-ref-label">Length alone hurts:</span> Input length can reduce performance even when the extra tokens aren't meaningfully distracting. Stuffing more context in can reduce quality even if the model accepts it.</div>
-  <div class="grok-ref-row"><span class="grok-ref-label">Practical guidance for Chronicle:</span> Keep prompts structured and compact. Place critical constraints at the very top (system prompt) and briefly restate them near the end. Use the Responses API's <code>previous_response_id</code> to reduce prompt bloat. Chronicle's memory summarization system (day synopses + bullet points) is the right pattern.</div>
+  <div class="grok-ref-row"><span class="grok-ref-label">Practical guidance for Chronicle:</span> Keep prompts structured and compact. Place critical constraints at the very top (system prompt) and briefly restate them near the end. Provider-side <code>previous_response_id</code> chaining is intentionally out of scope while Chronicle uses <code>store:false</code>. Chronicle's memory summarization system (day synopses + bullet points) remains the active state-compression pattern.</div>
  </div>
 
  <hr class="legend-rule">
@@ -1938,7 +1938,7 @@ export const apiInspectorGuideCombinedHtml = `<div class="header">
 
   <table>
    <tbody><tr><th>Symptom</th><th>Likely Grok Cause</th><th>Likely Integration Cause</th><th>How to Distinguish</th><th>Fix</th></tr>
-   <tr><td>"Grok forgot earlier state"</td><td>Context decay in long prompts</td><td>History not sent; wrong previous_response_id; storage disabled</td><td>Log the exact request body including prior messages</td><td>Verify full history in payload; consider Responses API</td></tr>
+   <tr><td>"Grok forgot earlier state"</td><td>Context decay in long prompts</td><td>History or state anchors not sent, over-trimmed, stale, or buried in the wrong part of the request</td><td>Log the exact Responses input, final app controls, and current-turn state digest</td><td>Verify explicit history/state payloads before blaming model memory; do not rely on provider-side chaining in this migration</td></tr>
    <tr><td>"Output is not valid JSON"</td><td>Using prompted JSON instead of Structured Outputs</td><td>Streaming parser receiving incomplete chunks</td><td>Re-run with Structured Outputs; compare parse success</td><td>Use Structured Outputs with supported schema subset</td></tr>
    <tr><td>"Structured output request errors"</td><td>N/A</td><td>Unsupported JSON Schema keywords (allOf, string length, array constraints)</td><td>Inspect the schema payload being sent</td><td>Remove unsupported keywords; validate constraints in app code</td></tr>
    <tr><td>"System instructions ignored in long prompts"</td><td>"Lost in the middle" position effect</td><td>Rules placed mid-prompt or buried in huge state blocks</td><td>Move rules to top and restate at end; check if compliance improves</td><td>Single system message first; compact state; re-pin critical constraints near end</td></tr>
@@ -2733,9 +2733,9 @@ src/services/supabase-data.ts (memory CRUD operations)</div>
  <span class="tag core-prompt"><span class="tag-icon">📝</span> core prompt (conditional)</span>
  <span class="item-name core">Verbosity Toggle</span>
  </div>
- <!-- LLM FILE REFERENCE: src/services/llm.ts (renderResponseDetailInstruction() and max_tokens selection) -->
- <div class="file-ref">src/services/llm.ts (renderResponseDetailInstruction() and max_tokens selection)</div>
- <div class="item-desc">Controls response detail and development style for the whole response while the request max_tokens cap remains Concise = 1024, Balanced = 2048, Detailed = 3072.</div>
+ <!-- LLM FILE REFERENCE: src/services/llm.ts (renderResponseDetailInstruction(), browser max_tokens, and provider max_output_tokens selection) -->
+ <div class="file-ref">src/services/llm.ts (renderResponseDetailInstruction(), browser max_tokens, and provider max_output_tokens selection)</div>
+ <div class="item-desc">Controls response detail and development style for the whole response while the browser request max_tokens cap maps to Responses max_output_tokens: Concise = 1024, Balanced = 2048, Detailed = 3072.</div>
  </div>
 
  <div class="item-row">
@@ -2780,7 +2780,7 @@ src/services/supabase-data.ts (memory CRUD operations)</div>
  <div class="meta-chip">Model <strong>grok-4.3</strong></div>
  <div class="meta-chip">Temp <strong>0.6</strong></div>
  <div class="meta-chip">Stream <strong>true</strong></div>
- <div class="meta-chip">Route <strong>llm.ts → /functions/v1/chat → api.x.ai/v1/chat/completions</strong></div>
+ <div class="meta-chip">Route <strong>llm.ts → /functions/v1/chat → api.x.ai/v1/responses</strong></div>
  </div>
 
  <div class="children">
@@ -2809,8 +2809,8 @@ src/services/supabase-data.ts (memory CRUD operations)</div>
  <span class="item-name check">403 Content Filter Retry</span>
  <span class="tag source">chat/index.ts</span>
  </div>
- <!-- LLM FILE REFERENCE: supabase/functions/v1/chat/index.ts (retry logic) -->
- <div class="file-ref">supabase/functions/v1/chat/index.ts (retry logic)</div>
+ <!-- LLM FILE REFERENCE: supabase/functions/chat/index.ts (retry logic) -->
+ <div class="file-ref">supabase/functions/chat/index.ts (retry logic)</div>
  <div class="item-desc">If xAI's content filter blocks the request (returns a 403 error), the app automatically adds a redirect instruction and tries again. If the retry also fails, the edge function returns a structured content-filter notice over HTTP 200 so the app can show an in-chat notice without a runtime overlay.</div>
  </div>
 

@@ -35,6 +35,7 @@ export const architectureExtraPaths: string[] = [
   '/supabase/functions/_shared/cors.ts',
   '/supabase/functions/_shared/rate-limit.ts',
   '/supabase/functions/_shared/state-sync-completeness.ts',
+  '/supabase/functions/_shared/xai-responses.ts',
   '/supabase/functions/admin-ai-usage-summary/index.ts',
   '/supabase/functions/admin-ai-usage-timeseries/index.ts',
   '/supabase/functions/admin-api-usage-test-report/index.ts',

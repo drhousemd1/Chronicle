@@ -119,7 +119,7 @@ function buildMergedPhases(): ApiMapPhase[] {
       {
         ...chatEdgeGatewaySection,
         title: "Verified Gateway and Provider Dispatch",
-        description: "Verified runtime dispatch path from frontend relay call through chat edge and xAI provider request.",
+        description: "Verified runtime dispatch path from frontend relay call through chat edge and xAI Responses request.",
       },
       chatEdgeGatewaySection.items.filter((item) => item.id !== "item-stream-pass-through"),
     ),
@@ -132,8 +132,8 @@ function buildMergedPhases(): ApiMapPhase[] {
   appendSections("phase-response-streaming-display", [
     cloneMergedCodeTruthSection({
       id: "section-streaming-pass-through",
-      title: "Verified Stream Assembly and Pass-Through",
-      description: "Verified runtime streaming path from edge SSE passthrough into the live chat renderer.",
+      title: "Verified Stream Assembly and Compatibility Bridge",
+      description: "Verified runtime path from xAI Responses stream collection through normalized Chat Completions-shaped SSE into the browser parser and completed-message commit flow.",
       defaultOpen: true,
       items: [streamPassThroughItem],
     }),

@@ -117,12 +117,31 @@ describe('buildChatReviewHtml', () => {
             method: 'POST',
             capturedAt: 3,
             status: 'sent',
-            requestBody: { modelId: 'test-model', messages: [{ role: 'system', content: 'system prompt' }] },
+            requestBody: {
+              modelId: 'test-model',
+              messages: [{ role: 'system', content: 'system prompt' }],
+              providerTransport: 'responses',
+              reasoningEffort: 'medium',
+              store: false,
+            },
             modelRequest: {
-              endpoint: 'https://api.x.ai/v1/chat/completions',
+              endpoint: 'https://api.x.ai/v1/responses',
               method: 'POST',
               capturedAt: 3,
-              requestBody: { model: 'test-model', messages: [{ role: 'system', content: 'system prompt' }] },
+              responseUsage: {
+                input_tokens: 120,
+                output_tokens: 80,
+                total_tokens: 200,
+                reasoning_tokens: 25,
+              },
+              reasoningSummaries: ['Provider summarized its reasoning for debug review.'],
+              providerStreamError: 'Provider stream failed after completion event.',
+              requestBody: {
+                model: 'test-model',
+                input: [{ role: 'system', content: 'system prompt' }],
+                store: false,
+                reasoning: { effort: 'medium' },
+              },
             },
           },
           supportCalls: [
@@ -162,10 +181,21 @@ describe('buildChatReviewHtml', () => {
               status: 'completed',
               requestBody: { userMessage: 'hello', aiResponse: 'reply' },
               modelRequest: {
-                endpoint: 'https://api.x.ai/v1/chat/completions',
+                endpoint: 'https://api.x.ai/v1/responses',
                 method: 'POST',
                 capturedAt: 4,
-                requestBody: { model: 'test-model', messages: [{ role: 'user', content: 'sync prompt' }] },
+                requestBody: {
+                  model: 'test-model',
+                  input: [{ role: 'user', content: 'sync prompt' }],
+                  store: false,
+                  reasoning: { effort: 'medium' },
+                  text: {
+                    format: {
+                      type: 'json_schema',
+                      name: 'chronicle_character_updates',
+                    },
+                  },
+                },
               },
               responseBody: {
                 updates: [
@@ -276,6 +306,11 @@ describe('buildChatReviewHtml', () => {
     expect(html).not.toContain('Raw saved message text');
     expect(html).toContain('API Call 1 Data');
     expect(html).toContain('Exact request body sent to Grok');
+    expect(html).toContain('Provider response usage');
+    expect(html).toContain('reasoning_tokens');
+    expect(html).toContain('Provider reasoning summaries');
+    expect(html).toContain('Provider stream error');
+    expect(html).toContain('Provider stream failed after completion event.');
     expect(html).toContain('API Call 2 + Supporting API Call Data');
     expect(html).not.toContain('This section also includes API Call 1 repair attempts');
     expect(html).not.toContain('First draft discarded before repair');

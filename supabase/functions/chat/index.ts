@@ -1,6 +1,6 @@
 // ============================================================================
 // GROK ONLY -- All chat calls go to xAI. No Gemini. No OpenAI.
-// This edge function exclusively uses the xAI API for all chat completions.
+// This edge function exclusively uses xAI APIs for chat generation.
 //
 // Chronicle chat now uses a single direct generation lane.
 // The older `roleplay_v2` pipeline value is still accepted as a compatibility
@@ -11,6 +11,16 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
+import {
+  callXaiResponses,
+  extractXaiResponsesReasoningSummaries,
+  extractXaiResponsesText,
+  extractXaiResponsesUsage,
+  getXaiResponsesBodyError,
+  normalizeResponsesStreamEvent,
+  type XaiResponsesReasoningEffort,
+  type XaiResponsesUsage,
+} from "../_shared/xai-responses.ts";
 
 type Message = {
   role: 'system' | 'user' | 'assistant';
@@ -43,6 +53,9 @@ type ChatRequest = {
   stream?: boolean;
   max_tokens?: number;
   pipeline?: 'direct' | 'roleplay_v2';
+  providerTransport?: 'chat_completions' | 'responses';
+  reasoningEffort?: XaiResponsesReasoningEffort;
+  store?: boolean;
   debugTrace?: boolean;
   roleplayContext?: RoleplayContext;
 };
@@ -87,6 +100,9 @@ type RoleplayDebugModelRequest = {
   capturedAt?: number;
   requestBody: unknown;
   notes?: string[];
+  responseUsage?: XaiResponsesUsage | null;
+  reasoningSummaries?: string[];
+  providerStreamError?: string | null;
 };
 
 type RoleplayDebugTrace = {
@@ -151,6 +167,8 @@ const DEBUG_CHAT_LOGS = Deno.env.get("DEBUG_CHAT_LOGS") === "true";
 const RECENT_HISTORY_WINDOW = 16;
 
 const TEMP_DIRECT = 0.6;
+const ROLEPLAY_RESPONSES_REASONING_EFFORT: XaiResponsesReasoningEffort = "medium";
+const ROLEPLAY_RESPONSES_STORE = false;
 
 const BANNED_TROPE_REPLACEMENTS: Record<string, string> = {
   tsundere: 'sharp-edged',
@@ -441,7 +459,9 @@ function streamTextAsSSE(
   const stream = new ReadableStream({
     start(controller) {
       const sendChunk = (delta: Record<string, unknown>, finishReason: string | null) => {
-        const payload = {
+      // Keep the browser-facing stream Chat Completions-shaped even when the
+      // provider call used Responses; the frontend parser depends on this shape.
+      const payload = {
           id,
           object: 'chat.completion.chunk',
           created,
@@ -487,6 +507,82 @@ function streamContentFilterNoticeAsSSE(
   });
 
   return new Response(stream, { headers });
+}
+
+function previewProviderError(errorText: string, max = 800): string {
+  const normalized = (errorText || '').replace(/\s+/g, ' ').trim();
+  if (!normalized) return '';
+  return normalized.length > max ? `${normalized.slice(0, max - 1).trim()}…` : normalized;
+}
+
+function messageFromUnknown(error: unknown): string {
+  return error instanceof Error ? error.message : String(error || 'Unknown provider error');
+}
+
+function appendProviderErrorToDebugTrace(
+  debugTrace: RoleplayDebugTrace | null,
+  modelRequest: RoleplayDebugModelRequest,
+  providerError: string,
+): RoleplayDebugTrace | null {
+  if (!debugTrace) return null;
+  return {
+    ...debugTrace,
+    modelRequest: {
+      ...modelRequest,
+      providerStreamError: providerError,
+    },
+    finalPath: 'provider_error',
+    fallbackReason: 'provider_error',
+    notes: [
+      ...debugTrace.notes,
+      `Provider error preserved for debugging: ${previewProviderError(providerError)}`,
+    ],
+  };
+}
+
+function streamProviderErrorAsSSE(
+  modelId: string,
+  headers: HeadersInit,
+  message: string,
+  reason: string,
+  debugTrace: RoleplayDebugTrace | null = null,
+): Response {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    start(controller) {
+      if (debugTrace) {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ chronicle_debug_trace: debugTrace })}\n\n`));
+      }
+      controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+        chronicle_provider_error: {
+          message,
+          reason,
+          model: modelId,
+        },
+      })}\n\n`));
+      controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+      controller.close();
+    },
+  });
+
+  return new Response(stream, { headers });
+}
+
+function jsonProviderErrorResponse(
+  status: number,
+  message: string,
+  reason: string,
+  headers: HeadersInit,
+  debugTrace: RoleplayDebugTrace | null = null,
+): Response {
+  return new Response(
+    JSON.stringify({
+      error: message,
+      error_type: reason,
+      chronicle_debug_trace: debugTrace,
+    }),
+    { status, headers },
+  );
 }
 
 async function readXAIStreamContent(body: ReadableStream<Uint8Array> | null): Promise<string> {
@@ -589,6 +685,390 @@ function buildXaiDebugModelRequest(
     },
     notes,
   };
+}
+
+function appendResponsesMetadataToDebugTrace(
+  debugTrace: RoleplayDebugTrace | null,
+  metadata: {
+    modelRequest: RoleplayDebugModelRequest;
+    responseUsage?: XaiResponsesUsage | null;
+    reasoningSummaries?: string[];
+    providerStreamError?: string | null;
+  },
+): RoleplayDebugTrace | null {
+  if (!debugTrace) return null;
+  return {
+    ...debugTrace,
+    modelRequest: {
+      ...metadata.modelRequest,
+      responseUsage: metadata.responseUsage ?? metadata.modelRequest.responseUsage ?? null,
+      reasoningSummaries: metadata.reasoningSummaries ?? metadata.modelRequest.reasoningSummaries,
+      providerStreamError: metadata.providerStreamError ?? metadata.modelRequest.providerStreamError ?? null,
+    },
+  };
+}
+
+async function readResponsesStreamContent(body: ReadableStream<Uint8Array> | null): Promise<{
+  text: string;
+  reasoningSummaries: string[];
+  responseUsage: XaiResponsesUsage | null;
+}> {
+  if (!body) {
+    throw new Error("Responses stream missing response body");
+  }
+
+  const decoder = new TextDecoder();
+  const reader = body.getReader();
+  let buffer = "";
+  let text = "";
+  const reasoningSummaries: string[] = [];
+  let completed = false;
+  let responseUsage: XaiResponsesUsage | null = null;
+
+  const consumeFrame = (frame: string) => {
+    for (const rawLine of frame.split("\n")) {
+      const line = rawLine.trim();
+      if (!line.startsWith("data:")) continue;
+      const data = line.slice(5).trim();
+      if (!data || data === "[DONE]") continue;
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(data);
+      } catch {
+        continue;
+      }
+      const normalized = normalizeResponsesStreamEvent(parsed);
+      if (normalized.visibleText) text += normalized.visibleText;
+      if (normalized.reasoningSummary) reasoningSummaries.push(normalized.reasoningSummary);
+      if (normalized.responseUsage) responseUsage = normalized.responseUsage;
+      if (normalized.failed || normalized.incomplete) {
+        throw new Error(normalized.errorMessage || "Responses stream failed");
+      }
+      if (normalized.completed) {
+        completed = true;
+        const completedText = extractXaiResponsesText((parsed as { response?: unknown }).response);
+        if (completedText && completedText !== text) {
+          text = completedText;
+        }
+        const completedReasoning = extractXaiResponsesReasoningSummaries((parsed as { response?: unknown }).response);
+        if (completedReasoning.length) reasoningSummaries.push(...completedReasoning);
+        responseUsage = extractXaiResponsesUsage((parsed as { response?: unknown }).response) ?? responseUsage;
+      }
+    }
+  };
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const frames = buffer.split(/\r?\n\r?\n/);
+      buffer = frames.pop() ?? "";
+      frames.forEach(consumeFrame);
+    }
+    buffer += decoder.decode();
+    if (buffer.trim()) consumeFrame(buffer);
+  } finally {
+    reader.releaseLock();
+  }
+
+  if (!completed) {
+    throw new Error("Responses stream ended before response.completed");
+  }
+  if (!text.trim()) {
+    throw new Error("Responses stream completed without output_text");
+  }
+
+  return { text, reasoningSummaries, responseUsage };
+}
+
+async function readResponsesJsonContent(response: Response): Promise<{
+  data: unknown;
+  text: string;
+  reasoningSummaries: string[];
+  responseUsage: XaiResponsesUsage | null;
+}> {
+  const data = await response.json();
+  const bodyError = getXaiResponsesBodyError(data, { requireOutputText: true });
+  if (bodyError) {
+    throw new Error(bodyError);
+  }
+  return {
+    data,
+    text: extractXaiResponsesText(data),
+    reasoningSummaries: extractXaiResponsesReasoningSummaries(data),
+    responseUsage: extractXaiResponsesUsage(data),
+  };
+}
+
+async function handleResponsesDirect(
+  messages: Message[],
+  modelId: string,
+  stream: boolean,
+  maxTokens: number,
+  responseHeadersBase: Record<string, string>,
+  debugTrace: RoleplayDebugTrace | null = null,
+): Promise<Response> {
+  const XAI_API_KEY = Deno.env.get("XAI_API_KEY");
+  if (!XAI_API_KEY) {
+    throw new Error("XAI_API_KEY is not configured. Please add your Grok API key in settings.");
+  }
+
+  const directStartedAt = performance.now();
+  const primary = await callXaiResponses({
+    apiKey: XAI_API_KEY,
+    model: modelId,
+    messages,
+    stream,
+    maxOutputTokens: maxTokens,
+    temperature: TEMP_DIRECT,
+    store: ROLEPLAY_RESPONSES_STORE,
+    reasoningEffort: ROLEPLAY_RESPONSES_REASONING_EFFORT,
+  });
+
+  let timedDebugTrace = withDebugTiming(debugTrace, { directMs: elapsedMs(directStartedAt) });
+
+  if (primary.ok) {
+    if (stream) {
+      const streamHeaders = {
+        ...responseHeadersBase,
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+      };
+      try {
+        const streamResult = await readResponsesStreamContent(primary.response.body);
+        const normalizedText = normalizeFinalText(streamResult.text);
+        timedDebugTrace = appendResponsesMetadataToDebugTrace(timedDebugTrace, {
+          modelRequest: primary.modelRequest,
+          responseUsage: streamResult.responseUsage,
+          reasoningSummaries: streamResult.reasoningSummaries,
+        });
+        return streamTextAsSSE(normalizedText, modelId, streamHeaders, timedDebugTrace);
+      } catch (error) {
+        const providerError = messageFromUnknown(error);
+        timedDebugTrace = appendProviderErrorToDebugTrace(timedDebugTrace, primary.modelRequest, providerError);
+        return streamProviderErrorAsSSE(
+          modelId,
+          streamHeaders,
+          "The AI provider failed while generating this turn. Please try again.",
+          'provider_stream_error',
+          timedDebugTrace,
+        );
+      }
+    }
+
+    let content: Awaited<ReturnType<typeof readResponsesJsonContent>>;
+    try {
+      content = await readResponsesJsonContent(primary.response);
+    } catch (error) {
+      const providerError = messageFromUnknown(error);
+      timedDebugTrace = appendProviderErrorToDebugTrace(timedDebugTrace, primary.modelRequest, providerError);
+      return jsonProviderErrorResponse(
+        502,
+        "The AI provider returned an unreadable response. Please try again.",
+        'provider_response_parse_error',
+        { ...responseHeadersBase, "Content-Type": "application/json" },
+        timedDebugTrace,
+      );
+    }
+    const data = {
+      id: `chatcmpl-${crypto.randomUUID()}`,
+      object: "chat.completion",
+      created: Math.floor(Date.now() / 1000),
+      model: modelId,
+      choices: [{
+        index: 0,
+        message: { role: "assistant", content: normalizeFinalText(content.text) },
+        finish_reason: "stop",
+      }],
+    };
+    timedDebugTrace = appendResponsesMetadataToDebugTrace(timedDebugTrace, {
+      modelRequest: primary.modelRequest,
+      responseUsage: content.responseUsage,
+      reasoningSummaries: content.reasoningSummaries,
+    });
+    return new Response(JSON.stringify({ ...data, chronicle_debug_trace: timedDebugTrace }), {
+      headers: { ...responseHeadersBase, "Content-Type": "application/json" },
+    });
+  }
+
+  if (primary.status === 403) {
+    debugLog('[chat] Responses 403 content safety, retrying with redirect directive');
+    const redirectMessages: Message[] = [
+      ...messages.slice(0, -1),
+      { role: 'system' as const, content: CONTENT_REDIRECT_DIRECTIVE },
+      messages[messages.length - 1],
+    ];
+    const fallbackStartedAt = performance.now();
+    const retry = await callXaiResponses({
+      apiKey: XAI_API_KEY,
+      model: modelId,
+      messages: redirectMessages,
+      stream,
+      maxOutputTokens: maxTokens,
+      temperature: TEMP_DIRECT,
+      store: ROLEPLAY_RESPONSES_STORE,
+      reasoningEffort: ROLEPLAY_RESPONSES_REASONING_EFFORT,
+      notes: ["Primary Responses request received 403; this retry request was the final Grok request."],
+    });
+    timedDebugTrace = withDebugTiming(timedDebugTrace, { fallbackMs: elapsedMs(fallbackStartedAt) });
+
+    if (retry.ok) {
+      const priorModelRequest = { ...primary.modelRequest, label: 'Primary Responses request before fallback retry' };
+      if (stream) {
+        const streamHeaders = {
+          ...responseHeadersBase,
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive",
+        };
+        try {
+          const streamResult = await readResponsesStreamContent(retry.response.body);
+          const normalizedText = normalizeFinalText(streamResult.text);
+          timedDebugTrace = timedDebugTrace
+            ? {
+                ...appendResponsesMetadataToDebugTrace(timedDebugTrace, {
+                  modelRequest: retry.modelRequest,
+                  responseUsage: streamResult.responseUsage,
+                  reasoningSummaries: streamResult.reasoningSummaries,
+                })!,
+                modelRequests: [priorModelRequest],
+              }
+            : null;
+          return streamTextAsSSE(normalizedText, modelId, streamHeaders, timedDebugTrace);
+        } catch (error) {
+          const providerError = messageFromUnknown(error);
+          timedDebugTrace = timedDebugTrace
+            ? {
+                ...appendProviderErrorToDebugTrace(timedDebugTrace, retry.modelRequest, providerError)!,
+                modelRequests: [priorModelRequest],
+              }
+            : null;
+          return streamProviderErrorAsSSE(
+            modelId,
+            streamHeaders,
+            "The AI provider failed while generating this turn. Please try again.",
+            'provider_stream_error',
+            timedDebugTrace,
+          );
+        }
+      }
+
+      let content: Awaited<ReturnType<typeof readResponsesJsonContent>>;
+      try {
+        content = await readResponsesJsonContent(retry.response);
+      } catch (error) {
+        const providerError = messageFromUnknown(error);
+        timedDebugTrace = timedDebugTrace
+          ? {
+              ...appendProviderErrorToDebugTrace(timedDebugTrace, retry.modelRequest, providerError)!,
+              modelRequests: [priorModelRequest],
+            }
+          : null;
+        return jsonProviderErrorResponse(
+          502,
+          "The AI provider returned an unreadable response. Please try again.",
+          'provider_response_parse_error',
+          { ...responseHeadersBase, "Content-Type": "application/json" },
+          timedDebugTrace,
+        );
+      }
+      timedDebugTrace = timedDebugTrace
+        ? {
+            ...appendResponsesMetadataToDebugTrace(timedDebugTrace, {
+              modelRequest: retry.modelRequest,
+              responseUsage: content.responseUsage,
+              reasoningSummaries: content.reasoningSummaries,
+            })!,
+            modelRequests: [priorModelRequest],
+        }
+        : null;
+      return jsonResponseAsCompletion(normalizeFinalText(content.text), modelId, {
+        ...responseHeadersBase,
+        "Content-Type": "application/json",
+      }, timedDebugTrace);
+    }
+
+    if (retry.status !== 403) {
+      const providerError = `Responses retry failed with HTTP ${retry.status}: ${previewProviderError(retry.errorText)}`;
+      timedDebugTrace = timedDebugTrace
+        ? {
+            ...appendProviderErrorToDebugTrace(timedDebugTrace, retry.modelRequest, providerError)!,
+            modelRequests: [{ ...primary.modelRequest, label: 'Primary Responses request before fallback retry' }],
+          }
+        : null;
+      if (stream) {
+        return streamProviderErrorAsSSE(modelId, {
+          ...responseHeadersBase,
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive",
+        }, "The AI provider failed while generating this turn. Please try again.", 'provider_http_error', timedDebugTrace);
+      }
+      return jsonProviderErrorResponse(
+        502,
+        "The AI provider failed while generating this turn. Please try again.",
+        'provider_http_error',
+        { ...responseHeadersBase, "Content-Type": "application/json" },
+        timedDebugTrace,
+      );
+    }
+
+    const blockedTrace: RoleplayDebugTrace | null = timedDebugTrace
+      ? {
+          ...timedDebugTrace,
+          modelRequest: retry.modelRequest,
+          modelRequests: [{ ...primary.modelRequest, label: 'Primary Responses request before fallback retry' }],
+          finalPath: 'content_filter_notice',
+          fallbackReason: 'provider_content_filter',
+          notes: [
+            ...timedDebugTrace.notes,
+            'Primary Responses request and content-redirect retry were both blocked by the provider.',
+            'The edge function returned a structured content-filter notice over HTTP 200 so the frontend can avoid a runtime overlay.',
+          ],
+        }
+      : null;
+
+    if (stream) {
+      return streamContentFilterNoticeAsSSE(modelId, {
+        ...responseHeadersBase,
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+      }, blockedTrace);
+    }
+
+    return new Response(
+      JSON.stringify({
+        ok: false,
+        skipped: true,
+        error: "Content filtered by provider",
+        error_type: "content_filtered",
+        message: CONTENT_FILTER_NOTICE_TEXT,
+        chronicle_debug_trace: blockedTrace,
+      }),
+      { status: 200, headers: { ...responseHeadersBase, "Content-Type": "application/json" } },
+    );
+  }
+
+  const providerError = `Responses request failed with HTTP ${primary.status}: ${previewProviderError(primary.errorText)}`;
+  timedDebugTrace = appendProviderErrorToDebugTrace(timedDebugTrace, primary.modelRequest, providerError);
+  if (stream) {
+    return streamProviderErrorAsSSE(modelId, {
+      ...responseHeadersBase,
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      "Connection": "keep-alive",
+    }, "The AI provider failed while generating this turn. Please try again.", 'provider_http_error', timedDebugTrace);
+  }
+  return jsonProviderErrorResponse(
+    502,
+    "The AI provider failed while generating this turn. Please try again.",
+    'provider_http_error',
+    { ...responseHeadersBase, "Content-Type": "application/json" },
+    timedDebugTrace,
+  );
 }
 
 async function handleDirect(
@@ -753,6 +1233,7 @@ serve(async (req) => {
       stream = true,
       max_tokens: maxTokens = 4096,
       pipeline = 'direct',
+      providerTransport = 'responses',
       debugTrace: debugTraceRequested = false,
       roleplayContext,
     } = body;
@@ -775,9 +1256,20 @@ serve(async (req) => {
       warnLog('[chat] roleplay_v2 requested, but Chronicle now aliases that lane to direct mode.');
     }
 
-    debugLog(`[chat] pipeline=${normalizedPipeline} model=${modelId} messages=${messages.length} stream=${stream}`);
+    debugLog(`[chat] pipeline=${normalizedPipeline} transport=${providerTransport} model=${modelId} messages=${messages.length} stream=${stream}`);
 
     // ---- direct (default + compatibility alias) --------------------------
+    if (providerTransport === 'responses') {
+      return await handleResponsesDirect(
+        messages,
+        modelId,
+        stream,
+        maxTokens,
+        responseHeadersBase,
+        debugTraceRequested ? buildDirectDebugTrace(messages, roleplayContext) : null,
+      );
+    }
+
     return await handleDirect(
       messages,
       modelId,

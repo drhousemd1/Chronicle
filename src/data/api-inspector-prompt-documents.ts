@@ -363,7 +363,13 @@ const browserToEdgeHeaders = `BROWSER -> SUPABASE EDGE HEADERS
   "apikey": "{{VITE_SUPABASE_PUBLISHABLE_KEY}}"
 }`;
 
-const edgeToXaiChatHeaders = `EDGE -> xAI CHAT HEADERS
+const edgeToXaiResponsesHeaders = `EDGE -> xAI RESPONSES HEADERS
+{
+  "Authorization": "Bearer {{XAI_API_KEY}}",
+  "Content-Type": "application/json"
+}`;
+
+const edgeToXaiChatHeaders = `EDGE -> xAI CHAT COMPLETIONS HEADERS
 {
   "Authorization": "Bearer {{XAI_API_KEY}}",
   "Content-Type": "application/json"
@@ -375,13 +381,26 @@ const edgeToXaiImageHeaders = `EDGE -> xAI IMAGE HEADERS
   "Content-Type": "application/json"
 }`;
 
-const requestPolicyNotes = `REQUEST POLICY NOTES
+const responsesRequestPolicyNotes = `REQUEST POLICY NOTES
 - top_p is not currently sent by Chronicle. Sampling uses the provider default for top_p.
-- store is not currently sent by Chronicle on chat-completions requests. xAI documents explicit storage control on the Responses API; Chronicle should set store:false if it intentionally migrates these roleplay calls to that endpoint later.
+- These migrated roleplay runtime calls use xAI Responses with store:false and reasoning.effort:"medium".
+- Chat history is still sent explicitly in the request input; Chronicle does not use provider-side previous_response_id chaining in this migration.
 - Secrets are redacted in this review document. Live requests use runtime environment variables and the signed-in user's session token.`;
 
-const supportJsonSchemaPolicyNote = `STRUCTURED OUTPUT NOTE
-These JSON-returning support calls request xAI structured output with response_format.type = "json_schema" and still keep Chronicle's deterministic validation gates. Provider schema enforcement reduces malformed JSON; app-side validation still decides what can be saved.`;
+const legacyChatRequestPolicyNotes = `REQUEST POLICY NOTES
+- top_p is not currently sent by Chronicle. Sampling uses the provider default for top_p.
+- This helper lane remains on xAI Chat Completions in the current migration and does not send Responses-only store or reasoning fields.
+- Secrets are redacted in this review document. Live requests use runtime environment variables and the signed-in user's session token.`;
+
+const imageRequestPolicyNotes = `REQUEST POLICY NOTES
+- Image generation lanes use xAI image endpoints, not the Responses text endpoint.
+- Secrets are redacted in this review document. Live requests use runtime environment variables and the signed-in user's session token.`;
+
+const responsesJsonSchemaPolicyNote = `STRUCTURED OUTPUT NOTE
+These JSON-returning migrated support calls request xAI Responses structured output with text.format.type = "json_schema" and still keep Chronicle's deterministic validation gates. Provider schema enforcement reduces malformed JSON; app-side validation still decides what can be saved.`;
+
+const chatJsonSchemaPolicyNote = `STRUCTURED OUTPUT NOTE
+This helper lane still uses Chat Completions structured output with response_format.type = "json_schema" and keeps Chronicle's deterministic validation or sanitation gates. Provider schema enforcement reduces malformed JSON; app-side validation still decides what can be saved.`;
 
 const contentRedirectDirective = `[CONTENT REDIRECT]
 The provider blocked the previous request. Continue in character without mentioning filters, moderation, or policy.
@@ -926,6 +945,9 @@ REQUEST BODY SHAPE
   "modelId": "grok-4.3",
   "stream": true,
   "max_tokens": "{{1024 concise | 2048 balanced | 3072 detailed}}",
+  "providerTransport": "responses",
+  "reasoningEffort": "medium",
+  "store": false,
   "pipeline": "direct",
   "debugTrace": "{{true only when requested}}",
   "roleplayContext": {
@@ -943,18 +965,20 @@ REQUEST BODY SHAPE
 GROK REQUEST BODY SENT BY CHAT EDGE FUNCTION
 {
   "model": "grok-4.3",
-  "messages": "<same messages array shown above>",
+  "input": "<same messages array shown above>",
   "stream": true,
+  "store": false,
+  "reasoning": { "effort": "medium" },
   "temperature": 0.6,
-  "max_tokens": "{{1024 concise | 2048 balanced | 3072 detailed}}"
+  "max_output_tokens": "{{1024 concise | 2048 balanced | 3072 detailed}}"
 }
 
-${edgeToXaiChatHeaders}
+${edgeToXaiResponsesHeaders}
 
-${requestPolicyNotes}
+${responsesRequestPolicyNotes}
 
 CONTENT-REDIRECT FALLBACK BRANCH
-If the primary xAI chat completion request returns HTTP 403, the chat edge function retries once with an additional system message inserted immediately before the final user message.
+If the primary xAI Responses request returns HTTP 403, the chat edge function retries once with an additional system message inserted immediately before the final user message.
 If the retry is also blocked, the edge function returns a structured content-filter notice over HTTP 200 instead of throwing a 422 runtime error.
 The frontend saves that notice as a local Chronicle system message so the user sees an in-chat interruption instead of a Lovable runtime overlay. Local notice messages are not included in later API Call 1 history.
 
@@ -977,6 +1001,23 @@ Event 2:
   }
 }
 
+STREAMING PROVIDER-ERROR EDGE EVENTS
+When the xAI Responses stream fails outside the content-filter branch, the edge function emits the debug trace and a local provider-error event before [DONE].
+The frontend saves that event as a local Chronicle assistant notice with localNotice="provider_error". Local provider-error notices are not included in later API Call 1 history.
+
+Event 1, only when debugTrace is enabled:
+{
+  "chronicle_debug_trace": "{{debug trace when requested, including providerStreamError}}"
+}
+
+Event 2:
+{
+  "chronicle_provider_error": {
+    "message": "{{local Chronicle provider-error notice text}}",
+    "reason": "provider_stream_error"
+  }
+}
+
 NON-STREAM DOUBLE-BLOCK EDGE RESPONSE
 {
   "ok": false,
@@ -985,6 +1026,13 @@ NON-STREAM DOUBLE-BLOCK EDGE RESPONSE
   "error_type": "content_filtered",
   "message": "{{local Chronicle notice text}}",
   "chronicle_debug_trace": "{{debug trace when requested, including primary and retry model requests}}"
+}
+
+NON-STREAM PROVIDER-ERROR EDGE RESPONSE
+{
+  "error": "{{local Chronicle provider-error notice text}}",
+  "error_type": "provider_response_parse_error | provider_http_error",
+  "chronicle_debug_trace": "{{debug trace when requested}}"
 }
 
 ================================================================================
@@ -1133,28 +1181,31 @@ BROWSER-TO-EDGE REQUEST BODY SHAPE
   "debugTrace": "{{true only when requested}}"
 }
 
-REQUEST BODY SHAPE SENT TO xAI
+RESPONSES REQUEST BODY SHAPE SENT TO xAI
 {
   "model": "grok-4.3",
-  "messages": [
+  "stream": false,
+  "input": [
     { "role": "system", "content": "<system prompt below>" },
     { "role": "user", "content": "<user prompt below>" }
   ],
   "temperature": 0.15,
-  "max_tokens": 8192,
-  "response_format": {
-    "type": "json_schema",
-    "json_schema": {
+  "max_output_tokens": 8192,
+  "store": false,
+  "reasoning": { "effort": "medium" },
+  "text": {
+    "format": {
+      "type": "json_schema",
       "name": "chronicle_character_updates",
       "schema": "{{updates array schema with character, field, value, evidence, confidence}}"
     }
   }
 }
 
-${edgeToXaiChatHeaders}
+${edgeToXaiResponsesHeaders}
 
-${requestPolicyNotes}
-${supportJsonSchemaPolicyNote}
+${responsesRequestPolicyNotes}
+${responsesJsonSchemaPolicyNote}
 
 SYSTEM MESSAGE
 ${characterStateSyncSystemPrompt}
@@ -1162,7 +1213,7 @@ ${characterStateSyncSystemPrompt}
 USER MESSAGE
 ${characterStateSyncUserPrompt}
 
-403 CONTENT-REDIRECT FALLBACK
+403 SAFE METADATA RETRY
 If the primary xAI request returns HTTP 403, the function retries once with this shorter fallback request.
 The fallback still uses structured output, but it is deliberately restricted to non-explicit metadata and cannot create, remove, or advance goals.
 
@@ -1254,28 +1305,31 @@ BROWSER-TO-EDGE REQUEST BODY SHAPE
   "debugTrace": "{{true only when requested}}"
 }
 
-REQUEST BODY SHAPE SENT TO xAI
+RESPONSES REQUEST BODY SHAPE SENT TO xAI
 {
   "model": "grok-4.3",
-  "messages": [
+  "stream": false,
+  "input": [
     { "role": "system", "content": "<system prompt below>" },
     { "role": "user", "content": "<user prompt below>" }
   ],
   "temperature": 0.3,
-  "max_tokens": 1024,
-  "response_format": {
-    "type": "json_schema",
-    "json_schema": {
+  "max_output_tokens": 1024,
+  "store": false,
+  "reasoning": { "effort": "medium" },
+  "text": {
+    "format": {
+      "type": "json_schema",
       "name": "chronicle_goal_progress",
       "schema": "{{classifications array schema with stepId, result, completed, confidence, evidence, summary}}"
     }
   }
 }
 
-${edgeToXaiChatHeaders}
+${edgeToXaiResponsesHeaders}
 
-${requestPolicyNotes}
-${supportJsonSchemaPolicyNote}
+${responsesRequestPolicyNotes}
+${responsesJsonSchemaPolicyNote}
 
 SYSTEM MESSAGE
 ${goalProgressSystemPrompt}
@@ -1356,28 +1410,31 @@ BROWSER-TO-EDGE REQUEST BODY SHAPE
   "debugTrace": "{{true only when requested}}"
 }
 
-REQUEST BODY SHAPE SENT TO xAI
+RESPONSES REQUEST BODY SHAPE SENT TO xAI
 {
   "model": "grok-4.3",
-  "messages": [
+  "stream": false,
+  "input": [
     { "role": "system", "content": "<system prompt below>" },
     { "role": "user", "content": "<user prompt below>" }
   ],
   "temperature": 0.15,
-  "max_tokens": 2048,
-  "response_format": {
-    "type": "json_schema",
-    "json_schema": {
+  "max_output_tokens": 2048,
+  "store": false,
+  "reasoning": { "effort": "medium" },
+  "text": {
+    "format": {
+      "type": "json_schema",
       "name": "chronicle_goal_alignment",
       "schema": "{{evaluations array schema with goalId, goalKind, characterId, signal, intensity, rationale, evidence}}"
     }
   }
 }
 
-${edgeToXaiChatHeaders}
+${edgeToXaiResponsesHeaders}
 
-${requestPolicyNotes}
-${supportJsonSchemaPolicyNote}
+${responsesRequestPolicyNotes}
+${responsesJsonSchemaPolicyNote}
 
 SYSTEM MESSAGE
 ${goalAlignmentSystemPrompt}
@@ -1416,27 +1473,31 @@ BROWSER-TO-EDGE REQUEST BODY SHAPE
   "debugTrace": "{{true only when requested}}"
 }
 
-REQUEST BODY SHAPE SENT TO xAI
+RESPONSES REQUEST BODY SHAPE SENT TO xAI
 {
   "model": "grok-4.3",
-  "messages": [
+  "stream": false,
+  "input": [
     { "role": "system", "content": "<system prompt below>" },
     { "role": "user", "content": "Extract durable story-memory events from this latest exchange:\n\n{{exchangeText}}" }
   ],
   "temperature": 0.3,
-  "response_format": {
-    "type": "json_schema",
-    "json_schema": {
+  "max_output_tokens": 1024,
+  "store": false,
+  "reasoning": { "effort": "medium" },
+  "text": {
+    "format": {
+      "type": "json_schema",
       "name": "chronicle_memory_events",
       "schema": "{{object schema with events string array}}"
     }
   }
 }
 
-${edgeToXaiChatHeaders}
+${edgeToXaiResponsesHeaders}
 
-${requestPolicyNotes}
-${supportJsonSchemaPolicyNote}
+${responsesRequestPolicyNotes}
+${responsesJsonSchemaPolicyNote}
 
 SYSTEM MESSAGE
 ${memoryExtractionSystemPrompt}
@@ -1469,29 +1530,40 @@ BROWSER-TO-EDGE REQUEST BODY SHAPE
 {
   "bullets": ["{{memory bullet from one day}}"],
   "day": "{{day number}}",
-  "conversationId": "{{conversationId}}"
+  "conversationId": "{{conversationId}}",
+  "debugTrace": "{{true only when requested}}"
 }
 
-REQUEST BODY SHAPE SENT TO xAI
+RESPONSES REQUEST BODY SHAPE SENT TO xAI
 {
   "model": "grok-4.3",
-  "messages": [
+  "stream": false,
+  "input": [
     { "role": "system", "content": "<system prompt below>" },
     { "role": "user", "content": "<user prompt below>" }
   ],
   "temperature": 0.3,
-  "max_tokens": 350
+  "max_output_tokens": 350,
+  "store": false,
+  "reasoning": { "effort": "medium" }
 }
 
-${edgeToXaiChatHeaders}
+${edgeToXaiResponsesHeaders}
 
-${requestPolicyNotes}
+${responsesRequestPolicyNotes}
 
 SYSTEM MESSAGE
 ${memoryCompressionSystemPrompt}
 
 USER MESSAGE
 ${memoryCompressionUserPrompt}
+
+EDGE RESPONSE SHAPE
+{
+  "synopsis": "{{2-3 sentence compressed day summary}}",
+  "providerBodyError": "{{present only when provider returned a failed or malformed Responses body}}",
+  "chronicle_debug_payload": "{{present only when debugTrace=true}}"
+}
 
 OUTPUT CLEANUP NOTE
 The edge function collapses whitespace, removes obvious list-prefix formatting if present, limits the synopsis to at most three sentences, and caps the final saved string before returning it.
@@ -1534,8 +1606,8 @@ REQUEST BODY SHAPE SENT TO xAI
 
 ${edgeToXaiChatHeaders}
 
-${requestPolicyNotes}
-${supportJsonSchemaPolicyNote}
+${legacyChatRequestPolicyNotes}
+${chatJsonSchemaPolicyNote}
 
 PROFILE SANITATION NOTE
 The edge function sanitizes the parsed profile before returning it. The browser sanitizes again before merging into saved side-character state and before sending avatarPrompt to the avatar path. Unsupported private or hidden details are blanked rather than persisted from thin first-appearance context. World context may shape public setting fit, but it does not prove private generated fields; private-field support must come from the first appearance or extracted first-appearance traits. Empty generated nested fields do not overwrite existing extracted side-character details.
@@ -1582,7 +1654,7 @@ TEXT OPTIMIZATION REQUEST BODY SENT TO xAI
 
 ${edgeToXaiChatHeaders}
 
-${requestPolicyNotes}
+${legacyChatRequestPolicyNotes}
 
 SYSTEM MESSAGE
 ${avatarSystemPrompt}
@@ -1607,7 +1679,7 @@ FRONTEND SERVICE
 src/services/character-ai.ts
 
 EDGE TRANSPORT
-/functions/v1/chat with stream=false. The chat edge function forwards through the direct xAI chat-completions lane.
+/functions/v1/chat with stream=false and providerTransport="chat_completions". These builder/helper calls explicitly opt into the legacy xAI Chat Completions compatibility lane so they do not inherit the roleplay runtime Responses reasoning default.
 
 ${characterEnhancementPromptFamilies}
 
@@ -1619,7 +1691,7 @@ FRONTEND SERVICE
 src/services/world-ai.ts
 
 EDGE TRANSPORT
-/functions/v1/chat with stream=false. The chat edge function forwards through the direct xAI chat-completions lane.
+/functions/v1/chat with stream=false and providerTransport="chat_completions". These builder/helper calls explicitly opt into the legacy xAI Chat Completions compatibility lane so they do not inherit the roleplay runtime Responses reasoning default.
 
 ${worldEnhancementPromptFamilies}
 
@@ -1673,7 +1745,7 @@ SCENE IMAGE TEXT ANALYSIS REQUEST BODY SENT TO xAI
 }
 
 ${edgeToXaiChatHeaders}
-${supportJsonSchemaPolicyNote}
+${chatJsonSchemaPolicyNote}
 
 SCENE IMAGE ANALYSIS PROMPT
 ${sceneImageAnalysisPrompt}
@@ -1714,7 +1786,7 @@ COVER IMAGE GENERATION REQUEST BODY SENT TO xAI
 
 ${edgeToXaiImageHeaders}
 
-${requestPolicyNotes}`;
+${imageRequestPolicyNotes}`;
 }
 
 export const apiInspectorPromptDocuments: Record<ApiInspectorPromptDocumentId, ApiInspectorPromptDocument> = {

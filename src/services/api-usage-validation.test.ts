@@ -112,11 +112,19 @@ describe("api-usage-validation call1 coverage", () => {
       systemInstruction,
       messages,
       finalUserInput,
+      transport: {
+        providerTransport: "responses",
+        store: false,
+        reasoningEffort: "medium",
+      },
     });
 
     expect(presence["call1.meta.system_instruction"]).toBe(true);
     expect(presence["call1.meta.history_messages"]).toBe(true);
     expect(presence["call1.meta.final_user_wrapper"]).toBe(true);
+    expect(presence["call1.transport.responses"]).toBe(true);
+    expect(presence["call1.transport.store_false"]).toBe(true);
+    expect(presence["call1.transport.reasoning_medium"]).toBe(true);
     expect(presence["call1.story.scenario_name"]).toBe(true);
     expect(presence["call1.story.story_premise"]).toBe(true);
     expect(presence["call1.story.structured_locations"]).toBe(true);
@@ -165,9 +173,17 @@ describe("api-usage-validation call1 coverage", () => {
       systemInstruction: brokenInstruction,
       messages,
       finalUserInput,
+      transport: {
+        providerTransport: "chat_completions",
+        store: true,
+        reasoningEffort: "low",
+      },
     });
 
     expect(presence["call1.story.story_premise"]).toBe(false);
+    expect(presence["call1.transport.responses"]).toBe(false);
+    expect(presence["call1.transport.store_false"]).toBe(false);
+    expect(presence["call1.transport.reasoning_medium"]).toBe(false);
     expect(presence["call1.cast.tone"]).toBeUndefined();
     expect(presence["call1.meta.history_messages"]).toBeUndefined();
   });

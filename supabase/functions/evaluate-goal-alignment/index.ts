@@ -1,6 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { callXaiResponses, extractXaiResponsesText, getXaiResponsesBodyError } from "../_shared/xai-responses.ts";
+
+const SUPPORT_REASONING_EFFORT = "medium" as const;
+const SUPPORT_STORE = false;
 
 type GoalKind = "story" | "character";
 type GoalFlexibility = "rigid" | "normal" | "flexible";
@@ -206,69 +210,59 @@ Respond in JSON only:
   ]
 }`;
 
-    const xaiRequestBody = {
-      model: "grok-4.3",
-      messages: [
-        { role: "system", content: "You are a precise goal-alignment classifier. Return valid JSON only." },
-        { role: "user", content: userPrompt },
-      ],
-      temperature: 0.15,
-      max_tokens: 2048,
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "chronicle_goal_alignment",
-          schema: {
-            type: "object",
-            additionalProperties: false,
-            properties: {
-              evaluations: {
-                type: "array",
-                items: {
-                  type: "object",
-                  additionalProperties: false,
-                  properties: {
-                    goalId: { type: "string" },
-                    goalKind: { type: "string", enum: ["story", "character"] },
-                    characterId: { anyOf: [{ type: "string" }, { type: "null" }] },
-                    signal: { type: "string", enum: ["support", "resistance", "drift", "neutral", "not_applicable"] },
-                    intensity: { type: "number", enum: [0, 1, 2, 3] },
-                    rationale: { type: "string" },
-                    evidence: { type: "string" },
-                  },
-                  required: ["goalId", "goalKind", "characterId", "signal", "intensity", "rationale", "evidence"],
+    const messages = [
+      { role: "system" as const, content: "You are a precise goal-alignment classifier. Return valid JSON only." },
+      { role: "user" as const, content: userPrompt },
+    ];
+    const responseFormat = {
+      type: "json_schema",
+      json_schema: {
+        name: "chronicle_goal_alignment",
+        schema: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            evaluations: {
+              type: "array",
+              items: {
+                type: "object",
+                additionalProperties: false,
+                properties: {
+                  goalId: { type: "string" },
+                  goalKind: { type: "string", enum: ["story", "character"] },
+                  characterId: { anyOf: [{ type: "string" }, { type: "null" }] },
+                  signal: { type: "string", enum: ["support", "resistance", "drift", "neutral", "not_applicable"] },
+                  intensity: { type: "number", enum: [0, 1, 2, 3] },
+                  rationale: { type: "string" },
+                  evidence: { type: "string" },
                 },
+                required: ["goalId", "goalKind", "characterId", "signal", "intensity", "rationale", "evidence"],
               },
             },
-            required: ["evaluations"],
           },
+          required: ["evaluations"],
         },
       },
     };
+    const result = await callXaiResponses({
+      apiKey: XAI_API_KEY,
+      model: "grok-4.3",
+      messages,
+      temperature: 0.15,
+      maxOutputTokens: 2048,
+      store: SUPPORT_STORE,
+      reasoningEffort: SUPPORT_REASONING_EFFORT,
+      textFormat: responseFormat,
+    });
 
     const debugPayload = debugTrace === true
       ? {
-          modelRequest: {
-            endpoint: "https://api.x.ai/v1/chat/completions",
-            method: "POST",
-            capturedAt: Date.now(),
-            requestBody: xaiRequestBody,
-          },
+          modelRequest: result.modelRequest,
         }
       : null;
 
-    const response = await fetch("https://api.x.ai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${XAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(xaiRequestBody),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[evaluate-goal-alignment] xAI error: ${response.status} - ${errorText}`);
+    if (!result.ok) {
+      console.error(`[evaluate-goal-alignment] xAI Responses error: ${result.status} - ${result.errorText}`);
       return new Response(JSON.stringify({
         evaluations: [],
         error: "Goal alignment classification failed",
@@ -278,8 +272,20 @@ Respond in JSON only:
       });
     }
 
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "";
+    const data = await result.response.json();
+    const bodyError = getXaiResponsesBodyError(data, { requireOutputText: true });
+    if (bodyError) {
+      console.error(`[evaluate-goal-alignment] xAI Responses body error: ${bodyError}`);
+      return new Response(JSON.stringify({
+        evaluations: [],
+        error: "Goal alignment classification failed",
+        providerBodyError: bodyError,
+        ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const content = extractXaiResponsesText(data) || "";
 
     let parsed: { evaluations?: GoalAlignmentEvaluation[] };
     try {

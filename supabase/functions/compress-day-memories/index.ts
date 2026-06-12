@@ -5,8 +5,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { callXaiResponses, extractXaiResponsesText, getXaiResponsesBodyError } from "../_shared/xai-responses.ts";
 
 const DAY_SYNOPSIS_MAX_CHARS = 900;
+const SUPPORT_REASONING_EFFORT = "medium" as const;
+const SUPPORT_STORE = false;
 
 function trimAtWordBoundary(value: string, maxChars: number): string {
   if (value.length <= maxChars) return value;
@@ -46,7 +49,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const { bullets, day, conversationId } = await req.json();
+    const { bullets, day, conversationId, debugTrace = false } = await req.json();
 
     if (!bullets || !Array.isArray(bullets) || bullets.length === 0) {
       return new Response(
@@ -75,40 +78,69 @@ Rules:
 
     const userMessage = `Compress these Day ${day} memory bullets into a 2-3 sentence synopsis:\n\n${bullets.map((b: string) => `- ${b}`).join('\n')}`;
 
-    const response = await fetch("https://api.x.ai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${XAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "grok-4.3",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage }
-        ],
-        temperature: 0.3,
-        max_tokens: 350,
-      }),
+    const result = await callXaiResponses({
+      apiKey: XAI_API_KEY,
+      model: "grok-4.3",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userMessage },
+      ],
+      temperature: 0.3,
+      maxOutputTokens: 350,
+      store: SUPPORT_STORE,
+      reasoningEffort: SUPPORT_REASONING_EFFORT,
     });
+    const debugPayload = debugTrace === true
+      ? {
+          modelRequest: result.modelRequest,
+        }
+      : null;
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("xAI error:", response.status, errorText);
-      throw new Error("Failed to compress day memories");
+    if (!result.ok) {
+      console.error("xAI Responses error:", result.status, result.errorText);
+      return new Response(
+        JSON.stringify({
+          error: "Failed to compress day memories",
+          providerBodyError: `xAI Responses HTTP ${result.status}`,
+          ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    const data = await response.json();
-    const synopsis = normalizeSynopsis(data.choices?.[0]?.message?.content || '');
+    const data = await result.response.json();
+    const bodyError = getXaiResponsesBodyError(data, { requireOutputText: true });
+    if (bodyError) {
+      console.error("xAI Responses body error:", bodyError);
+      return new Response(
+        JSON.stringify({
+          error: "Failed to compress day memories",
+          providerBodyError: bodyError,
+          ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const synopsis = normalizeSynopsis(extractXaiResponsesText(data) || '');
 
     if (!synopsis) {
-      throw new Error("Empty synopsis returned from model");
+      return new Response(
+        JSON.stringify({
+          error: "Empty synopsis returned from model",
+          providerBodyError: "Empty synopsis returned from model",
+          ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     console.log(`[compress-day-memories] Compressed ${bullets.length} bullets from Day ${day} into synopsis`);
 
     return new Response(
-      JSON.stringify({ synopsis }),
+      JSON.stringify({
+        synopsis,
+        ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

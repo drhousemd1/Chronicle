@@ -383,7 +383,8 @@ export async function aiEnhanceWorldField(
         { role: 'user', content: prompt }
       ],
       modelId,
-      stream: false
+      stream: false,
+      providerTransport: 'chat_completions'
     },
   });
 

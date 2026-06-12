@@ -18,28 +18,31 @@ const rows: ApiUsageValidationRowSeed[] = [
   { id: "call1.meta.system_instruction", label: "System instruction", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 11 },
   { id: "call1.meta.history_messages", label: "Recent messages", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 12 },
   { id: "call1.meta.final_user_wrapper", label: "Final user wrapper", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 13 },
-  { id: "call1.story.scenario_name", label: "Story card: name", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 14 },
-  { id: "call1.story.brief_description", label: "Story card: brief description", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 15 },
-  { id: "call1.story.story_premise", label: "Story details: premise", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 16 },
-  { id: "call1.story.structured_locations", label: "Story details: locations", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 17 },
-  { id: "call1.story.dialog_formatting", label: "Story details: dialog formatting", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 18 },
-  { id: "call1.story.custom_world_sections", label: "Story details: custom world content", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 19 },
-  { id: "call1.story.story_goals", label: "Story goals", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 20 },
-  { id: "call1.cast.ai_characters", label: "CAST: AI characters", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 21 },
-  { id: "call1.cast.user_controlled_exclusions", label: "CAST: user-controlled exclusions", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 22 },
-  { id: "call1.cast.character_basics", label: "Character basics", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 23 },
-  { id: "call1.cast.physical_appearance", label: "Physical appearance", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 24 },
-  { id: "call1.cast.currently_wearing", label: "Currently wearing", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 25 },
-  { id: "call1.cast.preferred_clothing", label: "Preferred clothing", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 26 },
-  { id: "call1.cast.personality", label: "Personality", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 27 },
-  { id: "call1.cast.tone", label: "Tone", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 28 },
-  { id: "call1.cast.background", label: "Background", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 29 },
-  { id: "call1.cast.key_life_events", label: "Key life events", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 30 },
-  { id: "call1.cast.relationships", label: "Relationships", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 31 },
-  { id: "call1.cast.secrets", label: "Secrets", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 32 },
-  { id: "call1.cast.fears", label: "Fears", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 33 },
-  { id: "call1.cast.character_goals", label: "Character goals", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 34 },
-  { id: "call1.cast.custom_sections", label: "Custom character sections", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 35 },
+  { id: "call1.transport.responses", label: "Provider transport: Responses", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 14 },
+  { id: "call1.transport.store_false", label: "Provider store=false", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 15 },
+  { id: "call1.transport.reasoning_medium", label: "Reasoning effort: medium", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 16 },
+  { id: "call1.story.scenario_name", label: "Story card: name", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 17 },
+  { id: "call1.story.brief_description", label: "Story card: brief description", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 18 },
+  { id: "call1.story.story_premise", label: "Story details: premise", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 19 },
+  { id: "call1.story.structured_locations", label: "Story details: locations", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 20 },
+  { id: "call1.story.dialog_formatting", label: "Story details: dialog formatting", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 21 },
+  { id: "call1.story.custom_world_sections", label: "Story details: custom world content", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 22 },
+  { id: "call1.story.story_goals", label: "Story goals", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 23 },
+  { id: "call1.cast.ai_characters", label: "CAST: AI characters", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 24 },
+  { id: "call1.cast.user_controlled_exclusions", label: "CAST: user-controlled exclusions", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 25 },
+  { id: "call1.cast.character_basics", label: "Character basics", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 26 },
+  { id: "call1.cast.physical_appearance", label: "Physical appearance", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 27 },
+  { id: "call1.cast.currently_wearing", label: "Currently wearing", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 28 },
+  { id: "call1.cast.preferred_clothing", label: "Preferred clothing", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 29 },
+  { id: "call1.cast.personality", label: "Personality", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 30 },
+  { id: "call1.cast.tone", label: "Tone", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 31 },
+  { id: "call1.cast.background", label: "Background", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 32 },
+  { id: "call1.cast.key_life_events", label: "Key life events", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 33 },
+  { id: "call1.cast.relationships", label: "Relationships", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 34 },
+  { id: "call1.cast.secrets", label: "Secrets", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 35 },
+  { id: "call1.cast.fears", label: "Fears", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 36 },
+  { id: "call1.cast.character_goals", label: "Character goals", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 37 },
+  { id: "call1.cast.custom_sections", label: "Custom character sections", kind: "detail", callGroup: "call_1", parentId: "summary.call1.chat_payload", sort: 38 },
 
   { id: "summary.call2.character_updates", label: "Call 2: Character Updates", kind: "summary", callGroup: "call_2", sort: 110 },
   { id: "call2.character_updates.user_message", label: "userMessage", kind: "detail", callGroup: "call_2", parentId: "summary.call2.character_updates", sort: 111 },
@@ -175,6 +178,9 @@ function getDetailHelpText(row: ApiUsageValidationRowSeed): string {
     if (row.id === "call1.meta.system_instruction") return "Call 1 trigger: verifies the assembled system instruction exists and is message[0] with role=system.";
     if (row.id === "call1.meta.history_messages") return "Call 1 trigger: verifies recent conversation messages were serialized into the message array in correct order/roles.";
     if (row.id === "call1.meta.final_user_wrapper") return "Call 1 trigger: verifies the final wrapped user message exists and contains the current user input.";
+    if (row.id === "call1.transport.responses") return "Call 1 trigger: verifies the browser asks the chat edge function to route live roleplay generation through xAI Responses.";
+    if (row.id === "call1.transport.store_false") return "Call 1 trigger: verifies the Responses transport is requested with store=false for the live roleplay path.";
+    if (row.id === "call1.transport.reasoning_medium") return "Call 1 trigger: verifies the Responses transport is requested with medium reasoning effort.";
     if (row.id.startsWith("call1.story.")) return "Call 1 trigger: evaluated only when this Story Builder field is authored. Passes when it appears in assembled WORLD CONTEXT/system instruction.";
     if (row.id.startsWith("call1.cast.")) return "Call 1 trigger: evaluated when relevant AI/User character data exists. Passes when that cast data is serialized into the Call 1 system instruction.";
   }

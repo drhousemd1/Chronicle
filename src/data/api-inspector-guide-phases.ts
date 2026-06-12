@@ -965,12 +965,12 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
             "title": "Verbosity Toggle",
             "tagType": "core-prompt",
             "icon": "📝",
-            "purpose": "Controls response detail and development style for the whole response while the request max_tokens cap remains Concise = 1024, Balanced = 2048, Detailed = 3072.",
+            "purpose": "Controls response detail and development style for the whole response while the browser request max_tokens cap maps to Responses max_output_tokens: Concise = 1024, Balanced = 2048, Detailed = 3072.",
             "settingsGate": "Settings-driven prompt block. The injected rules and token ceiling change with the user's selected verbosity mode.",
             "fileRefs": [
               {
                 "path": "src/services/llm.ts",
-                "lines": "renderResponseDetailInstruction() and max_tokens selection"
+                "lines": "renderResponseDetailInstruction(), browser max_tokens, and provider max_output_tokens selection"
               }
             ]
           },
