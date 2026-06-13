@@ -48,6 +48,7 @@ describe('support-call hardening source contracts', () => {
   it('uses schema-shaped side-character profile generation with sanitation before persistence boundaries', () => {
     const edgeSource = read('supabase/functions/generate-side-character/index.ts');
     const browserSource = read('src/components/chronicle/ChatInterfaceTab.tsx');
+    const runtimeSource = read('src/features/chat-runtime/side-character-profile.ts');
 
     expect(edgeSource).toContain('sideCharacterProfileResponseFormat');
     expect(edgeSource).toContain('temperature: 0.55');
@@ -64,11 +65,13 @@ describe('support-call hardening source contracts', () => {
     expect(edgeSource).not.toContain('a secret they might have');
 
     expect(browserSource).toContain('sanitizeGeneratedSideCharacterProfile');
-    expect(browserSource).toContain('buildSanitizedSideCharacterAvatarPrompt');
-    expect(browserSource).toContain('function mergeGeneratedProfileSection');
     expect(browserSource).toContain('mergeGeneratedProfileSection(sc.physicalAppearance, profileForUse.physicalAppearance)');
     expect(browserSource).not.toContain('physicalAppearance: { ...sc.physicalAppearance, ...profileForUse.physicalAppearance }');
     expect(browserSource).toContain('sexualOrientation: profileForUse.sexualOrientation || sc.sexualOrientation');
+    expect(runtimeSource).toContain('buildSanitizedSideCharacterAvatarPrompt');
+    expect(runtimeSource).toContain('function mergeGeneratedProfileSection');
+    expect(runtimeSource).toContain('generatedProfileSourceSupportsValue');
+    expect(runtimeSource).toContain('return normalizedSource.includes(normalizedValue);');
   });
 
   it('grounds scene-image analysis in established visible data with neutral fallbacks', () => {

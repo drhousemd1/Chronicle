@@ -4,10 +4,30 @@ import { describe, expect, it } from 'vitest';
 
 const read = (path: string) => readFileSync(path, 'utf8');
 
+function sliceBetween(source: string, startMarker: string, endMarker: string): string {
+  const start = source.indexOf(startMarker);
+  const end = source.indexOf(endMarker, start + startMarker.length);
+  expect(start).toBeGreaterThanOrEqual(0);
+  expect(end).toBeGreaterThan(start);
+  return source.slice(start, end);
+}
+
+function expectCollectorResultCommittedAfterGuard(sourceSlice: string) {
+  const collectIndex = sourceSlice.indexOf('const responseResult = await collectRoleplayResponse');
+  expect(collectIndex).toBeGreaterThanOrEqual(0);
+  const afterCollect = sourceSlice.slice(collectIndex);
+  const guardIndex = afterCollect.indexOf('if (!liveConversation ||');
+  const placeholderCommitIndex = afterCollect.indexOf('placeholderMapRef.current = responseResult.placeholderMap');
+  expect(guardIndex).toBeGreaterThanOrEqual(0);
+  expect(placeholderCommitIndex).toBeGreaterThan(guardIndex);
+}
+
 describe('roleplay runtime Responses migration source contracts', () => {
   it('opts API Call 1 into xAI Responses without changing the frontend commit contract', () => {
     const source = read('src/services/llm.ts');
     const chatInterfaceSource = read('src/components/chronicle/ChatInterfaceTab.tsx');
+    const localNoticesSource = read('src/features/chat-runtime/local-notices.ts');
+    const collectorSource = read('src/features/chat-runtime/collect-roleplay-response.ts');
 
     expect(source).toContain('const CHAT_RESPONSE_TIMEOUT_MS = 180_000;');
     expect(source).toContain("const ROLEPLAY_PROVIDER_TRANSPORT = 'responses';");
@@ -25,12 +45,39 @@ describe('roleplay runtime Responses migration source contracts', () => {
     expect(source).toContain('class ProviderStreamChatError extends Error');
     expect(source).toContain('throw new ProviderStreamChatError(providerError.message)');
     expect(source).toContain('if (error instanceof ProviderStreamChatError) throw error;');
-    expect(chatInterfaceSource).toContain('const unprefixedStandardNotice = PROVIDER_ERROR_NOTICE_TEXT.replace(/^Chronicle:\\s*/, \'\');');
-    expect(chatInterfaceSource).toContain('trimmedMessage === unprefixedStandardNotice');
-    expect(chatInterfaceSource).toContain('collectSendResponse(false)');
-    expect(chatInterfaceSource).toContain('collectRegenerateResponse(false)');
-    expect(chatInterfaceSource).toContain('collectContinueResponse(false)');
+    expect(localNoticesSource).toContain('const unprefixedStandardNotice = PROVIDER_ERROR_NOTICE_TEXT.replace(/^Chronicle:\\s*/, \'\');');
+    expect(localNoticesSource).toContain('trimmedMessage === unprefixedStandardNotice');
+    expect(chatInterfaceSource.split('collectRoleplayResponse(').length - 1).toBe(3);
+    expect(chatInterfaceSource.split('streamToUi: false').length - 1).toBe(3);
+    expect(chatInterfaceSource).toContain('placeholderMapRef.current = responseResult.placeholderMap');
+    expect(chatInterfaceSource).toContain('readRoleplayRequestDebugFromError(err, pendingDebugTrace, pendingCall1Request)');
+    expect(collectorSource).toContain('generateStream = generateRoleplayResponseStream');
+    expect(collectorSource).toContain('attachRoleplayRequestDebugToError(error, responseDebugTrace, responseCall1Request)');
+    expect(collectorSource).toContain('const candidatePlaceholderMap: PlaceholderNameMap = { ...placeholderMap };');
     expect(source).not.toContain("endpoint: 'https://api.x.ai/v1/chat/completions'");
+  });
+
+  it('keeps collector placeholder-map commits behind branch-specific stale guards', () => {
+    const chatInterfaceSource = read('src/components/chronicle/ChatInterfaceTab.tsx');
+    const sendSlice = sliceBetween(
+      chatInterfaceSource,
+      'const handleSend = async () => {',
+      'const handleCopyMessage',
+    );
+    const regenerateSlice = sliceBetween(
+      chatInterfaceSource,
+      'const handleRegenerateMessage = async',
+      'const handleContinueConversation = async',
+    );
+    const continueSlice = sliceBetween(
+      chatInterfaceSource,
+      'const handleContinueConversation = async',
+      '// Generate scene image from recent conversation context',
+    );
+
+    expectCollectorResultCommittedAfterGuard(sendSlice);
+    expectCollectorResultCommittedAfterGuard(regenerateSlice);
+    expectCollectorResultCommittedAfterGuard(continueSlice);
   });
 
   it('routes the chat edge direct lane through Responses by default while keeping an explicit legacy lane', () => {

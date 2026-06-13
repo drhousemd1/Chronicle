@@ -109,7 +109,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
           {
             id: "live-chat-entrypoints",
             title: "ChatInterfaceTab.tsx",
-            description: "Visible chat controls and the turn builders behind send, regenerate, and continue.",
+            description: "Visible chat controls, turn builders, and commit guards behind send, regenerate, and continue.",
             ownerTone: "component",
             primaryRef: ref("/src/components/chronicle/ChatInterfaceTab.tsx", "handleSend / handleRegenerateMessage / handleContinueConversation"),
             items: [
@@ -123,11 +123,13 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                   ref("/src/components/chronicle/ChatInterfaceTab.tsx", "handleSend"),
                   ref("/src/components/chronicle/ChatInterfaceTab.tsx", "handleRegenerateMessage"),
                   ref("/src/components/chronicle/ChatInterfaceTab.tsx", "handleContinueConversation"),
+                  ref("/src/features/chat-runtime/collect-roleplay-response.ts", "collectRoleplayResponse"),
                 ],
                 bullets: [
-                  bullet("Send", "Appends the new user message locally, builds effective world and cast state, and starts the streamed generation request."),
+                  bullet("Send", "Appends the new user message locally, builds effective world and cast state, then calls the shared response collector."),
 	                  bullet("Regenerate", "Slices the transcript back to the triggering user turn so the assistant can try a different version of the same exchange without double-feeding later accepted story state."),
                   bullet("Continue", "Builds a constrained continue instruction that keeps the turn focused on AI-controlled characters instead of treating it like a normal user prompt."),
+                  bullet("Commit guard", "The placeholder map and visible assistant message are committed only after the branch-specific stale-state guard passes."),
                 ],
                 meta: ["chat ui", "conversation slice", "roleplay entry"],
               },
@@ -166,6 +168,25 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                 ],
                 meta: ["style telemetry", "debug export", "repetition detector"],
               },
+              {
+                id: "response-collector",
+                title: "Shared response collector",
+                tag: "service",
+                summary:
+                  "Send, regenerate, and continue all use one browser-side collector for API Call 1 chunks, debug metadata, placeholder-name normalization, and provider/content-filter error metadata.",
+                fileRefs: [
+                  ref("/src/features/chat-runtime/collect-roleplay-response.ts", "collectRoleplayResponse"),
+                  ref("/src/features/chat-runtime/collect-roleplay-response.ts", "debug metadata helpers"),
+                  ref("/src/features/chat-runtime/collect-roleplay-response.ts", "placeholder normalization"),
+                  ref("/src/services/llm.ts", "generateRoleplayResponseStream"),
+                ],
+                bullets: [
+                  bullet("Runtime contract", "The UI still commits only the completed parsed response; this collector does not make partial provider chunks become accepted chat messages."),
+                  bullet("Debug continuity", "If the stream throws a provider or content-filter error, the collector attaches the latest debug trace/request so the local notice can still be exported for review."),
+                  bullet("Placeholder safety", "Placeholder-name changes are collected in a candidate map and returned to the caller, which commits them only after the relevant live-state guard passes."),
+                ],
+                meta: ["API Call 1 collector", "placeholder guard", "debug export"],
+              },
             ],
           },
         ],
@@ -178,7 +199,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
           {
             id: "live-chat-llm-service",
             title: "llm.ts",
-            description: "Prompt assembly, role framing, request envelope, and the browser-side SSE client.",
+            description: "Prompt assembly, role framing, request envelope, and the browser-side SSE parser consumed by the shared response collector.",
             ownerTone: "service",
             primaryRef: ref("/src/services/llm.ts", "getSystemInstruction / generateRoleplayResponseStream"),
             items: [
@@ -292,6 +313,7 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                 fileRefs: [
                   ref("/supabase/functions/chat/index.ts", "chronicle_content_filter SSE event"),
                   ref("/src/services/llm.ts", "content-filter SSE handling"),
+                  ref("/src/features/chat-runtime/local-notices.ts", "content-filter notice builder"),
                   ref("/src/components/chronicle/ChatInterfaceTab.tsx", "local content-filter notice"),
                 ],
                 bullets: [
@@ -311,19 +333,19 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
         groups: [
           {
             id: "live-chat-fanout",
-            title: "ChatInterfaceTab.tsx",
-            description: "Client-side fanout trigger that launches the post-turn work without blocking the visible reply.",
-            ownerTone: "component",
-            primaryRef: ref("/src/components/chronicle/ChatInterfaceTab.tsx", "queueAssistantDerivedWork / async follow-up lane"),
+            title: "use-post-turn-support-queue.ts",
+            description: "Client-side scheduler that waits for source-message persistence, then launches memory, goal, alignment, and character-state support work without blocking the visible reply.",
+            ownerTone: "service",
+            primaryRef: ref("/src/features/chat-runtime/use-post-turn-support-queue.ts", "queueAssistantDerivedWork / async follow-up lane"),
             items: [
               {
                 id: "post-turn-fanout",
                 title: "Async post-turn work queue",
                 tag: "service",
                 summary:
-                  "The visible response can finish streaming while follow-up extractors continue in the background against the newly accepted turn.",
+                  "After the completed assistant response is committed, follow-up extractors continue in the background against the newly accepted turn.",
                 fileRefs: [
-                  ref("/src/components/chronicle/ChatInterfaceTab.tsx", "queueAssistantDerivedWork"),
+                  ref("/src/features/chat-runtime/use-post-turn-support-queue.ts", "queueAssistantDerivedWork"),
                 ],
                 bullets: [
 	                  bullet("Separate concern", "This is why API Call 2 matters: Chronicle can keep accepted story state fresh even when older dialogue falls out of the raw context window."),
@@ -667,10 +689,10 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
         groups: [
           {
             id: "support-extraction-gates",
-            title: "ChatInterfaceTab.tsx",
-            description: "Support-lane orchestration that queues memory extraction, goal progress, goal alignment diagnostics, and character extraction after accepted assistant output.",
-            ownerTone: "component",
-            primaryRef: ref("/src/components/chronicle/ChatInterfaceTab.tsx", "post-turn support lane / buildActiveGoalCompletionIds"),
+            title: "use-post-turn-support-queue.ts",
+            description: "Tested support-lane scheduler that queues memory extraction, goal progress, serialized goal alignment, and serialized character-state extraction after accepted assistant output is persisted.",
+            ownerTone: "service",
+            primaryRef: ref("/src/features/chat-runtime/use-post-turn-support-queue.ts", "queueAssistantDerivedWork / async follow-up lane"),
             items: [
               {
                 id: "extraction-gates",
@@ -679,11 +701,12 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                 summary:
                   "After an assistant response is accepted, Chronicle queues support calls against that accepted message and its generation id instead of running them against drafts or stale branches.",
                 fileRefs: [
-                  ref("/src/components/chronicle/ChatInterfaceTab.tsx", "post-turn character extraction queue"),
+                  ref("/src/features/chat-runtime/use-post-turn-support-queue.ts", "post-turn character extraction queue"),
+                  ref("/src/components/chronicle/ChatInterfaceTab.tsx", "character snapshot runtime refs"),
                 ],
                 bullets: [
-                  bullet("Queue", "The accepted assistant response schedules memory, goal, alignment, and character-state workers."),
-                  bullet("State guard", "Character updates are applied only after the worker returns accepted updates for the same source message context."),
+                  bullet("Queue", "The accepted assistant response schedules memory, goal, alignment, and character-state workers only after its source message persistence succeeds."),
+                  bullet("State guard", "Character updates are extracted and applied through one serialized queue so a later extraction cannot overtake an earlier apply step."),
                 ],
                 review: ROLEPLAY_PIPELINE_REVIEW_20260515,
                 meta: ["post-turn lane", "accepted message"],
@@ -695,8 +718,8 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                 summary:
                   "Memories, goal completions, and character snapshots only count if their source generation still matches the currently accepted branch of that message slot.",
                 fileRefs: [
-                  ref("/src/components/chronicle/ChatInterfaceTab.tsx", "buildActiveGoalCompletionIds"),
-                  ref("/src/components/chronicle/ChatInterfaceTab.tsx", "buildActiveCharacterSnapshotMap"),
+                  ref("/src/features/chat-runtime/effective-state.ts", "buildActiveGoalCompletionIds"),
+                  ref("/src/features/chat-runtime/effective-state.ts", "buildActiveCharacterSnapshotMap"),
                   ref("/src/components/chronicle/ChatInterfaceTab.tsx", "isMessageGenerationStillCurrent"),
                 ],
                 bullets: [
@@ -718,9 +741,9 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
           {
             id: "support-overlay-merge",
             title: "Effective state builders",
-            description: "Overlay logic that merges authored scenario data with valid session and snapshot state.",
-            ownerTone: "component",
-            primaryRef: ref("/src/components/chronicle/ChatInterfaceTab.tsx", "effectiveWorldCore / computeEffectiveCharacter"),
+            description: "Pure helper logic that merges authored scenario data with valid session and snapshot state.",
+            ownerTone: "service",
+            primaryRef: ref("/src/features/chat-runtime/effective-state.ts", "effective state builders"),
             items: [
               {
                 id: "canonical-overlay",
@@ -729,8 +752,8 @@ export const apiInspectorLiveSections: ApiInspectorSection[] = [
                 summary:
                   "Chronicle builds effective roleplay state by overlaying current valid runtime updates on top of the original authored scenario graph.",
                 fileRefs: [
-                  ref("/src/components/chronicle/ChatInterfaceTab.tsx", "effectiveWorldCore"),
-                  ref("/src/components/chronicle/ChatInterfaceTab.tsx", "computeEffectiveCharacter"),
+                  ref("/src/features/chat-runtime/effective-state.ts", "buildEffectiveWorldCore"),
+                  ref("/src/features/chat-runtime/effective-state.ts", "applyCharacterSnapshot"),
                 ],
                 bullets: [
 	                  bullet("World", "Live scene, day/time, and session-specific overrides can replace older base story fields when they are the current accepted story state."),

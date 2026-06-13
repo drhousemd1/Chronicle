@@ -115,6 +115,7 @@ describe('roleplay support-call Responses migration contracts', () => {
     const memorySource = read('supabase/functions/extract-memory-events/index.ts');
     const characterSource = read('supabase/functions/extract-character-updates/index.ts');
     const chatInterfaceSource = read('src/components/chronicle/ChatInterfaceTab.tsx');
+    const debugSupportSource = read('src/features/chat-runtime/debug-support.ts');
 
     expect(adapterSource).toContain('if (!isRecord(payload)) return "Responses response envelope missing or malformed";');
     expect(adapterSource).toContain('if (payload.object !== "response")');
@@ -128,8 +129,8 @@ describe('roleplay support-call Responses migration contracts', () => {
     expect(characterSource).toContain('Safe character-state retry failed: HTTP ${safeResult.status}');
     expect(characterSource).toContain('providerBodyError: safeRetryError');
 
-    expect(chatInterfaceSource).toContain('focusedRetryParseError');
-    expect(chatInterfaceSource).toContain('return `focusedRetryParseError: ${focusedRetryParseError}`;');
+    expect(debugSupportSource).toContain('focusedRetryParseError');
+    expect(debugSupportSource).toContain('return `focusedRetryParseError: ${focusedRetryParseError}`;');
   });
 
   it('records day-memory compression as a debug-visible support call', () => {

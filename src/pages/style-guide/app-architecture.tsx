@@ -1723,18 +1723,18 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
     ],
   },
   "/src/data/api-inspector-map-registry.ts": {
-    description: "Registry compositor that merges guide-derived phase content with code-truth runtime sections so the Roleplay Pipeline page shows one combined flow instead of competing historical and live maps.",
+    description: "Legacy registry compositor that merges guide-derived phase content with code-truth runtime sections for older inspector utilities and tests. The current Roleplay Pipeline page renders directly from `/src/data/api-inspector-live-map.ts`, so this file must stay accurate but is not the live page's primary data source.",
     rows: [
       {
         id: "api-inspector-map-registry-compositor",
         title: "Roleplay Pipeline Registry Compositor",
-        summary: "Combines dense guide phases with current runtime sections before the inspector page renders navigation, cards, review notes, and source references.",
+        summary: "Combines dense guide phases with current runtime sections for compatibility with the older map registry path, while the visible Roleplay Pipeline uses the live-map registry directly.",
         badgeLabel: "DATA BLOCK",
         badgeClass: "data-block",
         details: [
-          { label: "Uses", values: ["/src/data/api-inspector-live-map.ts", "/src/data/api-inspector-guide-phases.ts"], kind: "files" },
-          { label: "Used By", values: ["/src/pages/style-guide/api-inspector.tsx"], kind: "files" },
-          { label: "Requires", values: ["merged inspector content stays clear about which sections describe live code and which sections come from imported guide material"], kind: "plain" },
+          { label: "Uses", values: ["/src/data/api-inspector-code-truth-registry.ts", "/src/data/api-inspector-guide-phases.ts"], kind: "files" },
+          { label: "Used By", values: ["/src/lib/api-inspector-utils.test.ts"], kind: "files" },
+          { label: "Requires", values: ["merged inspector content remains marked as the older compatibility map so future work does not mistake it for the current live page data source"], kind: "plain" },
         ],
       },
     ],
@@ -1749,7 +1749,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
         badgeLabel: "DATA BLOCK",
         badgeClass: "data-block",
         details: [
-          { label: "Used By", values: ["/src/data/api-inspector-live-map.ts", "/src/data/api-inspector-prompt-documents.ts"], kind: "files" },
+          { label: "Used By", values: ["/src/data/api-inspector-map-registry.ts"], kind: "files" },
           { label: "Requires", values: ["runtime descriptions stay synchronized with src/services/llm.ts, ChatInterfaceTab.tsx, and Supabase roleplay edge functions"], kind: "plain" },
         ],
       },
@@ -2183,7 +2183,7 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
     ],
   },
   "/src/components/chronicle/ChatInterfaceTab.tsx": {
-    description: "Primary Chronicle chat workspace that renders the live conversation, resolves effective story state, orchestrates API Call 1, schedules post-turn support calls, stores debug traces, and launches adjacent chat tools.",
+    description: "Primary Chronicle chat workspace that renders the live conversation and orchestrates the roleplay runtime while delegating response collection, effective-state resolution, post-turn queueing, debug trace persistence, formatting helpers, local notices, and side-character cleanup to focused chat-runtime modules.",
     rows: [
       {
         id: "chat-interface-live-workspace",
@@ -2200,6 +2200,10 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
           {
             label: "Uses",
             values: [
+              "/src/features/chat-runtime/collect-roleplay-response.ts",
+              "/src/features/chat-runtime/effective-state.ts",
+              "/src/features/chat-runtime/use-post-turn-support-queue.ts",
+              "/src/features/chat-runtime/use-chat-debug-trace.ts",
               "/src/services/llm.ts",
               "/src/services/persistence/conversations.ts",
               "/src/services/persistence/side-characters.ts",
@@ -2221,13 +2225,14 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       {
         id: "chat-interface-effective-story-state",
         title: "Effective Story State Resolver",
-        summary: "Builds the active main-character, side-character, memory, and goal state from the current message generation before anything is rendered or sent back to the AI.",
+        summary: "Wires the extracted effective-state helpers that build active main-character, side-character, memory, and goal state from the current message generation before rendering or API Call 1.",
         badgeLabel: "CODE LOGIC",
         badgeClass: "code-logic",
         details: [
           {
             label: "Uses",
             values: [
+              "/src/features/chat-runtime/effective-state.ts",
               "/src/types.ts",
               "/src/services/persistence/conversations.ts",
               "/src/services/persistence/side-characters.ts",
@@ -2249,13 +2254,18 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
       {
         id: "chat-interface-roleplay-runtime-path",
         title: "Direct Chat Runtime Path",
-        summary: "Packages the effective chat runtime into Chronicle's direct streaming Grok Responses request path, handles send/regenerate/Continue branches, records local style telemetry for debug review, then applies post-response derivations back into the continuity ledger.",
+        summary: "Orchestrates send/regenerate/Continue branches by calling the shared API Call 1 response collector, committing only accepted completed responses, recording local style telemetry, and handing accepted turns to the post-turn support queue.",
         badgeLabel: "API CALL",
         badgeClass: "api-call",
         details: [
           {
             label: "Calls",
-            values: ["/src/services/llm.ts", "/supabase/functions/chat/index.ts"],
+            values: [
+              "/src/features/chat-runtime/collect-roleplay-response.ts",
+              "/src/features/chat-runtime/use-post-turn-support-queue.ts",
+              "/src/services/llm.ts",
+              "/supabase/functions/chat/index.ts",
+            ],
             kind: "files",
           },
           {
@@ -2300,6 +2310,63 @@ const STATIC_FILE_OVERRIDES: Record<string, StaticFileOverride> = {
           {
             label: "Requires",
             values: ["debug capture stays optional and never blocks send, continue, or regenerate when trace data is absent"],
+            kind: "plain",
+          },
+        ],
+      },
+    ],
+  },
+  "/src/features/chat-runtime/collect-roleplay-response.ts": {
+    description: "Shared browser-side API Call 1 response collector used by send, regenerate, and Continue to gather streamed text, capture debug metadata, normalize placeholder names, and return one completed assistant response to the caller.",
+    rows: [
+      {
+        id: "roleplay-response-collector",
+        title: "Roleplay Response Collector",
+        summary: "Collects the `generateRoleplayResponseStream` async chunks into a completed response, optionally mirrors partial text to UI callbacks, and returns the cleaned text plus debug request data to the chat handler.",
+        badgeLabel: "CODE LOGIC",
+        badgeClass: "code-logic",
+        details: [
+          {
+            label: "Used By",
+            values: ["/src/components/chronicle/ChatInterfaceTab.tsx"],
+            kind: "files",
+          },
+          {
+            label: "Uses",
+            values: [
+              "/src/services/llm.ts",
+              "/src/services/placeholder-name-guard.ts",
+              "/src/features/chat-debug/types.ts",
+            ],
+            kind: "files",
+          },
+          {
+            label: "Mutates",
+            values: ["a candidate placeholder-name map returned to the caller only after collection succeeds"],
+            kind: "plain",
+          },
+          {
+            label: "Requires",
+            values: ["the caller remains responsible for stale-state guards and final message commit so discarded regenerate/continue branches cannot mutate visible chat or accepted placeholder state"],
+            kind: "plain",
+          },
+        ],
+      },
+      {
+        id: "roleplay-response-debug-errors",
+        title: "Debug Metadata on Provider Errors",
+        summary: "Attaches the latest API Call 1 debug trace and request record to thrown provider/content-filter errors so local error notices still export the failed request context.",
+        badgeLabel: "VALIDATION",
+        badgeClass: "code-logic",
+        details: [
+          {
+            label: "Used By",
+            values: ["/src/components/chronicle/ChatInterfaceTab.tsx"],
+            kind: "files",
+          },
+          {
+            label: "Requires",
+            values: ["provider/content-filter fallback notices keep request/debug data without turning failed drafts into accepted assistant messages"],
             kind: "plain",
           },
         ],

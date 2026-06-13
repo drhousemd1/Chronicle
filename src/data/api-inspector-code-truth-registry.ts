@@ -161,7 +161,7 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
               tagType: "code-logic",
               icon: "🔧",
               purpose:
-                "Creates the user turn, applies established-fact note preservation, increments the session message counter, streams one live response, and records local style telemetry after generation for debug review.",
+                "Creates the user turn, applies established-fact note preservation, increments the session message counter, collects one live response through the shared collector, and records local style telemetry after generation for debug review.",
               whyItExists:
                 "Chronicle needs one authoritative send path that assembles live turn state before any paid narrative request leaves the browser.",
               problemSolved:
@@ -169,8 +169,12 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
               fileRefs: [
 	                {
 	                  path: "src/components/chronicle/ChatInterfaceTab.tsx",
-			                  lines: "5281-5661",
+			                  lines: "4323-4470",
 	                },
+                {
+                  path: "src/features/chat-runtime/collect-roleplay-response.ts",
+                  lines: "85-166",
+                },
               ],
               subItems: [
                 {
@@ -189,7 +193,7 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
                   id: "item-handle-send-sub-3",
 	                  title: "Streaming lifecycle",
 	                  description:
-	                    "Streams one model response into the UI, normalizes placeholder names, commits the completed assistant message, and records local style telemetry for debug review.",
+	                    "Collects one model response, normalizes placeholder names in a candidate map, commits only after the live-state guard passes, and records local style telemetry for debug review.",
                 },
               ],
               crossRefs: [
@@ -223,8 +227,12 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
               fileRefs: [
 	                {
 	                  path: "src/components/chronicle/ChatInterfaceTab.tsx",
-			                  lines: "5663-5895, 5897-6163",
+			                  lines: "4652-4832, 4834-5051",
 	                },
+                {
+                  path: "src/features/chat-runtime/collect-roleplay-response.ts",
+                  lines: "85-166",
+                },
               ],
               subItems: [
                 {
@@ -461,7 +469,7 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
               problemSolved:
                 "Prevents wrappers, current-turn state, and the execution brief from being buried in the wrong message slot or omitted from the outbound payload.",
               fileRefs: [
-                { path: "src/services/llm.ts", lines: "132-163" },
+                { path: "src/services/llm.ts", lines: "185-228" },
               ],
               codeSourceLabel: "`messages` assembly in `generateRoleplayResponseStream`",
               promptViewEnabled: true,
@@ -481,9 +489,9 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
               settingsGate:
                 "Local debug record only. It is never appended to the final user message and is never sent to Grok/xAI.",
               fileRefs: [
-                { path: "src/services/llm.ts", lines: "144-163" },
+                { path: "src/services/llm.ts", lines: "185-228" },
                 { path: "src/lib/assistant-style-directive.ts", lines: "245-460" },
-                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "1507-1520, 5339-5364, 5714-5735, 5946-5969" },
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "430-452, 4387-4392, 4425-4427, 4737-4743, 4780-4781, 4966-4971, 5001-5002" },
               ],
               codeSourceLabel: "Assistant style telemetry shape",
               promptViewEnabled: true,
@@ -509,8 +517,8 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
               problemSolved:
                 "Prevents regenerate/session metadata from being lost while keeping app-generated instructions visibly separated from the player's actual turn.",
               fileRefs: [
-                { path: "src/services/llm.ts", lines: "144-163" },
-                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "5281-5364, 5663-5738, 5897-5979" },
+                { path: "src/services/llm.ts", lines: "185-228" },
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "4323-4383, 4652-4733, 4834-4962" },
               ],
               codeSourceLabel: "Final user wrapper expression",
               promptViewEnabled: true,
@@ -552,7 +560,7 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
               problemSolved:
                 "Prevents the frontend from bypassing Chronicle-specific runtime logic or calling the provider directly without app-level safeguards.",
               fileRefs: [
-                { path: "src/services/llm.ts", lines: "987-998" },
+                { path: "src/services/llm.ts", lines: "1007-1069" },
               ],
             },
             {
@@ -616,12 +624,13 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
               purpose:
                 "Reads the provider stream at the edge, normalizes the completed text, and re-emits Chat Completions-shaped SSE chunks for the existing frontend parser.",
               whyItExists:
-                "The browser parser expects Chat Completions-style SSE events, while the roleplay provider call now uses Responses.",
+                "The browser parser and shared response collector expect Chat Completions-style SSE events, while the roleplay provider call now uses Responses.",
               problemSolved:
                 "Preserves the existing completed-message commit contract without exposing raw Responses events or changing chat rendering mid-migration.",
               fileRefs: [
                 { path: "supabase/functions/chat/index.ts", lines: "710-779, 823-839" },
-                { path: "src/services/llm.ts", lines: "1082-1180" },
+                { path: "src/services/llm.ts", lines: "1102-1208" },
+                { path: "src/features/chat-runtime/collect-roleplay-response.ts", lines: "85-166" },
               ],
             },
           ],
@@ -645,13 +654,14 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
               tagType: "code-logic",
               icon: "🔧",
               purpose:
-                "After assistant response finalization, chat UI launches memory extraction, goal-step evaluation, character-state extraction, and new-character detection in non-blocking flows.",
+                "After the accepted assistant source message is persisted, the post-turn support queue launches memory extraction, goal-step evaluation, character-state extraction, and new-character detection in non-blocking flows.",
               whyItExists:
                 "Chronicle still needs state reconciliation after each turn, but that work cannot sit on the visible response hot path.",
               problemSolved:
-                "Keeps chat responsive while still updating memories, goals, character state, and new-character side effects in the background.",
+                "Keeps chat responsive while ensuring derived state work only runs after the source assistant message exists in persistence, with serialized lanes for goal alignment and character-state sync.",
               fileRefs: [
-                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "5190-5201" },
+                { path: "src/features/chat-runtime/use-post-turn-support-queue.ts", lines: "123-227" },
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "4233-4240, 4427, 4787, 5010" },
               ],
               crossRefs: [
                 {
@@ -686,7 +696,8 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
               problemSolved:
                 "Prevents stale memories, goals, or character updates from overwriting the currently active generation.",
               fileRefs: [
-                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3233-3247, 3457-3472, 4830-4915" },
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3110-3116, 3962-3965, 3990-3993, 4033-4036, 4167-4169, 4755-4761, 4973-4978" },
+                { path: "src/features/chat-runtime/use-post-turn-support-queue.ts", lines: "148-177" },
               ],
             },
           ],
@@ -708,7 +719,7 @@ export const apiInspectorCodeTruthRegistry: ApiArchitectureMapRegistry = {
               problemSolved:
                 "Prevents prompt bloat, skips repeated memory facts, and stops low-value flavor text from polluting the continuity layer.",
               fileRefs: [
-                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "5116-5283" },
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "4088-4256" },
                 { path: "supabase/functions/extract-memory-events/index.ts", lines: "69-129, 153-190" },
               ],
               codeSourceLabel: "Memory curator system prompt",
@@ -911,7 +922,8 @@ Only completed steps are persisted. Each row is tied to the source assistant gen
               problemSolved:
                 "Prevents every assistant turn from blindly mutating character state without an explicit eligibility and context pass.",
               fileRefs: [
-                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "4113-4441" },
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3122-3423, 4258-4269" },
+                { path: "src/features/chat-runtime/use-post-turn-support-queue.ts", lines: "93-121, 171-177" },
               ],
               crossRefs: [
                 {
@@ -1003,7 +1015,7 @@ Character goals:
                 "Prevents unsupported fields, duplicate structured values, and malformed retry outputs from corrupting saved character data.",
               fileRefs: [
                 { path: "supabase/functions/extract-character-updates/index.ts", lines: "118-209, 357-445, 454-555, 887-1099" },
-                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "4156-4283, 4312-4397, 4977-5114" },
+                { path: "src/components/chronicle/ChatInterfaceTab.tsx", lines: "3425-4086" },
               ],
               codeSourceLabel: "Validation/reconciliation checkpoints",
               promptViewEnabled: true,

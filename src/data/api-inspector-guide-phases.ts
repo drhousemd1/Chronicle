@@ -22,11 +22,11 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
             "fileRefs": [
               {
                 "path": "src/components/chronicle/ChatInterfaceTab.tsx",
-                "lines": "sessionMessageCountRef, lines ~1468-1483"
+                "lines": "sessionMessageCountRef, lines 758-775 and send usage at 4609, 4627"
               },
               {
                 "path": "src/services/llm.ts",
-                "lines": "buildRoleplayApiMessages, lines ~144-163"
+                "lines": "buildRoleplayApiMessages, starts around line 185"
               }
             ],
             "subItems": [
@@ -125,7 +125,7 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
             "fileRefs": [
               {
                 "path": "src/services/llm.ts",
-                "lines": "buildRoleplayApiMessages, lines ~132-163"
+                "lines": "buildRoleplayApiMessages, starts around line 185"
               }
             ],
             "subItems": [
@@ -1026,7 +1026,7 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
             "fileRefs": [
               {
                 "path": "src/services/llm.ts",
-                "lines": "buildRoleplayApiMessages, lines ~132-163"
+                "lines": "buildRoleplayApiMessages, starts around line 185"
               }
             ],
             "subItems": [
@@ -1058,6 +1058,18 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
               {
                 "path": "supabase/functions/chat/index.ts",
                 "lines": "retry logic"
+              },
+              {
+                "path": "src/services/llm.ts",
+                "lines": "content-filter SSE handling"
+              },
+              {
+                "path": "src/features/chat-runtime/local-notices.ts",
+                "lines": "content-filter notice builder"
+              },
+              {
+                "path": "src/components/chronicle/ChatInterfaceTab.tsx",
+                "lines": "local content-filter notice"
               }
             ]
           }

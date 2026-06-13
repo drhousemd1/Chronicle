@@ -50,6 +50,7 @@ const rows: ApiUsageValidationRowSeed[] = [
   { id: "call2.character_updates.recent_context", label: "recentContext", kind: "detail", callGroup: "call_2", parentId: "summary.call2.character_updates", sort: 113 },
   { id: "call2.character_updates.characters_payload", label: "characters", kind: "detail", callGroup: "call_2", parentId: "summary.call2.character_updates", sort: 114 },
   { id: "call2.character_updates.eligible_characters", label: "eligibleCharacters", kind: "detail", callGroup: "call_2", parentId: "summary.call2.character_updates", sort: 115 },
+  { id: "call2.character_updates.story_clock", label: "day/time", kind: "detail", callGroup: "call_2", parentId: "summary.call2.character_updates", sort: 116 },
 
   { id: "summary.call2.memory_extract", label: "Call 2: Memory Extraction", kind: "summary", callGroup: "call_2", sort: 120 },
   { id: "call2.memory_extract.message_text", label: "messageText", kind: "detail", callGroup: "call_2", parentId: "summary.call2.memory_extract", sort: 121 },

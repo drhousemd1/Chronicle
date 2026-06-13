@@ -15,11 +15,8 @@ import {
 import { analyzeAssistantCandidateStyle, analyzeRecentAssistantStyle, type AssistantStyleTelemetry } from '@/lib/assistant-style-directive';
 import { uid, now, uuid } from '@/utils';
 import {
-  CONTENT_FILTER_NOTICE_TEXT,
   ContentFilteredChatError,
-  PROVIDER_ERROR_NOTICE_TEXT,
   buildEstablishedFactNote,
-  generateRoleplayResponseStream,
   isLocalRoleplayNoticeMessage,
   renderGoalMilestoneTarget,
 } from '../../services/llm';
@@ -54,7 +51,7 @@ import {
   findCharacterByName,
   MessageSegment
 } from '@/services/side-character-generator';
-import { normalizePlaceholderNames, PlaceholderNameMap } from '@/services/placeholder-name-guard';
+import type { PlaceholderNameMap } from '@/services/placeholder-name-guard';
 import { SideCharacterCard } from './SideCharacterCard';
 import { CharacterEditModal, CharacterEditDraft } from './CharacterEditModal';
 import { ScrollableSection } from './ScrollableSection';
@@ -86,19 +83,81 @@ import {
   type ChatDebugRequestRecord,
   type ChatDebugTrace,
   type DialogDebugComment,
-  type StoredChatDebugTraceMap,
 } from '@/features/chat-debug/types';
 import {
   buildDialogDebugCommentKey,
-  loadChatDebugTraceStore,
-  persistChatDebugTraceStore,
-  upsertChatDebugSupportCall,
-  upsertChatDebugTrace,
 } from '@/features/chat-debug/storage';
 import {
   buildChatReviewHtml,
   slugifyReviewExportFilePart,
 } from '@/features/chat-debug/review-export';
+import {
+  buildSupportCallDebugStatus,
+  splitEdgeDebugPayload,
+} from '@/features/chat-runtime/debug-support';
+import { usePostTurnSupportQueue } from '@/features/chat-runtime/use-post-turn-support-queue';
+import {
+  buildContentFilterNoticeMessage,
+  buildProviderErrorNoticeMessage,
+} from '@/features/chat-runtime/local-notices';
+import {
+  buildExportDialogDebugComments,
+  dialogDebugCommentsEqual,
+  loadDialogDebugComments,
+  mergeDialogDebugComments,
+  saveDialogDebugComments,
+  stripDialogDebugCommentsForMessage,
+} from '@/features/chat-runtime/dialog-debug-comments';
+import {
+  buildSceneImageCharacterData,
+  mergeGeneratedProfileSection,
+  sanitizeGeneratedSideCharacterProfile,
+} from '@/features/chat-runtime/side-character-profile';
+import {
+  FormattedMessage,
+  InlineFormattedMessageEditor,
+} from '@/features/chat-runtime/message-formatting';
+import { sanitizeAssistantMessageText } from '@/features/chat-runtime/message-formatting-utils';
+import {
+  buildEditableMessageSegments,
+  buildInlineEditedMessageText,
+  extractHiddenMessageTags,
+  mergeByRenderedSpeaker,
+} from '@/features/chat-runtime/speaker-resolution';
+import {
+  avatarNaturalSizeCache,
+  CHAT_SIDEBAR_WIDTH,
+  CHAT_TILE_HEIGHT,
+  CHAT_TILE_WIDTH,
+  clampPercent,
+  mapObjectPositionFromPreviewToTile,
+  mapTilePositionToPreview,
+  type Size2D,
+} from '@/features/chat-runtime/avatar-position';
+import {
+  getColorFamilyLabel,
+  normalizeHexColor,
+  tryNormalizeHexColor,
+} from '@/features/chat-runtime/chat-colors';
+import {
+  applyCharacterSnapshot,
+  applySideCharacterSnapshot,
+  buildActiveCharacterSnapshotMap,
+  buildActiveGoalAlignmentMap,
+  buildActiveGoalCompletionIds,
+  buildActiveMemories,
+  buildActiveSideCharacterSnapshotMap,
+  buildEffectiveWorldCore,
+  buildMessageGenerationMap,
+  upsertCharacterStateMessageSnapshot,
+  upsertSideCharacterStateMessageSnapshot,
+} from '@/features/chat-runtime/effective-state';
+import { useChatDebugTrace } from '@/features/chat-runtime/use-chat-debug-trace';
+import { TypingIndicatorBubble } from '@/components/chronicle/chat/TypingIndicatorBubble';
+import {
+  collectRoleplayResponse,
+  readRoleplayRequestDebugFromError,
+} from '@/features/chat-runtime/collect-roleplay-response';
 
 interface ChatInterfaceTabProps {
   scenarioId: string;
@@ -134,394 +193,8 @@ type ActionEvent = { messageId: string; generationId?: string; timestamp: number
 const TIME_SEQUENCE: TimeOfDay[] = ['sunrise', 'day', 'sunset', 'night'];
 const GOAL_ALIGNMENT_SHADOW_MODE = true;
 
-type EdgeDebugPayload = {
-  modelRequest?: ChatDebugRequestRecord['modelRequest'];
-  modelRequests?: ChatDebugRequestRecord['modelRequests'];
-  primaryModelRequest?: ChatDebugRequestRecord['modelRequest'];
-};
-
-function splitEdgeDebugPayload(data: unknown): {
-  responseBody: unknown;
-  modelRequest?: ChatDebugRequestRecord['modelRequest'];
-  modelRequests?: ChatDebugRequestRecord['modelRequests'];
-} {
-  if (!data || typeof data !== 'object') {
-    return { responseBody: data ?? null };
-  }
-
-  const raw = data as Record<string, unknown>;
-  const payload = raw.chronicle_debug_payload as EdgeDebugPayload | undefined;
-  if (!payload || typeof payload !== 'object') {
-    return { responseBody: data };
-  }
-
-  const responseBody = { ...raw };
-  delete responseBody.chronicle_debug_payload;
-  const modelRequests = [
-    ...(payload.modelRequests || []),
-    ...(payload.primaryModelRequest
-      ? [{ ...payload.primaryModelRequest, label: 'Primary request before fallback retry' }]
-      : []),
-  ];
-
-  return {
-    responseBody,
-    modelRequest: payload.modelRequest,
-    modelRequests: modelRequests.length ? modelRequests : undefined,
-  };
-}
-
-function stringifySupportCallError(error: unknown): string | undefined {
-  if (!error) return undefined;
-  if (error instanceof Error) return error.message;
-  if (typeof error === 'string') return error;
-  try {
-    return JSON.stringify(error);
-  } catch {
-    return String(error);
-  }
-}
-
-function getSupportCallResponseError(responseBody: unknown): string | undefined {
-  if (!responseBody || typeof responseBody !== 'object') return undefined;
-  const raw = responseBody as Record<string, unknown>;
-  const providerBodyError = typeof raw.providerBodyError === 'string' && raw.providerBodyError.trim()
-    ? raw.providerBodyError.trim()
-    : '';
-  if (providerBodyError) return `providerBodyError: ${providerBodyError}`;
-
-  const parseError = typeof raw.parseError === 'string' && raw.parseError.trim()
-    ? raw.parseError.trim()
-    : '';
-  if (parseError) return `parseError: ${parseError}`;
-
-  const focusedRetryParseError = typeof raw.focusedRetryParseError === 'string' && raw.focusedRetryParseError.trim()
-    ? raw.focusedRetryParseError.trim()
-    : '';
-  if (focusedRetryParseError) return `focusedRetryParseError: ${focusedRetryParseError}`;
-
-  const responseError = typeof raw.error === 'string' && raw.error.trim()
-    ? raw.error.trim()
-    : '';
-  if (responseError) return responseError;
-
-  return undefined;
-}
-
-function buildSupportCallDebugStatus(
-  edgeError: unknown,
-  responseBody: unknown,
-): Pick<ChatDebugRequestRecord, 'status' | 'error'> {
-  const error = stringifySupportCallError(edgeError) || getSupportCallResponseError(responseBody);
-  return {
-    status: error ? 'error' : 'completed',
-    error,
-  };
-}
-
-function cleanGeneratedProfileString(value: unknown): string {
-  return typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
-}
-
-function normalizeGeneratedProfileSupport(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim();
-}
-
-function generatedProfileSourceSupportsValue(value: unknown, sourceText: string): boolean {
-  const normalizedValue = normalizeGeneratedProfileSupport(cleanGeneratedProfileString(value));
-  if (!normalizedValue) return false;
-  const normalizedSource = normalizeGeneratedProfileSupport(sourceText);
-  return normalizedSource.includes(normalizedValue);
-}
-
-function sourceSupportedGeneratedProfileValue(value: unknown, sourceText: string): string {
-  const cleaned = cleanGeneratedProfileString(value);
-  return generatedProfileSourceSupportsValue(cleaned, sourceText) ? cleaned : '';
-}
-
-function buildSanitizedSideCharacterAvatarPrompt(profile: any, name: string): string {
-  const appearance = profile?.physicalAppearance || {};
-  const clothing = profile?.currentlyWearing || {};
-  const parts = [
-    cleanGeneratedProfileString(name),
-    cleanGeneratedProfileString(profile?.age),
-    cleanGeneratedProfileString(profile?.sexType),
-    cleanGeneratedProfileString(appearance.hairColor),
-    cleanGeneratedProfileString(appearance.eyeColor),
-    cleanGeneratedProfileString(appearance.build),
-    cleanGeneratedProfileString(appearance.height),
-    cleanGeneratedProfileString(appearance.skinTone),
-    cleanGeneratedProfileString(appearance.makeup),
-    cleanGeneratedProfileString(appearance.bodyMarkings),
-    cleanGeneratedProfileString(appearance.temporaryConditions),
-    cleanGeneratedProfileString(clothing.top),
-    cleanGeneratedProfileString(clothing.bottom),
-  ].filter(Boolean);
-  const uniqueParts = Array.from(new Set(parts));
-  return uniqueParts.length
-    ? `Portrait of ${uniqueParts.join(', ')}.`
-    : `Portrait of ${cleanGeneratedProfileString(name) || 'supporting character'}.`;
-}
-
-function sanitizeGeneratedSideCharacterProfile(profile: unknown, name: string, sourceText: string): any {
-  const raw = profile && typeof profile === 'object' ? profile as any : {};
-  const physicalAppearance = raw.physicalAppearance || {};
-  const currentlyWearing = raw.currentlyWearing || {};
-  const background = raw.background || {};
-  const personality = raw.personality || {};
-
-  const sanitized = {
-    nicknames: sourceSupportedGeneratedProfileValue(raw.nicknames, sourceText),
-    age: cleanGeneratedProfileString(raw.age),
-    sexType: cleanGeneratedProfileString(raw.sexType),
-    sexualOrientation: sourceSupportedGeneratedProfileValue(raw.sexualOrientation, sourceText),
-    roleDescription: cleanGeneratedProfileString(raw.roleDescription),
-    physicalAppearance: {
-      ...defaultPhysicalAppearance,
-      hairColor: cleanGeneratedProfileString(physicalAppearance.hairColor),
-      eyeColor: cleanGeneratedProfileString(physicalAppearance.eyeColor),
-      build: cleanGeneratedProfileString(physicalAppearance.build),
-      bodyHair: sourceSupportedGeneratedProfileValue(physicalAppearance.bodyHair, sourceText),
-      height: cleanGeneratedProfileString(physicalAppearance.height),
-      breastSize: sourceSupportedGeneratedProfileValue(physicalAppearance.breastSize, sourceText),
-      genitalia: sourceSupportedGeneratedProfileValue(physicalAppearance.genitalia, sourceText),
-      skinTone: cleanGeneratedProfileString(physicalAppearance.skinTone),
-      makeup: cleanGeneratedProfileString(physicalAppearance.makeup),
-      bodyMarkings: cleanGeneratedProfileString(physicalAppearance.bodyMarkings),
-      temporaryConditions: cleanGeneratedProfileString(physicalAppearance.temporaryConditions),
-    },
-    currentlyWearing: {
-      ...defaultCurrentlyWearing,
-      top: cleanGeneratedProfileString(currentlyWearing.top),
-      bottom: cleanGeneratedProfileString(currentlyWearing.bottom),
-      undergarments: sourceSupportedGeneratedProfileValue(currentlyWearing.undergarments, sourceText),
-      miscellaneous: cleanGeneratedProfileString(currentlyWearing.miscellaneous),
-    },
-    background: {
-      relationshipStatus: sourceSupportedGeneratedProfileValue(background.relationshipStatus, sourceText),
-      residence: cleanGeneratedProfileString(background.residence),
-      educationLevel: cleanGeneratedProfileString(background.educationLevel),
-    },
-    personality: {
-      ...defaultSideCharacterPersonality,
-      traits: Array.isArray(personality.traits)
-        ? personality.traits.map(cleanGeneratedProfileString).filter(Boolean).slice(0, 2)
-        : [],
-      miscellaneous: cleanGeneratedProfileString(personality.miscellaneous),
-      secrets: sourceSupportedGeneratedProfileValue(personality.secrets, sourceText),
-      fears: sourceSupportedGeneratedProfileValue(personality.fears, sourceText),
-      kinksFantasies: sourceSupportedGeneratedProfileValue(personality.kinksFantasies, sourceText),
-      desires: sourceSupportedGeneratedProfileValue(personality.desires, sourceText),
-    },
-    avatarPrompt: '',
-  };
-
-  return {
-    ...sanitized,
-    avatarPrompt: buildSanitizedSideCharacterAvatarPrompt(sanitized, name),
-  };
-}
-
-function mergeGeneratedProfileSection<T extends Record<string, any>>(existing: T, generated: unknown): T {
-  const merged = { ...existing };
-  if (!generated || typeof generated !== 'object') return merged;
-  for (const [key, value] of Object.entries(generated as Record<string, any>)) {
-    if (Array.isArray(value)) {
-      if (value.length > 0) (merged as any)[key] = value;
-      continue;
-    }
-    if (typeof value === 'string') {
-      const trimmed = value.trim();
-      if (trimmed) (merged as any)[key] = trimmed;
-      continue;
-    }
-    if (value && typeof value === 'object') {
-      (merged as any)[key] = value;
-    }
-  }
-  return merged;
-}
-
-function buildSceneImageCharacterData(char: Character | SideCharacter) {
-  const appearance = 'physicalAppearance' in char ? char.physicalAppearance : undefined;
-  const wearing = 'currentlyWearing' in char ? char.currentlyWearing : undefined;
-  return {
-    name: char.name,
-    physicalAppearance: {
-      hairColor: appearance?.hairColor || '',
-      eyeColor: appearance?.eyeColor || '',
-      build: appearance?.build || '',
-      height: appearance?.height || '',
-      skinTone: appearance?.skinTone || '',
-      makeup: appearance?.makeup || '',
-      bodyMarkings: appearance?.bodyMarkings || '',
-      temporaryConditions: appearance?.temporaryConditions || '',
-    },
-    currentlyWearing: {
-      top: wearing?.top || '',
-      bottom: wearing?.bottom || '',
-    },
-  };
-}
 const DIALOG_DEBUG_ENABLED_STORAGE_KEY = 'chronicle_dialog_debug_enabled_v1';
 
-function buildDialogDebugCommentsStorageKey(scenarioId: string, conversationId: string): string {
-  return `chronicle_dialog_debug_comments_v1:${scenarioId}:${conversationId}`;
-}
-
-function buildConversationMessageGenerationMap(messages: Message[]): Map<string, string> {
-  return new Map(
-    messages.map((message) => [message.id, message.generationId || message.id]),
-  );
-}
-
-function mergeDialogDebugComments(
-  ...sources: Array<Record<string, DialogDebugComment>>
-): Record<string, DialogDebugComment> {
-  const merged = new Map<string, DialogDebugComment>();
-
-  for (const source of sources) {
-    for (const [key, comment] of Object.entries(source)) {
-      const existing = merged.get(key);
-      if (!existing || comment.updatedAt >= existing.updatedAt) {
-        merged.set(key, comment);
-      }
-    }
-  }
-
-  return Object.fromEntries(merged.entries());
-}
-
-function stripDialogDebugCommentsForMessage(
-  comments: Record<string, DialogDebugComment>,
-  messageId: string,
-): Record<string, DialogDebugComment> {
-  return Object.fromEntries(
-    Object.entries(comments).filter(([, comment]) => comment.messageId !== messageId),
-  );
-}
-
-function dialogDebugCommentsEqual(
-  left: Record<string, DialogDebugComment>,
-  right: Record<string, DialogDebugComment>,
-): boolean {
-  const leftKeys = Object.keys(left).sort();
-  const rightKeys = Object.keys(right).sort();
-  if (leftKeys.length !== rightKeys.length) return false;
-  return leftKeys.every((key, index) => {
-    if (key !== rightKeys[index]) return false;
-    const leftComment = left[key];
-    const rightComment = right[key];
-    return JSON.stringify(leftComment) === JSON.stringify(rightComment);
-  });
-}
-
-function buildExportDialogDebugComments(
-  comments: Record<string, DialogDebugComment>,
-  messages: Message[],
-): Record<string, DialogDebugComment> {
-  return Object.fromEntries(
-    messages.flatMap((message) => {
-      const key = buildDialogDebugCommentKey(message.id, message.generationId);
-      const comment = comments[key];
-      return comment ? [[message.id, comment] as const] : [];
-    }),
-  );
-}
-
-function buildContentFilterNoticeMessage(message: string, day?: number, timeOfDay?: TimeOfDay): Message {
-  return {
-    id: uuid(),
-    generationId: uuid(),
-    role: 'assistant',
-    text: message || CONTENT_FILTER_NOTICE_TEXT,
-    localNotice: 'content_filter',
-    day,
-    timeOfDay,
-    createdAt: now(),
-  };
-}
-
-function buildProviderErrorNoticeMessage(message: string, day?: number, timeOfDay?: TimeOfDay): Message {
-  const trimmedMessage = message.trim();
-  const unprefixedStandardNotice = PROVIDER_ERROR_NOTICE_TEXT.replace(/^Chronicle:\s*/, '');
-  const normalizedMessage = !trimmedMessage || trimmedMessage === unprefixedStandardNotice
-    ? PROVIDER_ERROR_NOTICE_TEXT
-    : trimmedMessage.startsWith('Chronicle:')
-    ? trimmedMessage
-    : `${PROVIDER_ERROR_NOTICE_TEXT} ${trimmedMessage}`.trim();
-  return {
-    id: uuid(),
-    generationId: uuid(),
-    role: 'assistant',
-    text: normalizedMessage || PROVIDER_ERROR_NOTICE_TEXT,
-    localNotice: 'provider_error',
-    day,
-    timeOfDay,
-    createdAt: now(),
-  };
-}
-
-function loadDialogDebugComments(
-  scenarioId: string,
-  conversationId: string,
-  messages: Message[],
-): Record<string, DialogDebugComment> {
-  const generationMap = buildConversationMessageGenerationMap(messages);
-  try {
-    const raw = window.localStorage.getItem(buildDialogDebugCommentsStorageKey(scenarioId, conversationId));
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object') return {};
-    return Object.fromEntries(
-      Object.entries(parsed as Record<string, DialogDebugComment>).filter(([, comment]) => (
-        comment
-        && typeof comment.messageId === 'string'
-        && typeof comment.note === 'string'
-        && (
-          comment.note.trim().length > 0
-          || normalizeDialogDebugTags(comment.tags).length > 0
-        )
-      ))
-      .map(([storedKey, comment]) => {
-        const messageId = typeof comment.messageId === 'string'
-          ? comment.messageId
-          : storedKey.split(':', 1)[0];
-        const generationId = typeof comment.generationId === 'string' && comment.generationId.trim().length > 0
-          ? comment.generationId
-          : generationMap.get(messageId) || messageId;
-        const normalized: DialogDebugComment = {
-          ...comment,
-          messageId,
-          generationId,
-          tags: normalizeDialogDebugTags(comment.tags),
-          createdAt: typeof comment.createdAt === 'number' ? comment.createdAt : Date.now(),
-          updatedAt: typeof comment.updatedAt === 'number'
-            ? comment.updatedAt
-            : (typeof comment.createdAt === 'number' ? comment.createdAt : Date.now()),
-        };
-        return [buildDialogDebugCommentKey(messageId, generationId), normalized] as const;
-      })
-    );
-  } catch {
-    return {};
-  }
-}
-
-function saveDialogDebugComments(
-  scenarioId: string,
-  conversationId: string,
-  comments: Record<string, DialogDebugComment>
-) {
-  try {
-    window.localStorage.setItem(
-      buildDialogDebugCommentsStorageKey(scenarioId, conversationId),
-      JSON.stringify(comments)
-    );
-  } catch {
-    // Debug notes are local convenience data; storage failure should never break chat.
-  }
-}
 let isDebugLogging = false;
 const debugLog = (...args: unknown[]) => {
   if (!import.meta.env.DEV || isDebugLogging) {
@@ -537,603 +210,6 @@ const debugLog = (...args: unknown[]) => {
     isDebugLogging = false;
   }
 };
-
-type MessageToken = {
-  type: 'plain' | 'speech' | 'action' | 'thought';
-  content: string;
-  trailing?: string;
-};
-
-const CHAT_RENDER_ARTIFACT_LINE_REGEX = /^\s*(?:(?:[-—*_]){3,}|```(?:\w+)?|<\/?writer_draft>)\s*$/gim;
-const DOUBLE_COLON_SPEAKER_REGEX = /^(\s*(?:\*\*)?[A-Z][a-zA-Z\s'-]{0,29}(?:\*\*)?)\s*:{2,}\s*/gm;
-const THOUGHT_WRAPPED_AS_ACTION_REGEX = /\*\(\s*([\s\S]*?)\s*\)\*/g;
-const PLANNER_LANGUAGE_LEAK_REGEX = /\b(?:survival\s+(?:priority|step)\s*[:—-]?|priority(?:\s+is|'s)\s*[:—-]?|priority\s*:)\s*/gi;
-const PLANNER_LABEL_LEAK_REGEX = /\b(?:goal|directive|plan|must include)\s*:\s*/gi;
-
-function normalizeEmDashUsage(text: string): string {
-  return text.replace(/\s*—\s*/g, '... ');
-}
-
-function sanitizeAssistantMessageText(text: string): string {
-  return text
-    .replace(CHAT_RENDER_ARTIFACT_LINE_REGEX, '')
-    .replace(DOUBLE_COLON_SPEAKER_REGEX, '$1: ')
-    .replace(THOUGHT_WRAPPED_AS_ACTION_REGEX, '($1)')
-    .replace(PLANNER_LANGUAGE_LEAK_REGEX, '')
-    .replace(PLANNER_LABEL_LEAK_REGEX, '')
-    .split('\n').map(normalizeEmDashUsage).join('\n')
-    .replace(/[ \t]+\n/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-}
-
-function parseMessageTokens(text: string, preserveWhitespace = false): MessageToken[] {
-  let cleanRaw = text.replace(/\[SCENE:\s*.*?\]/g, '');
-  cleanRaw = cleanRaw.replace(THOUGHT_WRAPPED_AS_ACTION_REGEX, '($1)');
-  if (!preserveWhitespace) cleanRaw = cleanRaw.trim();
-  // Supports straight and smart quotes, and keeps optional trailing punctuation with the speech token.
-  const regex = /(\*[\s\S]*?\*)|([“"][\s\S]*?[”"][,.!?;:]?)|(\([\s\S]*?\))/g;
-
-  const parts: MessageToken[] = [];
-  let lastIndex = 0;
-  let match;
-
-  while ((match = regex.exec(cleanRaw)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push({ type: 'plain', content: cleanRaw.slice(lastIndex, match.index) });
-    }
-
-    const found = match[0];
-    if (found.startsWith('*')) {
-      parts.push({ type: 'action', content: found.slice(1, -1) });
-    } else if (found.startsWith('"') || found.startsWith('“')) {
-      // [opening quote][body][closing quote][optional punctuation]
-      const speechMatch = found.match(/^([“"])([\s\S]*?)([”"])([,.!?;:]?)$/);
-      if (speechMatch) {
-        parts.push({
-          type: 'speech',
-          content: speechMatch[2],
-          trailing: speechMatch[4] || '',
-        });
-      } else {
-        // Fallback for malformed quote blocks; still treat as speech so styling remains consistent.
-        parts.push({ type: 'speech', content: found.replace(/^["“]|["”]$/g, '') });
-      }
-    } else if (found.startsWith('(')) {
-      parts.push({ type: 'thought', content: found.slice(1, -1) });
-    }
-
-    lastIndex = regex.lastIndex;
-  }
-
-  if (lastIndex < cleanRaw.length) {
-    parts.push({ type: 'plain', content: cleanRaw.slice(lastIndex) });
-  }
-
-  return parts;
-}
-
-function escapeHtml(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
-type PlainTextMode = 'default' | 'action';
-
-function tokensToStyledHtml(tokens: MessageToken[], dynamicText: boolean, plainTextMode: PlainTextMode = 'default'): string {
-  return tokens.map(token => {
-    if (!dynamicText) {
-      if (token.type === 'speech') {
-        return `<span style="color:white;font-weight:500">"${escapeHtml(token.content)}"${escapeHtml(token.trailing || '')}</span>`;
-      }
-      if (token.type === 'plain' && plainTextMode === 'action') {
-        return `<span style="color:rgb(148,163,184);font-style:italic">${escapeHtml(token.content)}</span>`;
-      }
-      return `<span style="color:white;font-weight:500">${escapeHtml(token.content)}</span>`;
-    }
-    if (token.type === 'speech') {
-      return `<span style="color:white;font-weight:500">"${escapeHtml(token.content)}"${escapeHtml(token.trailing || '')}</span>`;
-    }
-    if (token.type === 'action') {
-      return `<span style="color:rgb(148,163,184);font-style:italic">*${escapeHtml(token.content)}*</span>`;
-    }
-    if (token.type === 'thought') {
-      return `<span style="color:rgba(199,210,254,0.9);font-style:italic;letter-spacing:-0.025em;text-shadow:0 0 8px rgba(129,140,248,0.6),0 0 16px rgba(129,140,248,0.4),0 0 24px rgba(129,140,248,0.2)">(${escapeHtml(token.content)})</span>`;
-    }
-    if (plainTextMode === 'action') {
-      return `<span style="color:rgb(148,163,184);font-style:italic">${escapeHtml(token.content)}</span>`;
-    }
-    return `<span style="color:rgb(203,213,225)">${escapeHtml(token.content)}</span>`;
-  }).join('');
-}
-
-function getCaretCharOffset(el: HTMLElement): number {
-  const sel = window.getSelection();
-  if (!sel || sel.rangeCount === 0) return 0;
-  const range = sel.getRangeAt(0).cloneRange();
-  range.selectNodeContents(el);
-  range.setEnd(sel.getRangeAt(0).endContainer, sel.getRangeAt(0).endOffset);
-  return range.toString().length;
-}
-
-function setCaretCharOffset(el: HTMLElement, offset: number) {
-  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-  let charCount = 0;
-  let lastNode: Text | null = null;
-  while (walker.nextNode()) {
-    const node = walker.currentNode as Text;
-    lastNode = node;
-    if (charCount + node.length >= offset) {
-      const range = document.createRange();
-      range.setStart(node, offset - charCount);
-      range.collapse(true);
-      const sel = window.getSelection();
-      sel?.removeAllRanges();
-      sel?.addRange(range);
-      return;
-    }
-    charCount += node.length;
-  }
-  // Fallback: offset exceeded total text -- place cursor at end
-  if (lastNode) {
-    const range = document.createRange();
-    range.setStart(lastNode, lastNode.length);
-    range.collapse(true);
-    const sel = window.getSelection();
-    sel?.removeAllRanges();
-    sel?.addRange(range);
-  }
-}
-
-const FormattedMessage: React.FC<{ text: string; dynamicText?: boolean; plainTextMode?: PlainTextMode }> = ({
-  text,
-  dynamicText = true,
-  plainTextMode = 'default',
-}) => {
-  const tokens = useMemo(() => parseMessageTokens(text), [text]);
-
-  return (
-    <div className="whitespace-pre-wrap">
-      {tokens.map((token, i) => {
-        if (!dynamicText) {
-          if (token.type === 'speech') {
-            return (
-              <span key={i} className="text-white font-medium">
-                &ldquo;{token.content}&rdquo;{token.trailing || ''}
-              </span>
-            );
-          }
-          if (token.type === 'plain' && plainTextMode === 'action') {
-            return (
-              <span key={i} className="text-slate-400 italic">
-                {token.content}
-              </span>
-            );
-          }
-          return (
-            <span key={i} className="text-white font-medium">
-              {token.content}
-            </span>
-          );
-        }
-
-        if (token.type === 'speech') {
-          return (
-            <span key={i} className="text-white font-medium">
-              &ldquo;{token.content}&rdquo;{token.trailing || ''}
-            </span>
-          );
-        }
-        if (token.type === 'action') {
-          return (
-            <span key={i} className="text-slate-400 italic">
-               {token.content}
-            </span>
-          );
-        }
-        if (token.type === 'thought') {
-          return (
-            <span
-              key={i}
-              className="text-indigo-200/90 italic tracking-tight animate-in fade-in zoom-in-95 duration-500"
-              style={{
-                textShadow: '0 0 8px rgba(129, 140, 248, 0.6), 0 0 16px rgba(129, 140, 248, 0.4), 0 0 24px rgba(129, 140, 248, 0.2)'
-              }}
-            >
-              {token.content}
-            </span>
-          );
-        }
-        if (plainTextMode === 'action') {
-          return (
-            <span key={i} className="text-slate-400 italic">
-              {token.content}
-            </span>
-          );
-        }
-        return (
-          <span key={i} className="text-slate-300">
-            {token.content}
-          </span>
-        );
-      })}
-    </div>
-  );
-};
-
-// Guardrail: chat message editing must stay visually in-place inside the bubble.
-// Do not replace this with a plain textarea/modal flow unless the replacement
-// preserves avatar wrapping, bubble sizing, and dialogue/action/thought styling.
-const InlineFormattedMessageEditor: React.FC<{
-  value: string;
-  dynamicText: boolean;
-  plainTextMode?: PlainTextMode;
-  autoFocus?: boolean;
-  onChange: (value: string) => void;
-}> = ({ value, dynamicText, plainTextMode = 'default', autoFocus = false, onChange }) => {
-  const editorRef = useRef<HTMLDivElement | null>(null);
-  const hasInitializedRef = useRef(false);
-
-  React.useLayoutEffect(() => {
-    const editor = editorRef.current;
-    if (!editor) return;
-
-    const nextHtml = tokensToStyledHtml(parseMessageTokens(value, true), dynamicText, plainTextMode);
-    if (editor.innerHTML !== nextHtml) {
-      editor.innerHTML = nextHtml;
-    }
-
-    if (!hasInitializedRef.current && autoFocus) {
-      hasInitializedRef.current = true;
-      editor.focus();
-      setCaretCharOffset(editor, editor.innerText.length);
-    }
-  }, [autoFocus, dynamicText, plainTextMode, value]);
-
-  return (
-    <div
-      ref={editorRef}
-      contentEditable
-      suppressContentEditableWarning
-      role="textbox"
-      aria-label="Edit message"
-      aria-multiline="true"
-      spellCheck
-      className="min-h-[1.5rem] whitespace-pre-wrap break-words rounded-md -mx-1 px-1 py-1 text-[15px] leading-relaxed font-normal outline-none"
-      onBlur={(e) => {
-        onChange(e.currentTarget.innerText.replace(/\u00a0/g, ' '));
-      }}
-      onInput={(e) => {
-        const editor = e.currentTarget;
-        const rawText = editor.innerText.replace(/\u00a0/g, ' ');
-        const caretPos = getCaretCharOffset(editor);
-        editor.innerHTML = tokensToStyledHtml(parseMessageTokens(rawText, true), dynamicText, plainTextMode);
-        setCaretCharOffset(editor, caretPos);
-        onChange(rawText);
-      }}
-    />
-  );
-};
-
-/**
- * Resolve a segment's speaker to the identity that will actually be rendered.
- * This normalizes null (default speaker) to the actual character name.
- */
-const inferCanonicalNarrativeSpeakerName = (
-  segment: MessageSegment,
-  appData: ScenarioData,
-  resolveCanonicalName?: (name: string) => string | null
-): string | null => {
-  const trimmed = segment.content.trim();
-  if (!trimmed) return null;
-
-  const aliases: Array<{ alias: string; canonicalName: string }> = [];
-
-  for (const character of appData.characters) {
-    aliases.push({ alias: character.name, canonicalName: character.name });
-    character.nicknames?.split(',').map((value) => value.trim()).filter(Boolean).forEach((nickname) => {
-      aliases.push({ alias: nickname, canonicalName: character.name });
-    });
-  }
-
-  for (const character of (appData.sideCharacters || [])) {
-    aliases.push({ alias: character.name, canonicalName: character.name });
-    character.nicknames?.split(',').map((value) => value.trim()).filter(Boolean).forEach((nickname) => {
-      aliases.push({ alias: nickname, canonicalName: character.name });
-    });
-  }
-
-  aliases.sort((left, right) => right.alias.length - left.alias.length);
-
-  for (const entry of aliases) {
-    const escapedAlias = entry.alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const pattern = new RegExp(`^${escapedAlias}(?:['’]s\\b|\\b(?=[\\s,]))`, 'i');
-    if (pattern.test(trimmed)) {
-      return resolveCanonicalName?.(entry.canonicalName) || entry.canonicalName;
-    }
-  }
-
-  return null;
-};
-
-const resolveRenderedSpeakerName = (
-  segment: MessageSegment,
-  isAi: boolean,
-  appData: ScenarioData,
-  userChar: Character | null,
-  resolveCanonicalName?: (name: string) => string | null
-): string => {
-  if (segment.speakerName) {
-    // Has explicit speaker tag - normalize to canonical card name when possible
-    const canonical = resolveCanonicalName?.(segment.speakerName);
-    return (canonical || segment.speakerName).toLowerCase();
-  } else if (isAi) {
-    const inferredName = inferCanonicalNarrativeSpeakerName(segment, appData, resolveCanonicalName);
-    if (inferredName) return inferredName.toLowerCase();
-    const aiChars = appData.characters.filter(c => c.controlledBy === 'AI');
-    return (aiChars[0]?.name || 'Narrator').toLowerCase();
-  } else if (!isAi) {
-    // User message without tag - defaults to user's character
-    return (userChar?.name || 'You').toLowerCase();
-  } else {
-    // AI message without tag - defaults to first AI character
-    const aiChars = appData.characters.filter(c => c.controlledBy === 'AI');
-    return (aiChars[0]?.name || 'Narrator').toLowerCase();
-  }
-};
-
-/**
- * Merge consecutive segments by RESOLVED speaker identity.
- * This ensures that a null speaker (renders as Ashley) merges with an explicit "Ashley:" tag.
- */
-const mergeByRenderedSpeaker = (
-  rawSegments: MessageSegment[],
-  isAi: boolean,
-  appData: ScenarioData,
-  userChar: Character | null,
-  resolveCanonicalName?: (name: string) => string | null
-): MessageSegment[] => {
-  if (rawSegments.length <= 1) return rawSegments;
-
-  // Resolve speaker names first (lowercased for comparison)
-  const withResolvedNames = rawSegments.map(seg => ({
-    ...seg,
-    resolvedName: resolveRenderedSpeakerName(seg, isAi, appData, userChar, resolveCanonicalName),
-    canonicalSpeakerName: seg.speakerName
-      ? (resolveCanonicalName?.(seg.speakerName) || seg.speakerName)
-      : inferCanonicalNarrativeSpeakerName(seg, appData, resolveCanonicalName)
-  }));
-
-  // Merge consecutive segments with same resolved name
-  const merged: MessageSegment[] = [];
-  let current = withResolvedNames[0];
-
-  for (let i = 1; i < withResolvedNames.length; i++) {
-    const next = withResolvedNames[i];
-    if (current.resolvedName === next.resolvedName) {
-      current = {
-        ...current,
-        content: current.content + '\n\n' + next.content
-      };
-    } else {
-      merged.push({
-        speakerName: current.canonicalSpeakerName ?? current.speakerName,
-        content: current.content
-      });
-      current = next;
-    }
-  }
-  merged.push({
-    speakerName: current.canonicalSpeakerName ?? current.speakerName,
-    content: current.content
-  });
-
-  return merged;
-};
-
-const MESSAGE_SYSTEM_TAG_REGEX = /\[SCENE:\s*.*?\]|\[UPDATE:[^\]]*\]|\[ADDROW:[^\]]*\]|\[NEWCAT:[^\]]*\]/g;
-
-const extractHiddenMessageTags = (text: string): string[] => text.match(MESSAGE_SYSTEM_TAG_REGEX) ?? [];
-
-const buildEditableMessageSegments = (
-  text: string,
-  isAi: boolean,
-  appData: ScenarioData,
-  userChar: Character | null,
-  resolveCanonicalName?: (name: string) => string | null
-): MessageSegment[] => mergeByRenderedSpeaker(
-  parseMessageSegments(text),
-  isAi,
-  appData,
-  userChar,
-  resolveCanonicalName
-);
-
-const serializeEditableMessageSegments = (segments: MessageSegment[]): string => segments
-  .map((segment) => {
-    const content = segment.content.trim();
-    if (!content) return '';
-    return segment.speakerName ? `${segment.speakerName}: ${content}` : content;
-  })
-  .filter(Boolean)
-  .join('\n\n')
-  .trim();
-
-const buildInlineEditedMessageText = (segments: MessageSegment[], systemTags: string[]): string => {
-  const visibleBody = serializeEditableMessageSegments(segments);
-  const hiddenTags = systemTags.join('\n').trim();
-  return [hiddenTags, visibleBody].filter((part) => part.trim().length > 0).join('\n\n').trim();
-};
-
-const clampPercent = (value: number): number => Math.max(0, Math.min(100, value));
-const CHARACTER_AVATAR_PREVIEW_SIZE = 192;
-const CHAT_TILE_HEIGHT = 140;
-const CHAT_TILE_WIDTH = 268;
-const CHAT_SIDEBAR_WIDTH = CHAT_TILE_WIDTH + 32;
-
-type Size2D = { width: number; height: number };
-const avatarNaturalSizeCache = new Map<string, Size2D>();
-
-const mapObjectPositionFromPreviewToTile = (
-  stored: { x: number; y: number },
-  imageSize: Size2D,
-  tileSize: Size2D
-): { x: number; y: number } => {
-  const fromSize = {
-    width: CHARACTER_AVATAR_PREVIEW_SIZE,
-    height: CHARACTER_AVATAR_PREVIEW_SIZE,
-  };
-
-  const fromScale = Math.max(fromSize.width / imageSize.width, fromSize.height / imageSize.height);
-  const toScale = Math.max(tileSize.width / imageSize.width, tileSize.height / imageSize.height);
-
-  const mapAxis = (
-    storedPercent: number,
-    imageLength: number,
-    fromLength: number,
-    toLength: number
-  ): number => {
-    const fromRendered = imageLength * fromScale;
-    const fromOverflow = Math.max(0, fromRendered - fromLength);
-    const sourceOffset = fromOverflow === 0 ? 0 : ((fromOverflow * clampPercent(storedPercent)) / 100) / fromScale;
-
-    const toRendered = imageLength * toScale;
-    const toOverflow = Math.max(0, toRendered - toLength);
-    if (toOverflow === 0) return 50;
-    const toOffset = sourceOffset * toScale;
-    return clampPercent((toOffset / toOverflow) * 100);
-  };
-
-  return {
-    x: mapAxis(stored.x, imageSize.width, fromSize.width, tileSize.width),
-    y: mapAxis(stored.y, imageSize.height, fromSize.height, tileSize.height),
-  };
-};
-
-const mapTilePositionToPreview = (
-  tilePos: { x: number; y: number },
-  imageSize: Size2D,
-  tileSize: Size2D
-): { x: number; y: number } => {
-  const previewSize = { width: CHARACTER_AVATAR_PREVIEW_SIZE, height: CHARACTER_AVATAR_PREVIEW_SIZE };
-
-  const fromScale = Math.max(tileSize.width / imageSize.width, tileSize.height / imageSize.height);
-  const toScale = Math.max(previewSize.width / imageSize.width, previewSize.height / imageSize.height);
-
-  const mapAxis = (
-    tilePercent: number,
-    imageLength: number,
-    fromLength: number,
-    toLength: number
-  ): number => {
-    const fromRendered = imageLength * fromScale;
-    const fromOverflow = Math.max(0, fromRendered - fromLength);
-    const sourceOffset = fromOverflow === 0 ? 0 : ((fromOverflow * clampPercent(tilePercent)) / 100) / fromScale;
-
-    const toRendered = imageLength * toScale;
-    const toOverflow = Math.max(0, toRendered - toLength);
-    if (toOverflow === 0) return 50;
-    const toOffset = sourceOffset * toScale;
-    return clampPercent((toOffset / toOverflow) * 100);
-  };
-
-  return {
-    x: mapAxis(tilePos.x, imageSize.width, tileSize.width, previewSize.width),
-    y: mapAxis(tilePos.y, imageSize.height, tileSize.height, previewSize.height),
-  };
-};
-const HEX_COLOR_PATTERN = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i;
-
-const normalizeHexColor = (value: string | undefined | null, fallback: string): string => {
-  if (!value) return fallback;
-  const trimmed = value.trim();
-  const match = trimmed.match(HEX_COLOR_PATTERN);
-  if (!match) return fallback;
-  const raw = match[1].toLowerCase();
-  const expanded = raw.length === 3 ? raw.split('').map(c => c + c).join('') : raw;
-  return `#${expanded}`;
-};
-
-const tryNormalizeHexColor = (value: string): string | null => {
-  const trimmed = value.trim();
-  const match = trimmed.match(HEX_COLOR_PATTERN);
-  if (!match) return null;
-  const raw = match[1].toLowerCase();
-  const expanded = raw.length === 3 ? raw.split('').map(c => c + c).join('') : raw;
-  return `#${expanded}`;
-};
-
-const getColorFamilyLabel = (hex: string): string => {
-  const normalized = normalizeHexColor(hex, '#1a1b20');
-  const r = parseInt(normalized.slice(1, 3), 16);
-  const g = parseInt(normalized.slice(3, 5), 16);
-  const b = parseInt(normalized.slice(5, 7), 16);
-
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const chroma = max - min;
-  const lightness = ((max + min) / 2) / 255;
-
-  if (chroma < 12) {
-    if (lightness < 0.18) return 'Very dark gray';
-    if (lightness < 0.4) return 'Dark gray';
-    if (lightness < 0.7) return 'Gray';
-    return 'Light gray';
-  }
-
-  let hue = 0;
-  if (max === r) hue = ((g - b) / chroma) % 6;
-  else if (max === g) hue = (b - r) / chroma + 2;
-  else hue = (r - g) / chroma + 4;
-  hue = Math.round(hue * 60);
-  if (hue < 0) hue += 360;
-
-  if (hue < 15 || hue >= 345) return 'Red';
-  if (hue < 45) return 'Orange';
-  if (hue < 70) return 'Yellow';
-  if (hue < 160) return 'Green';
-  if (hue < 200) return 'Cyan';
-  if (hue < 260) return 'Blue';
-  if (hue < 300) return 'Purple';
-  if (hue < 345) return 'Pink';
-  return 'Color';
-};
-
-type TypingIndicatorBubbleProps = {
-  offsetBubbles: boolean;
-  bubblesTransparent: boolean;
-  chatBubbleColor: string;
-};
-
-const TypingIndicatorBubble: React.FC<TypingIndicatorBubbleProps> = ({
-  offsetBubbles,
-  bubblesTransparent,
-  chatBubbleColor,
-}) => (
-  <div
-    className={`w-full animate-in fade-in slide-in-from-bottom-3 duration-300 ${
-      offsetBubbles ? 'max-w-3xl mr-auto' : 'max-w-4xl mx-auto'
-    }`}
-    role="status"
-    aria-live="polite"
-    aria-label="AI character is writing"
-  >
-    <div
-      className={`inline-flex items-center gap-1.5 rounded-2xl px-5 py-4 shadow-2xl ${
-        bubblesTransparent ? 'bg-black/50' : ''
-      }`}
-      style={!bubblesTransparent ? { backgroundColor: chatBubbleColor } : undefined}
-    >
-      {[0, 1, 2].map((dot) => (
-        <span
-          key={dot}
-          className="h-2.5 w-2.5 rounded-full bg-slate-300/80 shadow-[0_0_10px_rgba(203,213,225,0.35)] animate-bounce"
-          style={{ animationDelay: `${dot * 140}ms` }}
-        />
-      ))}
-      <span className="sr-only">AI character is writing</span>
-    </div>
-  </div>
-);
 
 export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   scenarioId,
@@ -1194,6 +270,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [sessionStatesLoaded, setSessionStatesLoaded] = useState(false);
   const [characterStateSnapshots, setCharacterStateSnapshots] = useState<CharacterStateMessageSnapshot[]>([]);
   const [sideCharacterSnapshots, setSideCharacterSnapshots] = useState<SideCharacterMessageSnapshot[]>([]);
+  const characterStateSnapshotsRef = useRef<CharacterStateMessageSnapshot[]>([]);
+  const sideCharacterSnapshotsRef = useRef<SideCharacterMessageSnapshot[]>([]);
   const [goalStepDerivations, setGoalStepDerivations] = useState<StoryGoalStepDerivation[]>([]);
   const [goalAlignmentStates, setGoalAlignmentStates] = useState<GoalAlignmentState[]>([]);
   const [canonicalDerivationsLoaded, setCanonicalDerivationsLoaded] = useState(false);
@@ -1232,16 +310,16 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   // Admin debug: action tracking refs (Continue / Regenerate clicks)
   const continueEventsRef = useRef<ActionEvent[]>([]);
   const regenerateEventsRef = useRef<ActionEvent[]>([]);
-  const chatDebugTraceStoreRef = useRef<StoredChatDebugTraceMap>(loadChatDebugTraceStore(scenarioId, conversationId));
+  const {
+    chatDebugTraceStoreRef,
+    saveChatDebugTrace,
+    recordChatDebugSupportCall,
+  } = useChatDebugTrace({ scenarioId, conversationId, isAdmin });
   const [dialogDebugEnabled, setDialogDebugEnabled] = useState(false);
   const [dialogDebugComments, setDialogDebugComments] = useState<Record<string, DialogDebugComment>>({});
   const [activeDialogDebugMessage, setActiveDialogDebugMessage] = useState<Message | null>(null);
   const [dialogDebugDraft, setDialogDebugDraft] = useState('');
   const [dialogDebugTagDraft, setDialogDebugTagDraft] = useState<ChatDebugIssueTag[]>([]);
-
-  useEffect(() => {
-    chatDebugTraceStoreRef.current = loadChatDebugTraceStore(scenarioId, conversationId);
-  }, [conversationId, scenarioId]);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -1381,79 +459,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     };
   }, [isAdmin]);
 
-  const attachRequestDebugToError = (
-    error: unknown,
-    trace: ChatDebugTrace | null,
-    request: ChatDebugRequestRecord | null,
-  ) => {
-    if (!error || typeof error !== 'object') return;
-    const carrier = error as Record<string, unknown>;
-    carrier.__chronicleDebugAttempted = true;
-    carrier.__chronicleDebugTrace = trace ?? null;
-    carrier.__chronicleCall1Request = request ?? null;
-  };
-
-  const readRequestDebugFromError = (
-    error: unknown,
-    fallbackTrace: ChatDebugTrace | null,
-    fallbackRequest: ChatDebugRequestRecord | null,
-  ) => {
-    const carrier = error && typeof error === 'object' ? error as Record<string, unknown> : {};
-    const hasAttemptDebug = carrier.__chronicleDebugAttempted === true;
-    return {
-      trace: hasAttemptDebug
-        ? (carrier.__chronicleDebugTrace as ChatDebugTrace | null | undefined) ?? null
-        : fallbackTrace,
-      call1Request: hasAttemptDebug
-        ? (carrier.__chronicleCall1Request as ChatDebugRequestRecord | null | undefined) ?? null
-        : fallbackRequest,
-    };
-  };
-
-  const saveChatDebugTrace = useCallback((
-    message: Message,
-    trace: ChatDebugTrace | null,
-    call1Request?: ChatDebugRequestRecord | null,
-  ) => {
-    if (!isAdmin || (!trace && !call1Request)) return;
-
-    const generationId = message.generationId || message.id;
-    const enrichedCall1Request = call1Request && trace?.modelRequest
-      ? {
-          ...call1Request,
-          modelRequest: trace.modelRequest,
-          modelRequests: trace.modelRequests || call1Request.modelRequests,
-        }
-      : call1Request;
-    const nextStore = upsertChatDebugTrace(chatDebugTraceStoreRef.current, {
-      messageId: message.id,
-      generationId,
-      capturedAt: Date.now(),
-      trace,
-      call1Request: enrichedCall1Request || undefined,
-    });
-
-    chatDebugTraceStoreRef.current = nextStore;
-    persistChatDebugTraceStore(scenarioId, conversationId, nextStore);
-	  }, [conversationId, isAdmin, scenarioId]);
-
-  const recordChatDebugSupportCall = useCallback((
-    message: Pick<Message, 'id' | 'generationId'> | null | undefined,
-    call: ChatDebugRequestRecord,
-  ) => {
-    if (!isAdmin || !message?.id) return;
-
-    const nextStore = upsertChatDebugSupportCall(
-      chatDebugTraceStoreRef.current,
-      message.id,
-      message.generationId || message.id,
-      call,
-    );
-
-    chatDebugTraceStoreRef.current = nextStore;
-    persistChatDebugTraceStore(scenarioId, conversationId, nextStore);
-  }, [conversationId, isAdmin, scenarioId]);
-
   const appendContentFilterNotice = useCallback((
     baseConversations: Conversation[],
     error: ContentFilteredChatError,
@@ -1504,70 +509,16 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     return nextConversations;
   }, [conversationId, currentDay, currentTimeOfDay, onSaveScenario, onUpdate, saveChatDebugTrace]);
 
-  const buildMessageGenerationMap = useCallback((messages: Message[]): Map<string, string> => {
-    const map = new Map<string, string>();
-    for (const message of messages) {
-      map.set(message.id, message.generationId || message.id);
-    }
-    return map;
-  }, []);
-
   const latestMessageGenerationMap = useMemo(() => {
     return buildMessageGenerationMap(conversation?.messages || []);
-  }, [buildMessageGenerationMap, conversation?.messages]);
-
-  const buildActiveGoalCompletionIds = useCallback((
-    derivations: StoryGoalStepDerivation[],
-    generationMap: Map<string, string>,
-  ): Set<string> => {
-    const completed = new Set<string>();
-    for (const derivation of derivations) {
-      if (!derivation.completed) continue;
-      if (generationMap.get(derivation.sourceMessageId) !== derivation.sourceGenerationId) continue;
-      completed.add(derivation.stepId);
-    }
-    return completed;
-  }, []);
+  }, [conversation?.messages]);
 
   const activeGoalCompletionIds = useMemo(() => {
     return buildActiveGoalCompletionIds(
       goalStepDerivations.filter((derivation) => derivation.conversationId === conversationId),
       latestMessageGenerationMap,
     );
-  }, [buildActiveGoalCompletionIds, conversationId, goalStepDerivations, latestMessageGenerationMap]);
-
-  const buildActiveGoalAlignmentMap = useCallback((
-    states: GoalAlignmentState[],
-    generationMap: Map<string, string>,
-  ): Map<string, GoalAlignmentState> => {
-    const map = new Map<string, GoalAlignmentState>();
-    for (const state of states) {
-      const latestSourceIsStale =
-        (state.sourceMessageId && state.sourceGenerationId && generationMap.get(state.sourceMessageId) !== state.sourceGenerationId) ||
-        (!state.sourceMessageId && !!state.sourceGenerationId);
-
-      if (latestSourceIsStale) {
-        const previous = state.previousState;
-        if (!previous) continue;
-        const previousSourceIsStale =
-          (previous.sourceMessageId && previous.sourceGenerationId && generationMap.get(previous.sourceMessageId) !== previous.sourceGenerationId) ||
-          (!previous.sourceMessageId && !!previous.sourceGenerationId);
-        if (previousSourceIsStale) continue;
-
-        const normalizedPrevious = normalizeGoalAlignmentState({
-          ...state,
-          ...previous,
-          previousState: null,
-        });
-        map.set(buildGoalAlignmentKey(normalizedPrevious.goalKind, normalizedPrevious.goalId, normalizedPrevious.characterId), normalizedPrevious);
-        continue;
-      }
-
-      const normalized = normalizeGoalAlignmentState(state);
-      map.set(buildGoalAlignmentKey(normalized.goalKind, normalized.goalId, normalized.characterId), normalized);
-    }
-    return map;
-  }, []);
+  }, [conversationId, goalStepDerivations, latestMessageGenerationMap]);
 
   const activeGoalAlignmentMap = useMemo(() => {
     if (GOAL_ALIGNMENT_SHADOW_MODE) {
@@ -1578,55 +529,25 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       goalAlignmentStates.filter((entry) => entry.conversationId === conversationId),
       latestMessageGenerationMap,
     );
-  }, [buildActiveGoalAlignmentMap, conversationId, goalAlignmentStates, latestMessageGenerationMap]);
+  }, [conversationId, goalAlignmentStates, latestMessageGenerationMap]);
 
   const canUseCanonicalChatState = canonicalDerivationsLoaded && !canonicalDerivationsLoadError;
-
-  const buildActiveMemories = useCallback((
-    sourceMemories: Memory[],
-    generationMap: Map<string, string>,
-  ): Memory[] => {
-    return sourceMemories.filter((memory) => {
-      if (!memory.sourceMessageId) return true;
-      const currentGeneration = generationMap.get(memory.sourceMessageId);
-      if (!currentGeneration) return false;
-      if (!memory.sourceGenerationId) return true;
-      return currentGeneration === memory.sourceGenerationId;
-    });
-  }, []);
 
   const activeMemories = useMemo(() => {
     return buildActiveMemories(
       memories.filter((memory) => memory.conversationId === conversationId),
       latestMessageGenerationMap,
     );
-  }, [buildActiveMemories, conversationId, memories, latestMessageGenerationMap]);
+  }, [conversationId, memories, latestMessageGenerationMap]);
 
-  // Build effective world core by merging base with session overrides and canonical goal derivations
+  // Build effective world core by merging base with session overrides and canonical goal derivations.
   const effectiveWorldCore = useMemo((): WorldCore => {
-    const manualCore = worldCoreSessionOverrides
-      ? {
-          ...appData.world.core,
-          ...worldCoreSessionOverrides,
-          structuredLocations: worldCoreSessionOverrides.structuredLocations ?? appData.world.core.structuredLocations,
-          customWorldSections: worldCoreSessionOverrides.customWorldSections ?? appData.world.core.customWorldSections,
-          storyGoals: worldCoreSessionOverrides.storyGoals ?? appData.world.core.storyGoals,
-        }
-      : appData.world.core;
-
-    const storyGoals = (manualCore.storyGoals || []).map((goal) => ({
-      ...goal,
-      alignment: activeGoalAlignmentMap.get(buildGoalAlignmentKey('story', goal.id)),
-      steps: (goal.steps || []).map((step) => {
-        if (!activeGoalCompletionIds.has(step.id)) return step;
-        return step.completed ? step : { ...step, completed: true };
-      }),
-    }));
-
-    return {
-      ...manualCore,
-      storyGoals,
-    };
+    return buildEffectiveWorldCore({
+      baseCore: appData.world.core,
+      worldCoreSessionOverrides,
+      activeGoalAlignmentMap,
+      activeGoalCompletionIds,
+    });
   }, [activeGoalAlignmentMap, activeGoalCompletionIds, appData.world.core, worldCoreSessionOverrides]);
 
   const exportPostTurnStateChanges = useMemo((): Record<string, string[]> => {
@@ -1744,7 +665,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   // Issue #6B: Track previous day for compression trigger
   const previousDayRef = useRef<number>(currentDay);
   const latestConversationsRef = useRef(appData.conversations);
-  const goalAlignmentEvalQueueRef = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
     currentDayRef.current = currentDay;
@@ -1823,6 +743,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     if (conversationId === "loading") return;
 
     let isCancelled = false;
+    characterStateSnapshotsRef.current = [];
+    sideCharacterSnapshotsRef.current = [];
     setCharacterStateSnapshots([]);
     setSideCharacterSnapshots([]);
     setGoalStepDerivations([]);
@@ -1838,6 +760,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         supabaseData.fetchGoalAlignmentStates(conversationId),
       ]).then(([snapshots, sideSnapshots, derivations, alignmentStates]) => {
         if (isCancelled) return;
+        characterStateSnapshotsRef.current = snapshots;
+        sideCharacterSnapshotsRef.current = sideSnapshots;
         setCharacterStateSnapshots(snapshots);
         setSideCharacterSnapshots(sideSnapshots);
         setGoalStepDerivations(derivations);
@@ -2243,76 +1167,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     };
   }, [conversationId, sessionStates]);
 
-  const buildActiveCharacterSnapshotMap = useCallback((
-    snapshots: CharacterStateMessageSnapshot[],
-    generationMap: Map<string, string>,
-    messages: Message[],
-  ): Map<string, CharacterStateMessageSnapshot> => {
-    const messageOrder = new Map<string, number>();
-    messages.forEach((message, index) => {
-      messageOrder.set(message.id, index);
-    });
-
-    const latestByCharacter = new Map<string, { order: number; createdAt: number; snapshot: CharacterStateMessageSnapshot }>();
-
-    for (const snapshot of snapshots) {
-      if (generationMap.get(snapshot.sourceMessageId) !== snapshot.sourceGenerationId) continue;
-      const order = messageOrder.get(snapshot.sourceMessageId);
-      if (order == null) continue;
-      const existing = latestByCharacter.get(snapshot.characterId);
-      if (!existing || order > existing.order || (order === existing.order && snapshot.createdAt >= existing.createdAt)) {
-        latestByCharacter.set(snapshot.characterId, {
-          order,
-          createdAt: snapshot.createdAt,
-          snapshot,
-        });
-      }
-    }
-
-    return new Map(
-      Array.from(latestByCharacter.entries()).map(([characterId, value]) => [characterId, value.snapshot]),
-    );
-  }, []);
-
   const activeCharacterSnapshotMap = useMemo(
     () => buildActiveCharacterSnapshotMap(
       characterStateSnapshots.filter((snapshot) => snapshot.conversationId === conversationId),
       latestMessageGenerationMap,
       conversation?.messages || [],
     ),
-    [buildActiveCharacterSnapshotMap, characterStateSnapshots, conversationId, latestMessageGenerationMap, conversation?.messages],
+    [characterStateSnapshots, conversationId, latestMessageGenerationMap, conversation?.messages],
   );
-
-  const buildActiveSideCharacterSnapshotMap = useCallback((
-    snapshots: SideCharacterMessageSnapshot[],
-    generationMap: Map<string, string>,
-    messages: Message[],
-  ): Map<string, SideCharacterMessageSnapshot> => {
-    const messageOrder = new Map<string, number>();
-    messages.forEach((message, index) => {
-      messageOrder.set(message.id, index);
-    });
-
-    const latestByCharacter = new Map<string, { order: number; createdAt: number; snapshot: SideCharacterMessageSnapshot }>();
-
-    for (const snapshot of snapshots) {
-      if (generationMap.get(snapshot.sourceMessageId) !== snapshot.sourceGenerationId) continue;
-      const order = messageOrder.get(snapshot.sourceMessageId);
-      if (order == null) continue;
-      const existing = latestByCharacter.get(snapshot.sideCharacterId);
-      if (!existing || order > existing.order || (order === existing.order && snapshot.createdAt >= existing.createdAt)) {
-        latestByCharacter.set(snapshot.sideCharacterId, {
-          order,
-          createdAt: snapshot.createdAt,
-          snapshot,
-        });
-      }
-    }
-
-    return new Map(
-      Array.from(latestByCharacter.entries()).map(([sideCharacterId, value]) => [sideCharacterId, value.snapshot]),
-    );
-  }, []);
 
   const activeSideCharacterSnapshotMap = useMemo(
     () => buildActiveSideCharacterSnapshotMap(
@@ -2320,7 +1182,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       latestMessageGenerationMap,
       conversation?.messages || [],
     ),
-    [buildActiveSideCharacterSnapshotMap, sideCharacterSnapshots, conversationId, latestMessageGenerationMap, conversation?.messages],
+    [sideCharacterSnapshots, conversationId, latestMessageGenerationMap, conversation?.messages],
   );
 
   const computeEffectiveCharacter = useCallback((
@@ -2328,27 +1190,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     snapshotMap: Map<string, CharacterStateMessageSnapshot> = activeCharacterSnapshotMap,
     alignmentMap: Map<string, GoalAlignmentState> = activeGoalAlignmentMap,
   ): Character & { previousNames?: string[] } => {
-    const withGoalAlignment = (character: Character & { previousNames?: string[] }) => ({
-      ...character,
-      goals: (character.goals || []).map((goal) => ({
-        ...goal,
-        alignment: alignmentMap.get(buildGoalAlignmentKey('character', goal.id, baseChar.id)),
-      })),
+    return applyCharacterSnapshot({
+      baseChar,
+      manualMergedCharacter: getManualSessionCharacter(baseChar),
+      snapshotMap,
+      alignmentMap,
     });
-    const manualMerged = getManualSessionCharacter(baseChar);
-    const snapshot = snapshotMap.get(baseChar.id);
-    if (!snapshot?.statePayload) return withGoalAlignment(manualMerged);
-
-    const payload = snapshot.statePayload;
-    const merged = {
-      ...manualMerged,
-      ...payload,
-      id: baseChar.id,
-      sections: payload.sections ?? manualMerged.sections,
-      avatarDataUrl: payload.avatarDataUrl ?? manualMerged.avatarDataUrl,
-      previousNames: payload.previousNames ?? manualMerged.previousNames ?? [],
-    };
-    return withGoalAlignment(merged as Character & { previousNames?: string[] });
   }, [activeCharacterSnapshotMap, activeGoalAlignmentMap, getManualSessionCharacter]);
 
   const getEffectiveCharacter = useCallback((baseChar: Character): Character & { previousNames?: string[] } => {
@@ -2364,29 +1211,56 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     baseChar: SideCharacter,
     snapshotMap: Map<string, SideCharacterMessageSnapshot> = activeSideCharacterSnapshotMap,
   ): SideCharacter => {
-    const snapshot = snapshotMap.get(baseChar.id);
-    if (!snapshot?.statePayload) return baseChar;
-
-    const payload = snapshot.statePayload;
-    return {
-      ...baseChar,
-      ...payload,
-      id: baseChar.id,
-      physicalAppearance: payload.physicalAppearance ?? baseChar.physicalAppearance,
-      currentlyWearing: payload.currentlyWearing ?? baseChar.currentlyWearing,
-      preferredClothing: payload.preferredClothing ?? baseChar.preferredClothing,
-      background: payload.background ?? baseChar.background,
-      personality: payload.personality ?? baseChar.personality,
-      sections: payload.sections ?? baseChar.sections,
-      avatarDataUrl: payload.avatarDataUrl ?? baseChar.avatarDataUrl,
-      avatarPosition: payload.avatarPosition ?? baseChar.avatarPosition,
-      extractedTraits: payload.extractedTraits ?? baseChar.extractedTraits,
-    };
+    return applySideCharacterSnapshot(baseChar, snapshotMap);
   }, [activeSideCharacterSnapshotMap]);
 
+  const getLatestConversationMessages = useCallback((): Message[] => {
+    return latestConversationsRef.current.find(c => c.id === conversationId)?.messages || conversation?.messages || [];
+  }, [conversation?.messages, conversationId]);
+
+  const buildCurrentCharacterSnapshotMap = useCallback(() => {
+    const messages = getLatestConversationMessages();
+    return buildActiveCharacterSnapshotMap(
+      characterStateSnapshotsRef.current.filter((snapshot) => snapshot.conversationId === conversationId),
+      buildMessageGenerationMap(messages),
+      messages,
+    );
+  }, [conversationId, getLatestConversationMessages]);
+
+  const buildCurrentSideCharacterSnapshotMap = useCallback(() => {
+    const messages = getLatestConversationMessages();
+    return buildActiveSideCharacterSnapshotMap(
+      sideCharacterSnapshotsRef.current.filter((snapshot) => snapshot.conversationId === conversationId),
+      buildMessageGenerationMap(messages),
+      messages,
+    );
+  }, [conversationId, getLatestConversationMessages]);
+
+  const getCurrentEffectiveMainCharacters = useCallback(() => {
+    const snapshotMap = buildCurrentCharacterSnapshotMap();
+    return appData.characters.map((character) => computeEffectiveCharacter(character, snapshotMap));
+  }, [appData.characters, buildCurrentCharacterSnapshotMap, computeEffectiveCharacter]);
+
+  const getCurrentEffectiveSideCharacters = useCallback(() => {
+    const snapshotMap = buildCurrentSideCharacterSnapshotMap();
+    return (appData.sideCharacters || []).map((sideChar) => computeEffectiveSideCharacter(sideChar, snapshotMap));
+  }, [appData.sideCharacters, buildCurrentSideCharacterSnapshotMap, computeEffectiveSideCharacter]);
+
+  const upsertCharacterSnapshotInRuntimeState = useCallback((snapshot: CharacterStateMessageSnapshot) => {
+    const next = upsertCharacterStateMessageSnapshot(characterStateSnapshotsRef.current, snapshot);
+    characterStateSnapshotsRef.current = next;
+    setCharacterStateSnapshots(next);
+  }, []);
+
+  const upsertSideCharacterSnapshotInRuntimeState = useCallback((snapshot: SideCharacterMessageSnapshot) => {
+    const next = upsertSideCharacterStateMessageSnapshot(sideCharacterSnapshotsRef.current, snapshot);
+    sideCharacterSnapshotsRef.current = next;
+    setSideCharacterSnapshots(next);
+  }, []);
+
   const effectiveSideCharacters = useMemo(
-    () => (appData.sideCharacters || []).map((sideChar) => computeEffectiveSideCharacter(sideChar)),
-    [appData.sideCharacters, computeEffectiveSideCharacter],
+    () => getCurrentEffectiveSideCharacters(),
+    [getCurrentEffectiveSideCharacters],
   );
 
   // Get all character names for memory extraction context
@@ -2444,28 +1318,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           )
         : activeGoalAlignmentMap;
 
-    const manualCore = worldCoreSessionOverrides
-      ? {
-          ...appData.world.core,
-          ...worldCoreSessionOverrides,
-          structuredLocations: worldCoreSessionOverrides.structuredLocations ?? appData.world.core.structuredLocations,
-          customWorldSections: worldCoreSessionOverrides.customWorldSections ?? appData.world.core.customWorldSections,
-          storyGoals: worldCoreSessionOverrides.storyGoals ?? appData.world.core.storyGoals,
-        }
-      : appData.world.core;
-
-    const worldCore = {
-      ...manualCore,
-      storyGoals: (manualCore.storyGoals || []).map((goal) => ({
-        ...goal,
-        alignment: overrideGoalAlignmentMap.get(buildGoalAlignmentKey('story', goal.id)),
-        steps: (goal.steps || []).map((step) => (
-          overrideGoalCompletionIds.has(step.id) && !step.completed
-            ? { ...step, completed: true }
-            : step
-        )),
-      })),
-    };
+    const worldCore = buildEffectiveWorldCore({
+      baseCore: appData.world.core,
+      worldCoreSessionOverrides,
+      activeGoalAlignmentMap: overrideGoalAlignmentMap,
+      activeGoalCompletionIds: overrideGoalCompletionIds,
+    });
 
     return {
       ...appData,
@@ -2486,11 +1344,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     activeGoalAlignmentMap,
     activeSideCharacterSnapshotMap,
     appData,
-    buildActiveGoalCompletionIds,
-    buildActiveGoalAlignmentMap,
-    buildActiveCharacterSnapshotMap,
-    buildActiveSideCharacterSnapshotMap,
-    buildMessageGenerationMap,
     characterStateSnapshots,
     conversationId,
     computeEffectiveCharacter,
@@ -4190,12 +3043,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     return newText.length >= oldText.length * 1.12 && novelty >= 0.20;
   };
 
-  // Concurrency guard + lightweight queue for extraction
-  const extractionInProgressRef = useRef(false);
-  const pendingExtractionRef = useRef<{ userMessage: string; aiResponse: string; meta?: ExtractionRequestMeta } | null>(null);
-
   // Build eligible character set from latest exchange
-  const buildEligibleCharacterNames = useCallback((userMessage: string, aiResponse: string): Set<string> => {
+  const buildEligibleCharacterNames = useCallback((
+    userMessage: string,
+    aiResponse: string,
+    mainCharacters: Array<Character & { previousNames?: string[] }> = effectiveMainCharacters,
+    sideCharacters: SideCharacter[] = effectiveSideCharacters,
+  ): Set<string> => {
     const eligible = new Set<string>();
     const combinedText = `${userMessage}\n${aiResponse}`;
     const isAliasMentioned = (alias: string): boolean => {
@@ -4208,12 +3062,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     const addTaggedSpeaker = (speakerName: string | null | undefined) => {
       const normalizedSpeaker = speakerName?.trim().toLowerCase();
       if (!normalizedSpeaker) return;
-      const mainMatch = effectiveMainCharacters.find((character) => character.name.toLowerCase() === normalizedSpeaker);
+      const mainMatch = mainCharacters.find((character) => character.name.toLowerCase() === normalizedSpeaker);
       if (mainMatch) {
         eligible.add(mainMatch.name.toLowerCase());
         return;
       }
-      const sideMatch = effectiveSideCharacters.find((character) => character.name.toLowerCase() === normalizedSpeaker);
+      const sideMatch = sideCharacters.find((character) => character.name.toLowerCase() === normalizedSpeaker);
       if (sideMatch) eligible.add(sideMatch.name.toLowerCase());
     };
 
@@ -4221,14 +3075,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     for (const segment of parseMessageSegments(aiResponse)) addTaggedSpeaker(segment.speakerName);
 
     // Check all characters (main + side) by name, nicknames, previousNames
-    for (const c of effectiveMainCharacters) {
+    for (const c of mainCharacters) {
       const names = [c.name, ...(c.nicknames?.split(',').map(n => n.trim()) || []), ...(c.previousNames || [])].filter(Boolean);
       const mentioned = names.some(isAliasMentioned);
       if (mentioned) {
         eligible.add(c.name.toLowerCase());
       }
     }
-    for (const sc of effectiveSideCharacters) {
+    for (const sc of sideCharacters) {
       const names = [sc.name, ...(sc.nicknames?.split(',').map(n => n.trim()) || [])].filter(Boolean);
       const mentioned = names.some(isAliasMentioned);
       if (mentioned) {
@@ -4244,17 +3098,17 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     aiResponse: string,
     meta?: ExtractionRequestMeta
   ): Promise<ExtractedUpdate[]> => {
-    // Concurrency guard: if busy, enqueue latest request
-    if (extractionInProgressRef.current) {
-      debugLog('[extractCharacterUpdates] Queuing — extraction already in progress');
-      pendingExtractionRef.current = { userMessage, aiResponse, meta };
-      return [];
-    }
-    extractionInProgressRef.current = true;
     debugLog('[extractCharacterUpdates] Started', meta?.reason ? `(${meta.reason})` : '');
     try {
+      const currentEffectiveMainCharacters = getCurrentEffectiveMainCharacters();
+      const currentEffectiveSideCharacters = getCurrentEffectiveSideCharacters();
       // Build eligible character set
-      const eligibleNames = buildEligibleCharacterNames(userMessage, aiResponse);
+      const eligibleNames = buildEligibleCharacterNames(
+        userMessage,
+        aiResponse,
+        currentEffectiveMainCharacters,
+        currentEffectiveSideCharacters,
+      );
       debugLog('[extractCharacterUpdates] Eligible characters:', [...eligibleNames]);
       if (eligibleNames.size === 0) return [];
 
@@ -4282,7 +3136,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       };
 
       // Build character data for context — only eligible characters
-      const charactersData = effectiveMainCharacters.map((effective) => {
+      const charactersData = currentEffectiveMainCharacters.map((effective) => {
         return {
           name: effective.name,
           previousNames: effective.previousNames || [],
@@ -4326,7 +3180,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }).filter(c => eligibleNames.has(c.name.toLowerCase()));
 
       // Also include eligible side characters
-      const sideCharsData = effectiveSideCharacters.filter(sc =>
+      const sideCharsData = currentEffectiveSideCharacters.filter(sc =>
         eligibleNames.has(sc.name.toLowerCase())
       ).map(sc => ({
         name: sc.name,
@@ -4551,22 +3405,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     } catch (err) {
       console.error('[extractCharacterUpdates] Failed:', err);
       return [];
-    } finally {
-      extractionInProgressRef.current = false;
-      // Process queued extraction if any
-      const pending = pendingExtractionRef.current;
-      if (pending) {
-        pendingExtractionRef.current = null;
-        debugLog('[extractCharacterUpdates] Processing queued extraction');
-        extractCharacterUpdatesFromDialogue(pending.userMessage, pending.aiResponse, pending.meta).then(updates => {
-          if (updates.length > 0) {
-            debugLog(`[extractCharacterUpdates] Queued extraction yielded ${updates.length} updates`);
-            applyExtractedUpdates(updates, pending.meta);
-          }
-        }).catch(err => {
-          console.error('[extractCharacterUpdates] Queued extraction failed:', err);
-        });
-      }
     }
   };
 
@@ -5140,7 +3978,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           return;
         }
 
-        const effectiveChar = computeEffectiveCharacter(mainChar);
+        const effectiveChar = computeEffectiveCharacter(mainChar, buildCurrentCharacterSnapshotMap());
         const nextEffectiveChar = applyUpdatesToCharacterSnapshot(effectiveChar, charUpdates);
         const currentPayload = toCharacterStateSnapshotPayload(effectiveChar);
         const nextPayload = stampFieldChangeMetadata(
@@ -5169,18 +4007,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           statePayload: nextPayload,
         });
 
-        setCharacterStateSnapshots((prev) => {
-          const next = [...prev];
-          const index = next.findIndex(
-            (entry) =>
-              entry.characterId === persistedSnapshot.characterId &&
-              entry.sourceMessageId === persistedSnapshot.sourceMessageId &&
-              entry.sourceGenerationId === persistedSnapshot.sourceGenerationId,
-          );
-          if (index === -1) next.push(persistedSnapshot);
-          else next[index] = persistedSnapshot;
-          return next;
-        });
+        upsertCharacterSnapshotInRuntimeState(persistedSnapshot);
 
         debugLog(`[applyExtractedUpdates] Persisted canonical snapshot for ${mainChar.name}:`, Object.keys(nextPayload));
       } else if (sideChar) {
@@ -5194,7 +4021,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           return;
         }
 
-        const effectiveSideChar = computeEffectiveSideCharacter(sideChar);
+        const effectiveSideChar = computeEffectiveSideCharacter(sideChar, buildCurrentSideCharacterSnapshotMap());
         const nextEffectiveSideChar = applyUpdatesToSideCharacterSnapshot(effectiveSideChar, charUpdates);
         const currentPayload = toSideCharacterStateSnapshotPayload(effectiveSideChar);
         const nextPayload = stampFieldChangeMetadata(
@@ -5223,18 +4050,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           statePayload: nextPayload,
         });
 
-        setSideCharacterSnapshots((prev) => {
-          const next = [...prev];
-          const index = next.findIndex(
-            (entry) =>
-              entry.sideCharacterId === persistedSnapshot.sideCharacterId &&
-              entry.sourceMessageId === persistedSnapshot.sourceMessageId &&
-              entry.sourceGenerationId === persistedSnapshot.sourceGenerationId,
-          );
-          if (index === -1) next.push(persistedSnapshot);
-          else next[index] = persistedSnapshot;
-          return next;
-        });
+        upsertSideCharacterSnapshotInRuntimeState(persistedSnapshot);
 
         debugLog(`[applyExtractedUpdates] Persisted canonical side-character snapshot for ${sideChar.name}:`, Object.keys(nextPayload));
       } else {
@@ -5413,66 +4229,18 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     recordChatDebugSupportCall,
   ]);
 
-  const queueAssistantDerivedWork = (
-    userText: string,
-    aiText: string,
-    sourceMessage: Message,
-  ) => {
-    queueAssistantMemoryExtraction(userText, aiText, sourceMessage);
-
-    evaluateGoalProgress(
-      userText,
-      aiText,
-      sourceMessage.id,
-      sourceMessage.generationId,
-    ).catch(err => {
-      console.error('[queueAssistantDerivedWork] Goal progress evaluation failed:', err);
-    });
-
-    goalAlignmentEvalQueueRef.current = goalAlignmentEvalQueueRef.current
-      .catch(() => undefined)
-      .then(() => evaluateGoalAlignment(
-        userText,
-        aiText,
-        sourceMessage.id,
-        sourceMessage.generationId,
-      ))
-      .catch(err => {
-        console.error('[queueAssistantDerivedWork] Goal alignment evaluation failed:', err);
-      });
-    void goalAlignmentEvalQueueRef.current;
-
-    const extractionMeta: ExtractionRequestMeta = {
-      sourceMessageId: sourceMessage.id,
-      sourceMessageGenerationId: sourceMessage.generationId,
-      reason: 'post_turn_state_sync',
-    };
-
-    extractCharacterUpdatesFromDialogue(userText, aiText, extractionMeta).then(updates => {
-      if (updates.length > 0) {
-        debugLog(
-          `[queueAssistantDerivedWork] Extracted ${updates.length} character updates (${extractionMeta.reason})`,
-          updates,
-        );
-        applyExtractedUpdates(updates, extractionMeta);
-      }
-    }).catch(err => {
-      console.error('[queueAssistantDerivedWork] Character extraction failed:', err);
-    });
-  };
-
-  const queueAssistantDerivedWorkAfterSourcePersist = (
-    messagesToPersist: Message[],
-    userText: string,
-    aiText: string,
-    sourceMessage: Message,
-  ) => {
-    supabaseData.saveNewMessages(conversationId, messagesToPersist).then(() => {
-      queueAssistantDerivedWork(userText, aiText, sourceMessage);
-    }).catch(err => {
-      console.error('[queueAssistantDerivedWork] Skipped derived work because source messages failed to persist:', err);
-    });
-  };
+  const {
+    queueAssistantDerivedWorkAfterSourcePersist,
+  } = usePostTurnSupportQueue<ExtractedUpdate>({
+    conversationId,
+    saveNewMessages: supabaseData.saveNewMessages,
+    queueMemoryExtraction: queueAssistantMemoryExtraction,
+    evaluateGoalProgress,
+    evaluateGoalAlignment,
+    extractCharacterUpdatesFromDialogue,
+    applyExtractedUpdates,
+    debugLog,
+  });
 
   const incrementDay = () => {
     const newDay = currentDay + 1;
@@ -5594,67 +4362,25 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       sessionMessageCountRef.current += 1;
 
       const llmInput = establishedFactNote + input;
-      const collectSendResponse = async (streamToUi = false) => {
-        let responseText = '';
-        let responseDebugTrace: ChatDebugTrace | null = null;
-        let responseCall1Request: ChatDebugRequestRecord | null = null;
-        const candidatePlaceholderMap: PlaceholderNameMap = { ...placeholderMapRef.current };
-        const stream = generateRoleplayResponseStream(
-          llmAppData,
-          conversationId,
-          llmInput,
-          modelId,
-          currentDay,
-          currentTimeOfDay,
-          activeMemories,
-          memoriesEnabled,
-          undefined,
-          sessionMessageCountRef.current,
-          canonicalActiveScene,
-          {
-            debugTrace: isAdmin,
-            onDebugTrace: (trace) => {
-              responseDebugTrace = trace;
-            },
-            onRequestPayload: (request) => {
-              responseCall1Request = request;
-            },
-          }
-        );
-
-        try {
-          for await (const chunk of stream) {
-            responseText += chunk;
-
-            if (streamToUi) {
-              setStreamingContent(responseText);
-
-              // Format streaming content on-the-fly to prevent flickering
-              const existingNamesForStream = getKnownCharacterNames(effectiveAppData);
-              const formatted = sanitizeAssistantOutput(responseText);
-              const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, candidatePlaceholderMap);
-              setFormattedStreamingContent(normalizedText);
-            }
-          }
-        } catch (error) {
-          attachRequestDebugToError(error, responseDebugTrace, responseCall1Request);
-          throw error;
-        }
-
-        let cleanedText = sanitizeAssistantOutput(responseText);
-        const existingNames = getKnownCharacterNames(effectiveAppData);
-        const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, candidatePlaceholderMap);
-        cleanedText = normalizedText;
-
-        return {
-          cleanedText,
-          debugTrace: responseDebugTrace,
-          call1Request: responseCall1Request,
-          placeholderMap: candidatePlaceholderMap,
-        };
-      };
-
-      const responseResult = await collectSendResponse(false);
+      const responseResult = await collectRoleplayResponse({
+        appData: llmAppData,
+        conversationId,
+        userMessage: llmInput,
+        modelId,
+        currentDay,
+        currentTimeOfDay,
+        memories: activeMemories,
+        memoriesEnabled,
+        sessionMessageCount: sessionMessageCountRef.current,
+        activeScene: canonicalActiveScene,
+        debugTrace: isAdmin,
+        placeholderMap: placeholderMapRef.current,
+        knownCharacterNames: getKnownCharacterNames(effectiveAppData),
+        sanitizeAssistantOutput,
+        streamToUi: false,
+        onStreamingContent: setStreamingContent,
+        onFormattedStreamingContent: setFormattedStreamingContent,
+      });
       const cleanedText = responseResult.cleanedText;
       pendingDebugTrace = responseResult.debugTrace;
       pendingCall1Request = responseResult.call1Request;
@@ -5705,7 +4431,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     } catch (err) {
       console.error(err);
       if (err instanceof ContentFilteredChatError) {
-        const errorDebug = readRequestDebugFromError(err, pendingDebugTrace, pendingCall1Request);
+        const errorDebug = readRoleplayRequestDebugFromError(err, pendingDebugTrace, pendingCall1Request);
         const latestBase = latestConversationsRef.current;
         const liveConversation = latestBase.find(c => c.id === conversationId);
         const liveUserMessage = liveConversation?.messages.find(message => message.id === userMsg.id);
@@ -5722,7 +4448,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         return;
       }
       const message = err instanceof Error ? err.message : "Dialogue stream failed. Check your connection or model settings.";
-      const errorDebug = readRequestDebugFromError(err, pendingDebugTrace, pendingCall1Request);
+      const errorDebug = readRoleplayRequestDebugFromError(err, pendingDebugTrace, pendingCall1Request);
       const latestBase = latestConversationsRef.current;
       const liveConversation = latestBase.find(c => c.id === conversationId);
       const liveUserMessage = liveConversation?.messages.find(message => message.id === userMsg.id);
@@ -5984,69 +4710,27 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         truncatedAppData.uiSettings?.responseVerbosity,
       );
 
-      const collectRegenerateResponse = async (streamToUi = false) => {
-        let responseText = '';
-        let responseDebugTrace: ChatDebugTrace | null = null;
-        let responseCall1Request: ChatDebugRequestRecord | null = null;
-        const candidatePlaceholderMap: PlaceholderNameMap = { ...placeholderMapRef.current };
-        const stream = generateRoleplayResponseStream(
-          truncatedAppData,
-          conversationId,
-          regenInput,
-          modelId,
-          currentDay,
-          currentTimeOfDay,
-          truncatedMemories,
-          memoriesEnabled,
-          true,
-          undefined,
-          canonicalActiveScene,
-          {
-            debugTrace: isAdmin,
-            onDebugTrace: (trace) => {
-              responseDebugTrace = trace;
-            },
-            onRequestPayload: (request) => {
-              responseCall1Request = request;
-            },
-          }
-        );
-
-        try {
-          for await (const chunk of stream) {
-            responseText += chunk;
-
-            if (streamToUi) {
-              setStreamingContent(responseText);
-
-              // Format streaming content on-the-fly
-              const existingNamesForStream = getKnownCharacterNames(effectiveAppData);
-              const formatted = sanitizeAssistantOutput(responseText);
-              const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, candidatePlaceholderMap);
-              setFormattedStreamingContent(normalizedText);
-            }
-          }
-        } catch (error) {
-          attachRequestDebugToError(error, responseDebugTrace, responseCall1Request);
-          throw error;
-        }
-
-        let cleanedText = sanitizeAssistantOutput(responseText);
-        const existingNames = getKnownCharacterNames(effectiveAppData);
-        const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, candidatePlaceholderMap);
-        cleanedText = normalizedText;
-
-        return {
-          cleanedText,
-          debugTrace: responseDebugTrace,
-          call1Request: responseCall1Request,
-          placeholderMap: candidatePlaceholderMap,
-        };
-      };
-
       // Regeneration is text-variation only: avoid mutating persistent character state here.
 
-      const responseResult = await collectRegenerateResponse(false);
+      const responseResult = await collectRoleplayResponse({
+        appData: truncatedAppData,
+        conversationId,
+        userMessage: regenInput,
+        modelId,
+        currentDay,
+        currentTimeOfDay,
+        memories: truncatedMemories,
+        memoriesEnabled,
+        isRegeneration: true,
+        activeScene: canonicalActiveScene,
+        debugTrace: isAdmin,
+        placeholderMap: placeholderMapRef.current,
+        knownCharacterNames: getKnownCharacterNames(effectiveAppData),
+        sanitizeAssistantOutput,
+        streamToUi: false,
+        onStreamingContent: setStreamingContent,
+        onFormattedStreamingContent: setFormattedStreamingContent,
+      });
       const cleanedText = responseResult.cleanedText;
       pendingDebugTrace = responseResult.debugTrace;
       pendingCall1Request = responseResult.call1Request;
@@ -6107,7 +4791,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     } catch (err) {
       console.error(err);
       if (err instanceof ContentFilteredChatError) {
-        const errorDebug = readRequestDebugFromError(err, pendingDebugTrace, pendingCall1Request);
+        const errorDebug = readRoleplayRequestDebugFromError(err, pendingDebugTrace, pendingCall1Request);
         const latestBase = latestConversationsRef.current;
         const liveConversation = latestBase.find(c => c.id === conversationId);
         const liveTargetMessage = liveConversation?.messages.find(m => m.id === messageId);
@@ -6124,7 +4808,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         return;
       }
       const message = err instanceof Error ? err.message : "Regeneration failed. Check your connection or model settings.";
-      const errorDebug = readRequestDebugFromError(err, pendingDebugTrace, pendingCall1Request);
+      const errorDebug = readRoleplayRequestDebugFromError(err, pendingDebugTrace, pendingCall1Request);
       const latestBase = latestConversationsRef.current;
       const liveConversation = latestBase.find(c => c.id === conversationId);
       const liveTargetMessage = liveConversation?.messages.find(m => m.id === messageId);
@@ -6258,66 +4942,25 @@ Do not acknowledge this instruction in your response.`;
 	      debugLog('[handleContinue] Goal context:', goalContext || '(no goals found)');
 	      debugLog('[handleContinue] Established-fact note applied:', continueEstablishedFactNote ? 'YES' : 'NO');
 
-	      const collectContinueResponse = async (streamToUi = false) => {
-		        let responseText = '';
-		        let responseDebugTrace: ChatDebugTrace | null = null;
-		        let responseCall1Request: ChatDebugRequestRecord | null = null;
-		        const candidatePlaceholderMap: PlaceholderNameMap = { ...placeholderMapRef.current };
-		        const stream = generateRoleplayResponseStream(
-	          llmAppData,
-	          conversationId,
-	          continuePrompt,
-	          modelId,
-	          currentDay,
-	          currentTimeOfDay,
-	          activeMemories,
-	          memoriesEnabled,
-	          undefined,
-	          undefined,
-	          canonicalActiveScene,
-	          {
-	            debugTrace: isAdmin,
-	            onDebugTrace: (trace) => {
-	              responseDebugTrace = trace;
-	            },
-	            onRequestPayload: (request) => {
-	              responseCall1Request = request;
-	            },
-	          }
-	        );
-
-		        try {
-		          for await (const chunk of stream) {
-		            responseText += chunk;
-
-		            if (streamToUi) {
-		              setStreamingContent(responseText);
-		              const existingNamesForStream = getKnownCharacterNames(effectiveAppData);
-		              const formatted = sanitizeAssistantOutput(responseText);
-		              const { normalizedText } = normalizePlaceholderNames(formatted, existingNamesForStream, candidatePlaceholderMap);
-		              setFormattedStreamingContent(normalizedText);
-		            }
-		          }
-		        } catch (error) {
-		          attachRequestDebugToError(error, responseDebugTrace, responseCall1Request);
-		          throw error;
-		        }
-
-		        let cleanedText = sanitizeAssistantOutput(responseText);
-		        const existingNames = getKnownCharacterNames(effectiveAppData);
-		        const { normalizedText } = normalizePlaceholderNames(cleanedText, existingNames, candidatePlaceholderMap);
-		        cleanedText = normalizedText;
-
-		        return {
-		          cleanedText,
-		          debugTrace: responseDebugTrace,
-		          call1Request: responseCall1Request,
-		          placeholderMap: candidatePlaceholderMap,
-		        };
-		      };
-
-		      const responseResult = await collectContinueResponse(false);
-		      const cleanedText = responseResult.cleanedText;
+      const responseResult = await collectRoleplayResponse({
+        appData: llmAppData,
+        conversationId,
+        userMessage: continuePrompt,
+        modelId,
+        currentDay,
+        currentTimeOfDay,
+        memories: activeMemories,
+        memoriesEnabled,
+        activeScene: canonicalActiveScene,
+        debugTrace: isAdmin,
+        placeholderMap: placeholderMapRef.current,
+        knownCharacterNames: getKnownCharacterNames(effectiveAppData),
+        sanitizeAssistantOutput,
+        streamToUi: false,
+        onStreamingContent: setStreamingContent,
+        onFormattedStreamingContent: setFormattedStreamingContent,
+      });
+      const cleanedText = responseResult.cleanedText;
 	      pendingDebugTrace = responseResult.debugTrace;
 	      pendingCall1Request = responseResult.call1Request;
 	      const candidateStyleTelemetry = analyzeAssistantCandidateStyle(
@@ -6332,7 +4975,7 @@ Do not acknowledge this instruction in your response.`;
         debugLog('[handleContinue] Skipping assistant commit because the conversation tail changed before completion.');
         return;
       }
-			      placeholderMapRef.current = responseResult.placeholderMap;
+      placeholderMapRef.current = responseResult.placeholderMap;
 
       const aiMessageId = uuid();
       const aiMsg: Message = {
@@ -6353,25 +4996,25 @@ Do not acknowledge this instruction in your response.`;
       latestConversationsRef.current = updatedConvs;
       const updatedConversation = updatedConvs.find(c => c.id === conversationId);
       if (updatedConversation) syncAssistantResponseLengths(updatedConversation.messages);
-		      onUpdate(updatedConvs);
-		      onSaveScenario(updatedConvs);
-		      saveChatDebugTrace(aiMsg, pendingDebugTrace, pendingCall1Request);
-		      if (pendingStyleTelemetryCall) recordChatDebugSupportCall(aiMsg, pendingStyleTelemetryCall);
-          if (lastRoleplayMessage) {
-            continueEventsRef.current.push({
-              messageId: lastRoleplayMessage.id,
-              generationId: continueAnchorGenerationId || undefined,
-              timestamp: Date.now(),
-            });
-          }
-		      queueAssistantDerivedWorkAfterSourcePersist([aiMsg], lastUserSceneText, cleanedText, aiMsg);
+      onUpdate(updatedConvs);
+      onSaveScenario(updatedConvs);
+      saveChatDebugTrace(aiMsg, pendingDebugTrace, pendingCall1Request);
+      if (pendingStyleTelemetryCall) recordChatDebugSupportCall(aiMsg, pendingStyleTelemetryCall);
+      if (lastRoleplayMessage) {
+        continueEventsRef.current.push({
+          messageId: lastRoleplayMessage.id,
+          generationId: continueAnchorGenerationId || undefined,
+          timestamp: Date.now(),
+        });
+      }
+      queueAssistantDerivedWorkAfterSourcePersist([aiMsg], lastUserSceneText, cleanedText, aiMsg);
 
       processResponseForNewCharacters(cleanedText, aiMsg);
 
     } catch (err) {
       console.error(err);
       if (err instanceof ContentFilteredChatError) {
-        const errorDebug = readRequestDebugFromError(err, pendingDebugTrace, pendingCall1Request);
+        const errorDebug = readRoleplayRequestDebugFromError(err, pendingDebugTrace, pendingCall1Request);
         const latestBase = latestConversationsRef.current;
         const liveConversation = latestBase.find(c => c.id === conversationId);
         if (!liveConversation || !isContinueAnchorStillCurrent(liveConversation.messages)) {
@@ -6387,7 +5030,7 @@ Do not acknowledge this instruction in your response.`;
         return;
       }
       const message = err instanceof Error ? err.message : "Continue failed. Check your connection or model settings.";
-      const errorDebug = readRequestDebugFromError(err, pendingDebugTrace, pendingCall1Request);
+      const errorDebug = readRoleplayRequestDebugFromError(err, pendingDebugTrace, pendingCall1Request);
       const latestBase = latestConversationsRef.current;
       const liveConversation = latestBase.find(c => c.id === conversationId);
       if (!liveConversation || !isContinueAnchorStillCurrent(liveConversation.messages)) {
