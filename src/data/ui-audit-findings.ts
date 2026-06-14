@@ -6411,6 +6411,31 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260614-006",
+      title: "Storage privacy Stage A — inventory and Stage B target list",
+      summary:
+        "Security · Documented every code path that touches a Supabase Storage bucket and classified scenes + image_library as Stage B private-bucket targets. No bucket settings or call sites changed in Stage A.",
+      severity: "doc" as const,
+      status: "completed" as const,
+      problem:
+        "Finding qh-sec-20260607-003 flagged that private roleplay media (scenes, image_library) is served from public-readable buckets. The fix needs a signed-URL helper and bucket flips, but no inventory existed of every consumer of those buckets, so Stage B could not be planned safely.",
+      plan:
+        "Stage A is documentation only. Catalog every src/ and supabase/ call to getPublicUrl or storage.from for the avatars, covers, backgrounds, guide_images, scenes, and image_library buckets. Classify each bucket as publisher-owned public, app-static public, or Stage B private + signed URL. Leave the finding in-progress until Stage B flips scenes and image_library to private buckets and routes reads through the signed-URL helper.",
+      changes:
+        "Created docs/guides/storage-privacy-migration.md with a bucket classification table and per-bucket code-path inventory. Updated qh-sec-20260607-003 metadata: status set to in-progress, verificationStatus unverified, added Stage A note to evidence, added scan-storage-privacy-stage-a-20260614 tag, added runIds.storageStageA20260614 to relatedRunIds, and recorded a Stage A comment explaining that Stage B will flip buckets + ship the signed-URL helper before the finding can be marked fixed. Added the new run and this change-log entry to the registry. No SQL, RLS, storage bucket, or runtime code was changed.",
+      filesAffected: [
+        "docs/guides/storage-privacy-migration.md",
+        "src/data/ui-audit-findings.ts",
+      ],
+      agent: "Lovable",
+      relatedFindingIds: ["qh-sec-20260607-003"],
+      relatedRunIds: [runIds.securityDeep20260607, runIds.storageStageA20260614],
+      tags: ["security", "supabase-storage", "privacy", "stage-a", "documentation", "lovable-supabase-required", "quality-hub"],
+      comments: [],
+      createdAt: qualityHubStorageStageA20260614Timestamp,
+      updatedAt: qualityHubStorageStageA20260614Timestamp,
+    },
+    {
       id: "cl-20260614-005",
       title: "Enforce profile privacy server-side via owner-only RLS and redacting RPCs",
       summary:
