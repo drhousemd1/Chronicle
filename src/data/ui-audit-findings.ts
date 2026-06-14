@@ -4758,6 +4758,9 @@ const saveScenarioAtomicOwnership20260614Findings = findingsResolved.filter((f) 
 const charactersParentBinding20260614Findings = findingsResolved.filter((f) =>
   f.tags.includes("scan-characters-parent-binding-20260614"),
 );
+const publishedScenariosOwnership20260614Findings = findingsResolved.filter((f) =>
+  f.tags.includes("scan-published-scenarios-ownership-20260614"),
+);
 const lovableSupabaseRequiredFindings = findingsResolved.filter((f) =>
   f.tags.includes("lovable-supabase-required"),
 );
