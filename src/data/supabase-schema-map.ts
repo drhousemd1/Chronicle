@@ -80,6 +80,7 @@ export interface SchemaFunction {
   volatility: 'IMMUTABLE' | 'STABLE' | 'VOLATILE';
   config: string[] | null;
   definition: string;
+  lastUpdatedNote?: string;
 }
 
 export interface SchemaEnum {
@@ -5535,6 +5536,14 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "notNull": true,
           "ordinal": 9,
           "isIdentity": false
+        },
+        {
+          "name": "image_path",
+          "type": "text",
+          "default": null,
+          "notNull": false,
+          "ordinal": 10,
+          "isIdentity": false
         }
       ],
       "comment": null,
@@ -8028,6 +8037,14 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "notNull": false,
           "ordinal": 7,
           "isIdentity": false
+        },
+        {
+          "name": "image_path",
+          "type": "text",
+          "default": null,
+          "notNull": false,
+          "ordinal": 8,
+          "isIdentity": false
         }
       ],
       "comment": null,
@@ -9986,8 +10003,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       ],
       "language": "sql",
       "arguments": "",
-      "definition": "CREATE OR REPLACE FUNCTION public.get_folders_with_details()\n RETURNS TABLE(id uuid, user_id uuid, name text, description text, thumbnail_image_id uuid, thumbnail_url text, image_count bigint, created_at timestamp with time zone, updated_at timestamp with time zone)\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\n  SELECT\n    f.id,\n    f.user_id,\n    f.name,\n    f.description,\n    f.thumbnail_image_id,\n    COALESCE(\n      thumb.image_url,\n      first_img.image_url\n    ) AS thumbnail_url,\n    COALESCE(cnt.c, 0) AS image_count,\n    f.created_at,\n    f.updated_at\n  FROM image_folders f\n  LEFT JOIN library_images thumb\n    ON thumb.id = f.thumbnail_image_id\n  LEFT JOIN LATERAL (\n    SELECT li.image_url\n    FROM library_images li\n    WHERE li.folder_id = f.id\n    ORDER BY li.created_at ASC\n    LIMIT 1\n  ) first_img ON f.thumbnail_image_id IS NULL\n  LEFT JOIN LATERAL (\n    SELECT count(*) AS c\n    FROM library_images li\n    WHERE li.folder_id = f.id\n  ) cnt ON true\n  WHERE f.user_id = auth.uid()\n  ORDER BY f.updated_at DESC;\n$function$\n",
-      "returnType": "TABLE(id uuid, user_id uuid, name text, description text, thumbnail_image_id uuid, thumbnail_url text, image_count bigint, created_at timestamp with time zone, updated_at timestamp with time zone)",
+      "definition": "Updated by migration 20260614100132 to expose thumbnail_path alongside thumbnail_url. STABLE SECURITY DEFINER. Returns one row per image_folders owned by auth.uid(). thumbnail_url + thumbnail_path come from the folder's pinned thumbnail_image_id (library_images.image_url/image_path), falling back to the oldest image in the folder. image_count is COUNT(*) of library_images in the folder. image_path is null for legacy rows that were never backfilled and is the canonical reference for signed-URL minting against the private image_library bucket.",
+      "returnType": "TABLE(id uuid, user_id uuid, name text, description text, thumbnail_image_id uuid, thumbnail_url text, thumbnail_path text, image_count bigint, created_at timestamp with time zone, updated_at timestamp with time zone)",
       "volatility": "STABLE",
       "securityDefiner": true
     },
@@ -9998,8 +10015,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       ],
       "language": "sql",
       "arguments": "p_user_id uuid",
-      "definition": "CREATE OR REPLACE FUNCTION public.get_folders_with_details(p_user_id uuid)\n RETURNS TABLE(id uuid, user_id uuid, name text, description text, thumbnail_image_id uuid, thumbnail_url text, image_count bigint, created_at timestamp with time zone, updated_at timestamp with time zone)\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\n  SELECT\n    f.id,\n    f.user_id,\n    f.name,\n    f.description,\n    f.thumbnail_image_id,\n    COALESCE(\n      thumb.image_url,\n      first_img.image_url\n    ) AS thumbnail_url,\n    COALESCE(cnt.c, 0) AS image_count,\n    f.created_at,\n    f.updated_at\n  FROM image_folders f\n  LEFT JOIN library_images thumb\n    ON thumb.id = f.thumbnail_image_id\n  LEFT JOIN LATERAL (\n    SELECT li.image_url\n    FROM library_images li\n    WHERE li.folder_id = f.id\n    ORDER BY li.created_at ASC\n    LIMIT 1\n  ) first_img ON f.thumbnail_image_id IS NULL\n  LEFT JOIN LATERAL (\n    SELECT count(*) AS c\n    FROM library_images li\n    WHERE li.folder_id = f.id\n  ) cnt ON true\n  WHERE f.user_id = p_user_id\n  ORDER BY f.updated_at DESC;\n$function$\n",
-      "returnType": "TABLE(id uuid, user_id uuid, name text, description text, thumbnail_image_id uuid, thumbnail_url text, image_count bigint, created_at timestamp with time zone, updated_at timestamp with time zone)",
+      "definition": "Deprecated overload retained for backward compatibility. Same shape as the no-arg overload (updated 2026-06-14 to expose thumbnail_path) but filters by an explicit p_user_id rather than auth.uid().",
+      "returnType": "TABLE(id uuid, user_id uuid, name text, description text, thumbnail_image_id uuid, thumbnail_url text, thumbnail_path text, image_count bigint, created_at timestamp with time zone, updated_at timestamp with time zone)",
       "volatility": "STABLE",
       "securityDefiner": true
     },
@@ -10023,6 +10040,18 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "language": "sql",
       "arguments": "_user_id uuid, _role app_role",
       "definition": "CREATE OR REPLACE FUNCTION public.has_role(_user_id uuid, _role app_role)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\n  SELECT EXISTS (\n    SELECT 1 FROM public.user_roles\n    WHERE user_id = _user_id AND role = _role\n  )\n$function$\n",
+      "returnType": "boolean",
+      "volatility": "STABLE",
+      "securityDefiner": true
+    },
+    {
+      "name": "can_read_scene_storage_object",
+      "config": [
+        "search_path=public"
+      ],
+      "language": "plpgsql",
+      "arguments": "p_path text",
+      "definition": "STABLE SECURITY DEFINER predicate added by migrations 20260614100132 and 20260614110123. Returns true when caller is the owner segment of the path, OR caller has app_role 'admin', OR there exists a public.scenes row with image_path = p_path whose parent scenario is published (is_published=true AND is_hidden=false) and whose publisher's profile does not have hide_published_works=true. Used exclusively by the 'Owners admins or published scenes can view' storage.objects policy on the private scenes bucket to gate signed-URL minting and direct object reads.",
       "returnType": "boolean",
       "volatility": "STABLE",
       "securityDefiner": true
@@ -10089,7 +10118,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "definition": "CREATE OR REPLACE FUNCTION public.save_scenario_atomic(p_scenario_id uuid, p_user_id uuid, p_story jsonb, p_characters jsonb DEFAULT '[]'::jsonb, p_codex_entries jsonb DEFAULT '[]'::jsonb, p_scenes jsonb DEFAULT '[]'::jsonb)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  char_record jsonb;\n  codex_record jsonb;\n  scene_record jsonb;\n  incoming_char_ids uuid[];\n  incoming_codex_ids uuid[];\n  incoming_scene_ids uuid[];\n  v_story_existed boolean := false;\n  v_rows integer;\n  v_id uuid;\nBEGIN\n  -- Auth gate\n  IF auth.uid() IS NULL OR auth.uid() <> p_user_id THEN\n    RAISE EXCEPTION 'Unauthorized';\n  END IF;\n\n  -- Pre-flight: reject if scenario exists and belongs to another user\n  PERFORM 1 FROM public.stories\n    WHERE id = p_scenario_id AND user_id <> p_user_id;\n  IF FOUND THEN\n    RAISE EXCEPTION 'Unauthorized: scenario owned by another user';\n  END IF;\n\n  -- Track whether story already existed (owned by caller)\n  SELECT EXISTS(\n    SELECT 1 FROM public.stories WHERE id = p_scenario_id AND user_id = p_user_id\n  ) INTO v_story_existed;\n\n  -- 1. Upsert the story record (guarded)\n  INSERT INTO stories (\n    id, user_id, title, description, cover_image_url, cover_image_position,\n    tags, world_core, ui_settings, opening_dialog, selected_model,\n    selected_art_style, version, is_draft, nav_button_images\n  ) VALUES (\n    p_scenario_id,\n    p_user_id,\n    COALESCE(p_story->>'title', 'Untitled Story'),\n    COALESCE(p_story->>'description', ''),\n    COALESCE(p_story->>'cover_image_url', ''),\n    COALESCE((p_story->'cover_image_position')::jsonb, '{\"x\":50,\"y\":50}'::jsonb),\n    COALESCE(ARRAY(SELECT jsonb_array_elements_text(p_story->'tags')), '{}'::text[]),\n    COALESCE((p_story->'world_core')::jsonb, '{}'::jsonb),\n    COALESCE((p_story->'ui_settings')::jsonb, '{\"darkMode\":false,\"showBackgrounds\":true,\"transparentBubbles\":false}'::jsonb),\n    COALESCE((p_story->'opening_dialog')::jsonb, '{\"text\":\"\",\"enabled\":true}'::jsonb),\n    p_story->>'selected_model',\n    COALESCE(p_story->>'selected_art_style', 'cinematic-2-5d'),\n    COALESCE((p_story->>'version')::int, 3),\n    COALESCE((p_story->>'is_draft')::boolean, false),\n    COALESCE((p_story->'nav_button_images')::jsonb, '{}'::jsonb)\n  )\n  ON CONFLICT (id) DO UPDATE SET\n    title = EXCLUDED.title,\n    description = EXCLUDED.description,\n    cover_image_url = EXCLUDED.cover_image_url,\n    cover_image_position = EXCLUDED.cover_image_position,\n    tags = EXCLUDED.tags,\n    world_core = EXCLUDED.world_core,\n    ui_settings = EXCLUDED.ui_settings,\n    opening_dialog = EXCLUDED.opening_dialog,\n    selected_model = EXCLUDED.selected_model,\n    selected_art_style = EXCLUDED.selected_art_style,\n    version = EXCLUDED.version,\n    is_draft = EXCLUDED.is_draft,\n    nav_button_images = EXCLUDED.nav_button_images,\n    updated_at = now()\n  WHERE public.stories.user_id = p_user_id;\n\n  GET DIAGNOSTICS v_rows = ROW_COUNT;\n  IF v_story_existed AND v_rows = 0 THEN\n    RAISE EXCEPTION 'Unauthorized: story ownership guard blocked update for scenario %', p_scenario_id;\n  END IF;\n\n  -- 2. Sync characters: delete removed, upsert current (guarded)\n  SELECT ARRAY(SELECT (elem->>'id')::uuid FROM jsonb_array_elements(p_characters) AS elem)\n    INTO incoming_char_ids;\n\n  DELETE FROM characters\n    WHERE scenario_id = p_scenario_id\n    AND id != ALL(incoming_char_ids);\n\n  FOR char_record IN SELECT * FROM jsonb_array_elements(p_characters) LOOP\n    v_id := (char_record->>'id')::uuid;\n    INSERT INTO characters (\n      id, user_id, scenario_id, name, nicknames, age, sex_type, sexual_orientation,\n      location, current_mood, controlled_by, character_role, role_description,\n      tags, avatar_url, avatar_position, physical_appearance, currently_wearing,\n      preferred_clothing, personality, goals, background, tone, key_life_events,\n      relationships, secrets, fears, sections, is_library\n    ) VALUES (\n      v_id,\n      p_user_id,\n      p_scenario_id,\n      COALESCE(char_record->>'name', ''),\n      COALESCE(char_record->>'nicknames', ''),\n      COALESCE(char_record->>'age', ''),\n      char_record->>'sex_type',\n      COALESCE(char_record->>'sexual_orientation', ''),\n      COALESCE(char_record->>'location', ''),\n      COALESCE(char_record->>'current_mood', ''),\n      char_record->>'controlled_by',\n      char_record->>'character_role',\n      COALESCE(char_record->>'role_description', ''),\n      char_record->>'tags',\n      char_record->>'avatar_url',\n      COALESCE((char_record->'avatar_position')::jsonb, '{\"x\":50,\"y\":50}'::jsonb),\n      COALESCE((char_record->'physical_appearance')::jsonb, '{}'::jsonb),\n      COALESCE((char_record->'currently_wearing')::jsonb, '{}'::jsonb),\n      COALESCE((char_record->'preferred_clothing')::jsonb, '{}'::jsonb),\n      (char_record->'personality')::jsonb,\n      COALESCE((char_record->'goals')::jsonb, '[]'::jsonb),\n      COALESCE((char_record->'background')::jsonb, '{}'::jsonb),\n      COALESCE((char_record->'tone')::jsonb, '{}'::jsonb),\n      COALESCE((char_record->'key_life_events')::jsonb, '{}'::jsonb),\n      COALESCE((char_record->'relationships')::jsonb, '{}'::jsonb),\n      COALESCE((char_record->'secrets')::jsonb, '{}'::jsonb),\n      COALESCE((char_record->'fears')::jsonb, '{}'::jsonb),\n      COALESCE((char_record->'sections')::jsonb, '[]'::jsonb),\n      COALESCE((char_record->>'is_library')::boolean, false)\n    )\n    ON CONFLICT (id) DO UPDATE SET\n      name = EXCLUDED.name,\n      nicknames = EXCLUDED.nicknames,\n      age = EXCLUDED.age,\n      sex_type = EXCLUDED.sex_type,\n      sexual_orientation = EXCLUDED.sexual_orientation,\n      location = EXCLUDED.location,\n      current_mood = EXCLUDED.current_mood,\n      controlled_by = EXCLUDED.controlled_by,\n      character_role = EXCLUDED.character_role,\n      role_description = EXCLUDED.role_description,\n      tags = EXCLUDED.tags,\n      avatar_url = EXCLUDED.avatar_url,\n      avatar_position = EXCLUDED.avatar_position,\n      physical_appearance = EXCLUDED.physical_appearance,\n      currently_wearing = EXCLUDED.currently_wearing,\n      preferred_clothing = EXCLUDED.preferred_clothing,\n      personality = EXCLUDED.personality,\n      goals = EXCLUDED.goals,\n      background = EXCLUDED.background,\n      tone = EXCLUDED.tone,\n      key_life_events = EXCLUDED.key_life_events,\n      relationships = EXCLUDED.relationships,\n      secrets = EXCLUDED.secrets,\n      fears = EXCLUDED.fears,\n      sections = EXCLUDED.sections,\n      is_library = EXCLUDED.is_library,\n      updated_at = now()\n    WHERE public.characters.user_id = p_user_id\n      AND public.characters.scenario_id = p_scenario_id;\n\n    GET DIAGNOSTICS v_rows = ROW_COUNT;\n    IF v_rows = 0 THEN\n      RAISE EXCEPTION 'Unauthorized: characters row % blocked by ownership guard', v_id;\n    END IF;\n  END LOOP;\n\n  -- 3. Sync codex entries: delete removed, upsert current (guarded)\n  SELECT ARRAY(SELECT (elem->>'id')::uuid FROM jsonb_array_elements(p_codex_entries) AS elem)\n    INTO incoming_codex_ids;\n\n  DELETE FROM codex_entries\n    WHERE scenario_id = p_scenario_id\n    AND id != ALL(incoming_codex_ids);\n\n  FOR codex_record IN SELECT * FROM jsonb_array_elements(p_codex_entries) LOOP\n    v_id := (codex_record->>'id')::uuid;\n    INSERT INTO codex_entries (id, scenario_id, title, body)\n    VALUES (\n      v_id,\n      p_scenario_id,\n      COALESCE(codex_record->>'title', ''),\n      COALESCE(codex_record->>'body', '')\n    )\n    ON CONFLICT (id) DO UPDATE SET\n      title = EXCLUDED.title,\n      body = EXCLUDED.body,\n      updated_at = now()\n    WHERE public.codex_entries.scenario_id = p_scenario_id;\n\n    GET DIAGNOSTICS v_rows = ROW_COUNT;\n    IF v_rows = 0 THEN\n      RAISE EXCEPTION 'Unauthorized: codex_entries row % blocked by ownership guard', v_id;\n    END IF;\n  END LOOP;\n\n  -- 4. Sync scenes: delete removed, upsert current (guarded)\n  SELECT ARRAY(SELECT (elem->>'id')::uuid FROM jsonb_array_elements(p_scenes) AS elem)\n    INTO incoming_scene_ids;\n\n  DELETE FROM scenes\n    WHERE scenario_id = p_scenario_id\n    AND id != ALL(incoming_scene_ids);\n\n  FOR scene_record IN SELECT * FROM jsonb_array_elements(p_scenes) LOOP\n    v_id := (scene_record->>'id')::uuid;\n    INSERT INTO scenes (id, scenario_id, image_url, tags, is_starting_scene)\n    VALUES (\n      v_id,\n      p_scenario_id,\n      scene_record->>'image_url',\n      COALESCE(ARRAY(SELECT jsonb_array_elements_text(scene_record->'tags')), '{}'::text[]),\n      COALESCE((scene_record->>'is_starting_scene')::boolean, false)\n    )\n    ON CONFLICT (id) DO UPDATE SET\n      image_url = EXCLUDED.image_url,\n      tags = EXCLUDED.tags,\n      is_starting_scene = EXCLUDED.is_starting_scene\n    WHERE public.scenes.scenario_id = p_scenario_id;\n\n    GET DIAGNOSTICS v_rows = ROW_COUNT;\n    IF v_rows = 0 THEN\n      RAISE EXCEPTION 'Unauthorized: scenes row % blocked by ownership guard', v_id;\n    END IF;\n  END LOOP;\nEND;\n$function$\n\n",
       "returnType": "void",
       "volatility": "VOLATILE",
-      "securityDefiner": true
+      "securityDefiner": true,
+      "lastUpdatedNote": "Definition string above is the pre-Stage-B body. Migration 20260614100132 extended the scenes upsert: INSERT now writes image_path = NULLIF(scene_record->>'image_path',''), and ON CONFLICT DO UPDATE SET adds image_path = EXCLUDED.image_path. Behavior otherwise unchanged. See migration file for the current full body."
     },
     {
       "name": "set_admin_access",
@@ -10207,7 +10237,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       {
         "id": "image_library",
         "name": "image_library",
-        "public": true,
+        "public": false,
         "createdAt": "2026-01-29T06:15:59.051603+00:00",
         "fileSizeLimit": null,
         "allowedMimeTypes": null
@@ -10215,7 +10245,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       {
         "id": "scenes",
         "name": "scenes",
-        "public": true,
+        "public": false,
         "createdAt": "2026-01-16T06:02:07.392815+00:00",
         "fileSizeLimit": null,
         "allowedMimeTypes": null
@@ -10280,9 +10310,9 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "withCheck": null
       },
       {
-        "name": "Anyone can view scenes",
+        "name": "Owners admins or published scenes can view",
         "roles": null,
-        "using": "(bucket_id = 'scenes'::text)",
+        "using": "((bucket_id = 'scenes'::text) AND can_read_scene_storage_object(name))",
         "command": "SELECT",
         "withCheck": null
       },
@@ -10416,9 +10446,9 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "withCheck": "((bucket_id = 'image_library'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))"
       },
       {
-        "name": "Users can view image_library",
+        "name": "Owners can view own image_library",
         "roles": null,
-        "using": "(bucket_id = 'image_library'::text)",
+        "using": "((bucket_id = 'image_library'::text) AND (((auth.uid())::text = (storage.foldername(name))[1]) OR has_role(auth.uid(), 'admin'::app_role)))",
         "command": "SELECT",
         "withCheck": null
       }

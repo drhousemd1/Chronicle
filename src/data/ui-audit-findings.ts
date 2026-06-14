@@ -67,6 +67,7 @@ const runIds = {
   galleryCounterIntegrity20260614: "run-lovable-gallery-counter-integrity-20260614",
   profilePrivacyEnforcement20260614: "run-lovable-profile-privacy-enforcement-20260614",
   storageStageA20260614: "run-lovable-storage-privacy-stage-a-20260614",
+  storagePrivacyStageB20260614: "run-lovable-storage-privacy-stage-b-20260614",
 } as const;
 
 const qualityHubHousekeepingScanTimestamp = "2026-05-30T19:22:16.000-06:00";
@@ -94,6 +95,7 @@ const qualityHubPublishedScenariosOwnership20260614Timestamp = "2026-06-14T08:00
 const qualityHubGalleryCounterIntegrity20260614Timestamp = "2026-06-14T08:30:00.000Z";
 const qualityHubProfilePrivacyEnforcement20260614Timestamp = "2026-06-14T09:00:00.000Z";
 const qualityHubStorageStageA20260614Timestamp = "2026-06-14T09:30:00.000Z";
+const qualityHubStoragePrivacyStageB20260614Timestamp = "2026-06-14T11:15:00.000Z";
 
 function stamp(runId: string) {
   return {
@@ -577,9 +579,17 @@ const findings: QualityFinding[] = [
       "supabase/migrations/20260116074008_bf01783c-7103-4f68-87d0-b771df78cc28.sql",
       "supabase/migrations/20260117105449_b3da9c51-aeac-4c54-8600-c803cb424bdc.sql",
       "supabase/migrations/20260129061559_3948ce7f-b8a5-4dfc-ba48-56532095fddc.sql",
+      "supabase/migrations/20260614100132_5a48760f-99bb-4518-875e-582b86e43480.sql",
+      "supabase/migrations/20260614100327_b44457a0-db46-4327-b4cd-f89faf0a2d59.sql",
+      "supabase/migrations/20260614101828_f8eaf601-dbab-46e4-9c6e-bac43faad060.sql",
+      "supabase/migrations/20260614110123_f5920e48-fe09-4103-8fe8-c0ddce58a979.sql",
       "src/services/persistence/media-settings.ts",
       "src/services/persistence/shared.ts",
+      "src/services/persistence/signed-media.ts",
+      "src/services/persistence/library-copy.ts",
       "src/components/chronicle/ImageLibraryTab.tsx",
+      "src/features/story-builder/hooks/use-story-builder-media.ts",
+      "docs/guides/storage-privacy-migration.md",
     ],
     "Buckets used for avatars, scenes, covers, backgrounds, and image-library uploads are public-readable or have broad SELECT policies, while the app uses them for private adult roleplay media and returns public URLs.",
     "Row-level security protects database rows, not public storage URLs. Think of it like locking the file cabinet but leaving photocopies on a public table if someone knows where to look.",
@@ -589,20 +599,32 @@ const findings: QualityFinding[] = [
     "large",
     runIds.securityDeep20260607,
     {
-      status: "in-progress",
-      verificationStatus: "unverified",
+      status: "fixed",
+      verificationStatus: "verified",
+      verifiedBy: stamp(runIds.storagePrivacyStageB20260614),
       route: "media persistence and image library",
       component: "Supabase Storage buckets",
+      currentState:
+        "scenes and image_library storage buckets are PRIVATE (storage.buckets.public=false). scenes SELECT is gated by storage policy 'Owners admins or published scenes can view' which calls public.can_read_scene_storage_object(name): owner OR admin OR (image_path matches a published, non-hidden scenario whose publisher does not have hide_published_works=true). image_library SELECT is gated by 'Owners can view own image_library' (owner folder segment OR admin). All persisted references store the storage path (scenes.image_path / library_images.image_path) and rendering routes through src/services/persistence/signed-media.ts (createSignedUrl with in-memory caching, never persisted). avatars, covers, backgrounds, and guide_images remain intentionally public (publisher-owned public / app-static public per the Stage A classification).",
       evidence: [
         "`avatars` and `scenes` have `Anyone can view` storage object policies.",
         "`covers`, `backgrounds`, and `image_library` are created or read as public buckets.",
         "Persistence helpers call `getPublicUrl` for media stored under these buckets.",
         "Stage A (2026-06-14): docs/guides/storage-privacy-migration.md catalogs every code path against each bucket and classifies `scenes` and `image_library` as Stage B private-bucket targets. No bucket settings, RLS, or code paths changed in Stage A.",
+        "Stage B migrations 20260614100132, 20260614100327, 20260614101828, 20260614110123: added scenes.image_path + library_images.image_path columns (backfilled from legacy public URLs), created public.can_read_scene_storage_object(text) STABLE SECURITY DEFINER, updated get_folders_with_details to expose thumbnail_path, updated save_scenario_atomic to persist scenes.image_path, dropped legacy 'Anyone can view scenes' and 'Users can view image_library' storage policies, added 'Owners admins or published scenes can view' and 'Owners can view own image_library'.",
+        "Bucket flip: scenes and image_library both flipped to public=false via supabase--storage_update_bucket.",
+        "Runtime probes (2026-06-14T11:10Z) — Cold public URL GET on legacy /storage/v1/object/public/scenes/<owner>/<file>.jpg returns HTTP 400 for both an unpublished scene and a published scene (bucket is private, public path disabled).",
+        "Runtime probes — Anonymous POST /storage/v1/object/sign/scenes/<owner>/<unpublished-file>.jpg returns HTTP 400 with {not_found}. Anonymous POST /storage/v1/object/sign/scenes/<owner>/<published-visible-file>.jpg returns HTTP 200 with a signed URL; GET on that signed URL returns HTTP 200.",
+        "Runtime probes — Owner JWT POST /storage/v1/object/sign/scenes/<own-unpublished-file>.jpg returns HTTP 200; GET on the signed URL returns HTTP 200. Owner JWT POST /storage/v1/object/sign/image_library/<own-file>.jpg returns HTTP 200; GET returns HTTP 200. Anonymous POST against image_library returns HTTP 400.",
+        "Policy emulation probes (set_config('request.jwt.claims', ...)) confirm can_read_scene_storage_object: owner-on-own-unpublished=true, non-owner-on-unpublished=false, non-owner-on-published-visible=true, anon-on-unpublished=false. Hidden/private publisher case (hide_published_works=true) has no live data; the predicate's COALESCE(p.hide_published_works,false)=false branch enforces the requirement by construction.",
+        "Browser smoke (owner JWT, Story Builder + My Stories): zero requests to /storage/v1/object/public/scenes/ or /storage/v1/object/public/image_library/ were observed during navigation; cover/avatar public URLs continue to load 200 OK from their still-public buckets, as expected by the Stage A classification.",
+        "Supabase linter (2026-06-14): 36 findings unchanged from prior runs. The 4 'Public Bucket Allows Listing' warnings cover avatars/backgrounds/covers/guide_images (intentionally public per Stage A) and the SECURITY DEFINER function warnings are pre-existing; no new warnings were introduced by the Stage B migrations or the bucket flips.",
+        "Static greps: rg 'getPublicUrl\\(.+(scenes|image_library)' src returns no matches. rg 'storage://' against rendered img src returns no matches. createSignedUrl is called only from src/services/persistence/signed-media.ts and src/services/persistence/library-copy.ts.",
       ],
       expectedBehavior: "Private roleplay media uses private object storage and owner-checked signed URL access.",
       actualBehavior: "Private/draft media paths are stored in buckets whose objects can be publicly fetched by URL.",
-      tags: ["module-security", "module-security-storage-policies", "module-security-data-visibility", "scan-security-deep-20260607", "supabase-storage", "privacy", "lovable-supabase-required", "scan-storage-privacy-stage-a-20260614"],
-      relatedRunIds: [runIds.securityDeep20260607, runIds.storageStageA20260614],
+      tags: ["module-security", "module-security-storage-policies", "module-security-data-visibility", "scan-security-deep-20260607", "supabase-storage", "privacy", "lovable-supabase-required", "scan-storage-privacy-stage-a-20260614", "scan-storage-privacy-stage-b-20260614"],
+      relatedRunIds: [runIds.securityDeep20260607, runIds.storageStageA20260614, runIds.storagePrivacyStageB20260614],
       comments: [
         {
           id: "stage-a-note-qh-sec-20260607-003-20260614",
@@ -610,9 +632,75 @@ const findings: QualityFinding[] = [
           timestamp: qualityHubStorageStageA20260614Timestamp,
           text: "Stage A complete: storage bucket inventory documented at docs/guides/storage-privacy-migration.md, classifying avatars/covers/backgrounds/guide_images as publisher-owned public and scenes/image_library as Stage B private+signed-URL targets. Finding stays in-progress until Stage B flips the buckets and routes reads through a signed-URL helper.",
         },
+        {
+          id: "stage-b-fix-note-qh-sec-20260607-003-20260614",
+          author: "Lovable",
+          timestamp: qualityHubStoragePrivacyStageB20260614Timestamp,
+          text: "Stage B complete and verified. Migrations 20260614100132, 20260614100327, 20260614101828, 20260614110123 added scenes/library_images.image_path, public.can_read_scene_storage_object(text), and the new owner/published-gated storage policies (replacing 'Anyone can view scenes' and 'Users can view image_library'). scenes and image_library buckets flipped to private. Frontend now persists imagePath and renders through createSignedUrl via signed-media.ts and library-copy.ts. Full access matrix runtime + policy probes pass (cold public 400, anon-unpublished 400, anon-published 200, owner-unpublished 200, owner-library 200, anon-library 400). Schema snapshots refreshed in src/data/supabase-schema-map.ts and src/data/database-schema-inventory.ts. Cross-user export/import portability for private scene images was descoped to follow-up finding qh-port-20260614-001 (functionality/portability, not a public-storage exposure).",
+        },
       ],
       createdAt: qualityHubSecurityDeep20260607Timestamp,
-      updatedAt: qualityHubStorageStageA20260614Timestamp,
+      updatedAt: qualityHubStoragePrivacyStageB20260614Timestamp,
+    },
+  ),
+  finding(
+    "qh-port-20260614-001",
+    "Story export, import, and remix do not copy scene image bytes across owners",
+    "medium",
+    "confirmed",
+    "data-integrity",
+    "Cross-User Portability",
+    "Story Transfer",
+    [
+      "src/lib/story-transfer.ts",
+      "src/services/persistence/scenarios.ts",
+      "src/services/persistence/signed-media.ts",
+      "src/features/story-builder/hooks/use-story-builder-media.ts",
+    ],
+    "Story Transfer (Markdown/JSON/RTF) and the remix-clone flow embed the original owner's scenes.image_path and scenes.image_url. After the Stage B bucket flip, an importing or remixing user is neither the owner nor (necessarily) an admin, and the imported scenario is not yet published, so can_read_scene_storage_object returns false and the importing user's createSignedUrl call fails. Rendered scene tiles surface as empty <img>.",
+    "This is a functionality and portability issue surfaced by the scenes-bucket privacy flip — it is not a re-exposure of private storage. The storage policy is doing the right thing by refusing reads from non-owners; what is missing is a byte-copy of the source scene into the importing user's own scenes folder so the imported scenario references paths the importer can sign.",
+    "Users who import or remix a scenario that uses private scene art will see broken scene previews until they re-upload or regenerate each scene.",
+    "On import/remix, detect owner mismatch (or any case where the importer cannot sign the source path) and copy bytes from the source scenes path into the importing user's scenes/<importer_uid>/ folder, persisting the new image_path. Drop legacy image_url so the renderer hydrates via signed URLs against the new path. Apply the same treatment to library_images when a destination outside the source owner is selected.",
+    "data-layer",
+    "medium",
+    runIds.storagePrivacyStageB20260614,
+    {
+      status: "open",
+      verificationStatus: "unverified",
+      route: "story export / import / remix",
+      component: "src/lib/story-transfer.ts and remix flow",
+      currentState:
+        "Deferred follow-up explicitly split out from qh-sec-20260607-003 so the storage-exposure finding can be closed cleanly. No code change attempted in this pass — Story Transfer still emits raw scene.url / image_path; cross-user imports will render empty scene tiles until a byte-copy importer is added.",
+      evidence: [
+        "src/lib/story-transfer.ts serializes scene.url verbatim into Markdown/JSON/RTF payloads (Stage B audit, 2026-06-14).",
+        "Bucket flip on scenes (2026-06-14): anonymous and non-owner signed-URL mint against another user's unpublished scene path returns HTTP 400 (verified by Stage B access matrix).",
+        "No import path in scenarios persistence currently re-uploads bytes; src/services/persistence/library-copy.ts has the helper shape needed but is wired only to the Image Library picker, not to story import or remix.",
+      ],
+      expectedBehavior:
+        "Imported / remixed scenarios render their scene gallery for the importing user without requiring the source story to be published.",
+      actualBehavior:
+        "Imported / remixed scenarios reference the source owner's private scene paths, so the importing user cannot mint a signed URL and the scene tile renders empty.",
+      tags: [
+        "module-data-quality",
+        "supabase-storage",
+        "story-transfer",
+        "follow-up",
+        "deferred",
+        "scan-storage-privacy-stage-b-20260614",
+        "lovable-supabase-required",
+      ],
+      relatedFindingIds: ["qh-sec-20260607-003"],
+      relatedRunIds: [runIds.storagePrivacyStageB20260614],
+      comments: [
+        {
+          id: "open-note-qh-port-20260614-001-stageB",
+          author: "Lovable",
+          timestamp: qualityHubStoragePrivacyStageB20260614Timestamp,
+          text: "Logged as a separate follow-up at the user's instruction so qh-sec-20260607-003 (storage exposure) can be closed without conflating it with cross-user portability work. Next step: extend src/lib/story-transfer.ts import path and the remix-clone flow to copy bytes from source scene paths into the importing user's scenes/<uid>/ folder and rewrite scenes.image_path before save.",
+        },
+      ],
+      createdAt: qualityHubStoragePrivacyStageB20260614Timestamp,
+      updatedAt: qualityHubStoragePrivacyStageB20260614Timestamp,
     },
   ),
   finding(
@@ -4823,6 +4911,9 @@ const profilePrivacyEnforcement20260614Findings = findingsResolved.filter((f) =>
 const storageStageA20260614Findings = findingsResolved.filter((f) =>
   f.tags.includes("scan-storage-privacy-stage-a-20260614"),
 );
+const storagePrivacyStageB20260614Findings = findingsResolved.filter((f) =>
+  f.tags.includes("scan-storage-privacy-stage-b-20260614"),
+);
 const lovableSupabaseRequiredFindings = findingsResolved.filter((f) =>
   f.tags.includes("lovable-supabase-required"),
 );
@@ -4851,6 +4942,37 @@ const runs: QualityScanRun[] = [
     issueIdsCreated: [],
     issueIdsUpdated: ["qh-sec-20260607-003"],
     changeLogIds: ["cl-20260614-006"],
+  },
+  {
+    id: runIds.storagePrivacyStageB20260614,
+    name: "Lovable Supabase Fix — Storage Privacy Stage B (private buckets + signed URLs)",
+    profile: "standard",
+    status: "completed",
+    startedAt: qualityHubStoragePrivacyStageB20260614Timestamp,
+    finishedAt: qualityHubStoragePrivacyStageB20260614Timestamp,
+    agent: codexAgent,
+    scope: [
+      "module-security",
+      "module-security-storage-policies",
+      "Supabase Storage buckets (scenes, image_library)",
+      "public.can_read_scene_storage_object",
+      "public.get_folders_with_details",
+      "public.save_scenario_atomic",
+      "src/services/persistence/signed-media.ts",
+      "src/services/persistence/library-copy.ts",
+      "src/features/story-builder/hooks/use-story-builder-media.ts",
+      "src/components/chronicle/ImageLibraryTab.tsx",
+      "src/components/chronicle/ImageLibraryPickerModal.tsx",
+      "src/components/chronicle/BackgroundPickerModal.tsx",
+      "src/pages/Index.tsx",
+      "docs/guides/storage-privacy-migration.md",
+    ],
+    summary: summaryFor(storagePrivacyStageB20260614Findings),
+    notes:
+      "Stage B closure for qh-sec-20260607-003. Added scenes.image_path + library_images.image_path (backfilled), public.can_read_scene_storage_object(text), and the new owner/admin/published-gated storage policies; replaced legacy permissive policies; flipped scenes and image_library buckets to private. Frontend rendering routes through createSignedUrl via signed-media.ts; library reuse copies bytes via library-copy.ts. Access matrix: cold public 400, anon-unpublished 400, anon-published 200, owner-unpublished 200, owner-library 200, anon-library 400 (REST + policy emulation). Cross-user import/remix portability deferred to qh-port-20260614-001.",
+    issueIdsCreated: ["qh-port-20260614-001"],
+    issueIdsUpdated: ["qh-sec-20260607-003"],
+    changeLogIds: ["cl-20260614-007"],
   },
   {
     id: runIds.profilePrivacyEnforcement20260614,
@@ -6410,6 +6532,53 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
     },
   ],
   changeLog: [
+    {
+      id: "cl-20260614-007",
+      title: "Storage privacy Stage B — private scenes + image_library buckets with signed-URL helper",
+      summary:
+        "Security · Flipped the scenes and image_library buckets to private, gated SELECT on owner/admin/published-scenario predicates, and routed all media rendering through signed URLs. qh-sec-20260607-003 closed; cross-user import/remix portability spun out as qh-port-20260614-001.",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem:
+        "Per Stage A inventory, the scenes and image_library Supabase Storage buckets were public-readable and the persistence layer returned getPublicUrl strings. Any leaked path exposed private roleplay scene art and personal image-library uploads outside the intended owner-only context. Stage A documented the consumers but made no behavior change.",
+      plan:
+        "Add image_path columns to scenes and library_images (backfilled from legacy public URLs). Introduce public.can_read_scene_storage_object(text) STABLE SECURITY DEFINER predicate (owner OR admin OR published-and-publisher-not-hidden scene). Update get_folders_with_details to expose thumbnail_path. Update save_scenario_atomic to persist scenes.image_path. Drop legacy 'Anyone can view scenes' and 'Users can view image_library' storage policies; add 'Owners admins or published scenes can view' on scenes and 'Owners can view own image_library' on image_library. Flip both buckets to private via the storage tool. Add src/services/persistence/signed-media.ts (cached createSignedUrl) and src/services/persistence/library-copy.ts (cross-bucket byte copy). Migrate every picker consumer to receive imagePath, persist imagePath via Scene model, hydrate previews through signed URLs in scenarios persistence, and update ImageLibraryTab to store/delete by image_path. Verify with REST + policy-emulation access matrix probes, owner browser smoke, and Supabase linter delta.",
+      changes:
+        "Database (Stage B migrations 20260614100132, 20260614100327, 20260614101828, 20260614110123):\n- ALTER TABLE public.scenes ADD COLUMN image_path text; backfill from image_url public URLs.\n- ALTER TABLE public.library_images ADD COLUMN image_path text; backfill from image_url public URLs.\n- CREATE OR REPLACE FUNCTION public.can_read_scene_storage_object(p_path text) RETURNS boolean LANGUAGE plpgsql STABLE SECURITY DEFINER (owner segment OR has_role admin OR EXISTS published-non-hidden scene with image_path = p_path and publisher hide_published_works = false).\n- CREATE OR REPLACE FUNCTION public.get_folders_with_details() now returns thumbnail_path alongside thumbnail_url.\n- CREATE OR REPLACE FUNCTION public.save_scenario_atomic(...): scenes upsert writes image_path = NULLIF(scene_record->>'image_path',''); ON CONFLICT DO UPDATE keeps it in sync.\n- Storage policies: DROP 'Anyone can view scenes' and 'Users can view image_library'. ADD 'Owners admins or published scenes can view' ((bucket_id='scenes') AND can_read_scene_storage_object(name)) and 'Owners can view own image_library' (owner folder segment OR admin).\n\nBuckets:\n- supabase--storage_update_bucket flipped scenes.public=false and image_library.public=false.\n\nFrontend:\n- src/services/persistence/signed-media.ts: cached createSignedUrl resolver for the scenes and image_library private buckets (display-only URLs, never persisted).\n- src/services/persistence/library-copy.ts: copies bytes from image_library into a destination bucket (covers / avatars / backgrounds / scenes) and returns a public URL (public dest) or a storage:// sentinel (private dest).\n- src/services/persistence/scenarios.ts: hydrateScenePreviewUrls resolves signed URLs from imagePath at load time; dbToScene strips storage:// sentinels from the rendered Scene.url so the existing render contract is preserved.\n- src/types.ts: Scene gained imagePath.\n- src/features/story-builder/hooks/use-story-builder-media.ts: handleAddScene and handleSceneGenerate resolve scene.url through getSignedMediaUrl('scenes', imagePath) immediately after upload so freshly uploaded scenes render without relying on public URLs.\n- All six picker consumers wired with explicit destBucket (SceneGalleryActionButtons, CoverImageActionButtons, AvatarActionButtons, UploadSourceMenu, BackgroundPickerModal, SidebarThemeModal). BackgroundPickerModal gained onAddFromLibrary; Index.tsx now creates the user_backgrounds row from the copied bytes rather than passing a URL into onSelectBackground.\n- src/components/chronicle/ImageLibraryTab.tsx: stores image_path on upload, deletes via image_path, and renders folder + image thumbnails through signed URLs.\n- src/components/chronicle/ImageLibraryPickerModal.tsx: rows lacking imagePath render as disabled 'Migration pending' tiles; selecting them is blocked.\n\nVerification:\n- Cold public URL GET on legacy /storage/v1/object/public/scenes/<owner>/<file>.jpg → HTTP 400 (unpublished AND published).\n- Anon POST /storage/v1/object/sign/scenes/<owner>/<unpublished>.jpg → HTTP 400.\n- Anon POST /storage/v1/object/sign/scenes/<owner>/<published-visible>.jpg → HTTP 200; GET signed → HTTP 200.\n- Owner JWT POST /storage/v1/object/sign/scenes/<own-unpublished>.jpg → HTTP 200; GET signed → HTTP 200.\n- Owner JWT POST /storage/v1/object/sign/image_library/<own>.jpg → HTTP 200; GET signed → HTTP 200.\n- Anon POST /storage/v1/object/sign/image_library/<any>.jpg → HTTP 400.\n- Policy emulation (set_config request.jwt.claims): owner-on-own-unpublished=true, non-owner-on-unpublished=false, non-owner-on-published-visible=true, anon-on-unpublished=false. Hidden-publisher branch enforced by COALESCE(p.hide_published_works,false)=false in the predicate.\n- Browser smoke (owner JWT): zero requests to /storage/v1/object/public/scenes/ or /storage/v1/object/public/image_library/ observed during navigation; covers/avatars continue to load from their still-public buckets per Stage A classification.\n- Supabase linter: 36 findings unchanged from prior runs (4 'Public Bucket Allows Listing' on intentionally-public buckets, plus pre-existing SECURITY DEFINER warnings). No new warnings introduced by Stage B.\n- Static greps: rg 'getPublicUrl\\(.+(scenes|image_library)' src → no matches. createSignedUrl restricted to signed-media.ts and library-copy.ts.\n\nDocs / schema:\n- docs/guides/storage-privacy-migration.md updated with the final verified Stage B status and the access matrix.\n- src/data/supabase-schema-map.ts: scenes/image_library bucket public flags flipped to false; legacy storage policies replaced with the new owner/published-gated entries; can_read_scene_storage_object added to the functions section; image_path column appended to scenes and library_images; get_folders_with_details and save_scenario_atomic notes updated.\n- src/data/database-schema-inventory.ts: scenes/library_images columns include image_path; storage_buckets entries for scenes and image_library flipped to private with notes; new storage_policies section captures the two new SELECT policies; functions list updated for get_folders_with_details, save_scenario_atomic, and the new can_read_scene_storage_object.\n\nDeferred:\n- Cross-user import/remix portability of private scene images is now functionality, not exposure. Logged as separate follow-up qh-port-20260614-001 instead of buried in qh-sec-20260607-003.",
+      filesAffected: [
+        "supabase/migrations/20260614100132_5a48760f-99bb-4518-875e-582b86e43480.sql",
+        "supabase/migrations/20260614100327_b44457a0-db46-4327-b4cd-f89faf0a2d59.sql",
+        "supabase/migrations/20260614101828_f8eaf601-dbab-46e4-9c6e-bac43faad060.sql",
+        "supabase/migrations/20260614110123_f5920e48-fe09-4103-8fe8-c0ddce58a979.sql",
+        "src/services/persistence/signed-media.ts",
+        "src/services/persistence/library-copy.ts",
+        "src/services/persistence/scenarios.ts",
+        "src/features/story-builder/hooks/use-story-builder-media.ts",
+        "src/components/chronicle/ImageLibraryTab.tsx",
+        "src/components/chronicle/ImageLibraryPickerModal.tsx",
+        "src/components/chronicle/BackgroundPickerModal.tsx",
+        "src/components/chronicle/SceneGalleryActionButtons.tsx",
+        "src/components/chronicle/CoverImageActionButtons.tsx",
+        "src/components/chronicle/AvatarActionButtons.tsx",
+        "src/components/chronicle/UploadSourceMenu.tsx",
+        "src/components/chronicle/SidebarThemeModal.tsx",
+        "src/components/chronicle/image-library-types.ts",
+        "src/pages/Index.tsx",
+        "src/types.ts",
+        "src/integrations/supabase/types.ts",
+        "src/data/supabase-schema-map.ts",
+        "src/data/database-schema-inventory.ts",
+        "src/data/ui-audit-findings.ts",
+        "docs/guides/storage-privacy-migration.md",
+      ],
+      agent: "Lovable",
+      relatedFindingIds: ["qh-sec-20260607-003", "qh-port-20260614-001"],
+      relatedRunIds: [runIds.securityDeep20260607, runIds.storageStageA20260614, runIds.storagePrivacyStageB20260614],
+      tags: ["security", "supabase-storage", "privacy", "stage-b", "signed-urls", "lovable-supabase-required", "quality-hub"],
+      comments: [],
+      createdAt: qualityHubStoragePrivacyStageB20260614Timestamp,
+      updatedAt: qualityHubStoragePrivacyStageB20260614Timestamp,
+    },
     {
       id: "cl-20260614-006",
       title: "Storage privacy Stage A — inventory and Stage B target list",

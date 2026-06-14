@@ -1746,6 +1746,12 @@ export const databaseSchemaInventory = {
           "default": null
         },
         {
+          "name": "image_path",
+          "type": "text",
+          "nullable": true,
+          "default": null
+        },
+        {
           "name": "filename",
           "type": "text",
           "nullable": true,
@@ -2847,6 +2853,12 @@ export const databaseSchemaInventory = {
           "default": null
         },
         {
+          "name": "image_path",
+          "type": "text",
+          "nullable": true,
+          "default": null
+        },
+        {
           "name": "tags",
           "type": "text[]",
           "nullable": true,
@@ -3549,7 +3561,7 @@ export const databaseSchemaInventory = {
         "library_images"
       ],
       "security": "DEFINER",
-      "description": "RPC: folders with thumbnail + image count"
+      "description": "RPC: folders with thumbnail + image count. Updated 2026-06-14 to also return thumbnail_path (library_images.image_path) for signed-URL minting against the private image_library bucket."
     },
     {
       "name": "save_scenario_atomic",
@@ -3560,7 +3572,17 @@ export const databaseSchemaInventory = {
         "scenes"
       ],
       "security": "DEFINER",
-      "description": "RPC: atomic upsert of story + characters + codex + scenes; ownership-hardened (June 2026) with parent pre-flight, story-update WHERE guard + GET DIAGNOSTICS, and per-row guarded ON CONFLICT DO UPDATE branches for each child table"
+      "description": "RPC: atomic upsert of story + characters + codex + scenes; ownership-hardened (June 2026) with parent pre-flight, story-update WHERE guard + GET DIAGNOSTICS, and per-row guarded ON CONFLICT DO UPDATE branches for each child table. Updated 2026-06-14: scenes upsert now writes image_path = NULLIF(scene_record->>'image_path','') and ON CONFLICT DO UPDATE keeps it in sync."
+    },
+    {
+      "name": "can_read_scene_storage_object",
+      "touches": [
+        "scenes",
+        "published_scenarios",
+        "profiles"
+      ],
+      "security": "DEFINER",
+      "description": "Predicate added 2026-06-14 to gate SELECT on the private scenes storage bucket. Returns true when caller is the owner folder segment of p_path, OR caller has app_role 'admin', OR p_path matches a public.scenes.image_path whose scenario is published (is_published=true AND is_hidden=false) and whose publisher does not have profiles.hide_published_works=true. Used exclusively by the storage.objects policy 'Owners admins or published scenes can view'."
     },
     {
       "name": "update_updated_at_column",
@@ -3582,7 +3604,8 @@ export const databaseSchemaInventory = {
     },
     {
       "name": "scenes",
-      "public": true
+      "public": false,
+      "notes": "Flipped to private 2026-06-14 (Stage B, qh-sec-20260607-003). SELECT gated by storage policy 'Owners admins or published scenes can view' which calls public.can_read_scene_storage_object(name): owner OR admin OR (image_path matches a published, non-hidden scene whose publisher does not have hide_published_works=true). All reads route through createSignedUrl via src/services/persistence/signed-media.ts."
     },
     {
       "name": "covers",
@@ -3594,7 +3617,8 @@ export const databaseSchemaInventory = {
     },
     {
       "name": "image_library",
-      "public": true
+      "public": false,
+      "notes": "Flipped to private 2026-06-14 (Stage B, qh-sec-20260607-003). SELECT gated by storage policy 'Owners can view own image_library': owner folder segment OR admin. Reads route through createSignedUrl via src/services/persistence/signed-media.ts. library-copy.ts copies bytes into a destination bucket when a library image is reused as a cover/avatar/background/scene."
     },
     {
       "name": "guide_images",
@@ -3603,6 +3627,26 @@ export const databaseSchemaInventory = {
     {
       "name": "finance_documents",
       "public": false
+    }
+  ],
+  "storage_policies": [
+    {
+      "bucket": "scenes",
+      "policy": "Owners admins or published scenes can view",
+      "command": "SELECT",
+      "expression": "bucket_id = 'scenes' AND can_read_scene_storage_object(name)",
+      "added": "2026-06-14",
+      "replaces": "Anyone can view scenes",
+      "notes": "Replaces the legacy permissive Anyone-can-view-scenes policy. Allows owner, admin, or anonymous reads of scenes attached to a published, non-hidden scenario whose publisher does not hide their works."
+    },
+    {
+      "bucket": "image_library",
+      "policy": "Owners can view own image_library",
+      "command": "SELECT",
+      "expression": "bucket_id = 'image_library' AND ((auth.uid())::text = (storage.foldername(name))[1] OR has_role(auth.uid(), 'admin'))",
+      "added": "2026-06-14",
+      "replaces": "Users can view image_library",
+      "notes": "Owner-only (plus admin) SELECT on the private image_library bucket. Anonymous GETs return 400; signed-URL minting requires the owner JWT."
     }
   ],
   "edge_functions": [
