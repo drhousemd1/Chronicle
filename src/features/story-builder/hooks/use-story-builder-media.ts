@@ -399,9 +399,14 @@ export function useStoryBuilderMedia({
       let finalPath: string | null = null;
       try {
         const uploaded = await compressAndUpload(data.imageUrl, 'scenes', userId, 1024, 768, 0.85);
-        finalUrl = uploaded;
         const m = /\/scenes\/(.+)$/.exec(uploaded);
         finalPath = m ? m[1] : null;
+        if (finalPath) {
+          const signed = await getSignedMediaUrl('scenes', finalPath);
+          finalUrl = signed || uploaded;
+        } else {
+          finalUrl = uploaded;
+        }
       } catch {
         // Use original URL if compression fails.
       }
