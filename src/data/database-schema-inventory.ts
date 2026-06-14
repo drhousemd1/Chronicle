@@ -3561,7 +3561,7 @@ export const databaseSchemaInventory = {
         "library_images"
       ],
       "security": "DEFINER",
-      "description": "RPC: folders with thumbnail + image count"
+      "description": "RPC: folders with thumbnail + image count. Updated 2026-06-14 to also return thumbnail_path (library_images.image_path) for signed-URL minting against the private image_library bucket."
     },
     {
       "name": "save_scenario_atomic",
@@ -3572,7 +3572,17 @@ export const databaseSchemaInventory = {
         "scenes"
       ],
       "security": "DEFINER",
-      "description": "RPC: atomic upsert of story + characters + codex + scenes; ownership-hardened (June 2026) with parent pre-flight, story-update WHERE guard + GET DIAGNOSTICS, and per-row guarded ON CONFLICT DO UPDATE branches for each child table"
+      "description": "RPC: atomic upsert of story + characters + codex + scenes; ownership-hardened (June 2026) with parent pre-flight, story-update WHERE guard + GET DIAGNOSTICS, and per-row guarded ON CONFLICT DO UPDATE branches for each child table. Updated 2026-06-14: scenes upsert now writes image_path = NULLIF(scene_record->>'image_path','') and ON CONFLICT DO UPDATE keeps it in sync."
+    },
+    {
+      "name": "can_read_scene_storage_object",
+      "touches": [
+        "scenes",
+        "published_scenarios",
+        "profiles"
+      ],
+      "security": "DEFINER",
+      "description": "Predicate added 2026-06-14 to gate SELECT on the private scenes storage bucket. Returns true when caller is the owner folder segment of p_path, OR caller has app_role 'admin', OR p_path matches a public.scenes.image_path whose scenario is published (is_published=true AND is_hidden=false) and whose publisher does not have profiles.hide_published_works=true. Used exclusively by the storage.objects policy 'Owners admins or published scenes can view'."
     },
     {
       "name": "update_updated_at_column",
