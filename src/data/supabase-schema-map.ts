@@ -80,6 +80,7 @@ export interface SchemaFunction {
   volatility: 'IMMUTABLE' | 'STABLE' | 'VOLATILE';
   config: string[] | null;
   definition: string;
+  lastUpdatedNote?: string;
 }
 
 export interface SchemaEnum {
