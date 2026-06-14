@@ -1613,6 +1613,35 @@ export type Database = {
           },
         ]
       }
+      scenario_plays: {
+        Row: {
+          id: string
+          played_at: string
+          published_scenario_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          played_at?: string
+          published_scenario_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          played_at?: string
+          published_scenario_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scenario_plays_published_scenario_id_fkey"
+            columns: ["published_scenario_id"]
+            isOneToOne: false
+            referencedRelation: "published_scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scenario_reviews: {
         Row: {
           character_details_complexity: number
@@ -2158,14 +2187,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      decrement_like_count: {
-        Args: { published_id: string }
-        Returns: undefined
-      }
-      decrement_save_count: {
-        Args: { published_id: string }
-        Returns: undefined
-      }
       fetch_gallery_scenarios: {
         Args: {
           p_custom_tags?: string[]
@@ -2229,20 +2250,8 @@ export type Database = {
         }
         Returns: boolean
       }
-      increment_like_count: {
-        Args: { published_id: string }
-        Returns: undefined
-      }
-      increment_play_count: {
-        Args: { published_id: string }
-        Returns: undefined
-      }
-      increment_save_count: {
-        Args: { published_id: string }
-        Returns: undefined
-      }
-      increment_view_count: {
-        Args: { published_id: string }
+      record_scenario_play: {
+        Args: { p_published_scenario_id: string }
         Returns: undefined
       }
       record_scenario_view: {
