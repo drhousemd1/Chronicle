@@ -6189,11 +6189,21 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "comment": null,
       "policies": [
         {
-          "name": "Anyone authenticated can view profiles",
+          "name": "Users can view own profile",
           "roles": [
             "authenticated"
           ],
-          "using": "true",
+          "using": "(auth.uid() = id)",
+          "command": "SELECT",
+          "withCheck": null,
+          "permissive": true
+        },
+        {
+          "name": "Admins can view all profiles",
+          "roles": [
+            "authenticated"
+          ],
+          "using": "has_role(auth.uid(), 'admin'::app_role)",
           "command": "SELECT",
           "withCheck": null,
           "permissive": true
