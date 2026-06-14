@@ -10223,7 +10223,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       {
         "id": "image_library",
         "name": "image_library",
-        "public": true,
+        "public": false,
         "createdAt": "2026-01-29T06:15:59.051603+00:00",
         "fileSizeLimit": null,
         "allowedMimeTypes": null
@@ -10231,7 +10231,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       {
         "id": "scenes",
         "name": "scenes",
-        "public": true,
+        "public": false,
         "createdAt": "2026-01-16T06:02:07.392815+00:00",
         "fileSizeLimit": null,
         "allowedMimeTypes": null
