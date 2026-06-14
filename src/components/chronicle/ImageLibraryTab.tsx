@@ -256,21 +256,24 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
         .eq('folder_id', id);
 
       if (images && images.length > 0) {
-        const filePaths = images.map((img) => {
-          try {
-            const url = new URL(img.image_url);
-            const marker = '/object/public/image_library/';
-            const idx = url.pathname.indexOf(marker);
-            if (idx === -1) {
-              console.warn('Could not extract storage path from:', img.image_url);
+        const { data: imageRows } = await supabase
+          .from('library_images')
+          .select('image_path, image_url')
+          .eq('folder_id', id);
+        const filePaths = (imageRows || [])
+          .map((img: any) => {
+            if (img.image_path) return img.image_path as string;
+            try {
+              const url = new URL(img.image_url);
+              const marker = '/object/public/image_library/';
+              const idx = url.pathname.indexOf(marker);
+              if (idx === -1) return '';
+              return url.pathname.substring(idx + marker.length);
+            } catch {
               return '';
             }
-            return url.pathname.substring(idx + marker.length);
-          } catch {
-            console.warn('Invalid image URL:', img.image_url);
-            return '';
-          }
-        }).filter(Boolean);
+          })
+          .filter(Boolean);
 
         if (filePaths.length > 0) {
           await supabase.storage.from('image_library').remove(filePaths);
@@ -338,22 +341,27 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
 
               if (uploadError) throw uploadError;
 
-              const { data: { publicUrl } } = supabase.storage
-                .from('image_library')
-                .getPublicUrl(path);
+              // image_library is private — store a sentinel in image_url
+              // (NOT NULL legacy column) and the bucket-relative path in
+              // image_path. Render via signed URL at view time.
+              const sentinelUrl = `storage://image_library/${path}`;
 
               const { data: imgData, error: insertError } = await supabase
                 .from('library_images')
                 .insert({
                   user_id: userId,
                   folder_id: selectedFolder.id,
-                  image_url: publicUrl,
+                  image_url: sentinelUrl,
+                  image_path: path,
                   filename: file.name,
-                })
+                } as any)
                 .select()
                 .single();
 
               if (insertError) throw insertError;
+
+              const signed = await getSignedMediaUrl('image_library', path);
+              setSignedUrls((prev) => ({ ...prev, [path]: signed }));
 
               setFolderImages((prev) => [
                 {
@@ -361,6 +369,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
                   userId: imgData.user_id,
                   folderId: imgData.folder_id,
                   imageUrl: imgData.image_url,
+                  imagePath: (imgData as any).image_path || path,
                   filename: imgData.filename || '',
                   title: (imgData as any).title || '',
                   isThumbnail: false,
@@ -400,12 +409,19 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
 
   const executeDeleteImage = async (image: LibraryImage) => {
     try {
-      const url = new URL(image.imageUrl);
-      const marker = '/object/public/image_library/';
-      const idx = url.pathname.indexOf(marker);
-      const filePath = idx !== -1 ? url.pathname.substring(idx + marker.length) : null;
+      let filePath: string | null = image.imagePath || null;
       if (!filePath) {
-        console.warn('Could not extract storage path from:', image.imageUrl);
+        try {
+          const url = new URL(image.imageUrl);
+          const marker = '/object/public/image_library/';
+          const idx = url.pathname.indexOf(marker);
+          filePath = idx !== -1 ? url.pathname.substring(idx + marker.length) : null;
+        } catch {
+          filePath = null;
+        }
+      }
+      if (!filePath) {
+        console.warn('Could not extract storage path for image:', image.id);
       }
       
       if (filePath) {
@@ -448,12 +464,12 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
       setFolders((prev) =>
         prev.map((f) =>
           f.id === selectedFolder.id
-            ? { ...f, thumbnailImageId: image.id, thumbnailUrl: image.imageUrl }
+            ? { ...f, thumbnailImageId: image.id, thumbnailUrl: image.imageUrl, thumbnailPath: image.imagePath || null }
             : f
         )
       );
       setSelectedFolder((prev) =>
-        prev ? { ...prev, thumbnailImageId: image.id, thumbnailUrl: image.imageUrl } : null
+        prev ? { ...prev, thumbnailImageId: image.id, thumbnailUrl: image.imageUrl, thumbnailPath: image.imagePath || null } : null
       );
     } catch (e: any) {
       console.error('Failed to set thumbnail:', e);
