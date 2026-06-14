@@ -4832,6 +4832,27 @@ const housekeepingFindings = findingsResolved.filter((f) =>
 
 const runs: QualityScanRun[] = [
   {
+    id: runIds.storageStageA20260614,
+    name: "Lovable Supabase Fix — Storage Privacy Stage A Inventory",
+    profile: "standard",
+    status: "completed",
+    startedAt: qualityHubStorageStageA20260614Timestamp,
+    finishedAt: qualityHubStorageStageA20260614Timestamp,
+    agent: codexAgent,
+    scope: [
+      "module-security",
+      "module-security-storage-policies",
+      "Supabase Storage buckets",
+      "docs/guides/storage-privacy-migration.md",
+    ],
+    summary: summaryFor(storageStageA20260614Findings),
+    notes:
+      "Stage A documentation pass for finding qh-sec-20260607-003. Cataloged every code path that reads or writes the avatars, covers, backgrounds, guide_images, scenes, and image_library buckets, and classified scenes + image_library as Stage B private-bucket targets. No DB, RLS, storage, or code-path changes were made. Finding stays in-progress until Stage B lands the signed-URL helper and bucket flips.",
+    issueIdsCreated: [],
+    issueIdsUpdated: ["qh-sec-20260607-003"],
+    changeLogIds: ["cl-20260614-006"],
+  },
+  {
     id: runIds.profilePrivacyEnforcement20260614,
     name: "Lovable Supabase Fix — Profile Privacy Enforcement",
     profile: "standard",
