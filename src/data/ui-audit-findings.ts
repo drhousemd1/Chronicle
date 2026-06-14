@@ -66,6 +66,7 @@ const runIds = {
   publishedScenariosOwnership20260614: "run-lovable-published-scenarios-ownership-20260614",
   galleryCounterIntegrity20260614: "run-lovable-gallery-counter-integrity-20260614",
   profilePrivacyEnforcement20260614: "run-lovable-profile-privacy-enforcement-20260614",
+  storageStageA20260614: "run-lovable-storage-privacy-stage-a-20260614",
 } as const;
 
 const qualityHubHousekeepingScanTimestamp = "2026-05-30T19:22:16.000-06:00";
@@ -92,6 +93,7 @@ const qualityHubCharactersParentBinding20260614Timestamp = "2026-06-14T07:30:00.
 const qualityHubPublishedScenariosOwnership20260614Timestamp = "2026-06-14T08:00:00.000Z";
 const qualityHubGalleryCounterIntegrity20260614Timestamp = "2026-06-14T08:30:00.000Z";
 const qualityHubProfilePrivacyEnforcement20260614Timestamp = "2026-06-14T09:00:00.000Z";
+const qualityHubStorageStageA20260614Timestamp = "2026-06-14T09:30:00.000Z";
 
 function stamp(runId: string) {
   return {
@@ -587,19 +589,30 @@ const findings: QualityFinding[] = [
     "large",
     runIds.securityDeep20260607,
     {
+      status: "in-progress",
+      verificationStatus: "unverified",
       route: "media persistence and image library",
       component: "Supabase Storage buckets",
       evidence: [
         "`avatars` and `scenes` have `Anyone can view` storage object policies.",
         "`covers`, `backgrounds`, and `image_library` are created or read as public buckets.",
         "Persistence helpers call `getPublicUrl` for media stored under these buckets.",
+        "Stage A (2026-06-14): docs/guides/storage-privacy-migration.md catalogs every code path against each bucket and classifies `scenes` and `image_library` as Stage B private-bucket targets. No bucket settings, RLS, or code paths changed in Stage A.",
       ],
       expectedBehavior: "Private roleplay media uses private object storage and owner-checked signed URL access.",
       actualBehavior: "Private/draft media paths are stored in buckets whose objects can be publicly fetched by URL.",
-      tags: ["module-security", "module-security-storage-policies", "module-security-data-visibility", "scan-security-deep-20260607", "supabase-storage", "privacy", "lovable-supabase-required"],
-      relatedRunIds: [runIds.securityDeep20260607],
+      tags: ["module-security", "module-security-storage-policies", "module-security-data-visibility", "scan-security-deep-20260607", "supabase-storage", "privacy", "lovable-supabase-required", "scan-storage-privacy-stage-a-20260614"],
+      relatedRunIds: [runIds.securityDeep20260607, runIds.storageStageA20260614],
+      comments: [
+        {
+          id: "stage-a-note-qh-sec-20260607-003-20260614",
+          author: "Lovable",
+          timestamp: qualityHubStorageStageA20260614Timestamp,
+          text: "Stage A complete: storage bucket inventory documented at docs/guides/storage-privacy-migration.md, classifying avatars/covers/backgrounds/guide_images as publisher-owned public and scenes/image_library as Stage B private+signed-URL targets. Finding stays in-progress until Stage B flips the buckets and routes reads through a signed-URL helper.",
+        },
+      ],
       createdAt: qualityHubSecurityDeep20260607Timestamp,
-      updatedAt: qualityHubSecurityDeep20260607Timestamp,
+      updatedAt: qualityHubStorageStageA20260614Timestamp,
     },
   ),
   finding(
@@ -4807,6 +4820,9 @@ const galleryCounterIntegrity20260614Findings = findingsResolved.filter((f) =>
 const profilePrivacyEnforcement20260614Findings = findingsResolved.filter((f) =>
   f.tags.includes("scan-profile-privacy-enforcement-20260614"),
 );
+const storageStageA20260614Findings = findingsResolved.filter((f) =>
+  f.tags.includes("scan-storage-privacy-stage-a-20260614"),
+);
 const lovableSupabaseRequiredFindings = findingsResolved.filter((f) =>
   f.tags.includes("lovable-supabase-required"),
 );
@@ -4815,6 +4831,27 @@ const housekeepingFindings = findingsResolved.filter((f) =>
 );
 
 const runs: QualityScanRun[] = [
+  {
+    id: runIds.storageStageA20260614,
+    name: "Lovable Supabase Fix — Storage Privacy Stage A Inventory",
+    profile: "standard",
+    status: "completed",
+    startedAt: qualityHubStorageStageA20260614Timestamp,
+    finishedAt: qualityHubStorageStageA20260614Timestamp,
+    agent: codexAgent,
+    scope: [
+      "module-security",
+      "module-security-storage-policies",
+      "Supabase Storage buckets",
+      "docs/guides/storage-privacy-migration.md",
+    ],
+    summary: summaryFor(storageStageA20260614Findings),
+    notes:
+      "Stage A documentation pass for finding qh-sec-20260607-003. Cataloged every code path that reads or writes the avatars, covers, backgrounds, guide_images, scenes, and image_library buckets, and classified scenes + image_library as Stage B private-bucket targets. No DB, RLS, storage, or code-path changes were made. Finding stays in-progress until Stage B lands the signed-URL helper and bucket flips.",
+    issueIdsCreated: [],
+    issueIdsUpdated: ["qh-sec-20260607-003"],
+    changeLogIds: ["cl-20260614-006"],
+  },
   {
     id: runIds.profilePrivacyEnforcement20260614,
     name: "Lovable Supabase Fix — Profile Privacy Enforcement",
@@ -6373,6 +6410,31 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
     },
   ],
   changeLog: [
+    {
+      id: "cl-20260614-006",
+      title: "Storage privacy Stage A — inventory and Stage B target list",
+      summary:
+        "Security · Documented every code path that touches a Supabase Storage bucket and classified scenes + image_library as Stage B private-bucket targets. No bucket settings or call sites changed in Stage A.",
+      severity: "patch" as const,
+      status: "completed" as const,
+      problem:
+        "Finding qh-sec-20260607-003 flagged that private roleplay media (scenes, image_library) is served from public-readable buckets. The fix needs a signed-URL helper and bucket flips, but no inventory existed of every consumer of those buckets, so Stage B could not be planned safely.",
+      plan:
+        "Stage A is documentation only. Catalog every src/ and supabase/ call to getPublicUrl or storage.from for the avatars, covers, backgrounds, guide_images, scenes, and image_library buckets. Classify each bucket as publisher-owned public, app-static public, or Stage B private + signed URL. Leave the finding in-progress until Stage B flips scenes and image_library to private buckets and routes reads through the signed-URL helper.",
+      changes:
+        "Created docs/guides/storage-privacy-migration.md with a bucket classification table and per-bucket code-path inventory. Updated qh-sec-20260607-003 metadata: status set to in-progress, verificationStatus unverified, added Stage A note to evidence, added scan-storage-privacy-stage-a-20260614 tag, added runIds.storageStageA20260614 to relatedRunIds, and recorded a Stage A comment explaining that Stage B will flip buckets + ship the signed-URL helper before the finding can be marked fixed. Added the new run and this change-log entry to the registry. No SQL, RLS, storage bucket, or runtime code was changed.",
+      filesAffected: [
+        "docs/guides/storage-privacy-migration.md",
+        "src/data/ui-audit-findings.ts",
+      ],
+      agent: "Lovable",
+      relatedFindingIds: ["qh-sec-20260607-003"],
+      relatedRunIds: [runIds.securityDeep20260607, runIds.storageStageA20260614],
+      tags: ["security", "supabase-storage", "privacy", "stage-a", "documentation", "lovable-supabase-required", "quality-hub"],
+      comments: [],
+      createdAt: qualityHubStorageStageA20260614Timestamp,
+      updatedAt: qualityHubStorageStageA20260614Timestamp,
+    },
     {
       id: "cl-20260614-005",
       title: "Enforce profile privacy server-side via owner-only RLS and redacting RPCs",
