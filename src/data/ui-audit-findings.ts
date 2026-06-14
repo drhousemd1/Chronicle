@@ -4770,6 +4770,26 @@ const housekeepingFindings = findingsResolved.filter((f) =>
 
 const runs: QualityScanRun[] = [
   {
+    id: runIds.publishedScenariosOwnership20260614,
+    name: "Lovable Supabase Fix — published_scenarios Ownership + Quarantine",
+    profile: "standard",
+    status: "completed",
+    startedAt: qualityHubPublishedScenariosOwnership20260614Timestamp,
+    finishedAt: qualityHubPublishedScenariosOwnership20260614Timestamp,
+    agent: codexAgent,
+    scope: [
+      "module-security",
+      "module-security-auth-access-control",
+      "public.published_scenarios",
+    ],
+    summary: summaryFor(publishedScenariosOwnership20260614Findings),
+    notes:
+      "Rebuilt INSERT/UPDATE RLS on public.published_scenarios with parent-story ownership checks and ran a quarantine UPDATE that hides any legacy rows whose publisher_id differs from the story owner. Pre-flight count returned zero mismatched rows.",
+    issueIdsCreated: [],
+    issueIdsUpdated: ["qh-sec-20260607-002"],
+    changeLogIds: ["cl-20260614-003"],
+  },
+  {
     id: runIds.charactersParentBinding20260614,
     name: "Lovable Supabase Fix — characters Parent Binding",
     profile: "standard",
