@@ -2770,6 +2770,54 @@ export const databaseSchemaInventory = {
         }
       ]
     },
+    "scenario_plays": {
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "default": "gen_random_uuid()",
+          "primary_key": true
+        },
+        {
+          "name": "published_scenario_id",
+          "type": "uuid",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false,
+          "default": null
+        },
+        {
+          "name": "played_at",
+          "type": "timestamptz",
+          "nullable": false,
+          "default": "now()"
+        }
+      ],
+      "foreign_keys": [
+        "published_scenario_id -> published_scenarios.id ON DELETE CASCADE",
+        "user_id -> auth.users.id ON DELETE CASCADE"
+      ],
+      "indexes": [
+        "scenario_plays_pkey (id)",
+        "idx_scenario_plays_user_scenario_played_at (user_id, published_scenario_id, played_at DESC)",
+        "idx_scenario_plays_published_scenario_id (published_scenario_id)"
+      ],
+      "rls_policies": [
+        {
+          "name": "Users can view own plays",
+          "command": "SELECT",
+          "roles": "authenticated",
+          "using": "user_id = auth.uid()",
+          "with_check": null
+        }
+      ],
+      "notes": "Per-user ledger of plays; inserts only via SECURITY DEFINER record_scenario_play RPC with a 5-minute throttle. Drives published_scenarios.play_count via sync_play_count trigger."
+    },
     "scenes": {
       "columns": [
         {
