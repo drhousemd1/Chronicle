@@ -63,6 +63,7 @@ const runIds = {
   contentFilterFindingReclassification20260613: "run-codex-content-filter-finding-reclassification-20260613",
   saveScenarioAtomicOwnership20260614: "run-lovable-save-scenario-atomic-ownership-20260614",
   charactersParentBinding20260614: "run-lovable-characters-parent-binding-20260614",
+  publishedScenariosOwnership20260614: "run-lovable-published-scenarios-ownership-20260614",
 } as const;
 
 const qualityHubHousekeepingScanTimestamp = "2026-05-30T19:22:16.000-06:00";
@@ -86,6 +87,7 @@ const qualityHubAiUsageTelemetryIntegrity20260613Timestamp = "2026-06-13T02:52:4
 const qualityHubContentFilterFindingReclassification20260613Timestamp = "2026-06-13T03:07:45.000-06:00";
 const qualityHubSaveScenarioAtomicOwnership20260614Timestamp = "2026-06-14T07:00:00.000Z";
 const qualityHubCharactersParentBinding20260614Timestamp = "2026-06-14T07:30:00.000Z";
+const qualityHubPublishedScenariosOwnership20260614Timestamp = "2026-06-14T08:00:00.000Z";
 
 function stamp(runId: string) {
   return {
@@ -525,19 +527,35 @@ const findings: QualityFinding[] = [
     "medium",
     runIds.securityDeep20260607,
     {
+      status: "fixed",
+      verificationStatus: "verified",
+      verifiedBy: stamp(runIds.publishedScenariosOwnership20260614),
       route: "gallery publish flow",
       component: "published_scenarios RLS",
+      currentState: "published_scenarios INSERT and UPDATE policies now require publisher_id = auth.uid() AND that the referenced stories row is owned by auth.uid(). A quarantine sweep also hides any legacy rows whose publisher_id does not match the underlying story owner; a live count confirmed zero such rows at fix time.",
       evidence: [
         "`published_scenarios` stores `scenario_id` and has a unique index on that story link.",
         "The insert policy only checks `publisher_id = auth.uid()`.",
         "Story and child-table SELECT policies trust `published_scenarios` rows to expose published content.",
+        "June 2026 Lovable fix: INSERT WITH CHECK is now `(publisher_id = auth.uid()) AND EXISTS(SELECT 1 FROM public.stories s WHERE s.id = published_scenarios.scenario_id AND s.user_id = auth.uid())`.",
+        "UPDATE policy keeps USING `publisher_id = auth.uid()` and adds the same parent-binding WITH CHECK clause.",
+        "Quarantine: `UPDATE public.published_scenarios ps SET is_hidden = true ... WHERE ps.publisher_id <> s.user_id AND ps.is_hidden = false`. Pre-flight count returned 0 mismatched rows.",
+        "Live `pg_policy` inspection on `public.published_scenarios` confirms both policies carry the parent-binding subquery.",
       ],
       expectedBehavior: "Only the story owner can publish or update publication state for that story.",
       actualBehavior: "The policy authorizes the publisher field but not the referenced story ownership.",
-      tags: ["module-security", "module-security-auth-access-control", "module-security-data-visibility", "scan-security-deep-20260607", "gallery", "supabase-rls", "lovable-supabase-required"],
-      relatedRunIds: [runIds.securityDeep20260607],
+      tags: ["module-security", "module-security-auth-access-control", "module-security-data-visibility", "scan-security-deep-20260607", "gallery", "supabase-rls", "lovable-supabase-required", "scan-published-scenarios-ownership-20260614"],
+      relatedRunIds: [runIds.securityDeep20260607, runIds.publishedScenariosOwnership20260614],
+      comments: [
+        {
+          id: "fix-note-qh-sec-20260607-002-20260614",
+          author: "Lovable",
+          timestamp: qualityHubPublishedScenariosOwnership20260614Timestamp,
+          text: "Bound published_scenarios INSERT/UPDATE to parent story ownership and ran a quarantine sweep to hide any legacy publisher/owner mismatches.",
+        },
+      ],
       createdAt: qualityHubSecurityDeep20260607Timestamp,
-      updatedAt: qualityHubSecurityDeep20260607Timestamp,
+      updatedAt: qualityHubPublishedScenariosOwnership20260614Timestamp,
     },
   ),
   finding(
@@ -4740,6 +4758,9 @@ const saveScenarioAtomicOwnership20260614Findings = findingsResolved.filter((f) 
 const charactersParentBinding20260614Findings = findingsResolved.filter((f) =>
   f.tags.includes("scan-characters-parent-binding-20260614"),
 );
+const publishedScenariosOwnership20260614Findings = findingsResolved.filter((f) =>
+  f.tags.includes("scan-published-scenarios-ownership-20260614"),
+);
 const lovableSupabaseRequiredFindings = findingsResolved.filter((f) =>
   f.tags.includes("lovable-supabase-required"),
 );
@@ -4748,6 +4769,26 @@ const housekeepingFindings = findingsResolved.filter((f) =>
 );
 
 const runs: QualityScanRun[] = [
+  {
+    id: runIds.publishedScenariosOwnership20260614,
+    name: "Lovable Supabase Fix — published_scenarios Ownership + Quarantine",
+    profile: "standard",
+    status: "completed",
+    startedAt: qualityHubPublishedScenariosOwnership20260614Timestamp,
+    finishedAt: qualityHubPublishedScenariosOwnership20260614Timestamp,
+    agent: codexAgent,
+    scope: [
+      "module-security",
+      "module-security-auth-access-control",
+      "public.published_scenarios",
+    ],
+    summary: summaryFor(publishedScenariosOwnership20260614Findings),
+    notes:
+      "Rebuilt INSERT/UPDATE RLS on public.published_scenarios with parent-story ownership checks and ran a quarantine UPDATE that hides any legacy rows whose publisher_id differs from the story owner. Pre-flight count returned zero mismatched rows.",
+    issueIdsCreated: [],
+    issueIdsUpdated: ["qh-sec-20260607-002"],
+    changeLogIds: ["cl-20260614-003"],
+  },
   {
     id: runIds.charactersParentBinding20260614,
     name: "Lovable Supabase Fix — characters Parent Binding",
@@ -6238,6 +6279,29 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
     },
   ],
   changeLog: [
+    {
+      id: "cl-20260614-003",
+      title: "Bind published_scenarios INSERT/UPDATE to parent story ownership and quarantine mismatches",
+      summary: "Security · A signed-in user can no longer publish or update a gallery row for a story they do not own; legacy mismatched rows are hidden.",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "public.published_scenarios INSERT and UPDATE policies only required `publisher_id = auth.uid()`. A caller who knew another user's scenario UUID could force-publish that private story by inserting a publication row, after which downstream story / codex / scene / character SELECT policies would expose the content as published.",
+      plan: "Drop and recreate INSERT and UPDATE policies with parent-binding WITH CHECK clauses that also require the referenced stories row to be owned by `auth.uid()`. Leave DELETE and SELECT unchanged. Run a one-shot quarantine UPDATE that sets `is_hidden = true` on any legacy publisher/owner mismatch so it cannot surface in the gallery.",
+      changes: "Replaced public.published_scenarios policies and ran a safety sweep:\n- `Publishers can insert own publications` INSERT WITH CHECK is now `(publisher_id = auth.uid()) AND EXISTS(SELECT 1 FROM public.stories s WHERE s.id = published_scenarios.scenario_id AND s.user_id = auth.uid())`.\n- `Publishers can update own publications` UPDATE USING stays `publisher_id = auth.uid()`, and WITH CHECK now carries the same parent-binding subquery.\n- DELETE and SELECT policies were left unchanged.\n- Quarantine `UPDATE public.published_scenarios ps SET is_hidden = true FROM public.stories s WHERE s.id = ps.scenario_id AND ps.publisher_id <> s.user_id AND ps.is_hidden = false` ran; pre-flight count returned zero mismatched rows, so no rows were modified.\n- Refreshed `src/data/supabase-schema-map.ts` and `src/data/database-schema-inventory.ts` with the new policy definitions.",
+      filesAffected: [
+        "public.published_scenarios policies (Supabase migration)",
+        "src/data/supabase-schema-map.ts",
+        "src/data/database-schema-inventory.ts",
+        "src/data/ui-audit-findings.ts",
+      ],
+      agent: "Lovable",
+      relatedFindingIds: ["qh-sec-20260607-002"],
+      relatedRunIds: [runIds.securityDeep20260607, runIds.publishedScenariosOwnership20260614],
+      tags: ["security", "supabase-rls", "parent-binding", "gallery", "quarantine", "lovable-supabase-required", "quality-hub"],
+      comments: [],
+      createdAt: qualityHubPublishedScenariosOwnership20260614Timestamp,
+      updatedAt: qualityHubPublishedScenariosOwnership20260614Timestamp,
+    },
     {
       id: "cl-20260614-002",
       title: "Bind characters INSERT/UPDATE to parent story ownership",

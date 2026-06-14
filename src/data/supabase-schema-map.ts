@@ -6477,7 +6477,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           ],
           "using": null,
           "command": "INSERT",
-          "withCheck": "(publisher_id = auth.uid())",
+          "withCheck": "((publisher_id = auth.uid()) AND (EXISTS ( SELECT 1\n   FROM stories s\n  WHERE ((s.id = published_scenarios.scenario_id) AND (s.user_id = auth.uid())))))",
           "permissive": true
         },
         {
@@ -6487,7 +6487,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           ],
           "using": "(publisher_id = auth.uid())",
           "command": "UPDATE",
-          "withCheck": null,
+          "withCheck": "((publisher_id = auth.uid()) AND (EXISTS ( SELECT 1\n   FROM stories s\n  WHERE ((s.id = published_scenarios.scenario_id) AND (s.user_id = auth.uid())))))",
           "permissive": true
         }
       ],
