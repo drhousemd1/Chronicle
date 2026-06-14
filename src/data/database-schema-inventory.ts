@@ -1127,9 +1127,9 @@ export const databaseSchemaInventory = {
         {
           "name": "Users can create own characters",
           "command": "INSERT",
-          "roles": "public",
+          "roles": "authenticated",
           "using": null,
-          "with_check": "auth.uid() = user_id"
+          "with_check": "(auth.uid() = user_id) AND (scenario_id IS NULL OR EXISTS(SELECT 1 FROM stories s WHERE s.id = characters.scenario_id AND s.user_id = auth.uid()))"
         },
         {
           "name": "Users can view own or published characters",
@@ -1141,9 +1141,9 @@ export const databaseSchemaInventory = {
         {
           "name": "Users can update own characters",
           "command": "UPDATE",
-          "roles": "public",
+          "roles": "authenticated",
           "using": "auth.uid() = user_id",
-          "with_check": null
+          "with_check": "(auth.uid() = user_id) AND (scenario_id IS NULL OR EXISTS(SELECT 1 FROM stories s WHERE s.id = characters.scenario_id AND s.user_id = auth.uid()))"
         },
         {
           "name": "Users can delete own characters",

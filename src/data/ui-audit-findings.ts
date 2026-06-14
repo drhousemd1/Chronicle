@@ -62,6 +62,7 @@ const runIds = {
   aiUsageTelemetryIntegrity20260613: "run-codex-ai-usage-telemetry-integrity-20260613",
   contentFilterFindingReclassification20260613: "run-codex-content-filter-finding-reclassification-20260613",
   saveScenarioAtomicOwnership20260614: "run-lovable-save-scenario-atomic-ownership-20260614",
+  charactersParentBinding20260614: "run-lovable-characters-parent-binding-20260614",
 } as const;
 
 const qualityHubHousekeepingScanTimestamp = "2026-05-30T19:22:16.000-06:00";
@@ -84,6 +85,7 @@ const qualityHubInternalToolRouteGuard20260613Timestamp = "2026-06-13T02:48:03.0
 const qualityHubAiUsageTelemetryIntegrity20260613Timestamp = "2026-06-13T02:52:48.000-06:00";
 const qualityHubContentFilterFindingReclassification20260613Timestamp = "2026-06-13T03:07:45.000-06:00";
 const qualityHubSaveScenarioAtomicOwnership20260614Timestamp = "2026-06-14T07:00:00.000Z";
+const qualityHubCharactersParentBinding20260614Timestamp = "2026-06-14T07:30:00.000Z";
 
 function stamp(runId: string) {
   return {
@@ -599,19 +601,34 @@ const findings: QualityFinding[] = [
     "medium",
     runIds.securityDeep20260607,
     {
+      status: "fixed",
+      verificationStatus: "verified",
+      verifiedBy: stamp(runIds.charactersParentBinding20260614),
       route: "character persistence",
       component: "characters RLS",
+      currentState: "characters INSERT and UPDATE policies now require auth.uid() = user_id AND (scenario_id IS NULL OR the referenced stories row is owned by auth.uid()). A child row can no longer be attached to or moved under another user's scenario.",
       evidence: [
         "`Users can create own characters` checks only `auth.uid() = user_id`.",
         "Published character SELECT policies read characters by `scenario_id` when the parent story is published.",
         "No later migration was found replacing character inserts with a parent story ownership check.",
+        "June 2026 Lovable fix: INSERT WITH CHECK now is `(auth.uid() = user_id) AND (scenario_id IS NULL OR EXISTS(SELECT 1 FROM public.stories s WHERE s.id = characters.scenario_id AND s.user_id = auth.uid()))`.",
+        "UPDATE policy now carries the same parent-binding WITH CHECK clause in addition to the existing `auth.uid() = user_id` USING clause.",
+        "Live `pg_policy` inspection on `public.characters` confirms both policies carry the parent-binding subquery.",
       ],
       expectedBehavior: "A user can only insert characters for stories they own.",
       actualBehavior: "A user can insert a character row with their own `user_id` but another story's `scenario_id`.",
-      tags: ["module-security", "module-security-auth-access-control", "scan-security-deep-20260607", "supabase-rls", "gallery-integrity", "lovable-supabase-required"],
-      relatedRunIds: [runIds.securityDeep20260607],
+      tags: ["module-security", "module-security-auth-access-control", "scan-security-deep-20260607", "supabase-rls", "gallery-integrity", "lovable-supabase-required", "scan-characters-parent-binding-20260614"],
+      relatedRunIds: [runIds.securityDeep20260607, runIds.charactersParentBinding20260614],
+      comments: [
+        {
+          id: "fix-note-qh-sec-20260607-004-20260614",
+          author: "Lovable",
+          timestamp: qualityHubCharactersParentBinding20260614Timestamp,
+          text: "Replaced characters INSERT/UPDATE policies with parent-story ownership checks so scenario_id, when set, must belong to a story owned by auth.uid().",
+        },
+      ],
       createdAt: qualityHubSecurityDeep20260607Timestamp,
-      updatedAt: qualityHubSecurityDeep20260607Timestamp,
+      updatedAt: qualityHubCharactersParentBinding20260614Timestamp,
     },
   ),
   finding(
@@ -4720,6 +4737,9 @@ const aiUsageTelemetryIntegrity20260613Findings = findingsResolved.filter((f) =>
 const saveScenarioAtomicOwnership20260614Findings = findingsResolved.filter((f) =>
   f.tags.includes("scan-save-scenario-atomic-ownership-20260614"),
 );
+const charactersParentBinding20260614Findings = findingsResolved.filter((f) =>
+  f.tags.includes("scan-characters-parent-binding-20260614"),
+);
 const lovableSupabaseRequiredFindings = findingsResolved.filter((f) =>
   f.tags.includes("lovable-supabase-required"),
 );
@@ -4728,6 +4748,26 @@ const housekeepingFindings = findingsResolved.filter((f) =>
 );
 
 const runs: QualityScanRun[] = [
+  {
+    id: runIds.charactersParentBinding20260614,
+    name: "Lovable Supabase Fix — characters Parent Binding",
+    profile: "standard",
+    status: "completed",
+    startedAt: qualityHubCharactersParentBinding20260614Timestamp,
+    finishedAt: qualityHubCharactersParentBinding20260614Timestamp,
+    agent: codexAgent,
+    scope: [
+      "module-security",
+      "module-security-auth-access-control",
+      "public.characters",
+    ],
+    summary: summaryFor(charactersParentBinding20260614Findings),
+    notes:
+      "Replaced public.characters INSERT and UPDATE RLS policies with parent-binding checks: the row's scenario_id, when not null, must reference a stories row owned by auth.uid().",
+    issueIdsCreated: [],
+    issueIdsUpdated: ["qh-sec-20260607-004"],
+    changeLogIds: ["cl-20260614-002"],
+  },
   {
     id: runIds.saveScenarioAtomicOwnership20260614,
     name: "Lovable Supabase Fix — save_scenario_atomic Ownership Guards",
@@ -6198,6 +6238,29 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
     },
   ],
   changeLog: [
+    {
+      id: "cl-20260614-002",
+      title: "Bind characters INSERT/UPDATE to parent story ownership",
+      summary: "Security · A user can no longer insert or move a character row under another user's scenario.",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "public.characters INSERT and UPDATE policies only checked `auth.uid() = user_id`. They never verified that the row's `scenario_id` belonged to the same user, so an attacker could attach attacker-owned character rows to another user's (potentially published) story by ID.",
+      plan: "Drop and recreate the INSERT and UPDATE policies with a parent-binding WITH CHECK clause that requires the referenced `stories` row (when `scenario_id` is not null) to be owned by `auth.uid()`. Keep DELETE and SELECT policies unchanged.",
+      changes: "Replaced public.characters policies:\n- `Users can create own characters` INSERT WITH CHECK is now `(auth.uid() = user_id) AND (scenario_id IS NULL OR EXISTS(SELECT 1 FROM public.stories s WHERE s.id = characters.scenario_id AND s.user_id = auth.uid()))`.\n- `Users can update own characters` UPDATE USING stays `auth.uid() = user_id`, and WITH CHECK now carries the same parent-binding subquery.\n- Both policies are now scoped to the `authenticated` role explicitly.\n- DELETE and SELECT policies were left unchanged.\n- Refreshed `src/data/supabase-schema-map.ts` and `src/data/database-schema-inventory.ts` with the new policy definitions.",
+      filesAffected: [
+        "public.characters policies (Supabase migration)",
+        "src/data/supabase-schema-map.ts",
+        "src/data/database-schema-inventory.ts",
+        "src/data/ui-audit-findings.ts",
+      ],
+      agent: "Lovable",
+      relatedFindingIds: ["qh-sec-20260607-004"],
+      relatedRunIds: [runIds.securityDeep20260607, runIds.charactersParentBinding20260614],
+      tags: ["security", "supabase-rls", "parent-binding", "lovable-supabase-required", "quality-hub"],
+      comments: [],
+      createdAt: qualityHubCharactersParentBinding20260614Timestamp,
+      updatedAt: qualityHubCharactersParentBinding20260614Timestamp,
+    },
     {
       id: "cl-20260614-001",
       title: "Harden save_scenario_atomic with parent + child ownership guards",
