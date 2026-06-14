@@ -242,7 +242,7 @@ export async function fetchScenarioById(id: string): Promise<{
       story: {
         openingDialog,
       },
-      scenes: (scenesResult.data || []).map(dbToScene),
+      scenes: await hydrateScenePreviewUrls((scenesResult.data || []).map(dbToScene)),
       uiSettings,
       conversations: conversationsWithMessages,
       selectedModel:
@@ -308,7 +308,7 @@ export async function fetchScenarioForPlay(id: string): Promise<{
       story: {
         openingDialog,
       },
-      scenes: (scenesResult.data || []).map(dbToScene),
+      scenes: await hydrateScenePreviewUrls((scenesResult.data || []).map(dbToScene)),
       uiSettings,
       conversations: [],
       selectedModel:
