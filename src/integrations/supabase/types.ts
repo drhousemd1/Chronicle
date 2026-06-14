@@ -1213,6 +1213,7 @@ export type Database = {
           filename: string | null
           folder_id: string
           id: string
+          image_path: string | null
           image_url: string
           is_thumbnail: boolean | null
           tags: string[]
@@ -1224,6 +1225,7 @@ export type Database = {
           filename?: string | null
           folder_id: string
           id?: string
+          image_path?: string | null
           image_url: string
           is_thumbnail?: boolean | null
           tags?: string[]
@@ -1235,6 +1237,7 @@ export type Database = {
           filename?: string | null
           folder_id?: string
           id?: string
+          image_path?: string | null
           image_url?: string
           is_thumbnail?: boolean | null
           tags?: string[]
@@ -1743,6 +1746,7 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          image_path: string | null
           image_url: string
           is_starting_scene: boolean | null
           scenario_id: string
@@ -1752,6 +1756,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
+          image_path?: string | null
           image_url: string
           is_starting_scene?: boolean | null
           scenario_id: string
@@ -1761,6 +1766,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          image_path?: string | null
           image_url?: string
           is_starting_scene?: boolean | null
           scenario_id?: string
@@ -2187,6 +2193,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_read_scene_storage_object: {
+        Args: { p_path: string }
+        Returns: boolean
+      }
       fetch_gallery_scenarios: {
         Args: {
           p_custom_tags?: string[]
@@ -2214,35 +2224,21 @@ export type Database = {
           total_views: number
         }[]
       }
-      get_folders_with_details:
-        | {
-            Args: never
-            Returns: {
-              created_at: string
-              description: string
-              id: string
-              image_count: number
-              name: string
-              thumbnail_image_id: string
-              thumbnail_url: string
-              updated_at: string
-              user_id: string
-            }[]
-          }
-        | {
-            Args: { p_user_id: string }
-            Returns: {
-              created_at: string
-              description: string
-              id: string
-              image_count: number
-              name: string
-              thumbnail_image_id: string
-              thumbnail_url: string
-              updated_at: string
-              user_id: string
-            }[]
-          }
+      get_folders_with_details: {
+        Args: never
+        Returns: {
+          created_at: string
+          description: string
+          id: string
+          image_count: number
+          name: string
+          thumbnail_image_id: string
+          thumbnail_path: string
+          thumbnail_url: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
       get_public_creator_profile: { Args: { p_user_id: string }; Returns: Json }
       get_public_profiles: {
         Args: { p_user_ids: string[] }
