@@ -329,6 +329,7 @@ export function useStoryBuilderMedia({
           const newScene: Scene = {
             id: uuid(),
             url: publicUrl,
+            imagePath: `${userId}/${filename}`,
             tags: [],
             createdAt: now(),
           };
@@ -390,8 +391,12 @@ export function useStoryBuilderMedia({
       });
 
       let finalUrl = data.imageUrl;
+      let finalPath: string | null = null;
       try {
-        finalUrl = await compressAndUpload(data.imageUrl, 'scenes', userId, 1024, 768, 0.85);
+        const uploaded = await compressAndUpload(data.imageUrl, 'scenes', userId, 1024, 768, 0.85);
+        finalUrl = uploaded;
+        const m = /\/scenes\/(.+)$/.exec(uploaded);
+        finalPath = m ? m[1] : null;
       } catch {
         // Use original URL if compression fails.
       }
@@ -399,6 +404,7 @@ export function useStoryBuilderMedia({
       const newScene: Scene = {
         id: uuid(),
         url: finalUrl,
+        imagePath: finalPath,
         tags: [],
         createdAt: now(),
       };

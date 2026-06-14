@@ -28,6 +28,12 @@ interface BackgroundPickerModalProps {
   onDelete: (id: string, imageUrl: string) => void;
   isUploading: boolean;
   onOverlayChange?: (id: string, color: string, opacity: number) => void;
+  /**
+   * Called when the user picks an image from the Image Library. Receives the
+   * long-lived public URL of the bytes copied into the `backgrounds` bucket.
+   * Parent is responsible for creating a user_backgrounds row and selecting it.
+   */
+  onAddFromLibrary?: (imageUrl: string) => Promise<void> | void;
 }
 
 export function BackgroundPickerModal({
@@ -41,6 +47,7 @@ export function BackgroundPickerModal({
   onDelete,
   isUploading,
   onOverlayChange,
+  onAddFromLibrary,
 }: BackgroundPickerModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
@@ -236,9 +243,11 @@ export function BackgroundPickerModal({
             isOpen={isPickerOpen}
             onClose={() => setIsPickerOpen(false)}
             destBucket="backgrounds"
-            onSelect={(url) => {
-              onSelectBackground(url as any);
+            onSelect={async (url) => {
               setIsPickerOpen(false);
+              if (onAddFromLibrary) {
+                await onAddFromLibrary(url);
+              }
             }}
           />
         </div>

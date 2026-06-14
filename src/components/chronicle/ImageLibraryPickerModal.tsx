@@ -165,9 +165,8 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
   const handleConfirmSelection = async () => {
     if (!selectedImage || !user) return;
     if (!selectedImage.imagePath) {
-      // Legacy row missing image_path — fall back to stored URL.
-      onSelect(selectedImage.imageUrl);
-      onClose();
+      // Legacy row missing image_path is not selectable post-Stage B.
+      toast.error('This image needs to be re-uploaded before it can be used.');
       return;
     }
     setIsCopying(true);
@@ -313,25 +312,34 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
                 ) : (
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                     {folderImages.map((image) => {
-                      const src = image.imagePath
-                        ? thumbSignedUrls[image.imagePath] || ''
-                        : image.imageUrl;
+                      const hasPath = !!image.imagePath;
+                      const src = hasPath ? thumbSignedUrls[image.imagePath!] || '' : '';
                       const isSelected = selectedImage?.id === image.id;
+                      const isDisabled = !hasPath;
                       return (
                       <button
                         key={image.id}
-                        onClick={() => setSelectedImage(image)}
+                        type="button"
+                        onClick={() => !isDisabled && setSelectedImage(image)}
+                        disabled={isDisabled}
+                        title={isDisabled ? 'Migration pending — re-upload required' : image.filename}
                         className={`relative aspect-square rounded-lg overflow-hidden bg-slate-100 border-2 transition-all ${
                           isSelected
                             ? 'border-blue-500 ring-2 ring-blue-500/30'
                             : 'border-transparent hover:border-slate-300'
-                        }`}
+                        } ${isDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                       >
-                        <img
-                          src={src}
-                          alt={image.filename}
-                          className="w-full h-full object-cover"
-                        />
+                        {hasPath ? (
+                          <img
+                            src={src}
+                            alt={image.filename}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-slate-500 text-center px-1">
+                            Migration<br />pending
+                          </div>
+                        )}
                         {isSelected && (
                           <div className="absolute top-1 right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
                             <Check className="w-4 h-4 text-white" />
@@ -353,7 +361,7 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
           </Button>
           <Button
             onClick={handleConfirmSelection}
-            disabled={!selectedImage || isCopying}
+            disabled={!selectedImage || !selectedImage.imagePath || isCopying}
             className="bg-slate-900 hover:bg-slate-800 text-white"
           >
             {isCopying ? 'Copying…' : 'Select Image'}
