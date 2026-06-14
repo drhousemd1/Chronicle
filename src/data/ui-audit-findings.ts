@@ -648,7 +648,7 @@ const findings: QualityFinding[] = [
     "Story export, import, and remix do not copy scene image bytes across owners",
     "medium",
     "confirmed",
-    "data-quality",
+    "data-integrity",
     "Cross-User Portability",
     "Story Transfer",
     [
