@@ -3500,7 +3500,7 @@ export const databaseSchemaInventory = {
         "scenes"
       ],
       "security": "DEFINER",
-      "description": "RPC: atomic upsert of story + characters + codex + scenes"
+      "description": "RPC: atomic upsert of story + characters + codex + scenes; ownership-hardened (June 2026) with parent pre-flight, story-update WHERE guard + GET DIAGNOSTICS, and per-row guarded ON CONFLICT DO UPDATE branches for each child table"
     },
     {
       "name": "update_updated_at_column",

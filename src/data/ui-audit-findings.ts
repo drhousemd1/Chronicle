@@ -61,6 +61,7 @@ const runIds = {
   internalToolRouteGuard20260613: "run-codex-internal-tool-route-guard-20260613",
   aiUsageTelemetryIntegrity20260613: "run-codex-ai-usage-telemetry-integrity-20260613",
   contentFilterFindingReclassification20260613: "run-codex-content-filter-finding-reclassification-20260613",
+  saveScenarioAtomicOwnership20260614: "run-lovable-save-scenario-atomic-ownership-20260614",
 } as const;
 
 const qualityHubHousekeepingScanTimestamp = "2026-05-30T19:22:16.000-06:00";
@@ -82,6 +83,7 @@ const qualityHubAdminDebugTraceAuthorization20260613Timestamp = "2026-06-13T02:4
 const qualityHubInternalToolRouteGuard20260613Timestamp = "2026-06-13T02:48:03.000-06:00";
 const qualityHubAiUsageTelemetryIntegrity20260613Timestamp = "2026-06-13T02:52:48.000-06:00";
 const qualityHubContentFilterFindingReclassification20260613Timestamp = "2026-06-13T03:07:45.000-06:00";
+const qualityHubSaveScenarioAtomicOwnership20260614Timestamp = "2026-06-14T07:00:00.000Z";
 
 function stamp(runId: string) {
   return {
@@ -465,21 +467,39 @@ const findings: QualityFinding[] = [
     "medium",
     runIds.securityDeep20260607,
     {
+      status: "fixed",
+      verificationStatus: "verified",
+      verifiedBy: stamp(runIds.saveScenarioAtomicOwnership20260614),
       route: "Supabase RPC",
       component: "save_scenario_atomic",
       batchable: false,
+      currentState: "save_scenario_atomic now rejects calls when p_scenario_id belongs to another user, restricts the story upsert to rows owned by p_user_id, checks GET DIAGNOSTICS after the story update, and uses guarded ON CONFLICT DO UPDATE branches for characters, codex_entries, and scenes with per-row ownership/parent checks that raise on zero affected rows.",
       evidence: [
         "`save_scenario_atomic` is created as `SECURITY DEFINER`.",
         "The only authorization check compares `auth.uid()` to caller-supplied `p_user_id`.",
         "The RPC upserts `stories` and deletes/upserts `characters`, `codex_entries`, and `scenes` by `p_scenario_id` without a parent-owner check.",
         "No later migration was found that revokes, replaces, or owner-hardens this RPC.",
+        "June 2026 Lovable fix: pre-flight check `PERFORM 1 FROM public.stories WHERE id = p_scenario_id AND user_id <> p_user_id` raises `Unauthorized: scenario owned by another user`.",
+        "Story ON CONFLICT DO UPDATE branch carries `WHERE public.stories.user_id = p_user_id`, followed by `GET DIAGNOSTICS v_rows = ROW_COUNT` and an ownership-guard exception when the row pre-existed but no row was updated.",
+        "Per-row character upserts use `WHERE public.characters.user_id = p_user_id AND public.characters.scenario_id = p_scenario_id` and raise on zero rows.",
+        "Per-row codex_entries upserts use `WHERE public.codex_entries.scenario_id = p_scenario_id` and raise on zero rows.",
+        "Per-row scenes upserts use `WHERE public.scenes.scenario_id = p_scenario_id` and raise on zero rows.",
+        "Live `pg_get_functiondef` check confirms four `GET DIAGNOSTICS` invocations and all four guard clauses.",
       ],
       expectedBehavior: "Bulk scenario save must prove the target story belongs to the authenticated user before any write.",
       actualBehavior: "The RPC trusts caller-supplied identity and object IDs before executing definer-owned writes.",
-      tags: ["module-security", "module-security-auth-access-control", "module-security-data-visibility", "scan-security-deep-20260607", "supabase-rls", "security-definer", "lovable-supabase-required"],
-      relatedRunIds: [runIds.securityDeep20260607],
+      tags: ["module-security", "module-security-auth-access-control", "module-security-data-visibility", "scan-security-deep-20260607", "supabase-rls", "security-definer", "lovable-supabase-required", "scan-save-scenario-atomic-ownership-20260614"],
+      relatedRunIds: [runIds.securityDeep20260607, runIds.saveScenarioAtomicOwnership20260614],
+      comments: [
+        {
+          id: "fix-note-qh-sec-20260607-001-20260614",
+          author: "Lovable",
+          timestamp: qualityHubSaveScenarioAtomicOwnership20260614Timestamp,
+          text: "Rewrote save_scenario_atomic with parent ownership pre-flight, story upsert WHERE-clause guard + GET DIAGNOSTICS check, and per-child guarded ON CONFLICT DO UPDATE branches that raise when ownership/parent rows do not match.",
+        },
+      ],
       createdAt: qualityHubSecurityDeep20260607Timestamp,
-      updatedAt: qualityHubSecurityDeep20260607Timestamp,
+      updatedAt: qualityHubSaveScenarioAtomicOwnership20260614Timestamp,
     },
   ),
   finding(
@@ -4697,6 +4717,9 @@ const internalToolRouteGuard20260613Findings = findingsResolved.filter((f) =>
 const aiUsageTelemetryIntegrity20260613Findings = findingsResolved.filter((f) =>
   f.tags.includes("scan-ai-usage-telemetry-integrity-20260613"),
 );
+const saveScenarioAtomicOwnership20260614Findings = findingsResolved.filter((f) =>
+  f.tags.includes("scan-save-scenario-atomic-ownership-20260614"),
+);
 const lovableSupabaseRequiredFindings = findingsResolved.filter((f) =>
   f.tags.includes("lovable-supabase-required"),
 );
@@ -4705,6 +4728,27 @@ const housekeepingFindings = findingsResolved.filter((f) =>
 );
 
 const runs: QualityScanRun[] = [
+  {
+    id: runIds.saveScenarioAtomicOwnership20260614,
+    name: "Lovable Supabase Fix — save_scenario_atomic Ownership Guards",
+    profile: "standard",
+    status: "completed",
+    startedAt: qualityHubSaveScenarioAtomicOwnership20260614Timestamp,
+    finishedAt: qualityHubSaveScenarioAtomicOwnership20260614Timestamp,
+    agent: codexAgent,
+    scope: [
+      "module-security",
+      "module-security-auth-access-control",
+      "module-security-data-visibility",
+      "public.save_scenario_atomic",
+    ],
+    summary: summaryFor(saveScenarioAtomicOwnership20260614Findings),
+    notes:
+      "Replaced public.save_scenario_atomic with an ownership-hardened version: pre-flight parent check, guarded story upsert with GET DIAGNOSTICS, and per-row guarded ON CONFLICT DO UPDATE branches for characters, codex_entries, and scenes.",
+    issueIdsCreated: [],
+    issueIdsUpdated: ["qh-sec-20260607-001"],
+    changeLogIds: ["cl-20260614-001"],
+  },
   {
     id: runIds.contentFilterFindingReclassification20260613,
     name: "Codex Quality Hub Correction — Content-Filter Finding Reclassification",
@@ -6154,6 +6198,29 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
     },
   ],
   changeLog: [
+    {
+      id: "cl-20260614-001",
+      title: "Harden save_scenario_atomic with parent + child ownership guards",
+      summary: "Security · The atomic scenario save RPC now refuses to touch any row that does not belong to the calling user.",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "public.save_scenario_atomic ran with SECURITY DEFINER and only checked `auth.uid() = p_user_id`. A caller who knew another user's scenario UUID could overwrite or prune that user's story, characters, codex entries, and scenes; child ON CONFLICT branches could also mutate foreign rows by ID collision.",
+      plan: "Rewrite the RPC behind the same signature with a pre-flight parent ownership check, a story upsert restricted to rows owned by p_user_id with a GET DIAGNOSTICS guard, and per-row child upserts that include ownership/parent WHERE clauses and raise when zero rows update.",
+      changes: "Updated public.save_scenario_atomic:\n- Added `PERFORM 1 FROM public.stories WHERE id = p_scenario_id AND user_id <> p_user_id` pre-flight that raises `Unauthorized: scenario owned by another user`.\n- Story ON CONFLICT DO UPDATE branch now carries `WHERE public.stories.user_id = p_user_id`, followed by `GET DIAGNOSTICS v_rows = ROW_COUNT` and an ownership-guard exception if the story pre-existed but no row was updated.\n- Character upserts use `WHERE public.characters.user_id = p_user_id AND public.characters.scenario_id = p_scenario_id` with a GET DIAGNOSTICS check.\n- Codex_entries upserts use `WHERE public.codex_entries.scenario_id = p_scenario_id` with a GET DIAGNOSTICS check.\n- Scenes upserts use `WHERE public.scenes.scenario_id = p_scenario_id` with a GET DIAGNOSTICS check.\n- Delete branches remain scoped to `scenario_id = p_scenario_id`; zero deletes stay legitimate.\n- Refreshed `src/data/supabase-schema-map.ts` and `src/data/database-schema-inventory.ts` with the new definition/notes.",
+      filesAffected: [
+        "public.save_scenario_atomic (Supabase migration)",
+        "src/data/supabase-schema-map.ts",
+        "src/data/database-schema-inventory.ts",
+        "src/data/ui-audit-findings.ts",
+      ],
+      agent: "Lovable",
+      relatedFindingIds: ["qh-sec-20260607-001"],
+      relatedRunIds: [runIds.securityDeep20260607, runIds.saveScenarioAtomicOwnership20260614],
+      tags: ["security", "supabase-rpc", "security-definer", "ownership-guard", "lovable-supabase-required", "quality-hub"],
+      comments: [],
+      createdAt: qualityHubSaveScenarioAtomicOwnership20260614Timestamp,
+      updatedAt: qualityHubSaveScenarioAtomicOwnership20260614Timestamp,
+    },
     {
       id: "cl-20260613-014",
       title: "Remove mislabeled content-filter retry security finding",
