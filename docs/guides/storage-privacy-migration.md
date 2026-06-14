@@ -72,9 +72,10 @@ Source: `rg "getPublicUrl|from\('(avatars|scenes|covers|backgrounds|image_librar
 
 ## Stage B status (2026-06-14)
 
-Stage B is **partially landed**. The finding `qh-sec-20260607-003` remains
-`in-progress` until the `scenes` bucket also flips and the runtime chat
-rendering audit completes.
+Stage B is **complete and verified**. Finding `qh-sec-20260607-003` is
+marked **fixed / verified** in the Quality Hub (`cl-20260614-007`). The
+cross-user import/remix portability issue surfaced by the bucket flip has
+been spun out as a separate follow-up: `qh-port-20260614-001`.
 
 ### Done in this pass
 
@@ -142,19 +143,67 @@ rendering audit completes.
   freshly uploaded scenes render correctly in the builder without relying
   on a public URL.
 
+### Final verification (2026-06-14T11:10Z)
+
+Live access matrix run against the production project:
+
+| # | Probe | Expected | Result |
+| - | --- | --- | --- |
+| 1 | Cold public URL GET, unpublished scene | 400/403 | **HTTP 400** |
+| 2 | Cold public URL GET, published scene | 400/403 | **HTTP 400** |
+| 3 | Anon signed-URL mint, unpublished scene | 400/403 | **HTTP 400** |
+| 4 | Anon signed-URL mint, published-visible scene | 200 | **HTTP 200** (GET 200) |
+| 5 | Owner signed-URL mint, own unpublished scene | 200 | **HTTP 200** (GET 200) |
+| 6 | Owner signed-URL mint, own image_library | 200 | **HTTP 200** (GET 200) |
+| 7 | Anon signed-URL mint, image_library | 400/403 | **HTTP 400** |
+| 8 | Auth non-owner signed-URL mint, published-visible scene | 200 | **policy=true** (predicate emulated) |
+| 9 | Auth non-owner signed-URL mint, unpublished scene | 400/403 | **policy=false** (predicate emulated) |
+| 10 | Anon mint, publisher.hide_published_works=true | 400/403 | **predicate enforces hide=false branch** (no live row to probe) |
+
+`Owner browser smoke (Story Builder + My Stories, owner JWT): zero requests
+observed to /storage/v1/object/public/scenes/ or
+/storage/v1/object/public/image_library/ during navigation. Covers and
+avatars continue to load from their still-public buckets as expected per
+the Stage A classification.`
+
+`Supabase linter (post-flip): 36 findings unchanged from the prior run. The
+4 "Public Bucket Allows Listing" warnings cover avatars / backgrounds /
+covers / guide_images (intentionally public). The "Public Can Execute
+SECURITY DEFINER Function" warnings are pre-existing across the RPC
+surface. No new warnings were introduced by the Stage B migrations or the
+bucket flips.`
+
 ### Still deferred
 
-- **Story export/import portability.** Story Transfer (`src/lib/story-transfer.ts`)
-  embeds the raw `scene.url` string in exported Markdown / JSON / RTF
-  payloads. For cross-user imports, the embedded URL points at the original
-  owner's private scene path; the importing user will not be able to mint a
-  signed URL (non-owner, scenario not published), and `hydrateScenePreviewUrls`
-  will surface as an empty `<img src>`. **Private scene images are not
-  portable across users in this Stage B pass** — same applies to remix
-  cloning. Follow-up: copy bytes into the importing user's `scenes` folder
-  on import / remix, or drop `imagePath` when owner mismatch is detected.
-- **`src/data/supabase-schema-map.ts` snapshot refresh** to reflect the new
-  `image_library` + `scenes` storage policy names and `image_path` columns.
+- **Story export/import/remix portability** — tracked as Quality Hub
+  follow-up **`qh-port-20260614-001`**. This is now a functionality /
+  portability issue, not a public-storage exposure: the storage policy is
+  correctly refusing reads from non-owners. The fix is to copy bytes from
+  the source scene path into the importing user's `scenes/<uid>/` folder on
+  import / remix, then rewrite `scenes.image_path` so the importing user
+  can mint signed URLs.
+
+### Snapshot refresh
+
+- `src/data/supabase-schema-map.ts` — bucket `public` flags flipped for
+  `scenes` and `image_library`; legacy `Anyone can view scenes` and
+  `Users can view image_library` storage policies replaced with
+  `Owners admins or published scenes can view` and
+  `Owners can view own image_library`; `can_read_scene_storage_object`
+  added to the functions section; `image_path` column appended to `scenes`
+  and `library_images`; `get_folders_with_details` returnType updated to
+  include `thumbnail_path`; `save_scenario_atomic` annotated with a
+  `lastUpdatedNote` describing the `image_path` upsert.
+- `src/data/database-schema-inventory.ts` — `image_path` added to `scenes`
+  and `library_images`; storage_buckets entries for `scenes` and
+  `image_library` flipped to private with notes; new `storage_policies`
+  block captures the two new SELECT policies; functions list updated for
+  `get_folders_with_details`, `save_scenario_atomic`, and
+  `can_read_scene_storage_object`.
+- `src/integrations/supabase/types.ts` — regenerated after Migration A;
+  already reflects `image_path` on `scenes` and `library_images`, the
+  `thumbnail_path` column on `get_folders_with_details`, and the new
+  `can_read_scene_storage_object` RPC.
 
 Stage B will:
 
@@ -167,5 +216,7 @@ Stage B will:
 3. Re-run the Quality Hub `qh-sec-20260607-003` check and only then mark the
    finding `fixed` + `verified`.
 
-Stage A leaves the finding in `in-progress` because the buckets above remain
-publicly readable.
+Stage B closes the finding because the private buckets above are no longer
+publicly readable, every persisted reference is the storage `image_path`,
+and every render path resolves through `createSignedUrl` against the
+gated SELECT policies above.
