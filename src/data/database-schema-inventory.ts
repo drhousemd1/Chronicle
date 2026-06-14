@@ -3629,6 +3629,26 @@ export const databaseSchemaInventory = {
       "public": false
     }
   ],
+  "storage_policies": [
+    {
+      "bucket": "scenes",
+      "policy": "Owners admins or published scenes can view",
+      "command": "SELECT",
+      "expression": "bucket_id = 'scenes' AND can_read_scene_storage_object(name)",
+      "added": "2026-06-14",
+      "replaces": "Anyone can view scenes",
+      "notes": "Replaces the legacy permissive Anyone-can-view-scenes policy. Allows owner, admin, or anonymous reads of scenes attached to a published, non-hidden scenario whose publisher does not hide their works."
+    },
+    {
+      "bucket": "image_library",
+      "policy": "Owners can view own image_library",
+      "command": "SELECT",
+      "expression": "bucket_id = 'image_library' AND ((auth.uid())::text = (storage.foldername(name))[1] OR has_role(auth.uid(), 'admin'))",
+      "added": "2026-06-14",
+      "replaces": "Users can view image_library",
+      "notes": "Owner-only (plus admin) SELECT on the private image_library bucket. Anonymous GETs return 400; signed-URL minting requires the owner JWT."
+    }
+  ],
   "edge_functions": [
     {
       "name": "chat",
