@@ -4911,6 +4911,9 @@ const profilePrivacyEnforcement20260614Findings = findingsResolved.filter((f) =>
 const storageStageA20260614Findings = findingsResolved.filter((f) =>
   f.tags.includes("scan-storage-privacy-stage-a-20260614"),
 );
+const storagePrivacyStageB20260614Findings = findingsResolved.filter((f) =>
+  f.tags.includes("scan-storage-privacy-stage-b-20260614"),
+);
 const lovableSupabaseRequiredFindings = findingsResolved.filter((f) =>
   f.tags.includes("lovable-supabase-required"),
 );
