@@ -326,10 +326,15 @@ export function useStoryBuilderMedia({
           const filename = `scene-${uuid()}-${Date.now()}.jpg`;
           const publicUrl = await uploadSceneImage(userId, blob, filename);
 
+          // `scenes` is a private bucket; the publicUrl path returned by the
+          // helper will 404 anonymously. Resolve a signed URL for the preview
+          // and persist only the bucket-relative imagePath.
+          const imagePath = `${userId}/${filename}`;
+          const signed = await getSignedMediaUrl('scenes', imagePath);
           const newScene: Scene = {
             id: uuid(),
-            url: publicUrl,
-            imagePath: `${userId}/${filename}`,
+            url: signed || publicUrl,
+            imagePath,
             tags: [],
             createdAt: now(),
           };
