@@ -19,6 +19,7 @@ import {
   ensureStorageUrl,
   supabase,
 } from './shared';
+import { getSignedMediaUrls, isStorageSentinel } from './signed-media';
 
 function dbToScenarioMetadata(row: any): ScenarioMetadata {
   return {
@@ -54,11 +55,38 @@ function dbToScene(row: any): Scene {
 
   return {
     id: row.id,
-    url: row.image_url,
+    url: isStorageSentinel(row.image_url) ? '' : (row.image_url || ''),
+    imagePath: row.image_path || null,
     tags,
     isStartingScene: row.is_starting_scene || false,
     createdAt: new Date(row.created_at).getTime(),
   };
+}
+
+/**
+ * Stage B: scene `url` is ephemeral. After hydrating Scene rows from DB,
+ * resolve a short-lived signed URL for any scene that has an image_path so
+ * downstream consumers can render <img src={scene.url} /> without knowing the
+ * bucket flipped private.
+ *
+ * Mutates the input array in place and returns it for chaining.
+ */
+async function hydrateScenePreviewUrls(scenes: Scene[]): Promise<Scene[]> {
+  const paths = scenes
+    .map((s) => s.imagePath)
+    .filter((p): p is string => !!p);
+  if (!paths.length) return scenes;
+  try {
+    const map = await getSignedMediaUrls('scenes', paths);
+    for (const scene of scenes) {
+      if (scene.imagePath && map[scene.imagePath]) {
+        scene.url = map[scene.imagePath];
+      }
+    }
+  } catch (e) {
+    console.warn('[scenarios] failed to hydrate scene preview URLs', e);
+  }
+  return scenes;
 }
 
 async function backfillScenarioWorldCoreById(scenarioId: string, canonicalWorldCore: WorldCore): Promise<void> {
