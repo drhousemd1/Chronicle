@@ -2219,14 +2219,14 @@ export const databaseSchemaInventory = {
           "command": "INSERT",
           "roles": "authenticated",
           "using": null,
-          "with_check": "publisher_id = auth.uid()"
+          "with_check": "publisher_id = auth.uid() AND EXISTS(SELECT 1 FROM stories s WHERE s.id = published_scenarios.scenario_id AND s.user_id = auth.uid())"
         },
         {
           "name": "Publishers can update own publications",
           "command": "UPDATE",
           "roles": "authenticated",
           "using": "publisher_id = auth.uid()",
-          "with_check": null
+          "with_check": "publisher_id = auth.uid() AND EXISTS(SELECT 1 FROM stories s WHERE s.id = published_scenarios.scenario_id AND s.user_id = auth.uid())"
         },
         {
           "name": "Publishers can delete own publications",
