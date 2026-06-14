@@ -170,6 +170,7 @@ export function CoverImageActionButtons({
       <ImageLibraryPickerModal
         isOpen={isPickerOpen}
         onClose={() => setIsPickerOpen(false)}
+        destBucket="covers"
         onSelect={(imageUrl) => {
           onSelectFromLibrary(imageUrl);
           setIsPickerOpen(false);

@@ -194,6 +194,12 @@ export type World = {
 export type Scene = {
   id: string;
   url: string;
+  /**
+   * Stage B: bucket-relative path in the (private) `scenes` storage bucket.
+   * `url` is resolved at load time via signed-media helper when imagePath is
+   * present. Persist `imagePath` and treat `url` as ephemeral display data.
+   */
+  imagePath?: string | null;
   title?: string;
   tags: string[];
   isStartingScene?: boolean;

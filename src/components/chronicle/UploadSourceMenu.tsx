@@ -9,9 +9,12 @@ import {
 import { ChevronDown, Upload, Image as ImageIcon } from 'lucide-react';
 import { ImageLibraryPickerModal } from './ImageLibraryPickerModal';
 
+import type { DestinationBucket } from '@/services/persistence/library-copy';
+
 interface UploadSourceMenuProps {
   onUploadFromDevice: () => void;
   onSelectFromLibrary: (imageUrl: string) => void;
+  destBucket?: DestinationBucket;
   disabled?: boolean;
   label?: string;
   variant?: ButtonVariant;
@@ -22,6 +25,7 @@ interface UploadSourceMenuProps {
 export const UploadSourceMenu: React.FC<UploadSourceMenuProps> = ({
   onUploadFromDevice,
   onSelectFromLibrary,
+  destBucket = 'avatars',
   disabled = false,
   label = 'Upload Image',
   variant = 'primary',
@@ -65,6 +69,7 @@ export const UploadSourceMenu: React.FC<UploadSourceMenuProps> = ({
       <ImageLibraryPickerModal
         isOpen={isPickerOpen}
         onClose={() => setIsPickerOpen(false)}
+        destBucket={destBucket}
         onSelect={(imageUrl) => {
           onSelectFromLibrary(imageUrl);
           setIsPickerOpen(false);

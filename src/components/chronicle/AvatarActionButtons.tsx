@@ -181,6 +181,7 @@ export function AvatarActionButtons({
       <ImageLibraryPickerModal
         isOpen={isPickerOpen}
         onClose={() => setIsPickerOpen(false)}
+        destBucket="avatars"
         onSelect={(imageUrl) => {
           onSelectFromLibrary(imageUrl);
           setIsPickerOpen(false);
