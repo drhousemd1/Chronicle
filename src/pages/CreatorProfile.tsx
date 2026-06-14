@@ -8,6 +8,7 @@ import { StarRating } from '@/components/chronicle/StarRating';
 import { cn } from '@/lib/utils';
 
 interface CreatorProfileData {
+  id?: string;
   display_name: string | null;
   avatar_url: string | null;
   avatar_position: { x: number; y: number } | null;
@@ -62,21 +63,48 @@ export default function CreatorProfile() {
     setIsLoading(true);
 
     const loadData = async () => {
-      const [profileRes, statsRes, worksRes] = await Promise.all([
-        supabase.from('profiles').select('display_name, avatar_url, avatar_position, about_me, preferred_genres, hide_published_works, hide_profile_details').eq('id', userId).maybeSingle(),
+      const [profileRes, statsRes] = await Promise.all([
+        supabase.rpc('get_public_creator_profile', { p_user_id: userId }),
         supabase.rpc('get_creator_stats', { creator_user_id: userId }),
-        supabase.from('published_scenarios').select(`
-          id, scenario_id, like_count, play_count, view_count, save_count, allow_remix,
-          stories!inner (title, description, cover_image_url, cover_image_position)
-        `).eq('publisher_id', userId).eq('is_published', true).eq('is_hidden', false).order('created_at', { ascending: false }),
       ]);
 
-      if (profileRes.data) {
-        const d = profileRes.data as any;
+      const d: any = profileRes.data ?? null;
+      if (d) {
+        const pos = d.avatar_position
+          ? (typeof d.avatar_position === 'string' ? JSON.parse(d.avatar_position) : d.avatar_position)
+          : { x: 50, y: 50 };
         setProfile({
-          ...d,
-          avatar_position: d.avatar_position ? (typeof d.avatar_position === 'string' ? JSON.parse(d.avatar_position) : d.avatar_position) : { x: 50, y: 50 },
+          id: d.id,
+          display_name: d.display_name ?? null,
+          avatar_url: d.avatar_url ?? null,
+          avatar_position: pos,
+          about_me: d.about_me ?? null,
+          preferred_genres: Array.isArray(d.preferred_genres) ? d.preferred_genres : [],
+          hide_published_works: !!d.hide_published_works,
+          hide_profile_details: !!d.hide_profile_details,
         });
+
+        const rawWorks: any[] = Array.isArray(d.works) ? d.works : [];
+        setWorks(rawWorks.map((w) => ({
+          id: w.id,
+          scenario_id: w.scenario_id,
+          like_count: Number(w.like_count) || 0,
+          play_count: Number(w.play_count) || 0,
+          view_count: Number(w.view_count) || 0,
+          save_count: Number(w.save_count) || 0,
+          allow_remix: !!w.allow_remix,
+          storyType: w.story_type ?? null,
+          scenario: {
+            title: w.scenario_title ?? '',
+            description: w.scenario_description ?? null,
+            cover_image_url: w.scenario_cover_image_url ?? null,
+            cover_image_position: w.scenario_cover_image_position
+              ? (typeof w.scenario_cover_image_position === 'string'
+                ? JSON.parse(w.scenario_cover_image_position)
+                : w.scenario_cover_image_position)
+              : { x: 50, y: 50 },
+          },
+        })));
       }
       if (statsRes.data && Array.isArray(statsRes.data) && statsRes.data.length > 0) {
         const s = statsRes.data[0];
@@ -88,19 +116,6 @@ export default function CreatorProfile() {
           total_plays: Number(s.total_plays) || 0,
           follower_count: Number(s.follower_count) || 0,
         });
-      }
-      if (worksRes.data) {
-        const scenarioIds = worksRes.data.map((w: any) => w.scenario_id);
-        const { data: themesData } = await supabase
-          .from('content_themes')
-          .select('scenario_id, story_type')
-          .in('scenario_id', scenarioIds);
-        const themesMap = new Map((themesData || []).map((t: any) => [t.scenario_id, t.story_type]));
-        setWorks(worksRes.data.map((w: any) => ({
-          ...w,
-          scenario: w.stories,
-          storyType: themesMap.get(w.scenario_id) || null,
-        })));
       }
 
       fetchCreatorOverallRating(userId).then(setCreatorRating).catch(console.error);

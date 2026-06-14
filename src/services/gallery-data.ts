@@ -163,11 +163,11 @@ export async function fetchPublishedScenarios(
     const scenarioIds = data.map((item: any) => item.scenario_id);
     
     const [profilesResult, themesResult] = await Promise.all([
-      supabase.from('profiles').select('id, username, avatar_url, display_name').in('id', uniquePublisherIds),
+      supabase.rpc('get_public_profiles', { p_user_ids: uniquePublisherIds as string[] }),
       supabase.from('content_themes').select('*').in('scenario_id', scenarioIds)
     ]);
-    
-    const profileMap = new Map((profilesResult.data || []).map(p => [p.id, p]));
+
+    const profileMap = new Map((profilesResult.data || []).map((p: any) => [p.id, p]));
     const themesMap = new Map((themesResult.data || []).map(t => [t.scenario_id, {
       characterTypes: t.character_types || [],
       storyType: t.story_type as 'SFW' | 'NSFW' | null,
@@ -400,11 +400,9 @@ export async function fetchSavedScenarios(userId: string): Promise<SavedScenario
   )];
   
   const { data: profiles } = await supabase
-    .from('profiles')
-    .select('id, username, avatar_url, display_name')
-    .in('id', publisherIds);
-  
-  const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+    .rpc('get_public_profiles', { p_user_ids: publisherIds as string[] });
+
+  const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
   
   return data.map((item: any) => ({
     id: item.id,
@@ -649,11 +647,9 @@ export async function fetchScenarioReviews(
 
   const userIds = [...new Set(data.map((r: any) => r.user_id))];
   const { data: profiles } = await supabase
-    .from('profiles')
-    .select('id, username, avatar_url, display_name')
-    .in('id', userIds);
+    .rpc('get_public_profiles', { p_user_ids: userIds as string[] });
 
-  const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+  const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
 
   return data.map((r: any) => ({
     ...r,

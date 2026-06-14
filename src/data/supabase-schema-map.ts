@@ -6189,11 +6189,21 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "comment": null,
       "policies": [
         {
-          "name": "Anyone authenticated can view profiles",
+          "name": "Users can view own profile",
           "roles": [
             "authenticated"
           ],
-          "using": "true",
+          "using": "(auth.uid() = id)",
+          "command": "SELECT",
+          "withCheck": null,
+          "permissive": true
+        },
+        {
+          "name": "Admins can view all profiles",
+          "roles": [
+            "authenticated"
+          ],
+          "using": "has_role(auth.uid(), 'admin'::app_role)",
           "command": "SELECT",
           "withCheck": null,
           "permissive": true
@@ -6453,9 +6463,10 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         {
           "name": "Anyone can view published scenarios",
           "roles": [
-            "authenticated"
+            "authenticated",
+            "anon"
           ],
-          "using": "((is_published = true) AND (is_hidden = false))",
+          "using": "((is_published = true AND is_hidden = false AND EXISTS(SELECT 1 FROM public.profiles p WHERE p.id = published_scenarios.publisher_id AND COALESCE(p.hide_published_works,false) = false)) OR publisher_id = auth.uid() OR has_role(auth.uid(), 'admin'::app_role))",
           "command": "SELECT",
           "withCheck": null,
           "permissive": true
@@ -9927,7 +9938,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       ],
       "language": "plpgsql",
       "arguments": "p_search_text text DEFAULT NULL::text, p_search_tags text[] DEFAULT NULL::text[], p_sort_by text DEFAULT 'recent'::text, p_limit integer DEFAULT 20, p_offset integer DEFAULT 0, p_story_types text[] DEFAULT NULL::text[], p_genres text[] DEFAULT NULL::text[], p_origins text[] DEFAULT NULL::text[], p_trigger_warnings text[] DEFAULT NULL::text[], p_custom_tags text[] DEFAULT NULL::text[], p_publisher_ids uuid[] DEFAULT NULL::uuid[]",
-      "definition": "CREATE OR REPLACE FUNCTION public.fetch_gallery_scenarios(p_search_text text DEFAULT NULL::text, p_search_tags text[] DEFAULT NULL::text[], p_sort_by text DEFAULT 'recent'::text, p_limit integer DEFAULT 20, p_offset integer DEFAULT 0, p_story_types text[] DEFAULT NULL::text[], p_genres text[] DEFAULT NULL::text[], p_origins text[] DEFAULT NULL::text[], p_trigger_warnings text[] DEFAULT NULL::text[], p_custom_tags text[] DEFAULT NULL::text[], p_publisher_ids uuid[] DEFAULT NULL::uuid[])\n RETURNS json\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_result json;\nBEGIN\n  SELECT json_agg(row_data)\n  INTO v_result\n  FROM (\n    SELECT json_build_object(\n      'id', ps.id,\n      'scenario_id', ps.scenario_id,\n      'publisher_id', ps.publisher_id,\n      'allow_remix', ps.allow_remix,\n      'tags', ps.tags,\n      'like_count', ps.like_count,\n      'save_count', ps.save_count,\n      'play_count', ps.play_count,\n      'view_count', ps.view_count,\n      'avg_rating', ps.avg_rating,\n      'review_count', ps.review_count,\n      'is_published', ps.is_published,\n      'created_at', ps.created_at,\n      'updated_at', ps.updated_at,\n      'scenario', json_build_object(\n        'id', s.id,\n        'title', s.title,\n        'description', s.description,\n        'cover_image_url', s.cover_image_url,\n        'cover_image_position', s.cover_image_position\n      ),\n      'publisher', json_build_object(\n        'username', p.username,\n        'avatar_url', p.avatar_url,\n        'display_name', p.display_name\n      ),\n      'contentThemes', CASE WHEN ct.id IS NOT NULL THEN json_build_object(\n        'characterTypes', COALESCE(ct.character_types, ARRAY[]::text[]),\n        'storyType', ct.story_type,\n        'genres', COALESCE(ct.genres, ARRAY[]::text[]),\n        'origin', COALESCE(ct.origin, ARRAY[]::text[]),\n        'triggerWarnings', COALESCE(ct.trigger_warnings, ARRAY[]::text[]),\n        'customTags', COALESCE(ct.custom_tags, ARRAY[]::text[])\n      ) ELSE NULL END\n    ) AS row_data\n    FROM published_scenarios ps\n    JOIN stories s ON s.id = ps.scenario_id\n    LEFT JOIN profiles p ON p.id = ps.publisher_id\n    LEFT JOIN content_themes ct ON ct.scenario_id = ps.scenario_id\n    WHERE ps.is_published = true\n      AND ps.is_hidden = false\n      AND (p_search_tags IS NULL OR ps.tags && p_search_tags)\n      AND (p_publisher_ids IS NULL OR ps.publisher_id = ANY(p_publisher_ids))\n      AND (p_story_types IS NULL OR ct.story_type = ANY(p_story_types))\n      AND (p_genres IS NULL OR ct.genres && p_genres)\n      AND (p_origins IS NULL OR ct.origin && p_origins)\n      AND (p_trigger_warnings IS NULL OR ct.trigger_warnings && p_trigger_warnings)\n      AND (p_custom_tags IS NULL OR ct.custom_tags && p_custom_tags)\n      AND (\n        p_search_text IS NULL\n        OR p_search_text = ''\n        OR to_tsvector('english', COALESCE(s.title, '') || ' ' || COALESCE(s.description, '')) @@ plainto_tsquery('english', p_search_text)\n        OR s.title ILIKE '%' || p_search_text || '%'\n        OR s.description ILIKE '%' || p_search_text || '%'\n      )\n    ORDER BY\n      CASE WHEN p_sort_by = 'liked' THEN ps.like_count END DESC NULLS LAST,\n      CASE WHEN p_sort_by = 'saved' THEN ps.save_count END DESC NULLS LAST,\n      CASE WHEN p_sort_by = 'played' THEN ps.play_count END DESC NULLS LAST,\n      CASE WHEN p_sort_by IN ('recent', 'all') THEN ps.created_at END DESC NULLS LAST,\n      ps.created_at DESC\n    LIMIT p_limit\n    OFFSET p_offset\n  ) sub;\n\n  RETURN COALESCE(v_result, '[]'::json);\nEND;\n$function$\n",
+      "definition": "CREATE OR REPLACE FUNCTION public.fetch_gallery_scenarios(p_search_text text DEFAULT NULL::text, p_search_tags text[] DEFAULT NULL::text[], p_sort_by text DEFAULT 'recent'::text, p_limit integer DEFAULT 20, p_offset integer DEFAULT 0, p_story_types text[] DEFAULT NULL::text[], p_genres text[] DEFAULT NULL::text[], p_origins text[] DEFAULT NULL::text[], p_trigger_warnings text[] DEFAULT NULL::text[], p_custom_tags text[] DEFAULT NULL::text[], p_publisher_ids uuid[] DEFAULT NULL::uuid[])\n RETURNS json\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_result json;\nBEGIN\n  SELECT json_agg(row_data)\n  INTO v_result\n  FROM (\n    SELECT json_build_object(\n      'id', ps.id,\n      'scenario_id', ps.scenario_id,\n      'publisher_id', ps.publisher_id,\n      'allow_remix', ps.allow_remix,\n      'tags', ps.tags,\n      'like_count', ps.like_count,\n      'save_count', ps.save_count,\n      'play_count', ps.play_count,\n      'view_count', ps.view_count,\n      'avg_rating', ps.avg_rating,\n      'review_count', ps.review_count,\n      'is_published', ps.is_published,\n      'created_at', ps.created_at,\n      'updated_at', ps.updated_at,\n      'scenario', json_build_object(\n        'id', s.id,\n        'title', s.title,\n        'description', s.description,\n        'cover_image_url', s.cover_image_url,\n        'cover_image_position', s.cover_image_position\n      ),\n      'publisher', json_build_object(\n        'username', p.username,\n        'avatar_url', p.avatar_url,\n        'display_name', p.display_name\n      ),\n      'contentThemes', CASE WHEN ct.id IS NOT NULL THEN json_build_object(\n        'characterTypes', COALESCE(ct.character_types, ARRAY[]::text[]),\n        'storyType', ct.story_type,\n        'genres', COALESCE(ct.genres, ARRAY[]::text[]),\n        'origin', COALESCE(ct.origin, ARRAY[]::text[]),\n        'triggerWarnings', COALESCE(ct.trigger_warnings, ARRAY[]::text[]),\n        'customTags', COALESCE(ct.custom_tags, ARRAY[]::text[])\n      ) ELSE NULL END\n    ) AS row_data\n    FROM published_scenarios ps\n    JOIN stories s ON s.id = ps.scenario_id\n    LEFT JOIN profiles p ON p.id = ps.publisher_id\n    LEFT JOIN content_themes ct ON ct.scenario_id = ps.scenario_id\n    WHERE ps.is_published = true\n      AND ps.is_hidden = false\n      AND (COALESCE(p.hide_published_works,false) = false OR ps.publisher_id = auth.uid() OR has_role(auth.uid(), 'admin'::app_role))\n      AND (p_search_tags IS NULL OR ps.tags && p_search_tags)\n      AND (p_publisher_ids IS NULL OR ps.publisher_id = ANY(p_publisher_ids))\n      AND (p_story_types IS NULL OR ct.story_type = ANY(p_story_types))\n      AND (p_genres IS NULL OR ct.genres && p_genres)\n      AND (p_origins IS NULL OR ct.origin && p_origins)\n      AND (p_trigger_warnings IS NULL OR ct.trigger_warnings && p_trigger_warnings)\n      AND (p_custom_tags IS NULL OR ct.custom_tags && p_custom_tags)\n      AND (\n        p_search_text IS NULL\n        OR p_search_text = ''\n        OR to_tsvector('english', COALESCE(s.title, '') || ' ' || COALESCE(s.description, '')) @@ plainto_tsquery('english', p_search_text)\n        OR s.title ILIKE '%' || p_search_text || '%'\n        OR s.description ILIKE '%' || p_search_text || '%'\n      )\n    ORDER BY\n      CASE WHEN p_sort_by = 'liked' THEN ps.like_count END DESC NULLS LAST,\n      CASE WHEN p_sort_by = 'saved' THEN ps.save_count END DESC NULLS LAST,\n      CASE WHEN p_sort_by = 'played' THEN ps.play_count END DESC NULLS LAST,\n      CASE WHEN p_sort_by IN ('recent', 'all') THEN ps.created_at END DESC NULLS LAST,\n      ps.created_at DESC\n    LIMIT p_limit\n    OFFSET p_offset\n  ) sub;\n\n  RETURN COALESCE(v_result, '[]'::json);\nEND;\n$function$\n",
       "returnType": "json",
       "volatility": "STABLE",
       "securityDefiner": true
@@ -9937,10 +9948,34 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "config": [
         "search_path=public"
       ],
-      "language": "sql",
+      "language": "plpgsql",
       "arguments": "creator_user_id uuid",
-      "definition": "CREATE OR REPLACE FUNCTION public.get_creator_stats(creator_user_id uuid)\n RETURNS TABLE(published_count bigint, total_likes bigint, total_saves bigint, total_views bigint, total_plays bigint, follower_count bigint)\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\n  SELECT\n    COUNT(*)::bigint as published_count,\n    COALESCE(SUM(like_count), 0)::bigint as total_likes,\n    COALESCE(SUM(save_count), 0)::bigint as total_saves,\n    COALESCE(SUM(view_count), 0)::bigint as total_views,\n    COALESCE(SUM(play_count), 0)::bigint as total_plays,\n    (SELECT COUNT(*)::bigint FROM creator_follows WHERE creator_id = creator_user_id) as follower_count\n  FROM published_scenarios\n  WHERE publisher_id = creator_user_id\n    AND is_published = true\n    AND is_hidden = false;\n$function$\n",
+      "definition": "// See migration 20260614 (profile-privacy-enforcement). plpgsql STABLE SECURITY DEFINER. Returns zeros for published_count/total_likes/total_saves/total_views/total_plays when target profile.hide_published_works = true and caller is not owner/admin; follower_count remains public. Otherwise returns aggregate counts from published_scenarios where is_published AND NOT is_hidden plus follower_count from creator_follows.",
       "returnType": "TABLE(published_count bigint, total_likes bigint, total_saves bigint, total_views bigint, total_plays bigint, follower_count bigint)",
+      "volatility": "STABLE",
+      "securityDefiner": true
+    },
+    {
+      "name": "get_public_profiles",
+      "config": [
+        "search_path=public"
+      ],
+      "language": "sql",
+      "arguments": "p_user_ids uuid[]",
+      "definition": "STABLE SECURITY DEFINER. Returns id, username, display_name, avatar_url, avatar_position, hide_profile_details, hide_published_works for the requested user ids. Username/display_name/avatar_url/avatar_position are nulled out when hide_profile_details = true. EXECUTE revoked from PUBLIC and granted to authenticated and anon. Added by 20260614 profile-privacy-enforcement migration.",
+      "returnType": "TABLE(id uuid, username text, display_name text, avatar_url text, avatar_position jsonb, hide_profile_details boolean, hide_published_works boolean)",
+      "volatility": "STABLE",
+      "securityDefiner": true
+    },
+    {
+      "name": "get_public_creator_profile",
+      "config": [
+        "search_path=public"
+      ],
+      "language": "plpgsql",
+      "arguments": "p_user_id uuid",
+      "definition": "STABLE SECURITY DEFINER. Returns a single jsonb document for the requested creator. Owner and admin always receive the full profile plus a works array. When hide_profile_details = true and caller is not owner/admin, returns only {id, hide_profile_details:true, hide_published_works:true}. When hide_published_works = true and caller is not owner/admin, returns the profile shell with works = []. Otherwise returns profile (id, username, display_name, avatar_url, avatar_position, about_me, preferred_genres, hide_profile_details, hide_published_works) plus jsonb_agg of public works (id, scenario_id, like_count, save_count, play_count, view_count, allow_remix, created_at, scenario_title, scenario_description, scenario_cover_image_url, scenario_cover_image_position, story_type). EXECUTE revoked from PUBLIC and granted to authenticated and anon. Added by 20260614 profile-privacy-enforcement migration.",
+      "returnType": "jsonb",
       "volatility": "STABLE",
       "securityDefiner": true
     },

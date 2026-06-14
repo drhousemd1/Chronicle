@@ -2079,10 +2079,17 @@ export const databaseSchemaInventory = {
       ],
       "rls_policies": [
         {
-          "name": "Anyone authenticated can view profiles",
+          "name": "Users can view own profile",
           "command": "SELECT",
           "roles": "authenticated",
-          "using": "true",
+          "using": "auth.uid() = id",
+          "with_check": null
+        },
+        {
+          "name": "Admins can view all profiles",
+          "command": "SELECT",
+          "roles": "authenticated",
+          "using": "has_role(auth.uid(), 'admin'::app_role)",
           "with_check": null
         },
         {
@@ -2210,8 +2217,8 @@ export const databaseSchemaInventory = {
         {
           "name": "Anyone can view published scenarios",
           "command": "SELECT",
-          "roles": "authenticated",
-          "using": "is_published = true AND is_hidden = false",
+          "roles": "authenticated, anon",
+          "using": "(is_published = true AND is_hidden = false AND EXISTS(SELECT 1 FROM public.profiles p WHERE p.id = published_scenarios.publisher_id AND COALESCE(p.hide_published_works,false) = false)) OR publisher_id = auth.uid() OR has_role(auth.uid(), 'admin'::app_role)",
           "with_check": null
         },
         {
@@ -3510,10 +3517,30 @@ export const databaseSchemaInventory = {
       "name": "get_creator_stats",
       "touches": [
         "published_scenarios",
-        "creator_follows"
+        "creator_follows",
+        "profiles"
       ],
       "security": "DEFINER",
-      "description": "RPC: aggregate stats for a creator"
+      "description": "RPC: aggregate stats for a creator. Zeros public counters for non-owner/non-admin callers when target profile.hide_published_works = true; follower_count always public."
+    },
+    {
+      "name": "get_public_profiles",
+      "touches": [
+        "profiles"
+      ],
+      "security": "DEFINER",
+      "description": "RPC: minimal public profile chips for a list of user ids. Nulls out username/display_name/avatar when hide_profile_details = true. Anon-callable."
+    },
+    {
+      "name": "get_public_creator_profile",
+      "touches": [
+        "profiles",
+        "published_scenarios",
+        "stories",
+        "content_themes"
+      ],
+      "security": "DEFINER",
+      "description": "RPC: redacting creator profile + works view. Enforces hide_profile_details and hide_published_works server-side; owner/admin bypass. Anon-callable."
     },
     {
       "name": "get_folders_with_details",
