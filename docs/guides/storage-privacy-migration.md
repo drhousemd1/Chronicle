@@ -70,7 +70,64 @@ Source: `rg "getPublicUrl|from\('(avatars|scenes|covers|backgrounds|image_librar
 - `src/components/admin/finance/documents/DocumentsPage.tsx` and related admin
   components — restricted to admins by RLS + UI gating. No Stage B action.
 
-## Stage B (out of scope this pass)
+## Stage B status (2026-06-14)
+
+Stage B is **partially landed**. The finding `qh-sec-20260607-003` remains
+`in-progress` until the `scenes` bucket also flips and the runtime chat
+rendering audit completes.
+
+### Done in this pass
+
+- Added `image_path` columns to `scenes` and `library_images` (Migration A) and
+  backfilled existing rows where the public URL could be parsed.
+- Added `public.can_read_scene_storage_object(p_path)` (admin/owner + published
+  scenario predicate). Currently unused by storage policies; reserved for the
+  follow-up `scenes`-bucket flip.
+- Updated `get_folders_with_details()` and `save_scenario_atomic()` to expose
+  and persist `image_path` / `thumbnail_path`.
+- Tightened `public.get_creator_stats()` to return zeros for non-owners /
+  non-admins when `hide_profile_details` or `hide_published_works` is true.
+- New frontend helpers:
+  - `src/services/persistence/signed-media.ts` — cached `createSignedUrl`
+    resolver for the `image_library` and `scenes` private buckets. Signed URLs
+    are display-only and MUST NOT be persisted.
+  - `src/services/persistence/library-copy.ts` — copies bytes from the private
+    `image_library` into a destination bucket (covers / avatars / backgrounds
+    / scenes) and returns either a public URL (public dest) or a
+    `storage://<bucket>/<path>` sentinel (`scenes`).
+- `ImageLibraryPickerModal` resolves thumbnails through signed URLs and copies
+  the selected image into a `destBucket` before invoking `onSelect`, so legacy
+  consumers continue to receive a long-lived destination URL. New
+  `onSelectWithPath` callback exposes `imagePath` for callers that persist it.
+- All six picker consumers wired with explicit `destBucket`:
+  `SceneGalleryActionButtons` (`scenes`), `CoverImageActionButtons` (`covers`),
+  `AvatarActionButtons` (`avatars`), `UploadSourceMenu` (defaults `avatars`),
+  `BackgroundPickerModal` (`backgrounds`), `SidebarThemeModal` (`backgrounds`).
+- `ImageLibraryTab` now stores `image_path` on upload, deletes via
+  `image_path`, and renders folder + image thumbnails through signed URLs.
+- `Scene` TypeScript model gained `imagePath`. `dbToScene` strips
+  `storage://` sentinels and `hydrateScenePreviewUrls` resolves signed URLs at
+  load time so existing `<img src={scene.url}>` render sites keep working.
+- **Bucket flip:** `image_library` is now PRIVATE. Storage policy
+  `Owners can view own image_library` enforces owner/admin SELECT; anonymous
+  GETs return HTTP 400 and signed-URL minting requires the owner JWT.
+
+### Deferred to a follow-up pass
+
+- **`scenes` bucket flip.** Scene art is still publicly readable via the
+  `scenes` bucket. The chat runtime persists `message.imageUrl` (legacy public
+  scene URLs) in message snapshots — flipping the bucket without an audit
+  would break in-flight chat sessions. Once the chat-runtime render sites are
+  migrated to resolve via `scene.imagePath` / `getSignedMediaUrl('scenes', …)`,
+  the storage policies for `scenes` can be tightened with
+  `public.can_read_scene_storage_object(p_path)` and the bucket flipped to
+  `public=false`.
+- **Story export/import portability.** Export still embeds the destination
+  URL. Cross-user import of scene images should be treated as
+  image-less for non-owners; current behavior copies the URL string and will
+  surface a broken image once the `scenes` bucket flips.
+- **`src/data/supabase-schema-map.ts` snapshot refresh** to reflect the new
+  `image_library` policy names and `image_path` columns.
 
 Stage B will:
 
