@@ -4816,6 +4816,33 @@ const housekeepingFindings = findingsResolved.filter((f) =>
 
 const runs: QualityScanRun[] = [
   {
+    id: runIds.profilePrivacyEnforcement20260614,
+    name: "Lovable Supabase Fix — Profile Privacy Enforcement",
+    profile: "standard",
+    status: "completed",
+    startedAt: qualityHubProfilePrivacyEnforcement20260614Timestamp,
+    finishedAt: qualityHubProfilePrivacyEnforcement20260614Timestamp,
+    agent: codexAgent,
+    scope: [
+      "module-security",
+      "module-security-data-visibility",
+      "public.profiles RLS",
+      "public.get_public_profiles",
+      "public.get_public_creator_profile",
+      "public.get_creator_stats",
+      "public.published_scenarios SELECT",
+      "public.fetch_gallery_scenarios",
+      "src/pages/CreatorProfile.tsx",
+      "src/services/gallery-data.ts",
+    ],
+    summary: summaryFor(profilePrivacyEnforcement20260614Findings),
+    notes:
+      "Replaced the broad profiles SELECT with owner+admin policies. Added get_public_profiles and get_public_creator_profile SECURITY DEFINER RPCs that honor hide_profile_details and hide_published_works server-side. Rewrote get_creator_stats to zero public counters when hidden. Tightened published_scenarios SELECT and fetch_gallery_scenarios to filter publishers with hide_published_works. Switched CreatorProfile and gallery-data publisher/reviewer chip reads to the new RPCs.",
+    issueIdsCreated: [],
+    issueIdsUpdated: ["qh-sec-20260607-008"],
+    changeLogIds: ["cl-20260614-005"],
+  },
+  {
     id: runIds.galleryCounterIntegrity20260614,
     name: "Lovable Supabase Fix — Gallery Counter Integrity",
     profile: "standard",
