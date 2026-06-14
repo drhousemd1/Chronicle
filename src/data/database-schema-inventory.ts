@@ -2079,10 +2079,17 @@ export const databaseSchemaInventory = {
       ],
       "rls_policies": [
         {
-          "name": "Anyone authenticated can view profiles",
+          "name": "Users can view own profile",
           "command": "SELECT",
           "roles": "authenticated",
-          "using": "true",
+          "using": "auth.uid() = id",
+          "with_check": null
+        },
+        {
+          "name": "Admins can view all profiles",
+          "command": "SELECT",
+          "roles": "authenticated",
+          "using": "has_role(auth.uid(), 'admin'::app_role)",
           "with_check": null
         },
         {
