@@ -9956,6 +9956,30 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "securityDefiner": true
     },
     {
+      "name": "get_public_profiles",
+      "config": [
+        "search_path=public"
+      ],
+      "language": "sql",
+      "arguments": "p_user_ids uuid[]",
+      "definition": "STABLE SECURITY DEFINER. Returns id, username, display_name, avatar_url, avatar_position, hide_profile_details, hide_published_works for the requested user ids. Username/display_name/avatar_url/avatar_position are nulled out when hide_profile_details = true. EXECUTE revoked from PUBLIC and granted to authenticated and anon. Added by 20260614 profile-privacy-enforcement migration.",
+      "returnType": "TABLE(id uuid, username text, display_name text, avatar_url text, avatar_position jsonb, hide_profile_details boolean, hide_published_works boolean)",
+      "volatility": "STABLE",
+      "securityDefiner": true
+    },
+    {
+      "name": "get_public_creator_profile",
+      "config": [
+        "search_path=public"
+      ],
+      "language": "plpgsql",
+      "arguments": "p_user_id uuid",
+      "definition": "STABLE SECURITY DEFINER. Returns a single jsonb document for the requested creator. Owner and admin always receive the full profile plus a works array. When hide_profile_details = true and caller is not owner/admin, returns only {id, hide_profile_details:true, hide_published_works:true}. When hide_published_works = true and caller is not owner/admin, returns the profile shell with works = []. Otherwise returns profile (id, username, display_name, avatar_url, avatar_position, about_me, preferred_genres, hide_profile_details, hide_published_works) plus jsonb_agg of public works (id, scenario_id, like_count, save_count, play_count, view_count, allow_remix, created_at, scenario_title, scenario_description, scenario_cover_image_url, scenario_cover_image_position, story_type). EXECUTE revoked from PUBLIC and granted to authenticated and anon. Added by 20260614 profile-privacy-enforcement migration.",
+      "returnType": "jsonb",
+      "volatility": "STABLE",
+      "securityDefiner": true
+    },
+    {
       "name": "get_folders_with_details",
       "config": [
         "search_path=public"
