@@ -9921,30 +9921,6 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
   ],
   "functions": [
     {
-      "name": "decrement_like_count",
-      "config": [
-        "search_path=public"
-      ],
-      "language": "plpgsql",
-      "arguments": "published_id uuid",
-      "definition": "CREATE OR REPLACE FUNCTION public.decrement_like_count(published_id uuid)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  -- After deletion, the like record won't exist, so just validate user is authenticated\n  IF auth.uid() IS NULL THEN\n    RAISE EXCEPTION 'Unauthorized';\n  END IF;\n  UPDATE published_scenarios \n  SET like_count = GREATEST(0, like_count - 1), updated_at = now()\n  WHERE id = published_id;\nEND;\n$function$\n",
-      "returnType": "void",
-      "volatility": "VOLATILE",
-      "securityDefiner": true
-    },
-    {
-      "name": "decrement_save_count",
-      "config": [
-        "search_path=public"
-      ],
-      "language": "plpgsql",
-      "arguments": "published_id uuid",
-      "definition": "CREATE OR REPLACE FUNCTION public.decrement_save_count(published_id uuid)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF auth.uid() IS NULL THEN\n    RAISE EXCEPTION 'Unauthorized';\n  END IF;\n  UPDATE published_scenarios \n  SET save_count = GREATEST(0, save_count - 1), updated_at = now()\n  WHERE id = published_id;\nEND;\n$function$\n",
-      "returnType": "void",
-      "volatility": "VOLATILE",
-      "securityDefiner": true
-    },
-    {
       "name": "fetch_gallery_scenarios",
       "config": [
         "search_path=public"
