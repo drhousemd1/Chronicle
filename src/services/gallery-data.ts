@@ -400,11 +400,9 @@ export async function fetchSavedScenarios(userId: string): Promise<SavedScenario
   )];
   
   const { data: profiles } = await supabase
-    .from('profiles')
-    .select('id, username, avatar_url, display_name')
-    .in('id', publisherIds);
-  
-  const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+    .rpc('get_public_profiles', { p_user_ids: publisherIds as string[] });
+
+  const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
   
   return data.map((item: any) => ({
     id: item.id,
@@ -649,11 +647,9 @@ export async function fetchScenarioReviews(
 
   const userIds = [...new Set(data.map((r: any) => r.user_id))];
   const { data: profiles } = await supabase
-    .from('profiles')
-    .select('id, username, avatar_url, display_name')
-    .in('id', userIds);
+    .rpc('get_public_profiles', { p_user_ids: userIds as string[] });
 
-  const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+  const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
 
   return data.map((r: any) => ({
     ...r,
