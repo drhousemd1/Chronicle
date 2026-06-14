@@ -3594,7 +3594,8 @@ export const databaseSchemaInventory = {
     },
     {
       "name": "scenes",
-      "public": true
+      "public": false,
+      "notes": "Flipped to private 2026-06-14 (Stage B, qh-sec-20260607-003). SELECT gated by storage policy 'Owners admins or published scenes can view' which calls public.can_read_scene_storage_object(name): owner OR admin OR (image_path matches a published, non-hidden scene whose publisher does not have hide_published_works=true). All reads route through createSignedUrl via src/services/persistence/signed-media.ts."
     },
     {
       "name": "covers",
@@ -3606,7 +3607,8 @@ export const databaseSchemaInventory = {
     },
     {
       "name": "image_library",
-      "public": true
+      "public": false,
+      "notes": "Flipped to private 2026-06-14 (Stage B, qh-sec-20260607-003). SELECT gated by storage policy 'Owners can view own image_library': owner folder segment OR admin. Reads route through createSignedUrl via src/services/persistence/signed-media.ts. library-copy.ts copies bytes into a destination bucket when a library image is reused as a cover/avatar/background/scene."
     },
     {
       "name": "guide_images",
