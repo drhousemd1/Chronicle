@@ -4793,6 +4793,27 @@ const housekeepingFindings = findingsResolved.filter((f) =>
 
 const runs: QualityScanRun[] = [
   {
+    id: runIds.galleryCounterIntegrity20260614,
+    name: "Lovable Supabase Fix — Gallery Counter Integrity",
+    profile: "standard",
+    status: "completed",
+    startedAt: qualityHubGalleryCounterIntegrity20260614Timestamp,
+    finishedAt: qualityHubGalleryCounterIntegrity20260614Timestamp,
+    agent: codexAgent,
+    scope: [
+      "module-security",
+      "module-security-auth-access-control",
+      "public.published_scenarios counters",
+      "public.scenario_plays",
+    ],
+    summary: summaryFor(galleryCounterIntegrity20260614Findings),
+    notes:
+      "Dropped six legacy counter RPCs; added public.scenario_plays ledger + throttled record_scenario_play RPC; moved like/save/play counts to AFTER INSERT/DELETE sync triggers backed by the truth tables; backfilled drifted counters; updated gallery-data.ts call sites and types.",
+    issueIdsCreated: [],
+    issueIdsUpdated: ["qh-sec-20260607-011"],
+    changeLogIds: ["cl-20260614-004"],
+  },
+  {
     id: runIds.publishedScenariosOwnership20260614,
     name: "Lovable Supabase Fix — published_scenarios Ownership + Quarantine",
     profile: "standard",
