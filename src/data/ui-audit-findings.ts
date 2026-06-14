@@ -6415,7 +6415,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
       title: "Storage privacy Stage A — inventory and Stage B target list",
       summary:
         "Security · Documented every code path that touches a Supabase Storage bucket and classified scenes + image_library as Stage B private-bucket targets. No bucket settings or call sites changed in Stage A.",
-      severity: "doc" as const,
+      severity: "patch" as const,
       status: "completed" as const,
       problem:
         "Finding qh-sec-20260607-003 flagged that private roleplay media (scenes, image_library) is served from public-readable buckets. The fix needs a signed-URL helper and bucket flips, but no inventory existed of every consumer of those buckets, so Stage B could not be planned safely.",
