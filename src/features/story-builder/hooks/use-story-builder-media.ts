@@ -326,10 +326,15 @@ export function useStoryBuilderMedia({
           const filename = `scene-${uuid()}-${Date.now()}.jpg`;
           const publicUrl = await uploadSceneImage(userId, blob, filename);
 
+          // `scenes` is a private bucket; the publicUrl path returned by the
+          // helper will 404 anonymously. Resolve a signed URL for the preview
+          // and persist only the bucket-relative imagePath.
+          const imagePath = `${userId}/${filename}`;
+          const signed = await getSignedMediaUrl('scenes', imagePath);
           const newScene: Scene = {
             id: uuid(),
-            url: publicUrl,
-            imagePath: `${userId}/${filename}`,
+            url: signed || publicUrl,
+            imagePath,
             tags: [],
             createdAt: now(),
           };
@@ -394,9 +399,14 @@ export function useStoryBuilderMedia({
       let finalPath: string | null = null;
       try {
         const uploaded = await compressAndUpload(data.imageUrl, 'scenes', userId, 1024, 768, 0.85);
-        finalUrl = uploaded;
         const m = /\/scenes\/(.+)$/.exec(uploaded);
         finalPath = m ? m[1] : null;
+        if (finalPath) {
+          const signed = await getSignedMediaUrl('scenes', finalPath);
+          finalUrl = signed || uploaded;
+        } else {
+          finalUrl = uploaded;
+        }
       } catch {
         // Use original URL if compression fails.
       }
