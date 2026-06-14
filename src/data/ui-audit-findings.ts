@@ -4781,6 +4781,9 @@ const charactersParentBinding20260614Findings = findingsResolved.filter((f) =>
 const publishedScenariosOwnership20260614Findings = findingsResolved.filter((f) =>
   f.tags.includes("scan-published-scenarios-ownership-20260614"),
 );
+const galleryCounterIntegrity20260614Findings = findingsResolved.filter((f) =>
+  f.tags.includes("scan-gallery-counter-integrity-20260614"),
+);
 const lovableSupabaseRequiredFindings = findingsResolved.filter((f) =>
   f.tags.includes("lovable-supabase-required"),
 );
