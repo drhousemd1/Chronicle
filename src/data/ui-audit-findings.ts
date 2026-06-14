@@ -4749,6 +4749,26 @@ const housekeepingFindings = findingsResolved.filter((f) =>
 
 const runs: QualityScanRun[] = [
   {
+    id: runIds.charactersParentBinding20260614,
+    name: "Lovable Supabase Fix — characters Parent Binding",
+    profile: "standard",
+    status: "completed",
+    startedAt: qualityHubCharactersParentBinding20260614Timestamp,
+    finishedAt: qualityHubCharactersParentBinding20260614Timestamp,
+    agent: codexAgent,
+    scope: [
+      "module-security",
+      "module-security-auth-access-control",
+      "public.characters",
+    ],
+    summary: summaryFor(charactersParentBinding20260614Findings),
+    notes:
+      "Replaced public.characters INSERT and UPDATE RLS policies with parent-binding checks: the row's scenario_id, when not null, must reference a stories row owned by auth.uid().",
+    issueIdsCreated: [],
+    issueIdsUpdated: ["qh-sec-20260607-004"],
+    changeLogIds: ["cl-20260614-002"],
+  },
+  {
     id: runIds.saveScenarioAtomicOwnership20260614,
     name: "Lovable Supabase Fix — save_scenario_atomic Ownership Guards",
     profile: "standard",
