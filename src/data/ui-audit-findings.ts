@@ -4737,6 +4737,9 @@ const aiUsageTelemetryIntegrity20260613Findings = findingsResolved.filter((f) =>
 const saveScenarioAtomicOwnership20260614Findings = findingsResolved.filter((f) =>
   f.tags.includes("scan-save-scenario-atomic-ownership-20260614"),
 );
+const charactersParentBinding20260614Findings = findingsResolved.filter((f) =>
+  f.tags.includes("scan-characters-parent-binding-20260614"),
+);
 const lovableSupabaseRequiredFindings = findingsResolved.filter((f) =>
   f.tags.includes("lovable-supabase-required"),
 );
