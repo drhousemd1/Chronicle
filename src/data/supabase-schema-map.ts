@@ -8036,6 +8036,14 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "notNull": false,
           "ordinal": 7,
           "isIdentity": false
+        },
+        {
+          "name": "image_path",
+          "type": "text",
+          "default": null,
+          "notNull": false,
+          "ordinal": 8,
+          "isIdentity": false
         }
       ],
       "comment": null,
