@@ -9993,54 +9993,6 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "securityDefiner": true
     },
     {
-      "name": "increment_like_count",
-      "config": [
-        "search_path=public"
-      ],
-      "language": "plpgsql",
-      "arguments": "published_id uuid",
-      "definition": "CREATE OR REPLACE FUNCTION public.increment_like_count(published_id uuid)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1 FROM scenario_likes \n    WHERE published_scenario_id = published_id AND user_id = auth.uid()\n  ) THEN\n    RAISE EXCEPTION 'Unauthorized: No like record found';\n  END IF;\n  UPDATE published_scenarios \n  SET like_count = like_count + 1, updated_at = now()\n  WHERE id = published_id;\nEND;\n$function$\n",
-      "returnType": "void",
-      "volatility": "VOLATILE",
-      "securityDefiner": true
-    },
-    {
-      "name": "increment_play_count",
-      "config": [
-        "search_path=public"
-      ],
-      "language": "plpgsql",
-      "arguments": "published_id uuid",
-      "definition": "CREATE OR REPLACE FUNCTION public.increment_play_count(published_id uuid)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF auth.uid() IS NULL THEN\n    RAISE EXCEPTION 'Unauthorized';\n  END IF;\n  UPDATE published_scenarios \n  SET play_count = play_count + 1, updated_at = now()\n  WHERE id = published_id;\nEND;\n$function$\n",
-      "returnType": "void",
-      "volatility": "VOLATILE",
-      "securityDefiner": true
-    },
-    {
-      "name": "increment_save_count",
-      "config": [
-        "search_path=public"
-      ],
-      "language": "plpgsql",
-      "arguments": "published_id uuid",
-      "definition": "CREATE OR REPLACE FUNCTION public.increment_save_count(published_id uuid)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1 FROM saved_scenarios \n    WHERE published_scenario_id = published_id AND user_id = auth.uid()\n  ) THEN\n    RAISE EXCEPTION 'Unauthorized: No save record found';\n  END IF;\n  UPDATE published_scenarios \n  SET save_count = save_count + 1, updated_at = now()\n  WHERE id = published_id;\nEND;\n$function$\n",
-      "returnType": "void",
-      "volatility": "VOLATILE",
-      "securityDefiner": true
-    },
-    {
-      "name": "increment_view_count",
-      "config": [
-        "search_path=public"
-      ],
-      "language": "plpgsql",
-      "arguments": "published_id uuid",
-      "definition": "CREATE OR REPLACE FUNCTION public.increment_view_count(published_id uuid)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF auth.uid() IS NULL THEN\n    RAISE EXCEPTION 'Unauthorized';\n  END IF;\n  UPDATE published_scenarios \n  SET view_count = view_count + 1, updated_at = now()\n  WHERE id = published_id;\nEND;\n$function$\n",
-      "returnType": "void",
-      "volatility": "VOLATILE",
-      "securityDefiner": true
-    },
-    {
       "name": "record_scenario_view",
       "config": [
         "search_path=public"
