@@ -6374,6 +6374,41 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260614-005",
+      title: "Enforce profile privacy server-side via owner-only RLS and redacting RPCs",
+      summary:
+        "Security · Profile privacy flags (hide_profile_details, hide_published_works) are now enforced inside the database; the SPA can no longer query private fields directly.",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem:
+        "public.profiles SELECT was open to any authenticated user, and CreatorProfile fetched private fields before deciding whether to render them. Privacy was effectively a client-side overlay over data the database had already returned.",
+      plan:
+        "Drop the broad profiles SELECT policy and add owner + admin policies. Introduce get_public_profiles(uuid[]) for minimal public chips and get_public_creator_profile(uuid) for the creator view, both enforcing hide_profile_details and hide_published_works server-side. Rewrite get_creator_stats to zero public counters when hidden. Tighten published_scenarios SELECT and fetch_gallery_scenarios to honor hide_published_works. Switch CreatorProfile and gallery-data publisher/reviewer chip reads to the new RPCs.",
+      changes:
+        "Database:\n- DROP POLICY \"Anyone authenticated can view profiles\" on public.profiles. ADD \"Users can view own profile\" (auth.uid()=id) and \"Admins can view all profiles\" (has_role).\n- CREATE OR REPLACE FUNCTION public.get_public_profiles(uuid[]) SECURITY DEFINER STABLE: returns id, username, display_name, avatar_url, avatar_position, hide_profile_details, hide_published_works; nulls out username/display_name/avatar fields when hide_profile_details=true. EXECUTE revoked from PUBLIC and granted to authenticated/anon.\n- CREATE OR REPLACE FUNCTION public.get_public_creator_profile(uuid) SECURITY DEFINER STABLE returns jsonb: owner/admin always get full profile + works; hide_profile_details returns stub {id, hide_profile_details:true, hide_published_works:true}; hide_published_works returns profile shell with works=[]; otherwise returns profile + jsonb_agg of public works (id, scenario_id, counts, allow_remix, created_at, scenario_title/description/cover_image_url/cover_image_position, story_type).\n- CREATE OR REPLACE FUNCTION public.get_creator_stats(uuid) rewritten in plpgsql: zeros published/likes/saves/views/plays for non-owner/non-admin callers when hide_published_works=true; follower_count stays public.\n- DROP and recreate public.published_scenarios SELECT policy with EXISTS check that the publisher profile is not hidden, plus owner and admin bypass branches.\n- CREATE OR REPLACE FUNCTION public.fetch_gallery_scenarios(...) adds COALESCE(p.hide_published_works,false)=false OR ps.publisher_id=v_caller OR v_is_admin to the WHERE clause.\n\nFrontend:\n- src/pages/CreatorProfile.tsx: replaced the broad profiles SELECT and the public published_scenarios SELECT (plus the separate content_themes lookup) with a single supabase.rpc('get_public_creator_profile', { p_user_id }); works are read from the returned jsonb.\n- src/services/gallery-data.ts: three non-owner publisher/reviewer profile chip reads (gallery listing, saved scenarios, scenario reviews) switched from from('profiles') to rpc('get_public_profiles', { p_user_ids }).\n- Regenerated src/integrations/supabase/types.ts now includes get_public_profiles and get_public_creator_profile.\n- Refreshed src/data/database-schema-inventory.ts and src/data/supabase-schema-map.ts with the new policies and functions.",
+      filesAffected: [
+        "public.profiles SELECT policies (Supabase migration)",
+        "public.get_public_profiles RPC (Supabase migration)",
+        "public.get_public_creator_profile RPC (Supabase migration)",
+        "public.get_creator_stats RPC (Supabase migration)",
+        "public.published_scenarios SELECT policy (Supabase migration)",
+        "public.fetch_gallery_scenarios RPC (Supabase migration)",
+        "src/pages/CreatorProfile.tsx",
+        "src/services/gallery-data.ts",
+        "src/integrations/supabase/types.ts",
+        "src/data/supabase-schema-map.ts",
+        "src/data/database-schema-inventory.ts",
+        "src/data/ui-audit-findings.ts",
+      ],
+      agent: "Lovable",
+      relatedFindingIds: ["qh-sec-20260607-008"],
+      relatedRunIds: [runIds.securityDeep20260607, runIds.profilePrivacyEnforcement20260614],
+      tags: ["security", "supabase-rls", "supabase-rpc", "privacy", "lovable-supabase-required", "quality-hub"],
+      comments: [],
+      createdAt: qualityHubProfilePrivacyEnforcement20260614Timestamp,
+      updatedAt: qualityHubProfilePrivacyEnforcement20260614Timestamp,
+    },
+    {
       id: "cl-20260614-004",
       title: "Replace gallery counter RPCs with derived counts and a throttled play ledger",
       summary: "Security · Public gallery counters can no longer be inflated by direct RPC calls; like/save/play counts are now derived from the truth tables, and plays are throttled per user.",
