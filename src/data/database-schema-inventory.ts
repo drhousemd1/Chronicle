@@ -2853,6 +2853,12 @@ export const databaseSchemaInventory = {
           "default": null
         },
         {
+          "name": "image_path",
+          "type": "text",
+          "nullable": true,
+          "default": null
+        },
+        {
           "name": "tags",
           "type": "text[]",
           "nullable": true,
