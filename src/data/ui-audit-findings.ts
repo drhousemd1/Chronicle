@@ -4717,6 +4717,9 @@ const internalToolRouteGuard20260613Findings = findingsResolved.filter((f) =>
 const aiUsageTelemetryIntegrity20260613Findings = findingsResolved.filter((f) =>
   f.tags.includes("scan-ai-usage-telemetry-integrity-20260613"),
 );
+const saveScenarioAtomicOwnership20260614Findings = findingsResolved.filter((f) =>
+  f.tags.includes("scan-save-scenario-atomic-ownership-20260614"),
+);
 const lovableSupabaseRequiredFindings = findingsResolved.filter((f) =>
   f.tags.includes("lovable-supabase-required"),
 );
@@ -4725,6 +4728,27 @@ const housekeepingFindings = findingsResolved.filter((f) =>
 );
 
 const runs: QualityScanRun[] = [
+  {
+    id: runIds.saveScenarioAtomicOwnership20260614,
+    name: "Lovable Supabase Fix — save_scenario_atomic Ownership Guards",
+    profile: "standard",
+    status: "completed",
+    startedAt: qualityHubSaveScenarioAtomicOwnership20260614Timestamp,
+    finishedAt: qualityHubSaveScenarioAtomicOwnership20260614Timestamp,
+    agent: codexAgent,
+    scope: [
+      "module-security",
+      "module-security-auth-access-control",
+      "module-security-data-visibility",
+      "public.save_scenario_atomic",
+    ],
+    summary: summaryFor(saveScenarioAtomicOwnership20260614Findings),
+    notes:
+      "Replaced public.save_scenario_atomic with an ownership-hardened version: pre-flight parent check, guarded story upsert with GET DIAGNOSTICS, and per-row guarded ON CONFLICT DO UPDATE branches for characters, codex_entries, and scenes.",
+    issueIdsCreated: [],
+    issueIdsUpdated: ["qh-sec-20260607-001"],
+    changeLogIds: ["cl-20260614-001"],
+  },
   {
     id: runIds.contentFilterFindingReclassification20260613,
     name: "Codex Quality Hub Correction — Content-Filter Finding Reclassification",
