@@ -10296,9 +10296,9 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "withCheck": null
       },
       {
-        "name": "Anyone can view scenes",
+        "name": "Owners admins or published scenes can view",
         "roles": null,
-        "using": "(bucket_id = 'scenes'::text)",
+        "using": "((bucket_id = 'scenes'::text) AND can_read_scene_storage_object(name))",
         "command": "SELECT",
         "withCheck": null
       },
@@ -10432,9 +10432,9 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "withCheck": "((bucket_id = 'image_library'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))"
       },
       {
-        "name": "Users can view image_library",
+        "name": "Owners can view own image_library",
         "roles": null,
-        "using": "(bucket_id = 'image_library'::text)",
+        "using": "((bucket_id = 'image_library'::text) AND (((auth.uid())::text = (storage.foldername(name))[1]) OR has_role(auth.uid(), 'admin'::app_role)))",
         "command": "SELECT",
         "withCheck": null
       }
