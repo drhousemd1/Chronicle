@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 
 import { supabase } from '@/integrations/supabase/client';
 import { resizeImage, uuid } from '@/utils';
+import { getSignedMediaUrl, getSignedMediaUrls } from '@/services/persistence/signed-media';
 
 import type { ImageFolder, LibraryImage } from './image-library-types';
 export type { ImageFolder, LibraryImage } from './image-library-types';
@@ -34,6 +35,9 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
   const [editingFolder, setEditingFolder] = useState<ImageFolder | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [aspectRatios, setAspectRatios] = useState<Record<string, { label: string; orientation: 'portrait' | 'landscape' | 'square' }>>({});
+  // image_library is private — render via signed URLs keyed by image_path
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+  const [folderSignedUrls, setFolderSignedUrls] = useState<Record<string, string>>({});
 
   // Fetch guards
   const hasLoadedRef = useRef(false);
@@ -57,10 +61,10 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
         }
       };
       el.onerror = () => { loaded++; };
-      el.src = img.imageUrl;
+      el.src = img.imagePath ? (signedUrls[img.imagePath] || '') : img.imageUrl;
     });
     return () => { cancelled = true; };
-  }, [folderImages]);
+  }, [folderImages, signedUrls]);
   const [lightboxImage, setLightboxImage] = useState<LibraryImage | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'folder' | 'image'; id: string } | null>(null);
@@ -106,12 +110,22 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
         description: row.description || '',
         thumbnailImageId: row.thumbnail_image_id,
         thumbnailUrl: row.thumbnail_url,
+        thumbnailPath: row.thumbnail_path || null,
         imageCount: Number(row.image_count) || 0,
         createdAt: new Date(row.created_at).getTime(),
         updatedAt: new Date(row.updated_at).getTime(),
       } as ImageFolder));
 
       setFolders(foldersWithDetails);
+      const thumbPaths = foldersWithDetails
+        .map((f: ImageFolder) => f.thumbnailPath)
+        .filter((p: string | null | undefined): p is string => !!p);
+      if (thumbPaths.length) {
+        const map = await getSignedMediaUrls('image_library', thumbPaths);
+        setFolderSignedUrls(map);
+      } else {
+        setFolderSignedUrls({});
+      }
       hasLoadedRef.current = true;
     } catch (e: any) {
       console.error('Failed to load folders:', e);
@@ -143,19 +157,26 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
 
       if (error) throw error;
 
-      setFolderImages(
-        (data || []).map((img: any) => ({
-          id: img.id,
-          userId: img.user_id,
-          folderId: img.folder_id,
-          imageUrl: img.image_url,
-          filename: img.filename || '',
-          title: img.title || '',
-          isThumbnail: img.is_thumbnail || false,
-          tags: img.tags || [],
-          createdAt: new Date(img.created_at).getTime(),
-        }))
-      );
+      const mapped: LibraryImage[] = (data || []).map((img: any) => ({
+        id: img.id,
+        userId: img.user_id,
+        folderId: img.folder_id,
+        imageUrl: img.image_url,
+        imagePath: img.image_path || null,
+        filename: img.filename || '',
+        title: img.title || '',
+        isThumbnail: img.is_thumbnail || false,
+        tags: img.tags || [],
+        createdAt: new Date(img.created_at).getTime(),
+      }));
+      setFolderImages(mapped);
+      const paths = mapped.map((i) => i.imagePath).filter((p): p is string => !!p);
+      if (paths.length) {
+        const map = await getSignedMediaUrls('image_library', paths);
+        setSignedUrls(map);
+      } else {
+        setSignedUrls({});
+      }
     } catch (e: any) {
       console.error('Failed to load images:', e);
       const message = e?.message || "Could not load images for this folder.";
