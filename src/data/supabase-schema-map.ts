@@ -10044,6 +10044,18 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "securityDefiner": true
     },
     {
+      "name": "can_read_scene_storage_object",
+      "config": [
+        "search_path=public"
+      ],
+      "language": "plpgsql",
+      "arguments": "p_path text",
+      "definition": "STABLE SECURITY DEFINER predicate added by migrations 20260614100132 and 20260614110123. Returns true when caller is the owner segment of the path, OR caller has app_role 'admin', OR there exists a public.scenes row with image_path = p_path whose parent scenario is published (is_published=true AND is_hidden=false) and whose publisher's profile does not have hide_published_works=true. Used exclusively by the 'Owners admins or published scenes can view' storage.objects policy on the private scenes bucket to gate signed-URL minting and direct object reads.",
+      "returnType": "boolean",
+      "volatility": "STABLE",
+      "securityDefiner": true
+    },
+    {
       "name": "record_scenario_view",
       "config": [
         "search_path=public"
