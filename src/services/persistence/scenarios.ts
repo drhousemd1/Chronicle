@@ -362,7 +362,8 @@ export async function saveScenario(
   }));
   const scenesPayload = data.scenes.map((s) => ({
     id: s.id,
-    image_url: s.url,
+    image_url: s.imagePath ? `storage://scenes/${s.imagePath}` : (s.url || ''),
+    image_path: s.imagePath || null,
     tags: s.tags ?? [],
     is_starting_scene: s.isStartingScene || false,
   }));
@@ -452,7 +453,8 @@ async function syncScenes(scenarioId: string, data: ScenarioData): Promise<void>
         data.scenes.map((s) => ({
           id: s.id,
           scenario_id: scenarioId,
-          image_url: s.url,
+          image_url: s.imagePath ? `storage://scenes/${s.imagePath}` : (s.url || ''),
+          image_path: s.imagePath || null,
           tags: s.tags ?? [],
           is_starting_scene: s.isStartingScene || false,
         })),
