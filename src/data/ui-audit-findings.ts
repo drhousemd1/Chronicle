@@ -64,6 +64,7 @@ const runIds = {
   saveScenarioAtomicOwnership20260614: "run-lovable-save-scenario-atomic-ownership-20260614",
   charactersParentBinding20260614: "run-lovable-characters-parent-binding-20260614",
   publishedScenariosOwnership20260614: "run-lovable-published-scenarios-ownership-20260614",
+  galleryCounterIntegrity20260614: "run-lovable-gallery-counter-integrity-20260614",
 } as const;
 
 const qualityHubHousekeepingScanTimestamp = "2026-05-30T19:22:16.000-06:00";
@@ -88,6 +89,7 @@ const qualityHubContentFilterFindingReclassification20260613Timestamp = "2026-06
 const qualityHubSaveScenarioAtomicOwnership20260614Timestamp = "2026-06-14T07:00:00.000Z";
 const qualityHubCharactersParentBinding20260614Timestamp = "2026-06-14T07:30:00.000Z";
 const qualityHubPublishedScenariosOwnership20260614Timestamp = "2026-06-14T08:00:00.000Z";
+const qualityHubGalleryCounterIntegrity20260614Timestamp = "2026-06-14T08:30:00.000Z";
 
 function stamp(runId: string) {
   return {
@@ -997,18 +999,36 @@ const findings: QualityFinding[] = [
     "medium",
     runIds.securityDeep20260607,
     {
+      status: "fixed",
+      verificationStatus: "verified",
+      verifiedBy: stamp(runIds.galleryCounterIntegrity20260614),
       route: "gallery RPCs",
       component: "published_scenarios counters",
+      currentState: "All six legacy counter RPCs (increment_like_count, decrement_like_count, increment_save_count, decrement_save_count, increment_play_count, increment_view_count) have been dropped. like_count and save_count are now maintained by AFTER INSERT/DELETE triggers on scenario_likes and saved_scenarios. play_count is maintained by an AFTER INSERT/DELETE trigger on the new scenario_plays ledger, which is only written via the throttled SECURITY DEFINER record_scenario_play RPC (one play per scenario per 5 minutes per user). view_count is still maintained by record_scenario_view (24-hour dedup). Frontend was updated to stop calling the dropped RPCs.",
       evidence: [
         "`decrement_like_count`, `decrement_save_count`, `increment_play_count`, and `increment_view_count` update `published_scenarios` counters directly.",
         "Some newer view/action flows are safer, but these legacy functions remain present in migrations/types.",
+        "June 2026 Lovable fix: pg_proc no longer lists increment_like_count / decrement_like_count / increment_save_count / decrement_save_count / increment_play_count / increment_view_count in the public schema.",
+        "Created public.scenario_plays ledger (user_id, published_scenario_id, played_at) with RLS enabled, SELECT-own policy, and no client-side INSERT path.",
+        "Created public.record_scenario_play(uuid) SECURITY DEFINER with auth gate, published-non-hidden guard, and `played_at > now() - interval '5 minutes'` throttle; EXECUTE revoked from PUBLIC/anon and granted to authenticated/service_role.",
+        "Added trigger functions sync_published_scenario_like_count, sync_published_scenario_save_count, sync_published_scenario_play_count; triggers sync_like_count / sync_save_count / sync_play_count fire AFTER INSERT OR DELETE on scenario_likes / saved_scenarios / scenario_plays and rewrite the corresponding counter from count(*) on the truth table.",
+        "One-time backfill recomputed like_count and save_count from scenario_likes and saved_scenarios for all rows whose stored count drifted.",
+        "src/services/gallery-data.ts toggleLike / saveScenarioToCollection / unsaveScenario no longer call any counter RPCs; incrementPlayCount now calls record_scenario_play; types.ts no longer lists the dropped RPCs.",
       ],
       expectedBehavior: "Counters change only from verified one-user-one-action evidence.",
       actualBehavior: "Direct RPC calls can mutate public counters from a supplied published scenario ID.",
-      tags: ["module-security", "module-security-auth-access-control", "scan-security-deep-20260607", "gallery-integrity", "lovable-supabase-required"],
-      relatedRunIds: [runIds.securityDeep20260607],
+      tags: ["module-security", "module-security-auth-access-control", "scan-security-deep-20260607", "gallery-integrity", "lovable-supabase-required", "scan-gallery-counter-integrity-20260614"],
+      relatedRunIds: [runIds.securityDeep20260607, runIds.galleryCounterIntegrity20260614],
+      comments: [
+        {
+          id: "fix-note-qh-sec-20260607-011-20260614",
+          author: "Lovable",
+          timestamp: qualityHubGalleryCounterIntegrity20260614Timestamp,
+          text: "Dropped six legacy counter RPCs, added scenario_plays ledger + throttled record_scenario_play, and moved like/save/play counts to AFTER INSERT/DELETE sync triggers. Backfilled drifted counters. Updated gallery-data.ts call sites.",
+        },
+      ],
       createdAt: qualityHubSecurityDeep20260607Timestamp,
-      updatedAt: qualityHubSecurityDeep20260607Timestamp,
+      updatedAt: qualityHubGalleryCounterIntegrity20260614Timestamp,
     },
   ),
   finding(
@@ -4761,6 +4781,9 @@ const charactersParentBinding20260614Findings = findingsResolved.filter((f) =>
 const publishedScenariosOwnership20260614Findings = findingsResolved.filter((f) =>
   f.tags.includes("scan-published-scenarios-ownership-20260614"),
 );
+const galleryCounterIntegrity20260614Findings = findingsResolved.filter((f) =>
+  f.tags.includes("scan-gallery-counter-integrity-20260614"),
+);
 const lovableSupabaseRequiredFindings = findingsResolved.filter((f) =>
   f.tags.includes("lovable-supabase-required"),
 );
@@ -4769,6 +4792,27 @@ const housekeepingFindings = findingsResolved.filter((f) =>
 );
 
 const runs: QualityScanRun[] = [
+  {
+    id: runIds.galleryCounterIntegrity20260614,
+    name: "Lovable Supabase Fix — Gallery Counter Integrity",
+    profile: "standard",
+    status: "completed",
+    startedAt: qualityHubGalleryCounterIntegrity20260614Timestamp,
+    finishedAt: qualityHubGalleryCounterIntegrity20260614Timestamp,
+    agent: codexAgent,
+    scope: [
+      "module-security",
+      "module-security-auth-access-control",
+      "public.published_scenarios counters",
+      "public.scenario_plays",
+    ],
+    summary: summaryFor(galleryCounterIntegrity20260614Findings),
+    notes:
+      "Dropped six legacy counter RPCs; added public.scenario_plays ledger + throttled record_scenario_play RPC; moved like/save/play counts to AFTER INSERT/DELETE sync triggers backed by the truth tables; backfilled drifted counters; updated gallery-data.ts call sites and types.",
+    issueIdsCreated: [],
+    issueIdsUpdated: ["qh-sec-20260607-011"],
+    changeLogIds: ["cl-20260614-004"],
+  },
   {
     id: runIds.publishedScenariosOwnership20260614,
     name: "Lovable Supabase Fix — published_scenarios Ownership + Quarantine",
@@ -6279,6 +6323,33 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
     },
   ],
   changeLog: [
+    {
+      id: "cl-20260614-004",
+      title: "Replace gallery counter RPCs with derived counts and a throttled play ledger",
+      summary: "Security · Public gallery counters can no longer be inflated by direct RPC calls; like/save/play counts are now derived from the truth tables, and plays are throttled per user.",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem: "Six SECURITY DEFINER counter RPCs (increment_like_count, decrement_like_count, increment_save_count, decrement_save_count, increment_play_count, increment_view_count) could be called directly by any authenticated user to drive public counters on `published_scenarios`. Even when nominally paired with a like/save row, they were drift-prone and could be replayed.",
+      plan: "Drop all six legacy counter RPCs; add an idempotent per-truth-table sync via AFTER INSERT/DELETE triggers; introduce a per-user `scenario_plays` ledger written only through a throttled SECURITY DEFINER `record_scenario_play` RPC; backfill drifted counters; switch frontend calls to the new contract.",
+      changes: "Database:\n- DROP FUNCTION public.increment_like_count / decrement_like_count / increment_save_count / decrement_save_count / increment_play_count / increment_view_count.\n- CREATE TABLE public.scenario_plays (id, published_scenario_id, user_id, played_at) with RLS enabled, SELECT-own policy, no INSERT policy (definer-only writes), and indexes for the throttle lookup and per-scenario aggregates.\n- CREATE FUNCTION public.record_scenario_play(uuid) SECURITY DEFINER: auth gate, requires the scenario to be is_published AND NOT is_hidden, throttles to one row per scenario per user per 5 minutes, then inserts into scenario_plays. EXECUTE revoked from PUBLIC and anon, granted to authenticated and service_role.\n- CREATE FUNCTIONs sync_published_scenario_like_count / save_count / play_count: SECURITY DEFINER trigger functions that recompute the affected counter from count(*) on the truth table. Bound to triggers sync_like_count / sync_save_count / sync_play_count AFTER INSERT OR DELETE on scenario_likes / saved_scenarios / scenario_plays.\n- Backfill: recomputed like_count and save_count from the truth tables for every published scenario whose stored count drifted. play_count keeps its current value and will move forward via the new ledger.\n\nFrontend:\n- src/services/gallery-data.ts: toggleLike / saveScenarioToCollection / unsaveScenario no longer call the dropped counter RPCs; incrementPlayCount now calls record_scenario_play. recordView still calls record_scenario_view.\n- Regenerated src/integrations/supabase/types.ts dropped the six legacy RPCs and added record_scenario_play.\n- Refreshed src/data/supabase-schema-map.ts and src/data/database-schema-inventory.ts with the new table, RPC, and trigger function entries.",
+      filesAffected: [
+        "public.scenario_plays + RLS (Supabase migration)",
+        "public.record_scenario_play RPC (Supabase migration)",
+        "public.sync_published_scenario_{like,save,play}_count + triggers (Supabase migration)",
+        "src/services/gallery-data.ts",
+        "src/integrations/supabase/types.ts",
+        "src/data/supabase-schema-map.ts",
+        "src/data/database-schema-inventory.ts",
+        "src/data/ui-audit-findings.ts",
+      ],
+      agent: "Lovable",
+      relatedFindingIds: ["qh-sec-20260607-011"],
+      relatedRunIds: [runIds.securityDeep20260607, runIds.galleryCounterIntegrity20260614],
+      tags: ["security", "supabase-rls", "supabase-rpc", "trigger", "gallery-integrity", "lovable-supabase-required", "quality-hub"],
+      comments: [],
+      createdAt: qualityHubGalleryCounterIntegrity20260614Timestamp,
+      updatedAt: qualityHubGalleryCounterIntegrity20260614Timestamp,
+    },
     {
       id: "cl-20260614-003",
       title: "Bind published_scenarios INSERT/UPDATE to parent story ownership and quarantine mismatches",

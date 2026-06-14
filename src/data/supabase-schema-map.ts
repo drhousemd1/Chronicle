@@ -9921,30 +9921,6 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
   ],
   "functions": [
     {
-      "name": "decrement_like_count",
-      "config": [
-        "search_path=public"
-      ],
-      "language": "plpgsql",
-      "arguments": "published_id uuid",
-      "definition": "CREATE OR REPLACE FUNCTION public.decrement_like_count(published_id uuid)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  -- After deletion, the like record won't exist, so just validate user is authenticated\n  IF auth.uid() IS NULL THEN\n    RAISE EXCEPTION 'Unauthorized';\n  END IF;\n  UPDATE published_scenarios \n  SET like_count = GREATEST(0, like_count - 1), updated_at = now()\n  WHERE id = published_id;\nEND;\n$function$\n",
-      "returnType": "void",
-      "volatility": "VOLATILE",
-      "securityDefiner": true
-    },
-    {
-      "name": "decrement_save_count",
-      "config": [
-        "search_path=public"
-      ],
-      "language": "plpgsql",
-      "arguments": "published_id uuid",
-      "definition": "CREATE OR REPLACE FUNCTION public.decrement_save_count(published_id uuid)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF auth.uid() IS NULL THEN\n    RAISE EXCEPTION 'Unauthorized';\n  END IF;\n  UPDATE published_scenarios \n  SET save_count = GREATEST(0, save_count - 1), updated_at = now()\n  WHERE id = published_id;\nEND;\n$function$\n",
-      "returnType": "void",
-      "volatility": "VOLATILE",
-      "securityDefiner": true
-    },
-    {
       "name": "fetch_gallery_scenarios",
       "config": [
         "search_path=public"
@@ -10017,54 +9993,6 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "securityDefiner": true
     },
     {
-      "name": "increment_like_count",
-      "config": [
-        "search_path=public"
-      ],
-      "language": "plpgsql",
-      "arguments": "published_id uuid",
-      "definition": "CREATE OR REPLACE FUNCTION public.increment_like_count(published_id uuid)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1 FROM scenario_likes \n    WHERE published_scenario_id = published_id AND user_id = auth.uid()\n  ) THEN\n    RAISE EXCEPTION 'Unauthorized: No like record found';\n  END IF;\n  UPDATE published_scenarios \n  SET like_count = like_count + 1, updated_at = now()\n  WHERE id = published_id;\nEND;\n$function$\n",
-      "returnType": "void",
-      "volatility": "VOLATILE",
-      "securityDefiner": true
-    },
-    {
-      "name": "increment_play_count",
-      "config": [
-        "search_path=public"
-      ],
-      "language": "plpgsql",
-      "arguments": "published_id uuid",
-      "definition": "CREATE OR REPLACE FUNCTION public.increment_play_count(published_id uuid)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF auth.uid() IS NULL THEN\n    RAISE EXCEPTION 'Unauthorized';\n  END IF;\n  UPDATE published_scenarios \n  SET play_count = play_count + 1, updated_at = now()\n  WHERE id = published_id;\nEND;\n$function$\n",
-      "returnType": "void",
-      "volatility": "VOLATILE",
-      "securityDefiner": true
-    },
-    {
-      "name": "increment_save_count",
-      "config": [
-        "search_path=public"
-      ],
-      "language": "plpgsql",
-      "arguments": "published_id uuid",
-      "definition": "CREATE OR REPLACE FUNCTION public.increment_save_count(published_id uuid)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NOT EXISTS (\n    SELECT 1 FROM saved_scenarios \n    WHERE published_scenario_id = published_id AND user_id = auth.uid()\n  ) THEN\n    RAISE EXCEPTION 'Unauthorized: No save record found';\n  END IF;\n  UPDATE published_scenarios \n  SET save_count = save_count + 1, updated_at = now()\n  WHERE id = published_id;\nEND;\n$function$\n",
-      "returnType": "void",
-      "volatility": "VOLATILE",
-      "securityDefiner": true
-    },
-    {
-      "name": "increment_view_count",
-      "config": [
-        "search_path=public"
-      ],
-      "language": "plpgsql",
-      "arguments": "published_id uuid",
-      "definition": "CREATE OR REPLACE FUNCTION public.increment_view_count(published_id uuid)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF auth.uid() IS NULL THEN\n    RAISE EXCEPTION 'Unauthorized';\n  END IF;\n  UPDATE published_scenarios \n  SET view_count = view_count + 1, updated_at = now()\n  WHERE id = published_id;\nEND;\n$function$\n",
-      "returnType": "void",
-      "volatility": "VOLATILE",
-      "securityDefiner": true
-    },
-    {
       "name": "record_scenario_view",
       "config": [
         "search_path=public"
@@ -10073,6 +10001,46 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "arguments": "p_published_scenario_id uuid",
       "definition": "CREATE OR REPLACE FUNCTION public.record_scenario_view(p_published_scenario_id uuid)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_user_id uuid := auth.uid();\nBEGIN\n  IF v_user_id IS NULL THEN\n    RAISE EXCEPTION 'Unauthorized';\n  END IF;\n\n  -- Check if user viewed this in the last 24 hours\n  IF EXISTS (\n    SELECT 1 FROM scenario_views\n    WHERE published_scenario_id = p_published_scenario_id\n      AND user_id = v_user_id\n      AND viewed_at > now() - interval '24 hours'\n  ) THEN\n    RETURN; -- Already viewed recently, do nothing\n  END IF;\n\n  -- Insert new view record\n  INSERT INTO scenario_views (published_scenario_id, user_id)\n  VALUES (p_published_scenario_id, v_user_id);\n\n  -- Increment the count\n  UPDATE published_scenarios\n  SET view_count = view_count + 1, updated_at = now()\n  WHERE id = p_published_scenario_id;\nEND;\n$function$\n",
       "returnType": "void",
+      "volatility": "VOLATILE",
+      "securityDefiner": true
+    },
+    {
+      "name": "record_scenario_play",
+      "config": ["search_path=public"],
+      "language": "plpgsql",
+      "arguments": "p_published_scenario_id uuid",
+      "definition": "CREATE OR REPLACE FUNCTION public.record_scenario_play(p_published_scenario_id uuid) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public' AS $function$ DECLARE v_user_id uuid := auth.uid(); BEGIN IF v_user_id IS NULL THEN RAISE EXCEPTION 'Unauthorized'; END IF; IF NOT EXISTS (SELECT 1 FROM public.published_scenarios WHERE id = p_published_scenario_id AND is_published = true AND is_hidden = false) THEN RAISE EXCEPTION 'Scenario not available'; END IF; IF EXISTS (SELECT 1 FROM public.scenario_plays WHERE published_scenario_id = p_published_scenario_id AND user_id = v_user_id AND played_at > now() - interval '5 minutes') THEN RETURN; END IF; INSERT INTO public.scenario_plays (published_scenario_id, user_id) VALUES (p_published_scenario_id, v_user_id); END; $function$",
+      "returnType": "void",
+      "volatility": "VOLATILE",
+      "securityDefiner": true
+    },
+    {
+      "name": "sync_published_scenario_like_count",
+      "config": ["search_path=public"],
+      "language": "plpgsql",
+      "arguments": "",
+      "definition": "Trigger function: AFTER INSERT OR DELETE on public.scenario_likes; sets published_scenarios.like_count = count(*) from scenario_likes for the affected published_scenario_id.",
+      "returnType": "trigger",
+      "volatility": "VOLATILE",
+      "securityDefiner": true
+    },
+    {
+      "name": "sync_published_scenario_save_count",
+      "config": ["search_path=public"],
+      "language": "plpgsql",
+      "arguments": "",
+      "definition": "Trigger function: AFTER INSERT OR DELETE on public.saved_scenarios; sets published_scenarios.save_count = count(*) from saved_scenarios for the affected published_scenario_id.",
+      "returnType": "trigger",
+      "volatility": "VOLATILE",
+      "securityDefiner": true
+    },
+    {
+      "name": "sync_published_scenario_play_count",
+      "config": ["search_path=public"],
+      "language": "plpgsql",
+      "arguments": "",
+      "definition": "Trigger function: AFTER INSERT OR DELETE on public.scenario_plays; sets published_scenarios.play_count = count(*) from scenario_plays for the affected published_scenario_id.",
+      "returnType": "trigger",
       "volatility": "VOLATILE",
       "securityDefiner": true
     },
