@@ -63,6 +63,7 @@ const runIds = {
   contentFilterFindingReclassification20260613: "run-codex-content-filter-finding-reclassification-20260613",
   saveScenarioAtomicOwnership20260614: "run-lovable-save-scenario-atomic-ownership-20260614",
   charactersParentBinding20260614: "run-lovable-characters-parent-binding-20260614",
+  publishedScenariosOwnership20260614: "run-lovable-published-scenarios-ownership-20260614",
 } as const;
 
 const qualityHubHousekeepingScanTimestamp = "2026-05-30T19:22:16.000-06:00";
@@ -86,6 +87,7 @@ const qualityHubAiUsageTelemetryIntegrity20260613Timestamp = "2026-06-13T02:52:4
 const qualityHubContentFilterFindingReclassification20260613Timestamp = "2026-06-13T03:07:45.000-06:00";
 const qualityHubSaveScenarioAtomicOwnership20260614Timestamp = "2026-06-14T07:00:00.000Z";
 const qualityHubCharactersParentBinding20260614Timestamp = "2026-06-14T07:30:00.000Z";
+const qualityHubPublishedScenariosOwnership20260614Timestamp = "2026-06-14T08:00:00.000Z";
 
 function stamp(runId: string) {
   return {
