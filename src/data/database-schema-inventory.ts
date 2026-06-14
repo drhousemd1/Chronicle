@@ -3387,56 +3387,6 @@ export const databaseSchemaInventory = {
       "description": "Grant/revoke admin role"
     },
     {
-      "name": "increment_like_count",
-      "touches": [
-        "published_scenarios",
-        "scenario_likes"
-      ],
-      "security": "DEFINER",
-      "description": "Increment like count after like insert"
-    },
-    {
-      "name": "decrement_like_count",
-      "touches": [
-        "published_scenarios"
-      ],
-      "security": "DEFINER",
-      "description": "Decrement like count after like delete"
-    },
-    {
-      "name": "increment_save_count",
-      "touches": [
-        "published_scenarios",
-        "saved_scenarios"
-      ],
-      "security": "DEFINER",
-      "description": "Increment save count"
-    },
-    {
-      "name": "decrement_save_count",
-      "touches": [
-        "published_scenarios"
-      ],
-      "security": "DEFINER",
-      "description": "Decrement save count"
-    },
-    {
-      "name": "increment_play_count",
-      "touches": [
-        "published_scenarios"
-      ],
-      "security": "DEFINER",
-      "description": "Increment play count"
-    },
-    {
-      "name": "increment_view_count",
-      "touches": [
-        "published_scenarios"
-      ],
-      "security": "DEFINER",
-      "description": "Increment view count"
-    },
-    {
       "name": "record_scenario_view",
       "touches": [
         "scenario_views",
@@ -3444,6 +3394,41 @@ export const databaseSchemaInventory = {
       ],
       "security": "DEFINER",
       "description": "Insert view + increment count (24h dedup)"
+    },
+    {
+      "name": "record_scenario_play",
+      "touches": [
+        "scenario_plays"
+      ],
+      "security": "DEFINER",
+      "description": "Insert a play row, throttled to once per scenario per 5 minutes per user. play_count is then maintained by sync_play_count trigger."
+    },
+    {
+      "name": "sync_published_scenario_like_count",
+      "touches": [
+        "published_scenarios",
+        "scenario_likes"
+      ],
+      "security": "DEFINER",
+      "description": "Trigger: keeps published_scenarios.like_count = count(*) from scenario_likes after INSERT/DELETE."
+    },
+    {
+      "name": "sync_published_scenario_save_count",
+      "touches": [
+        "published_scenarios",
+        "saved_scenarios"
+      ],
+      "security": "DEFINER",
+      "description": "Trigger: keeps published_scenarios.save_count = count(*) from saved_scenarios after INSERT/DELETE."
+    },
+    {
+      "name": "sync_published_scenario_play_count",
+      "touches": [
+        "published_scenarios",
+        "scenario_plays"
+      ],
+      "security": "DEFINER",
+      "description": "Trigger: keeps published_scenarios.play_count = count(*) from scenario_plays after INSERT/DELETE."
     },
     {
       "name": "update_review_aggregates",
