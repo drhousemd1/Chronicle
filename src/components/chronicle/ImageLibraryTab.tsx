@@ -519,9 +519,9 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
                     className="group relative cursor-pointer transition-all duration-300 group-hover:-translate-y-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#14151a]"
                   >
                     <div className="aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-200 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)] transition-shadow duration-300 group-hover:shadow-2xl border border-[#4a5f7f] relative">
-                      {folder.thumbnailUrl ? (
-                        <img
-                          src={folder.thumbnailUrl}
+                       {(folder.thumbnailPath ? folderSignedUrls[folder.thumbnailPath] : folder.thumbnailUrl) ? (
+                         <img
+                           src={folder.thumbnailPath ? (folderSignedUrls[folder.thumbnailPath] || '') : (folder.thumbnailUrl || '')}
                           alt={folder.name}
                           className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                         />
@@ -714,7 +714,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
                 {/* Image container */}
                 <div className="relative aspect-square bg-slate-100 overflow-hidden">
                   <img
-                    src={image.imageUrl}
+                    src={image.imagePath ? (signedUrls[image.imagePath] || '') : image.imageUrl}
                     alt={image.title || image.filename}
                     className="w-full h-full object-cover cursor-pointer transition-transform duration-700 group-hover:scale-110"
                     onClick={() => {
@@ -817,7 +817,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
               <div className="bg-[#2e2e33] rounded-2xl p-4 sm:p-5 space-y-4 shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
                 <div className="w-full rounded-2xl border border-black/35 bg-[#1c1c1f] overflow-hidden shadow-[inset_0_2px_6px_rgba(0,0,0,0.40)]">
                   <img
-                    src={lightboxImage.imageUrl}
+                    src={lightboxImage.imagePath ? (signedUrls[lightboxImage.imagePath] || '') : lightboxImage.imageUrl}
                     alt={lightboxImage.title || lightboxImage.filename}
                     className="w-full max-h-[50vh] object-contain"
                   />
