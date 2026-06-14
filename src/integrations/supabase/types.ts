@@ -2243,6 +2243,19 @@ export type Database = {
               user_id: string
             }[]
           }
+      get_public_creator_profile: { Args: { p_user_id: string }; Returns: Json }
+      get_public_profiles: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          avatar_position: Json
+          avatar_url: string
+          display_name: string
+          hide_profile_details: boolean
+          hide_published_works: boolean
+          id: string
+          username: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
