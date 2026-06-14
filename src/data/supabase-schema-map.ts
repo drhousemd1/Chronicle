@@ -5535,6 +5535,14 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "notNull": true,
           "ordinal": 9,
           "isIdentity": false
+        },
+        {
+          "name": "image_path",
+          "type": "text",
+          "default": null,
+          "notNull": false,
+          "ordinal": 10,
+          "isIdentity": false
         }
       ],
       "comment": null,
