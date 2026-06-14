@@ -6463,9 +6463,10 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         {
           "name": "Anyone can view published scenarios",
           "roles": [
-            "authenticated"
+            "authenticated",
+            "anon"
           ],
-          "using": "((is_published = true) AND (is_hidden = false))",
+          "using": "((is_published = true AND is_hidden = false AND EXISTS(SELECT 1 FROM public.profiles p WHERE p.id = published_scenarios.publisher_id AND COALESCE(p.hide_published_works,false) = false)) OR publisher_id = auth.uid() OR has_role(auth.uid(), 'admin'::app_role))",
           "command": "SELECT",
           "withCheck": null,
           "permissive": true
