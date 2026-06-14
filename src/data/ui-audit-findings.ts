@@ -66,6 +66,7 @@ const runIds = {
   publishedScenariosOwnership20260614: "run-lovable-published-scenarios-ownership-20260614",
   galleryCounterIntegrity20260614: "run-lovable-gallery-counter-integrity-20260614",
   profilePrivacyEnforcement20260614: "run-lovable-profile-privacy-enforcement-20260614",
+  storageStageA20260614: "run-lovable-storage-privacy-stage-a-20260614",
 } as const;
 
 const qualityHubHousekeepingScanTimestamp = "2026-05-30T19:22:16.000-06:00";
