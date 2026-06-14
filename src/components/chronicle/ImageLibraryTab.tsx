@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 
 import { supabase } from '@/integrations/supabase/client';
 import { resizeImage, uuid } from '@/utils';
+import { getSignedMediaUrl, getSignedMediaUrls } from '@/services/persistence/signed-media';
 
 import type { ImageFolder, LibraryImage } from './image-library-types';
 export type { ImageFolder, LibraryImage } from './image-library-types';
@@ -34,6 +35,9 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
   const [editingFolder, setEditingFolder] = useState<ImageFolder | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [aspectRatios, setAspectRatios] = useState<Record<string, { label: string; orientation: 'portrait' | 'landscape' | 'square' }>>({});
+  // image_library is private — render via signed URLs keyed by image_path
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+  const [folderSignedUrls, setFolderSignedUrls] = useState<Record<string, string>>({});
 
   // Fetch guards
   const hasLoadedRef = useRef(false);
@@ -57,10 +61,10 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
         }
       };
       el.onerror = () => { loaded++; };
-      el.src = img.imageUrl;
+      el.src = img.imagePath ? (signedUrls[img.imagePath] || '') : img.imageUrl;
     });
     return () => { cancelled = true; };
-  }, [folderImages]);
+  }, [folderImages, signedUrls]);
   const [lightboxImage, setLightboxImage] = useState<LibraryImage | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'folder' | 'image'; id: string } | null>(null);
@@ -106,12 +110,22 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
         description: row.description || '',
         thumbnailImageId: row.thumbnail_image_id,
         thumbnailUrl: row.thumbnail_url,
+        thumbnailPath: row.thumbnail_path || null,
         imageCount: Number(row.image_count) || 0,
         createdAt: new Date(row.created_at).getTime(),
         updatedAt: new Date(row.updated_at).getTime(),
       } as ImageFolder));
 
       setFolders(foldersWithDetails);
+      const thumbPaths = foldersWithDetails
+        .map((f: ImageFolder) => f.thumbnailPath)
+        .filter((p: string | null | undefined): p is string => !!p);
+      if (thumbPaths.length) {
+        const map = await getSignedMediaUrls('image_library', thumbPaths);
+        setFolderSignedUrls(map);
+      } else {
+        setFolderSignedUrls({});
+      }
       hasLoadedRef.current = true;
     } catch (e: any) {
       console.error('Failed to load folders:', e);
@@ -143,19 +157,26 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
 
       if (error) throw error;
 
-      setFolderImages(
-        (data || []).map((img: any) => ({
-          id: img.id,
-          userId: img.user_id,
-          folderId: img.folder_id,
-          imageUrl: img.image_url,
-          filename: img.filename || '',
-          title: img.title || '',
-          isThumbnail: img.is_thumbnail || false,
-          tags: img.tags || [],
-          createdAt: new Date(img.created_at).getTime(),
-        }))
-      );
+      const mapped: LibraryImage[] = (data || []).map((img: any) => ({
+        id: img.id,
+        userId: img.user_id,
+        folderId: img.folder_id,
+        imageUrl: img.image_url,
+        imagePath: img.image_path || null,
+        filename: img.filename || '',
+        title: img.title || '',
+        isThumbnail: img.is_thumbnail || false,
+        tags: img.tags || [],
+        createdAt: new Date(img.created_at).getTime(),
+      }));
+      setFolderImages(mapped);
+      const paths = mapped.map((i) => i.imagePath).filter((p): p is string => !!p);
+      if (paths.length) {
+        const map = await getSignedMediaUrls('image_library', paths);
+        setSignedUrls(map);
+      } else {
+        setSignedUrls({});
+      }
     } catch (e: any) {
       console.error('Failed to load images:', e);
       const message = e?.message || "Could not load images for this folder.";
@@ -235,21 +256,24 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
         .eq('folder_id', id);
 
       if (images && images.length > 0) {
-        const filePaths = images.map((img) => {
-          try {
-            const url = new URL(img.image_url);
-            const marker = '/object/public/image_library/';
-            const idx = url.pathname.indexOf(marker);
-            if (idx === -1) {
-              console.warn('Could not extract storage path from:', img.image_url);
+        const { data: imageRows } = await supabase
+          .from('library_images')
+          .select('image_path, image_url')
+          .eq('folder_id', id);
+        const filePaths = (imageRows || [])
+          .map((img: any) => {
+            if (img.image_path) return img.image_path as string;
+            try {
+              const url = new URL(img.image_url);
+              const marker = '/object/public/image_library/';
+              const idx = url.pathname.indexOf(marker);
+              if (idx === -1) return '';
+              return url.pathname.substring(idx + marker.length);
+            } catch {
               return '';
             }
-            return url.pathname.substring(idx + marker.length);
-          } catch {
-            console.warn('Invalid image URL:', img.image_url);
-            return '';
-          }
-        }).filter(Boolean);
+          })
+          .filter(Boolean);
 
         if (filePaths.length > 0) {
           await supabase.storage.from('image_library').remove(filePaths);
@@ -317,22 +341,27 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
 
               if (uploadError) throw uploadError;
 
-              const { data: { publicUrl } } = supabase.storage
-                .from('image_library')
-                .getPublicUrl(path);
+              // image_library is private — store a sentinel in image_url
+              // (NOT NULL legacy column) and the bucket-relative path in
+              // image_path. Render via signed URL at view time.
+              const sentinelUrl = `storage://image_library/${path}`;
 
               const { data: imgData, error: insertError } = await supabase
                 .from('library_images')
                 .insert({
                   user_id: userId,
                   folder_id: selectedFolder.id,
-                  image_url: publicUrl,
+                  image_url: sentinelUrl,
+                  image_path: path,
                   filename: file.name,
-                })
+                } as any)
                 .select()
                 .single();
 
               if (insertError) throw insertError;
+
+              const signed = await getSignedMediaUrl('image_library', path);
+              setSignedUrls((prev) => ({ ...prev, [path]: signed }));
 
               setFolderImages((prev) => [
                 {
@@ -340,6 +369,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
                   userId: imgData.user_id,
                   folderId: imgData.folder_id,
                   imageUrl: imgData.image_url,
+                  imagePath: (imgData as any).image_path || path,
                   filename: imgData.filename || '',
                   title: (imgData as any).title || '',
                   isThumbnail: false,
@@ -379,12 +409,19 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
 
   const executeDeleteImage = async (image: LibraryImage) => {
     try {
-      const url = new URL(image.imageUrl);
-      const marker = '/object/public/image_library/';
-      const idx = url.pathname.indexOf(marker);
-      const filePath = idx !== -1 ? url.pathname.substring(idx + marker.length) : null;
+      let filePath: string | null = image.imagePath || null;
       if (!filePath) {
-        console.warn('Could not extract storage path from:', image.imageUrl);
+        try {
+          const url = new URL(image.imageUrl);
+          const marker = '/object/public/image_library/';
+          const idx = url.pathname.indexOf(marker);
+          filePath = idx !== -1 ? url.pathname.substring(idx + marker.length) : null;
+        } catch {
+          filePath = null;
+        }
+      }
+      if (!filePath) {
+        console.warn('Could not extract storage path for image:', image.id);
       }
       
       if (filePath) {
@@ -427,12 +464,12 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
       setFolders((prev) =>
         prev.map((f) =>
           f.id === selectedFolder.id
-            ? { ...f, thumbnailImageId: image.id, thumbnailUrl: image.imageUrl }
+            ? { ...f, thumbnailImageId: image.id, thumbnailUrl: image.imageUrl, thumbnailPath: image.imagePath || null }
             : f
         )
       );
       setSelectedFolder((prev) =>
-        prev ? { ...prev, thumbnailImageId: image.id, thumbnailUrl: image.imageUrl } : null
+        prev ? { ...prev, thumbnailImageId: image.id, thumbnailUrl: image.imageUrl, thumbnailPath: image.imagePath || null } : null
       );
     } catch (e: any) {
       console.error('Failed to set thumbnail:', e);
@@ -482,9 +519,9 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
                     className="group relative cursor-pointer transition-all duration-300 group-hover:-translate-y-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#14151a]"
                   >
                     <div className="aspect-[2/3] w-full overflow-hidden rounded-[2rem] bg-slate-200 shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)] transition-shadow duration-300 group-hover:shadow-2xl border border-[#4a5f7f] relative">
-                      {folder.thumbnailUrl ? (
-                        <img
-                          src={folder.thumbnailUrl}
+                       {(folder.thumbnailPath ? folderSignedUrls[folder.thumbnailPath] : folder.thumbnailUrl) ? (
+                         <img
+                           src={folder.thumbnailPath ? (folderSignedUrls[folder.thumbnailPath] || '') : (folder.thumbnailUrl || '')}
                           alt={folder.name}
                           className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
                         />
@@ -677,7 +714,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
                 {/* Image container */}
                 <div className="relative aspect-square bg-slate-100 overflow-hidden">
                   <img
-                    src={image.imageUrl}
+                    src={image.imagePath ? (signedUrls[image.imagePath] || '') : image.imageUrl}
                     alt={image.title || image.filename}
                     className="w-full h-full object-cover cursor-pointer transition-transform duration-700 group-hover:scale-110"
                     onClick={() => {
@@ -780,7 +817,7 @@ export const ImageLibraryTab: React.FC<ImageLibraryTabProps> = ({ userId, onFold
               <div className="bg-[#2e2e33] rounded-2xl p-4 sm:p-5 space-y-4 shadow-[inset_1px_1px_0_rgba(255,255,255,0.07),inset_-1px_-1px_0_rgba(0,0,0,0.30),0_4px_12px_rgba(0,0,0,0.25)]">
                 <div className="w-full rounded-2xl border border-black/35 bg-[#1c1c1f] overflow-hidden shadow-[inset_0_2px_6px_rgba(0,0,0,0.40)]">
                   <img
-                    src={lightboxImage.imageUrl}
+                    src={lightboxImage.imagePath ? (signedUrls[lightboxImage.imagePath] || '') : lightboxImage.imageUrl}
                     alt={lightboxImage.title || lightboxImage.filename}
                     className="w-full max-h-[50vh] object-contain"
                   />

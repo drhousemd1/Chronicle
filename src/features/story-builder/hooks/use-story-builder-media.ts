@@ -15,6 +15,7 @@ import { uploadCoverImage, uploadSceneImage, dataUrlToBlob } from '@/services/su
 import { trackAiUsageEvent } from '@/services/usage-tracking';
 import { clamp, compressAndUpload, now, resizeImage, uuid } from '@/utils';
 import type { Scene } from '@/types';
+import { getSignedMediaUrl, isStorageSentinel } from '@/services/persistence/signed-media';
 
 type CoverPosition = { x: number; y: number };
 type AspectRatioMeta = { label: string; orientation: 'portrait' | 'landscape' | 'square' };
@@ -69,7 +70,7 @@ export interface StoryBuilderMediaController {
   requestDeleteCover: () => void;
   confirmDeleteCover: () => void;
   handleAddScene: (e: ChangeEvent<HTMLInputElement>) => Promise<void>;
-  handleSceneSelectedFromLibrary: (imageUrl: string) => void;
+  handleSceneSelectedFromLibrary: (imageUrlOrSentinel: string) => Promise<void>;
   handleSceneGenerate: (prompt: string, styleId: string) => Promise<void>;
   handleSaveScene: (id: string, title: string, tags: string[]) => void;
   requestDeleteScene: (id: string) => void;
@@ -284,10 +285,19 @@ export function useStoryBuilderMedia({
     setPendingDeleteCover(false);
   }, [onUpdateCoverImage, onUpdateCoverPosition]);
 
-  const handleSceneSelectedFromLibrary = useCallback((imageUrl: string) => {
+  const handleSceneSelectedFromLibrary = useCallback(async (imageUrlOrSentinel: string) => {
+    // Picker (destBucket="scenes") returns a `storage://scenes/<path>` sentinel.
+    // Resolve it into a Scene with imagePath persisted + a signed preview url.
+    let imagePath: string | null = null;
+    let previewUrl = imageUrlOrSentinel;
+    if (isStorageSentinel(imageUrlOrSentinel)) {
+      imagePath = imageUrlOrSentinel.replace(/^storage:\/\/scenes\//, '');
+      previewUrl = (await getSignedMediaUrl('scenes', imagePath)) || '';
+    }
     const newScene: Scene = {
       id: uuid(),
-      url: imageUrl,
+      url: previewUrl,
+      imagePath,
       tags: [],
       createdAt: now(),
     };

@@ -19,6 +19,7 @@ import {
   ensureStorageUrl,
   supabase,
 } from './shared';
+import { getSignedMediaUrls, isStorageSentinel } from './signed-media';
 
 function dbToScenarioMetadata(row: any): ScenarioMetadata {
   return {
@@ -54,11 +55,38 @@ function dbToScene(row: any): Scene {
 
   return {
     id: row.id,
-    url: row.image_url,
+    url: isStorageSentinel(row.image_url) ? '' : (row.image_url || ''),
+    imagePath: row.image_path || null,
     tags,
     isStartingScene: row.is_starting_scene || false,
     createdAt: new Date(row.created_at).getTime(),
   };
+}
+
+/**
+ * Stage B: scene `url` is ephemeral. After hydrating Scene rows from DB,
+ * resolve a short-lived signed URL for any scene that has an image_path so
+ * downstream consumers can render <img src={scene.url} /> without knowing the
+ * bucket flipped private.
+ *
+ * Mutates the input array in place and returns it for chaining.
+ */
+async function hydrateScenePreviewUrls(scenes: Scene[]): Promise<Scene[]> {
+  const paths = scenes
+    .map((s) => s.imagePath)
+    .filter((p): p is string => !!p);
+  if (!paths.length) return scenes;
+  try {
+    const map = await getSignedMediaUrls('scenes', paths);
+    for (const scene of scenes) {
+      if (scene.imagePath && map[scene.imagePath]) {
+        scene.url = map[scene.imagePath];
+      }
+    }
+  } catch (e) {
+    console.warn('[scenarios] failed to hydrate scene preview URLs', e);
+  }
+  return scenes;
 }
 
 async function backfillScenarioWorldCoreById(scenarioId: string, canonicalWorldCore: WorldCore): Promise<void> {
@@ -214,7 +242,7 @@ export async function fetchScenarioById(id: string): Promise<{
       story: {
         openingDialog,
       },
-      scenes: (scenesResult.data || []).map(dbToScene),
+      scenes: await hydrateScenePreviewUrls((scenesResult.data || []).map(dbToScene)),
       uiSettings,
       conversations: conversationsWithMessages,
       selectedModel:
@@ -280,7 +308,7 @@ export async function fetchScenarioForPlay(id: string): Promise<{
       story: {
         openingDialog,
       },
-      scenes: (scenesResult.data || []).map(dbToScene),
+      scenes: await hydrateScenePreviewUrls((scenesResult.data || []).map(dbToScene)),
       uiSettings,
       conversations: [],
       selectedModel:
@@ -334,7 +362,8 @@ export async function saveScenario(
   }));
   const scenesPayload = data.scenes.map((s) => ({
     id: s.id,
-    image_url: s.url,
+    image_url: s.imagePath ? `storage://scenes/${s.imagePath}` : (s.url || ''),
+    image_path: s.imagePath || null,
     tags: s.tags ?? [],
     is_starting_scene: s.isStartingScene || false,
   }));
@@ -424,7 +453,8 @@ async function syncScenes(scenarioId: string, data: ScenarioData): Promise<void>
         data.scenes.map((s) => ({
           id: s.id,
           scenario_id: scenarioId,
-          image_url: s.url,
+          image_url: s.imagePath ? `storage://scenes/${s.imagePath}` : (s.url || ''),
+          image_path: s.imagePath || null,
           tags: s.tags ?? [],
           is_starting_scene: s.isStartingScene || false,
         })),

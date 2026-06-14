@@ -12,27 +12,55 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { toast } from 'sonner';
 import type { ImageFolder, LibraryImage } from './image-library-types';
+import { getSignedMediaUrl, getSignedMediaUrls } from '@/services/persistence/signed-media';
+import {
+  copyLibraryImageTo,
+  type DestinationBucket,
+  type LibraryPickerSelection,
+} from '@/services/persistence/library-copy';
 
 interface ImageLibraryPickerModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /**
+   * Destination bucket the selected image should be copied into. Required so the
+   * picker can copy bytes from the private image_library into a consumer-owned
+   * bucket before invoking onSelect.
+   */
+  destBucket?: DestinationBucket;
+  /**
+   * Legacy single-arg callback: receives the long-lived destination URL
+   * (or storage:// sentinel for private buckets like `scenes`). Most existing
+   * consumers use this — destBucket defaults to 'avatars' for backwards
+   * compatibility but callers SHOULD pass an explicit destBucket.
+   */
   onSelect: (imageUrl: string) => void;
+  /**
+   * Advanced callback that also receives the destination imagePath. Use this
+   * when persisting alongside an image_path column (e.g. scenes).
+   */
+  onSelectWithPath?: (result: { url: string; imagePath: string; bucket: DestinationBucket }) => void;
 }
 
 export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = ({
   isOpen,
   onClose,
+  destBucket = 'avatars',
   onSelect,
+  onSelectWithPath,
 }) => {
   const { user } = useAuth();
   const [folders, setFolders] = useState<ImageFolder[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<ImageFolder | null>(null);
   const [folderImages, setFolderImages] = useState<LibraryImage[]>([]);
-  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<LibraryImage | null>(null);
   const [isLoadingFolders, setIsLoadingFolders] = useState(false);
   const [isLoadingImages, setIsLoadingImages] = useState(false);
+  const [isCopying, setIsCopying] = useState(false);
   const [foldersError, setFoldersError] = useState<string | null>(null);
   const [imagesError, setImagesError] = useState<string | null>(null);
+  const [thumbSignedUrls, setThumbSignedUrls] = useState<Record<string, string>>({});
+  const [folderThumbSignedUrls, setFolderThumbSignedUrls] = useState<Record<string, string>>({});
 
   const loadFolders = useCallback(async () => {
     if (!user) return;
@@ -43,19 +71,32 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
 
       if (error) throw error;
 
-      const foldersWithDetails = (data || []).map((row: any) => ({
+      const rows = (data || []) as any[];
+      const foldersWithDetails: ImageFolder[] = rows.map((row: any) => ({
         id: row.id,
         userId: row.user_id,
         name: row.name,
         description: row.description || '',
         thumbnailImageId: row.thumbnail_image_id,
         thumbnailUrl: row.thumbnail_url,
+        thumbnailPath: row.thumbnail_path || null,
         imageCount: Number(row.image_count) || 0,
         createdAt: new Date(row.created_at).getTime(),
         updatedAt: new Date(row.updated_at).getTime(),
       } as ImageFolder));
 
       setFolders(foldersWithDetails);
+
+      // Resolve signed URLs for folder thumbnails (image_library is private).
+      const thumbPaths = foldersWithDetails
+        .map((f) => f.thumbnailPath)
+        .filter((p): p is string => !!p);
+      if (thumbPaths.length) {
+        const map = await getSignedMediaUrls('image_library', thumbPaths);
+        setFolderThumbSignedUrls(map);
+      } else {
+        setFolderThumbSignedUrls({});
+      }
     } catch (e) {
       console.error('Failed to load folders:', e);
       const message = e instanceof Error ? e.message : 'Could not load folders.';
@@ -69,8 +110,9 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
   useEffect(() => {
     if (!isOpen) return;
     setSelectedFolder(null);
-    setSelectedImageUrl(null);
+    setSelectedImage(null);
     setFolderImages([]);
+    setThumbSignedUrls({});
     void loadFolders();
   }, [isOpen, loadFolders]);
 
@@ -86,19 +128,24 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
 
       if (error) throw error;
 
-      setFolderImages(
-        (data || []).map((img: any) => ({
-          id: img.id,
-          userId: img.user_id,
-          folderId: img.folder_id,
-          imageUrl: img.image_url,
-          filename: img.filename || '',
-          title: img.title || '',
-          isThumbnail: img.is_thumbnail || false,
-          tags: img.tags || [],
-          createdAt: new Date(img.created_at).getTime(),
-        }))
-      );
+      const images: LibraryImage[] = (data || []).map((img: any) => ({
+        id: img.id,
+        userId: img.user_id,
+        folderId: img.folder_id,
+        imageUrl: img.image_url,
+        imagePath: img.image_path || null,
+        filename: img.filename || '',
+        title: img.title || '',
+        isThumbnail: img.is_thumbnail || false,
+        tags: img.tags || [],
+        createdAt: new Date(img.created_at).getTime(),
+      }));
+      setFolderImages(images);
+
+      // Resolve signed URLs for thumbnail rendering (image_library private).
+      const paths = images.map((i) => i.imagePath).filter((p): p is string => !!p);
+      const map = await getSignedMediaUrls('image_library', paths);
+      setThumbSignedUrls(map);
     } catch (e) {
       console.error('Failed to load images:', e);
       const message = e instanceof Error ? e.message : 'Could not load folder images.';
@@ -111,14 +158,38 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
 
   const handleSelectFolder = (folder: ImageFolder) => {
     setSelectedFolder(folder);
-    setSelectedImageUrl(null);
+    setSelectedImage(null);
     loadFolderImages(folder.id);
   };
 
-  const handleConfirmSelection = () => {
-    if (selectedImageUrl) {
-      onSelect(selectedImageUrl);
+  const handleConfirmSelection = async () => {
+    if (!selectedImage || !user) return;
+    if (!selectedImage.imagePath) {
+      // Legacy row missing image_path — fall back to stored URL.
+      onSelect(selectedImage.imageUrl);
       onClose();
+      return;
+    }
+    setIsCopying(true);
+    try {
+      const previewUrl = thumbSignedUrls[selectedImage.imagePath]
+        || (await getSignedMediaUrl('image_library', selectedImage.imagePath));
+      const selection: LibraryPickerSelection = {
+        imageId: selectedImage.id,
+        imagePath: selectedImage.imagePath,
+        previewUrl,
+        filename: selectedImage.filename,
+        contentType: 'image/jpeg',
+      };
+      const copied = await copyLibraryImageTo(selection, destBucket, user.id);
+      onSelect(copied.publicOrSentinelUrl);
+      onSelectWithPath?.({ url: copied.publicOrSentinelUrl, imagePath: copied.destPath, bucket: copied.destBucket });
+      onClose();
+    } catch (e) {
+      console.error('[ImageLibraryPickerModal] copy failed', e);
+      toast.error('Could not use that image. Please try again.');
+    } finally {
+      setIsCopying(false);
     }
   };
 
@@ -132,7 +203,7 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
                 onClick={() => {
                   setSelectedFolder(null);
                   setFolderImages([]);
-                  setSelectedImageUrl(null);
+                  setSelectedImage(null);
                 }}
                 className="p-1 hover:bg-slate-200 rounded-lg transition-colors mr-1"
                 aria-label="Back to folder list"
@@ -173,15 +244,19 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
-                    {folders.map((folder) => (
+                    {folders.map((folder) => {
+                      const thumb = folder.thumbnailPath
+                        ? folderThumbSignedUrls[folder.thumbnailPath] || ''
+                        : folder.thumbnailUrl || '';
+                      return (
                       <button
                         key={folder.id}
                         onClick={() => handleSelectFolder(folder)}
                         className="group relative aspect-[2/3] rounded-[2rem] overflow-hidden shadow-[0_12px_32px_-2px_rgba(0,0,0,0.50)] transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl cursor-pointer text-left"
                       >
-                        {folder.thumbnailUrl ? (
+                        {thumb ? (
                           <img
-                            src={folder.thumbnailUrl}
+                            src={thumb}
                             alt={folder.name}
                             className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                           />
@@ -204,7 +279,8 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
                           )}
                         </div>
                       </button>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </>
@@ -236,28 +312,34 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
                   </div>
                 ) : (
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                    {folderImages.map((image) => (
+                    {folderImages.map((image) => {
+                      const src = image.imagePath
+                        ? thumbSignedUrls[image.imagePath] || ''
+                        : image.imageUrl;
+                      const isSelected = selectedImage?.id === image.id;
+                      return (
                       <button
                         key={image.id}
-                        onClick={() => setSelectedImageUrl(image.imageUrl)}
+                        onClick={() => setSelectedImage(image)}
                         className={`relative aspect-square rounded-lg overflow-hidden bg-slate-100 border-2 transition-all ${
-                          selectedImageUrl === image.imageUrl
+                          isSelected
                             ? 'border-blue-500 ring-2 ring-blue-500/30'
                             : 'border-transparent hover:border-slate-300'
                         }`}
                       >
                         <img
-                          src={image.imageUrl}
+                          src={src}
                           alt={image.filename}
                           className="w-full h-full object-cover"
                         />
-                        {selectedImageUrl === image.imageUrl && (
+                        {isSelected && (
                           <div className="absolute top-1 right-1 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
                             <Check className="w-4 h-4 text-white" />
                           </div>
                         )}
                       </button>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </>
@@ -266,15 +348,15 @@ export const ImageLibraryPickerModal: React.FC<ImageLibraryPickerModalProps> = (
         </ScrollArea>
 
         <div className="px-6 py-4 border-t bg-ghost-white flex justify-end gap-3">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={isCopying}>
             Cancel
           </Button>
           <Button
             onClick={handleConfirmSelection}
-            disabled={!selectedImageUrl}
+            disabled={!selectedImage || isCopying}
             className="bg-slate-900 hover:bg-slate-800 text-white"
           >
-            Select Image
+            {isCopying ? 'Copying…' : 'Select Image'}
           </Button>
         </div>
       </DialogContent>

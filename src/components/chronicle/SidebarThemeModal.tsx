@@ -681,6 +681,7 @@ export function SidebarThemeModal({
         <ImageLibraryPickerModal
           isOpen={isPickerOpen}
           onClose={() => setIsPickerOpen(false)}
+          destBucket="backgrounds"
           onSelect={handleLibraryPick}
         />
       </DialogContentBare>
