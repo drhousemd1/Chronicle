@@ -589,19 +589,30 @@ const findings: QualityFinding[] = [
     "large",
     runIds.securityDeep20260607,
     {
+      status: "in-progress",
+      verificationStatus: "unverified",
       route: "media persistence and image library",
       component: "Supabase Storage buckets",
       evidence: [
         "`avatars` and `scenes` have `Anyone can view` storage object policies.",
         "`covers`, `backgrounds`, and `image_library` are created or read as public buckets.",
         "Persistence helpers call `getPublicUrl` for media stored under these buckets.",
+        "Stage A (2026-06-14): docs/guides/storage-privacy-migration.md catalogs every code path against each bucket and classifies `scenes` and `image_library` as Stage B private-bucket targets. No bucket settings, RLS, or code paths changed in Stage A.",
       ],
       expectedBehavior: "Private roleplay media uses private object storage and owner-checked signed URL access.",
       actualBehavior: "Private/draft media paths are stored in buckets whose objects can be publicly fetched by URL.",
-      tags: ["module-security", "module-security-storage-policies", "module-security-data-visibility", "scan-security-deep-20260607", "supabase-storage", "privacy", "lovable-supabase-required"],
-      relatedRunIds: [runIds.securityDeep20260607],
+      tags: ["module-security", "module-security-storage-policies", "module-security-data-visibility", "scan-security-deep-20260607", "supabase-storage", "privacy", "lovable-supabase-required", "scan-storage-privacy-stage-a-20260614"],
+      relatedRunIds: [runIds.securityDeep20260607, runIds.storageStageA20260614],
+      comments: [
+        {
+          id: "stage-a-note-qh-sec-20260607-003-20260614",
+          author: "Lovable",
+          timestamp: qualityHubStorageStageA20260614Timestamp,
+          text: "Stage A complete: storage bucket inventory documented at docs/guides/storage-privacy-migration.md, classifying avatars/covers/backgrounds/guide_images as publisher-owned public and scenes/image_library as Stage B private+signed-URL targets. Finding stays in-progress until Stage B flips the buckets and routes reads through a signed-URL helper.",
+        },
+      ],
       createdAt: qualityHubSecurityDeep20260607Timestamp,
-      updatedAt: qualityHubSecurityDeep20260607Timestamp,
+      updatedAt: qualityHubStorageStageA20260614Timestamp,
     },
   ),
   finding(
