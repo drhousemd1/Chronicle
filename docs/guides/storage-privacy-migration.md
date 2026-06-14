@@ -112,22 +112,49 @@ rendering audit completes.
   `Owners can view own image_library` enforces owner/admin SELECT; anonymous
   GETs return HTTP 400 and signed-URL minting requires the owner JWT.
 
-### Deferred to a follow-up pass
+### Chat-runtime audit (verified 2026-06-14)
 
-- **`scenes` bucket flip.** Scene art is still publicly readable via the
-  `scenes` bucket. The chat runtime persists `message.imageUrl` (legacy public
-  scene URLs) in message snapshots — flipping the bucket without an audit
-  would break in-flight chat sessions. Once the chat-runtime render sites are
-  migrated to resolve via `scene.imagePath` / `getSignedMediaUrl('scenes', …)`,
-  the storage policies for `scenes` can be tightened with
-  `public.can_read_scene_storage_object(p_path)` and the bucket flipped to
-  `public=false`.
-- **Story export/import portability.** Export still embeds the destination
-  URL. Cross-user import of scene images should be treated as
-  image-less for non-owners; current behavior copies the URL string and will
-  surface a broken image once the `scenes` bucket flips.
+- Live `information_schema` check confirms **`public.messages` has no
+  `image_url` column** (columns: id, conversation_id, role, content,
+  created_at, day, time_of_day, generation_id). The `Message.imageUrl`
+  referenced in `ChatInterfaceTab.tsx` is purely in-memory frontend state
+  that is dropped on reload — `saveNewMessages` and the full conversation
+  save path do not persist it. No historical message migration is needed.
+- `supabase/functions/generate-scene-image/index.ts` returns the raw Grok
+  image URL directly to the client; it does NOT upload to the `scenes`
+  bucket, so the bucket flip does not affect that path.
+- The only persisted scene references live in `public.scenes` (now
+  `image_url` + `image_path`). `fetchScenarioById` and `fetchScenarioForPlay`
+  both wrap results with `hydrateScenePreviewUrls`, which resolves signed
+  URLs from `imagePath` at load time.
+
+### Done in this pass (scenes bucket flip)
+
+- Migration `20260614110126`: dropped `Anyone can view scenes` storage
+  policy; added `Owners admins or published scenes can view` gated by
+  `public.can_read_scene_storage_object(name)`. Re-ran the `image_path`
+  backfill to cover any rows uploaded between Migration A and this pass.
+- `scenes` storage bucket flipped to PRIVATE. Anonymous GET against a
+  legacy public scene URL now returns **HTTP 400**.
+- `handleAddScene` and `handleSceneGenerate` in
+  `use-story-builder-media.ts` now resolve `scene.url` through
+  `getSignedMediaUrl('scenes', imagePath)` immediately after upload, so
+  freshly uploaded scenes render correctly in the builder without relying
+  on a public URL.
+
+### Still deferred
+
+- **Story export/import portability.** Story Transfer (`src/lib/story-transfer.ts`)
+  embeds the raw `scene.url` string in exported Markdown / JSON / RTF
+  payloads. For cross-user imports, the embedded URL points at the original
+  owner's private scene path; the importing user will not be able to mint a
+  signed URL (non-owner, scenario not published), and `hydrateScenePreviewUrls`
+  will surface as an empty `<img src>`. **Private scene images are not
+  portable across users in this Stage B pass** — same applies to remix
+  cloning. Follow-up: copy bytes into the importing user's `scenes` folder
+  on import / remix, or drop `imagePath` when owner mismatch is detected.
 - **`src/data/supabase-schema-map.ts` snapshot refresh** to reflect the new
-  `image_library` policy names and `image_path` columns.
+  `image_library` + `scenes` storage policy names and `image_path` columns.
 
 Stage B will:
 
