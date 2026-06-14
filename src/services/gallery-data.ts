@@ -291,11 +291,8 @@ export async function toggleLike(
       .from('scenario_likes')
       .delete()
       .eq('id', existing.id);
-    
-    await supabase.rpc('decrement_like_count', { 
-      published_id: publishedScenarioId 
-    });
-    
+
+    // like_count is maintained by the sync_like_count trigger on scenario_likes.
     return false;
   } else {
     await supabase
@@ -304,11 +301,8 @@ export async function toggleLike(
         published_scenario_id: publishedScenarioId,
         user_id: userId
       });
-    
-    await supabase.rpc('increment_like_count', { 
-      published_id: publishedScenarioId 
-    });
-    
+
+    // like_count is maintained by the sync_like_count trigger on scenario_likes.
     return true;
   }
 }
@@ -340,10 +334,8 @@ export async function saveScenarioToCollection(
     });
     
   if (error) throw error;
-  
-  await supabase.rpc('increment_save_count', { 
-    published_id: publishedScenarioId 
-  });
+
+  // save_count is maintained by the sync_save_count trigger on saved_scenarios.
 }
 
 // Remove saved scenario
@@ -356,12 +348,10 @@ export async function unsaveScenario(
     .delete()
     .eq('published_scenario_id', publishedScenarioId)
     .eq('user_id', userId);
-    
+
   if (error) throw error;
-  
-  await supabase.rpc('decrement_save_count', { 
-    published_id: publishedScenarioId 
-  });
+
+  // save_count is maintained by the sync_save_count trigger on saved_scenarios.
 }
 
 // Get user's saved scenarios
@@ -454,10 +444,11 @@ export async function getUserInteractions(
   return { likes, saves };
 }
 
-// Increment play count
+// Record a play (throttled to once per scenario per 5 minutes server-side).
+// play_count is maintained by the sync_play_count trigger on scenario_plays.
 export async function incrementPlayCount(publishedScenarioId: string): Promise<void> {
-  await supabase.rpc('increment_play_count', { 
-    published_id: publishedScenarioId 
+  await supabase.rpc('record_scenario_play', {
+    p_published_scenario_id: publishedScenarioId
   });
 }
 
