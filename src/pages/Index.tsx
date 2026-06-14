@@ -1231,6 +1231,20 @@ const IndexContent = () => {
         onDelete={handleDeleteBackground}
         isUploading={isUploadingBackground}
         onOverlayChange={handleOverlayChange}
+        onAddFromLibrary={async (imageUrl) => {
+          if (!user?.id) return;
+          try {
+            const newBg = await supabaseData.createUserBackground(user.id, imageUrl);
+            setHubBackgrounds((prev) => [newBg, ...prev]);
+            await supabaseData.setSelectedBackground(user.id, newBg.id);
+            setSelectedHubBackgroundId(newBg.id);
+            setHubBackgrounds((prev) =>
+              prev.map((b) => ({ ...b, isSelected: b.id === newBg.id })),
+            );
+          } catch (err) {
+            console.error('Failed to add background from library:', err);
+          }
+        }}
       />
 
       <BackgroundPickerModal
@@ -1244,6 +1258,17 @@ const IndexContent = () => {
         onDelete={handleDeleteBackground}
         isUploading={isUploadingBackground}
         onOverlayChange={handleOverlayChange}
+        onAddFromLibrary={async (imageUrl) => {
+          if (!user?.id) return;
+          try {
+            const newBg = await supabaseData.createUserBackground(user.id, imageUrl);
+            setHubBackgrounds((prev) => [newBg, ...prev]);
+            await supabaseData.setImageLibraryBackground(user.id, newBg.id);
+            setSelectedImageLibraryBackgroundId(newBg.id);
+          } catch (err) {
+            console.error('Failed to add image library background:', err);
+          }
+        }}
       />
 
       {/* Delete Confirmation Dialog - handles characters, bookmarks, and scenarios */}
