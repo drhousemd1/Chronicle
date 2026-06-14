@@ -2573,10 +2573,12 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "policies": [
         {
           "name": "Users can create own characters",
-          "roles": null,
+          "roles": [
+            "authenticated"
+          ],
           "using": null,
           "command": "INSERT",
-          "withCheck": "(auth.uid() = user_id)",
+          "withCheck": "((auth.uid() = user_id) AND ((scenario_id IS NULL) OR (EXISTS ( SELECT 1\n   FROM stories s\n  WHERE ((s.id = characters.scenario_id) AND (s.user_id = auth.uid()))))))",
           "permissive": true
         },
         {
@@ -2589,10 +2591,12 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         },
         {
           "name": "Users can update own characters",
-          "roles": null,
+          "roles": [
+            "authenticated"
+          ],
           "using": "(auth.uid() = user_id)",
           "command": "UPDATE",
-          "withCheck": null,
+          "withCheck": "((auth.uid() = user_id) AND ((scenario_id IS NULL) OR (EXISTS ( SELECT 1\n   FROM stories s\n  WHERE ((s.id = characters.scenario_id) AND (s.user_id = auth.uid()))))))",
           "permissive": true
         },
         {
