@@ -67,6 +67,7 @@ const runIds = {
   galleryCounterIntegrity20260614: "run-lovable-gallery-counter-integrity-20260614",
   profilePrivacyEnforcement20260614: "run-lovable-profile-privacy-enforcement-20260614",
   storageStageA20260614: "run-lovable-storage-privacy-stage-a-20260614",
+  storagePrivacyStageB20260614: "run-lovable-storage-privacy-stage-b-20260614",
 } as const;
 
 const qualityHubHousekeepingScanTimestamp = "2026-05-30T19:22:16.000-06:00";
@@ -94,6 +95,7 @@ const qualityHubPublishedScenariosOwnership20260614Timestamp = "2026-06-14T08:00
 const qualityHubGalleryCounterIntegrity20260614Timestamp = "2026-06-14T08:30:00.000Z";
 const qualityHubProfilePrivacyEnforcement20260614Timestamp = "2026-06-14T09:00:00.000Z";
 const qualityHubStorageStageA20260614Timestamp = "2026-06-14T09:30:00.000Z";
+const qualityHubStoragePrivacyStageB20260614Timestamp = "2026-06-14T11:15:00.000Z";
 
 function stamp(runId: string) {
   return {
