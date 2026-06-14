@@ -2045,6 +2045,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             characterName: name,
             modelId,
             stylePrompt: styleData?.backendPrompt || '',
+            usageEventType: 'side_character_avatar_generated',
             debugTrace: isAdmin,
           };
           recordChatDebugSupportCall(sourceMessage, {

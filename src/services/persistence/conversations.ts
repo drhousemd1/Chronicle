@@ -20,6 +20,7 @@ import type {
   TimeOfDay,
 } from '@/types';
 import type { DialogDebugComment } from '@/features/chat-debug/types';
+import type { TablesUpdate } from '@/integrations/supabase/types';
 import { normalizeDialogDebugTags } from '@/features/chat-debug/types';
 import {
   asCharacterBackground,
@@ -185,7 +186,7 @@ export async function updateConversationMeta(
     timeRemaining?: number;
   },
 ): Promise<void> {
-  const updateObj: Record<string, any> = {};
+  const updateObj: TablesUpdate<'conversations'> = {};
   if (patch.currentDay !== undefined) updateObj.current_day = patch.currentDay;
   if (patch.currentTimeOfDay !== undefined) updateObj.current_time_of_day = patch.currentTimeOfDay;
   if (patch.title !== undefined) updateObj.title = patch.title;

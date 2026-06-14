@@ -150,6 +150,11 @@ function safeCount(value: unknown): number {
   return Math.max(1, Math.floor(n));
 }
 
+function isAuthoritativeUsageEventSource(value: unknown): boolean {
+  const source = typeof value === "string" ? value : "";
+  return source.startsWith("server:");
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: getCorsHeaders(req) });
@@ -221,7 +226,7 @@ serve(async (req) => {
 
     let eventsQuery = serviceClient
       .from("ai_usage_events")
-      .select("created_at, event_type, event_count, user_id")
+      .select("created_at, event_type, event_count, event_source, user_id")
       .gte("created_at", rangeStartIso);
 
     if (userIds) {
@@ -281,6 +286,7 @@ serve(async (req) => {
     }
 
     for (const row of eventsRes.data || []) {
+      if (!isAuthoritativeUsageEventSource(row.event_source)) continue;
       const createdAt = safeDate(row.created_at);
       if (!createdAt) continue;
       const idx = getBucketIndex(createdAt, buckets);

@@ -98,7 +98,6 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
       onOpenChange(false);
     } catch (err) {
       console.error('Failed to submit review:', err);
-      console.error('Failed to submit review:', err);
     } finally {
       setIsSubmitting(false);
     }
@@ -112,7 +111,6 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
       onReviewSubmitted();
       onOpenChange(false);
     } catch (err) {
-      console.error('Failed to delete review:', err);
       console.error('Failed to delete review:', err);
     } finally {
       setIsDeleting(false);

@@ -1,10 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { shouldReturnAdminDebugTrace } from "../_shared/admin-debug.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
+import { recordServerAiUsage } from "../_shared/server-usage.ts";
 import { callXaiResponses, extractXaiResponsesText, getXaiResponsesBodyError } from "../_shared/xai-responses.ts";
 
 const SUPPORT_REASONING_EFFORT = "medium" as const;
 const SUPPORT_STORE = false;
+const SUPPORT_RATE_LIMIT_WINDOW_MS = 60_000;
+const SUPPORT_RATE_LIMIT_MAX = 30;
 
 type GoalKind = "story" | "character";
 type GoalFlexibility = "rigid" | "normal" | "flexible";
@@ -119,12 +124,27 @@ serve(async (req) => {
       });
     }
 
+    const rateDecision = checkRateLimit({ scope: "evaluate-goal-alignment", key: user.id, windowMs: SUPPORT_RATE_LIMIT_WINDOW_MS, max: SUPPORT_RATE_LIMIT_MAX });
+    if (!rateDecision.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: "Rate limit exceeded. Please wait before retrying goal alignment evaluation.",
+          retryAfterSeconds: rateDecision.retryAfterSeconds,
+          evaluations: [],
+        }),
+        { status: 429, headers: { ...corsHeaders, ...getRateLimitHeaders(rateDecision), "Content-Type": "application/json" } }
+      );
+    }
+    const rateHeaders = getRateLimitHeaders(rateDecision);
+    const responseHeadersBase = { ...corsHeaders, ...rateHeaders };
+
     const body: EvaluationRequest = await req.json();
     const { userMessage, aiResponse, recentContext = "", goals = [], currentDay, currentTimeOfDay, debugTrace = false } = body;
+    const debugTraceAllowed = await shouldReturnAdminDebugTrace(supabase, user.id, debugTrace, "[evaluate-goal-alignment]");
 
     if ((!userMessage && !aiResponse) || goals.length === 0) {
       return new Response(JSON.stringify({ evaluations: [] }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...responseHeadersBase, "Content-Type": "application/json" },
       });
     }
 
@@ -255,7 +275,7 @@ Respond in JSON only:
       textFormat: responseFormat,
     });
 
-    const debugPayload = debugTrace === true
+    const debugPayload = debugTraceAllowed
       ? {
           modelRequest: result.modelRequest,
         }
@@ -268,7 +288,7 @@ Respond in JSON only:
         error: "Goal alignment classification failed",
         ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
       }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...responseHeadersBase, "Content-Type": "application/json" },
       });
     }
 
@@ -282,7 +302,7 @@ Respond in JSON only:
         providerBodyError: bodyError,
         ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
       }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...responseHeadersBase, "Content-Type": "application/json" },
       });
     }
     const content = extractXaiResponsesText(data) || "";
@@ -301,7 +321,7 @@ Respond in JSON only:
         parseError: "parse_error",
         ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
       }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...responseHeadersBase, "Content-Type": "application/json" },
       });
     }
 
@@ -363,13 +383,25 @@ Respond in JSON only:
 
     console.log(`[evaluate-goal-alignment] Evaluated ${evaluations.length} of ${goals.length} goals`);
 
+    await recordServerAiUsage({
+      userId: user.id,
+      eventType: "goal_alignment_eval_call",
+      functionName: "evaluate-goal-alignment",
+      metadata: {
+        modelId: "grok-4.3",
+        status: "success",
+        goalCount: goals.length,
+        acceptedEvaluationCount: evaluations.length,
+      },
+    });
+
     return new Response(JSON.stringify({
       evaluations,
       alignmentReviews,
       rejectedEvaluations,
       ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
     }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...responseHeadersBase, "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("[evaluate-goal-alignment] Error:", error);

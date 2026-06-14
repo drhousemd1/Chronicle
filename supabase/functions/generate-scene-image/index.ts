@@ -8,6 +8,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
+import { recordServerAiUsage } from "../_shared/server-usage.ts";
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -455,6 +456,20 @@ serve(async (req) => {
     }
 
     console.log("[generate-scene-image] Image generated successfully");
+
+    await recordServerAiUsage({
+      userId: user.id,
+      eventType: "scene_image_generated",
+      functionName: "generate-scene-image",
+      metadata: {
+        modelId: "grok-imagine-image",
+        textModelId: effectiveTextModel,
+        status: "success",
+        recentMessageCount: Array.isArray(recentMessages) ? recentMessages.length : 0,
+        characterCount: Array.isArray(characters) ? characters.length : 0,
+        promptChars: imagePrompt.length,
+      },
+    });
 
     return new Response(JSON.stringify({ 
       imageUrl,

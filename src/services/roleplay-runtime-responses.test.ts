@@ -84,7 +84,7 @@ describe('roleplay runtime Responses migration source contracts', () => {
     const source = read('supabase/functions/chat/index.ts');
 
     expect(source).toContain('providerTransport?: \'chat_completions\' | \'responses\';');
-    expect(source).toContain("providerTransport = 'responses'");
+    expect(source).toContain("const providerTransport = body.providerTransport === 'chat_completions' ? 'chat_completions' : 'responses';");
     expect(source).toContain("if (providerTransport === 'responses')");
     expect(source).toContain('return await handleResponsesDirect(');
     expect(source).toContain('return await handleDirect(');

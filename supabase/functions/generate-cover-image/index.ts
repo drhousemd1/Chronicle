@@ -7,6 +7,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
+import { recordServerAiUsage } from "../_shared/server-usage.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -146,6 +147,19 @@ serve(async (req) => {
     }
 
     console.log(`[generate-cover-image] Cover image generated successfully`);
+
+    await recordServerAiUsage({
+      userId: user.id,
+      eventType: "cover_image_generated",
+      functionName: "generate-cover-image",
+      metadata: {
+        modelId: "grok-imagine-image",
+        status: "success",
+        promptChars: compressedPrompt.length,
+        hadStylePrompt: Boolean(stylePrompt),
+        hadNegativePrompt: Boolean(negativePrompt),
+      },
+    });
 
     return new Response(JSON.stringify({ imageUrl }), {
       headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },

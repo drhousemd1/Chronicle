@@ -5,8 +5,10 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { shouldReturnAdminDebugTrace } from "../_shared/admin-debug.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
+import { recordServerAiUsage } from "../_shared/server-usage.ts";
 
 const STRING_FIELD = { type: "string" };
 
@@ -254,6 +256,7 @@ serve(async (req) => {
     const rateHeaders = getRateLimitHeaders(rateDecision);
 
     const { name, dialogContext, extractedTraits, worldContext, modelId, debugTrace = false } = await req.json();
+    const debugTraceAllowed = await shouldReturnAdminDebugTrace(supabase, user.id, debugTrace, "[generate-side-character]");
     
     // GROK ONLY -- always use xAI
     const effectiveModelId = modelId === 'grok-4.3' ? modelId : 'grok-4.3';
@@ -295,7 +298,7 @@ Return ONLY valid JSON, no markdown formatting.`;
       temperature: 0.55,
       response_format: sideCharacterProfileResponseFormat,
     };
-    const debugPayload = debugTrace === true
+    const debugPayload = debugTraceAllowed
       ? {
           modelRequest: {
             endpoint: "https://api.x.ai/v1/chat/completions",
@@ -340,6 +343,17 @@ Return ONLY valid JSON, no markdown formatting.`;
     
     try {
       const profile = sanitizeGeneratedProfile(JSON.parse(cleanContent), sourceSupportText, name);
+      await recordServerAiUsage({
+        userId: user.id,
+        eventType: "side_character_card_generated",
+        functionName: "generate-side-character",
+        metadata: {
+          modelId: effectiveModelId,
+          status: "success",
+          sourceDialogChars: typeof dialogContext === "string" ? dialogContext.length : 0,
+          worldContextChars: typeof worldContext === "string" ? worldContext.length : 0,
+        },
+      });
       return new Response(JSON.stringify({ ...profile, ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}) }), {
         headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
       });

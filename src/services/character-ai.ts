@@ -2,7 +2,7 @@
 import { ScenarioData, Character, CharacterTraitSection, PhysicalAppearance, CurrentlyWearing, PreferredClothing, WorldCore, CharacterExtraRow } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { uid, now } from "@/utils";
-import { trackAiUsageEvent } from "@/services/usage-tracking";
+import { trackAiUsageEvent, type AiUsageEventType } from "@/services/usage-tracking";
 import { buildRequiredPresence, trackApiValidationSnapshot } from "@/services/api-usage-validation";
 import { buildContentThemeDirectives } from "@/constants/tag-injection-registry";
 
@@ -620,7 +620,8 @@ function extractAssistantText(data: unknown): string {
 async function callAIWithRetry(
   messages: { role: string; content: string }[],
   modelId: string,
-  stream: boolean = false
+  stream: boolean = false,
+  usageEventType?: AiUsageEventType
 ): Promise<string> {
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     const { data, error } = await supabase.functions.invoke('chat', {
@@ -629,6 +630,7 @@ async function callAIWithRetry(
         modelId,
         stream,
         providerTransport: 'chat_completions',
+        ...(usageEventType ? { usageEventType } : {}),
       },
     });
 
@@ -672,10 +674,11 @@ export async function aiEnhanceCharacterField(
   const fullContext = buildFullContext(appData, character.id);
   const selfContext = buildCharacterSelfContext(character);
   const prompt = buildCharacterFieldPrompt(fieldName, currentValue, fullContext, selfContext, customLabel, mode);
+  const usageEventType: AiUsageEventType = mode === "precise" ? "character_ai_enhance_precise" : "character_ai_enhance_detailed";
 
   aiDebugLog(`[character-ai] Enhancing field: ${fieldName} with model: ${modelId} (mode: ${mode})`);
   void trackAiUsageEvent({
-    eventType: mode === "precise" ? "character_ai_enhance_precise" : "character_ai_enhance_detailed",
+    eventType: usageEventType,
     eventSource: "character-ai",
     metadata: {
       fieldName,
@@ -702,7 +705,9 @@ export async function aiEnhanceCharacterField(
       { role: 'system', content: 'You are a concise character creation assistant. Return only the requested content, no explanations.' },
       { role: 'user', content: prompt }
     ],
-    modelId
+    modelId,
+    false,
+    usageEventType
   );
 
   // Parse generate-both response into delimiter format for callers
@@ -1276,7 +1281,9 @@ export async function aiFillCharacter(
         { role: 'system', content: 'You are a character creation assistant. Return only valid JSON.' },
         { role: 'user', content: prompt }
       ],
-      modelId
+      modelId,
+      false,
+      "character_ai_fill"
     );
     aiDebugLog(`[ai-fill] LLM response length: ${content.length}`);
 
@@ -1464,7 +1471,9 @@ export async function aiGenerateCharacter(
         { role: 'system', content: 'You are a creative character design assistant. Return only valid JSON.' },
         { role: 'user', content: prompt }
       ],
-      modelId
+      modelId,
+      false,
+      "character_ai_generate"
     );
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return {};

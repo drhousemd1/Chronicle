@@ -114,6 +114,7 @@ export const AvatarGenerationModal: React.FC<AvatarGenerationModalProps> = ({
             modelId,
             stylePrompt: selectedStyle.backendPrompt,
             negativePrompt: negativePrompt.trim() || undefined,
+            usageEventType: "character_avatar_generated",
           },
         }
       );

@@ -255,30 +255,41 @@ scenario.scenes = [{ id: uid('scene'), url: '', title: 'Clocktower', tags: ['mys
 
 const prompt = getSystemInstruction(scenario, 4, 'night');
 
-const customWorldStart = prompt.indexOf('CUSTOM WORLD CONTENT:');
-const castStart = prompt.indexOf('CAST:');
-const sceneStart = prompt.indexOf('AVAILABLE SCENES:');
+const customWorldStart = prompt.indexOf('--- CUSTOM WORLD CONTENT ---');
+const mainCharacterStart = prompt.indexOf('--- SECTION 3 - MAIN AI CHARACTER CARD INFORMATION ---');
+const sideCharacterStart = prompt.indexOf('--- SECTION 4 - SIDE AI CHARACTER CARD INFORMATION ---');
+const userCharacterStart = prompt.indexOf('--- SECTION 5 - USER-CONTROLLED CHARACTER CARD INFORMATION ---');
 
-const customWorldBlock = customWorldStart >= 0 && castStart > customWorldStart
-  ? prompt.slice(customWorldStart, castStart).trim()
+const customWorldBlock = customWorldStart >= 0 && mainCharacterStart > customWorldStart
+  ? prompt.slice(customWorldStart, mainCharacterStart).trim()
   : 'CUSTOM WORLD CONTENT block not found';
 
-const castBlock = castStart >= 0 && sceneStart > castStart
-  ? prompt.slice(castStart, sceneStart).trim()
-  : 'CAST block not found';
+const aiCharacterBlock = mainCharacterStart >= 0 && userCharacterStart > mainCharacterStart
+  ? prompt.slice(mainCharacterStart, userCharacterStart).trim()
+  : 'AI character card block not found';
+
+const userCharacterBlock = userCharacterStart >= 0
+  ? prompt.slice(userCharacterStart).trim()
+  : 'User-controlled character card block not found';
 
 printBlock('CUSTOM WORLD CONTENT BLOCK', customWorldBlock);
-printBlock('CAST BLOCK', castBlock);
+printBlock('AI CHARACTER CARD BLOCK', aiCharacterBlock);
+printBlock('USER CHARACTER CARD BLOCK', userCharacterBlock);
 
 console.log('\n==================== ASSERTIONS ====================');
 const checks = [
-  expectContains(prompt, '[Forbidden Lore]:', 'World freeform section title serialized'),
+  expectContains(prompt, '--- SECTION 2 - STORY AND WORLD CONTEXT ---', 'Story/world section label matches current renderer'),
+  expectContains(prompt, '--- CUSTOM WORLD CONTENT ---', 'Custom world content heading serialized'),
+  expectContains(prompt, 'Forbidden Lore\n- Forbidden Lore Notes: Only moonlight reveals the true ink beneath redacted passages.', 'World freeform section serialized into current row format'),
   expectContains(prompt, 'Forbidden Lore Notes: Only moonlight reveals the true ink beneath redacted passages.', 'World freeform value serialized into labeled row'),
-  expectContains(prompt, '[Private Notes]:\n      - Private Notes Notes: She records every omen in a cipher only she can read.', 'Character freeform custom section serialized'),
-  expectContains(prompt, 'PHYSICAL APPEARANCE:\n      - Hair Color: Black with silver streaks', 'Hardcoded character fields serialized under headings'),
-  expectContains(prompt, 'USER CHARACTER REFERENCE (READ-ONLY CONTEXT):', 'User-controlled character reference included'),
-  expectContains(prompt, 'SIDE CHARACTER REFERENCE:', 'Side-character reference included'),
-  expectContains(prompt, 'CUSTOM TRAITS / CUSTOM CONTENT:\n    [User Notes]:\n      - User Notes Notes: Rowan keeps hidden routes mapped in charcoal notebooks.', 'User freeform custom section serialized'),
+  expectContains(prompt, '--- SECTION 3 - MAIN AI CHARACTER CARD INFORMATION ---', 'Main AI character section label matches current renderer'),
+  expectContains(prompt, 'Ariadne CUSTOM CONTENT\nArtifacts\n- Relic: Sun-key etched with star maps\n\nPrivate Notes\n- Private Notes Notes: She records every omen in a cipher only she can read.', 'AI character custom sections serialized'),
+  expectContains(prompt, 'Ariadne PHYSICAL APPEARANCE\n- Hair Color: Black with silver streaks', 'Hardcoded character fields serialized under named headings'),
+  expectContains(prompt, '--- SECTION 4 - SIDE AI CHARACTER CARD INFORMATION ---', 'Side-character reference section included'),
+  expectContains(prompt, 'CHARACTER: Mara', 'Side-character card included'),
+  expectContains(prompt, '--- SECTION 5 - USER-CONTROLLED CHARACTER CARD INFORMATION ---', 'User-controlled character reference section included'),
+  expectContains(prompt, 'USER-CONTROLLED CHARACTERS DO NOT GENERATE FOR\n- Rowan', 'User-controlled generation boundary included'),
+  expectContains(prompt, 'Rowan CUSTOM CONTENT\nUser Notes\n- User Notes Notes: Rowan keeps hidden routes mapped in charcoal notebooks.', 'User freeform custom section serialized'),
 ];
 
 const failed = checks.filter((ok) => !ok).length;

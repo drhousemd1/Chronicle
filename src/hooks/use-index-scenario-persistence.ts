@@ -22,7 +22,7 @@ import {
   importScenarioFromAny,
   StoryImportMode,
 } from "@/lib/story-transfer";
-import { extractDocxPlainText } from "@/lib/docx-import";
+import { isStoryImportLimitError, readStoryImportFileText } from "@/lib/docx-import";
 import { StoryExportFormat } from "@/components/chronicle/StoryExportFormatModal";
 import * as supabaseData from "@/services/supabase-data";
 
@@ -405,37 +405,7 @@ export function useIndexScenarioPersistence({
       if (!file || !activeData) return;
 
       try {
-        const fileNameLower = file.name.toLowerCase();
-        const mimeTypeLower = file.type.toLowerCase();
-        const looksLikeDocx =
-          fileNameLower.endsWith(".docx") ||
-          mimeTypeLower.includes(
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-          );
-        const importWarnings: string[] = [];
-        let text = "";
-
-        if (looksLikeDocx) {
-          try {
-            const extraction = await extractDocxPlainText(await file.arrayBuffer());
-            text = extraction.text;
-            importWarnings.push(...extraction.warnings);
-            if (!text.trim()) {
-              importWarnings.push(
-                "DOCX extraction returned empty text; falling back to plain text import.",
-              );
-              text = await file.text();
-            }
-          } catch (docxError) {
-            importWarnings.push("DOCX extraction failed; fell back to raw text parsing.");
-            if (import.meta.env.DEV) {
-              console.debug("[story-import] DOCX extraction fallback:", docxError);
-            }
-            text = await file.text();
-          }
-        } else {
-          text = await file.text();
-        }
+        const { text, warnings: importWarnings } = await readStoryImportFileText(file);
 
         const result = importScenarioFromAny(
           { text, fileName: file.name, mimeType: file.type },
@@ -482,11 +452,17 @@ export function useIndexScenarioPersistence({
           text: `Import ${storyImportMode}: ${summaryParts.join(", ")}.${warningsCount > 0 ? ` ${warningsCount} warning${warningsCount === 1 ? "" : "s"}.` : ""}`,
         });
       } catch (error) {
-        console.error("Story import failed:", error);
+        if (isStoryImportLimitError(error)) {
+          console.warn("Story import rejected by safety limit:", error.message);
+        } else {
+          console.error("Story import failed:", error);
+        }
         setStoryTransferWarningDetails([]);
         setStoryTransferNotice({
           tone: "error",
-          text: "Import failed. Try JSON, Markdown/TXT, HTML/DOC, or DOCX again.",
+          text: isStoryImportLimitError(error)
+            ? error.userMessage
+            : "Import failed. Try JSON, Markdown/TXT, HTML/DOC, or DOCX again.",
         });
       }
     },

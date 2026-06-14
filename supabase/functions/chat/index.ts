@@ -9,8 +9,10 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { shouldReturnAdminDebugTrace } from "../_shared/admin-debug.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
+import { recordServerAiUsage, type ServerAiUsageEventType } from "../_shared/server-usage.ts";
 import {
   callXaiResponses,
   extractXaiResponsesReasoningSummaries,
@@ -58,7 +60,25 @@ type ChatRequest = {
   store?: boolean;
   debugTrace?: boolean;
   roleplayContext?: RoleplayContext;
+  usageEventType?: string;
 };
+
+const CHAT_USAGE_EVENT_TYPES = new Set<ServerAiUsageEventType>([
+  "chat_call_1",
+  "character_ai_fill",
+  "character_ai_generate",
+  "character_ai_enhance_precise",
+  "character_ai_enhance_detailed",
+  "world_ai_enhance_precise",
+  "world_ai_enhance_detailed",
+]);
+
+function normalizeChatUsageEventType(input: unknown): ServerAiUsageEventType {
+  if (typeof input !== "string") return "chat_call_1";
+  return CHAT_USAGE_EVENT_TYPES.has(input as ServerAiUsageEventType)
+    ? input as ServerAiUsageEventType
+    : "chat_call_1";
+}
 
 type XAIResult = { ok: true; response: Response } | { ok: false; status: number; errorText: string };
 
@@ -165,6 +185,13 @@ const CONTENT_FILTER_NOTICE_TEXT = 'Chronicle: The model provider blocked this t
 const DEBUG_CHAT_LOGS = Deno.env.get("DEBUG_CHAT_LOGS") === "true";
 
 const RECENT_HISTORY_WINDOW = 16;
+const CHAT_REQUEST_MAX_BODY_BYTES = 512_000;
+const CHAT_REQUEST_MAX_MESSAGES = 12;
+const CHAT_REQUEST_MAX_SINGLE_MESSAGE_CHARS = 180_000;
+const CHAT_REQUEST_MAX_TOTAL_MESSAGE_CHARS = 240_000;
+const CHAT_MIN_OUTPUT_TOKENS = 256;
+const CHAT_DEFAULT_OUTPUT_TOKENS = 2048;
+const CHAT_MAX_OUTPUT_TOKENS = 3072;
 
 const TEMP_DIRECT = 0.6;
 const ROLEPLAY_RESPONSES_REASONING_EFFORT: XaiResponsesReasoningEffort = "medium";
@@ -234,7 +261,7 @@ async function callXAI(
   messages: Message[],
   modelId: string,
   stream: boolean,
-  maxTokens: number = 4096,
+  maxTokens: number = CHAT_DEFAULT_OUTPUT_TOKENS,
   temperature: number = TEMP_DIRECT,
 ): Promise<XAIResult> {
   const XAI_API_KEY = Deno.env.get("XAI_API_KEY");
@@ -517,6 +544,107 @@ function previewProviderError(errorText: string, max = 800): string {
 
 function messageFromUnknown(error: unknown): string {
   return error instanceof Error ? error.message : String(error || 'Unknown provider error');
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+async function readBoundedJsonBody(req: Request): Promise<
+  | { ok: true; body: unknown }
+  | { ok: false; status: number; error: string }
+> {
+  const declaredLength = Number(req.headers.get('content-length') || 0);
+  if (Number.isFinite(declaredLength) && declaredLength > CHAT_REQUEST_MAX_BODY_BYTES) {
+    return {
+      ok: false,
+      status: 413,
+      error: `Request body is too large. Maximum size is ${CHAT_REQUEST_MAX_BODY_BYTES} bytes.`,
+    };
+  }
+
+  const rawBody = await req.text();
+  const actualLength = new TextEncoder().encode(rawBody).length;
+  if (actualLength > CHAT_REQUEST_MAX_BODY_BYTES) {
+    return {
+      ok: false,
+      status: 413,
+      error: `Request body is too large. Maximum size is ${CHAT_REQUEST_MAX_BODY_BYTES} bytes.`,
+    };
+  }
+
+  try {
+    return { ok: true, body: JSON.parse(rawBody) };
+  } catch {
+    return { ok: false, status: 400, error: 'Invalid JSON request body.' };
+  }
+}
+
+function normalizeChatMessages(value: unknown): (
+  | { ok: true; messages: Message[] }
+  | { ok: false; error: string }
+) {
+  if (!Array.isArray(value) || value.length === 0) {
+    return { ok: false, error: 'Missing required field: messages must be a non-empty array.' };
+  }
+
+  if (value.length > CHAT_REQUEST_MAX_MESSAGES) {
+    return {
+      ok: false,
+      error: `Too many messages. Maximum is ${CHAT_REQUEST_MAX_MESSAGES}.`,
+    };
+  }
+
+  let totalChars = 0;
+  const messages: Message[] = [];
+  const validRoles = new Set<Message['role']>(['system', 'user', 'assistant']);
+
+  for (const [index, rawMessage] of value.entries()) {
+    if (!isRecord(rawMessage)) {
+      return { ok: false, error: `Invalid message at index ${index}.` };
+    }
+
+    const role = rawMessage.role;
+    const content = rawMessage.content;
+    if (role !== 'system' && role !== 'user' && role !== 'assistant') {
+      return { ok: false, error: `Invalid message role at index ${index}.` };
+    }
+    if (!validRoles.has(role)) {
+      return { ok: false, error: `Invalid message role at index ${index}.` };
+    }
+    if (typeof content !== 'string') {
+      return { ok: false, error: `Invalid message content at index ${index}.` };
+    }
+    if (content.length > CHAT_REQUEST_MAX_SINGLE_MESSAGE_CHARS) {
+      return {
+        ok: false,
+        error: `Message at index ${index} is too large. Maximum is ${CHAT_REQUEST_MAX_SINGLE_MESSAGE_CHARS} characters.`,
+      };
+    }
+
+    totalChars += content.length;
+    if (totalChars > CHAT_REQUEST_MAX_TOTAL_MESSAGE_CHARS) {
+      return {
+        ok: false,
+        error: `Messages are too large. Maximum total content is ${CHAT_REQUEST_MAX_TOTAL_MESSAGE_CHARS} characters.`,
+      };
+    }
+
+    messages.push({ role, content });
+  }
+
+  return { ok: true, messages };
+}
+
+function clampChatMaxTokens(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return CHAT_DEFAULT_OUTPUT_TOKENS;
+  }
+
+  return Math.min(
+    CHAT_MAX_OUTPUT_TOKENS,
+    Math.max(CHAT_MIN_OUTPUT_TOKENS, Math.floor(value)),
+  );
 }
 
 function appendProviderErrorToDebugTrace(
@@ -807,6 +935,8 @@ async function handleResponsesDirect(
   stream: boolean,
   maxTokens: number,
   responseHeadersBase: Record<string, string>,
+  userId: string,
+  usageEventType: ServerAiUsageEventType,
   debugTrace: RoleplayDebugTrace | null = null,
 ): Promise<Response> {
   const XAI_API_KEY = Deno.env.get("XAI_API_KEY");
@@ -843,6 +973,22 @@ async function handleResponsesDirect(
           modelRequest: primary.modelRequest,
           responseUsage: streamResult.responseUsage,
           reasoningSummaries: streamResult.reasoningSummaries,
+        });
+        await recordServerAiUsage({
+          userId,
+          eventType: usageEventType,
+          functionName: "chat",
+          metadata: {
+            modelId,
+            providerTransport: "responses",
+            stream,
+            status: "success",
+            providerRequestCount: 1,
+            providerInputTokens: streamResult.responseUsage?.input_tokens ?? null,
+            providerOutputTokens: streamResult.responseUsage?.output_tokens ?? null,
+            providerTotalTokens: streamResult.responseUsage?.total_tokens ?? null,
+            providerReasoningTokens: streamResult.responseUsage?.reasoning_tokens ?? null,
+          },
         });
         return streamTextAsSSE(normalizedText, modelId, streamHeaders, timedDebugTrace);
       } catch (error) {
@@ -887,6 +1033,22 @@ async function handleResponsesDirect(
       modelRequest: primary.modelRequest,
       responseUsage: content.responseUsage,
       reasoningSummaries: content.reasoningSummaries,
+    });
+    await recordServerAiUsage({
+      userId,
+      eventType: usageEventType,
+      functionName: "chat",
+      metadata: {
+        modelId,
+        providerTransport: "responses",
+        stream,
+        status: "success",
+        providerRequestCount: 1,
+        providerInputTokens: content.responseUsage?.input_tokens ?? null,
+        providerOutputTokens: content.responseUsage?.output_tokens ?? null,
+        providerTotalTokens: content.responseUsage?.total_tokens ?? null,
+        providerReasoningTokens: content.responseUsage?.reasoning_tokens ?? null,
+      },
     });
     return new Response(JSON.stringify({ ...data, chronicle_debug_trace: timedDebugTrace }), {
       headers: { ...responseHeadersBase, "Content-Type": "application/json" },
@@ -936,6 +1098,22 @@ async function handleResponsesDirect(
                 modelRequests: [priorModelRequest],
               }
             : null;
+          await recordServerAiUsage({
+            userId,
+            eventType: usageEventType,
+            functionName: "chat",
+            metadata: {
+              modelId,
+              providerTransport: "responses",
+              stream,
+              status: "fallback_success",
+              providerRequestCount: 2,
+              providerInputTokens: streamResult.responseUsage?.input_tokens ?? null,
+              providerOutputTokens: streamResult.responseUsage?.output_tokens ?? null,
+              providerTotalTokens: streamResult.responseUsage?.total_tokens ?? null,
+              providerReasoningTokens: streamResult.responseUsage?.reasoning_tokens ?? null,
+            },
+          });
           return streamTextAsSSE(normalizedText, modelId, streamHeaders, timedDebugTrace);
         } catch (error) {
           const providerError = messageFromUnknown(error);
@@ -984,6 +1162,22 @@ async function handleResponsesDirect(
             modelRequests: [priorModelRequest],
         }
         : null;
+      await recordServerAiUsage({
+        userId,
+        eventType: usageEventType,
+        functionName: "chat",
+        metadata: {
+          modelId,
+          providerTransport: "responses",
+          stream,
+          status: "fallback_success",
+          providerRequestCount: 2,
+          providerInputTokens: content.responseUsage?.input_tokens ?? null,
+          providerOutputTokens: content.responseUsage?.output_tokens ?? null,
+          providerTotalTokens: content.responseUsage?.total_tokens ?? null,
+          providerReasoningTokens: content.responseUsage?.reasoning_tokens ?? null,
+        },
+      });
       return jsonResponseAsCompletion(normalizeFinalText(content.text), modelId, {
         ...responseHeadersBase,
         "Content-Type": "application/json",
@@ -1077,6 +1271,8 @@ async function handleDirect(
   stream: boolean,
   maxTokens: number,
   responseHeadersBase: Record<string, string>,
+  userId: string,
+  usageEventType: ServerAiUsageEventType,
   debugTrace: RoleplayDebugTrace | null = null,
 ): Promise<Response> {
   const directStartedAt = performance.now();
@@ -1089,6 +1285,18 @@ async function handleDirect(
 
   if (result.ok) {
     if (stream) {
+      await recordServerAiUsage({
+        userId,
+        eventType: usageEventType,
+        functionName: "chat",
+        metadata: {
+          modelId,
+          providerTransport: "chat_completions",
+          stream,
+          status: "success",
+          providerRequestCount: 1,
+        },
+      });
       return await streamSanitizedXAICompletion(result.response.body, modelId, {
         ...responseHeadersBase,
         "Content-Type": "text/event-stream",
@@ -1100,6 +1308,18 @@ async function handleDirect(
     if (timedDebugTrace) {
       data.chronicle_debug_trace = timedDebugTrace;
     }
+    await recordServerAiUsage({
+      userId,
+      eventType: usageEventType,
+      functionName: "chat",
+      metadata: {
+        modelId,
+        providerTransport: "chat_completions",
+        stream,
+        status: "success",
+        providerRequestCount: 1,
+      },
+    });
     return new Response(JSON.stringify(data), {
       headers: { ...responseHeadersBase, "Content-Type": "application/json" },
     });
@@ -1133,6 +1353,18 @@ async function handleDirect(
     }
     if (retry.ok) {
       if (stream) {
+        await recordServerAiUsage({
+          userId,
+          eventType: usageEventType,
+          functionName: "chat",
+          metadata: {
+            modelId,
+            providerTransport: "chat_completions",
+            stream,
+            status: "fallback_success",
+            providerRequestCount: 2,
+          },
+        });
         return await streamSanitizedXAICompletion(retry.response.body, modelId, {
           ...responseHeadersBase,
           "Content-Type": "text/event-stream",
@@ -1144,6 +1376,18 @@ async function handleDirect(
       if (timedDebugTrace) {
         data.chronicle_debug_trace = timedDebugTrace;
       }
+      await recordServerAiUsage({
+        userId,
+        eventType: usageEventType,
+        functionName: "chat",
+        metadata: {
+          modelId,
+          providerTransport: "chat_completions",
+          stream,
+          status: "fallback_success",
+          providerRequestCount: 2,
+        },
+      });
       return new Response(JSON.stringify(data), {
         headers: { ...responseHeadersBase, "Content-Type": "application/json" },
       });
@@ -1227,28 +1471,37 @@ serve(async (req) => {
     const rateHeaders = getRateLimitHeaders(rateDecision);
     const responseHeadersBase = { ...corsHeaders, ...rateHeaders };
 
-    const body: ChatRequest = await req.json();
-    const {
-      messages,
-      stream = true,
-      max_tokens: maxTokens = 4096,
-      pipeline = 'direct',
-      providerTransport = 'responses',
-      debugTrace: debugTraceRequested = false,
-      roleplayContext,
-    } = body;
-
-    const VALID_GROK_MODELS = ['grok-4.3'];
-    const modelId = VALID_GROK_MODELS.includes(body.modelId) ? body.modelId : 'grok-4.3';
-    if (body.modelId !== modelId) {
-      warnLog(`[chat] Rejected non-Grok model "${body.modelId}", using "${modelId}"`);
+    const bodyResult = await readBoundedJsonBody(req);
+    if (!bodyResult.ok) {
+      return new Response(
+        JSON.stringify({ error: bodyResult.error }),
+        { status: bodyResult.status, headers: { ...responseHeadersBase, "Content-Type": "application/json" } },
+      );
     }
 
-    if (!messages || !modelId) {
+    const body = bodyResult.body as Partial<ChatRequest>;
+    const messageResult = normalizeChatMessages(body.messages);
+    if (!messageResult.ok) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields: messages and modelId" }),
+        JSON.stringify({ error: messageResult.error }),
         { status: 400, headers: { ...responseHeadersBase, "Content-Type": "application/json" } },
       );
+    }
+
+    const messages = messageResult.messages;
+    const stream = body.stream !== false;
+    const maxTokens = clampChatMaxTokens(body.max_tokens);
+    const pipeline = body.pipeline === 'roleplay_v2' ? 'roleplay_v2' : 'direct';
+    const providerTransport = body.providerTransport === 'chat_completions' ? 'chat_completions' : 'responses';
+    const usageEventType = normalizeChatUsageEventType(body.usageEventType);
+    const debugTraceAllowed = await shouldReturnAdminDebugTrace(supabase, user.id, body.debugTrace, "[chat]");
+    const roleplayContext = isRecord(body.roleplayContext) ? body.roleplayContext as RoleplayContext : undefined;
+
+    const VALID_GROK_MODELS = ['grok-4.3'];
+    const requestedModelId = typeof body.modelId === 'string' ? body.modelId : '';
+    const modelId = VALID_GROK_MODELS.includes(requestedModelId) ? requestedModelId : 'grok-4.3';
+    if (requestedModelId !== modelId) {
+      warnLog(`[chat] Rejected non-Grok model "${requestedModelId}", using "${modelId}"`);
     }
 
     const normalizedPipeline = pipeline === 'roleplay_v2' ? 'direct' : pipeline;
@@ -1266,7 +1519,9 @@ serve(async (req) => {
         stream,
         maxTokens,
         responseHeadersBase,
-        debugTraceRequested ? buildDirectDebugTrace(messages, roleplayContext) : null,
+        user.id,
+        usageEventType,
+        debugTraceAllowed ? buildDirectDebugTrace(messages, roleplayContext) : null,
       );
     }
 
@@ -1276,7 +1531,9 @@ serve(async (req) => {
       stream,
       maxTokens,
       responseHeadersBase,
-      debugTraceRequested ? buildDirectDebugTrace(messages, roleplayContext) : null,
+      user.id,
+      usageEventType,
+      debugTraceAllowed ? buildDirectDebugTrace(messages, roleplayContext) : null,
     );
   } catch (error) {
     console.error("[chat] Error:", error);

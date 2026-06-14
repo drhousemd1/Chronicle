@@ -4,12 +4,17 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { shouldReturnAdminDebugTrace } from "../_shared/admin-debug.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
+import { recordServerAiUsage } from "../_shared/server-usage.ts";
 import { callXaiResponses, extractXaiResponsesText, getXaiResponsesBodyError } from "../_shared/xai-responses.ts";
 
 const DAY_SYNOPSIS_MAX_CHARS = 900;
 const SUPPORT_REASONING_EFFORT = "medium" as const;
 const SUPPORT_STORE = false;
+const SUPPORT_RATE_LIMIT_WINDOW_MS = 60_000;
+const SUPPORT_RATE_LIMIT_MAX = 30;
 
 function trimAtWordBoundary(value: string, maxChars: number): string {
   if (value.length <= maxChars) return value;
@@ -49,12 +54,26 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
+    const rateDecision = checkRateLimit({ scope: "compress-day-memories", key: user.id, windowMs: SUPPORT_RATE_LIMIT_WINDOW_MS, max: SUPPORT_RATE_LIMIT_MAX });
+    if (!rateDecision.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: "Rate limit exceeded. Please wait before retrying memory compression.",
+          retryAfterSeconds: rateDecision.retryAfterSeconds,
+        }),
+        { status: 429, headers: { ...corsHeaders, ...getRateLimitHeaders(rateDecision), "Content-Type": "application/json" } }
+      );
+    }
+    const rateHeaders = getRateLimitHeaders(rateDecision);
+    const responseHeadersBase = { ...corsHeaders, ...rateHeaders };
+
     const { bullets, day, conversationId, debugTrace = false } = await req.json();
+    const debugTraceAllowed = await shouldReturnAdminDebugTrace(supabase, user.id, debugTrace, "[compress-day-memories]");
 
     if (!bullets || !Array.isArray(bullets) || bullets.length === 0) {
       return new Response(
         JSON.stringify({ error: 'bullets array is required and must not be empty' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...responseHeadersBase, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -90,7 +109,7 @@ Rules:
       store: SUPPORT_STORE,
       reasoningEffort: SUPPORT_REASONING_EFFORT,
     });
-    const debugPayload = debugTrace === true
+    const debugPayload = debugTraceAllowed
       ? {
           modelRequest: result.modelRequest,
         }
@@ -104,7 +123,7 @@ Rules:
           providerBodyError: `xAI Responses HTTP ${result.status}`,
           ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { headers: { ...responseHeadersBase, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -118,7 +137,7 @@ Rules:
           providerBodyError: bodyError,
           ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { headers: { ...responseHeadersBase, 'Content-Type': 'application/json' } }
       );
     }
     const synopsis = normalizeSynopsis(extractXaiResponsesText(data) || '');
@@ -130,18 +149,41 @@ Rules:
           providerBodyError: "Empty synopsis returned from model",
           ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { headers: { ...responseHeadersBase, 'Content-Type': 'application/json' } }
       );
     }
 
     console.log(`[compress-day-memories] Compressed ${bullets.length} bullets from Day ${day} into synopsis`);
+
+    await recordServerAiUsage({
+      userId: user.id,
+      eventType: "memory_day_compression_call",
+      functionName: "compress-day-memories",
+      metadata: {
+        modelId: "grok-4.3",
+        day: typeof day === "number" ? day : null,
+        bulletCount: bullets.length,
+        status: "success",
+      },
+    });
+    await recordServerAiUsage({
+      userId: user.id,
+      eventType: "memory_bullets_compressed",
+      functionName: "compress-day-memories",
+      count: bullets.length,
+      metadata: {
+        modelId: "grok-4.3",
+        day: typeof day === "number" ? day : null,
+        status: "success",
+      },
+    });
 
     return new Response(
       JSON.stringify({
         synopsis,
         ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ...responseHeadersBase, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {

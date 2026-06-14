@@ -1,6 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { shouldReturnAdminDebugTrace } from "../_shared/admin-debug.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
+import { recordServerAiUsage, type ServerAiUsageEventType } from "../_shared/server-usage.ts";
 import {
   buildPhysicalStateCompletenessReviews,
   getMissingPhysicalStateReviewNames,
@@ -122,7 +125,15 @@ const characterUpdateResponseFormat = {
 
 const SUPPORT_REASONING_EFFORT: XaiResponsesReasoningEffort = "medium";
 const SUPPORT_STORE = false;
+const SUPPORT_RATE_LIMIT_WINDOW_MS = 60_000;
+const SUPPORT_RATE_LIMIT_MAX = 30;
 const EMPTY_CHARACTER_SYNC_JSON = '{"updates":[],"physicalStateReviews":[]}';
+
+function normalizeCharacterUpdateUsageEventType(input: unknown): ServerAiUsageEventType {
+  return input === "character_card_ai_update"
+    ? "character_card_ai_update"
+    : "character_cards_update_call";
+}
 
 type CharacterIndex = {
   map: Map<string, CharacterData>;
@@ -826,12 +837,28 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const { userMessage, aiResponse, recentContext, characters, modelId, eligibleCharacters, currentDay, currentTimeOfDay, debugTrace = false } = await req.json();
+    const rateDecision = checkRateLimit({ scope: "extract-character-updates", key: user.id, windowMs: SUPPORT_RATE_LIMIT_WINDOW_MS, max: SUPPORT_RATE_LIMIT_MAX });
+    if (!rateDecision.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: "Rate limit exceeded. Please wait before retrying character extraction.",
+          retryAfterSeconds: rateDecision.retryAfterSeconds,
+          updates: [],
+        }),
+        { status: 429, headers: { ...corsHeaders, ...getRateLimitHeaders(rateDecision), "Content-Type": "application/json" } }
+      );
+    }
+    const rateHeaders = getRateLimitHeaders(rateDecision);
+    const responseHeadersBase = { ...corsHeaders, ...rateHeaders };
+
+    const { userMessage, aiResponse, recentContext, characters, modelId, eligibleCharacters, currentDay, currentTimeOfDay, debugTrace = false, usageEventType } = await req.json();
+    const characterUpdateUsageEventType = normalizeCharacterUpdateUsageEventType(usageEventType);
+    const debugTraceAllowed = await shouldReturnAdminDebugTrace(supabase, user.id, debugTrace, "[extract-character-updates]");
     
     if (!userMessage && !aiResponse) {
       return new Response(
         JSON.stringify({ error: 'Either userMessage or aiResponse is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...responseHeadersBase, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -997,9 +1024,9 @@ Return ONLY valid JSON. No explanations.`;
     const apiKey = Deno.env.get("XAI_API_KEY");
     if (!apiKey) {
       return new Response(
-        JSON.stringify({ error: "XAI_API_KEY not configured. Please add your Grok API key in settings.", updates: [] }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+         JSON.stringify({ error: "XAI_API_KEY not configured. Please add your Grok API key in settings.", updates: [] }),
+         { status: 400, headers: { ...responseHeadersBase, 'Content-Type': 'application/json' } }
+       );
     }
     const modelForRequest = effectiveModelId;
 
@@ -1078,7 +1105,7 @@ Return ONLY valid JSON. No explanations.`;
         notes: ["Focused retry for omitted physical-state review coverage."],
       });
 
-      if (debugTrace === true) {
+      if (debugTraceAllowed) {
         additionalDebugModelRequests.push(focusedResult.modelRequest);
       }
 
@@ -1115,19 +1142,19 @@ Return ONLY valid JSON. No explanations.`;
       store: SUPPORT_STORE,
       reasoningEffort: SUPPORT_REASONING_EFFORT,
     });
-    primaryDebugPayload = debugTrace === true ? { modelRequest: result.modelRequest } : null;
+    primaryDebugPayload = debugTraceAllowed ? { modelRequest: result.modelRequest } : null;
 
     if (!result.ok) {
       if (result.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please try again later.", updates: [] }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 429, headers: { ...responseHeadersBase, "Content-Type": "application/json" } }
         );
       }
       if (result.status === 402) {
         return new Response(
           JSON.stringify({ error: "Payment required. Please add credits to continue.", updates: [] }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 402, headers: { ...responseHeadersBase, "Content-Type": "application/json" } }
         );
       }
       console.error("AI gateway error:", result.status, result.errorText);
@@ -1148,7 +1175,7 @@ Return ONLY valid JSON. No explanations.`;
           reasoningEffort: SUPPORT_REASONING_EFFORT,
           notes: ["Primary character-state sync request received 403; this safe retry extracted non-explicit metadata before any missing physical-state coverage retry."],
         });
-        const safeDebugPayload = debugTrace === true
+        const safeDebugPayload = debugTraceAllowed
           ? {
               modelRequest: safeResult.modelRequest,
               primaryModelRequest: primaryDebugPayload?.modelRequest,
@@ -1169,7 +1196,7 @@ Return ONLY valid JSON. No explanations.`;
                 providerBodyError: safeBodyError,
                 ...(safeDebugPayload ? { chronicle_debug_payload: safeDebugPayload } : {}),
               }),
-              { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+              { headers: { ...responseHeadersBase, "Content-Type": "application/json" } }
             );
           }
           const safeContent = extractXaiResponsesText(safeData) || EMPTY_CHARACTER_SYNC_JSON;
@@ -1198,6 +1225,35 @@ Return ONLY valid JSON. No explanations.`;
                 { disallowGoals: true, latestExchangeText },
               );
           console.log(`[extract-character-updates] Safe retry yielded ${reviewedSafeUpdates.updates.length} updates`);
+          await recordServerAiUsage({
+            userId: user.id,
+            eventType: characterUpdateUsageEventType,
+            functionName: "extract-character-updates",
+            metadata: {
+              modelId: "grok-4.3",
+              status: "fallback_success",
+              updateCount: reviewedSafeUpdates.updates.length,
+              missingPhysicalStateReviewCount: safeCompletenessReviews.filter((review) => !review.reviewed).length,
+            },
+          });
+          const safeUpdatedCharacters = new Set(
+            reviewedSafeUpdates.updates
+              .map((update) => update.character.trim().toLowerCase())
+              .filter(Boolean),
+          );
+          if (safeUpdatedCharacters.size > 0) {
+            await recordServerAiUsage({
+              userId: user.id,
+              eventType: "character_cards_updated",
+              functionName: "extract-character-updates",
+              count: safeUpdatedCharacters.size,
+              metadata: {
+                modelId: "grok-4.3",
+                status: "fallback_success",
+                updateCount: reviewedSafeUpdates.updates.length,
+              },
+            });
+          }
           return new Response(JSON.stringify({
             updates: reviewedSafeUpdates.updates,
             physicalStateReviews: safePhysicalStateReviews,
@@ -1213,7 +1269,7 @@ Return ONLY valid JSON. No explanations.`;
                 ...(additionalDebugModelRequests.length ? { modelRequests: additionalDebugModelRequests } : {}),
               },
             } : {}),
-          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+          }), { headers: { ...responseHeadersBase, 'Content-Type': 'application/json' } });
         }
         // If safe retry also fails, expose the failure so debug exports do not treat it as completed empty state.
         const missingPhysicalStateReviews = (filteredCharacters as CharacterData[]).map((character) => character.name);
@@ -1228,7 +1284,7 @@ Return ONLY valid JSON. No explanations.`;
             missingPhysicalStateReviews,
             ...(safeDebugPayload ? { chronicle_debug_payload: safeDebugPayload } : {}),
           }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { headers: { ...responseHeadersBase, "Content-Type": "application/json" } }
         );
       }
       throw new Error("Failed to extract character updates");
@@ -1247,7 +1303,7 @@ Return ONLY valid JSON. No explanations.`;
           providerBodyError: bodyError,
           ...(primaryDebugPayload ? { chronicle_debug_payload: primaryDebugPayload } : {}),
         }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { headers: { ...responseHeadersBase, "Content-Type": "application/json" } }
       );
     }
     const content = extractXaiResponsesText(data) || EMPTY_CHARACTER_SYNC_JSON;
@@ -1286,6 +1342,36 @@ Return ONLY valid JSON. No explanations.`;
       console.log(`[extract-character-updates] Updates:`, JSON.stringify(extractedUpdates));
     }
 
+    await recordServerAiUsage({
+      userId: user.id,
+      eventType: characterUpdateUsageEventType,
+      functionName: "extract-character-updates",
+      metadata: {
+        modelId: modelForRequest,
+        status: parseError ? "parsed_with_rejections" : "success",
+        updateCount: extractedUpdates.length,
+        missingPhysicalStateReviewCount: missingPhysicalStateReviews.length,
+      },
+    });
+    const updatedCharacters = new Set(
+      extractedUpdates
+        .map((update) => update.character.trim().toLowerCase())
+        .filter(Boolean),
+    );
+    if (updatedCharacters.size > 0) {
+      await recordServerAiUsage({
+        userId: user.id,
+        eventType: "character_cards_updated",
+        functionName: "extract-character-updates",
+        count: updatedCharacters.size,
+        metadata: {
+          modelId: modelForRequest,
+          status: "success",
+          updateCount: extractedUpdates.length,
+        },
+      });
+    }
+
     return new Response(
       JSON.stringify({
         updates: extractedUpdates,
@@ -1303,7 +1389,7 @@ Return ONLY valid JSON. No explanations.`;
           },
         } : {}),
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ...responseHeadersBase, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {

@@ -1,6 +1,6 @@
 import { Character, CodexEntry, ContentThemes, OpeningDialog, WorldCore } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
-import { trackAiUsageEvent } from "@/services/usage-tracking";
+import { trackAiUsageEvent, type AiUsageEventType } from "@/services/usage-tracking";
 import { buildRequiredPresence, trackApiValidationSnapshot } from "@/services/api-usage-validation";
 import { buildContentThemeDirectives } from "@/constants/tag-injection-registry";
 
@@ -351,10 +351,11 @@ export async function aiEnhanceWorldField(
   mode: 'precise' | 'detailed' = 'detailed'
 ): Promise<string> {
   const prompt = buildPrompt(fieldName, currentValue, worldContext, customLabel, mode);
+  const usageEventType: AiUsageEventType = mode === "precise" ? "world_ai_enhance_precise" : "world_ai_enhance_detailed";
 
   console.log(`[world-ai] Enhancing field: ${fieldName} with model: ${modelId} (mode: ${mode})`);
   void trackAiUsageEvent({
-    eventType: mode === "precise" ? "world_ai_enhance_precise" : "world_ai_enhance_detailed",
+    eventType: usageEventType,
     eventSource: "world-ai",
     metadata: {
       fieldName,
@@ -384,7 +385,8 @@ export async function aiEnhanceWorldField(
       ],
       modelId,
       stream: false,
-      providerTransport: 'chat_completions'
+      providerTransport: 'chat_completions',
+      usageEventType,
     },
   });
 

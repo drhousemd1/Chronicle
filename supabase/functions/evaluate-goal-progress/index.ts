@@ -1,10 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { shouldReturnAdminDebugTrace } from "../_shared/admin-debug.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
+import { recordServerAiUsage } from "../_shared/server-usage.ts";
 import { callXaiResponses, extractXaiResponsesText, getXaiResponsesBodyError } from "../_shared/xai-responses.ts";
 
 const SUPPORT_REASONING_EFFORT = "medium" as const;
 const SUPPORT_STORE = false;
+const SUPPORT_RATE_LIMIT_WINDOW_MS = 60_000;
+const SUPPORT_RATE_LIMIT_MAX = 30;
 
 type StepInput = {
   stepId: string;
@@ -123,12 +128,27 @@ serve(async (req) => {
       });
     }
 
+    const rateDecision = checkRateLimit({ scope: "evaluate-goal-progress", key: user.id, windowMs: SUPPORT_RATE_LIMIT_WINDOW_MS, max: SUPPORT_RATE_LIMIT_MAX });
+    if (!rateDecision.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: "Rate limit exceeded. Please wait before retrying goal progress evaluation.",
+          retryAfterSeconds: rateDecision.retryAfterSeconds,
+          stepUpdates: [],
+        }),
+        { status: 429, headers: { ...corsHeaders, ...getRateLimitHeaders(rateDecision), "Content-Type": "application/json" } }
+      );
+    }
+    const rateHeaders = getRateLimitHeaders(rateDecision);
+    const responseHeadersBase = { ...corsHeaders, ...rateHeaders };
+
     const body: EvaluationRequest = await req.json();
     const { userMessage, aiResponse, pendingSteps, currentDay, currentTimeOfDay, debugTrace = false } = body;
+    const debugTraceAllowed = await shouldReturnAdminDebugTrace(supabase, user.id, debugTrace, "[evaluate-goal-progress]");
 
     if (!userMessage || !pendingSteps?.length) {
       return new Response(JSON.stringify({ stepUpdates: [] }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+        headers: { ...responseHeadersBase, "Content-Type": "application/json" }
       });
     }
 
@@ -237,7 +257,7 @@ Set "completed" to true only when result is "completed", confidence is at least 
       reasoningEffort: SUPPORT_REASONING_EFFORT,
       textFormat: responseFormat,
     });
-    const debugPayload = debugTrace === true
+    const debugPayload = debugTraceAllowed
       ? {
           modelRequest: result.modelRequest,
         }
@@ -246,7 +266,7 @@ Set "completed" to true only when result is "completed", confidence is at least 
     if (!result.ok) {
       console.error(`[evaluate-goal-progress] xAI Responses error: ${result.status} - ${result.errorText}`);
       return new Response(JSON.stringify({ stepUpdates: [], error: 'Classification failed', ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}) }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+        headers: { ...responseHeadersBase, "Content-Type": "application/json" }
       });
     }
 
@@ -260,7 +280,7 @@ Set "completed" to true only when result is "completed", confidence is at least 
         providerBodyError: bodyError,
         ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
       }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...responseHeadersBase, "Content-Type": "application/json" },
       });
     }
     const content = extractXaiResponsesText(data) || '';
@@ -288,7 +308,7 @@ Set "completed" to true only when result is "completed", confidence is at least 
         parseError: "Failed to parse classification response",
         ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
       }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+        headers: { ...responseHeadersBase, "Content-Type": "application/json" }
       });
     }
 
@@ -301,7 +321,7 @@ Set "completed" to true only when result is "completed", confidence is at least 
         parseError: "classifications was not an array",
         ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
       }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+        headers: { ...responseHeadersBase, "Content-Type": "application/json" }
       });
     }
 
@@ -357,13 +377,26 @@ Set "completed" to true only when result is "completed", confidence is at least 
 
     console.log(`[evaluate-goal-progress] Classified ${stepUpdates.length} steps, ${stepUpdates.filter(u => u.completed).length} completed`);
 
+    await recordServerAiUsage({
+      userId: user.id,
+      eventType: "goal_progress_eval_call",
+      functionName: "evaluate-goal-progress",
+      metadata: {
+        modelId: "grok-4.3",
+        status: "success",
+        pendingStepCount: pendingSteps.length,
+        classifiedStepCount: stepUpdates.length,
+        completedStepCount: stepUpdates.filter((update) => update.completed).length,
+      },
+    });
+
     return new Response(JSON.stringify({
       stepUpdates,
       classificationReviews,
       rejectedClassifications,
       ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
     }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
+      headers: { ...responseHeadersBase, "Content-Type": "application/json" }
     });
 
   } catch (error) {

@@ -6,8 +6,10 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { shouldReturnAdminDebugTrace } from "../_shared/admin-debug.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
+import { recordServerAiUsage, type ServerAiUsageEventType } from "../_shared/server-usage.ts";
 
 type DebugModelRequest = {
   label?: string;
@@ -127,7 +129,11 @@ serve(async (req) => {
     }
     const rateHeaders = getRateLimitHeaders(rateDecision);
 
-    const { avatarPrompt, characterName, modelId, stylePrompt, negativePrompt, debugTrace = false } = await req.json();
+    const { avatarPrompt, characterName, modelId, stylePrompt, negativePrompt, usageEventType, debugTrace = false } = await req.json();
+    const debugTraceAllowed = await shouldReturnAdminDebugTrace(supabase, user.id, debugTrace, "[generate-avatar]");
+    const avatarUsageEventType: ServerAiUsageEventType = usageEventType === "character_avatar_generated"
+      ? "character_avatar_generated"
+      : "side_character_avatar_generated";
     
     if (!avatarPrompt) {
       return new Response(JSON.stringify({ error: "avatarPrompt is required" }), {
@@ -147,7 +153,7 @@ serve(async (req) => {
         avatarPrompt,
         stylePrompt || null,
         negativePrompt || null,
-        debugTrace === true ? debugModelRequests : undefined,
+        debugTraceAllowed ? debugModelRequests : undefined,
       );
       console.log(`[generate-avatar] Optimized prompt (${optimizedPrompt.length} chars):`, optimizedPrompt);
     } catch (err) {
@@ -178,7 +184,7 @@ serve(async (req) => {
       prompt: optimizedPrompt,
       n: 1,
     };
-    if (debugTrace === true) {
+    if (debugTraceAllowed) {
       debugModelRequests.push({
         label: "Avatar image generation",
         endpoint: "https://api.x.ai/v1/images/generations",
@@ -237,9 +243,22 @@ serve(async (req) => {
 
     console.log(`Avatar generated for ${characterName} via xAI`);
 
+    await recordServerAiUsage({
+      userId: user.id,
+      eventType: avatarUsageEventType,
+      functionName: "generate-side-character-avatar",
+      metadata: {
+        modelId: "grok-imagine-image",
+        promptModelId: modelId === "grok-4.3" ? modelId : "grok-4.3",
+        status: "success",
+        avatarUsageKind: avatarUsageEventType,
+        optimizedPromptChars: optimizedPrompt.length,
+      },
+    });
+
     return new Response(JSON.stringify({
       imageUrl,
-      ...(debugTrace === true ? { chronicle_debug_payload: { modelRequests: debugModelRequests } } : {}),
+      ...(debugTraceAllowed ? { chronicle_debug_payload: { modelRequests: debugModelRequests } } : {}),
     }), {
       headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
     });

@@ -32,11 +32,16 @@ async function countRows(builder: PromiseLike<{ count: number | null; error: unk
   return result.count ?? 0;
 }
 
+function isAuthoritativeUsageEventSource(value: unknown): boolean {
+  const source = typeof value === "string" ? value : "";
+  return source.startsWith("server:");
+}
+
 async function countEventsByType(supabase: SupabaseClient, eventTypes: string[]): Promise<number> {
   if (!eventTypes.length) return 0;
   const { data, error } = await supabase
     .from("ai_usage_events")
-    .select("event_count")
+    .select("event_count, event_source")
     .in("event_type", eventTypes);
 
   if (error || !data) {
@@ -45,6 +50,7 @@ async function countEventsByType(supabase: SupabaseClient, eventTypes: string[])
   }
 
   return data.reduce((sum, row) => {
+    if (!isAuthoritativeUsageEventSource(row.event_source)) return sum;
     const value = Number(row.event_count);
     return Number.isFinite(value) ? sum + value : sum;
   }, 0);

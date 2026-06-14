@@ -100,93 +100,41 @@ Result: audits/fixes from external agents frequently miss real owner files.
 
 ---
 
-## 5. Target folder architecture
+## 5. Current target extraction map
 
-Create a feature-based structure while preserving temporary compatibility exports.
+Create a feature-based structure while preserving temporary compatibility exports. The current source of truth for exact old-to-new paths is the committed mapping file:
+
+- `docs/guides/mappings/story-character-refactor-path-map.json`
+
+Current committed mapping snapshot:
 
 ```text
-src/features/
-  story-builder/
-    StoryBuilderScreen.tsx
-    StoryBuilderLayout.tsx
-    sidebar/
-      StoryRosterSidebar.tsx
-      StoryRosterGroup.tsx
-      StoryRosterCharacterTile.tsx
-      AddCharacterPlaceholderCard.tsx
-    sections/
-      StoryCardSection.tsx
-      WorldCoreSection.tsx
-      OpeningDialogSection.tsx
-      SceneGallerySection.tsx
-      StoryGoalsSection.tsx
-      WorldCustomContentSection.tsx
-    controls/
-      CoverImageActionControls.tsx
-      SceneGalleryActionControls.tsx
-    hooks/
-      useCoverImagePosition.ts
-      useRosterTileExpansion.ts
-      useStoryBuilderValidation.ts
-    utils/
-      avatar-position-mapping.ts
-      world-core-mappers.ts
-    types/
-      story-builder.types.ts
+src/components/chronicle/WorldTab.tsx
+  -> src/features/story-builder/StoryBuilderScreen.tsx
+  -> src/features/story-builder/sidebar/StoryRosterSidebar.tsx
+  -> src/features/story-builder/sidebar/StoryRosterGroup.tsx
+  -> src/features/story-builder/sidebar/StoryRosterCharacterTile.tsx
 
-  character-builder/
-    CharacterBuilderScreen.tsx
-    CharacterBuilderLayout.tsx
-    sidebar/
-      CharacterBuilderSidebar.tsx
-      CharacterHeaderTile.tsx
-      TraitNavList.tsx
-      TraitNavButton.tsx
-      TraitProgressRing.tsx
-      SidebarActionCard.tsx
-    sections/
-      BasicsSection.tsx
-      PhysicalAppearanceSection.tsx
-      CurrentlyWearingSection.tsx
-      PreferredClothingSection.tsx
-      PersonalitySection.tsx
-      ToneSection.tsx
-      BackgroundSection.tsx
-      KeyLifeEventsSection.tsx
-      RelationshipsSection.tsx
-      SecretsSection.tsx
-      FearsSection.tsx
-      CharacterGoalsSection.tsx
-      CustomTraitSection.tsx
-    rows/
-      LockedTraitRow.tsx
-      EditableTraitRow.tsx
-      AddRowButton.tsx
-      CollapsedFieldSummary.tsx
-    modals/
-      NavButtonImageEditorModal.tsx
-    hooks/
-      useCharacterAvatarPosition.ts
-      useTraitSectionProgress.ts
-      useCharacterBuilderEnhance.ts
-      useNavButtonImages.ts
-    utils/
-      character-section-registry.ts
-      character-section-progress.ts
-    types/
-      character-builder.types.ts
+src/components/chronicle/CharactersTab.tsx
+  -> src/features/character-builder/CharacterBuilderScreen.tsx
+  -> src/features/character-builder/sidebar/TraitNavButton.tsx
+  -> src/features/character-builder/sidebar/TraitProgressRing.tsx
+  -> src/features/character-builder/sections/HardcodedSection.tsx
+  -> src/features/character-builder/rows/HardcodedRow.tsx
+  -> src/features/character-builder/rows/ExtraRow.tsx
+  -> src/features/character-builder/rows/AutoResizeTextareaField.tsx
+  -> src/features/character-builder/utils/section-keys.ts
+  -> src/features/character-builder/utils/section-progress.ts
+  -> src/features/character-builder/types/character-builder.types.ts
 
-  shared-builder/
-    components/
-      BuilderShellCard.tsx
-      BuilderSectionHeader.tsx
-      BuilderPanel.tsx
-      ImageActionButtonsBase.tsx
-      CharacterImageTileBase.tsx
-      AutoResizeTextareaField.tsx
-    utils/
-      image-position.ts
+src/components/chronicle/CharacterEditModal.tsx
+  -> src/features/character-editor-modal/CharacterEditorModalScreen.tsx
+
+src/components/chronicle/StoryCardView.tsx
+  -> src/features/character-editor-modal/ScenarioCardEditorView.tsx
 ```
+
+Do not treat unlisted component names as approved current paths. If a future refactor packet needs additional files, update `story-character-refactor-path-map.json` first and then mirror the new paths here.
 
 ---
 
@@ -378,25 +326,33 @@ Maintain and commit a machine-readable mapping file:
 
 - `docs/guides/mappings/story-character-refactor-path-map.json`
 
-Minimum contents:
+Current contents:
 
 ```json
 {
   "src/components/chronicle/WorldTab.tsx": [
     "src/features/story-builder/StoryBuilderScreen.tsx",
     "src/features/story-builder/sidebar/StoryRosterSidebar.tsx",
-    "src/features/story-builder/sections/StoryCardSection.tsx",
-    "src/features/story-builder/sections/WorldCoreSection.tsx",
-    "src/features/story-builder/sections/OpeningDialogSection.tsx",
-    "src/features/story-builder/sections/SceneGallerySection.tsx"
+    "src/features/story-builder/sidebar/StoryRosterGroup.tsx",
+    "src/features/story-builder/sidebar/StoryRosterCharacterTile.tsx"
   ],
   "src/components/chronicle/CharactersTab.tsx": [
     "src/features/character-builder/CharacterBuilderScreen.tsx",
-    "src/features/character-builder/sidebar/CharacterBuilderSidebar.tsx",
-    "src/features/character-builder/sections/BasicsSection.tsx",
-    "src/features/character-builder/sections/PhysicalAppearanceSection.tsx",
-    "src/features/character-builder/sections/CurrentlyWearingSection.tsx",
-    "src/features/character-builder/sections/PreferredClothingSection.tsx"
+    "src/features/character-builder/sidebar/TraitNavButton.tsx",
+    "src/features/character-builder/sidebar/TraitProgressRing.tsx",
+    "src/features/character-builder/sections/HardcodedSection.tsx",
+    "src/features/character-builder/rows/HardcodedRow.tsx",
+    "src/features/character-builder/rows/ExtraRow.tsx",
+    "src/features/character-builder/rows/AutoResizeTextareaField.tsx",
+    "src/features/character-builder/utils/section-keys.ts",
+    "src/features/character-builder/utils/section-progress.ts",
+    "src/features/character-builder/types/character-builder.types.ts"
+  ],
+  "src/components/chronicle/CharacterEditModal.tsx": [
+    "src/features/character-editor-modal/CharacterEditorModalScreen.tsx"
+  ],
+  "src/components/chronicle/StoryCardView.tsx": [
+    "src/features/character-editor-modal/ScenarioCardEditorView.tsx"
   ]
 }
 ```

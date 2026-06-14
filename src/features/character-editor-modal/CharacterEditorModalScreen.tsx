@@ -689,7 +689,8 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
           userMessage: concatenatedUser,
           aiResponse: concatenatedAi,
           characters: charactersData,
-          modelId: modelId || 'grok-4.3'
+          modelId: modelId || 'grok-4.3',
+          usageEventType: 'character_card_ai_update'
         }
       });
       
@@ -940,7 +941,12 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
         ]),
       });
       const { data, error } = await supabase.functions.invoke('generate-side-character-avatar', {
-        body: { avatarPrompt, characterName: draft.name || character.name, modelId: modelId || 'grok-4.3' }
+        body: {
+          avatarPrompt,
+          characterName: draft.name || character.name,
+          modelId: modelId || 'grok-4.3',
+          usageEventType: 'character_avatar_generated'
+        }
       });
       if (error) throw error;
       if (data?.imageUrl) {

@@ -4,12 +4,17 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { shouldReturnAdminDebugTrace } from "../_shared/admin-debug.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
+import { recordServerAiUsage } from "../_shared/server-usage.ts";
 import { callXaiResponses, extractXaiResponsesText, getXaiResponsesBodyError } from "../_shared/xai-responses.ts";
 
 const MEMORY_POINT_MAX_CHARS = 140;
 const SUPPORT_REASONING_EFFORT = "medium" as const;
 const SUPPORT_STORE = false;
+const SUPPORT_RATE_LIMIT_WINDOW_MS = 60_000;
+const SUPPORT_RATE_LIMIT_MAX = 30;
 
 function trimAtWordBoundary(value: string, maxChars: number): string {
   if (value.length <= maxChars) return value;
@@ -42,7 +47,21 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Invalid token' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
+    const rateDecision = checkRateLimit({ scope: "extract-memory-events", key: user.id, windowMs: SUPPORT_RATE_LIMIT_WINDOW_MS, max: SUPPORT_RATE_LIMIT_MAX });
+    if (!rateDecision.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: "Rate limit exceeded. Please wait before retrying memory extraction.",
+          retryAfterSeconds: rateDecision.retryAfterSeconds,
+        }),
+        { status: 429, headers: { ...corsHeaders, ...getRateLimitHeaders(rateDecision), "Content-Type": "application/json" } }
+      );
+    }
+    const rateHeaders = getRateLimitHeaders(rateDecision);
+    const responseHeadersBase = { ...corsHeaders, ...rateHeaders };
+
     const { messageText, userMessage, aiResponse, characterNames, recentExistingMemories = [], modelId, debugTrace = false } = await req.json();
+    const debugTraceAllowed = await shouldReturnAdminDebugTrace(supabase, user.id, debugTrace, "[extract-memory-events]");
     const existingMemoryText = Array.isArray(recentExistingMemories) && recentExistingMemories.length > 0
       ? recentExistingMemories
           .filter((entry: unknown): entry is string => typeof entry === "string" && entry.trim().length > 0)
@@ -59,7 +78,7 @@ serve(async (req) => {
     if (!exchangeText) {
       return new Response(
         JSON.stringify({ error: 'userMessage, aiResponse, or messageText is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 400, headers: { ...responseHeadersBase, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -127,7 +146,7 @@ Empty events are acceptable.`;
       reasoningEffort: SUPPORT_REASONING_EFFORT,
       textFormat: responseFormat,
     });
-    const debugPayload = debugTrace === true
+    const debugPayload = debugTraceAllowed
       ? {
           modelRequest: result.modelRequest,
         }
@@ -137,7 +156,7 @@ Empty events are acceptable.`;
       if (result.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please try again later.", ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}) }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 429, headers: { ...responseHeadersBase, "Content-Type": "application/json" } }
         );
       }
       console.error("xAI Responses error:", result.status, result.errorText);
@@ -154,7 +173,7 @@ Empty events are acceptable.`;
           providerBodyError: bodyError,
           ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { headers: { ...responseHeadersBase, 'Content-Type': 'application/json' } }
       );
     }
     const content = extractXaiResponsesText(data);
@@ -191,6 +210,29 @@ Empty events are acceptable.`;
 
     console.log(`[extract-memory-events] Extracted ${extractedEvents.length} events from latest exchange`);
 
+    await recordServerAiUsage({
+      userId: user.id,
+      eventType: "memory_extraction_call",
+      functionName: "extract-memory-events",
+      metadata: {
+        modelId: effectiveModel,
+        status: parseError ? "parsed_with_rejections" : "success",
+        extractedEventCount: extractedEvents.length,
+      },
+    });
+    if (extractedEvents.length > 0) {
+      await recordServerAiUsage({
+        userId: user.id,
+        eventType: "memory_events_extracted",
+        functionName: "extract-memory-events",
+        count: extractedEvents.length,
+        metadata: {
+          modelId: effectiveModel,
+          status: "success",
+        },
+      });
+    }
+
     return new Response(
       JSON.stringify({
         extractedEvents,
@@ -205,7 +247,7 @@ Empty events are acceptable.`;
         } : {}),
         ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ...responseHeadersBase, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
