@@ -5,6 +5,7 @@ export type ImageFolder = {
   description: string;
   thumbnailImageId: string | null;
   thumbnailUrl: string | null;
+  thumbnailPath?: string | null;
   imageCount: number;
   createdAt: number;
   updatedAt: number;
@@ -15,6 +16,7 @@ export type LibraryImage = {
   userId: string;
   folderId: string;
   imageUrl: string;
+  imagePath?: string | null;
   filename: string;
   title: string;
   isThumbnail: boolean;
