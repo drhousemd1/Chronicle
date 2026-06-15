@@ -79,9 +79,9 @@ Stage B is complete and verified. Highlights:
 
 - Added `image_path` columns to `scenes` and `library_images` (Migration A) and
   backfilled existing rows where the public URL could be parsed.
-- Added `public.can_read_scene_storage_object(p_path)` (admin/owner + published
-  scenario predicate). Currently unused by storage policies; reserved for the
-  follow-up `scenes`-bucket flip.
+- Added `public.can_read_scene_storage_object(p_path)`, and it is now used by
+  the `Owners admins or published scenes can view` storage policy to gate
+  reads from the private `scenes` bucket.
 - Updated `get_folders_with_details()` and `save_scenario_atomic()` to expose
   and persist `image_path` / `thumbnail_path`.
 - Tightened `public.get_creator_stats()` to return zeros for non-owners /
@@ -190,8 +190,8 @@ bucket flips.`
   `Owners can view own image_library`; `can_read_scene_storage_object`
   added to the functions section; `image_path` column appended to `scenes`
   and `library_images`; `get_folders_with_details` returnType updated to
-  include `thumbnail_path`; `save_scenario_atomic` annotated with a
-  `lastUpdatedNote` describing the `image_path` upsert.
+  include `thumbnail_path`; `save_scenario_atomic.definition` now contains the
+  live function body, including `scenes.image_path` insert/update logic.
 - `src/data/database-schema-inventory.ts` — `image_path` added to `scenes`
   and `library_images`; storage_buckets entries for `scenes` and
   `image_library` flipped to private with notes; new `storage_policies`
