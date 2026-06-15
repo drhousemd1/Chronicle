@@ -1,26 +1,29 @@
-# Storage Privacy Migration — Stage A Inventory
+# Storage Privacy Migration
 
-Tracking finding **qh-sec-20260607-003** (Quality Hub). Stage A is documentation
-only: catalog every code path that reads or writes a Supabase Storage bucket
-and classify each bucket so Stage B can plan the public→private flips and the
-signed-URL helper.
+Tracking finding **qh-sec-20260607-003** (Quality Hub). Stage A captured the
+bucket inventory and classification; Stage B (complete and verified as of
+**2026-06-14**) flipped the `image_library` and `scenes` buckets to private
+behind owner/admin/published-gated storage policies and routed every render
+path through signed URLs. The finding is marked **fixed / verified** in the
+Quality Hub (`cl-20260614-007`); the cross-user export/import/remix
+portability follow-up is tracked separately as `qh-port-20260614-001`.
 
-No bucket settings, RLS, or code paths are changed in Stage A. The buckets
-listed below remain public-read until Stage B lands.
+The bucket classification and code-path inventory below reflect the
+post-Stage-B state. No buckets remain pending a flip.
 
 ## Bucket classification
 
-| Bucket | Today | Target | Notes |
+| Bucket | State | Classification | Notes |
 | --- | --- | --- | --- |
 | `avatars` | public | **publisher-owned public** (gallery + character chips) | Surfaces in the gallery and on every profile/character tile, so public URLs are acceptable. Path convention is `<user_id>/...`. |
 | `covers` | public | **publisher-owned public** (gallery covers) | Cover art ships with every published scenario; gallery consumers expect a long-lived URL. |
 | `backgrounds` | public | **publisher-owned public** (UI backgrounds) | Sidebar/scene backdrops; shared across the user's own sessions and not user-private content. |
 | `guide_images` | public | **app-static public** (admin guide assets) | Edited only by admins; consumed by the in-app guide for every signed-in user. |
-| `scenes` | public | **private + signed URLs** | Generated scene art is the most sensitive user media; today the URL is public even for unpublished/draft stories. Stage B must move to private + per-request signed URLs gated by owner / publication state. |
-| `image_library` | public | **private + signed URLs** | User-managed personal image library. Should be owner-only. Stage B must flip the bucket private and route reads through a signed-URL helper that checks `library_images.user_id = auth.uid()`. |
-| `finance_documents` | **private** | already private (admin-only) | No change. Listed for completeness. |
+| `scenes` | **private** | **private + signed URLs** | Generated scene art. Bucket is private; SELECT is gated by `public.can_read_scene_storage_object(name)` (owner / admin / published-visible). All reads are minted through `getSignedMediaUrl('scenes', image_path)`. |
+| `image_library` | **private** | **private + signed URLs** | User-managed personal image library. Owner-only SELECT via the `Owners can view own image_library` storage policy; reads minted through `getSignedMediaUrl('image_library', image_path)`. |
+| `finance_documents` | private | private (admin-only) | Unchanged. Listed for completeness. |
 
-## Code paths (Stage A inventory)
+## Code paths
 
 Source: `rg "getPublicUrl|from\('(avatars|scenes|covers|backgrounds|image_library)'\)" src supabase`.
 
@@ -49,17 +52,17 @@ Source: `rg "getPublicUrl|from\('(avatars|scenes|covers|backgrounds|image_librar
 - `src/features/character-builder/CharacterBuilderScreen.tsx` — uploads
   character-builder backdrops for the owning user.
 
-### `scenes` (Stage B: private + signed URLs)
+### `scenes` (private + signed URLs)
 
 - `src/utils.ts`, `src/services/persistence/shared.ts` — generic
-  `getPublicUrl(bucket, path)` helper used by the scene persistence layer.
-  Stage B will replace the `scenes` and `image_library` callers with a
-  signed-URL helper.
+  `getPublicUrl(bucket, path)` helper retained for the still-public buckets.
+  Private buckets (`scenes`, `image_library`) are resolved through
+  `src/services/persistence/signed-media.ts` (`getSignedMediaUrl`).
 - `src/services/persistence/scenarios.ts` — selects/deletes from the
   `public.scenes` **table** (not the bucket) for the owner; included here so the
   Stage B helper change does not get conflated with table reads.
 
-### `image_library` (Stage B: private + signed URLs)
+### `image_library` (private + signed URLs)
 
 - `src/components/chronicle/ImageLibraryTab.tsx` — uploads, lists, and removes
   the signed-in user's library images; today calls `getPublicUrl` to render
@@ -70,14 +73,9 @@ Source: `rg "getPublicUrl|from\('(avatars|scenes|covers|backgrounds|image_librar
 - `src/components/admin/finance/documents/DocumentsPage.tsx` and related admin
   components — restricted to admins by RLS + UI gating. No Stage B action.
 
-## Stage B status (2026-06-14)
+## Stage B summary (2026-06-14)
 
-Stage B is **complete and verified**. Finding `qh-sec-20260607-003` is
-marked **fixed / verified** in the Quality Hub (`cl-20260614-007`). The
-cross-user import/remix portability issue surfaced by the bucket flip has
-been spun out as a separate follow-up: `qh-port-20260614-001`.
-
-### Done in this pass
+Stage B is complete and verified. Highlights:
 
 - Added `image_path` columns to `scenes` and `library_images` (Migration A) and
   backfilled existing rows where the public URL could be parsed.
@@ -205,18 +203,7 @@ bucket flips.`
   `thumbnail_path` column on `get_folders_with_details`, and the new
   `can_read_scene_storage_object` RPC.
 
-Stage B will:
-
-1. Add a `getPrivateMediaUrl(bucket, path)` helper that calls
-   `supabase.storage.from(bucket).createSignedUrl(path, ttl)` after the caller
-   has confirmed owner / publication eligibility.
-2. Flip `scenes` and `image_library` to private buckets, write owner-only
-   `storage.objects` policies, and migrate the call sites above to the new
-   helper.
-3. Re-run the Quality Hub `qh-sec-20260607-003` check and only then mark the
-   finding `fixed` + `verified`.
-
-Stage B closes the finding because the private buckets above are no longer
-publicly readable, every persisted reference is the storage `image_path`,
-and every render path resolves through `createSignedUrl` against the
-gated SELECT policies above.
+Stage B closed the finding: the private buckets above are no longer publicly
+readable, every persisted reference is the storage `image_path`, and every
+render path resolves through `createSignedUrl` against the gated SELECT
+policies above.
