@@ -50,8 +50,8 @@ serve(async (req) => {
     }
     const rateHeaders = getRateLimitHeaders(rateDecision);
 
-    const { prompt, stylePrompt, negativePrompt, scenarioTitle } = await req.json();
-    
+    const { prompt, styleId, stylePrompt, negativePrompt, scenarioTitle } = await req.json();
+
     if (!prompt) {
       return new Response(JSON.stringify({ error: "prompt is required" }), {
         status: 400,
@@ -59,11 +59,37 @@ serve(async (req) => {
       });
     }
 
+    // BF-02: Resolve the art-style backend prompt server-side from styleId
+    // using the service role. Never trust client-supplied prompt text.
+    let resolvedStylePrompt = '';
+    let resolvedStyleId: string | null = typeof styleId === 'string' ? styleId : null;
+    if (resolvedStyleId) {
+      try {
+        const admin = createClient(
+          Deno.env.get('SUPABASE_URL')!,
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+        );
+        const { data: styleRow } = await admin
+          .from('art_styles')
+          .select('backend_prompt')
+          .eq('id', resolvedStyleId)
+          .maybeSingle();
+        resolvedStylePrompt = (styleRow as any)?.backend_prompt || '';
+      } catch (err) {
+        console.error('[generate-cover-image] art_styles lookup failed:', err);
+      }
+    }
+    // Legacy backward-compat only: if no styleId AND no DB row, accept the
+    // legacy client `stylePrompt`. Normal runtime should not reach this.
+    if (!resolvedStylePrompt && typeof stylePrompt === 'string') {
+      resolvedStylePrompt = stylePrompt;
+    }
+
     // Build the full prompt
     let fullPrompt = `Portrait composition (2:3 aspect ratio), vertical orientation. ${prompt.trim()}`;
-    
-    if (stylePrompt) {
-      fullPrompt += `. Style: ${stylePrompt}`;
+
+    if (resolvedStylePrompt) {
+      fullPrompt += `. Style: ${resolvedStylePrompt}`;
     }
     
     if (negativePrompt) {
@@ -156,7 +182,8 @@ serve(async (req) => {
         modelId: "grok-imagine-image",
         status: "success",
         promptChars: compressedPrompt.length,
-        hadStylePrompt: Boolean(stylePrompt),
+        hadStylePrompt: Boolean(resolvedStylePrompt),
+        styleId: resolvedStyleId,
         hadNegativePrompt: Boolean(negativePrompt),
       },
     });

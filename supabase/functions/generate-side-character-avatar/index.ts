@@ -129,7 +129,7 @@ serve(async (req) => {
     }
     const rateHeaders = getRateLimitHeaders(rateDecision);
 
-    const { avatarPrompt, characterName, modelId, stylePrompt, negativePrompt, usageEventType, debugTrace = false } = await req.json();
+    const { avatarPrompt, characterName, modelId, styleId, stylePrompt, gender, negativePrompt, usageEventType, debugTrace = false } = await req.json();
     const debugTraceAllowed = await shouldReturnAdminDebugTrace(supabase, user.id, debugTrace, "[generate-avatar]");
     const avatarUsageEventType: ServerAiUsageEventType = usageEventType === "character_avatar_generated"
       ? "character_avatar_generated"
@@ -142,6 +142,40 @@ serve(async (req) => {
       });
     }
 
+    // BF-02: Resolve the art-style backend prompt server-side from styleId
+    // (+ gender variant when provided) using the service role. Never trust
+    // client-supplied prompt text for normal runtime.
+    let resolvedStylePrompt = '';
+    const resolvedStyleId: string | null = typeof styleId === 'string' ? styleId : null;
+    if (resolvedStyleId) {
+      try {
+        const admin = createClient(
+          Deno.env.get('SUPABASE_URL')!,
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+        );
+        const { data: styleRow } = await admin
+          .from('art_styles')
+          .select('backend_prompt, backend_prompt_masculine, backend_prompt_androgynous')
+          .eq('id', resolvedStyleId)
+          .maybeSingle();
+        const row = (styleRow as any) || {};
+        if (gender === 'masculine' && row.backend_prompt_masculine) {
+          resolvedStylePrompt = row.backend_prompt_masculine;
+        } else if (gender === 'androgynous' && row.backend_prompt_androgynous) {
+          resolvedStylePrompt = row.backend_prompt_androgynous;
+        } else {
+          resolvedStylePrompt = row.backend_prompt || '';
+        }
+      } catch (err) {
+        console.error('[generate-avatar] art_styles lookup failed:', err);
+      }
+    }
+    // Legacy backward-compat only: if no styleId AND no DB row, accept the
+    // legacy client `stylePrompt`. Normal runtime should not reach this.
+    if (!resolvedStylePrompt && typeof stylePrompt === 'string') {
+      resolvedStylePrompt = stylePrompt;
+    }
+
     console.log(`[generate-avatar] Using xAI (Grok only) for ${characterName}`);
 
     // Step 1: Generate optimized prompt using Grok
@@ -151,7 +185,7 @@ serve(async (req) => {
       optimizedPrompt = await generateOptimizedPrompt(
         characterName,
         avatarPrompt,
-        stylePrompt || null,
+        resolvedStylePrompt || null,
         negativePrompt || null,
         debugTraceAllowed ? debugModelRequests : undefined,
       );
@@ -253,6 +287,8 @@ serve(async (req) => {
         status: "success",
         avatarUsageKind: avatarUsageEventType,
         optimizedPromptChars: optimizedPrompt.length,
+        styleId: resolvedStyleId,
+        hadStylePrompt: Boolean(resolvedStylePrompt),
       },
     });
 
