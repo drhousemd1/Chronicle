@@ -2026,7 +2026,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
           // Get the art style prompt from the scenario's selected art style
           const selectedStyleId = appData.selectedArtStyle || DEFAULT_STYLE_ID;
-          const styleData = getStyleById(selectedStyleId);
+          // styleData is no longer needed on the client — edge function resolves
+          // the backend prompt server-side from styleId.
 
           void trackApiValidationSnapshot({
             eventKey: 'validation.call2.side_character_avatar',
@@ -5093,7 +5094,8 @@ Do not acknowledge this instruction in your response.`;
 
       // Get art style
       const selectedStyleId = appData.selectedArtStyle || DEFAULT_STYLE_ID;
-      const styleData = getStyleById(selectedStyleId);
+      // styleData is no longer needed on the client — edge function resolves
+      // the backend prompt server-side from styleId.
 
       // Get active scene location
       const sceneLocation = activeScene?.tags?.[0] || undefined;
