@@ -605,10 +605,17 @@ export const databaseSchemaInventory = {
           "with_check": null
         },
         {
-          "name": "Anyone authenticated can read settings",
+          "name": "Admins can read all settings",
           "command": "SELECT",
           "roles": "authenticated",
-          "using": "true",
+          "using": "has_role(auth.uid(), 'admin')",
+          "with_check": null
+        },
+        {
+          "name": "Auth can read public settings keys",
+          "command": "SELECT",
+          "roles": "authenticated",
+          "using": "setting_key IN ('shared_keys','nav_button_images','subscription_tiers_v1')",
           "with_check": null
         }
       ]
