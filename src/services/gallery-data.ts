@@ -428,13 +428,15 @@ export async function trackRemix(
   if (error) throw error;
 }
 
-// Fetch published scenarios with full data for user's own scenarios
+// Fetch published scenarios with full data for user's own scenarios.
+// Owner-only; RLS restricts the table to publisher+admin (BF-11).
+// Explicit column list excludes moderation/internal fields.
 export async function fetchUserPublishedScenarios(
   userId: string
 ): Promise<Map<string, PublishedScenario>> {
   const { data, error } = await supabase
     .from('published_scenarios')
-    .select('*')
+    .select(PUBLISHED_SCENARIO_PUBLIC_COLUMNS)
     .eq('publisher_id', userId)
     .eq('is_published', true);
     
