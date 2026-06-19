@@ -100,7 +100,7 @@ export const AvatarGenerationModal: React.FC<AvatarGenerationModalProps> = ({
           ["single.character_avatar.model_id", modelId],
         ]),
         diagnostics: {
-          hasStylePrompt: Boolean(selectedStyle.backendPrompt),
+          styleId: selectedStyle.id,
           hasNegativePrompt: Boolean(negativePrompt.trim()),
         },
       });
@@ -112,7 +112,9 @@ export const AvatarGenerationModal: React.FC<AvatarGenerationModalProps> = ({
             avatarPrompt: prompt.trim(),
             characterName,
             modelId,
-            stylePrompt: selectedStyle.backendPrompt,
+            // BF-02: send only the safe identifier; edge function resolves
+            // the backend style prompt server-side from public.art_styles.
+            styleId: selectedStyle.id,
             negativePrompt: negativePrompt.trim() || undefined,
             usageEventType: "character_avatar_generated",
           },

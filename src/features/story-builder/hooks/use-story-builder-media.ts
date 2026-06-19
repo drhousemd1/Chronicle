@@ -19,7 +19,7 @@ import { getSignedMediaUrl, isStorageSentinel } from '@/services/persistence/sig
 
 type CoverPosition = { x: number; y: number };
 type AspectRatioMeta = { label: string; orientation: 'portrait' | 'landscape' | 'square' };
-type StyleLookup = (styleId: string) => { backendPrompt?: string } | undefined;
+type StyleLookup = (styleId: string) => { id: string } | undefined;
 
 export interface UseStoryBuilderMediaOptions {
   scenarioId: string;
@@ -364,7 +364,7 @@ export function useStoryBuilderMedia({
     setIsGeneratingScene(true);
     try {
       const style = getStyleById(styleId);
-      const artStylePrompt = style?.backendPrompt || '';
+      const resolvedStyleId = style?.id || styleId;
 
       void trackApiValidationSnapshot({
         eventKey: 'validation.single.scene_image',
@@ -373,7 +373,7 @@ export function useStoryBuilderMedia({
         parentRowId: 'summary.single.scene_image',
         detailPresence: buildRequiredPresence([
           ['single.scene_image.prompt_or_messages', prompt],
-          ['single.scene_image.characters_or_context', artStylePrompt || storyPremise || scenarioTitle],
+          ['single.scene_image.characters_or_context', resolvedStyleId || storyPremise || scenarioTitle],
         ]),
         diagnostics: { scenarioId },
       });
@@ -381,7 +381,9 @@ export function useStoryBuilderMedia({
       const { data, error } = await supabase.functions.invoke('generate-cover-image', {
         body: {
           prompt: `Scene: ${prompt}. Landscape composition, 4:3 aspect ratio, widescreen environment background.`,
-          artStylePrompt,
+          // BF-02: send only the safe identifier; edge function resolves
+          // the backend style prompt server-side from public.art_styles.
+          styleId: resolvedStyleId,
           scenarioTitle,
         },
       });

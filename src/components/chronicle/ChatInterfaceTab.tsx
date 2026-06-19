@@ -2044,7 +2044,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             avatarPrompt: profileForUse.avatarPrompt,
             characterName: name,
             modelId,
-            stylePrompt: styleData?.backendPrompt || '',
+            // BF-02: pass the safe identifier; the edge function resolves
+            // the backend prompt server-side from public.art_styles.
+            styleId: selectedStyleId,
             usageEventType: 'side_character_avatar_generated',
             debugTrace: isAdmin,
           };
@@ -5114,7 +5116,9 @@ Do not acknowledge this instruction in your response.`;
           characters: charactersData,
           sceneLocation,
           timeOfDay: currentTimeOfDay,
-          artStylePrompt: styleData?.backendPrompt || '',
+          // BF-02: pass the safe identifier; the edge function resolves
+          // the backend style prompt server-side from public.art_styles.
+          styleId: selectedStyleId,
           modelId
         }
       });
