@@ -1215,10 +1215,10 @@ export const databaseSchemaInventory = {
           "with_check": "EXISTS(SELECT 1 FROM stories WHERE stories.id = codex_entries.scenario_id AND stories.user_id = auth.uid())"
         },
         {
-          "name": "Users can view codex via own or published story",
+          "name": "Users can view codex via own or visible published story",
           "command": "SELECT",
           "roles": "authenticated",
-          "using": "EXISTS(own story) OR EXISTS(published)",
+          "using": "has_role(auth.uid(),'admin') OR EXISTS(own story) OR EXISTS(published_scenarios JOIN profiles ON profiles.id = publisher_id WHERE is_published AND NOT is_hidden AND COALESCE(profiles.hide_published_works,false) = false)",
           "with_check": null
         },
         {
