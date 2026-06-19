@@ -2577,10 +2577,10 @@ export const databaseSchemaInventory = {
       ],
       "rls_policies": [
         {
-          "name": "Anyone can view likes",
+          "name": "Users can view own likes",
           "command": "SELECT",
           "roles": "authenticated",
-          "using": "true",
+          "using": "user_id = auth.uid() OR has_role(auth.uid(), 'admin')",
           "with_check": null
         },
         {
