@@ -2213,6 +2213,13 @@ export type Database = {
         }
         Returns: Json
       }
+      get_creator_overall_rating: {
+        Args: { p_publisher_id: string }
+        Returns: {
+          rating: number
+          total_reviews: number
+        }[]
+      }
       get_creator_stats: {
         Args: { creator_user_id: string }
         Returns: {
@@ -2266,6 +2273,23 @@ export type Database = {
           hide_published_works: boolean
           id: string
           username: string
+        }[]
+      }
+      get_public_scenario_reviews: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_published_scenario_id: string
+        }
+        Returns: {
+          comment: string
+          created_at: string
+          id: string
+          raw_weighted_score: number
+          reviewer_avatar_url: string
+          reviewer_display_name: string
+          reviewer_username: string
+          spice_level: number
         }[]
       }
       has_role: {
