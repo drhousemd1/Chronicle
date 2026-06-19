@@ -3686,6 +3686,33 @@ export const databaseSchemaInventory = {
       "added": "2026-06-14",
       "replaces": "Users can view image_library",
       "notes": "Owner-only (plus admin) SELECT on the private image_library bucket. Anonymous GETs return 400; signed-URL minting requires the owner JWT."
+    },
+    {
+      "bucket": "guide_images",
+      "policy": "Admins can upload guide images",
+      "command": "INSERT",
+      "expression": "bucket_id = 'guide_images' AND has_role(auth.uid(), 'admin')",
+      "added": "2026-06-19",
+      "replaces": "Authenticated users can upload guide images",
+      "notes": "BF-14. Public SELECT on guide_images bucket is unchanged ('Anyone can read guide images')."
+    },
+    {
+      "bucket": "guide_images",
+      "policy": "Admins can update guide images",
+      "command": "UPDATE",
+      "expression": "bucket_id = 'guide_images' AND has_role(auth.uid(), 'admin')",
+      "added": "2026-06-19",
+      "replaces": null,
+      "notes": "BF-14."
+    },
+    {
+      "bucket": "guide_images",
+      "policy": "Admins can delete guide images",
+      "command": "DELETE",
+      "expression": "bucket_id = 'guide_images' AND has_role(auth.uid(), 'admin')",
+      "added": "2026-06-19",
+      "replaces": "Authenticated users can delete own guide images",
+      "notes": "BF-14."
     }
   ],
   "edge_functions": [
