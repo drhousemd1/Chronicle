@@ -366,13 +366,14 @@ serve(async (req) => {
     }
     const rateHeaders = getRateLimitHeaders(rateDecision);
 
-    const { 
-      recentMessages, 
-      characters, 
-      sceneLocation, 
+    const {
+      recentMessages,
+      characters,
+      sceneLocation,
       timeOfDay,
+      styleId,
       artStylePrompt,
-      modelId 
+      modelId
     } = await req.json();
 
     if (!recentMessages || recentMessages.length === 0) {
@@ -436,9 +437,39 @@ serve(async (req) => {
     }
 
     // Step 2: Get style block based on art style and gender presentation
-    const artStyleId = artStylePrompt?.startsWith('cinematic') ? 'cinematic-2-5d' : (artStylePrompt || 'cinematic-2-5d');
+    // BF-02: Resolve backend art-style prompt server-side from styleId using
+    // the service role. Fall back to legacy client `artStylePrompt` only when
+    // no styleId was supplied (legacy callers).
+    const resolvedStyleId: string = typeof styleId === 'string' && styleId
+      ? styleId
+      : 'cinematic-2-5d';
     const primaryGender = structuredData.characters[0]?.genderPresentation || 'androgynous';
-    const styleBlock = getStyleBlock(artStyleId, primaryGender, artStylePrompt);
+    let resolvedStyleBlock = '';
+    try {
+      const admin = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+      );
+      const { data: styleRow } = await admin
+        .from('art_styles')
+        .select('backend_prompt, backend_prompt_masculine, backend_prompt_androgynous')
+        .eq('id', resolvedStyleId)
+        .maybeSingle();
+      const row = (styleRow as any) || {};
+      if (primaryGender === 'masculine' && row.backend_prompt_masculine) {
+        resolvedStyleBlock = row.backend_prompt_masculine;
+      } else if (primaryGender === 'androgynous' && row.backend_prompt_androgynous) {
+        resolvedStyleBlock = row.backend_prompt_androgynous;
+      } else {
+        resolvedStyleBlock = row.backend_prompt || '';
+      }
+    } catch (err) {
+      console.error('[generate-scene-image] art_styles lookup failed:', err);
+    }
+    if (!resolvedStyleBlock && typeof artStylePrompt === 'string' && artStylePrompt) {
+      resolvedStyleBlock = artStylePrompt;
+    }
+    const styleBlock = getStyleBlock(resolvedStyleId, primaryGender, resolvedStyleBlock);
 
     // Step 3: Assemble byte-limited prompt
     const imagePrompt = assemblePromptWithByteLimit(structuredData, styleBlock);

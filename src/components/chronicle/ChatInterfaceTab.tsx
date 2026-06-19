@@ -226,7 +226,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   hasMoreMessages = false
 }) => {
   const { user } = useAuth();
-  const { defaultStyleId: DEFAULT_STYLE_ID, getStyleById } = useArtStyles();
+  const { defaultStyleId: DEFAULT_STYLE_ID } = useArtStyles();
   const [input, setInput] = useState('');
   const [expandedCharId, setExpandedCharId] = useState<string | null>(null);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
@@ -2026,7 +2026,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
           // Get the art style prompt from the scenario's selected art style
           const selectedStyleId = appData.selectedArtStyle || DEFAULT_STYLE_ID;
-          const styleData = getStyleById(selectedStyleId);
+          // styleData is no longer needed on the client — edge function resolves
+          // the backend prompt server-side from styleId.
 
           void trackApiValidationSnapshot({
             eventKey: 'validation.call2.side_character_avatar',
@@ -2044,7 +2045,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             avatarPrompt: profileForUse.avatarPrompt,
             characterName: name,
             modelId,
-            stylePrompt: styleData?.backendPrompt || '',
+            // BF-02: pass the safe identifier; the edge function resolves
+            // the backend prompt server-side from public.art_styles.
+            styleId: selectedStyleId,
             usageEventType: 'side_character_avatar_generated',
             debugTrace: isAdmin,
           };
@@ -5091,7 +5094,8 @@ Do not acknowledge this instruction in your response.`;
 
       // Get art style
       const selectedStyleId = appData.selectedArtStyle || DEFAULT_STYLE_ID;
-      const styleData = getStyleById(selectedStyleId);
+      // styleData is no longer needed on the client — edge function resolves
+      // the backend prompt server-side from styleId.
 
       // Get active scene location
       const sceneLocation = activeScene?.tags?.[0] || undefined;
@@ -5114,7 +5118,9 @@ Do not acknowledge this instruction in your response.`;
           characters: charactersData,
           sceneLocation,
           timeOfDay: currentTimeOfDay,
-          artStylePrompt: styleData?.backendPrompt || '',
+          // BF-02: pass the safe identifier; the edge function resolves
+          // the backend style prompt server-side from public.art_styles.
+          styleId: selectedStyleId,
           modelId
         }
       });

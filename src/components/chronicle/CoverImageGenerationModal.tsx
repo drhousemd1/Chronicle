@@ -62,7 +62,7 @@ export const CoverImageGenerationModal: React.FC<CoverImageGenerationModalProps>
         parentRowId: "summary.single.cover_image",
         detailPresence: buildRequiredPresence([
           ["single.cover_image.prompt", prompt.trim()],
-          ["single.cover_image.style_prompt", selectedStyle.backendPrompt],
+          ["single.cover_image.style_prompt", selectedStyle.id],
         ]),
         diagnostics: {
           hasNegativePrompt: Boolean(negativePrompt.trim()),
@@ -75,7 +75,9 @@ export const CoverImageGenerationModal: React.FC<CoverImageGenerationModalProps>
         {
           body: {
             prompt: prompt.trim(),
-            stylePrompt: selectedStyle.backendPrompt,
+            // BF-02: send only the safe identifier; edge function resolves
+            // the backend style prompt server-side from public.art_styles.
+            styleId: selectedStyle.id,
             negativePrompt: negativePrompt.trim() || undefined,
             scenarioTitle: scenarioTitle || undefined,
           },

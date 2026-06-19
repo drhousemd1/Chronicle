@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useArtStyles } from '@/contexts/ArtStylesContext';
 import { supabase } from '@/integrations/supabase/client';
 
 import { Input } from '@/components/ui/input';
@@ -20,23 +19,35 @@ interface StyleDraft {
 }
 
 export const ImageGenerationTool: React.FC = () => {
-  const { styles, refreshStyles } = useArtStyles();
+  // BF-02: admin tool loads the full art_styles row directly (admin RLS
+  // grants SELECT). Backend prompt fields are never read from the public
+  // useArtStyles context, which contains only sanitized presentation data.
   const [drafts, setDrafts] = useState<StyleDraft[]>([]);
 
-  useEffect(() => {
+  const loadDrafts = async () => {
+    const { data, error } = await (supabase as any)
+      .from('art_styles')
+      .select('id, display_name, thumbnail_url, backend_prompt, backend_prompt_masculine, backend_prompt_androgynous, sort_order')
+      .order('sort_order', { ascending: true, nullsFirst: false });
+    if (error) {
+      console.error('Failed to load art styles (admin):', error);
+      return;
+    }
     setDrafts(
-      styles.map((s) => ({
-        id: s.id,
-        displayName: s.displayName,
-        thumbnailUrl: s.thumbnailUrl,
-        backendPrompt: s.backendPrompt,
-        backendPromptMasculine: s.backendPromptMasculine || '',
-        backendPromptAndrogynous: s.backendPromptAndrogynous || '',
+      (data || []).map((row: any) => ({
+        id: row.id,
+        displayName: row.display_name,
+        thumbnailUrl: row.thumbnail_url,
+        backendPrompt: row.backend_prompt || '',
+        backendPromptMasculine: row.backend_prompt_masculine || '',
+        backendPromptAndrogynous: row.backend_prompt_androgynous || '',
         isDirty: false,
         isSaving: false,
-      }))
+      })),
     );
-  }, [styles]);
+  };
+
+  useEffect(() => { void loadDrafts(); }, []);
 
   const updateDraft = (id: string, patch: Partial<StyleDraft>) => {
     setDrafts((prev) =>
@@ -63,7 +74,7 @@ export const ImageGenerationTool: React.FC = () => {
 
       if (error) throw error;
 
-      await refreshStyles();
+      await loadDrafts();
       setDrafts((prev) =>
         prev.map((d) =>
           d.id === draft.id ? { ...d, isDirty: false, isSaving: false } : d
