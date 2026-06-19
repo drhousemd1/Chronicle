@@ -2239,6 +2239,22 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_my_liked_scenarios: {
+        Args: { p_published_scenario_ids: string[] }
+        Returns: {
+          published_scenario_id: string
+        }[]
+      }
+      get_public_app_flags: { Args: never; Returns: Json }
+      get_public_art_styles: {
+        Args: never
+        Returns: {
+          display_name: string
+          id: string
+          sort_order: number
+          thumbnail_url: string
+        }[]
+      }
       get_public_creator_profile: { Args: { p_user_id: string }; Returns: Json }
       get_public_profiles: {
         Args: { p_user_ids: string[] }
