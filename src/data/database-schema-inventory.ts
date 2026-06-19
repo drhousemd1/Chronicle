@@ -2904,10 +2904,10 @@ export const databaseSchemaInventory = {
           "with_check": "EXISTS(own story)"
         },
         {
-          "name": "Users can view scenes via own or published story",
+          "name": "Users can view scenes via own or visible published story",
           "command": "SELECT",
           "roles": "authenticated",
-          "using": "EXISTS(own story) OR EXISTS(published)",
+          "using": "has_role(auth.uid(),'admin') OR EXISTS(own story) OR EXISTS(published_scenarios JOIN profiles ON profiles.id = publisher_id WHERE is_published AND NOT is_hidden AND COALESCE(profiles.hide_published_works,false) = false)",
           "with_check": null
         },
         {
