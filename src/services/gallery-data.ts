@@ -630,31 +630,53 @@ export async function deleteReview(
 }
 
 // Fetch reviews for a scenario
+export interface PublicScenarioReview {
+  id: string;
+  raw_weighted_score: number | null;
+  spice_level: number | null;
+  comment: string | null;
+  created_at: string;
+  reviewer: {
+    username: string | null;
+    display_name: string | null;
+    avatar_url: string | null;
+  } | null;
+}
+
 export async function fetchScenarioReviews(
   publishedScenarioId: string,
   limit: number = 5,
   offset: number = 0
-): Promise<ScenarioReview[]> {
-  const { data, error } = await supabase
-    .from('scenario_reviews')
-    .select('*')
-    .eq('published_scenario_id', publishedScenarioId)
-    .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1);
+): Promise<PublicScenarioReview[]> {
+  const { data, error } = await supabase.rpc('get_public_scenario_reviews', {
+    p_published_scenario_id: publishedScenarioId,
+    p_limit: limit,
+    p_offset: offset,
+  });
 
   if (error) throw error;
-  if (!data || data.length === 0) return [];
+  if (!data || (data as any[]).length === 0) return [];
 
-  const userIds = [...new Set(data.map((r: any) => r.user_id))];
-  const { data: profiles } = await supabase
-    .rpc('get_public_profiles', { p_user_ids: userIds as string[] });
-
-  const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
-
-  return data.map((r: any) => ({
-    ...r,
-    reviewer: profileMap.get(r.user_id) || null,
-  }));
+  return (data as any[]).map((r: any) => {
+    const hasReviewer =
+      r.reviewer_username !== null ||
+      r.reviewer_display_name !== null ||
+      r.reviewer_avatar_url !== null;
+    return {
+      id: r.id,
+      raw_weighted_score: r.raw_weighted_score,
+      spice_level: r.spice_level,
+      comment: r.comment,
+      created_at: r.created_at,
+      reviewer: hasReviewer
+        ? {
+            username: r.reviewer_username ?? null,
+            display_name: r.reviewer_display_name ?? null,
+            avatar_url: r.reviewer_avatar_url ?? null,
+          }
+        : null,
+    };
+  });
 }
 
 // Fetch user's own review for a scenario
@@ -672,28 +694,18 @@ export async function fetchUserReview(publishedScenarioId: string, userId: strin
 
 // Fetch creator overall rating across all their published scenarios
 export async function fetchCreatorOverallRating(publisherId: string): Promise<{ rating: number; totalReviews: number } | null> {
-  const { data: publishedStories, error } = await supabase
-    .from('published_scenarios')
-    .select('id')
-    .eq('publisher_id', publisherId)
-    .eq('is_published', true);
+  const { data, error } = await supabase.rpc('get_creator_overall_rating', {
+    p_publisher_id: publisherId,
+  });
 
   if (error) throw error;
-  if (!publishedStories || publishedStories.length === 0) return null;
+  const row = Array.isArray(data) ? (data[0] as any) : (data as any);
+  if (!row) return null;
 
-  const publishedScenarioIds = publishedStories.map((story) => story.id);
-  const { data: reviews, error: reviewsError } = await supabase
-    .from('scenario_reviews')
-    .select('raw_weighted_score')
-    .in('published_scenario_id', publishedScenarioIds)
-    .not('raw_weighted_score', 'is', null);
+  const totalReviews = Number(row.total_reviews ?? 0);
+  if (totalReviews === 0) return null;
 
-  if (reviewsError) throw reviewsError;
-  if (!reviews || reviews.length === 0) return null;
-
-  const totalReviews = reviews.length;
-  const avgRating = reviews.reduce((sum: number, review: any) => sum + Number(review.raw_weighted_score), 0) / totalReviews;
-
+  const avgRating = Number(row.rating ?? 0);
   return { rating: Math.round(avgRating * 2) / 2, totalReviews };
 }
 
