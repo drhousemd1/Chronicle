@@ -10654,7 +10654,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
   ],
   "verification": {
     "tablesCount": 43,
-    "functionsCount": 19,
+    "functionsCount": 23,
     "enumsCount": 1,
     "storageBucketsCount": 7,
     "storagePoliciesCount": 26,
