@@ -3647,6 +3647,41 @@ export const databaseSchemaInventory = {
       "touches": [],
       "security": "INVOKER",
       "description": "Generic trigger: set updated_at for finance tables"
+    },
+    {
+      "name": "get_saved_scenarios_for_user",
+      "touches": [
+        "saved_scenarios",
+        "published_scenarios",
+        "stories",
+        "profiles"
+      ],
+      "security": "DEFINER",
+      "description": "RPC added 2026-06-19 (BF-11). Returns the current auth.uid()'s saved-scenario cards as a flat row shape (id, ps_*, story_*). Omits moderation/internal fields such as reported_count. Replaces a previous direct-table JOIN read on published_scenarios from the Saved list."
+    },
+    {
+      "name": "get_scenario_moderation_counters",
+      "touches": [
+        "published_scenarios"
+      ],
+      "security": "DEFINER",
+      "description": "RPC added 2026-06-19 (BF-11). Returns the reported_count for a single published scenario, gated to (publisher_id = auth.uid() OR admin). Backend-ready; no frontend caller today."
+    },
+    {
+      "name": "get_my_submitted_reports",
+      "touches": [
+        "reports"
+      ],
+      "security": "DEFINER",
+      "description": "RPC added 2026-06-19 (BF-10). Returns the current auth.uid()'s submitted reports as a sanitized projection (id, story_id, reason, status, created_at). Omits note, reviewed_by, accused_user_id, accused, reporter. Backend-ready; no frontend caller today."
+    },
+    {
+      "name": "get_my_account_status",
+      "touches": [
+        "user_strikes"
+      ],
+      "security": "DEFINER",
+      "description": "RPC added 2026-06-19 (BF-10). Returns an aggregated account-status summary for the current auth.uid() (active_strike_count, total_points, latest_status, latest_falls_off_at). Omits issued_by, note, report_id, reason. Backend-ready; no frontend caller today."
     }
   ],
   "storage_buckets": [
