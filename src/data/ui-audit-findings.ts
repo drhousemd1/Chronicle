@@ -68,6 +68,7 @@ const runIds = {
   profilePrivacyEnforcement20260614: "run-lovable-profile-privacy-enforcement-20260614",
   storageStageA20260614: "run-lovable-storage-privacy-stage-a-20260614",
   storagePrivacyStageB20260614: "run-lovable-storage-privacy-stage-b-20260614",
+  batchASecurity20260619: "run-lovable-batch-a-security-20260619",
 } as const;
 
 const qualityHubHousekeepingScanTimestamp = "2026-05-30T19:22:16.000-06:00";
