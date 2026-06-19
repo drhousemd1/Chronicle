@@ -7096,16 +7096,6 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "command": "INSERT",
           "withCheck": "((reporter_user_id IS NOT NULL) AND (auth.uid() = reporter_user_id))",
           "permissive": true
-        },
-        {
-          "name": "Users can view own submitted reports",
-          "roles": [
-            "authenticated"
-          ],
-          "using": "((reporter_user_id IS NOT NULL) AND (auth.uid() = reporter_user_id))",
-          "command": "SELECT",
-          "withCheck": null,
-          "permissive": true
         }
       ],
       "triggers": [
