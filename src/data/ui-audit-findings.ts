@@ -6537,6 +6537,49 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
   ],
   changeLog: [
     {
+      id: "cl-20260619-003",
+      title: "Batch C security — BF-10 reports/strikes lockdown + BF-11 published_scenarios moderation field privacy",
+      summary:
+        "Security · Closed BF-10 and BF-11. Removed the broad public/authenticated SELECT path on public.published_scenarios so non-owner non-admin callers can no longer reach reported_count (or any column) via direct table reads. Migrated the Saved-scenarios surface to a new sanitized SECURITY DEFINER RPC. Dropped public.reports from the supabase_realtime publication and removed user-facing raw SELECT on both public.reports and public.user_strikes; added sanitized own-row RPCs (backend-ready, no UI consumer yet). Admin moderation paths and report submission flows are preserved.",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem:
+        "BF-11: public.published_scenarios.reported_count and other moderation/internal fields were readable by any signed-in user via the permissive 'Anyone can view published scenarios' SELECT policy. Column-level REVOKE is not a valid privacy boundary while table-level SELECT is granted, so the leak had to be closed at the row policy level. BF-10: public.reports was published on supabase_realtime so any authenticated client could open a postgres_changes channel and watch raw reports rows, and public.reports / public.user_strikes both still had own-row SELECT policies that exposed sensitive columns (note, reviewed_by, accused_user_id, accused, reporter, issued_by, report_id, reason) to the reporting/affected user.",
+      plan:
+        "BF-11: 1) DROP POLICY 'Anyone can view published scenarios'. 2) ADD owner-only and admin-only SELECT policies. 3) REVOKE SELECT on public.published_scenarios FROM anon. 4) Add SECURITY DEFINER RPC get_saved_scenarios_for_user() returning a sanitized flat row shape for the Saved list (omits reported_count and any moderation field). 5) Add SECURITY DEFINER RPC get_scenario_moderation_counters(uuid) gated to publisher OR admin (backend-ready). 6) Migrate src/services/gallery-data.ts fetchSavedScenarios to the new RPC; remove dead-code fetchPublishedScenarios; add an explicit column list (no reported_count) to getPublishedScenario and fetchUserPublishedScenarios as defense in depth. BF-10: 1) ALTER PUBLICATION supabase_realtime DROP TABLE public.reports. 2) DROP POLICY 'Users can view own submitted reports'. 3) ADD SECURITY DEFINER RPC get_my_submitted_reports() returning id/story_id/reason/status/created_at (backend-ready). 4) DROP POLICY 'Users can view own strikes'. 5) ADD SECURITY DEFINER RPC get_my_account_status() returning active_strike_count/total_points/latest_status/latest_falls_off_at (backend-ready). 6) Replace the Realtime subscription in src/components/admin/finance/users/ReportsPage.tsx with a 30 s setInterval poll.",
+      changes:
+        "Database (live, migration timestamped 2026-06-19 batch C):\n- DROP POLICY 'Anyone can view published scenarios' ON public.published_scenarios.\n- CREATE POLICY 'Owners can view own publications' SELECT TO authenticated USING (publisher_id = auth.uid()).\n- CREATE POLICY 'Admins can view all publications' SELECT TO authenticated USING (has_role(auth.uid(),'admin')).\n- REVOKE SELECT ON public.published_scenarios FROM anon. authenticated SELECT grant retained (RLS gates per row).\n- CREATE FUNCTION public.get_saved_scenarios_for_user() RETURNS TABLE(...flat saved-card shape, no reported_count, no moderation fields) LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public. EXECUTE granted to authenticated. Scoped to auth.uid().\n- CREATE FUNCTION public.get_scenario_moderation_counters(p_published_scenario_id uuid) RETURNS TABLE(reported_count integer) LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=public; raises 'Unauthorized' unless caller is publisher or admin. EXECUTE granted to authenticated. Backend-ready; no UI consumer.\n- ALTER PUBLICATION supabase_realtime DROP TABLE public.reports (verified absent via pg_publication_tables).\n- DROP POLICY 'Users can view own submitted reports' ON public.reports. Admin ALL policy and own-INSERT policy retained.\n- CREATE FUNCTION public.get_my_submitted_reports() RETURNS TABLE(id, story_id, reason, status, created_at) LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public; auth.uid()-scoped. EXECUTE granted to authenticated. Backend-ready; no UI consumer.\n- DROP POLICY 'Users can view own strikes' ON public.user_strikes. Admin ALL policy retained.\n- CREATE FUNCTION public.get_my_account_status() RETURNS TABLE(active_strike_count, total_points, latest_status, latest_falls_off_at) LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=public; auth.uid()-scoped aggregate; omits issued_by/note/report_id/reason. EXECUTE granted to authenticated. Backend-ready; no UI consumer.\n\nFrontend:\n- src/services/gallery-data.ts: legacy fetchPublishedScenarios removed (no live callers). fetchSavedScenarios now calls supabase.rpc('get_saved_scenarios_for_user') and re-assembles SavedScenario[] from the flat row shape; publisher hydration unchanged via get_public_profiles. getPublishedScenario and fetchUserPublishedScenarios now use an explicit PUBLISHED_SCENARIO_PUBLIC_COLUMNS list that omits reported_count (defense in depth — the RLS owner branch already restricts rows). fetchGalleryScenarios continues to use fetch_gallery_scenarios RPC unchanged.\n- src/components/admin/finance/users/ReportsPage.tsx: removed supabase.channel('reports-realtime') subscription and its removeChannel cleanup. Replaced with a 30 s window.setInterval poll cleared on unmount. loadReports continues to .select('*') from public.reports (allowed by the retained 'Admins can manage reports' policy).\n\nSource-of-truth snapshots (this commit):\n- src/integrations/supabase/types.ts: regenerated post-migration to include get_saved_scenarios_for_user, get_scenario_moderation_counters, get_my_submitted_reports, get_my_account_status.\n- src/data/supabase-schema-map.ts: published_scenarios policies replaced ('Anyone can view published scenarios' removed; 'Owners can view own publications' and 'Admins can view all publications' added). reports policies: 'Users can view own submitted reports' removed. user_strikes policies: 'Users can view own strikes' removed. functions[] gained the four new RPC entries. functionsCount bumped 19 → 23.\n- src/data/database-schema-inventory.ts: mirrors the same policy deltas and adds the four new database_functions entries.\n- src/data/ui-audit-findings.ts: this change-log entry.\n\nValidation (probes run live as the migration ran and post-apply):\n- pg_policies confirms: published_scenarios SELECT is now {Owners can view own publications, Admins can view all publications}; reports has no 'Users can view own submitted reports'; user_strikes has no 'Users can view own strikes'.\n- pg_publication_tables confirms public.reports is no longer in supabase_realtime.\n- pg_proc confirms the four new functions exist as SECURITY DEFINER with search_path=public.\n- information_schema.role_table_grants: anon no longer holds SELECT on public.published_scenarios; authenticated SELECT retained (RLS gates per row).\n- Saved list: signed-in user receives sanitized rows via the new RPC; payload contains no reported_count or moderation fields (no such columns exist in the RPC RETURNS TABLE signature).\n- Owner surfaces (ShareStoryModal, StoryHub, PublicProfileTab, fetchUserPublishedScenarios) continue to receive own-row data via the owner RLS branch.\n- Gallery (fetch_gallery_scenarios RPC, SECURITY DEFINER) and Creator Profile (get_public_creator_profile RPC, SECURITY DEFINER) keep returning cards because RPCs bypass RLS under definer rights.\n- Admin ReportsPage: rows still load via the retained admin ALL policy; the 30 s poll replaces realtime push.\n- Static greps: rg \"reports-realtime\" src → 0; rg \"fetchPublishedScenarios\\b\" src → 0; rg \"from\\('published_scenarios'\\)\" src returns only owner/admin paths in gallery-data.ts and the owner PublicProfileTab.tsx surface.\n\nBackend-ready vs UI-consumed (BF-10):\n- get_my_submitted_reports and get_my_account_status are created and granted but have no normal-user UI consumer yet. The existing AccountSettingsTab is not extended in this batch. Surfacing them is deferred to a follow-up batch.\n\nDeferred / not in this batch:\n- Batch D (BF-04, BF-05, BF-06) storage/media bucket flips remain.\n- No changes to Batch A or Batch B artifacts.",
+      filesAffected: [
+        "supabase/migrations/2026-06-19_batch_c_bf10_bf11.sql",
+        "src/services/gallery-data.ts",
+        "src/components/admin/finance/users/ReportsPage.tsx",
+        "src/integrations/supabase/types.ts",
+        "src/data/supabase-schema-map.ts",
+        "src/data/database-schema-inventory.ts",
+        "src/data/ui-audit-findings.ts",
+      ],
+      agent: "Lovable",
+      relatedFindingIds: [],
+      relatedRunIds: [],
+      tags: [
+        "security",
+        "rls",
+        "realtime",
+        "published-scenarios",
+        "reports",
+        "user-strikes",
+        "reported-count",
+        "schema-snapshot",
+        "quality-hub",
+        "batch-c",
+        "bf-10",
+        "bf-11",
+      ],
+      comments: [],
+      createdAt: qualityHubBatchCSecurity20260619Timestamp,
+      updatedAt: qualityHubBatchCSecurity20260619Timestamp,
+    },
+    {
       id: "cl-20260619-002",
       title: "Batch B security — BF-08 scenario_reviews sanitized public RPC + tightened RLS",
       summary:
