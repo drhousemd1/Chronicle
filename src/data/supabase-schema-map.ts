@@ -1383,11 +1383,21 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         },
         {
-          "name": "Anyone authenticated can read settings",
+          "name": "Admins can read all settings",
           "roles": [
             "authenticated"
           ],
-          "using": "true",
+          "using": "has_role(auth.uid(), 'admin'::app_role)",
+          "command": "SELECT",
+          "withCheck": null,
+          "permissive": true
+        },
+        {
+          "name": "Auth can read public settings keys",
+          "roles": [
+            "authenticated"
+          ],
+          "using": "(setting_key = ANY (ARRAY['shared_keys'::text, 'nav_button_images'::text, 'subscription_tiers_v1'::text]))",
           "command": "SELECT",
           "withCheck": null,
           "permissive": true
