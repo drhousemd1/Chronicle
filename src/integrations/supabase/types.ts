@@ -2246,10 +2246,29 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_my_account_status: {
+        Args: never
+        Returns: {
+          active_strike_count: number
+          latest_falls_off_at: string
+          latest_status: string
+          total_points: number
+        }[]
+      }
       get_my_liked_scenarios: {
         Args: { p_published_scenario_ids: string[] }
         Returns: {
           published_scenario_id: string
+        }[]
+      }
+      get_my_submitted_reports: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          reason: string
+          status: string
+          story_id: string
         }[]
       }
       get_public_app_flags: { Args: never; Returns: Json }
@@ -2290,6 +2309,42 @@ export type Database = {
           reviewer_display_name: string
           reviewer_username: string
           spice_level: number
+        }[]
+      }
+      get_saved_scenarios_for_user: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          ps_allow_remix: boolean
+          ps_avg_rating: number
+          ps_created_at: string
+          ps_id: string
+          ps_is_hidden: boolean
+          ps_is_published: boolean
+          ps_like_count: number
+          ps_play_count: number
+          ps_publisher_id: string
+          ps_review_count: number
+          ps_save_count: number
+          ps_scenario_id: string
+          ps_tags: string[]
+          ps_updated_at: string
+          ps_view_count: number
+          published_scenario_id: string
+          source_scenario_id: string
+          story_cover_image_position: Json
+          story_cover_image_url: string
+          story_description: string
+          story_id: string
+          story_title: string
+          user_id: string
+        }[]
+      }
+      get_scenario_moderation_counters: {
+        Args: { p_published_scenario_id: string }
+        Returns: {
+          reported_count: number
         }[]
       }
       has_role: {
