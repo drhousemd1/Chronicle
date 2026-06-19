@@ -2476,13 +2476,6 @@ export const databaseSchemaInventory = {
           "roles": "authenticated",
           "using": null,
           "with_check": "reporter_user_id IS NOT NULL AND auth.uid() = reporter_user_id"
-        },
-        {
-          "name": "Users can view own submitted reports",
-          "command": "SELECT",
-          "roles": "authenticated",
-          "using": "reporter_user_id IS NOT NULL AND auth.uid() = reporter_user_id",
-          "with_check": null
         }
       ]
     },
