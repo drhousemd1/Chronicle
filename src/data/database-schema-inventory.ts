@@ -3660,7 +3660,8 @@ export const databaseSchemaInventory = {
     },
     {
       "name": "guide_images",
-      "public": true
+      "public": true,
+      "notes": "Public READ remains intentional. Updated 2026-06-19 (BF-14): write/update/delete on the guide_images bucket are now admin-only — legacy 'Authenticated users can upload/delete own guide images' storage policies were replaced by 'Admins can upload/update/delete guide images' (has_role(auth.uid(),'admin'))."
     },
     {
       "name": "finance_documents",
