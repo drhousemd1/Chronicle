@@ -6481,12 +6481,21 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "comment": null,
       "policies": [
         {
-          "name": "Anyone can view published scenarios",
+          "name": "Owners can view own publications",
           "roles": [
-            "authenticated",
-            "anon"
+            "authenticated"
           ],
-          "using": "((is_published = true AND is_hidden = false AND EXISTS(SELECT 1 FROM public.profiles p WHERE p.id = published_scenarios.publisher_id AND COALESCE(p.hide_published_works,false) = false)) OR publisher_id = auth.uid() OR has_role(auth.uid(), 'admin'::app_role))",
+          "using": "(publisher_id = auth.uid())",
+          "command": "SELECT",
+          "withCheck": null,
+          "permissive": true
+        },
+        {
+          "name": "Admins can view all publications",
+          "roles": [
+            "authenticated"
+          ],
+          "using": "has_role(auth.uid(), 'admin'::app_role)",
           "command": "SELECT",
           "withCheck": null,
           "permissive": true
@@ -7086,16 +7095,6 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "using": null,
           "command": "INSERT",
           "withCheck": "((reporter_user_id IS NOT NULL) AND (auth.uid() = reporter_user_id))",
-          "permissive": true
-        },
-        {
-          "name": "Users can view own submitted reports",
-          "roles": [
-            "authenticated"
-          ],
-          "using": "((reporter_user_id IS NOT NULL) AND (auth.uid() = reporter_user_id))",
-          "command": "SELECT",
-          "withCheck": null,
           "permissive": true
         }
       ],
@@ -9950,16 +9949,6 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "command": "ALL",
           "withCheck": "has_role(auth.uid(), 'admin'::app_role)",
           "permissive": true
-        },
-        {
-          "name": "Users can view own strikes",
-          "roles": [
-            "authenticated"
-          ],
-          "using": "(auth.uid() = user_id)",
-          "command": "SELECT",
-          "withCheck": null,
-          "permissive": true
         }
       ],
       "triggers": [
@@ -10244,6 +10233,46 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "returnType": "trigger",
       "volatility": "VOLATILE",
       "securityDefiner": false
+    },
+    {
+      "name": "get_saved_scenarios_for_user",
+      "config": ["search_path=public"],
+      "language": "sql",
+      "arguments": "",
+      "definition": "STABLE SECURITY DEFINER. Added 2026-06-19 (BF-11). Returns the current auth.uid()'s saved-scenario cards as a flat row shape (id, user_id, published_scenario_id, source_scenario_id, created_at, ps_*, story_*). Omits moderation/internal fields such as reported_count. EXECUTE granted to authenticated. Backs src/services/gallery-data.ts fetchSavedScenarios after the broad SELECT on published_scenarios was dropped.",
+      "returnType": "TABLE(id uuid, user_id uuid, published_scenario_id uuid, source_scenario_id uuid, created_at timestamptz, ps_id uuid, ps_scenario_id uuid, ps_publisher_id uuid, ps_allow_remix boolean, ps_tags text[], ps_like_count integer, ps_save_count integer, ps_play_count integer, ps_view_count integer, ps_avg_rating numeric, ps_review_count integer, ps_is_published boolean, ps_is_hidden boolean, ps_created_at timestamptz, ps_updated_at timestamptz, story_id uuid, story_title text, story_description text, story_cover_image_url text, story_cover_image_position jsonb)",
+      "volatility": "STABLE",
+      "securityDefiner": true
+    },
+    {
+      "name": "get_scenario_moderation_counters",
+      "config": ["search_path=public"],
+      "language": "plpgsql",
+      "arguments": "p_published_scenario_id uuid",
+      "definition": "STABLE SECURITY DEFINER. Added 2026-06-19 (BF-11). Returns reported_count for a single published_scenarios row, gated to publisher_id = auth.uid() OR has_role(auth.uid(),'admin'). EXECUTE granted to authenticated. Backend-ready; no frontend caller today.",
+      "returnType": "TABLE(reported_count integer)",
+      "volatility": "STABLE",
+      "securityDefiner": true
+    },
+    {
+      "name": "get_my_submitted_reports",
+      "config": ["search_path=public"],
+      "language": "sql",
+      "arguments": "",
+      "definition": "STABLE SECURITY DEFINER. Added 2026-06-19 (BF-10). Returns the current auth.uid()'s submitted reports as a sanitized projection (id, story_id, reason, status, created_at). Omits note, reviewed_by, accused_user_id, accused, reporter. EXECUTE granted to authenticated. Backend-ready; no frontend caller today. Replaces the dropped 'Users can view own submitted reports' SELECT policy.",
+      "returnType": "TABLE(id uuid, story_id text, reason text, status text, created_at timestamptz)",
+      "volatility": "STABLE",
+      "securityDefiner": true
+    },
+    {
+      "name": "get_my_account_status",
+      "config": ["search_path=public"],
+      "language": "plpgsql",
+      "arguments": "",
+      "definition": "STABLE SECURITY DEFINER. Added 2026-06-19 (BF-10). Returns an aggregated account-status summary for the current auth.uid() (active_strike_count, total_points, latest_status, latest_falls_off_at). Omits issued_by, note, report_id, reason. EXECUTE granted to authenticated. Backend-ready; no frontend caller today. Replaces the dropped 'Users can view own strikes' SELECT policy.",
+      "returnType": "TABLE(active_strike_count integer, total_points integer, latest_status text, latest_falls_off_at date)",
+      "volatility": "STABLE",
+      "securityDefiner": true
     }
   ],
   "enums": [
@@ -10625,7 +10654,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
   ],
   "verification": {
     "tablesCount": 43,
-    "functionsCount": 19,
+    "functionsCount": 23,
     "enumsCount": 1,
     "storageBucketsCount": 7,
     "storagePoliciesCount": 26,

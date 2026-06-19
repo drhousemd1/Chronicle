@@ -2228,10 +2228,17 @@ export const databaseSchemaInventory = {
       ],
       "rls_policies": [
         {
-          "name": "Anyone can view published scenarios",
+          "name": "Owners can view own publications",
           "command": "SELECT",
-          "roles": "authenticated, anon",
-          "using": "(is_published = true AND is_hidden = false AND EXISTS(SELECT 1 FROM public.profiles p WHERE p.id = published_scenarios.publisher_id AND COALESCE(p.hide_published_works,false) = false)) OR publisher_id = auth.uid() OR has_role(auth.uid(), 'admin'::app_role)",
+          "roles": "authenticated",
+          "using": "publisher_id = auth.uid()",
+          "with_check": null
+        },
+        {
+          "name": "Admins can view all publications",
+          "command": "SELECT",
+          "roles": "authenticated",
+          "using": "has_role(auth.uid(), 'admin'::app_role)",
           "with_check": null
         },
         {
@@ -2469,13 +2476,6 @@ export const databaseSchemaInventory = {
           "roles": "authenticated",
           "using": null,
           "with_check": "reporter_user_id IS NOT NULL AND auth.uid() = reporter_user_id"
-        },
-        {
-          "name": "Users can view own submitted reports",
-          "command": "SELECT",
-          "roles": "authenticated",
-          "using": "reporter_user_id IS NOT NULL AND auth.uid() = reporter_user_id",
-          "with_check": null
         }
       ]
     },
@@ -3451,13 +3451,6 @@ export const databaseSchemaInventory = {
           "roles": "authenticated",
           "using": "has_role(auth.uid(), 'admin')",
           "with_check": "has_role(auth.uid(), 'admin')"
-        },
-        {
-          "name": "Users can view own strikes",
-          "command": "SELECT",
-          "roles": "authenticated",
-          "using": "auth.uid() = user_id",
-          "with_check": null
         }
       ]
     }
@@ -3654,6 +3647,41 @@ export const databaseSchemaInventory = {
       "touches": [],
       "security": "INVOKER",
       "description": "Generic trigger: set updated_at for finance tables"
+    },
+    {
+      "name": "get_saved_scenarios_for_user",
+      "touches": [
+        "saved_scenarios",
+        "published_scenarios",
+        "stories",
+        "profiles"
+      ],
+      "security": "DEFINER",
+      "description": "RPC added 2026-06-19 (BF-11). Returns the current auth.uid()'s saved-scenario cards as a flat row shape (id, ps_*, story_*). Omits moderation/internal fields such as reported_count. Replaces a previous direct-table JOIN read on published_scenarios from the Saved list."
+    },
+    {
+      "name": "get_scenario_moderation_counters",
+      "touches": [
+        "published_scenarios"
+      ],
+      "security": "DEFINER",
+      "description": "RPC added 2026-06-19 (BF-11). Returns the reported_count for a single published scenario, gated to (publisher_id = auth.uid() OR admin). Backend-ready; no frontend caller today."
+    },
+    {
+      "name": "get_my_submitted_reports",
+      "touches": [
+        "reports"
+      ],
+      "security": "DEFINER",
+      "description": "RPC added 2026-06-19 (BF-10). Returns the current auth.uid()'s submitted reports as a sanitized projection (id, story_id, reason, status, created_at). Omits note, reviewed_by, accused_user_id, accused, reporter. Backend-ready; no frontend caller today."
+    },
+    {
+      "name": "get_my_account_status",
+      "touches": [
+        "user_strikes"
+      ],
+      "security": "DEFINER",
+      "description": "RPC added 2026-06-19 (BF-10). Returns an aggregated account-status summary for the current auth.uid() (active_strike_count, total_points, latest_status, latest_falls_off_at). Omits issued_by, note, report_id, reason. Backend-ready; no frontend caller today."
     }
   ],
   "storage_buckets": [

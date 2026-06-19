@@ -85,134 +85,36 @@ const normalizePublishedScenario = (row: any): PublishedScenario => ({
   contentThemes: row?.contentThemes ?? undefined,
 });
 
-export async function fetchPublishedScenarios(
-  searchTags?: string[],
-  sortBy: SortOption = 'all',
-  limit = 50,
-  offset = 0,
-  contentThemeFilters?: ContentThemeFilters,
-  publisherIds?: string[]
-): Promise<PublishedScenario[]> {
-  try {
-    let query = supabase
-      .from('published_scenarios')
-      .select(`
-        id,
-        scenario_id,
-        publisher_id,
-        allow_remix,
-        tags,
-        like_count,
-        save_count,
-        play_count,
-        view_count,
-        avg_rating,
-        review_count,
-        is_published,
-        created_at,
-        updated_at,
-        stories!inner (
-          id,
-          title,
-          description,
-          cover_image_url,
-          cover_image_position
-        )
-      `)
-      .eq('is_published', true);
+// NOTE: legacy `fetchPublishedScenarios` removed (BF-11). The Gallery surface
+// now goes through the sanitized server-side RPC `fetch_gallery_scenarios`.
 
-    // Filter by publisher IDs if provided (used by "Following" tab)
-    if (publisherIds && publisherIds.length > 0) {
-      query = query.in('publisher_id', publisherIds);
-    }
+// Explicit column list excludes moderation/internal fields (BF-11).
+// Owner-only callers — RLS restricts the table to publisher+admin.
+const PUBLISHED_SCENARIO_PUBLIC_COLUMNS = `
+  id,
+  scenario_id,
+  publisher_id,
+  allow_remix,
+  tags,
+  like_count,
+  save_count,
+  play_count,
+  view_count,
+  avg_rating,
+  review_count,
+  is_published,
+  created_at,
+  updated_at
+`;
 
-    // Apply sorting based on sortBy parameter
-    switch (sortBy) {
-      case 'liked':
-        query = query.order('like_count', { ascending: false });
-        break;
-      case 'saved':
-        query = query.order('save_count', { ascending: false });
-        break;
-      case 'played':
-        query = query.order('play_count', { ascending: false });
-        break;
-      case 'recent':
-      case 'all':
-      default:
-        query = query.order('created_at', { ascending: false });
-        break;
-    }
-
-    query = query.range(offset, offset + limit - 1);
-
-    if (searchTags?.length) {
-      query = query.overlaps('tags', searchTags);
-    }
-
-    const { data, error } = await query;
-    if (error) {
-      console.error('Failed to fetch published scenarios:', error);
-      return [];
-    }
-    
-    if (!data || data.length === 0) return [];
-    
-    // Fetch publisher profiles and content themes separately
-    const uniquePublisherIds = [...new Set(data.map((item: any) => item.publisher_id))];
-    const scenarioIds = data.map((item: any) => item.scenario_id);
-    
-    const [profilesResult, themesResult] = await Promise.all([
-      supabase.rpc('get_public_profiles', { p_user_ids: uniquePublisherIds as string[] }),
-      supabase.from('content_themes').select('*').in('scenario_id', scenarioIds)
-    ]);
-
-    const profileMap = new Map((profilesResult.data || []).map((p: any) => [p.id, p]));
-    const themesMap = new Map((themesResult.data || []).map(t => [t.scenario_id, {
-      characterTypes: t.character_types || [],
-      storyType: t.story_type as 'SFW' | 'NSFW' | null,
-      genres: t.genres || [],
-      origin: t.origin || [],
-      triggerWarnings: t.trigger_warnings || [],
-      customTags: t.custom_tags || []
-    }]));
-    
-    // Transform the data to match our interface
-    const results: PublishedScenario[] = data.map((item: any) => normalizePublishedScenario({
-      id: item.id,
-      scenario_id: item.scenario_id,
-      publisher_id: item.publisher_id,
-      allow_remix: item.allow_remix,
-      tags: item.tags,
-      like_count: item.like_count,
-      save_count: item.save_count,
-      play_count: item.play_count,
-      view_count: item.view_count,
-      avg_rating: item.avg_rating || 0,
-      review_count: item.review_count || 0,
-      is_published: item.is_published,
-      created_at: item.created_at,
-      updated_at: item.updated_at,
-      scenario: item.stories,
-      publisher: profileMap.get(item.publisher_id) || undefined,
-      contentThemes: themesMap.get(item.scenario_id) || undefined
-    }));
-
-    return results;
-  } catch (err) {
-    console.error('Error fetching published scenarios:', err);
-    return [];
-  }
-}
-
-// Check if current user has published a scenario
+// Check if current user has published a scenario (owner-only path).
 export async function getPublishedScenario(scenarioId: string): Promise<PublishedScenario | null> {
   const { data, error } = await supabase
     .from('published_scenarios')
-    .select('*')
+    .select(PUBLISHED_SCENARIO_PUBLIC_COLUMNS)
     .eq('scenario_id', scenarioId)
     .maybeSingle();
-    
+
   if (error) throw error;
   return data ? normalizePublishedScenario(data) : null;
 }
@@ -354,67 +256,65 @@ export async function unsaveScenario(
   // save_count is maintained by the sync_save_count trigger on saved_scenarios.
 }
 
-// Get user's saved scenarios
-export async function fetchSavedScenarios(userId: string): Promise<SavedScenario[]> {
-  const { data, error } = await supabase
-    .from('saved_scenarios')
-    .select(`
-      id,
-      user_id,
-      published_scenario_id,
-      source_scenario_id,
-      created_at,
-      published_scenarios (
-        id,
-        scenario_id,
-        publisher_id,
-        allow_remix,
-        tags,
-        like_count,
-        save_count,
-        play_count,
-        is_published,
-        created_at,
-        updated_at,
-        stories (
-          id,
-          title,
-          description,
-          cover_image_url,
-          cover_image_position
-        )
-      )
-    `)
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
-    
+// Get user's saved scenarios via sanitized SECURITY DEFINER RPC (BF-11).
+// Direct table reads on published_scenarios for non-owners are blocked by RLS;
+// the RPC omits moderation/internal fields (reported_count etc.).
+// The `userId` parameter is kept for the existing call sites but the RPC
+// internally scopes to auth.uid().
+export async function fetchSavedScenarios(_userId: string): Promise<SavedScenario[]> {
+  const { data, error } = await supabase.rpc('get_saved_scenarios_for_user');
+
   if (error) throw error;
-  
-  if (!data || data.length === 0) return [];
-  
-  // Fetch publisher profiles separately
+  if (!data || (data as any[]).length === 0) return [];
+
+  const rows = data as any[];
+
   const publisherIds = [...new Set(
-    data
-      .filter((item: any) => item.published_scenarios?.publisher_id)
-      .map((item: any) => item.published_scenarios.publisher_id)
+    rows
+      .filter((r) => r.ps_publisher_id)
+      .map((r) => r.ps_publisher_id as string)
   )];
-  
+
   const { data: profiles } = await supabase
-    .rpc('get_public_profiles', { p_user_ids: publisherIds as string[] });
+    .rpc('get_public_profiles', { p_user_ids: publisherIds });
 
   const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
-  
-  return data.map((item: any) => ({
-    id: item.id,
-    user_id: item.user_id,
-    published_scenario_id: item.published_scenario_id,
-    source_scenario_id: item.source_scenario_id,
-    created_at: item.created_at,
-    published_scenario: item.published_scenarios ? {
-      ...item.published_scenarios,
-      scenario: item.published_scenarios.stories,
-      publisher: profileMap.get(item.published_scenarios.publisher_id) || null
-    } : undefined
+
+  return rows.map((r) => ({
+    id: r.id,
+    user_id: r.user_id,
+    published_scenario_id: r.published_scenario_id,
+    source_scenario_id: r.source_scenario_id,
+    created_at: r.created_at,
+    published_scenario: r.ps_id
+      ? normalizePublishedScenario({
+          id: r.ps_id,
+          scenario_id: r.ps_scenario_id,
+          publisher_id: r.ps_publisher_id,
+          allow_remix: r.ps_allow_remix,
+          tags: r.ps_tags || [],
+          like_count: r.ps_like_count ?? 0,
+          save_count: r.ps_save_count ?? 0,
+          play_count: r.ps_play_count ?? 0,
+          view_count: r.ps_view_count ?? 0,
+          avg_rating: r.ps_avg_rating ?? 0,
+          review_count: r.ps_review_count ?? 0,
+          is_published: r.ps_is_published,
+          created_at: r.ps_created_at,
+          updated_at: r.ps_updated_at,
+          scenario: r.story_id
+            ? {
+                id: r.story_id,
+                title: r.story_title,
+                description: r.story_description,
+                cover_image_url: r.story_cover_image_url,
+                cover_image_position: r.story_cover_image_position,
+                world_core: null,
+              }
+            : undefined,
+          publisher: profileMap.get(r.ps_publisher_id) || undefined,
+        })
+      : undefined,
   }));
 }
 
@@ -528,13 +428,15 @@ export async function trackRemix(
   if (error) throw error;
 }
 
-// Fetch published scenarios with full data for user's own scenarios
+// Fetch published scenarios with full data for user's own scenarios.
+// Owner-only; RLS restricts the table to publisher+admin (BF-11).
+// Explicit column list excludes moderation/internal fields.
 export async function fetchUserPublishedScenarios(
   userId: string
 ): Promise<Map<string, PublishedScenario>> {
   const { data, error } = await supabase
     .from('published_scenarios')
-    .select('*')
+    .select(PUBLISHED_SCENARIO_PUBLIC_COLUMNS)
     .eq('publisher_id', userId)
     .eq('is_published', true);
     
