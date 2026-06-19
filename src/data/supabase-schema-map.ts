@@ -1444,7 +1444,6 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
             "INSERT",
             "MAINTAIN",
             "REFERENCES",
-            "SELECT",
             "TRIGGER",
             "TRUNCATE",
             "UPDATE"
