@@ -1308,10 +1308,10 @@ export const databaseSchemaInventory = {
       ],
       "rls_policies": [
         {
-          "name": "Anyone can view published story themes",
+          "name": "Anyone can view visible published story themes",
           "command": "SELECT",
           "roles": "authenticated",
-          "using": "EXISTS(published)",
+          "using": "has_role(auth.uid(),'admin') OR EXISTS(own story) OR EXISTS(published_scenarios JOIN profiles ON profiles.id = publisher_id WHERE is_published AND NOT is_hidden AND COALESCE(profiles.hide_published_works,false) = false)",
           "with_check": null
         },
         {
