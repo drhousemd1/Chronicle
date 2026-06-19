@@ -3028,11 +3028,11 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "comment": null,
       "policies": [
         {
-          "name": "Anyone can view published story themes",
+          "name": "Anyone can view visible published story themes",
           "roles": [
             "authenticated"
           ],
-          "using": "(EXISTS ( SELECT 1\n   FROM published_scenarios ps\n  WHERE ((ps.scenario_id = content_themes.scenario_id) AND (ps.is_published = true) AND (ps.is_hidden = false))))",
+          "using": "(has_role(auth.uid(), 'admin'::app_role) OR (EXISTS ( SELECT 1\n   FROM stories s\n  WHERE ((s.id = content_themes.scenario_id) AND (s.user_id = auth.uid())))) OR (EXISTS ( SELECT 1\n   FROM (published_scenarios ps\n     JOIN profiles p ON ((p.id = ps.publisher_id)))\n  WHERE ((ps.scenario_id = content_themes.scenario_id) AND (ps.is_published = true) AND (ps.is_hidden = false) AND (COALESCE(p.hide_published_works, false) = false)))))",
           "command": "SELECT",
           "withCheck": null,
           "permissive": true
