@@ -119,11 +119,11 @@ export function ReportsPage() {
 
   useEffect(() => { loadReports(); }, [loadReports]);
 
+  // BF-10: `reports` is no longer exposed on the realtime publication.
+  // Admin moderation view polls every 30s instead.
   useEffect(() => {
-    const channel = supabase.channel("reports-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "reports" }, () => loadReports())
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    const interval = window.setInterval(() => { loadReports(); }, 30_000);
+    return () => { window.clearInterval(interval); };
   }, [loadReports]);
 
   const update = async (id: string, status: ReportStatus) => {
