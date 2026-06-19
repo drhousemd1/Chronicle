@@ -42,7 +42,7 @@ export interface StoryBuilderScreenProps {
   onUpdateWorld: (world: Partial<World>) => void;
   onUpdateOpening: (opening: Partial<OpeningDialog>) => void;
   onUpdateScenes: (scenes: Scene[]) => void;
-  onUpdateCoverImage: (url: string) => void;
+  onUpdateCoverImage: (url: string, imagePath?: string | null) => void;
   onUpdateCoverPosition: (position: { x: number; y: number }) => void;
   onUpdateArtStyle: (styleId: string) => void;
   contentThemes: ContentThemes;

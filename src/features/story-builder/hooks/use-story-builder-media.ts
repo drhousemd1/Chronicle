@@ -13,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { buildRequiredPresence, trackApiValidationSnapshot } from '@/services/api-usage-validation';
 import { uploadCoverImage, uploadSceneImage, dataUrlToBlob } from '@/services/supabase-data';
 import { trackAiUsageEvent } from '@/services/usage-tracking';
-import { clamp, compressAndUpload, now, resizeImage, uuid } from '@/utils';
+import { clamp, compressAndUpload, compressAndUploadToPrivate, now, resizeImage, uuid } from '@/utils';
 import type { Scene } from '@/types';
 import { getSignedMediaUrl, isStorageSentinel } from '@/services/persistence/signed-media';
 
@@ -29,7 +29,7 @@ export interface UseStoryBuilderMediaOptions {
   scenarioTitle?: string;
   storyPremise?: string;
   getStyleById: StyleLookup;
-  onUpdateCoverImage: (url: string) => void;
+  onUpdateCoverImage: (url: string, imagePath?: string | null) => void;
   onUpdateCoverPosition: (position: CoverPosition) => void;
   onUpdateScenes: (scenes: Scene[]) => void;
 }
@@ -217,16 +217,31 @@ export function useStoryBuilderMedia({
     setCoverDragStart(null);
   }, []);
 
-  const handleCoverSelectedFromLibrary = useCallback((imageUrl: string) => {
-    onUpdateCoverImage(imageUrl);
+  const handleCoverSelectedFromLibrary = useCallback(async (imageUrlOrSentinel: string) => {
+    // Picker (destBucket="story_covers_private") returns a
+    // `storage://story_covers_private/<path>` sentinel. Resolve a signed URL
+    // for instant render and thread the path through onUpdateCoverImage.
+    let path: string | null = null;
+    let display = imageUrlOrSentinel;
+    if (isStorageSentinel(imageUrlOrSentinel)) {
+      path = imageUrlOrSentinel.replace(/^storage:\/\/story_covers_private\//, '');
+      display = (await getSignedMediaUrl('story_covers_private', path)) || imageUrlOrSentinel;
+    }
+    onUpdateCoverImage(display, path);
     onUpdateCoverPosition({ x: 50, y: 50 });
     setIsRepositioningCover(true);
   }, [onUpdateCoverImage, onUpdateCoverPosition]);
 
   const handleCoverGenerated = useCallback(async (imageUrl: string) => {
     try {
-      const compressedUrl = await compressAndUpload(imageUrl, 'covers', userId || 'anon', 1024, 1536, 0.85);
-      onUpdateCoverImage(compressedUrl);
+      if (!userId) {
+        onUpdateCoverImage(imageUrl);
+      } else {
+        const { path, signedUrl, sentinel } = await compressAndUploadToPrivate(
+          imageUrl, 'story_covers_private', userId, 1024, 1536, 0.85,
+        );
+        onUpdateCoverImage(signedUrl || sentinel, path);
+      }
     } catch {
       onUpdateCoverImage(imageUrl);
     }
@@ -251,9 +266,10 @@ export function useStoryBuilderMedia({
           if (!blob) throw new Error('Failed to process image');
 
           const filename = `cover-${uuid()}-${Date.now()}.jpg`;
-          const publicUrl = await uploadCoverImage(userId, blob, filename);
-
-          onUpdateCoverImage(publicUrl);
+          const { path, signedUrl, sentinel } = await uploadCoverImage(userId, blob, filename);
+          // Render with signed URL; persisted value is the sentinel +
+          // cover_image_path (threaded through onUpdateCoverImage's second arg).
+          onUpdateCoverImage(signedUrl || sentinel, path);
           onUpdateCoverPosition({ x: 50, y: 50 });
           setIsRepositioningCover(true);
         } catch (error) {

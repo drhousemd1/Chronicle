@@ -242,7 +242,7 @@ export function BackgroundPickerModal({
           <ImageLibraryPickerModal
             isOpen={isPickerOpen}
             onClose={() => setIsPickerOpen(false)}
-            destBucket="backgrounds"
+            destBucket="user_backgrounds_private"
             onSelect={async (url) => {
               setIsPickerOpen(false);
               if (onAddFromLibrary) {

@@ -303,6 +303,8 @@ export type Character = {
   roleDescription: string;
   tags: string;
   avatarDataUrl: string;
+  /** Stage B: durable bucket-relative path in character_avatars_private. */
+  avatarPath?: string | null;
   avatarPosition?: { x: number; y: number };
   
   // Hardcoded attribute sections
@@ -420,6 +422,8 @@ export type SideCharacter = {
   sections: CharacterTraitSection[];
   
   avatarDataUrl: string;
+  /** Stage B: durable bucket-relative path in character_avatars_private. */
+  avatarPath?: string | null;
   avatarPosition?: { x: number; y: number };
   isAvatarGenerating?: boolean;  // For async avatar generation UI
   
@@ -462,6 +466,8 @@ export type ScenarioMetadata = {
   title: string;
   description: string;
   coverImage: string;
+  /** Stage B: durable bucket-relative path in story_covers_private. */
+  coverImagePath?: string | null;
   coverImagePosition?: { x: number; y: number };
   tags: string[];
   createdAt: number;
@@ -493,6 +499,8 @@ export type UserBackground = {
   id: string;
   userId: string;
   imageUrl: string;
+  /** Stage B: durable bucket-relative path for private storage. */
+  imagePath?: string | null;
   isSelected: boolean;
   overlayColor: string;
   overlayOpacity: number;

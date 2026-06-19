@@ -11,7 +11,22 @@ import { supabase } from '@/integrations/supabase/client';
  *   expiry to avoid flicker.
  */
 
-type PrivateBucket = 'scenes' | 'image_library';
+export type PrivateBucket =
+  | 'scenes'
+  | 'image_library'
+  | 'user_backgrounds_private'
+  | 'sidebar_backgrounds_private'
+  | 'story_covers_private'
+  | 'character_avatars_private';
+
+const KNOWN_PRIVATE_BUCKETS: PrivateBucket[] = [
+  'scenes',
+  'image_library',
+  'user_backgrounds_private',
+  'sidebar_backgrounds_private',
+  'story_covers_private',
+  'character_avatars_private',
+];
 
 const DEFAULT_TTL_SECONDS = 60 * 60; // 1 hour
 const REFRESH_BEFORE_MS = 5 * 60 * 1000; // refresh 5 min before expiry
@@ -105,6 +120,44 @@ export const STORAGE_SENTINEL_PREFIX = 'storage://';
 
 export function isStorageSentinel(value: string | null | undefined): boolean {
   return typeof value === 'string' && value.startsWith(STORAGE_SENTINEL_PREFIX);
+}
+
+/**
+ * Parse a `storage://<bucket>/<path>` sentinel. Returns null when the value
+ * isn't a sentinel or the bucket isn't a known private bucket.
+ */
+export function parseStorageSentinel(
+  value: string | null | undefined,
+): { bucket: PrivateBucket; path: string } | null {
+  if (!isStorageSentinel(value)) return null;
+  const rest = (value as string).slice(STORAGE_SENTINEL_PREFIX.length);
+  const slash = rest.indexOf('/');
+  if (slash <= 0) return null;
+  const bucket = rest.slice(0, slash);
+  const path = rest.slice(slash + 1);
+  if (!path) return null;
+  if (!(KNOWN_PRIVATE_BUCKETS as string[]).includes(bucket)) return null;
+  return { bucket: bucket as PrivateBucket, path };
+}
+
+/**
+ * If `value` is a `storage://<bucket>/<path>` sentinel, resolve a signed URL
+ * and return it. Otherwise return the value unchanged (covers legacy public
+ * URLs and empty strings).
+ */
+export async function resolveStorageMaybeSentinel(
+  value: string | null | undefined,
+): Promise<string> {
+  if (!value) return '';
+  const parsed = parseStorageSentinel(value);
+  if (!parsed) return value;
+  const signed = await getSignedMediaUrl(parsed.bucket, parsed.path);
+  return signed || '';
+}
+
+/** Build a storage:// sentinel string. */
+export function buildStorageSentinel(bucket: PrivateBucket, path: string): string {
+  return `${STORAGE_SENTINEL_PREFIX}${bucket}/${path}`;
 }
 
 /** Clear the in-memory cache (test/debug only). */

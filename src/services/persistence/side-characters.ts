@@ -9,6 +9,12 @@ import {
   dbPreferredClothingToApp,
   supabase,
 } from './shared';
+import {
+  buildStorageSentinel,
+  getSignedMediaUrls,
+  isStorageSentinel,
+  parseStorageSentinel,
+} from './signed-media';
 
 function dbToSideCharacter(row: any): SideCharacter {
   return {
@@ -30,6 +36,7 @@ function dbToSideCharacter(row: any): SideCharacter {
     personality: row.personality || defaultSideCharacterPersonality,
     sections: Array.isArray(row.custom_sections) ? row.custom_sections : [],
     avatarDataUrl: row.avatar_url || '',
+    avatarPath: row.avatar_path || null,
     avatarPosition: row.avatar_position || { x: 50, y: 50 },
     firstMentionedIn: row.first_mentioned_in || '',
     extractedTraits: row.extracted_traits || [],
@@ -58,7 +65,7 @@ export async function fetchSideCharacters(conversationId: string): Promise<SideC
     .order('created_at', { ascending: true });
 
   if (error) throw error;
-  return (data || []).map(dbToSideCharacter);
+  return hydrateSideCharacterAvatars((data || []).map(dbToSideCharacter));
 }
 
 export async function saveSideCharacter(
@@ -66,6 +73,17 @@ export async function saveSideCharacter(
   conversationId: string,
   userId: string,
 ): Promise<void> {
+  let avatarUrl = sideChar.avatarDataUrl;
+  let avatarPath = sideChar.avatarPath || null;
+  if (avatarPath) {
+    avatarUrl = buildStorageSentinel('character_avatars_private', avatarPath);
+  } else {
+    const parsed = parseStorageSentinel(sideChar.avatarDataUrl);
+    if (parsed) {
+      avatarPath = parsed.path;
+      avatarUrl = buildStorageSentinel(parsed.bucket, parsed.path);
+    }
+  }
   const { error } = await supabase
     .from('side_characters')
     .upsert({
@@ -86,7 +104,8 @@ export async function saveSideCharacter(
       background: sideChar.background,
       personality: sideChar.personality,
       custom_sections: sideChar.sections || [],
-      avatar_url: sideChar.avatarDataUrl,
+      avatar_url: avatarUrl,
+      avatar_path: avatarPath,
       avatar_position: sideChar.avatarPosition,
       first_mentioned_in: sideChar.firstMentionedIn,
       extracted_traits: sideChar.extractedTraits,
@@ -120,7 +139,21 @@ export async function updateSideCharacter(
   if (patch.background !== undefined) updateData.background = patch.background;
   if (patch.personality !== undefined) updateData.personality = patch.personality;
   if (patch.sections !== undefined) updateData.custom_sections = patch.sections;
-  if (patch.avatarDataUrl !== undefined) updateData.avatar_url = patch.avatarDataUrl;
+  if (patch.avatarDataUrl !== undefined) {
+    const parsed = parseStorageSentinel(patch.avatarDataUrl);
+    if (parsed) {
+      updateData.avatar_url = buildStorageSentinel(parsed.bucket, parsed.path);
+      updateData.avatar_path = parsed.path;
+    } else {
+      updateData.avatar_url = patch.avatarDataUrl;
+    }
+  }
+  if (patch.avatarPath !== undefined) {
+    updateData.avatar_path = patch.avatarPath;
+    if (patch.avatarPath) {
+      updateData.avatar_url = buildStorageSentinel('character_avatars_private', patch.avatarPath);
+    }
+  }
   if (patch.avatarPosition !== undefined) updateData.avatar_position = patch.avatarPosition;
   if (patch.extractedTraits !== undefined) updateData.extracted_traits = patch.extractedTraits;
   if (patch.controlledBy !== undefined) updateData.controlled_by = patch.controlledBy;
@@ -133,6 +166,34 @@ export async function updateSideCharacter(
     .eq('id', id);
 
   if (error) throw error;
+}
+
+/**
+ * Stage B avatar hydration for side characters. Same shape as
+ * hydrateCharacterAvatars in characters.ts but kept local to avoid a circular
+ * import between persistence modules.
+ */
+export async function hydrateSideCharacterAvatars<
+  T extends { avatarDataUrl: string; avatarPath?: string | null },
+>(rows: T[]): Promise<T[]> {
+  const tasks: Array<{ row: T; path: string }> = [];
+  for (const r of rows) {
+    if (r.avatarPath) {
+      tasks.push({ row: r, path: r.avatarPath });
+    } else if (isStorageSentinel(r.avatarDataUrl)) {
+      const parsed = parseStorageSentinel(r.avatarDataUrl);
+      if (parsed && parsed.bucket === 'character_avatars_private') {
+        tasks.push({ row: r, path: parsed.path });
+      }
+    }
+  }
+  if (!tasks.length) return rows;
+  const map = await getSignedMediaUrls('character_avatars_private', tasks.map((t) => t.path));
+  for (const t of tasks) {
+    const signed = map[t.path];
+    if (signed) t.row.avatarDataUrl = signed;
+  }
+  return rows;
 }
 
 export async function deleteSideCharacter(id: string): Promise<void> {

@@ -2105,6 +2105,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
                 return {
                   ...sc,
                   avatarDataUrl: avatarResponseBody.imageUrl,
+                  avatarPath: avatarResponseBody.imagePath ?? null,
                   isAvatarGenerating: false,
                   updatedAt: now()
                 };
@@ -2115,7 +2116,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
             // Persist avatar update to database
             try {
-              await supabaseData.updateSideCharacter(characterId, { avatarDataUrl: avatarResponseBody.imageUrl });
+              await supabaseData.updateSideCharacter(characterId, {
+                avatarDataUrl: avatarResponseBody.imageUrl,
+                avatarPath: avatarResponseBody.imagePath ?? null,
+              });
             } catch (err) {
               console.error(`Failed to update side character avatar in database:`, err);
             }
@@ -5391,6 +5395,7 @@ const updatedChar: SideCharacter = {
         personality: draft.personality ? { ...char.personality, ...draft.personality } : char.personality,
         sections: draft.sections ?? char.sections,
         avatarDataUrl: draft.avatarDataUrl || char.avatarDataUrl,
+        avatarPath: draft.avatarPath ?? char.avatarPath ?? null,
         avatarPosition: draft.avatarPosition || char.avatarPosition,
         updatedAt: now(),
       };

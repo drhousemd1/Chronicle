@@ -25,6 +25,7 @@ interface UseIndexScenarioLifecycleArgs {
   setActiveId: Dispatch<SetStateAction<string | null>>;
   setActiveData: Dispatch<SetStateAction<ScenarioData | null>>;
   setActiveCoverImage: Dispatch<SetStateAction<string>>;
+  setActiveCoverImagePath: Dispatch<SetStateAction<string | null>>;
   setActiveCoverPosition: Dispatch<SetStateAction<{ x: number; y: number }>>;
   setActiveContentThemes: Dispatch<SetStateAction<ContentThemes>>;
   setSelectedCharacterId: Dispatch<SetStateAction<string | null>>;
@@ -51,6 +52,7 @@ export function useIndexScenarioLifecycle({
   setActiveId,
   setActiveData,
   setActiveCoverImage,
+  setActiveCoverImagePath,
   setActiveCoverPosition,
   setActiveContentThemes,
   setSelectedCharacterId,
@@ -84,8 +86,9 @@ export function useIndexScenarioLifecycle({
           return;
         }
 
-        const { data, coverImage, coverImagePosition, conversationCount } = result;
+        const { data, coverImage, coverImagePath, coverImagePosition, conversationCount } = result;
         setActiveCoverImage(coverImage);
+        setActiveCoverImagePath(coverImagePath ?? null);
         setActiveCoverPosition(coverImagePosition);
 
         try {
@@ -181,7 +184,7 @@ export function useIndexScenarioLifecycle({
           return;
         }
 
-        const { data, coverImage, coverImagePosition } = result;
+        const { data, coverImage, coverImagePath, coverImagePosition } = result;
         const ownerId = await supabaseData.getScenarioOwner(id);
         const isOwnScenario = ownerId === userId;
 
@@ -275,6 +278,7 @@ export function useIndexScenarioLifecycle({
         setActiveId(id);
         setActiveData(finalData);
         setActiveCoverImage(finalCoverImage);
+        setActiveCoverImagePath(coverImagePath ?? null);
         setActiveCoverPosition(finalCoverPosition);
 
         if (finalContentThemes !== defaultContentThemes) {
@@ -300,6 +304,7 @@ export function useIndexScenarioLifecycle({
       openRemixConfirm,
       setActiveContentThemes,
       setActiveCoverImage,
+      setActiveCoverImagePath,
       setActiveCoverPosition,
       setActiveData,
       setActiveId,
@@ -320,7 +325,7 @@ export function useIndexScenarioLifecycle({
           return;
         }
 
-        const { data, coverImage, coverImagePosition } = result;
+        const { data, coverImage, coverImagePath, coverImagePosition } = result;
         const newScenarioId = uuid();
 
         const clonedData = await supabaseData.cloneScenarioForRemix(
@@ -343,6 +348,7 @@ export function useIndexScenarioLifecycle({
         setActiveId(newScenarioId);
         setActiveData(clonedData);
         setActiveCoverImage(coverImage);
+        setActiveCoverImagePath(coverImagePath ?? null);
         setActiveCoverPosition(coverImagePosition);
         setActiveContentThemes(defaultContentThemes);
         setTab("world");
@@ -356,6 +362,7 @@ export function useIndexScenarioLifecycle({
       savedScenarios,
       setActiveContentThemes,
       setActiveCoverImage,
+      setActiveCoverImagePath,
       setActiveCoverPosition,
       setActiveData,
       setActiveId,
@@ -383,6 +390,7 @@ export function useIndexScenarioLifecycle({
     setActiveId(id);
     setActiveData(data);
     setActiveCoverImage("");
+    setActiveCoverImagePath(null);
     setActiveCoverPosition({ x: 50, y: 50 });
     setActiveContentThemes(defaultContentThemes);
     setTab("world");
@@ -391,6 +399,7 @@ export function useIndexScenarioLifecycle({
   }, [
     setActiveContentThemes,
     setActiveCoverImage,
+    setActiveCoverImagePath,
     setActiveCoverPosition,
     setActiveData,
     setActiveId,
@@ -489,7 +498,7 @@ export function useIndexScenarioLifecycle({
           return;
         }
 
-        const { data, coverImage, coverImagePosition } = scenarioResult;
+        const { data, coverImage, coverImagePath, coverImagePosition } = scenarioResult;
         const { conversation: thread, hasMore } = threadResult;
 
         data.conversations = [thread];
@@ -508,6 +517,7 @@ export function useIndexScenarioLifecycle({
 
         setActiveId(scenarioId);
         setActiveCoverImage(coverImage);
+        setActiveCoverImagePath(coverImagePath ?? null);
         setActiveCoverPosition(coverImagePosition);
         setActiveData(data);
         setPlayingConversationId(conversationId);
@@ -533,6 +543,7 @@ export function useIndexScenarioLifecycle({
     [
       resumeTimerRef,
       setActiveCoverImage,
+      setActiveCoverImagePath,
       setActiveCoverPosition,
       setActiveData,
       setActiveId,

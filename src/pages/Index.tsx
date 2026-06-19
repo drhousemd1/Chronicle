@@ -121,6 +121,7 @@ const IndexContent = () => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeData, setActiveData] = useState<ScenarioData | null>(null);
   const [activeCoverImage, setActiveCoverImage] = useState<string>("");
+  const [activeCoverImagePath, setActiveCoverImagePath] = useState<string | null>(null);
   const [activeCoverPosition, setActiveCoverPosition] = useState<{ x: number; y: number }>({ x: 50, y: 50 });
   const [activeContentThemes, setActiveContentThemes] = useState<ContentThemes>(defaultContentThemes);
   const [playingConversationId, setPlayingConversationId] = useState<string | null>(null);
@@ -408,12 +409,14 @@ const IndexContent = () => {
     activeId,
     activeData,
     activeCoverImage,
+    activeCoverImagePath,
     activeCoverPosition,
     activeContentThemes,
     userId: user?.id,
     setActiveId,
     setActiveData,
     setActiveCoverImage,
+    setActiveCoverImagePath,
     setActiveCoverPosition,
     setActiveContentThemes,
     setSelectedCharacterId,
@@ -453,6 +456,7 @@ const IndexContent = () => {
     setActiveId,
     setActiveData,
     setActiveCoverImage,
+    setActiveCoverImagePath,
     setActiveCoverPosition,
     setActiveContentThemes,
     setSelectedCharacterId,
@@ -1013,7 +1017,10 @@ const IndexContent = () => {
                   onUpdateWorld={(patch) => handleUpdateActive({ world: { ...activeData.world, ...patch } })}
                   onUpdateOpening={(patch) => handleUpdateActive({ story: { openingDialog: { ...activeData.story.openingDialog, ...patch } } })}
                   onUpdateScenes={(scenes) => handleUpdateActive({ scenes })}
-                  onUpdateCoverImage={setActiveCoverImage}
+                  onUpdateCoverImage={(url, path) => {
+                    setActiveCoverImage(url);
+                    setActiveCoverImagePath(path ?? null);
+                  }}
                   onUpdateCoverPosition={setActiveCoverPosition}
                   onUpdateArtStyle={(styleId) => handleUpdateActive({ selectedArtStyle: styleId })}
                   contentThemes={activeContentThemes}

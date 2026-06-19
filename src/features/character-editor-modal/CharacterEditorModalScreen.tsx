@@ -100,6 +100,7 @@ export interface CharacterEditDraft {
   fears?: CharacterFears;
   // Avatar fields for session-scoped updates
   avatarDataUrl?: string;
+  avatarPath?: string | null;
   avatarPosition?: { x: number; y: number };
   // Side character specific
   background?: {
@@ -897,8 +898,13 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
       if (!user) throw new Error('Not authenticated');
       const resizedBlob = await resizeImage(file);
       const filename = `session-avatar-${Date.now()}.jpg`;
-      const publicUrl = await supabaseData.uploadAvatar(user.id, resizedBlob, filename);
-      setDraft(prev => ({ ...prev, avatarDataUrl: publicUrl, avatarPosition: { x: 50, y: 50 } }));
+      const { path, signedUrl, sentinel } = await supabaseData.uploadAvatar(user.id, resizedBlob, filename);
+      setDraft(prev => ({
+        ...prev,
+        avatarDataUrl: signedUrl || sentinel,
+        avatarPath: path,
+        avatarPosition: { x: 50, y: 50 },
+      }));
       setIsRepositioningAvatar(true);
     } catch (err) {
       console.error('Avatar upload failed:', err);
@@ -958,7 +964,12 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
             characterName: draft.name || character.name,
           },
         });
-        setDraft(prev => ({ ...prev, avatarDataUrl: data.imageUrl, avatarPosition: { x: 50, y: 50 } }));
+        setDraft(prev => ({
+          ...prev,
+          avatarDataUrl: data.imageUrl,
+          avatarPath: data.imagePath ?? null,
+          avatarPosition: { x: 50, y: 50 },
+        }));
         setIsRepositioningAvatar(true);
       }
     } catch (err) {
@@ -1280,8 +1291,22 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
           
           <AvatarActionButtons
             onUploadFromDevice={() => fileInputRef.current?.click()}
-            onSelectFromLibrary={(imageUrl) => {
-              setDraft(prev => ({ ...prev, avatarDataUrl: imageUrl, avatarPosition: { x: 50, y: 50 } }));
+            onSelectFromLibrary={async (imageUrlOrSentinel) => {
+              let path: string | null = null;
+              let display = imageUrlOrSentinel;
+              if (imageUrlOrSentinel.startsWith('storage://character_avatars_private/')) {
+                path = imageUrlOrSentinel.replace(
+                  /^storage:\/\/character_avatars_private\//, '',
+                );
+                const { getSignedMediaUrl } = await import('@/services/persistence/signed-media');
+                display = (await getSignedMediaUrl('character_avatars_private', path)) || imageUrlOrSentinel;
+              }
+              setDraft(prev => ({
+                ...prev,
+                avatarDataUrl: display,
+                avatarPath: path,
+                avatarPosition: { x: 50, y: 50 },
+              }));
               setIsRepositioningAvatar(true);
             }}
             onGenerateClick={handleRegenerateAvatar}

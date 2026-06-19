@@ -25,7 +25,15 @@ export type LibraryPickerSelection = {
   contentType: string;
 };
 
-export type DestinationBucket = 'covers' | 'avatars' | 'backgrounds' | 'scenes';
+export type DestinationBucket =
+  | 'covers'
+  | 'avatars'
+  | 'backgrounds'
+  | 'scenes'
+  | 'user_backgrounds_private'
+  | 'sidebar_backgrounds_private'
+  | 'story_covers_private'
+  | 'character_avatars_private';
 
 export type CopiedLibraryImage = {
   destBucket: DestinationBucket;
@@ -35,7 +43,13 @@ export type CopiedLibraryImage = {
   contentType: string;
 };
 
-const PRIVATE_DEST_BUCKETS: DestinationBucket[] = ['scenes'];
+const PRIVATE_DEST_BUCKETS: DestinationBucket[] = [
+  'scenes',
+  'user_backgrounds_private',
+  'sidebar_backgrounds_private',
+  'story_covers_private',
+  'character_avatars_private',
+];
 
 function isPrivateDest(bucket: DestinationBucket): boolean {
   return PRIVATE_DEST_BUCKETS.includes(bucket);
@@ -86,7 +100,7 @@ export async function copyLibraryImageTo(
   }
 
   if (isPrivateDest(destBucket)) {
-    const signed = await getSignedMediaUrl(destBucket as 'scenes', destPath);
+    const signed = await getSignedMediaUrl(destBucket as any, destPath);
     return {
       destBucket,
       destPath,

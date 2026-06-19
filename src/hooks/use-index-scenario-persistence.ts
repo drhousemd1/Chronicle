@@ -32,12 +32,14 @@ interface UseIndexScenarioPersistenceArgs {
   activeId: string | null;
   activeData: ScenarioData | null;
   activeCoverImage: string;
+  activeCoverImagePath: string | null;
   activeCoverPosition: { x: number; y: number };
   activeContentThemes: ContentThemes;
   userId?: string;
   setActiveId: Dispatch<SetStateAction<string | null>>;
   setActiveData: Dispatch<SetStateAction<ScenarioData | null>>;
   setActiveCoverImage: Dispatch<SetStateAction<string>>;
+  setActiveCoverImagePath: Dispatch<SetStateAction<string | null>>;
   setActiveCoverPosition: Dispatch<SetStateAction<{ x: number; y: number }>>;
   setActiveContentThemes: Dispatch<SetStateAction<ContentThemes>>;
   setSelectedCharacterId: Dispatch<SetStateAction<string | null>>;
@@ -155,12 +157,14 @@ export function useIndexScenarioPersistence({
   activeId,
   activeData,
   activeCoverImage,
+  activeCoverImagePath,
   activeCoverPosition,
   activeContentThemes,
   userId,
   setActiveId,
   setActiveData,
   setActiveCoverImage,
+  setActiveCoverImagePath,
   setActiveCoverPosition,
   setActiveContentThemes,
   setSelectedCharacterId,
@@ -234,6 +238,7 @@ export function useIndexScenarioPersistence({
           nextDataToSave.world.core.briefDescription ||
           truncateLine(nextDataToSave.world.core.storyPremise || "Created via Builder", 120),
         coverImage: activeCoverImage,
+        coverImagePath: activeCoverImagePath,
         coverImagePosition: activeCoverPosition,
         tags: ["Custom"],
       };

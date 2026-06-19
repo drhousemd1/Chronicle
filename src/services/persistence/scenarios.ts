@@ -19,7 +19,15 @@ import {
   ensureStorageUrl,
   supabase,
 } from './shared';
-import { getSignedMediaUrls, isStorageSentinel } from './signed-media';
+import {
+  buildStorageSentinel,
+  getSignedMediaUrl,
+  getSignedMediaUrls,
+  isStorageSentinel,
+  parseStorageSentinel,
+  resolveStorageMaybeSentinel,
+} from './signed-media';
+import { hydrateCharacterAvatars } from './characters';
 
 function dbToScenarioMetadata(row: any): ScenarioMetadata {
   return {
@@ -27,6 +35,7 @@ function dbToScenarioMetadata(row: any): ScenarioMetadata {
     title: row.title,
     description: row.description || '',
     coverImage: row.cover_image_url || '',
+    coverImagePath: row.cover_image_path || null,
     coverImagePosition: row.cover_image_position || { x: 50, y: 50 },
     tags: row.tags || [],
     createdAt: new Date(row.created_at).getTime(),
@@ -87,6 +96,26 @@ async function hydrateScenePreviewUrls(scenes: Scene[]): Promise<Scene[]> {
     console.warn('[scenarios] failed to hydrate scene preview URLs', e);
   }
   return scenes;
+}
+
+/**
+ * Stage B cover hydration: replace `cover_image_url` with a signed URL when
+ * the row has a `cover_image_path` or when `cover_image_url` is a
+ * `storage://...` sentinel. Legacy public-URL rows pass through unchanged.
+ */
+async function hydrateCoverImageOnMetadata(meta: ScenarioMetadata): Promise<ScenarioMetadata> {
+  if (meta.coverImagePath) {
+    const signed = await getSignedMediaUrl('story_covers_private', meta.coverImagePath);
+    if (signed) meta.coverImage = signed;
+  } else if (isStorageSentinel(meta.coverImage)) {
+    meta.coverImage = await resolveStorageMaybeSentinel(meta.coverImage);
+  }
+  return meta;
+}
+
+async function hydrateCoverImagesOnMetadataList(list: ScenarioMetadata[]): Promise<ScenarioMetadata[]> {
+  await Promise.all(list.map((m) => hydrateCoverImageOnMetadata(m)));
+  return list;
 }
 
 async function backfillScenarioWorldCoreById(scenarioId: string, canonicalWorldCore: WorldCore): Promise<void> {
@@ -152,17 +181,18 @@ export async function backfillCanonicalWorldCoreForUser(userId: string): Promise
 export async function fetchMyScenarios(userId: string): Promise<ScenarioMetadata[]> {
   const { data, error } = await supabase
     .from('stories')
-    .select('id, title, description, cover_image_url, cover_image_position, tags, created_at, updated_at, is_draft')
+    .select('id, title, description, cover_image_url, cover_image_path, cover_image_position, tags, created_at, updated_at, is_draft')
     .eq('user_id', userId)
     .order('updated_at', { ascending: false });
 
   if (error) throw error;
-  return (data || []).map(dbToScenarioMetadata);
+  return hydrateCoverImagesOnMetadataList((data || []).map(dbToScenarioMetadata));
 }
 
 export async function fetchScenarioById(id: string): Promise<{
   data: ScenarioData;
   coverImage: string;
+  coverImagePath?: string | null;
   coverImagePosition: { x: number; y: number };
 } | null> {
   const [scenarioResult, charactersResult, codexResult, scenesResult, conversationsResult] = await Promise.all([
@@ -230,10 +260,24 @@ export async function fetchScenarioById(id: string): Promise<{
     void backfillScenarioUiSettingsById(scenario.id, uiSettings);
   }
 
+  const characters = await hydrateCharacterAvatars(
+    (charactersResult.data || []).map(dbToCharacter),
+  );
+
+  const rawCover = scenario.cover_image_url || '';
+  const coverPath: string | null = scenario.cover_image_path || null;
+  let coverImage = rawCover;
+  if (coverPath) {
+    const signed = await getSignedMediaUrl('story_covers_private', coverPath);
+    if (signed) coverImage = signed;
+  } else if (isStorageSentinel(rawCover)) {
+    coverImage = await resolveStorageMaybeSentinel(rawCover);
+  }
+
   return {
     data: {
       version: scenario.version || 3,
-      characters: (charactersResult.data || []).map(dbToCharacter),
+      characters,
       sideCharacters: [],
       world: {
         core: worldCore,
@@ -251,7 +295,8 @@ export async function fetchScenarioById(id: string): Promise<{
           : LLM_MODELS[0].id,
       selectedArtStyle: scenario.selected_art_style || 'cinematic-2-5d',
     },
-    coverImage: scenario.cover_image_url || '',
+    coverImage,
+    coverImagePath: coverPath,
     coverImagePosition: (scenario.cover_image_position as { x: number; y: number }) || { x: 50, y: 50 },
   };
 }
@@ -259,6 +304,7 @@ export async function fetchScenarioById(id: string): Promise<{
 export async function fetchScenarioForPlay(id: string): Promise<{
   data: ScenarioData;
   coverImage: string;
+  coverImagePath?: string | null;
   coverImagePosition: { x: number; y: number };
   conversationCount: number;
 } | null> {
@@ -296,10 +342,24 @@ export async function fetchScenarioForPlay(id: string): Promise<{
     void backfillScenarioUiSettingsById(scenario.id, uiSettings);
   }
 
+  const characters = await hydrateCharacterAvatars(
+    (charactersResult.data || []).map(dbToCharacter),
+  );
+
+  const rawCover = scenario.cover_image_url || '';
+  const coverPath: string | null = scenario.cover_image_path || null;
+  let coverImage = rawCover;
+  if (coverPath) {
+    const signed = await getSignedMediaUrl('story_covers_private', coverPath);
+    if (signed) coverImage = signed;
+  } else if (isStorageSentinel(rawCover)) {
+    coverImage = await resolveStorageMaybeSentinel(rawCover);
+  }
+
   return {
     data: {
       version: scenario.version || 3,
-      characters: (charactersResult.data || []).map(dbToCharacter),
+      characters,
       sideCharacters: [],
       world: {
         core: worldCore,
@@ -317,7 +377,8 @@ export async function fetchScenarioForPlay(id: string): Promise<{
           : LLM_MODELS[0].id,
       selectedArtStyle: scenario.selected_art_style || 'cinematic-2-5d',
     },
-    coverImage: scenario.cover_image_url || '',
+    coverImage,
+    coverImagePath: coverPath,
     coverImagePosition: (scenario.cover_image_position as { x: number; y: number }) || { x: 50, y: 50 },
     conversationCount: convCountResult.count || 0,
   };
@@ -326,11 +387,27 @@ export async function fetchScenarioForPlay(id: string): Promise<{
 export async function saveScenario(
   id: string,
   data: ScenarioData,
-  metadata: { title: string; description: string; coverImage: string; coverImagePosition?: { x: number; y: number }; tags: string[] },
+  metadata: { title: string; description: string; coverImage: string; coverImagePath?: string | null; coverImagePosition?: { x: number; y: number }; tags: string[] },
   userId: string,
   options?: { isDraft?: boolean },
 ): Promise<void> {
-  const safeCoverImage = await ensureStorageUrl(metadata.coverImage, 'covers', userId);
+  // Resolve cover persistence: prefer explicit coverImagePath; otherwise detect a
+  // storage:// sentinel; otherwise legacy public-URL (or base64 → public upload).
+  let safeCoverImageUrl = metadata.coverImage || '';
+  let safeCoverImagePath: string | null = metadata.coverImagePath || null;
+  if (safeCoverImagePath) {
+    safeCoverImageUrl = buildStorageSentinel('story_covers_private', safeCoverImagePath);
+  } else {
+    const parsed = parseStorageSentinel(safeCoverImageUrl);
+    if (parsed) {
+      safeCoverImagePath = parsed.path;
+      safeCoverImageUrl = buildStorageSentinel(parsed.bucket, parsed.path);
+    } else {
+      // Legacy: may be base64 or a plain public URL. ensureStorageUrl uploads
+      // base64 to the public `covers` bucket and returns the public URL.
+      safeCoverImageUrl = await ensureStorageUrl(safeCoverImageUrl, 'covers', userId);
+    }
+  }
 
   for (const char of data.characters) {
     if (char.avatarDataUrl?.startsWith('data:')) {
@@ -341,7 +418,8 @@ export async function saveScenario(
   const storyPayload = {
     title: metadata.title,
     description: metadata.description,
-    cover_image_url: safeCoverImage,
+    cover_image_url: safeCoverImageUrl,
+    cover_image_path: safeCoverImagePath,
     cover_image_position: metadata.coverImagePosition || { x: 50, y: 50 },
     tags: metadata.tags,
     world_core: migrateWorldCoreToCanonical(data.world.core as any),
@@ -480,7 +558,7 @@ export async function fetchScenarioIntegrity(id: string): Promise<{ characters: 
 export async function saveScenarioWithVerification(
   id: string,
   data: ScenarioData,
-  metadata: { title: string; description: string; coverImage: string; coverImagePosition?: { x: number; y: number }; tags: string[] },
+  metadata: { title: string; description: string; coverImage: string; coverImagePath?: string | null; coverImagePosition?: { x: number; y: number }; tags: string[] },
   userId: string,
   options?: { isDraft?: boolean },
 ): Promise<boolean> {
@@ -611,11 +689,11 @@ export async function fetchMyScenariosPaginated(
 ): Promise<ScenarioMetadata[]> {
   const { data, error } = await supabase
     .from('stories')
-    .select('id, title, description, cover_image_url, cover_image_position, tags, created_at, updated_at, is_draft')
+    .select('id, title, description, cover_image_url, cover_image_path, cover_image_position, tags, created_at, updated_at, is_draft')
     .eq('user_id', userId)
     .order('updated_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
   if (error) throw error;
-  return (data || []).map(dbToScenarioMetadata);
+  return hydrateCoverImagesOnMetadataList((data || []).map(dbToScenarioMetadata));
 }
