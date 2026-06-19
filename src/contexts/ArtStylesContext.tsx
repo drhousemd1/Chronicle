@@ -21,10 +21,9 @@ export function ArtStylesProvider({ children }: { children: React.ReactNode }) {
 
   const fetchStyles = useCallback(async () => {
     try {
-      const { data, error } = await (supabase as any)
-        .from('art_styles')
-        .select('*')
-        .order('sort_order', { ascending: true });
+      // BF-02: direct SELECT on public.art_styles is admin-only.
+      // Non-admin clients receive sanitized fields via the public RPC.
+      const { data, error } = await (supabase as any).rpc('get_public_art_styles');
 
       if (error) {
         console.error('Failed to fetch art styles:', error);
@@ -32,14 +31,22 @@ export function ArtStylesProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (data && data.length > 0) {
-        const mapped: AvatarStyle[] = data.map((row: any) => ({
-          id: row.id,
-          displayName: row.display_name,
-          thumbnailUrl: row.thumbnail_url,
-          backendPrompt: row.backend_prompt,
-          backendPromptMasculine: row.backend_prompt_masculine || undefined,
-          backendPromptAndrogynous: row.backend_prompt_androgynous || undefined,
-        }));
+        // Prompts are never returned to the client. Image-gen edge functions
+        // resolve prompts server-side from styleId using the service role.
+        // Keep local AVATAR_STYLES prompts as a best-effort client fallback
+        // for any pre-existing flows that still read backendPrompt.
+        const fallbackById = new Map(AVATAR_STYLES.map((s) => [s.id, s]));
+        const mapped: AvatarStyle[] = data.map((row: any) => {
+          const fb = fallbackById.get(row.id);
+          return {
+            id: row.id,
+            displayName: row.display_name,
+            thumbnailUrl: row.thumbnail_url,
+            backendPrompt: fb?.backendPrompt ?? '',
+            backendPromptMasculine: fb?.backendPromptMasculine,
+            backendPromptAndrogynous: fb?.backendPromptAndrogynous,
+          };
+        });
         setStyles(mapped);
       }
     } catch (err) {
