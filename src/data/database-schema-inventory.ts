@@ -3328,10 +3328,10 @@ export const databaseSchemaInventory = {
           "with_check": "auth.uid() = user_id"
         },
         {
-          "name": "Users can view own stories \u2014 missing published view policy",
+          "name": "Users can view own or visible published stories",
           "command": "SELECT",
           "roles": "authenticated",
-          "using": "auth.uid() = user_id",
+          "using": "(auth.uid() = user_id) OR has_role(auth.uid(),'admin') OR EXISTS(published_scenarios JOIN profiles ON profiles.id = publisher_id WHERE ps.scenario_id = stories.id AND is_published AND NOT is_hidden AND COALESCE(profiles.hide_published_works,false) = false)",
           "with_check": null
         },
         {
