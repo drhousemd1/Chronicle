@@ -62,7 +62,7 @@ export const CoverImageGenerationModal: React.FC<CoverImageGenerationModalProps>
         parentRowId: "summary.single.cover_image",
         detailPresence: buildRequiredPresence([
           ["single.cover_image.prompt", prompt.trim()],
-          ["single.cover_image.style_prompt", selectedStyle.id],
+          ["single.cover_image.style_id", selectedStyle.id],
         ]),
         diagnostics: {
           hasNegativePrompt: Boolean(negativePrompt.trim()),

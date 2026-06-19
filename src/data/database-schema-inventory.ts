@@ -605,10 +605,17 @@ export const databaseSchemaInventory = {
           "with_check": null
         },
         {
-          "name": "Anyone authenticated can read settings",
+          "name": "Admins can read all settings",
           "command": "SELECT",
           "roles": "authenticated",
-          "using": "true",
+          "using": "has_role(auth.uid(), 'admin')",
+          "with_check": null
+        },
+        {
+          "name": "Auth can read public settings keys",
+          "command": "SELECT",
+          "roles": "authenticated",
+          "using": "setting_key IN ('shared_keys','nav_button_images','subscription_tiers_v1')",
           "with_check": null
         }
       ]
@@ -671,10 +678,10 @@ export const databaseSchemaInventory = {
       ],
       "rls_policies": [
         {
-          "name": "Anyone can read art styles",
+          "name": "Admins can read art styles",
           "command": "SELECT",
-          "roles": "public",
-          "using": "true",
+          "roles": "authenticated",
+          "using": "has_role(auth.uid(), 'admin')",
           "with_check": null
         },
         {
@@ -1132,10 +1139,10 @@ export const databaseSchemaInventory = {
           "with_check": "(auth.uid() = user_id) AND (scenario_id IS NULL OR EXISTS(SELECT 1 FROM stories s WHERE s.id = characters.scenario_id AND s.user_id = auth.uid()))"
         },
         {
-          "name": "Users can view own or published characters",
+          "name": "Users can view own or visible published characters",
           "command": "SELECT",
           "roles": "authenticated",
-          "using": "(auth.uid() = user_id) OR EXISTS(SELECT 1 FROM published_scenarios ps WHERE ps.scenario_id = characters.scenario_id AND ps.is_published = true AND ps.is_hidden = false)",
+          "using": "(auth.uid() = user_id) OR has_role(auth.uid(), 'admin') OR EXISTS(SELECT 1 FROM published_scenarios ps JOIN profiles p ON p.id = ps.publisher_id WHERE ps.scenario_id = characters.scenario_id AND ps.is_published = true AND ps.is_hidden = false AND COALESCE(p.hide_published_works,false) = false)",
           "with_check": null
         },
         {
@@ -1208,10 +1215,10 @@ export const databaseSchemaInventory = {
           "with_check": "EXISTS(SELECT 1 FROM stories WHERE stories.id = codex_entries.scenario_id AND stories.user_id = auth.uid())"
         },
         {
-          "name": "Users can view codex via own or published story",
+          "name": "Users can view codex via own or visible published story",
           "command": "SELECT",
           "roles": "authenticated",
-          "using": "EXISTS(own story) OR EXISTS(published)",
+          "using": "has_role(auth.uid(),'admin') OR EXISTS(own story) OR EXISTS(published_scenarios JOIN profiles ON profiles.id = publisher_id WHERE is_published AND NOT is_hidden AND COALESCE(profiles.hide_published_works,false) = false)",
           "with_check": null
         },
         {
@@ -1301,10 +1308,10 @@ export const databaseSchemaInventory = {
       ],
       "rls_policies": [
         {
-          "name": "Anyone can view published story themes",
+          "name": "Anyone can view visible published story themes",
           "command": "SELECT",
           "roles": "authenticated",
-          "using": "EXISTS(published)",
+          "using": "has_role(auth.uid(),'admin') OR EXISTS(own story) OR EXISTS(published_scenarios JOIN profiles ON profiles.id = publisher_id WHERE is_published AND NOT is_hidden AND COALESCE(profiles.hide_published_works,false) = false)",
           "with_check": null
         },
         {
@@ -2570,10 +2577,10 @@ export const databaseSchemaInventory = {
       ],
       "rls_policies": [
         {
-          "name": "Anyone can view likes",
+          "name": "Users can view own likes",
           "command": "SELECT",
           "roles": "authenticated",
-          "using": "true",
+          "using": "user_id = auth.uid() OR has_role(auth.uid(), 'admin')",
           "with_check": null
         },
         {
@@ -2897,10 +2904,10 @@ export const databaseSchemaInventory = {
           "with_check": "EXISTS(own story)"
         },
         {
-          "name": "Users can view scenes via own or published story",
+          "name": "Users can view scenes via own or visible published story",
           "command": "SELECT",
           "roles": "authenticated",
-          "using": "EXISTS(own story) OR EXISTS(published)",
+          "using": "has_role(auth.uid(),'admin') OR EXISTS(own story) OR EXISTS(published_scenarios JOIN profiles ON profiles.id = publisher_id WHERE is_published AND NOT is_hidden AND COALESCE(profiles.hide_published_works,false) = false)",
           "with_check": null
         },
         {
@@ -3321,10 +3328,10 @@ export const databaseSchemaInventory = {
           "with_check": "auth.uid() = user_id"
         },
         {
-          "name": "Users can view own stories \u2014 missing published view policy",
+          "name": "Users can view own or visible published stories",
           "command": "SELECT",
           "roles": "authenticated",
-          "using": "auth.uid() = user_id",
+          "using": "(auth.uid() = user_id) OR has_role(auth.uid(),'admin') OR EXISTS(published_scenarios JOIN profiles ON profiles.id = publisher_id WHERE ps.scenario_id = stories.id AND is_published AND NOT is_hidden AND COALESCE(profiles.hide_published_works,false) = false)",
           "with_check": null
         },
         {
@@ -3423,6 +3430,13 @@ export const databaseSchemaInventory = {
           "roles": "authenticated",
           "using": "has_role(auth.uid(), 'admin')",
           "with_check": "has_role(auth.uid(), 'admin')"
+        },
+        {
+          "name": "Users can view own strikes",
+          "command": "SELECT",
+          "roles": "authenticated",
+          "using": "auth.uid() = user_id",
+          "with_check": null
         }
       ]
     }
@@ -3460,7 +3474,7 @@ export const databaseSchemaInventory = {
         "published_scenarios"
       ],
       "security": "DEFINER",
-      "description": "Insert view + increment count (24h dedup)"
+      "description": "Insert view + increment count (24h dedup). Updated 2026-06-19 (BF-12): gates on published_scenarios.is_published AND NOT is_hidden AND publisher profile.hide_published_works = false before inserting/incrementing; raises 'Scenario not available' otherwise."
     },
     {
       "name": "record_scenario_play",
@@ -3468,7 +3482,7 @@ export const databaseSchemaInventory = {
         "scenario_plays"
       ],
       "security": "DEFINER",
-      "description": "Insert a play row, throttled to once per scenario per 5 minutes per user. play_count is then maintained by sync_play_count trigger."
+      "description": "Insert a play row, throttled to once per scenario per 5 minutes per user. play_count is then maintained by sync_play_count trigger. Updated 2026-06-19 (BF-12): gates on published_scenarios.is_published AND NOT is_hidden AND publisher profile.hide_published_works = false; raises 'Scenario not available' otherwise."
     },
     {
       "name": "sync_published_scenario_like_count",
@@ -3561,7 +3575,7 @@ export const databaseSchemaInventory = {
         "library_images"
       ],
       "security": "DEFINER",
-      "description": "RPC: folders with thumbnail + image count. Updated 2026-06-14 to also return thumbnail_path (library_images.image_path) for signed-URL minting against the private image_library bucket."
+      "description": "RPC: folders with thumbnail + image count. Updated 2026-06-14 to also return thumbnail_path (library_images.image_path) for signed-URL minting against the private image_library bucket. BF-13 note (2026-06-19): two overloads exist in the live database — the no-arg overload filtered by auth.uid() (canonical, used by the client) and a deprecated p_user_id uuid overload retained for backward compatibility. No live DB change in Batch A; this entry documents the snapshot inconsistency so future audits do not flag it as drift."
     },
     {
       "name": "save_scenario_atomic",
@@ -3573,6 +3587,30 @@ export const databaseSchemaInventory = {
       ],
       "security": "DEFINER",
       "description": "RPC: atomic upsert of story + characters + codex + scenes; ownership-hardened (June 2026) with parent pre-flight, story-update WHERE guard + GET DIAGNOSTICS, and per-row guarded ON CONFLICT DO UPDATE branches for each child table. Updated 2026-06-14: scenes upsert now writes image_path = NULLIF(scene_record->>'image_path','') and ON CONFLICT DO UPDATE keeps it in sync."
+    },
+    {
+      "name": "get_public_art_styles",
+      "touches": [
+        "art_styles"
+      ],
+      "security": "DEFINER",
+      "description": "RPC added 2026-06-19 (BF-02). Returns only the safe public columns (id, display_name, thumbnail_url, sort_order) from public.art_styles. backend_prompt fields are never returned. EXECUTE granted to anon and authenticated. Source of art-style metadata for the browser; raw art_styles SELECT is admin-only."
+    },
+    {
+      "name": "get_public_app_flags",
+      "touches": [
+        "app_settings"
+      ],
+      "security": "DEFINER",
+      "description": "RPC added 2026-06-19 (BF-03). Returns a jsonb object containing only whitelisted public setting keys (currently 'shared_keys' and 'nav_button_images'). Other app_settings rows remain admin-only. EXECUTE granted to anon and authenticated."
+    },
+    {
+      "name": "get_my_liked_scenarios",
+      "touches": [
+        "scenario_likes"
+      ],
+      "security": "DEFINER",
+      "description": "RPC added 2026-06-19 (BF-09). Returns the subset of the supplied published_scenario_ids that the calling user has liked. Lets the gallery hydrate own-like state without a permissive public SELECT on scenario_likes (now own-row + admin only)."
     },
     {
       "name": "can_read_scene_storage_object",
@@ -3622,7 +3660,8 @@ export const databaseSchemaInventory = {
     },
     {
       "name": "guide_images",
-      "public": true
+      "public": true,
+      "notes": "Public READ remains intentional. Updated 2026-06-19 (BF-14): write/update/delete on the guide_images bucket are now admin-only — legacy 'Authenticated users can upload/delete own guide images' storage policies were replaced by 'Admins can upload/update/delete guide images' (has_role(auth.uid(),'admin'))."
     },
     {
       "name": "finance_documents",
@@ -3647,6 +3686,33 @@ export const databaseSchemaInventory = {
       "added": "2026-06-14",
       "replaces": "Users can view image_library",
       "notes": "Owner-only (plus admin) SELECT on the private image_library bucket. Anonymous GETs return 400; signed-URL minting requires the owner JWT."
+    },
+    {
+      "bucket": "guide_images",
+      "policy": "Admins can upload guide images",
+      "command": "INSERT",
+      "expression": "bucket_id = 'guide_images' AND has_role(auth.uid(), 'admin')",
+      "added": "2026-06-19",
+      "replaces": "Authenticated users can upload guide images",
+      "notes": "BF-14. Public SELECT on guide_images bucket is unchanged ('Anyone can read guide images')."
+    },
+    {
+      "bucket": "guide_images",
+      "policy": "Admins can update guide images",
+      "command": "UPDATE",
+      "expression": "bucket_id = 'guide_images' AND has_role(auth.uid(), 'admin')",
+      "added": "2026-06-19",
+      "replaces": null,
+      "notes": "BF-14."
+    },
+    {
+      "bucket": "guide_images",
+      "policy": "Admins can delete guide images",
+      "command": "DELETE",
+      "expression": "bucket_id = 'guide_images' AND has_role(auth.uid(), 'admin')",
+      "added": "2026-06-19",
+      "replaces": "Authenticated users can delete own guide images",
+      "notes": "BF-14."
     }
   ],
   "edge_functions": [

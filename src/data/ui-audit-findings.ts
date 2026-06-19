@@ -68,6 +68,7 @@ const runIds = {
   profilePrivacyEnforcement20260614: "run-lovable-profile-privacy-enforcement-20260614",
   storageStageA20260614: "run-lovable-storage-privacy-stage-a-20260614",
   storagePrivacyStageB20260614: "run-lovable-storage-privacy-stage-b-20260614",
+  batchASecurity20260619: "run-lovable-batch-a-security-20260619",
 } as const;
 
 const qualityHubHousekeepingScanTimestamp = "2026-05-30T19:22:16.000-06:00";
@@ -96,6 +97,7 @@ const qualityHubGalleryCounterIntegrity20260614Timestamp = "2026-06-14T08:30:00.
 const qualityHubProfilePrivacyEnforcement20260614Timestamp = "2026-06-14T09:00:00.000Z";
 const qualityHubStorageStageA20260614Timestamp = "2026-06-14T09:30:00.000Z";
 const qualityHubStoragePrivacyStageB20260614Timestamp = "2026-06-14T11:15:00.000Z";
+const qualityHubBatchASecurity20260619Timestamp = "2026-06-19T08:00:00.000Z";
 
 function stamp(runId: string) {
   return {
@@ -6532,6 +6534,59 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
     },
   ],
   changeLog: [
+    {
+      id: "cl-20260619-001",
+      title: "Batch A security cleanup — art_styles, app_settings, child-table visibility, scenario_likes, view/play guards, guide_images storage, snapshot refresh",
+      summary:
+        "Security · Locked down BF-02 (art_styles backend prompts), BF-03 (app_settings broad read), BF-07/BF-13 (child-table visibility gated on profiles.hide_published_works), BF-09 (scenario_likes own-row-only), BF-12 (record_scenario_view/play visibility guards), and BF-14 (guide_images storage admin-only write/update/delete). Refreshed source-of-truth snapshots (supabase-schema-map, database-schema-inventory) and API Inspector docs so future audits see the new RPCs, policies, and styleId-only client contract. BF-13 is the get_folders_with_details(uuid) snapshot mismatch (no live DB change — documented).",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem:
+        "Multiple privacy/visibility holes spanned this batch: (1) public.art_styles SELECT exposed backend image-generation prompts to every authenticated user, and the browser was actively shipping those prompt strings as stylePrompt payloads; (2) public.app_settings allowed any authenticated user to read every setting row instead of the whitelisted public flags; (3) child tables (stories, characters, codex_entries, content_themes, scenes) returned rows for publishers who set profiles.hide_published_works = true; (4) scenario_likes SELECT was permissive (Anyone can view likes), leaking other users' like-graph data; (5) record_scenario_view / record_scenario_play counted plays/views against unpublished, hidden, or hide_published_works scenarios; (6) guide_images storage bucket allowed any authenticated user to upload and delete files under their own folder; (7) the repo-owned schema snapshots and API Inspector / API Usage validation docs still described the old policies and the old client contract, so future agents would re-introduce the regressions.",
+      plan:
+        "1) Lock art_styles SELECT to admins; add SECURITY DEFINER RPC get_public_art_styles returning only safe fields; strip every backend prompt string from src/constants/avatar-styles.ts and src/contexts/ArtStylesContext.tsx; refactor the three image-generation edge functions (generate-cover-image, generate-scene-image, generate-side-character-avatar) to resolve backend_prompt server-side from styleId using the service role; switch every non-admin client caller to send styleId only. 2) Tighten app_settings SELECT to admins-only plus a whitelisted public-keys policy, and add get_public_app_flags. 3) Update child-table SELECT policies to JOIN profiles and require COALESCE(hide_published_works,false)=false (admin/owner bypass). 4) Replace scenario_likes 'Anyone can view likes' with own-row + admin SELECT; add get_my_liked_scenarios for gallery hydration. 5) Add visibility guards inside record_scenario_view and record_scenario_play. 6) Replace guide_images storage policies with admin-only INSERT/UPDATE/DELETE; keep public READ. 7) Refresh supabase-schema-map.ts, database-schema-inventory.ts, api-inspector-prompt-documents.ts, and api-usage-validation-registry.ts so the snapshots and prompts describe styleId, the new RPCs, and the new policies.",
+      changes:
+        "Database (live, migration 20260619074538_c40f68e6-46ad-48e2-ab2a-2864aad5b794):\n- ALTER TABLE public.art_styles policies: dropped permissive 'Anyone can read art styles'; SELECT now 'Admins can read art styles' USING has_role(auth.uid(),'admin'); REVOKE SELECT on public.art_styles FROM anon (verified via pg_class.relacl).\n- CREATE OR REPLACE FUNCTION public.get_public_art_styles() RETURNS TABLE(id text, display_name text, thumbnail_url text, sort_order integer) STABLE SECURITY DEFINER SET search_path=public; EXECUTE granted to anon, authenticated. backend_prompt / backend_prompt_masculine / backend_prompt_androgynous never leave the database.\n- ALTER public.app_settings policies: removed 'Anyone authenticated can read settings'; SELECT split into 'Admins can read all settings' (has_role admin) and 'Auth can read public settings keys' (setting_key IN ('shared_keys','nav_button_images','subscription_tiers_v1')). subscription_tiers_v1 is documented as intentional public UI configuration. Added get_public_app_flags() jsonb RPC returning only the shared_keys + nav_button_images entries.\n- ALTER child-table SELECT policies on public.stories, public.characters, public.codex_entries, public.content_themes, public.scenes: each policy now JOIN profiles and requires (auth.uid()=user_id) OR has_role admin OR (published_scenarios is_published=true AND is_hidden=false AND COALESCE(profiles.hide_published_works,false)=false). Owner and admin bypass preserved.\n- ALTER public.scenario_likes: replaced 'Anyone can view likes' with 'Users can view own likes' USING (user_id = auth.uid()) OR has_role admin. Added get_my_liked_scenarios(uuid[]) RPC for gallery own-like hydration.\n- ALTER public.record_scenario_view and public.record_scenario_play: both now verify published_scenarios JOIN profiles visibility (is_published AND NOT is_hidden AND NOT publisher.hide_published_works) before inserting/incrementing; raise 'Scenario not available' otherwise.\n- Storage: replaced guide_images bucket policies 'Authenticated users can upload guide images' and 'Authenticated users can delete own guide images' with 'Admins can upload guide images', 'Admins can update guide images', and 'Admins can delete guide images' (all gated by has_role(auth.uid(),'admin')). Public READ via 'Anyone can read guide images' is unchanged.\n\nFrontend / edge:\n- src/constants/avatar-styles.ts: stripped every backendPrompt / backendPromptMasculine / backendPromptAndrogynous field; the bundled client constant now carries only id, displayName, thumbnailUrl, sortOrder, plus a header comment explaining the BF-02 boundary.\n- src/contexts/ArtStylesContext.tsx: loads metadata via supabase.rpc('get_public_art_styles'); backendPrompt is no longer present on the AvatarStyle shape returned to UI; falls back to the local prompt-free constant if the RPC is unreachable.\n- src/components/admin/ImageGenerationTool.tsx: admin-only tool keeps direct .from('art_styles').select('*') (admins satisfy the new admin-only SELECT policy) so admins can keep editing the backend prompt strings.\n- supabase/functions/generate-cover-image/index.ts, generate-scene-image/index.ts, generate-side-character-avatar/index.ts: now resolve the backend prompt server-side from public.art_styles by styleId using the service role; legacy stylePrompt body field still accepted as a fallback for admin/legacy paths but is no longer the normal client contract.\n- src/components/chronicle/CoverImageGenerationModal.tsx, AvatarGenerationModal.tsx, ChatInterfaceTab.tsx, and src/features/story-builder/hooks/use-story-builder-media.ts: send styleId only; no stylePrompt in normal-user payloads.\n\nSource-of-truth snapshots (this commit):\n- src/data/supabase-schema-map.ts: app_settings policies replaced with the admin-only + public-keys whitelist; art_styles SELECT changed to admin-only and anon SELECT grant removed; scenario_likes 'Anyone can view likes' replaced with own-row + admin policy; stories/characters/codex_entries/content_themes/scenes SELECT policies rewritten to JOIN profiles and gate on hide_published_works; guide_images storage policies replaced with the admin-only INSERT/UPDATE/DELETE entries; record_scenario_view / record_scenario_play function descriptions rewritten to document the new visibility guards; new RPCs get_public_art_styles, get_public_app_flags, get_my_liked_scenarios added to the functions array.\n- src/data/database-schema-inventory.ts: same scope; also added storage_policies entries for guide_images admin INSERT/UPDATE/DELETE; recorded a BF-13 note on get_folders_with_details documenting the deprecated p_user_id uuid overload (snapshot mismatch only — NO live DB change in Batch A); added user_strikes own-SELECT policy entry; stories SELECT policy line corrected (no more 'missing published view policy' phrasing).\n- src/data/api-inspector-prompt-documents.ts: generate-side-character-avatar and generate-cover-image BROWSER-TO-EDGE bodies now document styleId as the normal field (with explicit BF-02 note that browsers MUST NOT send raw backend prompt strings); the assembled cover-image prompt line now references 'server-resolved style prompt from art_styles.backend_prompt for styleId' instead of literal stylePrompt concatenation.\n- src/data/api-usage-validation-registry.ts: cover-image detail row id renamed from single.cover_image.style_prompt to single.cover_image.style_id with label 'styleId (server-resolved)'.\n- src/components/chronicle/CoverImageGenerationModal.tsx: validation snapshot now reports the new style_id detail id.\n\nValidation:\n- pg_policies SELECT confirms the new policy names and qualifiers on art_styles, app_settings, scenario_likes, stories, characters, codex_entries, content_themes, scenes, reports, user_strikes (qualifiers JOIN profiles and reference hide_published_works for the child tables; scenario_likes SELECT scoped to user_id = auth.uid() OR admin; art_styles SELECT admin-only).\n- pg_class.relacl confirms public.art_styles anon ACL no longer includes SELECT ('r' bit removed); other tables retain authenticated grants because RLS now gates per-row.\n- pg_policies for storage.objects confirms guide_images write/update/delete are admin-gated and 'Anyone can read guide images' SELECT remains.\n- get_public_art_styles, get_public_app_flags, get_my_liked_scenarios are present in pg_proc with SECURITY DEFINER and search_path = public.\n- Static grep: rg 'backendPrompt' src/constants/avatar-styles.ts → no matches. rg \"stylePrompt: selectedStyle.backendPrompt\" src/ → no matches. rg 'styleId' src/ shows the four normal-runtime callers all sending styleId.\n- supabase/integrations/supabase/types.ts already regenerated post-migration with the new RPC signatures.\n\nDeferred / not in this batch:\n- BF-04, BF-05, BF-06 (storage flips), BF-08, BF-10 (reports + strikes RLS/RPC + AccountStatusSection), BF-11 remain in Batches B/C/D per the approved v4 plan.",
+      filesAffected: [
+        "supabase/migrations/20260619074538_c40f68e6-46ad-48e2-ab2a-2864aad5b794.sql",
+        "supabase/functions/generate-cover-image/index.ts",
+        "supabase/functions/generate-scene-image/index.ts",
+        "supabase/functions/generate-side-character-avatar/index.ts",
+        "src/constants/avatar-styles.ts",
+        "src/contexts/ArtStylesContext.tsx",
+        "src/components/admin/ImageGenerationTool.tsx",
+        "src/components/chronicle/AvatarGenerationModal.tsx",
+        "src/components/chronicle/ChatInterfaceTab.tsx",
+        "src/components/chronicle/CoverImageGenerationModal.tsx",
+        "src/features/story-builder/hooks/use-story-builder-media.ts",
+        "src/integrations/supabase/types.ts",
+        "src/data/supabase-schema-map.ts",
+        "src/data/database-schema-inventory.ts",
+        "src/data/api-inspector-prompt-documents.ts",
+        "src/data/api-usage-validation-registry.ts",
+        "src/data/ui-audit-findings.ts",
+      ],
+      agent: "Lovable",
+      relatedFindingIds: [],
+      relatedRunIds: [runIds.batchASecurity20260619],
+      tags: [
+        "security",
+        "rls",
+        "supabase-storage",
+        "art-styles",
+        "app-settings",
+        "scenario-likes",
+        "hide-published-works",
+        "view-play-guards",
+        "guide-images",
+        "schema-snapshot",
+        "quality-hub",
+        "batch-a",
+      ],
+      comments: [],
+      createdAt: qualityHubBatchASecurity20260619Timestamp,
+      updatedAt: qualityHubBatchASecurity20260619Timestamp,
+    },
     {
       id: "cl-20260614-007",
       title: "Storage privacy Stage B — private scenes + image_library buckets with signed-URL helper",

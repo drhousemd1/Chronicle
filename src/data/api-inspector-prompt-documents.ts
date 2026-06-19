@@ -1636,7 +1636,7 @@ BROWSER-TO-EDGE REQUEST BODY SHAPE
   "avatarPrompt": "{{source avatar prompt from side-character profile or character UI}}",
   "characterName": "{{character name}}",
   "modelId": "grok-4.3",
-  "stylePrompt": "{{optional selected style prompt}}",
+  "styleId": "{{optional selected art-style identifier (e.g. 'cinematic-2-5d'); the edge function resolves the backend prompt server-side via public.art_styles using the service role. BF-02 (2026-06-19): browser code MUST NOT send raw backend prompt strings; only the styleId. Legacy stylePrompt field is still accepted by the edge function but kept admin-only / non-default and is not part of the normal client contract.}}",
   "negativePrompt": "{{optional negative prompt}}",
   "debugTrace": "{{true only when requested}}"
 }
@@ -1772,7 +1772,7 @@ ${browserToEdgeHeaders}
 BROWSER-TO-EDGE REQUEST BODY SHAPE
 {
   "prompt": "{{cover image source prompt}}",
-  "stylePrompt": "{{optional selected style prompt}}",
+  "styleId": "{{optional selected art-style identifier (e.g. 'cinematic-2-5d'); the edge function resolves the backend prompt server-side via public.art_styles using the service role. BF-02 (2026-06-19): browser code MUST NOT send raw backend prompt strings; only the styleId. Legacy stylePrompt field is still accepted by the edge function for admin/legacy paths but is not part of the normal client contract.}}",
   "negativePrompt": "{{optional negative prompt}}",
   "scenarioTitle": "{{optional scenario title for logging}}"
 }
@@ -1780,7 +1780,7 @@ BROWSER-TO-EDGE REQUEST BODY SHAPE
 COVER IMAGE GENERATION REQUEST BODY SENT TO xAI
 {
   "model": "grok-imagine-image",
-  "prompt": "Portrait composition (2:3 aspect ratio), vertical orientation. {{prompt}}{{optional stylePrompt}}{{optional negativePrompt}}",
+  "prompt": "Portrait composition (2:3 aspect ratio), vertical orientation. {{prompt}}{{server-resolved style prompt from art_styles.backend_prompt for styleId}}{{optional negativePrompt}}",
   "n": 1
 }
 

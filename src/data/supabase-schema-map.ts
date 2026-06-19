@@ -1383,11 +1383,21 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         },
         {
-          "name": "Anyone authenticated can read settings",
+          "name": "Admins can read all settings",
           "roles": [
             "authenticated"
           ],
-          "using": "true",
+          "using": "has_role(auth.uid(), 'admin'::app_role)",
+          "command": "SELECT",
+          "withCheck": null,
+          "permissive": true
+        },
+        {
+          "name": "Auth can read public settings keys",
+          "roles": [
+            "authenticated"
+          ],
+          "using": "(setting_key = ANY (ARRAY['shared_keys'::text, 'nav_button_images'::text, 'subscription_tiers_v1'::text]))",
           "command": "SELECT",
           "withCheck": null,
           "permissive": true
@@ -1434,7 +1444,6 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
             "INSERT",
             "MAINTAIN",
             "REFERENCES",
-            "SELECT",
             "TRIGGER",
             "TRUNCATE",
             "UPDATE"
@@ -1593,9 +1602,11 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         },
         {
-          "name": "Anyone can read art styles",
-          "roles": null,
-          "using": "true",
+          "name": "Admins can read art styles",
+          "roles": [
+            "authenticated"
+          ],
+          "using": "has_role(auth.uid(), 'admin'::app_role)",
           "command": "SELECT",
           "withCheck": null,
           "permissive": true
@@ -2601,11 +2612,11 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         },
         {
-          "name": "Users can view own or published characters",
+          "name": "Users can view own or visible published characters",
           "roles": [
             "authenticated"
           ],
-          "using": "((auth.uid() = user_id) OR (EXISTS ( SELECT 1\n   FROM published_scenarios ps\n  WHERE ((ps.scenario_id = characters.scenario_id) AND (ps.is_published = true) AND (ps.is_hidden = false)))))",
+          "using": "((auth.uid() = user_id) OR has_role(auth.uid(), 'admin'::app_role) OR (EXISTS ( SELECT 1\n   FROM (published_scenarios ps\n     JOIN profiles p ON ((p.id = ps.publisher_id)))\n  WHERE ((ps.scenario_id = characters.scenario_id) AND (ps.is_published = true) AND (ps.is_hidden = false) AND (COALESCE(p.hide_published_works, false) = false)))))",
           "command": "SELECT",
           "withCheck": null,
           "permissive": true
@@ -2819,11 +2830,11 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         },
         {
-          "name": "Users can view codex via own or published story",
+          "name": "Users can view codex via own or visible published story",
           "roles": [
             "authenticated"
           ],
-          "using": "((EXISTS ( SELECT 1\n   FROM stories s\n  WHERE ((s.id = codex_entries.scenario_id) AND (s.user_id = auth.uid())))) OR (EXISTS ( SELECT 1\n   FROM published_scenarios ps\n  WHERE ((ps.scenario_id = codex_entries.scenario_id) AND (ps.is_published = true) AND (ps.is_hidden = false)))))",
+          "using": "(has_role(auth.uid(), 'admin'::app_role) OR (EXISTS ( SELECT 1\n   FROM stories s\n  WHERE ((s.id = codex_entries.scenario_id) AND (s.user_id = auth.uid())))) OR (EXISTS ( SELECT 1\n   FROM (published_scenarios ps\n     JOIN profiles p ON ((p.id = ps.publisher_id)))\n  WHERE ((ps.scenario_id = codex_entries.scenario_id) AND (ps.is_published = true) AND (ps.is_hidden = false) AND (COALESCE(p.hide_published_works, false) = false)))))",
           "command": "SELECT",
           "withCheck": null,
           "permissive": true
@@ -3017,11 +3028,11 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "comment": null,
       "policies": [
         {
-          "name": "Anyone can view published story themes",
+          "name": "Anyone can view visible published story themes",
           "roles": [
             "authenticated"
           ],
-          "using": "(EXISTS ( SELECT 1\n   FROM published_scenarios ps\n  WHERE ((ps.scenario_id = content_themes.scenario_id) AND (ps.is_published = true) AND (ps.is_hidden = false))))",
+          "using": "(has_role(auth.uid(), 'admin'::app_role) OR (EXISTS ( SELECT 1\n   FROM stories s\n  WHERE ((s.id = content_themes.scenario_id) AND (s.user_id = auth.uid())))) OR (EXISTS ( SELECT 1\n   FROM (published_scenarios ps\n     JOIN profiles p ON ((p.id = ps.publisher_id)))\n  WHERE ((ps.scenario_id = content_themes.scenario_id) AND (ps.is_published = true) AND (ps.is_hidden = false) AND (COALESCE(p.hide_published_works, false) = false)))))",
           "command": "SELECT",
           "withCheck": null,
           "permissive": true
@@ -7399,11 +7410,11 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "comment": null,
       "policies": [
         {
-          "name": "Anyone can view likes",
+          "name": "Users can view own likes",
           "roles": [
             "authenticated"
           ],
-          "using": "true",
+          "using": "((user_id = auth.uid()) OR has_role(auth.uid(), 'admin'::app_role))",
           "command": "SELECT",
           "withCheck": null,
           "permissive": true
@@ -8080,11 +8091,11 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         },
         {
-          "name": "Users can view scenes via own or published story",
+          "name": "Users can view scenes via own or visible published story",
           "roles": [
             "authenticated"
           ],
-          "using": "((EXISTS ( SELECT 1\n   FROM stories s\n  WHERE ((s.id = scenes.scenario_id) AND (s.user_id = auth.uid())))) OR (EXISTS ( SELECT 1\n   FROM published_scenarios ps\n  WHERE ((ps.scenario_id = scenes.scenario_id) AND (ps.is_published = true) AND (ps.is_hidden = false)))))",
+          "using": "(has_role(auth.uid(), 'admin'::app_role) OR (EXISTS ( SELECT 1\n   FROM stories s\n  WHERE ((s.id = scenes.scenario_id) AND (s.user_id = auth.uid())))) OR (EXISTS ( SELECT 1\n   FROM (published_scenarios ps\n     JOIN profiles p ON ((p.id = ps.publisher_id)))\n  WHERE ((ps.scenario_id = scenes.scenario_id) AND (ps.is_published = true) AND (ps.is_hidden = false) AND (COALESCE(p.hide_published_works, false) = false)))))",
           "command": "SELECT",
           "withCheck": null,
           "permissive": true
@@ -9105,11 +9116,11 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         },
         {
-          "name": "Users can view own or published stories",
+          "name": "Users can view own or visible published stories",
           "roles": [
             "authenticated"
           ],
-          "using": "((auth.uid() = user_id) OR (EXISTS ( SELECT 1\n   FROM published_scenarios ps\n  WHERE ((ps.scenario_id = stories.id) AND (ps.is_published = true) AND (ps.is_hidden = false)))))",
+          "using": "((auth.uid() = user_id) OR has_role(auth.uid(), 'admin'::app_role) OR (EXISTS ( SELECT 1\n   FROM (published_scenarios ps\n     JOIN profiles p ON ((p.id = ps.publisher_id)))\n  WHERE ((ps.scenario_id = stories.id) AND (ps.is_published = true) AND (ps.is_hidden = false) AND (COALESCE(p.hide_published_works, false) = false)))))",
           "command": "SELECT",
           "withCheck": null,
           "permissive": true
@@ -10063,7 +10074,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       ],
       "language": "plpgsql",
       "arguments": "p_published_scenario_id uuid",
-      "definition": "CREATE OR REPLACE FUNCTION public.record_scenario_view(p_published_scenario_id uuid)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_user_id uuid := auth.uid();\nBEGIN\n  IF v_user_id IS NULL THEN\n    RAISE EXCEPTION 'Unauthorized';\n  END IF;\n\n  -- Check if user viewed this in the last 24 hours\n  IF EXISTS (\n    SELECT 1 FROM scenario_views\n    WHERE published_scenario_id = p_published_scenario_id\n      AND user_id = v_user_id\n      AND viewed_at > now() - interval '24 hours'\n  ) THEN\n    RETURN; -- Already viewed recently, do nothing\n  END IF;\n\n  -- Insert new view record\n  INSERT INTO scenario_views (published_scenario_id, user_id)\n  VALUES (p_published_scenario_id, v_user_id);\n\n  -- Increment the count\n  UPDATE published_scenarios\n  SET view_count = view_count + 1, updated_at = now()\n  WHERE id = p_published_scenario_id;\nEND;\n$function$\n",
+      "definition": "STABLE SECURITY DEFINER. Updated 2026-06-19 (BF-12) to gate visibility before incrementing: raises Unauthorized when auth.uid() is NULL; raises 'Scenario not available' unless EXISTS published_scenarios JOIN profiles WHERE ps.id = p_published_scenario_id AND ps.is_published = true AND ps.is_hidden = false AND COALESCE(p.hide_published_works,false) = false. Throttled to once per 24h per (scenario,user) via scenario_views. Increments published_scenarios.view_count after insert.",
       "returnType": "void",
       "volatility": "VOLATILE",
       "securityDefiner": true
@@ -10073,9 +10084,39 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "config": ["search_path=public"],
       "language": "plpgsql",
       "arguments": "p_published_scenario_id uuid",
-      "definition": "CREATE OR REPLACE FUNCTION public.record_scenario_play(p_published_scenario_id uuid) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public' AS $function$ DECLARE v_user_id uuid := auth.uid(); BEGIN IF v_user_id IS NULL THEN RAISE EXCEPTION 'Unauthorized'; END IF; IF NOT EXISTS (SELECT 1 FROM public.published_scenarios WHERE id = p_published_scenario_id AND is_published = true AND is_hidden = false) THEN RAISE EXCEPTION 'Scenario not available'; END IF; IF EXISTS (SELECT 1 FROM public.scenario_plays WHERE published_scenario_id = p_published_scenario_id AND user_id = v_user_id AND played_at > now() - interval '5 minutes') THEN RETURN; END IF; INSERT INTO public.scenario_plays (published_scenario_id, user_id) VALUES (p_published_scenario_id, v_user_id); END; $function$",
+      "definition": "VOLATILE SECURITY DEFINER. Updated 2026-06-19 (BF-12) to gate visibility before recording a play: raises Unauthorized when auth.uid() is NULL; raises 'Scenario not available' unless EXISTS published_scenarios JOIN profiles WHERE ps.id = p_published_scenario_id AND ps.is_published = true AND ps.is_hidden = false AND COALESCE(p.hide_published_works,false) = false. Throttled to once per 5 minutes per (scenario,user). Insert into scenario_plays; published_scenarios.play_count is then maintained by sync_published_scenario_play_count trigger.",
       "returnType": "void",
       "volatility": "VOLATILE",
+      "securityDefiner": true
+    },
+    {
+      "name": "get_public_art_styles",
+      "config": ["search_path=public"],
+      "language": "sql",
+      "arguments": "",
+      "definition": "STABLE SECURITY DEFINER. Added 2026-06-19 (BF-02). Returns only the safe public columns (id, display_name, thumbnail_url, sort_order) from public.art_styles, ordered by sort_order, display_name. backend_prompt / backend_prompt_masculine / backend_prompt_androgynous are intentionally NEVER returned. EXECUTE granted to anon and authenticated. Used by src/contexts/ArtStylesContext.tsx so the browser never receives backend prompt strings.",
+      "returnType": "TABLE(id text, display_name text, thumbnail_url text, sort_order integer)",
+      "volatility": "STABLE",
+      "securityDefiner": true
+    },
+    {
+      "name": "get_public_app_flags",
+      "config": ["search_path=public"],
+      "language": "plpgsql",
+      "arguments": "",
+      "definition": "STABLE SECURITY DEFINER. Added 2026-06-19 (BF-03). Returns a jsonb object containing only the whitelisted public setting keys (currently 'shared_keys' and 'nav_button_images') from public.app_settings. All other rows in app_settings remain admin-only. EXECUTE granted to anon and authenticated.",
+      "returnType": "jsonb",
+      "volatility": "STABLE",
+      "securityDefiner": true
+    },
+    {
+      "name": "get_my_liked_scenarios",
+      "config": ["search_path=public"],
+      "language": "sql",
+      "arguments": "p_published_scenario_ids uuid[]",
+      "definition": "STABLE SECURITY DEFINER. Added 2026-06-19 (BF-09). Returns the subset of p_published_scenario_ids that the calling user (auth.uid()) has liked. Lets the gallery hydrate own-like state without a permissive public SELECT on scenario_likes (which is now own-row + admin only). EXECUTE granted to authenticated.",
+      "returnType": "TABLE(published_scenario_id uuid)",
+      "volatility": "STABLE",
       "securityDefiner": true
     },
     {
@@ -10316,22 +10357,25 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "withCheck": null
       },
       {
-        "name": "Authenticated users can delete own guide images",
-        "roles": [
-          "authenticated"
-        ],
-        "using": "((bucket_id = 'guide_images'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
+        "name": "Admins can delete guide images",
+        "roles": null,
+        "using": "((bucket_id = 'guide_images'::text) AND has_role(auth.uid(), 'admin'::app_role))",
         "command": "DELETE",
         "withCheck": null
       },
       {
-        "name": "Authenticated users can upload guide images",
-        "roles": [
-          "authenticated"
-        ],
+        "name": "Admins can upload guide images",
+        "roles": null,
         "using": null,
         "command": "INSERT",
-        "withCheck": "(bucket_id = 'guide_images'::text)"
+        "withCheck": "((bucket_id = 'guide_images'::text) AND has_role(auth.uid(), 'admin'::app_role))"
+      },
+      {
+        "name": "Admins can update guide images",
+        "roles": null,
+        "using": "((bucket_id = 'guide_images'::text) AND has_role(auth.uid(), 'admin'::app_role))",
+        "command": "UPDATE",
+        "withCheck": "((bucket_id = 'guide_images'::text) AND has_role(auth.uid(), 'admin'::app_role))"
       },
       {
         "name": "Public can view covers",
