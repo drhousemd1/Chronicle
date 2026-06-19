@@ -9116,11 +9116,11 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         },
         {
-          "name": "Users can view own or published stories",
+          "name": "Users can view own or visible published stories",
           "roles": [
             "authenticated"
           ],
-          "using": "((auth.uid() = user_id) OR (EXISTS ( SELECT 1\n   FROM published_scenarios ps\n  WHERE ((ps.scenario_id = stories.id) AND (ps.is_published = true) AND (ps.is_hidden = false)))))",
+          "using": "((auth.uid() = user_id) OR has_role(auth.uid(), 'admin'::app_role) OR (EXISTS ( SELECT 1\n   FROM (published_scenarios ps\n     JOIN profiles p ON ((p.id = ps.publisher_id)))\n  WHERE ((ps.scenario_id = stories.id) AND (ps.is_published = true) AND (ps.is_hidden = false) AND (COALESCE(p.hide_published_works, false) = false)))))",
           "command": "SELECT",
           "withCheck": null,
           "permissive": true
