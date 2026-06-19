@@ -3451,13 +3451,6 @@ export const databaseSchemaInventory = {
           "roles": "authenticated",
           "using": "has_role(auth.uid(), 'admin')",
           "with_check": "has_role(auth.uid(), 'admin')"
-        },
-        {
-          "name": "Users can view own strikes",
-          "command": "SELECT",
-          "roles": "authenticated",
-          "using": "auth.uid() = user_id",
-          "with_check": null
         }
       ]
     }
