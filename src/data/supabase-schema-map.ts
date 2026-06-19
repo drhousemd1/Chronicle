@@ -7683,10 +7683,34 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "comment": null,
       "policies": [
         {
-          "name": "Anyone authenticated can view reviews",
-          "roles": null,
-          "using": "true",
+          "name": "Users can view own reviews",
+          "roles": ["authenticated"],
+          "using": "(user_id = auth.uid())",
           "command": "SELECT",
+          "withCheck": null,
+          "permissive": true
+        },
+        {
+          "name": "Admins can view all reviews",
+          "roles": ["authenticated"],
+          "using": "has_role(auth.uid(), 'admin'::app_role)",
+          "command": "SELECT",
+          "withCheck": null,
+          "permissive": true
+        },
+        {
+          "name": "Admins can update reviews",
+          "roles": ["authenticated"],
+          "using": "has_role(auth.uid(), 'admin'::app_role)",
+          "command": "UPDATE",
+          "withCheck": null,
+          "permissive": true
+        },
+        {
+          "name": "Admins can delete reviews",
+          "roles": ["authenticated"],
+          "using": "has_role(auth.uid(), 'admin'::app_role)",
+          "command": "DELETE",
           "withCheck": null,
           "permissive": true
         },

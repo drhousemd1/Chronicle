@@ -2712,10 +2712,31 @@ export const databaseSchemaInventory = {
       ],
       "rls_policies": [
         {
-          "name": "Anyone authenticated can view reviews",
+          "name": "Users can view own reviews",
           "command": "SELECT",
-          "roles": "public",
-          "using": "true",
+          "roles": "authenticated",
+          "using": "user_id = auth.uid()",
+          "with_check": null
+        },
+        {
+          "name": "Admins can view all reviews",
+          "command": "SELECT",
+          "roles": "authenticated",
+          "using": "has_role(auth.uid(), 'admin'::app_role)",
+          "with_check": null
+        },
+        {
+          "name": "Admins can update reviews",
+          "command": "UPDATE",
+          "roles": "authenticated",
+          "using": "has_role(auth.uid(), 'admin'::app_role)",
+          "with_check": null
+        },
+        {
+          "name": "Admins can delete reviews",
+          "command": "DELETE",
+          "roles": "authenticated",
+          "using": "has_role(auth.uid(), 'admin'::app_role)",
           "with_check": null
         },
         {

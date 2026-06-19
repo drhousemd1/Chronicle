@@ -6,7 +6,7 @@ import { Dialog, DialogOverlay, DialogPortal } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { fetchScenarioCharacters, ScenarioCharacter, fetchScenarioReviews, fetchUserReview, type ScenarioReview } from '@/services/gallery-data';
+import { fetchScenarioCharacters, ScenarioCharacter, fetchScenarioReviews, fetchUserReview, type ScenarioReview, type PublicScenarioReview } from '@/services/gallery-data';
 import { StarRating } from './StarRating';
 import { SpiceRating } from './SpiceRating';
 import { ReviewModal } from './ReviewModal';
@@ -118,7 +118,7 @@ export const ScenarioDetailModal: React.FC<ScenarioDetailModalProps> = ({
   const [isLiking, setIsLiking] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUnpublishing, setIsUnpublishing] = useState(false);
-  const [reviews, setReviews] = useState<ScenarioReview[]>([]);
+  const [reviews, setReviews] = useState<PublicScenarioReview[]>([]);
   const [userReview, setUserReview] = useState<ScenarioReview | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   

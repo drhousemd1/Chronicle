@@ -1,114 +1,171 @@
-# Tenant Isolation & Media Privacy Hardening — REVISED Plan v4
+## BF-08 v2: Restrict raw `scenario_reviews` access; expose curated public reviews via RPC
 
-Only BF-10 changed from v3 (Option A grants/RLS correction). All other findings (BF-02, 03, 04, 05, 06, 07, 08, 09, 11, 12, 13, 14) and staging order are unchanged from v2/v3 and not repeated here.
+### Current state
 
-## BF-10 — Reports + strikes backend boundary + sanitized Account Status (REVISED, Option A)
+**Live RLS on `public.scenario_reviews`** (verified via `pg_policies`):
+- SELECT: `"Anyone authenticated can view reviews"` USING `true` — every authenticated user reads every row including per-axis scores and reviewer `user_id`.
+- INSERT: `"Users can create own reviews"` — `auth.uid() = user_id`.
+- UPDATE: `"Users can update own reviews"` — own-row.
+- DELETE: `"Users can delete own reviews"` — own-row.
+- No admin policy. Admin tooling reads via service role.
 
-### Live column evidence (re-verified)
+**Frontend raw-table reads:**
+| Location | Purpose | Fields actually used |
+|---|---|---|
+| `gallery-data.ts` `fetchScenarioReviews` (`.select('*')`) | Story Detail review list + spice avg | `id`, `created_at`, `raw_weighted_score`, `spice_level`, `comment`, reviewer display fields |
+| `gallery-data.ts` `fetchUserReview` (`.select('*')`) | Pre-fill ReviewModal for author | Full editable field set (own-row) |
+| `gallery-data.ts` `fetchCreatorOverallRating` (`.select('raw_weighted_score').in(...)`) | Aggregate on CreatorProfile | aggregate only |
+| `gallery-data.ts` `submitReview` / `deleteReview` | Author writes | own-row writes, unchanged |
 
-- `public.reports`: `id, reporter, accused, reason, story_id, status, created_at, updated_at, reporter_user_id, accused_user_id, note, reviewed_by`. Admin-only fields: `note`, `reviewed_by`, `accused_user_id`, `accused`.
-- `public.user_strikes`: `id, user_id, reason, issued_by, expires_at, created_at, report_id, points, note, status, issued_at, falls_off_at, updated_at`. Admin-only fields: `issued_by`, `note`, `points`, `report_id`.
+`StoryDetailModal` consumes only `id`, `created_at`, `raw_weighted_score`, `spice_level`, `comment`, and `reviewer.{display_name,username,avatar_url}` — it does NOT use `user_id`. `CreatorProfile` consumes only the aggregate.
 
-The locked product rule forbids exposing these admin-only fields to normal users, so normal-user RLS SELECT must be removed and all user-facing reads must go through a sanitized RPC.
+### Proposed migration (single file)
 
-### Why Option A
+```sql
+-- 1) Sanitized public RPC: no reviewer user_id, no per-axis scores, hard-capped pagination
+CREATE OR REPLACE FUNCTION public.get_public_scenario_reviews(
+  p_published_scenario_id uuid,
+  p_limit int DEFAULT 5,
+  p_offset int DEFAULT 0
+) RETURNS TABLE (
+  id uuid,
+  raw_weighted_score numeric,
+  spice_level int,
+  comment text,
+  created_at timestamptz,
+  reviewer_username text,
+  reviewer_display_name text,
+  reviewer_avatar_url text
+)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
+AS $$
+  SELECT
+    r.id,
+    r.raw_weighted_score,
+    r.spice_level,
+    r.comment,
+    r.created_at,
+    CASE WHEN COALESCE(p.hide_profile_details,false) THEN NULL ELSE p.username END,
+    CASE WHEN COALESCE(p.hide_profile_details,false) THEN NULL ELSE p.display_name END,
+    CASE WHEN COALESCE(p.hide_profile_details,false) THEN NULL ELSE p.avatar_url END
+  FROM public.scenario_reviews r
+  JOIN public.published_scenarios ps ON ps.id = r.published_scenario_id
+  JOIN public.profiles pub ON pub.id = ps.publisher_id
+  LEFT JOIN public.profiles p ON p.id = r.user_id
+  WHERE r.published_scenario_id = p_published_scenario_id
+    AND ps.is_published = true
+    AND ps.is_hidden = false
+    AND COALESCE(pub.hide_published_works, false) = false
+  ORDER BY r.created_at DESC
+  LIMIT LEAST(GREATEST(COALESCE(p_limit, 5), 0), 50)
+  OFFSET GREATEST(COALESCE(p_offset, 0), 0);
+$$;
 
-App admins authenticate through the same Supabase `authenticated` Postgres role as regular users; the admin distinction is an RLS predicate (`has_role(auth.uid(),'admin')`). Revoking `SELECT` from `authenticated` at the table-grant level would also block the admin RLS path and break the existing admin moderation UI. Option A leaves the table grant intact and removes only the normal-user RLS SELECT policy, so normal users get zero rows (no policy matches) while admin SELECT continues to function through the admin policy. No admin UI rewrite required.
+-- 2) Sanitized creator aggregate RPC
+CREATE OR REPLACE FUNCTION public.get_creator_overall_rating(p_publisher_id uuid)
+RETURNS TABLE (rating numeric, total_reviews bigint)
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE v_caller uuid := auth.uid();
+        v_is_owner boolean := (v_caller IS NOT NULL AND v_caller = p_publisher_id);
+        v_is_admin boolean := (v_caller IS NOT NULL AND public.has_role(v_caller,'admin'));
+        v_hide boolean;
+BEGIN
+  SELECT COALESCE(hide_published_works,false) INTO v_hide
+    FROM public.profiles WHERE id = p_publisher_id;
+  IF v_hide AND NOT v_is_owner AND NOT v_is_admin THEN
+    RETURN QUERY SELECT 0::numeric, 0::bigint; RETURN;
+  END IF;
+  RETURN QUERY
+  SELECT COALESCE(AVG(r.raw_weighted_score),0)::numeric,
+         COUNT(*)::bigint
+  FROM public.scenario_reviews r
+  JOIN public.published_scenarios ps ON ps.id = r.published_scenario_id
+  WHERE ps.publisher_id = p_publisher_id
+    AND ps.is_published = true
+    AND ps.is_hidden = false
+    AND r.raw_weighted_score IS NOT NULL;
+END; $$;
 
-### Backend changes
+GRANT EXECUTE ON FUNCTION public.get_public_scenario_reviews(uuid,int,int) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_creator_overall_rating(uuid)         TO anon, authenticated;
 
-1. Realtime
-   - `ALTER PUBLICATION supabase_realtime DROP TABLE public.reports;`
-   - Confirm `public.user_strikes` is not in the publication; drop it if it is.
+-- 3) Tighten RLS: drop the verified permissive SELECT, keep own-row writes, add own-row SELECT + admin
+DROP POLICY "Anyone authenticated can view reviews" ON public.scenario_reviews;
 
-2. Table grants — **leave existing grants in place** on both `public.reports` and `public.user_strikes` (no REVOKE). `authenticated` keeps SELECT/INSERT/UPDATE/DELETE so RLS can decide per-row. `service_role` keeps full access. `anon` is not granted.
+CREATE POLICY "Users can view own reviews"
+  ON public.scenario_reviews FOR SELECT
+  TO authenticated USING (user_id = auth.uid());
 
-3. `public.reports` policies (rewrite)
-   - Keep / add: `Users can insert own reports` — `FOR INSERT TO authenticated WITH CHECK (auth.uid() = reporter_user_id)`.
-   - Keep / add: `Admins can select reports` — `FOR SELECT TO authenticated USING (has_role(auth.uid(),'admin'))`.
-   - Keep / add: `Admins can update reports` — `FOR UPDATE TO authenticated USING (has_role(auth.uid(),'admin')) WITH CHECK (has_role(auth.uid(),'admin'))`.
-   - Keep / add: `Admins can delete reports` — `FOR DELETE TO authenticated USING (has_role(auth.uid(),'admin'))`.
-   - **Drop** any existing SELECT policy that allows a normal user to read their own row (for example a `reporter_user_id = auth.uid()` SELECT policy). After this change there is no SELECT policy that matches non-admin users, so direct SELECT from `authenticated` returns 0 rows for normal users while the admin SELECT policy still matches admins.
+CREATE POLICY "Admins can view all reviews"
+  ON public.scenario_reviews FOR SELECT
+  TO authenticated USING (public.has_role(auth.uid(),'admin'));
 
-4. `public.user_strikes` policies (rewrite)
-   - Keep / add: `Admins can select strikes` — `FOR SELECT TO authenticated USING (has_role(auth.uid(),'admin'))`.
-   - Keep / add: `Admins can insert strikes` / `Admins can update strikes` / `Admins can delete strikes` — same `has_role` gate (or one `FOR ALL` admin policy if the existing schema uses that shape).
-   - **Drop** any existing SELECT policy that allows the strike subject to read their own row (for example `user_id = auth.uid()`). Same outcome as above: non-admin direct SELECT returns 0 rows; admin SELECT works via the admin policy.
+CREATE POLICY "Admins can update reviews"
+  ON public.scenario_reviews FOR UPDATE
+  TO authenticated USING (public.has_role(auth.uid(),'admin'));
 
-5. New sanitized RPC `public.get_my_account_status()` (`SECURITY DEFINER`, `STABLE`, `SET search_path = public`, `GRANT EXECUTE ON FUNCTION public.get_my_account_status() TO authenticated`). Returns `jsonb`:
-   ```json
-   {
-     "reports": [
-       {"id": "<uuid>", "target_kind": "story|user",
-        "status": "open|reviewed|dismissed|actioned",
-        "reason_public": "<reason text>",
-        "created_at": "...",
-        "resolved_at": "<updated_at when status<>'open' else null>"}
-     ],
-     "strikes": [
-       {"id": "<uuid>", "status": "active|expired|revoked",
-        "reason_public": "<reason text>",
-        "issued_at": "...", "expires_at": "...",
-        "falls_off_at": "..."}
-     ]
-   }
-   ```
-   - `target_kind` derived: `'story'` when `story_id IS NOT NULL`, else `'user'`. No `target_id` returned.
-   - `reason_public` is the user-submitted `reason` for reports and the user-visible `reason` for strikes. `note` (admin-only) is never returned.
-   - Excludes: `note`, `reviewed_by`, `issued_by`, `points`, `report_id`, `accused_user_id`, `accused`, `reporter`, raw `updated_at`, and every other column not enumerated above.
-   - Filters internally: `reports.reporter_user_id = auth.uid()` and `user_strikes.user_id = auth.uid()`. Raises `Unauthorized` if `auth.uid() IS NULL`.
+CREATE POLICY "Admins can delete reviews"
+  ON public.scenario_reviews FOR DELETE
+  TO authenticated USING (public.has_role(auth.uid(),'admin'));
+-- INSERT/UPDATE/DELETE own-row policies are retained unchanged.
+```
 
-6. Client code audit: remove any client `from('reports').select(...)` or `from('user_strikes').select(...)` calls that were previously used to render a normal user's own moderation data; they will silently return 0 rows after this change. Admin moderation UI continues to use direct table SELECT under the admin policy.
+The aggregate trigger `update_review_aggregates` is SECURITY DEFINER and continues to work.
 
-### Frontend changes
+### Frontend changes (`src/services/gallery-data.ts` only)
 
-- Add private `Account Status` section to `src/components/account/AccountSettingsTab.tsx` (+ a small `AccountStatusSection.tsx`) that calls `supabase.rpc('get_my_account_status')` and renders:
-  - "My reports": status badge, target kind, `reason_public`, `created_at`, `resolved_at`. Empty state when none.
-  - "Account strikes": status badge, `reason_public`, `issued_at`, `expires_at`/`falls_off_at`. Empty state when none.
-- No raw table access from the client for self-reads.
+- **New display type** `PublicScenarioReview` (no `user_id`, no per-axis fields):
+  ```ts
+  export interface PublicScenarioReview {
+    id: string;
+    raw_weighted_score: number | null;
+    spice_level: number | null;
+    comment: string | null;
+    created_at: string;
+    reviewer: { username: string | null; display_name: string | null; avatar_url: string | null } | null;
+  }
+  ```
+  `fetchScenarioReviews` returns `PublicScenarioReview[]`, built directly from `get_public_scenario_reviews` rows (reviewer object assembled from `reviewer_*` columns, or `null` if all are null due to profile privacy). No synthesized `user_id`.
+- **`fetchUserReview`** unchanged — direct own-row `.from('scenario_reviews').select('*')`, still returns full `ScenarioReview` for ReviewModal editing (now allowed by the new own-row SELECT policy).
+- **`fetchCreatorOverallRating`** → calls `supabase.rpc('get_creator_overall_rating', { p_publisher_id })`, preserves `{ rating, totalReviews }` return contract (with existing `Math.round(x*2)/2` rounding kept).
+- **`submitReview` / `deleteReview`** unchanged.
+- `ScenarioReview` interface kept for the author/admin path; the public path uses `PublicScenarioReview`.
 
-### Validation (must all pass before mark-fixed)
+**`src/components/chronicle/StoryDetailModal.tsx`** — update the `reviews` state type and import from `PublicScenarioReview`. The render code already only touches the fields above; no JSX changes required beyond the type swap.
 
-- Direct raw-table boundary (Option A semantics):
-  - User A authed (non-admin): `SELECT * FROM public.reports WHERE reporter_user_id = auth.uid()` → **0 rows** (no matching RLS SELECT policy).
-  - User A authed (non-admin): `SELECT * FROM public.reports` (no filter) → 0 rows.
-  - User A authed (non-admin): `SELECT note, reviewed_by, accused_user_id FROM public.reports LIMIT 1` → 0 rows (policy returns nothing; admin fields therefore unreachable).
-  - User A authed (non-admin): `SELECT * FROM public.user_strikes WHERE user_id = auth.uid()` → 0 rows.
-  - User A authed (non-admin): `SELECT issued_by, note, points, report_id FROM public.user_strikes LIMIT 1` → 0 rows.
-  - Anon (no `anon` grant): same probes → permission denied or 0 rows.
-- Sanitized RPC:
-  - User A authed: `SELECT public.get_my_account_status()` → returns only A's reports and strikes with only the whitelisted keys. JSON-key audit confirms `note`, `reviewed_by`, `issued_by`, `points`, `report_id`, `accused_user_id`, `accused`, `reporter` are absent.
-  - User B authed: same RPC → returns only B's rows; cannot see A's.
-  - Anon: RPC raises `Unauthorized`.
-- Admin path (unchanged by this finding):
-  - Admin authed: `SELECT * FROM public.reports` returns full rows including `note`, `reviewed_by`.
-  - Admin authed: `SELECT * FROM public.user_strikes` returns full rows including `issued_by`, `note`, `points`.
-  - Admin update and delete of a report and a strike still succeed.
-- Insert path:
-  - User A authed: `INSERT INTO public.reports (reporter_user_id, reason, story_id, status) VALUES (auth.uid(), ..., ..., 'open')` succeeds.
-  - User A authed insert with `reporter_user_id = '<other-uuid>'` → blocked by the insert policy's `WITH CHECK`.
-- Realtime:
-  - Subscribe anon and authed to a `reports` channel; trigger admin insert → 0 messages received.
-- UI smoke:
-  - Account Settings → Account Status renders A's report and strike lists from the RPC.
-  - DevTools network shows no direct `from=reports` or `from=user_strikes` requests from the user session.
-  - Second account (B) opens Account Status; does not see A's data.
-  - Admin moderation UI still loads reports and strikes (admin SELECT path intact).
+### Source-of-truth refresh
 
-### Repo files touched
+- `src/integrations/supabase/types.ts` — auto-regenerated after migration approval (two new RPC signatures, no reviewer `user_id` in `get_public_scenario_reviews`).
+- `src/data/supabase-schema-map.ts` — replace `scenario_reviews` SELECT policy with own-row + 3 admin policies; append two new functions.
+- `src/data/database-schema-inventory.ts` — same deltas.
+- `src/data/ui-audit-findings.ts` — append change-log `cl-20260619-002`; mark BF-08 resolved with evidence (policy drop, new RPCs, frontend migration, no public `user_id`).
+- `src/data/architecture-file-analysis.ts` — add `get_public_scenario_reviews`, `get_creator_overall_rating` to `gallery-data.ts` rpcs.
 
-- New migration: drop legacy normal-user SELECT policies on `reports` and `user_strikes`; ensure admin SELECT/INSERT/UPDATE/DELETE policies exist; add `reports` insert-own policy if missing; create `get_my_account_status()`; drop `reports` from `supabase_realtime` publication. **No REVOKE statements.**
-- `src/components/account/AccountSettingsTab.tsx` + new `AccountStatusSection.tsx`.
-- Remove client `from('reports'|'user_strikes').select(...)` calls used for non-admin self-reads.
-- Schema snapshots: `src/data/supabase-schema-map.ts`, `src/data/database-schema-inventory.ts`, `src/integrations/supabase/types.ts`.
-- Quality Hub: BF-10 entry updated with this evidence.
+### Files that will change
 
-## Updated validation row (replaces BF-10 row in v2/v3 table)
+- new `supabase/migrations/<timestamp>_bf08_sanitize_scenario_reviews.sql`
+- `src/services/gallery-data.ts`
+- `src/components/chronicle/StoryDetailModal.tsx` (type swap only)
+- `src/integrations/supabase/types.ts` (auto-regen)
+- `src/data/supabase-schema-map.ts`
+- `src/data/database-schema-inventory.ts`
+- `src/data/ui-audit-findings.ts`
+- `src/data/architecture-file-analysis.ts`
 
-| BF | Direct query probe | Storage probe | Realtime probe | RPC probe | UI smoke |
-|----|-------------------|---------------|----------------|-----------|----------|
-| 10 | Non-admin authed direct `SELECT * FROM reports` (own and all) → **0 rows** (no matching RLS SELECT policy); direct `SELECT note, reviewed_by, accused_user_id FROM reports` → 0 rows; non-admin authed direct `SELECT * FROM user_strikes` (own and all) → 0 rows; direct `SELECT issued_by, note, points, report_id FROM user_strikes` → 0 rows; `INSERT` own report still succeeds; insert with foreign `reporter_user_id` blocked by `WITH CHECK`; admin direct SELECT/UPDATE/DELETE on both tables still succeeds via `has_role` policies; anon receives permission denied or 0 rows | — | `reports` Realtime channel emits 0 to anon and authed on admin insert; `user_strikes` not in publication | `get_my_account_status()` returns only caller's sanitized reports + strikes with whitelisted keys only; anon raises Unauthorized; key-audit confirms `note`, `reviewed_by`, `issued_by`, `points`, `report_id`, `accused_user_id`, `accused`, `reporter` are absent | Account Settings → Account Status renders from RPC; no `from=reports` / `from=user_strikes` requests in network panel; second account sees only own data; admin moderation tools still load full rows |
+### Validation
 
-## Everything else from v2/v3 — unchanged
+1. **Public display renders** — Story Detail modal on a visible scenario shows reviewer name/avatar, date, story/spice ratings, comment. Probe: `rpc('get_public_scenario_reviews', { p_published_scenario_id })` returns expected rows; result has no `user_id` column.
+2. **No public `user_id` leak** — Inspect RPC return columns and confirm absence of `user_id`/per-axis fields in the response.
+3. **Raw rows denied** — Non-author non-admin probe: `from('scenario_reviews').select('id,user_id').neq('user_id', auth.uid())` returns 0 rows.
+4. **Author own-row read** — Logged-in author: `fetchUserReview` returns the row; ReviewModal pre-fills correctly.
+5. **Admin raw access** — Admin probe: `from('scenario_reviews').select('*')` returns all rows.
+6. **Visibility gating** — RPC against unpublished / hidden / publisher-hidden scenario returns empty.
+7. **Pagination cap** — `rpc('get_public_scenario_reviews', { p_published_scenario_id, p_limit: 9999, p_offset: -5 })` returns ≤50 rows starting at offset 0.
+8. **Writes still work** — submit + delete review flows succeed.
+9. **Linter** — run `supabase--linter`; resolve migration-tied findings.
+10. **Snapshots** — `types.ts` shows new RPC signatures; schema map + inventory show updated policies/functions.
 
-All other findings and the staging order (Batch A independent, Batch B BF-08, Batch C BF-10 → BF-11, Batch D storage flips BF-04 → BF-05 → BF-06) carry over unchanged.
+### Out of scope (explicit)
+
+Batch C (reports / user_strikes / BF-10), Batch D (media buckets), and any unrelated table or surface.

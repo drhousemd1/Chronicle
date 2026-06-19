@@ -98,6 +98,7 @@ const qualityHubProfilePrivacyEnforcement20260614Timestamp = "2026-06-14T09:00:0
 const qualityHubStorageStageA20260614Timestamp = "2026-06-14T09:30:00.000Z";
 const qualityHubStoragePrivacyStageB20260614Timestamp = "2026-06-14T11:15:00.000Z";
 const qualityHubBatchASecurity20260619Timestamp = "2026-06-19T08:00:00.000Z";
+const qualityHubBatchBSecurity20260619Timestamp = "2026-06-19T09:10:00.000Z";
 
 function stamp(runId: string) {
   return {
@@ -6534,6 +6535,47 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
     },
   ],
   changeLog: [
+    {
+      id: "cl-20260619-002",
+      title: "Batch B security — BF-08 scenario_reviews sanitized public RPC + tightened RLS",
+      summary:
+        "Security · Closed BF-08. The blanket 'Anyone authenticated can view reviews' SELECT policy on public.scenario_reviews has been dropped. Public review display is now served by a sanitized SECURITY DEFINER RPC that omits the reviewer user_id and per-axis scores and is hard-capped at 50 rows per call. Creator overall rating is served by a second RPC gated on the publisher's hide_published_works flag. Raw row access is now restricted to the review author (own row) and admins. Authors keep direct own-row reads so ReviewModal pre-fills.",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem:
+        "public.scenario_reviews exposed the entire reviews table to every signed-in user via a permissive SELECT, including reviewer user_id (re-creating the same review-graph privacy issue BF-09 closed for likes) and per-axis scoring fields the UI never displays. fetchScenarioReviews used .select('*') and fetchCreatorOverallRating walked raw review rows for cross-publisher aggregates. Visibility gating (publisher hide_published_works, scenario is_published/is_hidden) was not enforced on review reads.",
+      plan:
+        "1) Add SECURITY DEFINER RPC get_public_scenario_reviews(p_published_scenario_id, p_limit, p_offset) returning id, raw_weighted_score, spice_level, comment, created_at, and reviewer_username/display_name/avatar_url (masked by profiles.hide_profile_details). Hard-cap pagination via LEAST(GREATEST(COALESCE(p_limit,5),0),50) and clamp offset >= 0. Gate on scenario visibility and publisher hide_published_works. 2) Add SECURITY DEFINER RPC get_creator_overall_rating(p_publisher_id) returning rating + total_reviews, gated on publisher visibility (returns 0/0 to non-owner non-admin when hidden). 3) DROP POLICY 'Anyone authenticated can view reviews'; ADD own-row SELECT + admin SELECT/UPDATE/DELETE policies; keep author INSERT/UPDATE/DELETE own-row policies untouched. 4) Migrate fetchScenarioReviews and fetchCreatorOverallRating to the new RPCs. Keep fetchUserReview direct (own-row policy permits it). 5) Add PublicScenarioReview display type so consumers don't depend on user_id. 6) Refresh source-of-truth snapshots and add change-log entry.",
+      changes:
+        "Database (live, migration timestamped 2026-06-19):\n- CREATE FUNCTION public.get_public_scenario_reviews(uuid,int,int) RETURNS TABLE(id, raw_weighted_score, spice_level, comment, created_at, reviewer_username, reviewer_display_name, reviewer_avatar_url) LANGUAGE sql STABLE SECURITY DEFINER SET search_path=public; LIMIT LEAST(GREATEST(COALESCE(p_limit,5),0),50); OFFSET GREATEST(COALESCE(p_offset,0),0); JOIN published_scenarios + profiles to gate on ps.is_published, NOT ps.is_hidden, NOT pub.hide_published_works; LEFT JOIN profiles to mask reviewer fields when hide_profile_details. EXECUTE granted to anon, authenticated.\n- CREATE FUNCTION public.get_creator_overall_rating(uuid) RETURNS TABLE(rating numeric, total_reviews bigint) LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=public; returns 0,0 when publisher hide_published_works is true and caller is neither owner nor admin; otherwise AVG(raw_weighted_score)/COUNT(*) over the publisher's published-and-not-hidden scenarios with non-null raw_weighted_score. EXECUTE granted to anon, authenticated.\n- DROP POLICY 'Anyone authenticated can view reviews' ON public.scenario_reviews.\n- CREATE POLICY 'Users can view own reviews' SELECT TO authenticated USING (user_id = auth.uid()).\n- CREATE POLICY 'Admins can view all reviews' SELECT TO authenticated USING (has_role(auth.uid(),'admin')).\n- CREATE POLICY 'Admins can update reviews' UPDATE TO authenticated USING (has_role(auth.uid(),'admin')).\n- CREATE POLICY 'Admins can delete reviews' DELETE TO authenticated USING (has_role(auth.uid(),'admin')).\n- Author INSERT/UPDATE/DELETE own-row policies retained unchanged. update_review_aggregates trigger (SECURITY DEFINER) continues to maintain published_scenarios.review_count and avg_rating.\n\nFrontend:\n- src/services/gallery-data.ts: added PublicScenarioReview interface (no user_id, no per-axis fields). fetchScenarioReviews now calls supabase.rpc('get_public_scenario_reviews', { p_published_scenario_id, p_limit, p_offset }) and maps reviewer_* columns into a nested reviewer object (or null when all three are null due to hide_profile_details). fetchCreatorOverallRating now calls supabase.rpc('get_creator_overall_rating', { p_publisher_id }) and preserves the { rating: round(x*2)/2, totalReviews } contract. fetchUserReview, submitReview, deleteReview unchanged.\n- src/components/chronicle/StoryDetailModal.tsx: reviews state typed as PublicScenarioReview[]; render code already only consumed id/raw_weighted_score/spice_level/comment/created_at/reviewer fields.\n\nSource-of-truth snapshots (this commit):\n- src/data/database-schema-inventory.ts: scenario_reviews rls_policies updated — 'Anyone authenticated can view reviews' removed; 'Users can view own reviews', 'Admins can view all reviews', 'Admins can update reviews', 'Admins can delete reviews' added.\n- src/data/supabase-schema-map.ts: same scenario_reviews policy delta.\n- src/data/architecture-file-analysis.ts: gallery-data.ts rpcs list now includes get_public_scenario_reviews and get_creator_overall_rating.\n- src/integrations/supabase/types.ts: regenerated post-migration with the two new RPC signatures (no reviewer user_id in get_public_scenario_reviews).\n\nValidation:\n- pg_policies confirms the new SELECT policy set on public.scenario_reviews and absence of 'Anyone authenticated can view reviews'.\n- pg_proc confirms get_public_scenario_reviews(uuid,int,int) and get_creator_overall_rating(uuid) exist as SECURITY DEFINER with search_path=public.\n- RPC return shape: get_public_scenario_reviews returns only id/raw_weighted_score/spice_level/comment/created_at/reviewer_username/reviewer_display_name/reviewer_avatar_url — no user_id, no per-axis scores.\n- Pagination cap: LEAST(GREATEST(COALESCE(p_limit,5),0),50) clamps any caller-supplied limit to 0..50; offset clamped to >=0.\n- Frontend grep: rg \"from\\('scenario_reviews'\\)\\.select\\('\\*'\\)\" src/ shows only fetchUserReview (own-row, allowed by new SELECT policy) and admin tooling. No public path performs broad scenario_reviews reads.\n- ReviewModal pre-fill (own-row read) and submitReview/deleteReview write flows unchanged.\n\nDeferred / not in this batch:\n- BF-04, BF-05, BF-06 (storage flips) and BF-10 / BF-11 remain in Batches C/D per the approved v4 plan.",
+      filesAffected: [
+        "supabase/migrations/20260619090616_bf08_sanitize_scenario_reviews.sql",
+        "src/services/gallery-data.ts",
+        "src/components/chronicle/StoryDetailModal.tsx",
+        "src/integrations/supabase/types.ts",
+        "src/data/supabase-schema-map.ts",
+        "src/data/database-schema-inventory.ts",
+        "src/data/architecture-file-analysis.ts",
+        "src/data/ui-audit-findings.ts",
+      ],
+      agent: "Lovable",
+      relatedFindingIds: [],
+      relatedRunIds: [],
+      tags: [
+        "security",
+        "rls",
+        "scenario-reviews",
+        "review-privacy",
+        "hide-published-works",
+        "schema-snapshot",
+        "quality-hub",
+        "batch-b",
+        "bf-08",
+      ],
+      comments: [],
+      createdAt: qualityHubBatchBSecurity20260619Timestamp,
+      updatedAt: qualityHubBatchBSecurity20260619Timestamp,
+    },
     {
       id: "cl-20260619-001",
       title: "Batch A security cleanup — art_styles, app_settings, child-table visibility, scenario_likes, view/play guards, guide_images storage, snapshot refresh",
