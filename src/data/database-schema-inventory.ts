@@ -678,10 +678,10 @@ export const databaseSchemaInventory = {
       ],
       "rls_policies": [
         {
-          "name": "Anyone can read art styles",
+          "name": "Admins can read art styles",
           "command": "SELECT",
-          "roles": "public",
-          "using": "true",
+          "roles": "authenticated",
+          "using": "has_role(auth.uid(), 'admin')",
           "with_check": null
         },
         {
