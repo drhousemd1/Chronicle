@@ -1139,10 +1139,10 @@ export const databaseSchemaInventory = {
           "with_check": "(auth.uid() = user_id) AND (scenario_id IS NULL OR EXISTS(SELECT 1 FROM stories s WHERE s.id = characters.scenario_id AND s.user_id = auth.uid()))"
         },
         {
-          "name": "Users can view own or published characters",
+          "name": "Users can view own or visible published characters",
           "command": "SELECT",
           "roles": "authenticated",
-          "using": "(auth.uid() = user_id) OR EXISTS(SELECT 1 FROM published_scenarios ps WHERE ps.scenario_id = characters.scenario_id AND ps.is_published = true AND ps.is_hidden = false)",
+          "using": "(auth.uid() = user_id) OR has_role(auth.uid(), 'admin') OR EXISTS(SELECT 1 FROM published_scenarios ps JOIN profiles p ON p.id = ps.publisher_id WHERE ps.scenario_id = characters.scenario_id AND ps.is_published = true AND ps.is_hidden = false AND COALESCE(p.hide_published_works,false) = false)",
           "with_check": null
         },
         {
