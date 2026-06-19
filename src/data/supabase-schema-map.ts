@@ -9949,16 +9949,6 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "command": "ALL",
           "withCheck": "has_role(auth.uid(), 'admin'::app_role)",
           "permissive": true
-        },
-        {
-          "name": "Users can view own strikes",
-          "roles": [
-            "authenticated"
-          ],
-          "using": "(auth.uid() = user_id)",
-          "command": "SELECT",
-          "withCheck": null,
-          "permissive": true
         }
       ],
       "triggers": [
