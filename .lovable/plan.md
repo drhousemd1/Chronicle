@@ -1,105 +1,177 @@
-## Batch C v2 — BF-10 (reports/strikes/Realtime) + BF-11 (published_scenarios moderation field exposure)
+## Batch D — Media Storage Privacy (BF-04, BF-05, BF-06, PD-01) — Revised
 
-Correction: column-level REVOKE is not a real privacy boundary while table-level SELECT remains for the same role. The revised BF-11 plan removes the broad public/authenticated raw SELECT on `published_scenarios` entirely and migrates non-owner surfaces to sanitized RPCs that already exist or are added here.
+Single controlled batch, executed in ordered internal stages. No part is deferred. Plan only; await approval.
 
-### Frontend inventory of raw `public.published_scenarios` reads
-1. `src/services/gallery-data.ts`
-   - `fetchPublishedScenarios` (legacy, **no live callers found** — confirmed via `rg`).
-   - `getPublishedScenario(scenarioId)` — **owner-only callers**: `ShareStoryModal`, `StoryHub`.
-   - `fetchUserPublishedScenarios(userId)` — **owner-only** (filters `publisher_id = userId`).
-   - `fetchSavedScenarios(userId)` — **normal-user surface** (the user's Saved list), joins `published_scenarios (...)` for card display. Non-owner rows are read here.
-   - `publishScenario` / `unpublishScenario` — owner INSERT/UPDATE only, unaffected by SELECT policy.
-2. `src/components/account/PublicProfileTab.tsx` — **owner-only** (`publisher_id = user.id`).
-3. Gallery (`Gallery.tsx` → `GalleryHub` → `fetchGalleryScenarios`) — already uses RPC `fetch_gallery_scenarios`. No raw read.
-4. `CreatorProfile` — already uses RPC `get_public_creator_profile`. No raw read.
-5. `StoryDetailModal` — receives data via props; no raw read.
+### Contract (governs every decision below)
 
-Only one non-owner raw-read path remains: `fetchSavedScenarios`. Everything else is owner/admin or already sanitized.
+- **Public URL fields are allowed only for intentionally public surfaces:** `profiles.avatar_url` (profile avatars) and `stories.published_cover_url` (published gallery cover mirror). Nothing else may persist a long-lived public URL.
+- **Private/custom media** (page backgrounds, user-uploaded sidebar themes, draft/private covers, private character/side-character avatars) must persist a durable bucket path in a `*_path` column and render through `getSignedMediaUrl`. No public-URL fallback after backfill closes.
+- **Default/shared sidebar themes** are admin-owned public assets in a dedicated public bucket. Normal users cannot write to that bucket.
 
-### BF-11 — Proposed changes
+### 1. Current live state (confirmed in repo + Supabase)
 
-#### 1. Migration: tighten `published_scenarios` SELECT to owner + admin only
-- `DROP POLICY "Anyone can view published scenarios" ON public.published_scenarios;`
-- `CREATE POLICY "Owners can view own publications" ON public.published_scenarios FOR SELECT TO authenticated USING (publisher_id = auth.uid());`
-- `CREATE POLICY "Admins can view all publications" ON public.published_scenarios FOR SELECT TO authenticated USING (has_role(auth.uid(),'admin'));`
-- INSERT/UPDATE/DELETE policies remain unchanged (publishers can manage own).
-- `REVOKE SELECT ON public.published_scenarios FROM anon;` (no anon surface needs it — gallery RPC uses SECURITY DEFINER). Keep `GRANT SELECT ON public.published_scenarios TO authenticated;` so RLS gates owner/admin rows.
-- `reported_count` becomes unreachable for non-owner, non-admin under any column subset, eliminating BF-11.
+- Buckets: `avatars` PUBLIC (profile + character + side-char + import re-uploads), `covers` PUBLIC (drafts AND published), `backgrounds` PUBLIC (page backgrounds AND user sidebar themes AND any admin defaults — all mixed), `scenes`/`image_library` PRIVATE (signed URL, Stage B complete), `guide_images` PUBLIC admin-only, `finance_documents` PRIVATE admin-only.
+- Rows store permanent public URLs in: `user_backgrounds.image_url`, `sidebar_backgrounds.image_url`, `stories.cover_image_url`, `characters.avatar_url`, `side_characters.avatar_url`, `profiles.avatar_url`.
+- No `*_path` durable columns exist except `scenes.image_path` and `library_images.image_path`.
+- `sidebar_backgrounds.category` already exists and can distinguish `default`/`shared` from user uploads.
+- `signed-media.ts` `PrivateBucket` union covers only `scenes | image_library`.
 
-#### 2. Migration: new sanitized RPC for the Saved list
-- `CREATE OR REPLACE FUNCTION public.get_saved_scenarios_for_user() RETURNS TABLE(id uuid, user_id uuid, published_scenario_id uuid, source_scenario_id uuid, created_at timestamptz, ps_id uuid, ps_scenario_id uuid, ps_publisher_id uuid, ps_allow_remix boolean, ps_tags text[], ps_like_count int, ps_save_count int, ps_play_count int, ps_view_count int, ps_avg_rating numeric, ps_review_count int, ps_is_published boolean, ps_is_hidden boolean, ps_created_at timestamptz, ps_updated_at timestamptz, story_id uuid, story_title text, story_description text, story_cover_image_url text, story_cover_image_position jsonb) LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$ ... $$;`
-- Scoped to `auth.uid()`; JOINs `saved_scenarios → published_scenarios → stories`; filters `ps.is_published = true AND ps.is_hidden = false AND COALESCE(publisher.hide_published_works,false)=false`; **does not return `reported_count`** or any moderation field.
-- `GRANT EXECUTE ON FUNCTION public.get_saved_scenarios_for_user() TO authenticated;`
-- Publisher hydration continues client-side via existing `get_public_profiles` RPC.
+### 2. Target storage layout
 
-#### 3. Migration: ensure owner/admin moderation-counter access for future surfaces (no UI today)
-- `CREATE OR REPLACE FUNCTION public.get_scenario_moderation_counters(p_published_scenario_id uuid) RETURNS TABLE(reported_count int) LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$ ... $$;` — gated by `publisher_id = auth.uid() OR has_role(auth.uid(),'admin')`. Registered but no frontend caller now (documented as backend-ready only).
+| Bucket | Public? | Contents | Path | Writable by |
+|---|---|---|---|---|
+| `avatars` | **Public** | Profile avatars ONLY | `<userId>/profile/<file>` | owner, only under `<userId>/profile/` |
+| `covers` | **Public** | Published gallery cover mirrors ONLY | `<userId>/<publishedScenarioId>/<file>` | service role (publish RPC) + owner of that published scenario |
+| `sidebar_themes_public` | **Public (new)** | Default/shared sidebar themes | `default/<file>` or `shared/<file>` | admin only |
+| `user_backgrounds_private` | Private (new) | Page backgrounds | `<userId>/<file>` | owner |
+| `sidebar_backgrounds_private` | Private (new) | User-uploaded sidebar themes | `<userId>/<file>` | owner |
+| `story_covers_private` | Private (new) | Draft/private covers + master copy of published covers | `<userId>/<scenarioId>/<file>` | owner, admin |
+| `character_avatars_private` | Private (new) | Character + side-character avatars | `<userId>/<scenarioId>/<file>` | owner, admin; readable signed by anyone via helper when story is published-and-visible |
+| `backgrounds` | **Deleted at end of batch** | — | — | — |
 
-### BF-10 — Proposed changes
+`backgrounds` bucket is decommissioned because its current dual-use (page bg + sidebar theme + would-be admin defaults) is exactly the BF-04/05 mixing problem. After backfill into `user_backgrounds_private` / `sidebar_backgrounds_private` / `sidebar_themes_public`, the `backgrounds` bucket is emptied and dropped in the same batch.
 
-#### 4. Migration: drop `reports` from Realtime publication
-- `ALTER PUBLICATION supabase_realtime DROP TABLE public.reports;`
+### 3. New / changed schema
 
-#### 5. Migration: remove raw own-SELECT on `reports`, add sanitized RPC
-- `DROP POLICY "Users can view own submitted reports" ON public.reports;`
-- `CREATE OR REPLACE FUNCTION public.get_my_submitted_reports() RETURNS TABLE(id uuid, story_id text, reason text, status text, created_at timestamptz) LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$ SELECT id, story_id, reason, status, created_at FROM public.reports WHERE reporter_user_id = auth.uid() ORDER BY created_at DESC $$;`
-- `GRANT EXECUTE ... TO authenticated;`
-- Omits `note`, `reviewed_by`, `accused_user_id`, `accused`, `reporter`. **No normal-user UI consumes this RPC today** — added backend-ready only; documented in Quality Hub.
-- INSERT policy `Users can insert own reports` is preserved → report submission still works.
-- Admin `Admins can manage reports` policy preserved → admin moderation works.
+Additive columns (no drops in same step):
+- `user_backgrounds.image_path text`
+- `sidebar_backgrounds.image_path text` (existing `category` column distinguishes default vs user rows)
+- `stories.cover_image_path text` (private master)
+- `stories.published_cover_url text` (public mirror, set only by publish flow)
+- `characters.avatar_path text`
+- `side_characters.avatar_path text`
 
-#### 6. Migration: remove raw own-SELECT on `user_strikes`, add sanitized account-status RPC
-- `DROP POLICY "Users can view own strikes" ON public.user_strikes;`
-- `CREATE OR REPLACE FUNCTION public.get_my_account_status() RETURNS TABLE(active_strike_count int, total_points int, latest_status text, latest_falls_off_at date) LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$ ... $$;` — `auth.uid()`-scoped aggregate; omits `issued_by`, `note`, `report_id`, `reason`.
-- `GRANT EXECUTE ... TO authenticated;`
-- **No normal-user UI consumes this RPC today** — backend-ready only.
-- Admin `Admins can manage user strikes` preserved.
+After backfill closes (Stage E in same batch):
+- `UPDATE` all private rows: set `*_url` to NULL where a `*_path` is present and the row is private.
+- `user_backgrounds.image_url`, `sidebar_backgrounds.image_url` (user rows only), `characters.avatar_url`, `side_characters.avatar_url`, `stories.cover_image_url` are dropped at end of batch — they have no remaining legitimate use. (Default sidebar rows move to `sidebar_backgrounds.image_url` referencing `sidebar_themes_public`; that column stays for default rows. Implementation note: we keep the column for the table because default rows still need a public URL, but enforce via trigger that user-owned rows must have NULL `image_url` and non-NULL `image_path`.)
+- `stories.cover_image_url` is dropped; gallery renders `published_cover_url`, owner UIs render signed URL from `cover_image_path`.
+- `characters.avatar_url`, `side_characters.avatar_url` dropped; renderers use signed URL.
+- `profiles.avatar_url` kept (intentionally public).
 
-### Frontend file changes
+New helper functions:
+- `public.can_read_private_story_media(p_bucket text, p_path text) returns boolean` — SECURITY DEFINER. Returns true if (a) caller owns the path, (b) caller is admin, or (c) path belongs to a row in `characters`/`side_characters`/`stories` whose parent story is published, not hidden, and publisher not hiding works. Mirrors the existing `can_read_scene_storage_object` pattern.
+- Trigger `enforce_private_media_url_null` on `user_backgrounds`, `sidebar_backgrounds` (user rows), `characters`, `side_characters`, `stories` (private state): rejects INSERT/UPDATE that sets `image_url`/`avatar_url`/`cover_image_url` on a private row.
+- Publish RPC update: `promote_story_cover_to_public(p_scenario_id uuid)` copies bytes from `story_covers_private` → `covers`, sets `published_cover_url`, returns the public URL. Unpublish/hide RPC clears `published_cover_url` AND deletes the public-bucket copy.
 
-- `src/services/gallery-data.ts`
-  - Rewrite `fetchSavedScenarios` to call `supabase.rpc('get_saved_scenarios_for_user')` and reassemble `SavedScenario[]` from the flat row shape (publishers hydrated via `get_public_profiles`).
-  - Remove `fetchPublishedScenarios` (dead code) **or** mark it owner/admin-only with explicit column list; will remove since no callers.
-  - `getPublishedScenario` and `fetchUserPublishedScenarios` — unchanged logic; owner policy continues to satisfy access. Add explicit column lists (no `reported_count`) for defense-in-depth even though policy now gates rows.
-- `src/components/account/PublicProfileTab.tsx` — unchanged (owner SELECT policy covers it).
-- `src/components/admin/finance/users/ReportsPage.tsx` — remove `supabase.channel("reports-realtime").on("postgres_changes", ...)` subscription and `removeChannel` cleanup; replace with a 30s `setInterval(loadReports, 30_000)` cleared in the effect's return.
-- `src/hooks/use-index-scenario-lifecycle.ts`, `src/hooks/use-index-authenticated-data.ts`, `src/pages/Index.tsx`, `src/components/chronicle/ShareStoryModal.tsx`, `src/components/chronicle/StoryHub.tsx` — no logic change; consume the unchanged service function signatures.
+### 4. Storage RLS (storage.objects)
 
-### Source-of-truth refresh (after live apply)
-- `src/integrations/supabase/types.ts` — regenerated to include new RPCs and removed policies/Realtime entries.
-- `src/data/supabase-schema-map.ts`:
-  - `published_scenarios.policies`: replace `Anyone can view published scenarios` with `Owners can view own publications` + `Admins can view all publications`; note `anon` SELECT grant revoked.
-  - `reports.policies`: remove `Users can view own submitted reports`; mark Realtime as **not published**.
-  - `user_strikes.policies`: remove `Users can view own strikes`.
-  - `functions[]`: add `get_saved_scenarios_for_user`, `get_scenario_moderation_counters`, `get_my_submitted_reports`, `get_my_account_status`.
-- `src/data/database-schema-inventory.ts`: mirror policy/grant/function deltas; record Realtime publication change for `reports`.
-- `src/data/architecture-file-analysis.ts`: register the new RPCs; update `ReportsPage.tsx` (drop Realtime), `gallery-data.ts` (new RPC), reflect removal of `fetchPublishedScenarios` if dropped.
-- `src/data/api-inspector-prompt-documents.ts` and `src/data/api-usage-validation-registry.ts`: register the four new RPC paths (mark `get_my_submitted_reports` and `get_my_account_status` as "backend-ready, no UI consumer yet").
-- `src/data/ui-audit-findings.ts`: new change-log entry `cl-20260619-003` covering BF-10 + BF-11; mark BF-10 and BF-11 issue rows with evidence (pg_policies / pg_publication_tables / probe results).
-- `.lovable/plan.md`: append Batch C v2 record.
+- `user_backgrounds_private`, `sidebar_backgrounds_private`: SELECT/INSERT/UPDATE/DELETE gated on `auth.uid()::text = (storage.foldername(name))[1]` OR admin.
+- `story_covers_private`: same owner+admin gate.
+- `character_avatars_private`: SELECT allowed when owner/admin OR `can_read_private_story_media('character_avatars_private', name)` returns true. Writes owner+admin only.
+- `sidebar_themes_public`: SELECT `authenticated` + `anon`. INSERT/UPDATE/DELETE `has_role(auth.uid(),'admin')`.
+- `avatars`: tighten — INSERT/UPDATE/DELETE require `(storage.foldername(name))[1] = auth.uid()::text AND (storage.foldername(name))[2] = 'profile'`. SELECT remains public.
+- `covers`: tighten — INSERT/UPDATE/DELETE service role only (executed by publish RPC); SELECT public.
+- `backgrounds`: all policies dropped at end of batch when bucket is deleted.
 
-### Validation probes (run post-apply)
+### 5. Backfill (admin-invoked edge function `migrate-media-to-private`)
 
-1. **BF-11 proof** — as a non-admin, non-publisher signed-in user:
-   - `await supabase.from('published_scenarios').select('reported_count').limit(1)` → returns `[]` (RLS denies all rows).
-   - `await supabase.from('published_scenarios').select('id').limit(1)` → returns `[]`.
-   - As anon: same query → permission error (no SELECT grant) or `[]`.
-   - As publisher of row X: `select('reported_count').eq('id', X)` → returns the row (owner branch).
-   - As admin: full access preserved.
-2. **Gallery still works** — `fetch_gallery_scenarios` RPC continues to return cards (no policy change to the RPC body; SECURITY DEFINER bypasses RLS).
-3. **Saved list still works** — `fetchSavedScenarios` returns cards via new RPC; no `reported_count` in payload.
-4. **Owner surfaces** — `ShareStoryModal` (`getPublishedScenario` on own scenario), `StoryHub`, `PublicProfileTab`, `fetchUserPublishedScenarios` all return rows.
-5. **BF-10 reports** — `pg_publication_tables` shows `reports` removed; non-admin `select('*').from('reports')` returns `[]`; INSERT of own report still succeeds; admin ReportsPage still shows rows and polls every 30 s.
-6. **BF-10 strikes** — non-admin `select('*').from('user_strikes')` returns `[]`; admin moderation UI unchanged.
-7. **Snapshots** — `pg_policies` matches updated set; `information_schema.role_table_grants` confirms `anon` no longer holds SELECT on `published_scenarios`; new functions present in `pg_proc` with `SECURITY DEFINER` + `search_path = public`.
-8. **Static greps** — `rg "reports-realtime" src` → 0; `rg "fetchPublishedScenarios\\b" src` → 0 (after removal); `rg "from\\(['\\\"]published_scenarios" src` → only owner/admin paths remain.
-9. `bun run lint`, typecheck, and relevant vitest suites pass.
+Idempotent, per-bucket pass:
+1. `user_backgrounds`: parse `<userId>/<file>` from `image_url`, copy bytes `backgrounds` → `user_backgrounds_private`, set `image_path`, NULL `image_url`, delete source object.
+2. `sidebar_backgrounds`:
+   - `category IN ('default','shared')` rows: copy bytes → `sidebar_themes_public/default/<file>`, rewrite `image_url` to new public URL, NULL `image_path`.
+   - All other rows: copy to `sidebar_backgrounds_private`, set `image_path`, NULL `image_url`.
+3. `stories`: copy current `cover_image_url` bytes → `story_covers_private`, set `cover_image_path`. For rows where `published_scenarios.is_published = true AND is_hidden = false`, also copy → `covers/<userId>/<publishedScenarioId>/<file>` and set `published_cover_url`. NULL `cover_image_url`.
+4. `characters`, `side_characters`: copy `avatar_url` bytes → `character_avatars_private/<userId>/<scenarioId>/<file>`, set `avatar_path`, NULL `avatar_url`.
+5. `profiles.avatar_url`: untouched.
+6. Failures written to `media_migration_errors(row_table, row_id, source_url, error, created_at)` for admin review. Bucket cleanup waits until errors are zero.
 
-### Backend-ready vs UI-consumed (BF-10)
-- `get_my_submitted_reports` and `get_my_account_status`: created and granted in this batch, but **no normal-user UI surface consumes them yet**. The existing AccountSettingsTab is not extended in this batch. Quality Hub entry will explicitly flag both as "RPC available, UI deferred to a later batch".
+After Stage E reports zero errors and validation probes pass:
+- Drop columns listed in §3.
+- `DELETE FROM storage.objects WHERE bucket_id = 'backgrounds';` then drop bucket via SQL (`delete from storage.buckets where id='backgrounds'`).
 
-### Explicitly out of scope
-- Batch D storage/media buckets (BF-04/05/06).
-- Building an AccountStatus UI section.
-- Any change to Batch A or Batch B artifacts.
-- Schema or policy changes for tables other than `published_scenarios`, `reports`, `user_strikes`.
+### 6. Export / Import / Remix
+
+- Export serializes `*_path` plus a one-shot signed URL (short TTL) that the export downloader uses to inline bytes into the export archive. Public surfaces (profile avatar, published cover) keep their public URL.
+- Import / Remix: `library-copy.ts` `copyMediaForUser` extended to all four new private buckets. Importer's user id is the only owner segment; original owner's path is never reused. `ensureStorageUrl` in `scenarios.ts` refactored to `ensureStoragePath` returning `{ bucket, path }`. Publish flow on the imported story calls `promote_story_cover_to_public` independently.
+
+### 7. Frontend files changed (exact list)
+
+Services:
+- `src/services/persistence/media-settings.ts` — switch `uploadAvatar` (only profile path), add `uploadProfileAvatar`, replace `uploadCoverImage` with `uploadStoryCoverPrivate`, replace `uploadBackgroundImage` → `uploadUserBackgroundPrivate`, replace `uploadSidebarBackgroundImage` → `uploadSidebarThemePrivate`; all return `{ path }`. Update `createUserBackground`/`createSidebarBackground` to persist `image_path` and never write `image_url` for user rows. Update delete helpers to remove from the new buckets.
+- `src/services/persistence/signed-media.ts` — extend `PrivateBucket` union with the four new buckets.
+- `src/services/persistence/scenarios.ts` — `ensureStorageUrl` → `ensureStoragePath`; hydrate signed URLs at load time; save persists `cover_image_path`.
+- `src/services/persistence/library-copy.ts` — add the four new private destinations.
+- `src/services/persistence/characters.ts` and `side-characters.ts` — read/write `avatar_path`, no longer write `avatar_url`.
+
+Components:
+- `src/components/account/PublicProfileTab.tsx` — upload to `avatars/<userId>/profile/<file>` (only writer to `avatars`).
+- `src/components/chronicle/BackgroundPickerModal.tsx`, `ImageLibraryPickerModal.tsx`, `ChatInterfaceTab.tsx` — render via `getSignedMediaUrl` for user rows; public URL for default/shared sidebar rows.
+- `src/components/chronicle/GalleryStoryCard.tsx`, `StoryDetailModal.tsx` — gallery uses `published_cover_url`; owner-only previews use signed URL from `cover_image_path`.
+- `src/features/character-editor-modal/CharacterEditorModalScreen.tsx`, `src/features/character-builder/CharacterBuilderScreen.tsx` — read/write `avatar_path`, render via signed URL.
+- `src/features/story-builder/hooks/use-story-builder-media.ts` — uploads to `story_covers_private`, persists `cover_image_path`; on publish triggers `promote_story_cover_to_public`.
+
+Edge functions:
+- `supabase/functions/generate-cover-image/index.ts` — write to `story_covers_private`, return `{ path }`.
+- `supabase/functions/generate-side-character-avatar/index.ts` — write to `character_avatars_private`, return `{ path }`.
+- `supabase/functions/migrate-base64-images/index.ts` — target new private buckets per row type.
+- New `supabase/functions/migrate-media-to-private/index.ts` — admin-invoked backfill described in §5.
+- Publish/unpublish RPC wiring (in existing publish edge function or RPC) updated to call `promote_story_cover_to_public` / cleanup.
+
+### 8. Migrations / live changes (ordered, single batch)
+
+Stage A — additive schema + new buckets:
+1. `storage_create_bucket` ×5: `user_backgrounds_private`, `sidebar_backgrounds_private`, `story_covers_private`, `character_avatars_private` (private); `sidebar_themes_public` (public).
+2. SQL migration: add the six new columns in §3; create `can_read_private_story_media`; create RLS on storage.objects for the five new buckets; create `enforce_private_media_url_null` trigger (initially DISABLED); create `promote_story_cover_to_public` RPC.
+
+Stage B — frontend renderer + writer changes shipped behind the existing fields (writers go to new buckets/paths, readers prefer `*_path` then fall back to `*_url`).
+
+Stage C — backfill via `migrate-media-to-private` until `media_migration_errors` is empty.
+
+Stage D — flip readers to `*_path`-only; enable `enforce_private_media_url_null` trigger; NULL all private `*_url` columns.
+
+Stage E — lockdown migration:
+1. Tighten `avatars` policies to `<userId>/profile/` writes.
+2. Tighten `covers` policies to service-role writes.
+3. Drop columns: `user_backgrounds.image_url`, `characters.avatar_url`, `side_characters.avatar_url`, `stories.cover_image_url`. Keep `sidebar_backgrounds.image_url` (default rows only, enforced by trigger).
+4. Empty + drop `backgrounds` bucket and its policies.
+
+Each SQL change goes through `supabase--migration`. Stage C runs through the edge function. All stages occur within this batch.
+
+### 9. Schema snapshots / generated types
+
+- Regenerate `src/integrations/supabase/types.ts`.
+- Update `src/data/database-schema-inventory.ts`, `src/data/supabase-schema-map.ts` — buckets, new columns, helper function, dropped columns, dropped bucket.
+- Update `src/data/architecture-file-analysis.ts` — new edge function, changed services.
+- Update `src/data/api-usage-validation-registry.ts` — new RPCs (`can_read_private_story_media`, `promote_story_cover_to_public`).
+- Update `docs/guides/storage-privacy-migration.md` with Stage C section + matrix.
+
+### 10. Validation probes (must all pass before batch closes)
+
+Cold-public-URL denial (the BF-04/05/06 acceptance test):
+- For one row per private surface (page background, user sidebar theme, draft cover, character avatar in private story, side-character avatar in private story), execute as **anon (no auth header)** and as **a different authenticated user**:
+  - `GET` against the legacy `https://<project>.supabase.co/storage/v1/object/public/backgrounds/<path>` → 400/404 (bucket gone).
+  - `GET` against the new private bucket public URL → 400.
+  - `supabase.storage.from(<private bucket>).list('<otherUserId>')` → empty / denied.
+  - `supabase.storage.from(<private bucket>).createSignedUrl('<otherUserId>/<file>', 60)` → error.
+- For published-story character avatar: same probes succeed via `can_read_private_story_media` signed URL, fail on direct public URL.
+
+Positive paths:
+- Owner upload + render + delete for each private bucket.
+- Publish flow: draft cover (private) → publish → `published_cover_url` populated, public URL fetchable; unpublish → public URL 404 and `published_cover_url` cleared.
+- Profile avatar upload still public.
+- Default sidebar theme visible to all authenticated users.
+
+Backend:
+- `pg_policies` snapshot for `storage.objects` matches §4.
+- `media_migration_errors` row count = 0 before Stage E lockdown migration runs.
+- `select count(*) from storage.objects where bucket_id='backgrounds'` = 0 before bucket drop.
+- `\d` snapshots confirm dropped columns.
+
+Automated:
+- `bun run lint`, build typecheck, `vitest run` for `media-settings`, `library-copy`, `signed-media` (with new bucket union), `scenarios` import/export, publish flow tests.
+- Playwright smoke: gallery loads with covers; owner sees draft cover; non-owner cannot.
+
+### 11. Quality Hub / change log
+
+- `cl-20260619-004` in `src/data/ui-audit-findings.ts` with BF-04/05/06/PD-01 evidence (probe outputs, migration filenames, edge-function commit).
+- Mark BF-04, BF-05, BF-06, PD-01 `resolved`.
+- Append Stage C section to `docs/guides/storage-privacy-migration.md` covering the five new buckets, dropped `backgrounds` bucket, dropped legacy columns, and the cold-URL denial matrix.
+
+### Risks / mitigations
+
+- **Backfill duration**: large media volume could be slow. Edge function processes in chunks of 100 rows, resumable via `media_migration_errors` + `*_path IS NOT NULL` skip.
+- **Storage.objects RLS on the four private buckets via SECURITY DEFINER helper**: same pattern as existing `can_read_scene_storage_object`, low risk.
+- **Trigger blocking legacy writes**: enabled only after Stage D flip so Stage B dual-write logic isn't broken.
+- **Bucket drop is destructive**: only runs after `storage.objects` for that bucket is empty AND probes pass.
+
+No part of BF-04/05/06/PD-01 is deferred. Stage E lockdown and bucket drop are inside this batch and gated on the validation probes in §10.
