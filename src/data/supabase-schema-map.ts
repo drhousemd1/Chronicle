@@ -1602,9 +1602,11 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "permissive": true
         },
         {
-          "name": "Anyone can read art styles",
-          "roles": null,
-          "using": "true",
+          "name": "Admins can read art styles",
+          "roles": [
+            "authenticated"
+          ],
+          "using": "has_role(auth.uid(), 'admin'::app_role)",
           "command": "SELECT",
           "withCheck": null,
           "permissive": true
