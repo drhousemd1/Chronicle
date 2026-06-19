@@ -4,7 +4,7 @@ import { CustomContentTypeModal } from '@/components/chronicle/CustomContentType
 import { TabFieldNavigator } from '@/components/chronicle/TabFieldNavigator';
 import { Button } from '@/components/chronicle/UI';
 import { Icons } from '@/constants';
-import { uid, now, clamp, compressAndUpload, resizeImage } from '@/utils';
+import { uid, now, clamp, compressAndUpload, compressAndUploadToPrivate, resizeImage } from '@/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { uploadAvatar, dataUrlToBlob, updateNavButtonImages, loadNavButtonImages } from '@/services/supabase-data';
 import { AvatarGenerationModal } from '@/components/chronicle/AvatarGenerationModal';
@@ -522,11 +522,19 @@ export const CharacterBuilderScreen: React.FC<CharacterBuilderScreenProps> = ({
   const handleAvatarGenerated = async (imageUrl: string) => {
     if (selected) {
       let finalUrl = imageUrl;
+      let finalPath: string | null = null;
       try {
-        finalUrl = await compressAndUpload(imageUrl, 'avatars', user?.id || 'anon', 512, 512, 0.85);
+        if (user?.id) {
+          const r = await compressAndUploadToPrivate(
+            imageUrl, 'character_avatars_private', user.id, 512, 512, 0.85,
+          );
+          finalUrl = r.signedUrl || r.sentinel;
+          finalPath = r.path;
+        }
       } catch { /* use original */ }
       onUpdate(selected.id, {
         avatarDataUrl: finalUrl,
+        avatarPath: finalPath,
         avatarPosition: { x: 50, y: 50 }
       });
       setIsRepositioning(true);
@@ -1090,14 +1098,23 @@ export const CharacterBuilderScreen: React.FC<CharacterBuilderScreenProps> = ({
 
                           <AvatarActionButtons
                             onUploadFromDevice={() => fileInputRef.current?.click()}
-                            onSelectFromLibrary={(imageUrl) => {
-                              if (selected) {
-                                onUpdate(selected.id, {
-                                  avatarDataUrl: imageUrl,
-                                  avatarPosition: { x: 50, y: 50 }
-                                });
-                                setIsRepositioning(true);
+                            onSelectFromLibrary={async (imageUrlOrSentinel) => {
+                              if (!selected) return;
+                              let path: string | null = null;
+                              let display = imageUrlOrSentinel;
+                              if (imageUrlOrSentinel.startsWith('storage://character_avatars_private/')) {
+                                path = imageUrlOrSentinel.replace(
+                                  /^storage:\/\/character_avatars_private\//, '',
+                                );
+                                const { getSignedMediaUrl } = await import('@/services/persistence/signed-media');
+                                display = (await getSignedMediaUrl('character_avatars_private', path)) || imageUrlOrSentinel;
                               }
+                              onUpdate(selected.id, {
+                                avatarDataUrl: display,
+                                avatarPath: path,
+                                avatarPosition: { x: 50, y: 50 }
+                              });
+                              setIsRepositioning(true);
                             }}
                             onGenerateClick={handleAiPortrait}
                             disabled={isUploading}
@@ -1127,10 +1144,13 @@ export const CharacterBuilderScreen: React.FC<CharacterBuilderScreenProps> = ({
                                     if (!blob) throw new Error('Failed to process image');
 
                                     const filename = `avatar-${selected.id}-${Date.now()}.jpg`;
-                                    const publicUrl = await uploadAvatar(user.id, blob, filename);
+                                    const { path, signedUrl, sentinel } = await uploadAvatar(user.id, blob, filename);
 
                                     onUpdate(selected.id, {
-                                      avatarDataUrl: publicUrl,
+                                      // Render with signed URL for instant preview; persisted
+                                      // value (sentinel + avatarPath) is written on save.
+                                      avatarDataUrl: signedUrl || sentinel,
+                                      avatarPath: path,
                                       avatarPosition: { x: 50, y: 50 }
                                     });
                                     setIsRepositioning(true);

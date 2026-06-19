@@ -1,12 +1,21 @@
 import type { UserBackground } from '@/types';
 import { sanitizeUiSettings } from '@/utils';
 import { supabase, toTimestamp } from './shared';
+import {
+  buildStorageSentinel,
+  getSignedMediaUrl,
+  getSignedMediaUrls,
+  parseStorageSentinel,
+  resolveStorageMaybeSentinel,
+  type PrivateBucket,
+} from './signed-media';
 
 function dbToUserBackground(row: any): UserBackground {
   return {
     id: row.id,
     userId: row.user_id,
     imageUrl: row.image_url,
+    imagePath: row.image_path || null,
     isSelected: row.is_selected || false,
     overlayColor: row.overlay_color || 'black',
     overlayOpacity: row.overlay_opacity ?? 10,
@@ -16,12 +25,36 @@ function dbToUserBackground(row: any): UserBackground {
   };
 }
 
-async function uploadToBucket(bucket: string, path: string, file: Blob): Promise<string> {
+/**
+ * Upload a blob to a public bucket and return the public URL. Used only for
+ * intentionally public surfaces (profile avatars via PublicProfileTab; legacy
+ * public uploads that haven't been migrated yet).
+ */
+async function uploadToPublicBucket(bucket: string, path: string, file: Blob): Promise<string> {
   const { error: uploadError } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
   if (uploadError) throw uploadError;
-
   const { data } = supabase.storage.from(bucket).getPublicUrl(path);
   return data.publicUrl;
+}
+
+/**
+ * Upload a blob to a private bucket and return a `storage://<bucket>/<path>`
+ * sentinel. Callers must persist the sentinel into their `*_url` column and
+ * the raw `<path>` into the matching `*_path` column, then resolve a signed
+ * URL via getSignedMediaUrl for display.
+ */
+async function uploadToPrivateBucket(
+  bucket: PrivateBucket,
+  path: string,
+  file: Blob,
+  contentType?: string,
+): Promise<{ path: string; sentinel: string; signedUrl: string }> {
+  const { error: uploadError } = await supabase.storage
+    .from(bucket)
+    .upload(path, file, { upsert: true, contentType });
+  if (uploadError) throw uploadError;
+  const signed = await getSignedMediaUrl(bucket, path);
+  return { path, sentinel: buildStorageSentinel(bucket, path), signedUrl: signed };
 }
 
 function extractBackgroundStoragePath(imageUrl: string): string | null {
@@ -29,16 +62,49 @@ function extractBackgroundStoragePath(imageUrl: string): string | null {
   return urlParts.length > 1 ? urlParts[1] : null;
 }
 
-export async function uploadAvatar(userId: string, file: Blob, filename: string): Promise<string> {
-  return uploadToBucket('avatars', `${userId}/${filename}`, file);
+/**
+ * Upload a character avatar to the private `character_avatars_private` bucket.
+ * Callers persist `path` into `characters.avatar_path` and `sentinel` into
+ * `characters.avatar_url`; `signedUrl` is for immediate render only.
+ *
+ * NOTE: This is for character/side-character avatars only. Profile avatars
+ * remain intentionally public and continue to upload directly to the `avatars`
+ * bucket from PublicProfileTab.
+ */
+export async function uploadAvatar(
+  userId: string,
+  file: Blob,
+  filename: string,
+): Promise<{ path: string; sentinel: string; signedUrl: string }> {
+  return uploadToPrivateBucket('character_avatars_private', `${userId}/${filename}`, file);
 }
 
 export async function uploadSceneImage(userId: string, file: Blob, filename: string): Promise<string> {
-  return uploadToBucket('scenes', `${userId}/${filename}`, file);
+  // Kept as legacy string-returning helper; `scenes` bucket was migrated to
+  // private in a previous Stage B. Callers already resolve a signed URL for
+  // preview; the returned publicUrl will 404 anonymously but is preserved for
+  // back-compat with library-copy and other consumers.
+  const { error: uploadError } = await supabase.storage
+    .from('scenes')
+    .upload(`${userId}/${filename}`, file, { upsert: true });
+  if (uploadError) throw uploadError;
+  const { data } = supabase.storage.from('scenes').getPublicUrl(`${userId}/${filename}`);
+  return data.publicUrl;
 }
 
-export async function uploadCoverImage(userId: string, file: Blob, filename: string): Promise<string> {
-  return uploadToBucket('covers', `${userId}/${filename}`, file);
+/**
+ * Upload a story cover to the private `story_covers_private` bucket. Callers
+ * persist `path` into `stories.cover_image_path` and `sentinel` into
+ * `stories.cover_image_url`; `signedUrl` is for immediate render only.
+ * The publish flow will mirror the file into the public `covers` bucket via
+ * promote_story_cover_to_public.
+ */
+export async function uploadCoverImage(
+  userId: string,
+  file: Blob,
+  filename: string,
+): Promise<{ path: string; sentinel: string; signedUrl: string }> {
+  return uploadToPrivateBucket('story_covers_private', `${userId}/${filename}`, file);
 }
 
 export async function fetchUserBackgrounds(userId: string): Promise<UserBackground[]> {
@@ -49,26 +115,47 @@ export async function fetchUserBackgrounds(userId: string): Promise<UserBackgrou
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return (data || []).map(dbToUserBackground);
+  return hydrateUserBackgroundImageUrls(
+    (data || []).map(dbToUserBackground),
+    'user_backgrounds_private',
+  );
 }
 
+/**
+ * Upload a user page-background image to the private `user_backgrounds_private`
+ * bucket. Returns a `storage://user_backgrounds_private/<path>` sentinel that
+ * `createUserBackground` will detect and split into image_url + image_path.
+ */
 export async function uploadBackgroundImage(userId: string, file: Blob, filename: string): Promise<string> {
-  return uploadToBucket('backgrounds', `${userId}/${filename}`, file);
+  const { sentinel } = await uploadToPrivateBucket(
+    'user_backgrounds_private',
+    `${userId}/${filename}`,
+    file,
+  );
+  return sentinel;
 }
 
-export async function createUserBackground(userId: string, imageUrl: string): Promise<UserBackground> {
+export async function createUserBackground(userId: string, imageUrlOrSentinel: string): Promise<UserBackground> {
+  const parsed = parseStorageSentinel(imageUrlOrSentinel);
+  const row = {
+    user_id: userId,
+    image_url: imageUrlOrSentinel,
+    image_path: parsed?.path ?? null,
+    is_selected: false,
+  };
+
   const { data, error } = await supabase
     .from('user_backgrounds')
-    .insert({
-      user_id: userId,
-      image_url: imageUrl,
-      is_selected: false,
-    })
+    .insert(row)
     .select()
     .single();
 
   if (error) throw error;
-  return dbToUserBackground(data);
+  const hydrated = dbToUserBackground(data);
+  if (parsed) {
+    hydrated.imageUrl = (await getSignedMediaUrl(parsed.bucket, parsed.path)) || '';
+  }
+  return hydrated;
 }
 
 export async function setSelectedBackground(userId: string, backgroundId: string | null): Promise<void> {
@@ -122,9 +209,28 @@ export async function getImageLibraryBackground(userId: string): Promise<string 
 }
 
 export async function deleteUserBackground(userId: string, backgroundId: string, imageUrl: string): Promise<void> {
-  const storagePath = extractBackgroundStoragePath(imageUrl);
-  if (storagePath) {
-    await supabase.storage.from('backgrounds').remove([storagePath]);
+  // Look up the row first to find image_path (preferred) before falling back
+  // to the legacy backgrounds-bucket URL parser.
+  const { data: row } = await supabase
+    .from('user_backgrounds')
+    .select('image_path, image_url')
+    .eq('id', backgroundId)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  const dbRow = (row || {}) as { image_path?: string | null; image_url?: string | null };
+  const fromPath = dbRow.image_path || null;
+  const fromSentinel = parseStorageSentinel(dbRow.image_url ?? imageUrl);
+
+  if (fromPath) {
+    await supabase.storage.from('user_backgrounds_private').remove([fromPath]);
+  } else if (fromSentinel) {
+    await supabase.storage.from(fromSentinel.bucket).remove([fromSentinel.path]);
+  } else {
+    const storagePath = extractBackgroundStoragePath(imageUrl);
+    if (storagePath) {
+      await supabase.storage.from('backgrounds').remove([storagePath]);
+    }
   }
 
   const { error } = await supabase
@@ -160,26 +266,42 @@ export async function fetchSidebarBackgrounds(userId: string): Promise<UserBackg
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return (data || []).map(dbToUserBackground);
+  return hydrateUserBackgroundImageUrls(
+    (data || []).map(dbToUserBackground),
+    'sidebar_backgrounds_private',
+  );
 }
 
 export async function uploadSidebarBackgroundImage(userId: string, file: Blob, filename: string): Promise<string> {
-  return uploadToBucket('backgrounds', `${userId}/sidebar/${filename}`, file);
+  const { sentinel } = await uploadToPrivateBucket(
+    'sidebar_backgrounds_private',
+    `${userId}/${filename}`,
+    file,
+  );
+  return sentinel;
 }
 
-export async function createSidebarBackground(userId: string, imageUrl: string): Promise<UserBackground> {
+export async function createSidebarBackground(userId: string, imageUrlOrSentinel: string): Promise<UserBackground> {
+  const parsed = parseStorageSentinel(imageUrlOrSentinel);
+  const row = {
+    user_id: userId,
+    image_url: imageUrlOrSentinel,
+    image_path: parsed?.path ?? null,
+    is_selected: false,
+  };
+
   const { data, error } = await supabase
     .from('sidebar_backgrounds')
-    .insert({
-      user_id: userId,
-      image_url: imageUrl,
-      is_selected: false,
-    })
+    .insert(row)
     .select()
     .single();
 
   if (error) throw error;
-  return dbToUserBackground(data);
+  const hydrated = dbToUserBackground(data);
+  if (parsed) {
+    hydrated.imageUrl = (await getSignedMediaUrl(parsed.bucket, parsed.path)) || '';
+  }
+  return hydrated;
 }
 
 export async function setSelectedSidebarBackground(userId: string, backgroundId: string | null): Promise<void> {
@@ -202,9 +324,30 @@ export async function setSelectedSidebarBackground(userId: string, backgroundId:
 }
 
 export async function deleteSidebarBackground(userId: string, backgroundId: string, imageUrl: string): Promise<void> {
-  const storagePath = extractBackgroundStoragePath(imageUrl);
-  if (storagePath) {
-    await supabase.storage.from('backgrounds').remove([storagePath]);
+  const { data: row } = await supabase
+    .from('sidebar_backgrounds')
+    .select('image_path, image_url, category')
+    .eq('id', backgroundId)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  const dbRow = (row || {}) as {
+    image_path?: string | null;
+    image_url?: string | null;
+    category?: string | null;
+  };
+  const fromPath = dbRow.image_path || null;
+  const fromSentinel = parseStorageSentinel(dbRow.image_url ?? imageUrl);
+
+  if (fromPath) {
+    await supabase.storage.from('sidebar_backgrounds_private').remove([fromPath]);
+  } else if (fromSentinel) {
+    await supabase.storage.from(fromSentinel.bucket).remove([fromSentinel.path]);
+  } else {
+    const storagePath = extractBackgroundStoragePath(imageUrl);
+    if (storagePath) {
+      await supabase.storage.from('backgrounds').remove([storagePath]);
+    }
   }
 
   const { error } = await supabase
@@ -214,6 +357,45 @@ export async function deleteSidebarBackground(userId: string, backgroundId: stri
     .eq('user_id', userId);
 
   if (error) throw error;
+}
+
+/**
+ * Stage B hydration: for rows that have `imagePath` (or a storage:// sentinel
+ * in `imageUrl`), resolve a short-lived signed URL into `imageUrl` so the
+ * existing render contract (<img src={bg.imageUrl} />) keeps working.
+ * Legacy rows (no imagePath, no sentinel) are left untouched.
+ */
+async function hydrateUserBackgroundImageUrls(
+  rows: UserBackground[],
+  defaultBucket: PrivateBucket,
+): Promise<UserBackground[]> {
+  const tasks: Array<{ row: UserBackground; bucket: PrivateBucket; path: string }> = [];
+  for (const row of rows) {
+    const sentinel = parseStorageSentinel(row.imageUrl);
+    if (row.imagePath) {
+      tasks.push({ row, bucket: defaultBucket, path: row.imagePath });
+    } else if (sentinel) {
+      tasks.push({ row, bucket: sentinel.bucket, path: sentinel.path });
+    }
+  }
+  if (tasks.length === 0) return rows;
+
+  // Group by bucket for batch signing
+  const byBucket = new Map<PrivateBucket, string[]>();
+  for (const t of tasks) {
+    const arr = byBucket.get(t.bucket) || [];
+    arr.push(t.path);
+    byBucket.set(t.bucket, arr);
+  }
+  const mapByBucket = new Map<PrivateBucket, Record<string, string>>();
+  for (const [bucket, paths] of byBucket) {
+    mapByBucket.set(bucket, await getSignedMediaUrls(bucket, paths));
+  }
+  for (const t of tasks) {
+    const signed = mapByBucket.get(t.bucket)?.[t.path];
+    if (signed) t.row.imageUrl = signed;
+  }
+  return rows;
 }
 
 export async function updateSidebarBackgroundCategories(

@@ -193,6 +193,72 @@ export async function compressAndUpload(
   });
 }
 
+/**
+ * Stage B private-bucket variant of compressAndUpload. Compresses an image URL
+ * and uploads to a private storage bucket. Returns the bucket-relative path,
+ * a `storage://<bucket>/<path>` sentinel, and a freshly minted signed URL for
+ * immediate display. The signed URL MUST NOT be persisted.
+ */
+export async function compressAndUploadToPrivate(
+  imageUrl: string,
+  bucket:
+    | 'story_covers_private'
+    | 'character_avatars_private'
+    | 'user_backgrounds_private'
+    | 'sidebar_backgrounds_private'
+    | 'scenes'
+    | 'image_library',
+  userId: string,
+  maxWidth = 1024,
+  maxHeight = 1024,
+  quality = 0.85,
+): Promise<{ path: string; sentinel: string; signedUrl: string }> {
+  const response = await fetch(imageUrl);
+  const blob = await response.blob();
+  const bitmapUrl = URL.createObjectURL(blob);
+
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = async () => {
+      try {
+        let width = img.width;
+        let height = img.height;
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { reject('Canvas context failed'); return; }
+        ctx.drawImage(img, 0, 0, width, height);
+        URL.revokeObjectURL(bitmapUrl);
+        canvas.toBlob(async (compressed) => {
+          if (!compressed) { reject('Compression failed'); return; }
+          const path = `${userId}/${bucket}-${Date.now()}.jpg`;
+          const { error: uploadError } = await supabase.storage
+            .from(bucket)
+            .upload(path, compressed, { upsert: true, contentType: 'image/jpeg' });
+          if (uploadError) { reject(uploadError); return; }
+          const { data: signedData } = await supabase.storage
+            .from(bucket)
+            .createSignedUrl(path, 60 * 60);
+          resolve({
+            path,
+            sentinel: `storage://${bucket}/${path}`,
+            signedUrl: signedData?.signedUrl || '',
+          });
+        }, 'image/jpeg', quality);
+      } catch (e) { reject(e); }
+    };
+    img.onerror = () => { URL.revokeObjectURL(bitmapUrl); reject('Image load failed'); };
+    img.src = bitmapUrl;
+  });
+}
+
 function mkTestTrait(id: string, label: string, value: string): CharacterTraitItem {
   return { id, label, value, createdAt: now(), updatedAt: now() };
 }
