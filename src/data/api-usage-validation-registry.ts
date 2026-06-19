@@ -121,7 +121,7 @@ const rows: ApiUsageValidationRowSeed[] = [
 
   { id: "summary.single.cover_image", label: "Single Call: Cover Image", kind: "summary", callGroup: "single_call", sort: 260 },
   { id: "single.cover_image.prompt", label: "prompt", kind: "detail", callGroup: "single_call", parentId: "summary.single.cover_image", sort: 261 },
-  { id: "single.cover_image.style_prompt", label: "stylePrompt", kind: "detail", callGroup: "single_call", parentId: "summary.single.cover_image", sort: 262 },
+  { id: "single.cover_image.style_id", label: "styleId (server-resolved)", kind: "detail", callGroup: "single_call", parentId: "summary.single.cover_image", sort: 262 },
 
   { id: "summary.single.scene_image", label: "Single Call: Scene Image", kind: "summary", callGroup: "single_call", sort: 270 },
   { id: "single.scene_image.prompt_or_messages", label: "prompt/recentMessages", kind: "detail", callGroup: "single_call", parentId: "summary.single.scene_image", sort: 271 },
