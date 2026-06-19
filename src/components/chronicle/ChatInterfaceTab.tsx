@@ -5395,6 +5395,7 @@ const updatedChar: SideCharacter = {
         personality: draft.personality ? { ...char.personality, ...draft.personality } : char.personality,
         sections: draft.sections ?? char.sections,
         avatarDataUrl: draft.avatarDataUrl || char.avatarDataUrl,
+        avatarPath: draft.avatarPath ?? char.avatarPath ?? null,
         avatarPosition: draft.avatarPosition || char.avatarPosition,
         updatedAt: now(),
       };
