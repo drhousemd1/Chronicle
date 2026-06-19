@@ -1,147 +1,114 @@
+# Tenant Isolation & Media Privacy Hardening — REVISED Plan v4
 
-# Supabase Fix Plan v4 — Approved
+Only BF-10 changed from v3 (Option A grants/RLS correction). All other findings (BF-02, 03, 04, 05, 06, 07, 08, 09, 11, 12, 13, 14) and staging order are unchanged from v2/v3 and not repeated here.
 
-Working one finding at a time. After every step: regenerate `src/integrations/supabase/types.ts`, refresh `src/data/database-schema-inventory.ts` and `src/data/supabase-schema-map.ts`, update Quality Hub registry with evidence, run typecheck/lint/tests/build (when frontend touched), report, then wait.
+## BF-10 — Reports + strikes backend boundary + sanitized Account Status (REVISED, Option A)
 
-Global guardrails:
-- No user data deletion.
-- No row contents, emails, secrets, tokens, story/chat text, images, or NSFW user content in any schema/inventory artifact.
-- Finding 003 ends this pass as `in-progress`, not `fixed`.
+### Live column evidence (re-verified)
 
----
+- `public.reports`: `id, reporter, accused, reason, story_id, status, created_at, updated_at, reporter_user_id, accused_user_id, note, reviewed_by`. Admin-only fields: `note`, `reviewed_by`, `accused_user_id`, `accused`.
+- `public.user_strikes`: `id, user_id, reason, issued_by, expires_at, created_at, report_id, points, note, status, issued_at, falls_off_at, updated_at`. Admin-only fields: `issued_by`, `note`, `points`, `report_id`.
 
-## Step 1 — `qh-sec-20260607-001` `save_scenario_atomic` ownership (next action)
+The locked product rule forbids exposing these admin-only fields to normal users, so normal-user RLS SELECT must be removed and all user-facing reads must go through a sanitized RPC.
 
-Single migration via `supabase--migration`. Replaces `public.save_scenario_atomic(uuid, uuid, jsonb, jsonb, jsonb, jsonb)` with same signature, SECURITY DEFINER, `search_path = public`.
+### Why Option A
 
-Logic:
+App admins authenticate through the same Supabase `authenticated` Postgres role as regular users; the admin distinction is an RLS predicate (`has_role(auth.uid(),'admin')`). Revoking `SELECT` from `authenticated` at the table-grant level would also block the admin RLS path and break the existing admin moderation UI. Option A leaves the table grant intact and removes only the normal-user RLS SELECT policy, so normal users get zero rows (no policy matches) while admin SELECT continues to function through the admin policy. No admin UI rewrite required.
 
-1. **Auth gate** (unchanged):
-   ```sql
-   IF auth.uid() IS NULL OR auth.uid() <> p_user_id THEN
-     RAISE EXCEPTION 'Unauthorized';
-   END IF;
+### Backend changes
+
+1. Realtime
+   - `ALTER PUBLICATION supabase_realtime DROP TABLE public.reports;`
+   - Confirm `public.user_strikes` is not in the publication; drop it if it is.
+
+2. Table grants — **leave existing grants in place** on both `public.reports` and `public.user_strikes` (no REVOKE). `authenticated` keeps SELECT/INSERT/UPDATE/DELETE so RLS can decide per-row. `service_role` keeps full access. `anon` is not granted.
+
+3. `public.reports` policies (rewrite)
+   - Keep / add: `Users can insert own reports` — `FOR INSERT TO authenticated WITH CHECK (auth.uid() = reporter_user_id)`.
+   - Keep / add: `Admins can select reports` — `FOR SELECT TO authenticated USING (has_role(auth.uid(),'admin'))`.
+   - Keep / add: `Admins can update reports` — `FOR UPDATE TO authenticated USING (has_role(auth.uid(),'admin')) WITH CHECK (has_role(auth.uid(),'admin'))`.
+   - Keep / add: `Admins can delete reports` — `FOR DELETE TO authenticated USING (has_role(auth.uid(),'admin'))`.
+   - **Drop** any existing SELECT policy that allows a normal user to read their own row (for example a `reporter_user_id = auth.uid()` SELECT policy). After this change there is no SELECT policy that matches non-admin users, so direct SELECT from `authenticated` returns 0 rows for normal users while the admin SELECT policy still matches admins.
+
+4. `public.user_strikes` policies (rewrite)
+   - Keep / add: `Admins can select strikes` — `FOR SELECT TO authenticated USING (has_role(auth.uid(),'admin'))`.
+   - Keep / add: `Admins can insert strikes` / `Admins can update strikes` / `Admins can delete strikes` — same `has_role` gate (or one `FOR ALL` admin policy if the existing schema uses that shape).
+   - **Drop** any existing SELECT policy that allows the strike subject to read their own row (for example `user_id = auth.uid()`). Same outcome as above: non-admin direct SELECT returns 0 rows; admin SELECT works via the admin policy.
+
+5. New sanitized RPC `public.get_my_account_status()` (`SECURITY DEFINER`, `STABLE`, `SET search_path = public`, `GRANT EXECUTE ON FUNCTION public.get_my_account_status() TO authenticated`). Returns `jsonb`:
+   ```json
+   {
+     "reports": [
+       {"id": "<uuid>", "target_kind": "story|user",
+        "status": "open|reviewed|dismissed|actioned",
+        "reason_public": "<reason text>",
+        "created_at": "...",
+        "resolved_at": "<updated_at when status<>'open' else null>"}
+     ],
+     "strikes": [
+       {"id": "<uuid>", "status": "active|expired|revoked",
+        "reason_public": "<reason text>",
+        "issued_at": "...", "expires_at": "...",
+        "falls_off_at": "..."}
+     ]
+   }
    ```
-2. **Pre-flight ownership check** for `p_scenario_id`:
-   ```sql
-   PERFORM 1 FROM public.stories
-     WHERE id = p_scenario_id AND user_id <> p_user_id;
-   IF FOUND THEN RAISE EXCEPTION 'Unauthorized: scenario owned by another user'; END IF;
-   ```
-3. **Story upsert** — `ON CONFLICT (id) DO UPDATE ... WHERE public.stories.user_id = p_user_id`. Then `GET DIAGNOSTICS v_rows = ROW_COUNT;` and, if the story already existed and `v_rows = 0`, raise `Unauthorized: story ownership guard`. Detect "existed" by re-checking row presence pre-upsert (cached in a local boolean) so a fresh insert isn't mis-flagged.
-4. **Children** — keep current loop structure; convert each `ON CONFLICT (id) DO UPDATE` to include guarded `WHERE` clauses:
-   - characters: `WHERE public.characters.user_id = p_user_id AND public.characters.scenario_id = p_scenario_id`
-   - codex_entries: `WHERE public.codex_entries.scenario_id = p_scenario_id`
-   - scenes: `WHERE public.scenes.scenario_id = p_scenario_id`
-   After each per-row upsert, `GET DIAGNOSTICS v_rows = ROW_COUNT;` — if `0`, raise `Unauthorized: <table> row <id> blocked by ownership guard`.
-5. **Deletes** stay scoped to `scenario_id = p_scenario_id` (no row count check; zero deletes are legitimate).
+   - `target_kind` derived: `'story'` when `story_id IS NOT NULL`, else `'user'`. No `target_id` returned.
+   - `reason_public` is the user-submitted `reason` for reports and the user-visible `reason` for strikes. `note` (admin-only) is never returned.
+   - Excludes: `note`, `reviewed_by`, `issued_by`, `points`, `report_id`, `accused_user_id`, `accused`, `reporter`, raw `updated_at`, and every other column not enumerated above.
+   - Filters internally: `reports.reporter_user_id = auth.uid()` and `user_strikes.user_id = auth.uid()`. Raises `Unauthorized` if `auth.uid() IS NULL`.
 
-**Verification (post-approval):**
-- `supabase--read_query` to assert function body contains the four guard clauses and `GET DIAGNOSTICS`.
-- Two-user simulation via temporary fixtures (auth-gated; will use `supabase--read_query` to confirm function signature/body — runtime simulation requires the user; we will document the SQL test plan and rely on body inspection + the GET DIAGNOSTICS guards as the structural evidence). If full runtime tests are required, will request the user run them in app.
-- Regenerate `supabase-schema-map.ts` + `database-schema-inventory.ts` (function definition + guard notes only — no row contents).
-- Update Quality Hub: `qh-sec-20260607-001` → `fixed`, evidence: function definition excerpt with guards.
+6. Client code audit: remove any client `from('reports').select(...)` or `from('user_strikes').select(...)` calls that were previously used to render a normal user's own moderation data; they will silently return 0 rows after this change. Admin moderation UI continues to use direct table SELECT under the admin policy.
 
-No frontend changes in this step → typecheck only.
+### Frontend changes
 
----
+- Add private `Account Status` section to `src/components/account/AccountSettingsTab.tsx` (+ a small `AccountStatusSection.tsx`) that calls `supabase.rpc('get_my_account_status')` and renders:
+  - "My reports": status badge, target kind, `reason_public`, `created_at`, `resolved_at`. Empty state when none.
+  - "Account strikes": status badge, `reason_public`, `issued_at`, `expires_at`/`falls_off_at`. Empty state when none.
+- No raw table access from the client for self-reads.
 
-## Step 2 — `qh-sec-20260607-004` characters parent binding (after Step 1 verified)
+### Validation (must all pass before mark-fixed)
 
-Single migration: drop+recreate `characters` INSERT and UPDATE policies. INSERT `WITH CHECK` and UPDATE `USING`/`WITH CHECK`:
-```sql
-auth.uid() = user_id
-AND (
-  scenario_id IS NULL
-  OR EXISTS (SELECT 1 FROM public.stories s WHERE s.id = scenario_id AND s.user_id = auth.uid())
-)
-```
-Library characters (`scenario_id IS NULL`) preserved.
+- Direct raw-table boundary (Option A semantics):
+  - User A authed (non-admin): `SELECT * FROM public.reports WHERE reporter_user_id = auth.uid()` → **0 rows** (no matching RLS SELECT policy).
+  - User A authed (non-admin): `SELECT * FROM public.reports` (no filter) → 0 rows.
+  - User A authed (non-admin): `SELECT note, reviewed_by, accused_user_id FROM public.reports LIMIT 1` → 0 rows (policy returns nothing; admin fields therefore unreachable).
+  - User A authed (non-admin): `SELECT * FROM public.user_strikes WHERE user_id = auth.uid()` → 0 rows.
+  - User A authed (non-admin): `SELECT issued_by, note, points, report_id FROM public.user_strikes LIMIT 1` → 0 rows.
+  - Anon (no `anon` grant): same probes → permission denied or 0 rows.
+- Sanitized RPC:
+  - User A authed: `SELECT public.get_my_account_status()` → returns only A's reports and strikes with only the whitelisted keys. JSON-key audit confirms `note`, `reviewed_by`, `issued_by`, `points`, `report_id`, `accused_user_id`, `accused`, `reporter` are absent.
+  - User B authed: same RPC → returns only B's rows; cannot see A's.
+  - Anon: RPC raises `Unauthorized`.
+- Admin path (unchanged by this finding):
+  - Admin authed: `SELECT * FROM public.reports` returns full rows including `note`, `reviewed_by`.
+  - Admin authed: `SELECT * FROM public.user_strikes` returns full rows including `issued_by`, `note`, `points`.
+  - Admin update and delete of a report and a strike still succeed.
+- Insert path:
+  - User A authed: `INSERT INTO public.reports (reporter_user_id, reason, story_id, status) VALUES (auth.uid(), ..., ..., 'open')` succeeds.
+  - User A authed insert with `reporter_user_id = '<other-uuid>'` → blocked by the insert policy's `WITH CHECK`.
+- Realtime:
+  - Subscribe anon and authed to a `reports` channel; trigger admin insert → 0 messages received.
+- UI smoke:
+  - Account Settings → Account Status renders A's report and strike lists from the RPC.
+  - DevTools network shows no direct `from=reports` or `from=user_strikes` requests from the user session.
+  - Second account (B) opens Account Status; does not see A's data.
+  - Admin moderation UI still loads reports and strikes (admin SELECT path intact).
 
-Verify with `supabase--read_query` against `pg_policies`. Refresh inventories. Quality Hub → fixed.
+### Repo files touched
 
----
+- New migration: drop legacy normal-user SELECT policies on `reports` and `user_strikes`; ensure admin SELECT/INSERT/UPDATE/DELETE policies exist; add `reports` insert-own policy if missing; create `get_my_account_status()`; drop `reports` from `supabase_realtime` publication. **No REVOKE statements.**
+- `src/components/account/AccountSettingsTab.tsx` + new `AccountStatusSection.tsx`.
+- Remove client `from('reports'|'user_strikes').select(...)` calls used for non-admin self-reads.
+- Schema snapshots: `src/data/supabase-schema-map.ts`, `src/data/database-schema-inventory.ts`, `src/integrations/supabase/types.ts`.
+- Quality Hub: BF-10 entry updated with this evidence.
 
-## Step 3 — `qh-sec-20260607-002` published_scenarios ownership (after Step 2)
+## Updated validation row (replaces BF-10 row in v2/v3 table)
 
-Migration:
-- Drop+recreate INSERT/UPDATE/DELETE policies requiring `publisher_id = auth.uid()` **and** `EXISTS (SELECT 1 FROM public.stories s WHERE s.id = scenario_id AND s.user_id = auth.uid())`.
-- Quarantine pass (data update, included in same migration as `UPDATE`):
-  ```sql
-  UPDATE public.published_scenarios ps
-  SET is_hidden = true, is_published = false, updated_at = now()
-  FROM public.stories s
-  WHERE s.id = ps.scenario_id AND s.user_id <> ps.publisher_id;
-  ```
-  Pre-run `supabase--read_query` to capture the count + IDs of mismatched rows; report to user. No deletions.
-- Verify policies via `pg_policies`, refresh inventories, update Quality Hub.
+| BF | Direct query probe | Storage probe | Realtime probe | RPC probe | UI smoke |
+|----|-------------------|---------------|----------------|-----------|----------|
+| 10 | Non-admin authed direct `SELECT * FROM reports` (own and all) → **0 rows** (no matching RLS SELECT policy); direct `SELECT note, reviewed_by, accused_user_id FROM reports` → 0 rows; non-admin authed direct `SELECT * FROM user_strikes` (own and all) → 0 rows; direct `SELECT issued_by, note, points, report_id FROM user_strikes` → 0 rows; `INSERT` own report still succeeds; insert with foreign `reporter_user_id` blocked by `WITH CHECK`; admin direct SELECT/UPDATE/DELETE on both tables still succeeds via `has_role` policies; anon receives permission denied or 0 rows | — | `reports` Realtime channel emits 0 to anon and authed on admin insert; `user_strikes` not in publication | `get_my_account_status()` returns only caller's sanitized reports + strikes with whitelisted keys only; anon raises Unauthorized; key-audit confirms `note`, `reviewed_by`, `issued_by`, `points`, `report_id`, `accused_user_id`, `accused`, `reporter` are absent | Account Settings → Account Status renders from RPC; no `from=reports` / `from=user_strikes` requests in network panel; second account sees only own data; admin moderation tools still load full rows |
 
----
+## Everything else from v2/v3 — unchanged
 
-## Step 4 — `qh-sec-20260607-011` gallery counters (after Step 3)
-
-Single migration creates `public.scenario_plays` (id, published_scenario_id FK CASCADE, user_id FK CASCADE to auth.users, played_at), grants (`SELECT, INSERT ON ... TO authenticated; ALL TO service_role`), enables RLS, adds owner-only SELECT + INSERT policies (no UPDATE/DELETE), and the recency index.
-
-Functions:
-- `record_scenario_play(uuid)` — auth gate, validates `is_published=true AND is_hidden=false`, returns early if a row exists in last 5 min, inserts ledger row, increments `play_count`.
-- Harden `record_scenario_view` — add `is_published=true AND is_hidden=false` check before inserting view row / incrementing.
-- `sync_like_count()` / `sync_save_count()` — `CREATE OR REPLACE FUNCTION`, recompute target row counts.
-- `DROP TRIGGER IF EXISTS trg_sync_like_count ON public.scenario_likes;` then `CREATE TRIGGER ... AFTER INSERT OR DELETE`. Same for `trg_sync_save_count` on `saved_scenarios`.
-- Backfill: `UPDATE published_scenarios SET like_count = ..., save_count = ...`.
-- `REVOKE EXECUTE ... FROM PUBLIC, anon, authenticated` for the six legacy counter RPCs.
-
-Frontend edits (`src/services/gallery-data.ts`):
-- `toggleLike` — drop `increment_like_count`/`decrement_like_count` calls; only insert/delete `scenario_likes`.
-- `saveScenarioToCollection` / `unsaveScenario` — drop `increment_save_count`/`decrement_save_count` calls.
-- `incrementPlayCount` → call `record_scenario_play`.
-- `incrementViewCount` — already wraps `record_scenario_view`, keep.
-- `rg "increment_(like|save|view|play)_count|decrement_(like|save)_count" src` must come back empty.
-
-QA: typecheck, lint, tests, build. Refresh inventories + types. Quality Hub → fixed.
-
----
-
-## Step 5 — `qh-sec-20260607-008` profile privacy (after Step 4)
-
-Migration:
-- Drop broad profiles SELECT. Add owner SELECT (`auth.uid() = id`) and admin SELECT (`public.has_role(auth.uid(), 'admin')`).
-- `get_public_profiles(uuid[])` returning id, username, display_name, avatar_url, avatar_position, hide_profile_details, hide_published_works (no about_me, no preferred_genres).
-- `get_public_creator_profile(uuid) returns jsonb` enforcing both privacy flags server-side. Owner/admin → full view. Otherwise:
-  - `hide_profile_details=true` → `{ id, hide_profile_details:true }` only.
-  - `hide_published_works=true` → profile shell, no works, no public work stats.
-  Works query uses `SELECT COALESCE(jsonb_agg(to_jsonb(w) ORDER BY w.created_at DESC), '[]'::jsonb) INTO v_works FROM (...) w;` per spec.
-- Revise `get_creator_stats` to return zeros for public stats when caller is not owner/admin and `hide_published_works=true`. Keep `follower_count` public.
-- **Tighten `published_scenarios` SELECT policy** to gate on `profiles.hide_published_works`:
-  ```sql
-  USING (
-    (is_published AND NOT is_hidden
-      AND EXISTS (SELECT 1 FROM public.profiles p
-                  WHERE p.id = published_scenarios.publisher_id
-                    AND COALESCE(p.hide_published_works,false) = false))
-    OR publisher_id = auth.uid()
-    OR public.has_role(auth.uid(), 'admin')
-  )
-  ```
-- Update `fetch_gallery_scenarios` body to manually exclude rows where publisher profile has `hide_published_works=true` (since SECURITY DEFINER bypasses RLS). Owner/admin branch preserved.
-
-Frontend:
-- `src/pages/CreatorProfile.tsx` → single `rpc('get_public_creator_profile', { p_user_id })`. Branch UI on returned flags.
-- Saved-scenario and review author chips → `get_public_profiles`.
-- Finance/admin reads unchanged (admin policy covers).
-- `PublicProfileTab` self-read unchanged.
-
-Verify: targeted `supabase--read_query` for both hidden states; typecheck/lint/tests/build. Refresh inventories + types. Quality Hub → fixed only after both flags verified.
-
----
-
-## Step 6 — `qh-sec-20260607-003` storage Stage A (after Step 5)
-
-**No DB or storage changes.** Inventory only:
-- Create `docs/guides/storage-privacy-migration.md`. For each bucket (avatars, scenes, covers, backgrounds, image_library), list code paths from `rg "getPublicUrl|from\('(avatars|scenes|covers|backgrounds|image_library)'\)" src supabase` and classify each as owner-only / publisher-owned public / gallery-public / admin-only / app-static. No real URLs, no row content.
-- Quality Hub: `qh-sec-20260607-003` stays `in-progress`; add change-log note that Stage B (signed-URL helper + bucket flips for `scenes` and `image_library`) is out of scope this pass.
-
----
-
-## Wait-points
-
-After each step: report what changed, what was verified, and stop until you say "continue with step N+1". Step 1 is the next action on approval.
+All other findings and the staging order (Batch A independent, Batch B BF-08, Batch C BF-10 → BF-11, Batch D storage flips BF-04 → BF-05 → BF-06) carry over unchanged.
