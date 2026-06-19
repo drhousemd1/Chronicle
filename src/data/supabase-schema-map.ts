@@ -10327,22 +10327,25 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "withCheck": null
       },
       {
-        "name": "Authenticated users can delete own guide images",
-        "roles": [
-          "authenticated"
-        ],
-        "using": "((bucket_id = 'guide_images'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
+        "name": "Admins can delete guide images",
+        "roles": null,
+        "using": "((bucket_id = 'guide_images'::text) AND has_role(auth.uid(), 'admin'::app_role))",
         "command": "DELETE",
         "withCheck": null
       },
       {
-        "name": "Authenticated users can upload guide images",
-        "roles": [
-          "authenticated"
-        ],
+        "name": "Admins can upload guide images",
+        "roles": null,
         "using": null,
         "command": "INSERT",
-        "withCheck": "(bucket_id = 'guide_images'::text)"
+        "withCheck": "((bucket_id = 'guide_images'::text) AND has_role(auth.uid(), 'admin'::app_role))"
+      },
+      {
+        "name": "Admins can update guide images",
+        "roles": null,
+        "using": "((bucket_id = 'guide_images'::text) AND has_role(auth.uid(), 'admin'::app_role))",
+        "command": "UPDATE",
+        "withCheck": "((bucket_id = 'guide_images'::text) AND has_role(auth.uid(), 'admin'::app_role))"
       },
       {
         "name": "Public can view covers",
