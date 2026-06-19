@@ -99,6 +99,7 @@ const qualityHubStorageStageA20260614Timestamp = "2026-06-14T09:30:00.000Z";
 const qualityHubStoragePrivacyStageB20260614Timestamp = "2026-06-14T11:15:00.000Z";
 const qualityHubBatchASecurity20260619Timestamp = "2026-06-19T08:00:00.000Z";
 const qualityHubBatchBSecurity20260619Timestamp = "2026-06-19T09:10:00.000Z";
+const qualityHubBatchCSecurity20260619Timestamp = "2026-06-19T10:00:00.000Z";
 
 function stamp(runId: string) {
   return {
