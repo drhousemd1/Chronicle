@@ -506,6 +506,7 @@ export type Database = {
       characters: {
         Row: {
           age: string | null
+          avatar_path: string | null
           avatar_position: Json | null
           avatar_url: string | null
           background: Json | null
@@ -539,6 +540,7 @@ export type Database = {
         }
         Insert: {
           age?: string | null
+          avatar_path?: string | null
           avatar_position?: Json | null
           avatar_url?: string | null
           background?: Json | null
@@ -572,6 +574,7 @@ export type Database = {
         }
         Update: {
           age?: string | null
+          avatar_path?: string | null
           avatar_position?: Json | null
           avatar_url?: string | null
           background?: Json | null
@@ -1254,6 +1257,48 @@ export type Database = {
           },
         ]
       }
+      media_migration_errors: {
+        Row: {
+          created_at: string
+          error_code: string | null
+          error_message: string | null
+          id: string
+          owner_user_id: string | null
+          ref_id: string | null
+          ref_table: string | null
+          source_bucket: string
+          source_path: string | null
+          target_bucket: string
+          target_path: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          owner_user_id?: string | null
+          ref_id?: string | null
+          ref_table?: string | null
+          source_bucket: string
+          source_path?: string | null
+          target_bucket: string
+          target_path?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          owner_user_id?: string | null
+          ref_id?: string | null
+          ref_table?: string | null
+          source_bucket?: string
+          source_path?: string | null
+          target_bucket?: string
+          target_path?: string | null
+        }
+        Relationships: []
+      }
       memories: {
         Row: {
           content: string
@@ -1841,6 +1886,7 @@ export type Database = {
       side_characters: {
         Row: {
           age: string | null
+          avatar_path: string | null
           avatar_position: Json | null
           avatar_url: string | null
           background: Json | null
@@ -1868,6 +1914,7 @@ export type Database = {
         }
         Insert: {
           age?: string | null
+          avatar_path?: string | null
           avatar_position?: Json | null
           avatar_url?: string | null
           background?: Json | null
@@ -1895,6 +1942,7 @@ export type Database = {
         }
         Update: {
           age?: string | null
+          avatar_path?: string | null
           avatar_position?: Json | null
           avatar_url?: string | null
           background?: Json | null
@@ -1935,6 +1983,7 @@ export type Database = {
           category: string
           created_at: string | null
           id: string
+          image_path: string | null
           image_url: string
           is_selected: boolean | null
           overlay_color: string
@@ -1946,6 +1995,7 @@ export type Database = {
           category?: string
           created_at?: string | null
           id?: string
+          image_path?: string | null
           image_url: string
           is_selected?: boolean | null
           overlay_color?: string
@@ -1957,6 +2007,7 @@ export type Database = {
           category?: string
           created_at?: string | null
           id?: string
+          image_path?: string | null
           image_url?: string
           is_selected?: boolean | null
           overlay_color?: string
@@ -1968,6 +2019,7 @@ export type Database = {
       }
       stories: {
         Row: {
+          cover_image_path: string | null
           cover_image_position: Json | null
           cover_image_url: string | null
           created_at: string | null
@@ -1987,6 +2039,7 @@ export type Database = {
           world_core: Json
         }
         Insert: {
+          cover_image_path?: string | null
           cover_image_position?: Json | null
           cover_image_url?: string | null
           created_at?: string | null
@@ -2006,6 +2059,7 @@ export type Database = {
           world_core?: Json
         }
         Update: {
+          cover_image_path?: string | null
           cover_image_position?: Json | null
           cover_image_url?: string | null
           created_at?: string | null
@@ -2089,6 +2143,7 @@ export type Database = {
           created_at: string | null
           id: string
           image_library_selected: boolean | null
+          image_path: string | null
           image_url: string
           is_selected: boolean | null
           overlay_color: string
@@ -2101,6 +2156,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           image_library_selected?: boolean | null
+          image_path?: string | null
           image_url: string
           is_selected?: boolean | null
           overlay_color?: string
@@ -2113,6 +2169,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           image_library_selected?: boolean | null
+          image_path?: string | null
           image_url?: string
           is_selected?: boolean | null
           overlay_color?: string
@@ -2193,6 +2250,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_read_private_story_media: {
+        Args: { p_bucket: string; p_path: string }
+        Returns: boolean
+      }
       can_read_scene_storage_object: {
         Args: { p_path: string }
         Returns: boolean
@@ -2353,6 +2414,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      promote_story_cover_to_public: {
+        Args: { p_scenario_id: string }
+        Returns: Json
       }
       record_scenario_play: {
         Args: { p_published_scenario_id: string }
