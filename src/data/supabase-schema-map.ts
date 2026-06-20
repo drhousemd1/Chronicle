@@ -10304,6 +10304,14 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "allowedMimeTypes": null
       },
       {
+        "id": "character_avatars_private",
+        "name": "character_avatars_private",
+        "public": false,
+        "createdAt": "2026-06-19T10:40:15.536295+00:00",
+        "fileSizeLimit": null,
+        "allowedMimeTypes": null
+      },
+      {
         "id": "covers",
         "name": "covers",
         "public": true,
@@ -10342,15 +10350,57 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "createdAt": "2026-01-16T06:02:07.392815+00:00",
         "fileSizeLimit": null,
         "allowedMimeTypes": null
+      },
+      {
+        "id": "sidebar_backgrounds_private",
+        "name": "sidebar_backgrounds_private",
+        "public": false,
+        "createdAt": "2026-06-19T10:40:13.455891+00:00",
+        "fileSizeLimit": null,
+        "allowedMimeTypes": null
+      },
+      {
+        "id": "story_covers_private",
+        "name": "story_covers_private",
+        "public": false,
+        "createdAt": "2026-06-19T10:40:14.465732+00:00",
+        "fileSizeLimit": null,
+        "allowedMimeTypes": null
+      },
+      {
+        "id": "user_backgrounds_private",
+        "name": "user_backgrounds_private",
+        "public": false,
+        "createdAt": "2026-06-19T10:40:12.134771+00:00",
+        "fileSizeLimit": null,
+        "allowedMimeTypes": null
       }
     ],
     "policies": [
+      {
+        "name": "Admins can delete backgrounds",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'backgrounds'::text) AND has_role(auth.uid(), 'admin'::app_role))",
+        "command": "DELETE",
+        "withCheck": null
+      },
       {
         "name": "Admins can delete finance docs",
         "roles": [
           "authenticated"
         ],
         "using": "((bucket_id = 'finance_documents'::text) AND has_role(auth.uid(), 'admin'::app_role))",
+        "command": "DELETE",
+        "withCheck": null
+      },
+      {
+        "name": "Admins can delete guide images",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'guide_images'::text) AND has_role(auth.uid(), 'admin'::app_role))",
         "command": "DELETE",
         "withCheck": null
       },
@@ -10364,6 +10414,15 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "withCheck": null
       },
       {
+        "name": "Admins can update backgrounds",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'backgrounds'::text) AND has_role(auth.uid(), 'admin'::app_role))",
+        "command": "UPDATE",
+        "withCheck": null
+      },
+      {
         "name": "Admins can update finance docs",
         "roles": [
           "authenticated"
@@ -10373,6 +10432,24 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "withCheck": null
       },
       {
+        "name": "Admins can update guide images",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'guide_images'::text) AND has_role(auth.uid(), 'admin'::app_role))",
+        "command": "UPDATE",
+        "withCheck": "((bucket_id = 'guide_images'::text) AND has_role(auth.uid(), 'admin'::app_role))"
+      },
+      {
+        "name": "Admins can upload backgrounds",
+        "roles": [
+          "authenticated"
+        ],
+        "using": null,
+        "command": "INSERT",
+        "withCheck": "((bucket_id = 'backgrounds'::text) AND has_role(auth.uid(), 'admin'::app_role))"
+      },
+      {
         "name": "Admins can upload finance docs",
         "roles": [
           "authenticated"
@@ -10380,6 +10457,15 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "using": null,
         "command": "INSERT",
         "withCheck": "((bucket_id = 'finance_documents'::text) AND has_role(auth.uid(), 'admin'::app_role))"
+      },
+      {
+        "name": "Admins can upload guide images",
+        "roles": [
+          "authenticated"
+        ],
+        "using": null,
+        "command": "INSERT",
+        "withCheck": "((bucket_id = 'guide_images'::text) AND has_role(auth.uid(), 'admin'::app_role))"
       },
       {
         "name": "Anyone can read guide images",
@@ -10410,25 +10496,13 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "withCheck": null
       },
       {
-        "name": "Admins can delete guide images",
-        "roles": null,
-        "using": "((bucket_id = 'guide_images'::text) AND has_role(auth.uid(), 'admin'::app_role))",
-        "command": "DELETE",
+        "name": "Owners can view own image_library",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'image_library'::text) AND (((auth.uid())::text = (storage.foldername(name))[1]) OR has_role(auth.uid(), 'admin'::app_role)))",
+        "command": "SELECT",
         "withCheck": null
-      },
-      {
-        "name": "Admins can upload guide images",
-        "roles": null,
-        "using": null,
-        "command": "INSERT",
-        "withCheck": "((bucket_id = 'guide_images'::text) AND has_role(auth.uid(), 'admin'::app_role))"
-      },
-      {
-        "name": "Admins can update guide images",
-        "roles": null,
-        "using": "((bucket_id = 'guide_images'::text) AND has_role(auth.uid(), 'admin'::app_role))",
-        "command": "UPDATE",
-        "withCheck": "((bucket_id = 'guide_images'::text) AND has_role(auth.uid(), 'admin'::app_role))"
       },
       {
         "name": "Public can view covers",
@@ -10441,13 +10515,6 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "name": "Users can delete own avatars",
         "roles": null,
         "using": "((bucket_id = 'avatars'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
-        "command": "DELETE",
-        "withCheck": null
-      },
-      {
-        "name": "Users can delete own backgrounds",
-        "roles": null,
-        "using": "((bucket_id = 'backgrounds'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
         "command": "DELETE",
         "withCheck": null
       },
@@ -10466,29 +10533,6 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "withCheck": null
       },
       {
-        "name": "Users can delete their covers",
-        "roles": [
-          "authenticated"
-        ],
-        "using": "((bucket_id = 'covers'::text) AND ((storage.foldername(name))[1] = (auth.uid())::text))",
-        "command": "DELETE",
-        "withCheck": null
-      },
-      {
-        "name": "Users can update own avatars",
-        "roles": null,
-        "using": "((bucket_id = 'avatars'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
-        "command": "UPDATE",
-        "withCheck": null
-      },
-      {
-        "name": "Users can update own backgrounds",
-        "roles": null,
-        "using": "((bucket_id = 'backgrounds'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
-        "command": "UPDATE",
-        "withCheck": null
-      },
-      {
         "name": "Users can update own scenes",
         "roles": null,
         "using": "((bucket_id = 'scenes'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
@@ -10496,36 +10540,22 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "withCheck": null
       },
       {
-        "name": "Users can update their covers",
+        "name": "Users can update profile avatars",
         "roles": [
           "authenticated"
         ],
-        "using": "((bucket_id = 'covers'::text) AND ((storage.foldername(name))[1] = (auth.uid())::text))",
+        "using": "((bucket_id = 'avatars'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]) AND (name ~ (('^'::text || (auth.uid())::text) || '/avatar-[0-9]+\\.(jpg|jpeg|png|webp|gif)$'::text)))",
         "command": "UPDATE",
         "withCheck": null
       },
       {
-        "name": "Users can upload avatars",
-        "roles": null,
-        "using": null,
-        "command": "INSERT",
-        "withCheck": "((bucket_id = 'avatars'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))"
-      },
-      {
-        "name": "Users can upload backgrounds",
-        "roles": null,
-        "using": null,
-        "command": "INSERT",
-        "withCheck": "((bucket_id = 'backgrounds'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))"
-      },
-      {
-        "name": "Users can upload covers",
+        "name": "Users can upload profile avatars",
         "roles": [
           "authenticated"
         ],
         "using": null,
         "command": "INSERT",
-        "withCheck": "((bucket_id = 'covers'::text) AND ((storage.foldername(name))[1] = (auth.uid())::text))"
+        "withCheck": "((bucket_id = 'avatars'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]) AND (name ~ (('^'::text || (auth.uid())::text) || '/avatar-[0-9]+\\.(jpg|jpeg|png|webp|gif)$'::text)))"
       },
       {
         "name": "Users can upload scenes",
@@ -10536,17 +10566,184 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       },
       {
         "name": "Users can upload to image_library",
-        "roles": null,
+        "roles": [
+          "authenticated"
+        ],
         "using": null,
         "command": "INSERT",
         "withCheck": "((bucket_id = 'image_library'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))"
       },
       {
-        "name": "Owners can view own image_library",
-        "roles": null,
-        "using": "((bucket_id = 'image_library'::text) AND (((auth.uid())::text = (storage.foldername(name))[1]) OR has_role(auth.uid(), 'admin'::app_role)))",
+        "name": "char_avatar_priv owner delete",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'character_avatars_private'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
+        "command": "DELETE",
+        "withCheck": null
+      },
+      {
+        "name": "char_avatar_priv owner read",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'character_avatars_private'::text) AND (((auth.uid())::text = (storage.foldername(name))[1]) OR has_role(auth.uid(), 'admin'::app_role)))",
         "command": "SELECT",
         "withCheck": null
+      },
+      {
+        "name": "char_avatar_priv owner update",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'character_avatars_private'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
+        "command": "UPDATE",
+        "withCheck": null
+      },
+      {
+        "name": "char_avatar_priv owner write",
+        "roles": [
+          "authenticated"
+        ],
+        "using": null,
+        "command": "INSERT",
+        "withCheck": "((bucket_id = 'character_avatars_private'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))"
+      },
+      {
+        "name": "covers admin delete",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'covers'::text) AND has_role(auth.uid(), 'admin'::app_role))",
+        "command": "DELETE",
+        "withCheck": null
+      },
+      {
+        "name": "covers admin update",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'covers'::text) AND has_role(auth.uid(), 'admin'::app_role))",
+        "command": "UPDATE",
+        "withCheck": null
+      },
+      {
+        "name": "covers admin write",
+        "roles": [
+          "authenticated"
+        ],
+        "using": null,
+        "command": "INSERT",
+        "withCheck": "((bucket_id = 'covers'::text) AND has_role(auth.uid(), 'admin'::app_role))"
+      },
+      {
+        "name": "sidebar_bg_priv owner delete",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'sidebar_backgrounds_private'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
+        "command": "DELETE",
+        "withCheck": null
+      },
+      {
+        "name": "sidebar_bg_priv owner read",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'sidebar_backgrounds_private'::text) AND (((auth.uid())::text = (storage.foldername(name))[1]) OR has_role(auth.uid(), 'admin'::app_role)))",
+        "command": "SELECT",
+        "withCheck": null
+      },
+      {
+        "name": "sidebar_bg_priv owner update",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'sidebar_backgrounds_private'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
+        "command": "UPDATE",
+        "withCheck": null
+      },
+      {
+        "name": "sidebar_bg_priv owner write",
+        "roles": [
+          "authenticated"
+        ],
+        "using": null,
+        "command": "INSERT",
+        "withCheck": "((bucket_id = 'sidebar_backgrounds_private'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))"
+      },
+      {
+        "name": "story_covers_priv owner delete",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'story_covers_private'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
+        "command": "DELETE",
+        "withCheck": null
+      },
+      {
+        "name": "story_covers_priv owner update",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'story_covers_private'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
+        "command": "UPDATE",
+        "withCheck": null
+      },
+      {
+        "name": "story_covers_priv owner write",
+        "roles": [
+          "authenticated"
+        ],
+        "using": null,
+        "command": "INSERT",
+        "withCheck": "((bucket_id = 'story_covers_private'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))"
+      },
+      {
+        "name": "story_covers_priv published readable",
+        "roles": [
+          "anon",
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'story_covers_private'::text) AND can_read_private_story_media('story_covers_private'::text, name))",
+        "command": "SELECT",
+        "withCheck": null
+      },
+      {
+        "name": "user_bg_priv owner delete",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'user_backgrounds_private'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
+        "command": "DELETE",
+        "withCheck": null
+      },
+      {
+        "name": "user_bg_priv owner read",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'user_backgrounds_private'::text) AND (((auth.uid())::text = (storage.foldername(name))[1]) OR has_role(auth.uid(), 'admin'::app_role)))",
+        "command": "SELECT",
+        "withCheck": null
+      },
+      {
+        "name": "user_bg_priv owner update",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'user_backgrounds_private'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
+        "command": "UPDATE",
+        "withCheck": null
+      },
+      {
+        "name": "user_bg_priv owner write",
+        "roles": [
+          "authenticated"
+        ],
+        "using": null,
+        "command": "INSERT",
+        "withCheck": "((bucket_id = 'user_backgrounds_private'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))"
       }
     ]
   },
