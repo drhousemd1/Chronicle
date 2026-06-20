@@ -5634,7 +5634,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       ],
       "rlsEnabled": true,
       "foreignKeys": [],
-      "approxRowCount": null,
+      "approxRowCount": 1,
       "checkConstraints": [],
       "uniqueConstraints": []
     },
