@@ -139,6 +139,7 @@ export const GalleryHub = React.forwardRef<HTMLDivElement, GalleryHubProps>(({
     },
     initialPageParam: 0,
     staleTime: 30_000,
+    refetchOnWindowFocus: true,
     enabled: sortBy !== 'following' || (followedCreatorIds !== undefined),
   });
 
@@ -187,59 +188,14 @@ export const GalleryHub = React.forwardRef<HTMLDivElement, GalleryHubProps>(({
     return () => observer.disconnect();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  // Realtime subscription for published_scenarios
-  useEffect(() => {
-    const channel = supabase
-      .channel('gallery-realtime')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'published_scenarios' },
-        () => {
-          // New story published - invalidate to refetch
-          queryClient.invalidateQueries({ queryKey: ['gallery-scenarios'] });
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'published_scenarios' },
-        (payload) => {
-          const updated = payload.new as any;
-          // If unpublished or hidden, remove from cache
-          if (!updated.is_published || updated.is_hidden) {
-            queryClient.setQueryData(['gallery-scenarios', queryParams], (old: any) => {
-              if (!old?.pages) return old;
-              return {
-                ...old,
-                pages: old.pages.map((page: PublishedScenario[]) =>
-                  page.filter(s => s.id !== updated.id)
-                ),
-              };
-            });
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'published_scenarios' },
-        (payload) => {
-          const deleted = payload.old as any;
-          queryClient.setQueryData(['gallery-scenarios', queryParams], (old: any) => {
-            if (!old?.pages) return old;
-            return {
-              ...old,
-              pages: old.pages.map((page: PublishedScenario[]) =>
-                page.filter(s => s.id !== deleted.id)
-              ),
-            };
-          });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient, queryParams]);
+  // Realtime subscription on public.published_scenarios was removed as part of
+  // the Batch D / security closeout: any authenticated user could subscribe to
+  // the raw table and receive payloads that bypass the sanitized
+  // fetch_gallery_scenarios RPC. Cache freshness is now driven by:
+  //   - explicit invalidateQueries(['gallery-scenarios']) after local publish/
+  //     unpublish/hide actions (see gallery-data.ts and the handlers below),
+  //   - refetchOnWindowFocus on the useInfiniteQuery above, and
+  //   - the existing 30s staleTime.
 
   const applySearchQuery = useCallback((value: string) => {
     // Extract hashtags as tags, rest as search text
