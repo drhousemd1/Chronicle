@@ -1987,7 +1987,7 @@ export type Database = {
           created_at: string | null
           id: string
           image_path: string | null
-          image_url: string
+          image_url: string | null
           is_selected: boolean | null
           overlay_color: string
           overlay_opacity: number
@@ -1999,7 +1999,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           image_path?: string | null
-          image_url: string
+          image_url?: string | null
           is_selected?: boolean | null
           overlay_color?: string
           overlay_opacity?: number
@@ -2011,7 +2011,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           image_path?: string | null
-          image_url?: string
+          image_url?: string | null
           is_selected?: boolean | null
           overlay_color?: string
           overlay_opacity?: number
@@ -2147,7 +2147,7 @@ export type Database = {
           id: string
           image_library_selected: boolean | null
           image_path: string | null
-          image_url: string
+          image_url: string | null
           is_selected: boolean | null
           overlay_color: string
           overlay_opacity: number
@@ -2160,7 +2160,7 @@ export type Database = {
           id?: string
           image_library_selected?: boolean | null
           image_path?: string | null
-          image_url: string
+          image_url?: string | null
           is_selected?: boolean | null
           overlay_color?: string
           overlay_opacity?: number
@@ -2173,7 +2173,7 @@ export type Database = {
           id?: string
           image_library_selected?: boolean | null
           image_path?: string | null
-          image_url?: string
+          image_url?: string | null
           is_selected?: boolean | null
           overlay_color?: string
           overlay_opacity?: number
