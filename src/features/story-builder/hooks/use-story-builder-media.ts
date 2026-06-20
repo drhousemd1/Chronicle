@@ -232,24 +232,15 @@ export function useStoryBuilderMedia({
     setIsRepositioningCover(true);
   }, [onUpdateCoverImage, onUpdateCoverPosition]);
 
-  const handleCoverGenerated = useCallback(async (imageUrl: string) => {
-    try {
-      if (!userId) {
-        onUpdateCoverImage(imageUrl);
-      } else {
-        const { path, signedUrl, sentinel } = await compressAndUploadToPrivate(
-          imageUrl, 'story_covers_private', userId, 1024, 1536, 0.85,
-        );
-        onUpdateCoverImage(signedUrl || sentinel, path);
-      }
-    } catch {
-      onUpdateCoverImage(imageUrl);
-    }
-
+  const handleCoverGenerated = useCallback(async (imageUrl: string, imagePath?: string | null) => {
+    // Single-owner upload contract: the edge function already uploaded to
+    // story_covers_private and returned the signed URL + bucket-relative
+    // path. Persist the path directly — do not re-upload.
+    onUpdateCoverImage(imageUrl, imagePath ?? null);
     onUpdateCoverPosition({ x: 50, y: 50 });
     setIsRepositioningCover(true);
     setShowCoverGenModal(false);
-  }, [onUpdateCoverImage, onUpdateCoverPosition, userId]);
+  }, [onUpdateCoverImage, onUpdateCoverPosition]);
 
   const handleCoverUpload = useCallback(async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
