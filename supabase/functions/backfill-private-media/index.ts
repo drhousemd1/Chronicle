@@ -102,8 +102,9 @@ serve(async (req) => {
       if (selErr) {
         stat.errors += 1;
         await admin.from('media_migration_errors').insert({
-          source_table: job.table, error_kind: 'select_failed',
-          error_detail: selErr.message,
+          source_bucket: job.src_bucket, target_bucket: job.dst_bucket,
+          ref_table: job.table, error_code: 'select_failed',
+          error_message: selErr.message,
         });
         continue;
       }
@@ -122,9 +123,11 @@ serve(async (req) => {
           // External URL (e.g. xAI imgen CDN) or unparseable — record and skip.
           stat.skipped_external += 1;
           await admin.from('media_migration_errors').insert({
-            source_table: job.table, source_row_id: rowId, user_id: userId || null,
-            error_kind: 'external_or_unparseable_url',
-            error_detail: url.startsWith('data:') ? 'data:URL omitted' : url.split('?')[0].slice(0, 200),
+            source_bucket: job.src_bucket, target_bucket: job.dst_bucket,
+            owner_user_id: userId || null,
+            ref_table: job.table, ref_id: rowId,
+            error_code: 'external_or_unparseable_url',
+            error_message: url.startsWith('data:') ? 'data:URL omitted' : url.split('?')[0].slice(0, 200),
           });
           continue;
         }
@@ -152,11 +155,12 @@ serve(async (req) => {
         } catch (e) {
           stat.errors += 1;
           await admin.from('media_migration_errors').insert({
-            source_table: job.table, source_row_id: rowId, user_id: userId || null,
             source_bucket: job.src_bucket, source_path: parsedPath,
             target_bucket: job.dst_bucket, target_path: parsedPath,
-            error_kind: 'migration_failed',
-            error_detail: (e instanceof Error ? e.message : String(e)).slice(0, 500),
+            owner_user_id: userId || null,
+            ref_table: job.table, ref_id: rowId,
+            error_code: 'migration_failed',
+            error_message: (e instanceof Error ? e.message : String(e)).slice(0, 500),
           });
         }
       }
