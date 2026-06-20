@@ -392,6 +392,10 @@ export function useStoryBuilderMedia({
           // the backend style prompt server-side from public.art_styles.
           styleId: resolvedStyleId,
           scenarioTitle,
+          // Single-owner upload: ask the edge function to land scene bytes
+          // directly in the private `scenes` bucket; the client persists the
+          // returned imagePath instead of re-uploading.
+          destinationBucket: 'scenes',
         },
       });
 
@@ -404,21 +408,8 @@ export function useStoryBuilderMedia({
         metadata: { scenarioId },
       });
 
-      let finalUrl = data.imageUrl;
-      let finalPath: string | null = null;
-      try {
-        const uploaded = await compressAndUpload(data.imageUrl, 'scenes', userId, 1024, 768, 0.85);
-        const m = /\/scenes\/(.+)$/.exec(uploaded);
-        finalPath = m ? m[1] : null;
-        if (finalPath) {
-          const signed = await getSignedMediaUrl('scenes', finalPath);
-          finalUrl = signed || uploaded;
-        } else {
-          finalUrl = uploaded;
-        }
-      } catch {
-        // Use original URL if compression fails.
-      }
+      const finalUrl: string = data.imageUrl;
+      const finalPath: string | null = (data.imagePath as string | null | undefined) ?? null;
 
       const newScene: Scene = {
         id: uuid(),
