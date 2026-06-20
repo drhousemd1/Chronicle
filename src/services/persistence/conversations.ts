@@ -23,6 +23,12 @@ import type { DialogDebugComment } from '@/features/chat-debug/types';
 import type { TablesUpdate } from '@/integrations/supabase/types';
 import { normalizeDialogDebugTags } from '@/features/chat-debug/types';
 import {
+  buildStorageSentinel,
+  getSignedMediaUrl,
+  isStorageSentinel,
+  parseStorageSentinel,
+} from './signed-media';
+import {
   asCharacterBackground,
   asCharacterPersonality,
   asExtrasSection,
