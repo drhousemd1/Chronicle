@@ -3204,6 +3204,12 @@ export const databaseSchemaInventory = {
           "type": "timestamptz",
           "nullable": true,
           "default": "now()"
+        },
+        {
+          "name": "image_path",
+          "type": "text",
+          "nullable": true,
+          "default": null
         }
       ],
       "foreign_keys": [],
