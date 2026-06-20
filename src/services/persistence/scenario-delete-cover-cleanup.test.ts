@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const supabaseMocks = vi.hoisted(() => {
   const eqMock = vi.fn();
   const deleteMock = vi.fn(() => ({ eq: eqMock }));
-  const fromMock = vi.fn(() => ({ delete: deleteMock }));
-  const invokeMock = vi.fn();
+  const fromMock = vi.fn((_: string) => ({ delete: deleteMock }));
+  const invokeMock = vi.fn((_n: string, _o?: unknown) => Promise.resolve({ data: null, error: null }));
   const callOrder: string[] = [];
   return { eqMock, deleteMock, fromMock, invokeMock, callOrder };
 });
