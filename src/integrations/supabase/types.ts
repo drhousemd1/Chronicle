@@ -334,6 +334,7 @@ export type Database = {
       character_session_states: {
         Row: {
           age: string | null
+          avatar_path: string | null
           avatar_position: Json | null
           avatar_url: string | null
           background: Json | null
@@ -367,6 +368,7 @@ export type Database = {
         }
         Insert: {
           age?: string | null
+          avatar_path?: string | null
           avatar_position?: Json | null
           avatar_url?: string | null
           background?: Json | null
@@ -400,6 +402,7 @@ export type Database = {
         }
         Update: {
           age?: string | null
+          avatar_path?: string | null
           avatar_position?: Json | null
           avatar_url?: string | null
           background?: Json | null
@@ -1984,7 +1987,7 @@ export type Database = {
           created_at: string | null
           id: string
           image_path: string | null
-          image_url: string
+          image_url: string | null
           is_selected: boolean | null
           overlay_color: string
           overlay_opacity: number
@@ -1996,7 +1999,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           image_path?: string | null
-          image_url: string
+          image_url?: string | null
           is_selected?: boolean | null
           overlay_color?: string
           overlay_opacity?: number
@@ -2008,7 +2011,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           image_path?: string | null
-          image_url?: string
+          image_url?: string | null
           is_selected?: boolean | null
           overlay_color?: string
           overlay_opacity?: number
@@ -2144,7 +2147,7 @@ export type Database = {
           id: string
           image_library_selected: boolean | null
           image_path: string | null
-          image_url: string
+          image_url: string | null
           is_selected: boolean | null
           overlay_color: string
           overlay_opacity: number
@@ -2157,7 +2160,7 @@ export type Database = {
           id?: string
           image_library_selected?: boolean | null
           image_path?: string | null
-          image_url: string
+          image_url?: string | null
           is_selected?: boolean | null
           overlay_color?: string
           overlay_opacity?: number
@@ -2170,7 +2173,7 @@ export type Database = {
           id?: string
           image_library_selected?: boolean | null
           image_path?: string | null
-          image_url?: string
+          image_url?: string | null
           is_selected?: boolean | null
           overlay_color?: string
           overlay_opacity?: number

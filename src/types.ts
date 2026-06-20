@@ -367,6 +367,10 @@ export type CharacterSessionState = {
   goals?: CharacterGoal[];
   // Avatar overrides (session-scoped)
   avatarUrl?: string;
+  // Batch D Stage C: bucket-relative path in character_avatars_private when
+  // the session avatar override is stored privately. Renderers must hydrate
+  // via signed URL.
+  avatarPath?: string | null;
   avatarPosition?: { x: number; y: number };
   // Control and role overrides (session-scoped)
   controlledBy?: CharacterControl;

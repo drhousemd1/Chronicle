@@ -249,33 +249,50 @@ serve(async (req) => {
     const data = await response.json();
     let imageUrl = data.data?.[0]?.url;
 
-    // If API returned base64, upload to the private character_avatars_private
-    // bucket and return a signed URL plus durable bucket path + sentinel so
-    // the client can persist avatar_path on the character/side_character row.
+    // Single-owner upload contract (Batch D Stage C): this edge function is
+    // the sole writer for generated avatar bytes. Always upload to the
+    // private character_avatars_private bucket and return the durable path
+    // + sentinel + signed URL. Callers MUST persist avatar_path and MUST
+    // NOT re-upload the bytes themselves.
     let imagePath: string | null = null;
     let storageSentinel: string | null = null;
-    if (!imageUrl && data.data?.[0]?.b64_json) {
+    let imageBytes: Uint8Array | null = null;
+    let avatarContentType = 'image/png';
+    if (data.data?.[0]?.b64_json) {
       const raw = data.data[0].b64_json;
-      const imageBytes = Uint8Array.from(atob(raw), c => c.charCodeAt(0));
+      imageBytes = Uint8Array.from(atob(raw), c => c.charCodeAt(0));
+    } else if (imageUrl) {
+      try {
+        const fetched = await fetch(imageUrl);
+        if (!fetched.ok) throw new Error(`fetch xAI url ${fetched.status}`);
+        avatarContentType = fetched.headers.get('content-type') || 'image/png';
+        imageBytes = new Uint8Array(await fetched.arrayBuffer());
+      } catch (err) {
+        console.error('[generate-avatar] Failed to download xAI URL:', err);
+      }
+    }
+    if (imageBytes) {
+      const ext = avatarContentType.includes('jpeg') ? 'jpg' : 'png';
       const filename = `${user.id}/avatar-${Date.now()}.png`;
+      const finalName = filename.replace(/\.png$/, `.${ext}`);
       const { error: uploadError } = await supabase.storage
         .from('character_avatars_private')
-        .upload(filename, imageBytes, { contentType: 'image/png', upsert: true });
+        .upload(finalName, imageBytes, { contentType: avatarContentType, upsert: true });
       if (uploadError) {
         console.error('[generate-avatar] Storage upload failed:', uploadError);
         throw uploadError;
       }
-      imagePath = filename;
-      storageSentinel = `storage://character_avatars_private/${filename}`;
+      imagePath = finalName;
+      storageSentinel = `storage://character_avatars_private/${finalName}`;
       const { data: signedData, error: signError } = await supabase.storage
         .from('character_avatars_private')
-        .createSignedUrl(filename, 60 * 60);
+        .createSignedUrl(finalName, 60 * 60);
       if (signError) {
         console.error('[generate-avatar] Signed URL failed:', signError);
         throw signError;
       }
       imageUrl = signedData?.signedUrl || '';
-      console.log('[generate-avatar] Uploaded b64 to private storage:', filename);
+      console.log('[generate-avatar] Uploaded to private storage:', finalName);
     }
 
     if (!imageUrl) {

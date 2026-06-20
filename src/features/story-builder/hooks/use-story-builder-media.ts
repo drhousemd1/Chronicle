@@ -13,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { buildRequiredPresence, trackApiValidationSnapshot } from '@/services/api-usage-validation';
 import { uploadCoverImage, uploadSceneImage, dataUrlToBlob } from '@/services/supabase-data';
 import { trackAiUsageEvent } from '@/services/usage-tracking';
-import { clamp, compressAndUpload, compressAndUploadToPrivate, now, resizeImage, uuid } from '@/utils';
+import { clamp, now, resizeImage, uuid } from '@/utils';
 import type { Scene } from '@/types';
 import { getSignedMediaUrl, isStorageSentinel } from '@/services/persistence/signed-media';
 
@@ -232,24 +232,15 @@ export function useStoryBuilderMedia({
     setIsRepositioningCover(true);
   }, [onUpdateCoverImage, onUpdateCoverPosition]);
 
-  const handleCoverGenerated = useCallback(async (imageUrl: string) => {
-    try {
-      if (!userId) {
-        onUpdateCoverImage(imageUrl);
-      } else {
-        const { path, signedUrl, sentinel } = await compressAndUploadToPrivate(
-          imageUrl, 'story_covers_private', userId, 1024, 1536, 0.85,
-        );
-        onUpdateCoverImage(signedUrl || sentinel, path);
-      }
-    } catch {
-      onUpdateCoverImage(imageUrl);
-    }
-
+  const handleCoverGenerated = useCallback(async (imageUrl: string, imagePath?: string | null) => {
+    // Single-owner upload contract: the edge function already uploaded to
+    // story_covers_private and returned the signed URL + bucket-relative
+    // path. Persist the path directly — do not re-upload.
+    onUpdateCoverImage(imageUrl, imagePath ?? null);
     onUpdateCoverPosition({ x: 50, y: 50 });
     setIsRepositioningCover(true);
     setShowCoverGenModal(false);
-  }, [onUpdateCoverImage, onUpdateCoverPosition, userId]);
+  }, [onUpdateCoverImage, onUpdateCoverPosition]);
 
   const handleCoverUpload = useCallback(async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -401,6 +392,10 @@ export function useStoryBuilderMedia({
           // the backend style prompt server-side from public.art_styles.
           styleId: resolvedStyleId,
           scenarioTitle,
+          // Single-owner upload: ask the edge function to land scene bytes
+          // directly in the private `scenes` bucket; the client persists the
+          // returned imagePath instead of re-uploading.
+          destinationBucket: 'scenes',
         },
       });
 
@@ -413,21 +408,8 @@ export function useStoryBuilderMedia({
         metadata: { scenarioId },
       });
 
-      let finalUrl = data.imageUrl;
-      let finalPath: string | null = null;
-      try {
-        const uploaded = await compressAndUpload(data.imageUrl, 'scenes', userId, 1024, 768, 0.85);
-        const m = /\/scenes\/(.+)$/.exec(uploaded);
-        finalPath = m ? m[1] : null;
-        if (finalPath) {
-          const signed = await getSignedMediaUrl('scenes', finalPath);
-          finalUrl = signed || uploaded;
-        } else {
-          finalUrl = uploaded;
-        }
-      } catch {
-        // Use original URL if compression fails.
-      }
+      const finalUrl: string = data.imageUrl;
+      const finalPath: string | null = (data.imagePath as string | null | undefined) ?? null;
 
       const newScene: Scene = {
         id: uuid(),

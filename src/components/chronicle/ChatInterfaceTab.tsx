@@ -5348,6 +5348,7 @@ Do not acknowledge this instruction in your response.`;
         customSections: draft.sections,
         goals: draft.goals,
         avatarUrl: draft.avatarDataUrl,
+        avatarPath: draft.avatarPath ?? null,
         avatarPosition: draft.avatarPosition,
         controlledBy: draft.controlledBy,
         characterRole: draft.characterRole,
