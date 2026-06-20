@@ -1830,6 +1830,26 @@ export const databaseSchemaInventory = {
         }
       ]
     },
+    "media_migration_errors": {
+      "columns": [
+        {"name":"id","type":"uuid","nullable":false,"default":"gen_random_uuid()","primary_key":true},
+        {"name":"source_bucket","type":"text","nullable":false,"default":null},
+        {"name":"target_bucket","type":"text","nullable":false,"default":null},
+        {"name":"source_path","type":"text","nullable":true,"default":null},
+        {"name":"target_path","type":"text","nullable":true,"default":null},
+        {"name":"owner_user_id","type":"uuid","nullable":true,"default":null},
+        {"name":"ref_table","type":"text","nullable":true,"default":null},
+        {"name":"ref_id","type":"uuid","nullable":true,"default":null},
+        {"name":"error_code","type":"text","nullable":true,"default":null},
+        {"name":"error_message","type":"text","nullable":true,"default":null},
+        {"name":"created_at","type":"timestamptz","nullable":false,"default":"now()"}
+      ],
+      "foreign_keys": [],
+      "indexes": ["media_migration_errors_pkey (id)"],
+      "rls_policies": [
+        {"name":"Admins can read media migration errors","command":"SELECT","roles":"authenticated","using":"has_role(auth.uid(), 'admin')","with_check":null}
+      ]
+    },
     "memories": {
       "columns": [
         {
@@ -3393,6 +3413,29 @@ export const databaseSchemaInventory = {
           "using": "auth.uid() = user_id",
           "with_check": null
         }
+      ]
+    },
+    "user_backgrounds": {
+      "columns": [
+        {"name":"id","type":"uuid","nullable":false,"default":"gen_random_uuid()","primary_key":true},
+        {"name":"user_id","type":"uuid","nullable":false,"default":null},
+        {"name":"image_url","type":"text","nullable":true,"default":null},
+        {"name":"image_path","type":"text","nullable":true,"default":null},
+        {"name":"is_selected","type":"boolean","nullable":true,"default":"false"},
+        {"name":"image_library_selected","type":"boolean","nullable":true,"default":"false"},
+        {"name":"category","type":"text","nullable":false,"default":"'Uncategorized'"},
+        {"name":"sort_order","type":"integer","nullable":false,"default":"0"},
+        {"name":"overlay_color","type":"text","nullable":false,"default":"'black'"},
+        {"name":"overlay_opacity","type":"integer","nullable":false,"default":"10"},
+        {"name":"created_at","type":"timestamptz","nullable":true,"default":"now()"}
+      ],
+      "foreign_keys": [],
+      "indexes": ["user_backgrounds_pkey (id)"],
+      "rls_policies": [
+        {"name":"Users can view own user backgrounds","command":"SELECT","roles":"authenticated","using":"auth.uid() = user_id","with_check":null},
+        {"name":"Users can insert own user backgrounds","command":"INSERT","roles":"authenticated","using":null,"with_check":"auth.uid() = user_id"},
+        {"name":"Users can update own user backgrounds","command":"UPDATE","roles":"authenticated","using":"auth.uid() = user_id","with_check":null},
+        {"name":"Users can delete own user backgrounds","command":"DELETE","roles":"authenticated","using":"auth.uid() = user_id","with_check":null}
       ]
     },
     "user_roles": {
