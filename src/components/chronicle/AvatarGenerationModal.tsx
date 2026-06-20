@@ -22,7 +22,7 @@ import { buildRequiredPresence, trackApiValidationSnapshot } from "@/services/ap
 interface AvatarGenerationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onGenerated: (imageUrl: string) => void;
+  onGenerated: (imageUrl: string, imagePath?: string | null) => void;
   characterName: string;
   characterData?: {
     physicalAppearance?: PhysicalAppearance;
@@ -131,7 +131,7 @@ export const AvatarGenerationModal: React.FC<AvatarGenerationModalProps> = ({
           },
         });
 
-        onGenerated(data.imageUrl);
+        onGenerated(data.imageUrl, data.imagePath ?? null);
         setPrompt("");
         setNegativePrompt("");
         setSelectedStyleId(defaultStyleId);
