@@ -405,7 +405,20 @@ export async function fetchSessionStates(conversationId: string): Promise<Charac
 
   if (error) throw error;
 
-  return (data || []).map((row: any) => ({
+  const mapped = await Promise.all((data || []).map(async (row: any) => {
+    // Stage C hydration: prefer signed URL from avatar_path; otherwise resolve
+    // legacy storage:// sentinel; otherwise fall back to the legacy public URL
+    // (Stage E lockdown will retire the fallback).
+    let hydratedAvatar: string | undefined;
+    if (row.avatar_path) {
+      hydratedAvatar = await getSignedMediaUrl('character_avatars_private', row.avatar_path);
+    } else if (isStorageSentinel(row.avatar_url)) {
+      const parsed = parseStorageSentinel(row.avatar_url);
+      if (parsed) {
+        hydratedAvatar = await getSignedMediaUrl(parsed.bucket, parsed.path);
+      }
+    }
+    return ({
     id: row.id,
     characterId: row.character_id,
     conversationId: row.conversation_id,
@@ -424,7 +437,8 @@ export async function fetchSessionStates(conversationId: string): Promise<Charac
     preferredClothing: row.preferred_clothing ? dbPreferredClothingToApp(row.preferred_clothing) : undefined,
     customSections: row.custom_sections || undefined,
     goals: row.goals || [],
-    avatarUrl: row.avatar_url || undefined,
+    avatarUrl: hydratedAvatar || row.avatar_url || undefined,
+    avatarPath: row.avatar_path || null,
     avatarPosition: row.avatar_position || undefined,
     controlledBy: row.controlled_by || undefined,
     characterRole: row.character_role || undefined,
@@ -437,7 +451,9 @@ export async function fetchSessionStates(conversationId: string): Promise<Charac
     fears: asExtrasSection<CharacterFears>(row.fears),
     createdAt: new Date(row.created_at).getTime(),
     updatedAt: new Date(row.updated_at).getTime(),
+  });
   }));
+  return mapped;
 }
 
 export async function createSessionState(
