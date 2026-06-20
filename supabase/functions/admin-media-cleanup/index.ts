@@ -62,85 +62,79 @@ serve(async (req) => {
       );
     }
 
-    // Build candidate list via SQL (read-only).
-    const { data: candidates, error: qErr } = await admin.rpc("exec" as any, {} as any).catch(() => ({ data: null, error: null }));
-    // The above rpc may not exist; fall back to direct query via PostgREST is
-    // not possible against storage.objects, so we call our own SQL through a
-    // helper select on storage.objects via the admin client.
+    // Build candidate list from storage.objects using the service-role client.
     let names: string[] = [];
-    if (!candidates) {
-      const { data, error } = await admin
-        .schema("storage" as any)
-        .from("objects")
-        .select("name")
-        .eq("bucket_id", "avatars");
-      if (error) {
-        return new Response(JSON.stringify({ error: "Failed to list avatars", detail: error.message }), { status: 500, headers: jsonHeaders });
+    const { data, error } = await admin
+      .schema("storage" as any)
+      .from("objects")
+      .select("name")
+      .eq("bucket_id", "avatars");
+    if (error) {
+      return new Response(JSON.stringify({ error: "Failed to list avatars", detail: error.message }), { status: 500, headers: jsonHeaders });
+    }
+    const all = (data || []).map((r: any) => r.name as string);
+
+    const { data: priv } = await admin
+      .schema("storage" as any)
+      .from("objects")
+      .select("name")
+      .eq("bucket_id", "character_avatars_private");
+    const privSet = new Set((priv || []).map((r: any) => r.name as string));
+
+    // Fetch all canonical refs to public avatars bucket.
+    const [{ data: chars }, { data: sides }, { data: css }, { data: profiles }] = await Promise.all([
+      admin.from("characters").select("avatar_url"),
+      admin.from("side_characters").select("avatar_url"),
+      admin.from("character_session_states").select("avatar_url"),
+      admin.from("profiles").select("avatar_url"),
+    ]);
+    const referenced = new Set<string>();
+    const collect = (rows: any[] | null) => {
+      for (const r of rows || []) {
+        const u: string | null = r?.avatar_url ?? null;
+        if (!u) continue;
+        const m = u.match(/\/storage\/v1\/object\/public\/avatars\/(.+)$/);
+        if (m) referenced.add(m[1].split("?")[0]);
       }
-      const all = (data || []).map((r: any) => r.name as string);
+    };
+    collect(chars as any[]); collect(sides as any[]); collect(css as any[]); collect(profiles as any[]);
 
-      const { data: priv } = await admin
-        .schema("storage" as any)
-        .from("objects")
-        .select("name")
-        .eq("bucket_id", "character_avatars_private");
-      const privSet = new Set((priv || []).map((r: any) => r.name as string));
+    // Only target legacy character pattern: <uid>/avatar-<uuid>-<ts>.<ext>
+    const charPattern = /^[0-9a-f-]+\/avatar-[0-9a-f-]{36}-\d+\.(jpg|jpeg|png|webp)$/;
+    const legacy = all.filter((n) => charPattern.test(n));
 
-      // Fetch all canonical refs to public avatars bucket.
-      const [{ data: chars }, { data: sides }, { data: css }, { data: profiles }] = await Promise.all([
-        admin.from("characters").select("avatar_url"),
-        admin.from("side_characters").select("avatar_url"),
-        admin.from("character_session_states").select("avatar_url"),
-        admin.from("profiles").select("avatar_url"),
-      ]);
-      const referenced = new Set<string>();
-      const collect = (rows: any[] | null) => {
-        for (const r of rows || []) {
-          const u: string | null = r?.avatar_url ?? null;
-          if (!u) continue;
-          const m = u.match(/\/storage\/v1\/object\/public\/avatars\/(.+)$/);
-          if (m) referenced.add(m[1].split("?")[0]);
-        }
-      };
-      collect(chars as any[]); collect(sides as any[]); collect(css as any[]); collect(profiles as any[]);
-
-      // Only target legacy character pattern: <uid>/avatar-<uuid>-<ts>.<ext>
-      const charPattern = /^[0-9a-f-]+\/avatar-[0-9a-f-]{36}-\d+\.(jpg|jpeg|png|webp)$/;
-      const legacy = all.filter((n) => charPattern.test(n));
-
-      if (action === "purge_legacy_character_avatars") {
-        // Stage C — only delete objects that have a verified private mirror.
-        names = legacy.filter((n) => privSet.has(n) && !referenced.has(n));
+    if (action === "purge_legacy_character_avatars") {
+      // Stage C — only delete objects that have a verified private mirror.
+      names = legacy.filter((n) => privSet.has(n) && !referenced.has(n));
+    } else {
+      // purge_orphan_legacy_avatars — broader scan: delete objects with
+      // NO private mirror that are also not referenced from any URL-bearing
+      // text/json column across the app (messages, memories, snapshots,
+      // characters/session/side jsonb fields, stories metadata). Verified
+      // server-side here so the admin cannot pass arbitrary names.
+      const candidates = legacy.filter((n) => !privSet.has(n) && !referenced.has(n));
+      if (candidates.length === 0) {
+        names = [];
       } else {
-        // purge_orphan_legacy_avatars — broader scan: delete objects with
-        // NO private mirror that are also not referenced from any URL-bearing
-        // text/json column across the app (messages, memories, snapshots,
-        // characters/session/side jsonb fields, stories metadata). Verified
-        // server-side here so the admin cannot pass arbitrary names.
-        const candidates = legacy.filter((n) => !privSet.has(n) && !referenced.has(n));
-        if (candidates.length === 0) {
-          names = [];
-        } else {
-          const survivors: string[] = [];
-          // Chunk the LIKE-scan to keep SQL payload small.
-          const chunk = 25;
-          for (let i = 0; i < candidates.length; i += chunk) {
-            const slice = candidates.slice(i, i + chunk);
-            const { data: hits, error: scanErr } = await admin.rpc(
-              "scan_legacy_avatar_refs",
-              { p_names: slice } as any,
-            );
-            if (scanErr) {
-              return new Response(JSON.stringify({
-                error: "broader scan failed",
-                detail: scanErr.message,
-              }), { status: 500, headers: jsonHeaders });
-            }
-            const referencedNames = new Set<string>((hits || []).map((r: any) => r.name as string));
-            for (const n of slice) if (!referencedNames.has(n)) survivors.push(n);
+        const survivors: string[] = [];
+        // Chunk the LIKE-scan to keep SQL payload small.
+        const chunk = 25;
+        for (let i = 0; i < candidates.length; i += chunk) {
+          const slice = candidates.slice(i, i + chunk);
+          const { data: hits, error: scanErr } = await admin.rpc(
+            "scan_legacy_avatar_refs",
+            { p_names: slice } as any,
+          );
+          if (scanErr) {
+            return new Response(JSON.stringify({
+              error: "broader scan failed",
+              detail: scanErr.message,
+            }), { status: 500, headers: jsonHeaders });
           }
-          names = survivors;
+          const referencedNames = new Set<string>((hits || []).map((r: any) => r.name as string));
+          for (const n of slice) if (!referencedNames.has(n)) survivors.push(n);
         }
+        names = survivors;
       }
     }
 

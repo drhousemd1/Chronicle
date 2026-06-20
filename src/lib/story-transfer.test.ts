@@ -333,6 +333,43 @@ describe('story-transfer import/export', () => {
     expect(imported.editorState?.coverImagePosition).toEqual({ x: 38, y: 34 });
   });
 
+  it('exports private scene images with durable imagePath instead of signed display URLs', () => {
+    const source = buildScenario();
+    source.scenes[0] = {
+      ...source.scenes[0],
+      url: 'https://signed.example/scenes/source-owner/scene.webp?token=temporary',
+      imagePath: 'source-owner/scene.webp',
+    };
+
+    const exportedJson = exportScenarioToJson(source, buildExportOptions(source));
+    const parsed = JSON.parse(exportedJson);
+
+    expect(exportedJson).not.toContain('token=temporary');
+    expect(parsed.scenario.scenes[0].imagePath).toBe('source-owner/scene.webp');
+    expect(parsed.scenario.scenes[0].url).toBe('storage://scenes/source-owner/scene.webp');
+  });
+
+  it('preserves private scene imagePath when merging JSON transfer packages', () => {
+    const source = buildScenario();
+    source.scenes[0] = {
+      ...source.scenes[0],
+      title: 'Private Scene',
+      url: 'https://signed.example/scenes/source-owner/private.webp?token=temporary',
+      imagePath: 'source-owner/private.webp',
+    };
+    const exportedJson = exportScenarioToJson(source, buildExportOptions(source));
+
+    const imported = importScenarioFromAny(
+      { text: exportedJson, fileName: 'story-transfer.json', mimeType: 'application/json' },
+      createDefaultScenarioData(),
+      'merge'
+    );
+
+    expect(imported.data.scenes?.[0]?.title).toBe('Private Scene');
+    expect(imported.data.scenes?.[0]?.imagePath).toBe('source-owner/private.webp');
+    expect(imported.data.scenes?.[0]?.url).toBe('storage://scenes/source-owner/private.webp');
+  });
+
   it('sanitizes removed UI setting keys from story-transfer exports and imports', () => {
     const source = buildScenario();
     const exportedJson = exportScenarioToJson(source, buildExportOptions(source));

@@ -25,6 +25,7 @@ import {
 import { isStoryImportLimitError, readStoryImportFileText } from "@/lib/docx-import";
 import { StoryExportFormat } from "@/components/chronicle/StoryExportFormatModal";
 import * as supabaseData from "@/services/supabase-data";
+import { ensureSceneImagesOwnedByUser } from "@/services/persistence/scene-media-portability";
 
 type AppShellTab = TabKey | "library";
 
@@ -306,6 +307,7 @@ export function useIndexScenarioPersistence({
     [
       activeContentThemes,
       activeCoverImage,
+      activeCoverImagePath,
       activeCoverPosition,
       activeData,
       activeId,
@@ -417,11 +419,18 @@ export function useIndexScenarioPersistence({
           activeData,
           storyImportMode,
         );
-        setActiveData(result.data);
+        const portabilityResult = userId
+          ? await ensureSceneImagesOwnedByUser(result.data.scenes, userId, { onFailure: 'clear' })
+          : { scenes: result.data.scenes, warnings: [], copied: 0, cleared: 0 };
+        const importedData: ScenarioData = {
+          ...result.data,
+          scenes: portabilityResult.scenes,
+        };
+        setActiveData(importedData);
         if (storyImportMode === 'rewrite') {
           setActiveCoverImage(result.editorState?.coverImage ?? '');
           setActiveCoverPosition(result.editorState?.coverImagePosition ?? { x: 50, y: 50 });
-          setActiveContentThemes(result.data.contentThemes ?? defaultContentThemes);
+          setActiveContentThemes(importedData.contentThemes ?? defaultContentThemes);
         } else {
           if (typeof result.editorState?.coverImage === 'string' && !activeCoverImage) {
             setActiveCoverImage(result.editorState.coverImage);
@@ -429,8 +438,8 @@ export function useIndexScenarioPersistence({
           if (result.editorState?.coverImagePosition && !activeCoverImage) {
             setActiveCoverPosition(result.editorState.coverImagePosition);
           }
-          if (result.data.contentThemes) {
-            setActiveContentThemes(result.data.contentThemes);
+          if (importedData.contentThemes) {
+            setActiveContentThemes(importedData.contentThemes);
           }
         }
 
@@ -449,7 +458,7 @@ export function useIndexScenarioPersistence({
           `${createdCharacterCustomSections + createdWorldCustomSections} custom sections added`,
         ];
 
-        const warningDetails = [...importWarnings, ...result.warnings];
+        const warningDetails = [...importWarnings, ...result.warnings, ...portabilityResult.warnings];
         const warningsCount = warningDetails.length;
         setStoryTransferWarningDetails(warningDetails);
         setStoryTransferNotice({
@@ -481,6 +490,7 @@ export function useIndexScenarioPersistence({
       setStoryTransferNotice,
       setStoryTransferWarningDetails,
       storyImportMode,
+      userId,
     ],
   );
 

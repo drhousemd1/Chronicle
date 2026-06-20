@@ -138,6 +138,7 @@ type TransferPayloadV1 = {
       scenes?: Array<{
         title?: string;
         url?: string;
+        imagePath?: string | null;
         tags?: string[];
         isStartingScene?: boolean;
       }>;
@@ -340,6 +341,11 @@ const buildScenarioForTransfer = (
 ): ScenarioData => {
   const scenario = clone(data);
   scenario.uiSettings = sanitizeUiSettings(scenario.uiSettings);
+  scenario.scenes = (scenario.scenes || []).map((scene) =>
+    scene.imagePath
+      ? { ...scene, url: `storage://scenes/${scene.imagePath}` }
+      : scene
+  );
   const themes = cloneContentThemes(options?.contentThemes ?? data.contentThemes);
   if (themes) scenario.contentThemes = themes;
   if (options?.includeConversations !== true) {
@@ -481,9 +487,10 @@ const mergeScenes = (
 
   const merged = [...(existing || [])];
   incoming.forEach((scene) => {
-    if (!hasText(scene.url) && !hasText(scene.title)) return;
+    if (!hasText(scene.url) && !hasText(scene.title) && !hasText(scene.imagePath || '')) return;
     const idx = merged.findIndex(
       (item) =>
+        (hasText(scene.imagePath || '') && normalize(item.imagePath || '') === normalize(scene.imagePath || '')) ||
         (hasText(scene.url) && normalize(item.url) === normalize(scene.url)) ||
         (hasText(scene.title) && normalize(item.title || '') === normalize(scene.title || ''))
     );
@@ -491,6 +498,7 @@ const mergeScenes = (
       merged.push({
         id: scene.id || uuid(),
         url: clean(scene.url),
+        imagePath: scene.imagePath || null,
         title: clean(scene.title || ''),
         tags: [...(scene.tags || [])],
         isStartingScene: !!scene.isStartingScene,
@@ -502,6 +510,7 @@ const mergeScenes = (
       ...merged[idx],
       title: mergeScalarText(merged[idx].title || '', scene.title || '', mode),
       url: merged[idx].url || clean(scene.url),
+      imagePath: merged[idx].imagePath || scene.imagePath || null,
       tags: mergeSceneTags(merged[idx].tags || [], scene.tags || []),
       isStartingScene: merged[idx].isStartingScene || scene.isStartingScene,
     };
@@ -575,7 +584,8 @@ const toTransferPayload = (data: ScenarioData): TransferPayloadV1 => ({
       selectedArtStyle: data.selectedArtStyle || '',
       scenes: (data.scenes || []).map((scene) => ({
         title: scene.title || '',
-        url: scene.url || '',
+        url: scene.imagePath ? `storage://scenes/${scene.imagePath}` : (scene.url || ''),
+        imagePath: scene.imagePath || null,
         tags: [...(scene.tags || [])],
         isStartingScene: !!scene.isStartingScene,
       })),
@@ -2163,6 +2173,7 @@ const mergePayloadIntoScenario = (
         id: uuid(),
         title: clean(scene.title || ''),
         url: clean(scene.url || ''),
+        imagePath: clean(scene.imagePath || '') || null,
         tags: [...(scene.tags || [])],
         isStartingScene: !!scene.isStartingScene,
         createdAt: now(),

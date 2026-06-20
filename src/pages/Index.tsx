@@ -1155,7 +1155,7 @@ const IndexContent = () => {
           )}
 
 
-          {tab === "admin" && (
+          {tab === "admin" && isAdminState && (
             <React.Suspense fallback={<LazyTabFallback className="bg-black" />}>
               <AdminPage activeTool={adminActiveTool} onSetActiveTool={setAdminActiveTool} onRegisterGuideSave={(fn) => { guideSaveRef.current = fn; }} onRegisterGuideSyncAll={(fn) => { guideSyncAllRef.current = fn; }} onRegisterStyleGuideDownload={(fn) => { styleGuideDownloadRef.current = fn; }} onRegisterStyleGuideEdits={(fn) => { styleGuideEditsRef.current = fn; getEditsCount().then(c => setStyleGuideEditsCount(c)); }} onStyleGuideEditsCountChange={(count) => setStyleGuideEditsCount(count)} guideTheme={guideTheme} />
             </React.Suspense>

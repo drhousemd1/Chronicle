@@ -29,6 +29,7 @@ import {
   resolveStorageMaybeSentinel,
 } from './signed-media';
 import { hydrateCharacterAvatars } from './characters';
+import { ensureSceneImagesOwnedByUser } from './scene-media-portability';
 
 function dbToScenarioMetadata(row: any): ScenarioMetadata {
   return {
@@ -418,7 +419,13 @@ export async function saveScenario(
     }
   }
 
-  for (const char of data.characters) {
+  const portableSceneResult = await ensureSceneImagesOwnedByUser(data.scenes, userId, { onFailure: 'throw' });
+  const portableData: ScenarioData = {
+    ...data,
+    scenes: portableSceneResult.scenes,
+  };
+
+  for (const char of portableData.characters) {
     if (char.avatarDataUrl?.startsWith('data:')) {
       // Batch D lockdown: base64 character avatars (imports/legacy) go to the
       // private character_avatars_private bucket as a sentinel.
@@ -437,23 +444,23 @@ export async function saveScenario(
     cover_image_path: safeCoverImagePath,
     cover_image_position: metadata.coverImagePosition || { x: 50, y: 50 },
     tags: metadata.tags,
-    world_core: migrateWorldCoreToCanonical(data.world.core as any),
-    ui_settings: sanitizeUiSettings(data.uiSettings),
-    opening_dialog: data.story.openingDialog,
-    selected_model: data.selectedModel,
-    selected_art_style: data.selectedArtStyle || 'cinematic-2-5d',
-    version: data.version,
+    world_core: migrateWorldCoreToCanonical(portableData.world.core as any),
+    ui_settings: sanitizeUiSettings(portableData.uiSettings),
+    opening_dialog: portableData.story.openingDialog,
+    selected_model: portableData.selectedModel,
+    selected_art_style: portableData.selectedArtStyle || 'cinematic-2-5d',
+    version: portableData.version,
     is_draft: options?.isDraft ?? false,
     nav_button_images: {},
   };
 
-  const charactersPayload = data.characters.map((c) => characterToDb(c, userId, id, false));
-  const codexPayload = data.world.entries.map((e) => ({
+  const charactersPayload = portableData.characters.map((c) => characterToDb(c, userId, id, false));
+  const codexPayload = portableData.world.entries.map((e) => ({
     id: e.id,
     title: e.title,
     body: e.body,
   }));
-  const scenesPayload = data.scenes.map((s) => ({
+  const scenesPayload = portableData.scenes.map((s) => ({
     id: s.id,
     image_url: s.imagePath ? `storage://scenes/${s.imagePath}` : (s.url || ''),
     image_path: s.imagePath || null,
@@ -665,6 +672,7 @@ export async function cloneScenarioForRemix(
     id: uuid(),
     createdAt: Date.now(),
   }));
+  const portableSceneResult = await ensureSceneImagesOwnedByUser(clonedScenes, userId, { onFailure: 'throw' });
 
   const clonedData: ScenarioData = {
     ...originalData,
@@ -673,7 +681,7 @@ export async function cloneScenarioForRemix(
       ...originalData.world,
       entries: clonedCodexEntries,
     },
-    scenes: clonedScenes,
+    scenes: portableSceneResult.scenes,
     conversations: [],
     sideCharacters: [],
   };

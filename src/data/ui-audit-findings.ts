@@ -69,6 +69,9 @@ const runIds = {
   storageStageA20260614: "run-lovable-storage-privacy-stage-a-20260614",
   storagePrivacyStageB20260614: "run-lovable-storage-privacy-stage-b-20260614",
   batchASecurity20260619: "run-lovable-batch-a-security-20260619",
+  batchBSecurity20260619: "run-lovable-batch-b-security-20260619",
+  batchCSecurity20260619: "run-lovable-batch-c-security-20260619",
+  sceneMediaPortability20260615: "run-codex-scene-media-portability-20260615",
 } as const;
 
 const qualityHubHousekeepingScanTimestamp = "2026-05-30T19:22:16.000-06:00";
@@ -102,6 +105,7 @@ const qualityHubBatchBSecurity20260619Timestamp = "2026-06-19T09:10:00.000Z";
 const qualityHubBatchCSecurity20260619Timestamp = "2026-06-19T10:00:00.000Z";
 const qualityHubBatchDCoversAvatarsLockdown20260620Timestamp =
   "2026-06-20T03:15:00.000Z";
+const qualityHubSceneMediaPortability20260615Timestamp = "2026-06-15T09:10:00.000Z";
 
 function stamp(runId: string) {
   return {
@@ -659,6 +663,11 @@ const findings: QualityFinding[] = [
     "Story Transfer",
     [
       "src/lib/story-transfer.ts",
+      "src/lib/story-transfer.test.ts",
+      "src/hooks/use-index-scenario-persistence.ts",
+      "src/services/persistence/library-copy.ts",
+      "src/services/persistence/scene-media-portability.ts",
+      "src/services/persistence/scene-media-portability.test.ts",
       "src/services/persistence/scenarios.ts",
       "src/services/persistence/signed-media.ts",
       "src/features/story-builder/hooks/use-story-builder-media.ts",
@@ -671,32 +680,36 @@ const findings: QualityFinding[] = [
     "medium",
     runIds.storagePrivacyStageB20260614,
     {
-      status: "open",
-      verificationStatus: "unverified",
+      status: "in-progress",
+      verificationStatus: "retest-required",
       route: "story export / import / remix",
       component: "src/lib/story-transfer.ts and remix flow",
       currentState:
-        "Deferred follow-up explicitly split out from qh-sec-20260607-003 so the storage-exposure finding can be closed cleanly. No code change attempted in this pass — Story Transfer still emits raw scene.url / image_path; cross-user imports will render empty scene tiles until a byte-copy importer is added.",
+        "Code-side prevention is implemented: Story Transfer now preserves durable scene imagePath while stripping signed display URLs from transfer packages, imports attempt to relocate cross-owner scene images into the importing user's scenes namespace, remix cloning copies scene images before save, and saveScenario refuses to persist cross-owner private scene paths. Remaining Supabase/Lovable work: audit and repair any already-persisted rows whose story owner does not match the first segment of scenes.image_path.",
       evidence: [
-        "src/lib/story-transfer.ts serializes scene.url verbatim into Markdown/JSON/RTF payloads (Stage B audit, 2026-06-14).",
+        "src/lib/story-transfer.ts now serializes private scene media as storage://scenes/<imagePath> plus durable imagePath instead of exporting expiring signed display URLs.",
+        "src/services/persistence/scene-media-portability.ts enforces the owner-prefix invariant for private scene paths and copies authorized cross-owner scene bytes into the current user's scenes/<uid>/ namespace.",
+        "src/hooks/use-index-scenario-persistence.ts runs the portability guard during import and clears uncopyable private scene references with a user-visible warning instead of saving another owner's path.",
+        "src/services/persistence/scenarios.ts runs the same guard during save/remix so cloned or manually imported scenarios cannot persist cross-owner scene paths.",
+        "Focused tests cover same-owner hydration, cross-owner copy, uncopyable import clearing, signed URL stripping, and merge-package imagePath preservation.",
         "Bucket flip on scenes (2026-06-14): anonymous and non-owner signed-URL mint against another user's unpublished scene path returns HTTP 400 (verified by Stage B access matrix).",
-        "No import path in scenarios persistence currently re-uploads bytes; src/services/persistence/library-copy.ts has the helper shape needed but is wired only to the Image Library picker, not to story import or remix.",
+        "Existing live rows, if any, still require a Lovable maintenance migration because repo code cannot safely rewrite already-persisted storage objects without live Supabase access.",
       ],
       expectedBehavior:
-        "Imported / remixed scenarios render their scene gallery for the importing user without requiring the source story to be published.",
+        "Imported / remixed scenarios never persist another owner's private scene storage path. Authorized source images are copied into the current user's namespace; unauthorized private paths are removed with a warning instead of leaking or breaking silently.",
       actualBehavior:
-        "Imported / remixed scenarios reference the source owner's private scene paths, so the importing user cannot mint a signed URL and the scene tile renders empty.",
+        "Future imports/remixes are guarded in code. Historical rows still need a Lovable live-data audit and repair pass before the finding can be marked fixed/verified.",
       tags: [
         "module-data-quality",
         "supabase-storage",
         "story-transfer",
         "follow-up",
-        "deferred",
+        "code-prevention-20260615",
         "scan-storage-privacy-stage-b-20260614",
         "lovable-supabase-required",
       ],
       relatedFindingIds: ["qh-sec-20260607-003"],
-      relatedRunIds: [runIds.storagePrivacyStageB20260614],
+      relatedRunIds: [runIds.storagePrivacyStageB20260614, runIds.sceneMediaPortability20260615],
       comments: [
         {
           id: "open-note-qh-port-20260614-001-stageB",
@@ -704,9 +717,15 @@ const findings: QualityFinding[] = [
           timestamp: qualityHubStoragePrivacyStageB20260614Timestamp,
           text: "Logged as a separate follow-up at the user's instruction so qh-sec-20260607-003 (storage exposure) can be closed without conflating it with cross-user portability work. Next step: extend src/lib/story-transfer.ts import path and the remix-clone flow to copy bytes from source scene paths into the importing user's scenes/<uid>/ folder and rewrite scenes.image_path before save.",
         },
+        {
+          id: "code-note-qh-port-20260614-001-20260615",
+          author: "ChatGPT Codex",
+          timestamp: qualityHubSceneMediaPortability20260615Timestamp,
+          text: "Implemented the code-side prevention layer for future imports/remixes/saves. Remaining closeout requires Lovable to audit live Supabase rows for scenes.image_path values whose first path segment does not match the owning stories.user_id, copy those objects into the story owner's scenes/<uid>/ namespace when authorized, and update scenes.image_path plus scenes.image_url.",
+        },
       ],
       createdAt: qualityHubStoragePrivacyStageB20260614Timestamp,
-      updatedAt: qualityHubStoragePrivacyStageB20260614Timestamp,
+      updatedAt: qualityHubSceneMediaPortability20260615Timestamp,
     },
   ),
   finding(

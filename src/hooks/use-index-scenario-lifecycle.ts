@@ -164,6 +164,7 @@ export function useIndexScenarioLifecycle({
     [
       registry,
       setActiveCoverImage,
+      setActiveCoverImagePath,
       setActiveCoverPosition,
       setActiveData,
       setActiveId,

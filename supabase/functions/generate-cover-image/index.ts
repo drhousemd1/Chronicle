@@ -70,7 +70,7 @@ serve(async (req) => {
     // BF-02: Resolve the art-style backend prompt server-side from styleId
     // using the service role. Never trust client-supplied prompt text.
     let resolvedStylePrompt = '';
-    let resolvedStyleId: string | null = typeof styleId === 'string' ? styleId : null;
+    const resolvedStyleId: string | null = typeof styleId === 'string' ? styleId : null;
     if (resolvedStyleId) {
       try {
         const admin = createClient(

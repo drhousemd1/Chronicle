@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { uuid } from '@/utils';
-import { getSignedMediaUrl } from './signed-media';
+import { getSignedMediaUrl, type PrivateBucket } from './signed-media';
 
 /**
  * Stage B: image-library → destination-bucket copy contract.
@@ -24,6 +24,8 @@ export type LibraryPickerSelection = {
   filename: string;
   contentType: string;
 };
+
+export type SourcePrivateBucket = 'scenes' | 'image_library';
 
 export type DestinationBucket =
   | 'covers'
@@ -62,6 +64,66 @@ function inferExtension(filename: string, contentType: string): string {
   return 'jpg';
 }
 
+export async function copyPrivateStorageImageTo(
+  source: {
+    bucket: SourcePrivateBucket;
+    path: string;
+    filename?: string;
+    contentType?: string;
+    fallbackUrl?: string;
+  },
+  destination: {
+    bucket: DestinationBucket;
+    userId: string;
+    filenamePrefix?: string;
+  },
+): Promise<CopiedLibraryImage> {
+  if (!destination.userId) throw new Error('copyPrivateStorageImageTo: userId required');
+  if (!source?.path) throw new Error('copyPrivateStorageImageTo: source.path required');
+
+  const fetchUrl = (await getSignedMediaUrl(source.bucket, source.path)) || source.fallbackUrl;
+  if (!fetchUrl) throw new Error('copyPrivateStorageImageTo: could not resolve source signed URL');
+
+  const response = await fetch(fetchUrl);
+  if (!response.ok) {
+    throw new Error(`copyPrivateStorageImageTo: source fetch failed (${response.status})`);
+  }
+
+  const blob = await response.blob();
+  const contentType = blob.type || source.contentType || 'image/jpeg';
+  const sourceFilename = source.filename || source.path.split('/').pop() || 'image.jpg';
+  const ext = inferExtension(sourceFilename, contentType);
+  const prefix = destination.filenamePrefix || 'copy';
+  const destPath = `${destination.userId}/${prefix}-${uuid()}-${Date.now()}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(destination.bucket)
+    .upload(destPath, blob, { contentType, upsert: false });
+  if (uploadError) {
+    throw new Error(`copyPrivateStorageImageTo: upload failed: ${uploadError.message}`);
+  }
+
+  if (isPrivateDest(destination.bucket)) {
+    const signed = await getSignedMediaUrl(destination.bucket as PrivateBucket, destPath);
+    return {
+      destBucket: destination.bucket,
+      destPath,
+      publicOrSentinelUrl: `storage://${destination.bucket}/${destPath}`,
+      previewUrl: signed,
+      contentType,
+    };
+  }
+
+  const { data } = supabase.storage.from(destination.bucket).getPublicUrl(destPath);
+  return {
+    destBucket: destination.bucket,
+    destPath,
+    publicOrSentinelUrl: data.publicUrl,
+    previewUrl: data.publicUrl,
+    contentType,
+  };
+}
+
 /**
  * Copy an image_library selection into a destination bucket owned by the user.
  *
@@ -75,47 +137,18 @@ export async function copyLibraryImageTo(
 ): Promise<CopiedLibraryImage> {
   if (!userId) throw new Error('copyLibraryImageTo: userId required');
   if (!selection?.imagePath) throw new Error('copyLibraryImageTo: selection.imagePath required');
-
-  // Always fetch a fresh signed URL so we don't rely on a possibly-stale
-  // previewUrl baked into the selection earlier in the user's session.
-  const fetchUrl = (await getSignedMediaUrl('image_library', selection.imagePath))
-    || selection.previewUrl;
-  if (!fetchUrl) throw new Error('copyLibraryImageTo: could not resolve source signed URL');
-
-  const response = await fetch(fetchUrl);
-  if (!response.ok) {
-    throw new Error(`copyLibraryImageTo: source fetch failed (${response.status})`);
-  }
-  const blob = await response.blob();
-  const contentType = blob.type || selection.contentType || 'image/jpeg';
-
-  const ext = inferExtension(selection.filename, contentType);
-  const destPath = `${userId}/lib-${uuid()}-${Date.now()}.${ext}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from(destBucket)
-    .upload(destPath, blob, { contentType, upsert: false });
-  if (uploadError) {
-    throw new Error(`copyLibraryImageTo: upload failed: ${uploadError.message}`);
-  }
-
-  if (isPrivateDest(destBucket)) {
-    const signed = await getSignedMediaUrl(destBucket as any, destPath);
-    return {
-      destBucket,
-      destPath,
-      publicOrSentinelUrl: `storage://${destBucket}/${destPath}`,
-      previewUrl: signed,
-      contentType,
-    };
-  }
-
-  const { data } = supabase.storage.from(destBucket).getPublicUrl(destPath);
-  return {
-    destBucket,
-    destPath,
-    publicOrSentinelUrl: data.publicUrl,
-    previewUrl: data.publicUrl,
-    contentType,
-  };
+  return copyPrivateStorageImageTo(
+    {
+      bucket: 'image_library',
+      path: selection.imagePath,
+      filename: selection.filename,
+      contentType: selection.contentType,
+      fallbackUrl: selection.previewUrl,
+    },
+    {
+      bucket: destBucket,
+      userId,
+      filenamePrefix: 'lib',
+    },
+  );
 }

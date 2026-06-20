@@ -11,6 +11,42 @@ import * as supabaseData from "@/services/supabase-data";
 type AppShellTab = TabKey | "library";
 type WarmupLoader = () => Promise<unknown>;
 
+interface ResolvedShellQueryTarget {
+  adminTool: string | null;
+  requiresAdmin: boolean;
+  tab: AppShellTab;
+}
+
+export function resolveShellQueryTarget(
+  queryTab: string,
+  queryTool: string | null,
+  { isAdmin }: { isAdmin: boolean },
+): ResolvedShellQueryTarget {
+  const normalizedTab = toLegacyBuilderTab(normalizeBuilderTab(queryTab));
+
+  if (normalizedTab === "admin") {
+    if (!isAdmin) {
+      return {
+        adminTool: null,
+        requiresAdmin: true,
+        tab: "gallery",
+      };
+    }
+
+    return {
+      adminTool: queryTool || "hub",
+      requiresAdmin: true,
+      tab: "admin",
+    };
+  }
+
+  return {
+    adminTool: null,
+    requiresAdmin: false,
+    tab: normalizedTab as AppShellTab,
+  };
+}
+
 interface StoryTransferNoticeState {
   tone: "success" | "error" | "info";
   text: string;
@@ -67,12 +103,71 @@ export function useIndexShellBootstrap({
     if (!qTab) return;
 
     const normalizedTab = toLegacyBuilderTab(normalizeBuilderTab(qTab));
-    setTab(normalizedTab as AppShellTab);
-    if (normalizedTab === "admin" && qTool) {
-      setAdminActiveTool(qTool);
+    if (normalizedTab !== "admin") {
+      const target = resolveShellQueryTarget(qTab, qTool, { isAdmin: isAdminState });
+      setTab(target.tab);
+      clearAppliedSearchParams();
+      return;
     }
-    clearAppliedSearchParams();
-  }, [clearAppliedSearchParams, searchParams, setAdminActiveTool, setTab]);
+
+    if (authLoading) return;
+
+    if (!isAuthenticated || !userId) {
+      const target = resolveShellQueryTarget(qTab, qTool, { isAdmin: false });
+      setAdminActiveTool("hub");
+      setTab(target.tab);
+      clearAppliedSearchParams();
+      return;
+    }
+
+    if (isAdminState) {
+      const target = resolveShellQueryTarget(qTab, qTool, { isAdmin: true });
+      if (target.adminTool) setAdminActiveTool(target.adminTool);
+      setTab(target.tab);
+      clearAppliedSearchParams();
+      return;
+    }
+
+    let cancelled = false;
+    void checkIsAdmin(userId)
+      .then((isAllowed) => {
+        if (cancelled) return;
+        writeCachedAdminState(isAllowed);
+        setIsAdminState(isAllowed);
+        const target = resolveShellQueryTarget(qTab, qTool, { isAdmin: isAllowed });
+        if (target.adminTool) {
+          setAdminActiveTool(target.adminTool);
+        } else {
+          setAdminActiveTool("hub");
+        }
+        setTab(target.tab);
+        clearAppliedSearchParams();
+      })
+      .catch((error) => {
+        if (!cancelled && import.meta.env.DEV) {
+          console.debug("[admin-bootstrap] admin query guard skipped:", error);
+        }
+        if (!cancelled) {
+          setAdminActiveTool("hub");
+          setTab("gallery");
+          clearAppliedSearchParams();
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    authLoading,
+    clearAppliedSearchParams,
+    isAdminState,
+    isAuthenticated,
+    searchParams,
+    setAdminActiveTool,
+    setIsAdminState,
+    setTab,
+    userId,
+  ]);
 
   useEffect(() => {
     if (!storyTransferNotice) return;
