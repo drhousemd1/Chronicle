@@ -17,6 +17,7 @@ import { characterToDb, dbToCharacter } from './characters';
 import { dbToConversation } from './conversations';
 import {
   ensureStorageUrl,
+  ensurePrivateStorageSentinel,
   supabase,
 } from './shared';
 import {
