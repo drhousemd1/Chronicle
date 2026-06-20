@@ -54,6 +54,14 @@ serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
 
   try {
+    // One-shot internal token gate: this function is deployed only for the
+    // Batch D Stage C backfill and DELETED immediately after. The hardcoded
+    // token is rotated/invalidated by deletion. Do not pattern after this
+    // for any other function.
+    const ONE_SHOT_TOKEN = 'batch-d-stage-c-0x1Sz8RzjLxDthMygZtS6JP_g-9Bf4ztrddWq1oW77Y';
+    if (req.headers.get('x-batch-d-one-shot') === ONE_SHOT_TOKEN) {
+      return await runBackfill(corsHeaders);
+    }
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -81,7 +89,16 @@ serve(async (req) => {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    return await runBackfill(corsHeaders);
+  } catch (e) {
+    return new Response(
+      JSON.stringify({ error: e instanceof Error ? e.message : 'unknown' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
+  }
+});
 
+async function runBackfill(corsHeaders: Record<string, string>): Promise<Response> {
     const admin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
@@ -169,10 +186,4 @@ serve(async (req) => {
     return new Response(JSON.stringify({ summary }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-  } catch (e) {
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : 'unknown' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-    );
-  }
-});
+}
