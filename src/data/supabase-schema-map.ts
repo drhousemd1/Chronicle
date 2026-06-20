@@ -1635,69 +1635,10 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "name": "character_session_states",
       "grants": [
         {
-          "grantee": "anon",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
-          "grantee": "authenticated",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
-          "grantee": "postgres",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
           "grantee": "sandbox_exec",
           "privileges": [
             "INSERT",
             "SELECT"
-          ]
-        },
-        {
-          "grantee": "sandbox_exec_gialzvvswxadxolnwots",
-          "privileges": [
-            "INSERT",
-            "SELECT"
-          ]
-        },
-        {
-          "grantee": "service_role",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
           ]
         }
       ],
@@ -1880,7 +1821,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         },
         {
           "name": "previous_names",
-          "type": "text[]",
+          "type": "ARRAY",
           "default": "'{}'::text[]",
           "notNull": false,
           "ordinal": 23,
@@ -1948,6 +1889,14 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "default": null,
           "notNull": false,
           "ordinal": 31,
+          "isIdentity": false
+        },
+        {
+          "name": "avatar_path",
+          "type": "text",
+          "default": null,
+          "notNull": false,
+          "ordinal": 32,
           "isIdentity": false
         }
       ],
@@ -2265,69 +2214,10 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "name": "characters",
       "grants": [
         {
-          "grantee": "anon",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
-          "grantee": "authenticated",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
-          "grantee": "postgres",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
           "grantee": "sandbox_exec",
           "privileges": [
             "INSERT",
             "SELECT"
-          ]
-        },
-        {
-          "grantee": "sandbox_exec_gialzvvswxadxolnwots",
-          "privileges": [
-            "INSERT",
-            "SELECT"
-          ]
-        },
-        {
-          "grantee": "service_role",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
           ]
         }
       ],
@@ -2578,6 +2468,14 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "default": "''::text",
           "notNull": false,
           "ordinal": 31,
+          "isIdentity": false
+        },
+        {
+          "name": "avatar_path",
+          "type": "text",
+          "default": null,
+          "notNull": false,
+          "ordinal": 32,
           "isIdentity": false
         }
       ],
@@ -5616,6 +5514,130 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "checkConstraints": [],
       "uniqueConstraints": []
     },
+        {
+      "name": "media_migration_errors",
+      "grants": [
+        {
+          "grantee": "sandbox_exec",
+          "privileges": [
+            "INSERT",
+            "SELECT"
+          ]
+        }
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "notNull": true,
+          "ordinal": 1,
+          "isIdentity": false
+        },
+        {
+          "name": "source_bucket",
+          "type": "text",
+          "default": null,
+          "notNull": true,
+          "ordinal": 2,
+          "isIdentity": false
+        },
+        {
+          "name": "target_bucket",
+          "type": "text",
+          "default": null,
+          "notNull": true,
+          "ordinal": 3,
+          "isIdentity": false
+        },
+        {
+          "name": "source_path",
+          "type": "text",
+          "default": null,
+          "notNull": false,
+          "ordinal": 4,
+          "isIdentity": false
+        },
+        {
+          "name": "target_path",
+          "type": "text",
+          "default": null,
+          "notNull": false,
+          "ordinal": 5,
+          "isIdentity": false
+        },
+        {
+          "name": "owner_user_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": false,
+          "ordinal": 6,
+          "isIdentity": false
+        },
+        {
+          "name": "ref_table",
+          "type": "text",
+          "default": null,
+          "notNull": false,
+          "ordinal": 7,
+          "isIdentity": false
+        },
+        {
+          "name": "ref_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": false,
+          "ordinal": 8,
+          "isIdentity": false
+        },
+        {
+          "name": "error_code",
+          "type": "text",
+          "default": null,
+          "notNull": false,
+          "ordinal": 9,
+          "isIdentity": false
+        },
+        {
+          "name": "error_message",
+          "type": "text",
+          "default": null,
+          "notNull": false,
+          "ordinal": 10,
+          "isIdentity": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notNull": true,
+          "ordinal": 11,
+          "isIdentity": false
+        }
+      ],
+      "comment": null,
+      "policies": [
+        {
+          "name": "Admins can read media migration errors",
+          "roles": [
+            "authenticated"
+          ],
+          "using": "has_role(auth.uid(), 'admin'::app_role)",
+          "command": "SELECT",
+          "withCheck": null,
+          "permissive": true
+        }
+      ],
+      "triggers": [],
+      "primaryKey": [
+        "id"
+      ],
+      "rlsEnabled": true,
+      "foreignKeys": [],
+      "approxRowCount": null,
+      "checkConstraints": [],
+      "uniqueConstraints": []
+    },
     {
       "name": "memories",
       "grants": [
@@ -8373,69 +8395,10 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "name": "side_characters",
       "grants": [
         {
-          "grantee": "anon",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
-          "grantee": "authenticated",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
-          "grantee": "postgres",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
           "grantee": "sandbox_exec",
           "privileges": [
             "INSERT",
             "SELECT"
-          ]
-        },
-        {
-          "grantee": "sandbox_exec_gialzvvswxadxolnwots",
-          "privileges": [
-            "INSERT",
-            "SELECT"
-          ]
-        },
-        {
-          "grantee": "service_role",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
           ]
         }
       ],
@@ -8639,6 +8602,14 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "notNull": true,
           "ordinal": 25,
           "isIdentity": false
+        },
+        {
+          "name": "avatar_path",
+          "type": "text",
+          "default": null,
+          "notNull": false,
+          "ordinal": 26,
+          "isIdentity": false
         }
       ],
       "comment": null,
@@ -8713,69 +8684,10 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "name": "sidebar_backgrounds",
       "grants": [
         {
-          "grantee": "anon",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
-          "grantee": "authenticated",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
-          "grantee": "postgres",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
           "grantee": "sandbox_exec",
           "privileges": [
             "INSERT",
             "SELECT"
-          ]
-        },
-        {
-          "grantee": "sandbox_exec_gialzvvswxadxolnwots",
-          "privileges": [
-            "INSERT",
-            "SELECT"
-          ]
-        },
-        {
-          "grantee": "service_role",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
           ]
         }
       ],
@@ -8800,7 +8712,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "name": "image_url",
           "type": "text",
           "default": null,
-          "notNull": true,
+          "notNull": false,
           "ordinal": 3,
           "isIdentity": false
         },
@@ -8850,6 +8762,14 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "default": "0",
           "notNull": true,
           "ordinal": 9,
+          "isIdentity": false
+        },
+        {
+          "name": "image_path",
+          "type": "text",
+          "default": null,
+          "notNull": false,
+          "ordinal": 10,
           "isIdentity": false
         }
       ],
@@ -8902,69 +8822,10 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "name": "stories",
       "grants": [
         {
-          "grantee": "anon",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
-          "grantee": "authenticated",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
-          "grantee": "postgres",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
           "grantee": "sandbox_exec",
           "privileges": [
             "INSERT",
             "SELECT"
-          ]
-        },
-        {
-          "grantee": "sandbox_exec_gialzvvswxadxolnwots",
-          "privileges": [
-            "INSERT",
-            "SELECT"
-          ]
-        },
-        {
-          "grantee": "service_role",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
           ]
         }
       ],
@@ -9011,7 +8872,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         },
         {
           "name": "tags",
-          "type": "text[]",
+          "type": "ARRAY",
           "default": "'{}'::text[]",
           "notNull": false,
           "ordinal": 6,
@@ -9103,6 +8964,14 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "default": "'{}'::jsonb",
           "notNull": false,
           "ordinal": 17,
+          "isIdentity": false
+        },
+        {
+          "name": "cover_image_path",
+          "type": "text",
+          "default": null,
+          "notNull": false,
+          "ordinal": 18,
           "isIdentity": false
         }
       ],
@@ -9418,69 +9287,10 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "name": "user_backgrounds",
       "grants": [
         {
-          "grantee": "anon",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
-          "grantee": "authenticated",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
-          "grantee": "postgres",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
           "grantee": "sandbox_exec",
           "privileges": [
             "INSERT",
             "SELECT"
-          ]
-        },
-        {
-          "grantee": "sandbox_exec_gialzvvswxadxolnwots",
-          "privileges": [
-            "INSERT",
-            "SELECT"
-          ]
-        },
-        {
-          "grantee": "service_role",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
           ]
         }
       ],
@@ -9505,7 +9315,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "name": "image_url",
           "type": "text",
           "default": null,
-          "notNull": true,
+          "notNull": false,
           "ordinal": 3,
           "isIdentity": false
         },
@@ -9563,6 +9373,14 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "default": "0",
           "notNull": true,
           "ordinal": 10,
+          "isIdentity": false
+        },
+        {
+          "name": "image_path",
+          "type": "text",
+          "default": null,
+          "notNull": false,
+          "ordinal": 11,
           "isIdentity": false
         }
       ],
