@@ -13,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { buildRequiredPresence, trackApiValidationSnapshot } from '@/services/api-usage-validation';
 import { uploadCoverImage, uploadSceneImage, dataUrlToBlob } from '@/services/supabase-data';
 import { trackAiUsageEvent } from '@/services/usage-tracking';
-import { clamp, compressAndUpload, compressAndUploadToPrivate, now, resizeImage, uuid } from '@/utils';
+import { clamp, now, resizeImage, uuid } from '@/utils';
 import type { Scene } from '@/types';
 import { getSignedMediaUrl, isStorageSentinel } from '@/services/persistence/signed-media';
 
