@@ -50,7 +50,15 @@ serve(async (req) => {
     }
     const rateHeaders = getRateLimitHeaders(rateDecision);
 
-    const { prompt, styleId, stylePrompt, negativePrompt, scenarioTitle } = await req.json();
+    const { prompt, styleId, stylePrompt, negativePrompt, scenarioTitle, destinationBucket } = await req.json();
+    // Single-owner upload contract (Batch D Stage C): this edge function is
+    // the sole writer for generated cover/scene bytes. Callers MUST persist
+    // the returned imagePath and MUST NOT re-upload the bytes themselves.
+    const ALLOWED_BUCKETS = new Set(['story_covers_private', 'scenes']);
+    const dstBucket: 'story_covers_private' | 'scenes' =
+      typeof destinationBucket === 'string' && ALLOWED_BUCKETS.has(destinationBucket)
+        ? destinationBucket as 'story_covers_private' | 'scenes'
+        : 'story_covers_private';
 
     if (!prompt) {
       return new Response(JSON.stringify({ error: "prompt is required" }), {
@@ -141,37 +149,25 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    
-    let imageUrl = null;
-    
-    if (data.data?.[0]?.url) {
-      imageUrl = data.data[0].url;
-    } else if (data.data?.[0]?.b64_json) {
-      // Upload to the private story_covers_private bucket and return a
-      // signed URL. The client persists cover_image_path on the stories row;
-      // promotion to the public `covers` bucket happens only at publish time.
-      const raw = data.data[0].b64_json;
-      const imageBytes = Uint8Array.from(atob(raw), c => c.charCodeAt(0));
-      const filename = `${user.id}/cover-${Date.now()}.png`;
-      const { error: uploadError } = await supabase.storage
-        .from('story_covers_private')
-        .upload(filename, imageBytes, { contentType: 'image/png', upsert: true });
-      if (uploadError) {
-        console.error('[generate-cover-image] Storage upload failed:', uploadError);
-        throw uploadError;
+
+    // Resolve bytes from either the b64 or URL response shape.
+    let imageBytes: Uint8Array | null = null;
+    let contentType = 'image/png';
+    if (data.data?.[0]?.b64_json) {
+      const raw = data.data[0].b64_json as string;
+      imageBytes = Uint8Array.from(atob(raw), c => c.charCodeAt(0));
+    } else if (data.data?.[0]?.url) {
+      try {
+        const fetched = await fetch(data.data[0].url as string);
+        if (!fetched.ok) throw new Error(`fetch xAI url ${fetched.status}`);
+        contentType = fetched.headers.get('content-type') || 'image/png';
+        imageBytes = new Uint8Array(await fetched.arrayBuffer());
+      } catch (err) {
+        console.error('[generate-cover-image] Failed to download xAI URL:', err);
       }
-      const { data: signedData, error: signError } = await supabase.storage
-        .from('story_covers_private')
-        .createSignedUrl(filename, 60 * 60);
-      if (signError) {
-        console.error('[generate-cover-image] Signed URL failed:', signError);
-        throw signError;
-      }
-      imageUrl = signedData?.signedUrl || '';
-      console.log('[generate-cover-image] Uploaded b64 to private storage:', filename);
     }
 
-    if (!imageUrl) {
+    if (!imageBytes) {
       console.error("No image URL found in response:", JSON.stringify(data, null, 2));
       return new Response(JSON.stringify({ 
         error: "No image generated",
@@ -182,7 +178,26 @@ serve(async (req) => {
       });
     }
 
-    console.log(`[generate-cover-image] Cover image generated successfully`);
+    const ext = contentType.includes('jpeg') ? 'jpg' : 'png';
+    const filename = `${user.id}/${dstBucket === 'scenes' ? 'scene' : 'cover'}-${Date.now()}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from(dstBucket)
+      .upload(filename, imageBytes, { contentType, upsert: true });
+    if (uploadError) {
+      console.error('[generate-cover-image] Storage upload failed:', uploadError);
+      throw uploadError;
+    }
+    const { data: signedData, error: signError } = await supabase.storage
+      .from(dstBucket)
+      .createSignedUrl(filename, 60 * 60);
+    if (signError) {
+      console.error('[generate-cover-image] Signed URL failed:', signError);
+      throw signError;
+    }
+    const imageUrl = signedData?.signedUrl || '';
+    const imagePath = filename;
+    const storageSentinel = `storage://${dstBucket}/${filename}`;
+    console.log(`[generate-cover-image] Uploaded to ${dstBucket}/${filename}`);
 
     await recordServerAiUsage({
       userId: user.id,
@@ -198,7 +213,7 @@ serve(async (req) => {
       },
     });
 
-    return new Response(JSON.stringify({ imageUrl }), {
+    return new Response(JSON.stringify({ imageUrl, imagePath, storageSentinel, destinationBucket: dstBucket }), {
       headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
     });
 
