@@ -218,6 +218,48 @@ export async function ensureStorageUrl(
   }
 }
 
+/**
+ * Batch D — private-bucket variant of ensureStorageUrl. If `url` is a base64
+ * data URI, uploads it to the given private storage bucket and returns the
+ * `storage://<bucket>/<path>` sentinel. Otherwise returns the original string.
+ * Replaces the legacy `ensureStorageUrl(..., 'covers' | 'avatars', ...)` call
+ * sites so that imported/base64 covers and character avatars never land in a
+ * publicly readable bucket after lockdown.
+ */
+export async function ensurePrivateStorageSentinel(
+  url: string | undefined | null,
+  bucket:
+    | 'story_covers_private'
+    | 'character_avatars_private'
+    | 'user_backgrounds_private'
+    | 'sidebar_backgrounds_private',
+  userId: string,
+): Promise<string> {
+  if (!url || !url.startsWith('data:')) return url || '';
+  try {
+    const arr = url.split(',');
+    const mimeMatch = arr[0].match(/:(.*?);/);
+    if (!mimeMatch) return url;
+    const mime = mimeMatch[1];
+    const bstr = atob(arr[1]);
+    const u8arr = new Uint8Array(bstr.length);
+    for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
+    const blob = new Blob([u8arr], { type: mime });
+    const path = `${userId}/${bucket}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.png`;
+    const { error } = await supabase.storage.from(bucket).upload(path, blob, {
+      contentType: mime || 'image/png',
+      upsert: true,
+    });
+    if (error) {
+      console.error(`[ensurePrivateStorageSentinel] Failed to upload to ${bucket}:`, error);
+      return url;
+    }
+    return `storage://${bucket}/${path}`;
+  } catch {
+    return url;
+  }
+}
+
 export function dataUrlToBlob(dataUrl: string): Blob | null {
   try {
     const arr = dataUrl.split(',');

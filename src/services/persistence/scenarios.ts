@@ -17,6 +17,7 @@ import { characterToDb, dbToCharacter } from './characters';
 import { dbToConversation } from './conversations';
 import {
   ensureStorageUrl,
+  ensurePrivateStorageSentinel,
   supabase,
 } from './shared';
 import {
@@ -403,15 +404,29 @@ export async function saveScenario(
       safeCoverImagePath = parsed.path;
       safeCoverImageUrl = buildStorageSentinel(parsed.bucket, parsed.path);
     } else {
-      // Legacy: may be base64 or a plain public URL. ensureStorageUrl uploads
-      // base64 to the public `covers` bucket and returns the public URL.
-      safeCoverImageUrl = await ensureStorageUrl(safeCoverImageUrl, 'covers', userId);
+      // Batch D lockdown: base64 covers (e.g. JSON imports) go to the private
+      // story_covers_private bucket. Re-parse the returned sentinel so we also
+      // populate cover_image_path. Plain public URLs are left untouched as a
+      // transition fallback until full backfill.
+      safeCoverImageUrl = await ensurePrivateStorageSentinel(
+        safeCoverImageUrl,
+        'story_covers_private',
+        userId,
+      );
+      const reparsed = parseStorageSentinel(safeCoverImageUrl);
+      if (reparsed) safeCoverImagePath = reparsed.path;
     }
   }
 
   for (const char of data.characters) {
     if (char.avatarDataUrl?.startsWith('data:')) {
-      char.avatarDataUrl = await ensureStorageUrl(char.avatarDataUrl, 'avatars', userId);
+      // Batch D lockdown: base64 character avatars (imports/legacy) go to the
+      // private character_avatars_private bucket as a sentinel.
+      char.avatarDataUrl = await ensurePrivateStorageSentinel(
+        char.avatarDataUrl,
+        'character_avatars_private',
+        userId,
+      );
     }
   }
 

@@ -100,6 +100,8 @@ const qualityHubStoragePrivacyStageB20260614Timestamp = "2026-06-14T11:15:00.000
 const qualityHubBatchASecurity20260619Timestamp = "2026-06-19T08:00:00.000Z";
 const qualityHubBatchBSecurity20260619Timestamp = "2026-06-19T09:10:00.000Z";
 const qualityHubBatchCSecurity20260619Timestamp = "2026-06-19T10:00:00.000Z";
+const qualityHubBatchDCoversAvatarsLockdown20260620Timestamp =
+  "2026-06-20T03:15:00.000Z";
 
 function stamp(runId: string) {
   return {
@@ -6536,6 +6538,52 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
     },
   ],
   changeLog: [
+    {
+      id: "cl-20260620-001",
+      title:
+        "Batch D security — covers/avatars lockdown (BF-04/BF-05/BF-06/PD-01)",
+      summary:
+        "Security · Closed BF-04/BF-05/BF-06/PD-01 storage lockdown. New publish-cover edge function (service-role) mirrors story_covers_private into the public covers bucket on publish and removes the mirror on unpublish. publishScenario/unpublishScenario in gallery-data.ts now invoke it. The public covers bucket is admin-write-only (public read retained). The public avatars bucket only accepts profile-avatar filenames (^<uid>/avatar-<digits>\\.(jpg|jpeg|png|webp|gif)$) into the owner folder — character/private avatar paths are rejected. Legacy public character/session-state avatar_url values were nulled where avatar_path is canonical; an admin-only admin-media-cleanup edge function deletes the matching public objects after re-proving they have a private mirror and no current reference.",
+      severity: "fix" as const,
+      status: "completed" as const,
+      problem:
+        "BF-04/BF-05/BF-06: After Stage A/B/C of Batch D, user-uploaded story covers, character avatars and side-character avatars were re-routed to private buckets with *_path columns and signed-URL hydration, but the public covers and avatars buckets still accepted user writes and still held the legacy public objects. Without a publish-time copy from story_covers_private into the public covers bucket, new publishes would have lost their gallery cover (gallery cards read stories.cover_image_url). PD-01: the legacy character avatar_url values still pointed at public storage objects, so deleting the public objects without nulling those URLs would have produced 404s in the transition fallback. The covers bucket also lacked an unpublish/delete cleanup path, leaking private draft assets into the public mirror over time.",
+      plan:
+        "1) Service-role publish-cover edge function copies story_covers_private into covers/<owner>/<scenarioId>/<file> and writes stories.cover_image_url; action='unpublish' removes the mirror. 2) Wire publishScenario/unpublishScenario in gallery-data.ts. 3) Tighten covers storage RLS to admin-only writes (public read retained). 4) Tighten avatars storage RLS to profile-avatar filenames only. 5) Null public avatar_url on rows where avatar_path is populated. 6) admin-media-cleanup edge function performs the legacy public-object deletion with per-candidate re-verification. 7) Redirect legacy ensureStorageUrl('covers'|'avatars') fallbacks to ensurePrivateStorageSentinel. 8) Refresh snapshots and Quality Hub.",
+      changes:
+        "Database (live, migration timestamped 2026-06-20):\n- DROP user write/update/delete policies on bucket 'covers'; ADD admin-only equivalents. Public SELECT retained.\n- DROP user upload/update policies on bucket 'avatars'; ADD regex-restricted versions accepting only ^<uid>/avatar-[0-9]+\\.(jpg|jpeg|png|webp|gif)$ in owner folder. DELETE/SELECT policies retained.\n- UPDATE characters SET avatar_url = NULL WHERE avatar_path IS NOT NULL AND avatar_url LIKE '%/storage/v1/object/public/avatars/%' (21 rows).\n- UPDATE side_characters (0 rows) and character_session_states (1 row) same predicate.\n\nEdge functions (new):\n- supabase/functions/publish-cover/index.ts: service-role copy story_covers_private → covers on publish, removal on unpublish, gated by promote_story_cover_to_public RPC for owner/admin.\n- supabase/functions/admin-media-cleanup/index.ts: admin-only re-verified purge of legacy public character avatars.\n\nFrontend:\n- src/services/gallery-data.ts: publishScenario invokes publish-cover (action='publish'); unpublishScenario invokes it (action='unpublish'). Failures non-fatal.\n- src/services/persistence/scenarios.ts: base64 cover/character-avatar fallbacks now write to story_covers_private/character_avatars_private via ensurePrivateStorageSentinel; sentinel re-parse populates cover_image_path.\n- src/services/persistence/shared.ts: new ensurePrivateStorageSentinel helper.\n\nValidation:\n- pg_policies confirms covers bucket INSERT/UPDATE/DELETE are admin-only; public SELECT retained.\n- pg_policies confirms avatars bucket INSERT/UPDATE require the profile-avatar regex.\n- characters/character_session_states with avatar_url pointing at public avatars now = 0.\n- Both currently published stories have matching objects in both covers and story_covers_private.\n- publish-cover and admin-media-cleanup deploy cleanly.\n- rg ensureStorageUrl(...'(covers|avatars)' src returns 0 in scenarios.ts.\n\nStage A schema-snapshot drift acknowledged:\n- characters.avatar_path, library_images.image_path, scenes.image_path already present. side_characters.avatar_path, character_session_states.avatar_path, stories.cover_image_path, user_backgrounds.image_path, sidebar_backgrounds.image_path plus user_backgrounds and media_migration_errors table stubs remain pending in src/data/database-schema-inventory.ts. src/integrations/supabase/types.ts is regenerated post-migration and already carries the live shapes.\n\nKnown blockers reported instead of acted upon:\n- 57 character-avatar-pattern objects exist in public 'avatars' without a private mirror (deleted character rows or never-migrated assets). Per the explicit 'prove unreferenced before deletion' rule these are NOT deleted in this batch; reported for a dedicated cleanup pass with broader reference scanning across messages/memories/snapshots.\n- Running the admin-media-cleanup live purge requires an admin to invoke it once (preview session was unauthenticated during this run). Direct DELETE on storage.objects is blocked by storage.protect_delete().\n- Hide/delete-story flows have no client wiring; unpublish covers the only user path today (is_hidden is admin-set).",
+      filesAffected: [
+        "supabase/migrations/2026-06-20_batch_d_covers_avatars_lockdown.sql",
+        "supabase/functions/publish-cover/index.ts",
+        "supabase/functions/admin-media-cleanup/index.ts",
+        "src/services/gallery-data.ts",
+        "src/services/persistence/scenarios.ts",
+        "src/services/persistence/shared.ts",
+        "src/data/ui-audit-findings.ts",
+        "src/integrations/supabase/types.ts",
+      ],
+      agent: "Lovable",
+      relatedFindingIds: [],
+      relatedRunIds: [],
+      tags: [
+        "security",
+        "storage",
+        "covers",
+        "avatars",
+        "publish-flow",
+        "edge-function",
+        "schema-snapshot",
+        "quality-hub",
+        "batch-d",
+        "bf-04",
+        "bf-05",
+        "bf-06",
+        "pd-01",
+      ],
+      comments: [],
+      createdAt: qualityHubBatchDCoversAvatarsLockdown20260620Timestamp,
+      updatedAt: qualityHubBatchDCoversAvatarsLockdown20260620Timestamp,
+    },
     {
       id: "cl-20260619-003",
       title: "Batch C security — BF-10 reports/strikes lockdown + BF-11 published_scenarios moderation field privacy",

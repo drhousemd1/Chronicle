@@ -151,6 +151,19 @@ export async function publishScenario(
     .single();
     
   if (error) throw error;
+
+  // Batch D — promote private cover into the public `covers` bucket so gallery
+  // cards always have a resolvable public cover URL. Best-effort: a missing
+  // private cover is non-fatal (story may have no cover at all).
+  try {
+    const { error: fnErr } = await supabase.functions.invoke('publish-cover', {
+      body: { scenarioId, action: 'publish' },
+    });
+    if (fnErr) console.warn('[publishScenario] publish-cover invoke failed:', fnErr.message);
+  } catch (mirrorErr) {
+    console.warn('[publishScenario] publish-cover threw:', mirrorErr);
+  }
+
   return normalizePublishedScenario(data);
 }
 
@@ -162,6 +175,15 @@ export async function unpublishScenario(scenarioId: string): Promise<void> {
     .eq('scenario_id', scenarioId);
     
   if (error) throw error;
+
+  // Batch D — remove the public cover mirror.
+  try {
+    await supabase.functions.invoke('publish-cover', {
+      body: { scenarioId, action: 'unpublish' },
+    });
+  } catch (mirrorErr) {
+    console.warn('[unpublishScenario] publish-cover cleanup failed:', mirrorErr);
+  }
 }
 
 // Check if user has liked a scenario
