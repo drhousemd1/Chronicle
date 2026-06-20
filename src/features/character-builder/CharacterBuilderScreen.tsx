@@ -519,22 +519,14 @@ export const CharacterBuilderScreen: React.FC<CharacterBuilderScreenProps> = ({
     setShowAvatarModal(true);
   };
 
-  const handleAvatarGenerated = async (imageUrl: string) => {
+  const handleAvatarGenerated = async (imageUrl: string, imagePath?: string | null) => {
     if (selected) {
-      let finalUrl = imageUrl;
-      let finalPath: string | null = null;
-      try {
-        if (user?.id) {
-          const r = await compressAndUploadToPrivate(
-            imageUrl, 'character_avatars_private', user.id, 512, 512, 0.85,
-          );
-          finalUrl = r.signedUrl || r.sentinel;
-          finalPath = r.path;
-        }
-      } catch { /* use original */ }
+      // Single-owner upload contract: the edge function already uploaded to
+      // character_avatars_private and returned the signed URL + path. Persist
+      // the path directly — do not re-upload.
       onUpdate(selected.id, {
-        avatarDataUrl: finalUrl,
-        avatarPath: finalPath,
+        avatarDataUrl: imageUrl,
+        avatarPath: imagePath ?? null,
         avatarPosition: { x: 50, y: 50 }
       });
       setIsRepositioning(true);
