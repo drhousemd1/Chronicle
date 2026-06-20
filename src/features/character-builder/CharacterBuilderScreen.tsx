@@ -4,7 +4,7 @@ import { CustomContentTypeModal } from '@/components/chronicle/CustomContentType
 import { TabFieldNavigator } from '@/components/chronicle/TabFieldNavigator';
 import { Button } from '@/components/chronicle/UI';
 import { Icons } from '@/constants';
-import { uid, now, clamp, compressAndUpload, compressAndUploadToPrivate, resizeImage } from '@/utils';
+import { uid, now, clamp, resizeImage } from '@/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { uploadAvatar, dataUrlToBlob, updateNavButtonImages, loadNavButtonImages } from '@/services/supabase-data';
 import { AvatarGenerationModal } from '@/components/chronicle/AvatarGenerationModal';
