@@ -128,10 +128,10 @@ export interface SupabaseSchemaSnapshot {
 }
 
 export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
-  "generatedAt": "2026-06-07T05:49:06.838680Z",
+  "generatedAt": "2026-06-20T07:05:00.000000Z",
   "sourceProjectRef": "gialzvvswxadxolnwots",
   "sourceSchema": "public",
-  "generatorNotes": "Live introspection via psql against Lovable Cloud. Function definitions captured via pg_get_functiondef for security-definer audits. No row contents, secrets, PII, or user data included.",
+  "generatorNotes": "Live introspection via psql against Lovable Cloud. Function definitions captured via pg_get_functiondef for security-definer audits. No row contents, secrets, PII, or user data included. Security closeout 2026-06-20: public.published_scenarios was removed from the supabase_realtime publication (no client postgres_changes subscriber remains); direct EXECUTE on the trigger/internal SECURITY DEFINER helpers (handle_new_user, update_updated_at_column, set_updated_at_finance_live_tables, update_review_aggregates, sync_published_scenario_like_count/save_count/play_count, validate_review_ratings, enforce_private_media_url_null) was REVOKEd FROM PUBLIC, anon, authenticated. The supabase_realtime publication is not enumerated as a first-class field in this snapshot \u2014 see security memory and Quality Hub for the current membership.",
   "tables": [
     {
       "name": "ad_spend",
@@ -9851,18 +9851,6 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "securityDefiner": true
     },
     {
-      "name": "get_folders_with_details",
-      "config": [
-        "search_path=public"
-      ],
-      "language": "sql",
-      "arguments": "p_user_id uuid",
-      "definition": "Deprecated overload retained for backward compatibility. Same shape as the no-arg overload (updated 2026-06-14 to expose thumbnail_path) but filters by an explicit p_user_id rather than auth.uid().",
-      "returnType": "TABLE(id uuid, user_id uuid, name text, description text, thumbnail_image_id uuid, thumbnail_url text, thumbnail_path text, image_count bigint, created_at timestamp with time zone, updated_at timestamp with time zone)",
-      "volatility": "STABLE",
-      "securityDefiner": true
-    },
-    {
       "name": "handle_new_user",
       "config": [
         "search_path=public"
@@ -9872,7 +9860,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "definition": "CREATE OR REPLACE FUNCTION public.handle_new_user()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  random_name text;\nBEGIN\n  random_name := 'User' || substr(md5(random()::text), 1, 8);\n  INSERT INTO public.profiles (id, username, display_name)\n  VALUES (NEW.id, NEW.raw_user_meta_data ->> 'username', random_name);\n  RETURN NEW;\nEND;\n$function$\n",
       "returnType": "trigger",
       "volatility": "VOLATILE",
-      "securityDefiner": true
+      "securityDefiner": true,
+      "lastUpdatedNote": "2026-06-20 security closeout: EXECUTE revoked from PUBLIC, anon, authenticated. Continues to run on the auth.users AFTER INSERT trigger only."
     },
     {
       "name": "has_role",
@@ -9958,7 +9947,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "definition": "Trigger function: AFTER INSERT OR DELETE on public.scenario_likes; sets published_scenarios.like_count = count(*) from scenario_likes for the affected published_scenario_id.",
       "returnType": "trigger",
       "volatility": "VOLATILE",
-      "securityDefiner": true
+      "securityDefiner": true,
+      "lastUpdatedNote": "2026-06-20 security closeout: direct EXECUTE revoked from PUBLIC, anon, authenticated. Runs only via the scenario_likes trigger."
     },
     {
       "name": "sync_published_scenario_save_count",
@@ -9968,7 +9958,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "definition": "Trigger function: AFTER INSERT OR DELETE on public.saved_scenarios; sets published_scenarios.save_count = count(*) from saved_scenarios for the affected published_scenario_id.",
       "returnType": "trigger",
       "volatility": "VOLATILE",
-      "securityDefiner": true
+      "securityDefiner": true,
+      "lastUpdatedNote": "2026-06-20 security closeout: direct EXECUTE revoked from PUBLIC, anon, authenticated. Runs only via the saved_scenarios trigger."
     },
     {
       "name": "sync_published_scenario_play_count",
@@ -9978,7 +9969,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "definition": "Trigger function: AFTER INSERT OR DELETE on public.scenario_plays; sets published_scenarios.play_count = count(*) from scenario_plays for the affected published_scenario_id.",
       "returnType": "trigger",
       "volatility": "VOLATILE",
-      "securityDefiner": true
+      "securityDefiner": true,
+      "lastUpdatedNote": "2026-06-20 security closeout: direct EXECUTE revoked from PUBLIC, anon, authenticated. Runs only via the scenario_plays trigger."
     },
     {
       "name": "save_scenario_atomic",
@@ -10014,7 +10006,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "definition": "CREATE OR REPLACE FUNCTION public.set_updated_at_finance_live_tables()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  NEW.updated_at = now();\n  RETURN NEW;\nEND;\n$function$\n",
       "returnType": "trigger",
       "volatility": "VOLATILE",
-      "securityDefiner": false
+      "securityDefiner": false,
+      "lastUpdatedNote": "2026-06-20 security closeout: direct EXECUTE revoked from PUBLIC, anon, authenticated. Runs only via BEFORE UPDATE triggers on finance live tables."
     },
     {
       "name": "update_review_aggregates",
@@ -10026,7 +10019,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "definition": "CREATE OR REPLACE FUNCTION public.update_review_aggregates()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  target_id uuid;\nBEGIN\n  IF TG_OP = 'DELETE' THEN\n    target_id := OLD.published_scenario_id;\n  ELSE\n    target_id := NEW.published_scenario_id;\n  END IF;\n\n  UPDATE published_scenarios\n  SET\n    review_count = (SELECT COUNT(*) FROM scenario_reviews WHERE published_scenario_id = target_id),\n    avg_rating = COALESCE((SELECT AVG(raw_weighted_score) FROM scenario_reviews WHERE published_scenario_id = target_id), 0),\n    updated_at = now()\n  WHERE id = target_id;\n\n  IF TG_OP = 'DELETE' THEN\n    RETURN OLD;\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
       "returnType": "trigger",
       "volatility": "VOLATILE",
-      "securityDefiner": true
+      "securityDefiner": true,
+      "lastUpdatedNote": "2026-06-20 security closeout: direct EXECUTE revoked from PUBLIC, anon, authenticated. Runs only via the scenario_reviews trigger."
     },
     {
       "name": "update_updated_at_column",
@@ -10038,7 +10032,8 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "definition": "CREATE OR REPLACE FUNCTION public.update_updated_at_column()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  NEW.updated_at = NOW();\n  RETURN NEW;\nEND;\n$function$\n",
       "returnType": "trigger",
       "volatility": "VOLATILE",
-      "securityDefiner": false
+      "securityDefiner": false,
+      "lastUpdatedNote": "2026-06-20 security closeout: direct EXECUTE revoked from PUBLIC, anon, authenticated. Runs only via BEFORE UPDATE triggers across many public tables."
     },
     {
       "name": "validate_review_ratings",
@@ -10050,7 +10045,21 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "definition": "CREATE OR REPLACE FUNCTION public.validate_review_ratings()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'public'\nAS $function$\nBEGIN\n  IF NEW.concept_strength < 1 OR NEW.concept_strength > 5\n    OR NEW.initial_situation < 1 OR NEW.initial_situation > 5\n    OR NEW.role_clarity < 1 OR NEW.role_clarity > 5\n    OR NEW.motivation_tension < 1 OR NEW.motivation_tension > 5\n    OR NEW.tone_promise < 1 OR NEW.tone_promise > 5\n    OR NEW.low_friction_start < 1 OR NEW.low_friction_start > 5\n    OR NEW.worldbuilding_vibe < 1 OR NEW.worldbuilding_vibe > 5\n    OR NEW.replayability < 1 OR NEW.replayability > 5\n    OR NEW.character_details_complexity < 1 OR NEW.character_details_complexity > 5\n    OR NEW.spice_level < 1 OR NEW.spice_level > 5\n  THEN\n    RAISE EXCEPTION 'All ratings must be between 1 and 5';\n  END IF;\n  RETURN NEW;\nEND;\n$function$\n",
       "returnType": "trigger",
       "volatility": "VOLATILE",
-      "securityDefiner": false
+      "securityDefiner": false,
+      "lastUpdatedNote": "2026-06-20 security closeout: direct EXECUTE revoked from PUBLIC, anon, authenticated. Runs only via the scenario_reviews BEFORE INSERT/UPDATE trigger."
+    },
+    {
+      "name": "enforce_private_media_url_null",
+      "config": [
+        "search_path=public"
+      ],
+      "language": "plpgsql",
+      "arguments": "",
+      "definition": "Trigger function added during Batch D storage lockdown. Enforces that user_backgrounds rows (and non-default/non-shared sidebar_backgrounds rows) carry a NULL image_url plus a populated image_path so renders go through the private signed-URL flow. Raises an exception otherwise.",
+      "returnType": "trigger",
+      "volatility": "VOLATILE",
+      "securityDefiner": false,
+      "lastUpdatedNote": "2026-06-20 security closeout: direct EXECUTE revoked from PUBLIC, anon, authenticated. Runs only via BEFORE INSERT/UPDATE triggers on user_backgrounds and sidebar_backgrounds."
     },
     {
       "name": "get_saved_scenarios_for_user",
@@ -10671,11 +10680,12 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
     "tablesCount": 43,
     "functionsCount": 23,
     "enumsCount": 1,
-    "storageBucketsCount": 7,
+    "storageBucketsCount": 11,
     "storagePoliciesCount": 26,
     "edgeFunctionsCount": 20,
     "rowCountsNote": "approxRowCount from pg_class.reltuples; -1 means never analyzed (needs_verification)",
     "grantsCount": 258,
-    "functionDefinitionsIncluded": true
+    "functionDefinitionsIncluded": true,
+    "realtimePublicationNote": "supabase_realtime currently lists no public.* tables after 2026-06-20 closeout (public.published_scenarios was dropped)."
   }
 } as const;
