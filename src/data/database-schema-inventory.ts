@@ -3041,6 +3041,12 @@ export const databaseSchemaInventory = {
           "default": "''"
         },
         {
+          "name": "avatar_path",
+          "type": "text",
+          "nullable": true,
+          "default": null
+        },
+        {
           "name": "avatar_position",
           "type": "jsonb",
           "nullable": true,
