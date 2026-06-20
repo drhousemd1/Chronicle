@@ -3281,6 +3281,12 @@ export const databaseSchemaInventory = {
           "default": "''"
         },
         {
+          "name": "cover_image_path",
+          "type": "text",
+          "nullable": true,
+          "default": null
+        },
+        {
           "name": "cover_image_position",
           "type": "jsonb",
           "nullable": true,
