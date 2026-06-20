@@ -21,7 +21,7 @@ import { buildRequiredPresence, trackApiValidationSnapshot } from "@/services/ap
 interface CoverImageGenerationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onGenerated: (imageUrl: string) => void;
+  onGenerated: (imageUrl: string, imagePath?: string | null) => void;
   scenarioTitle?: string;
 }
 
@@ -101,7 +101,7 @@ export const CoverImageGenerationModal: React.FC<CoverImageGenerationModalProps>
           },
         });
 
-        onGenerated(data.imageUrl);
+        onGenerated(data.imageUrl, data.imagePath ?? null);
         setPrompt("");
         setNegativePrompt("");
         setSelectedStyleId(defaultStyleId);
