@@ -11,14 +11,14 @@ const supabaseMocks = vi.hoisted(() => {
 
 vi.mock('./shared', () => ({
   supabase: {
-    from: (...args: unknown[]) => {
-      supabaseMocks.callOrder.push('from:' + String(args[0]));
-      return supabaseMocks.fromMock(...(args as any));
+    from: (name: string) => {
+      supabaseMocks.callOrder.push('from:' + name);
+      return supabaseMocks.fromMock(name);
     },
     functions: {
-      invoke: (...args: unknown[]) => {
-        supabaseMocks.callOrder.push('invoke:' + String((args[0] as any)));
-        return supabaseMocks.invokeMock(...(args as any));
+      invoke: (name: string, opts?: unknown) => {
+        supabaseMocks.callOrder.push('invoke:' + name);
+        return supabaseMocks.invokeMock(name, opts);
       },
     },
   },
