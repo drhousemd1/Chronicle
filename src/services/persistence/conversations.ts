@@ -527,6 +527,7 @@ export async function updateSessionState(
     customSections: any[];
     goals: any[];
     avatarUrl: string;
+    avatarPath: string | null;
     avatarPosition: { x: number; y: number };
     controlledBy: string;
     characterRole: string;
@@ -565,7 +566,19 @@ export async function updateSessionState(
   if (patch.goals !== undefined) {
     updateData.goals = patch.goals;
   }
-  if (patch.avatarUrl !== undefined) updateData.avatar_url = patch.avatarUrl;
+  if (patch.avatarPath !== undefined) {
+    // Single-owner: persist avatar_path; mirror as sentinel into avatar_url so
+    // legacy readers still resolve correctly via parseStorageSentinel.
+    updateData.avatar_path = patch.avatarPath;
+    if (patch.avatarPath) {
+      updateData.avatar_url = buildStorageSentinel('character_avatars_private', patch.avatarPath);
+    } else if (patch.avatarUrl === undefined) {
+      updateData.avatar_url = null;
+    }
+  }
+  if (patch.avatarUrl !== undefined && patch.avatarPath === undefined) {
+    updateData.avatar_url = patch.avatarUrl;
+  }
   if (patch.avatarPosition !== undefined) updateData.avatar_position = patch.avatarPosition;
   if (patch.controlledBy !== undefined) updateData.controlled_by = patch.controlledBy;
   if (patch.characterRole !== undefined) updateData.character_role = patch.characterRole;
