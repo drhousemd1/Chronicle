@@ -50,7 +50,12 @@ serve(async (req) => {
     let body: { action?: string; dryRun?: boolean } = {};
     try { body = await req.json(); } catch { /* allow empty */ }
     const dryRun = body.dryRun === true;
-    if (body.action !== "purge_legacy_character_avatars") {
+    const action = body.action;
+    const VALID_ACTIONS = new Set([
+      "purge_legacy_character_avatars",
+      "purge_orphan_legacy_avatars",
+    ]);
+    if (!action || !VALID_ACTIONS.has(action)) {
       return new Response(
         JSON.stringify({ error: "unknown action" }),
         { status: 400, headers: jsonHeaders },
@@ -81,7 +86,7 @@ serve(async (req) => {
         .eq("bucket_id", "character_avatars_private");
       const privSet = new Set((priv || []).map((r: any) => r.name as string));
 
-      // Fetch refs
+      // Fetch all canonical refs to public avatars bucket.
       const [{ data: chars }, { data: sides }, { data: css }, { data: profiles }] = await Promise.all([
         admin.from("characters").select("avatar_url"),
         admin.from("side_characters").select("avatar_url"),
@@ -101,7 +106,42 @@ serve(async (req) => {
 
       // Only target legacy character pattern: <uid>/avatar-<uuid>-<ts>.<ext>
       const charPattern = /^[0-9a-f-]+\/avatar-[0-9a-f-]{36}-\d+\.(jpg|jpeg|png|webp)$/;
-      names = all.filter((n) => charPattern.test(n) && privSet.has(n) && !referenced.has(n));
+      const legacy = all.filter((n) => charPattern.test(n));
+
+      if (action === "purge_legacy_character_avatars") {
+        // Stage C — only delete objects that have a verified private mirror.
+        names = legacy.filter((n) => privSet.has(n) && !referenced.has(n));
+      } else {
+        // purge_orphan_legacy_avatars — broader scan: delete objects with
+        // NO private mirror that are also not referenced from any URL-bearing
+        // text/json column across the app (messages, memories, snapshots,
+        // characters/session/side jsonb fields, stories metadata). Verified
+        // server-side here so the admin cannot pass arbitrary names.
+        const candidates = legacy.filter((n) => !privSet.has(n) && !referenced.has(n));
+        if (candidates.length === 0) {
+          names = [];
+        } else {
+          const survivors: string[] = [];
+          // Chunk the LIKE-scan to keep SQL payload small.
+          const chunk = 25;
+          for (let i = 0; i < candidates.length; i += chunk) {
+            const slice = candidates.slice(i, i + chunk);
+            const { data: hits, error: scanErr } = await admin.rpc(
+              "scan_legacy_avatar_refs",
+              { p_names: slice } as any,
+            );
+            if (scanErr) {
+              return new Response(JSON.stringify({
+                error: "broader scan failed",
+                detail: scanErr.message,
+              }), { status: 500, headers: jsonHeaders });
+            }
+            const referencedNames = new Set<string>((hits || []).map((r: any) => r.name as string));
+            for (const n of slice) if (!referencedNames.has(n)) survivors.push(n);
+          }
+          names = survivors;
+        }
+      }
     }
 
     if (dryRun) {

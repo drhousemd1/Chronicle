@@ -607,6 +607,18 @@ export async function saveScenarioWithVerification(
 }
 
 export async function deleteScenario(id: string): Promise<void> {
+  // Batch D — best-effort public cover mirror cleanup BEFORE the story row is
+  // deleted, so the publish-cover edge function can still read stories.user_id
+  // / cover_image_url to identify and remove the mirror. Non-fatal: a missing
+  // mirror or unauthenticated session must not block deletion.
+  try {
+    await supabase.functions.invoke('publish-cover', {
+      body: { scenarioId: id, action: 'unpublish' },
+    });
+  } catch (mirrorErr) {
+    console.warn('[deleteScenario] publish-cover cleanup failed:', mirrorErr);
+  }
+
   const { error } = await supabase
     .from('stories')
     .delete()

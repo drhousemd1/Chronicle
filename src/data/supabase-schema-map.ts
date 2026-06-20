@@ -1635,69 +1635,10 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "name": "character_session_states",
       "grants": [
         {
-          "grantee": "anon",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
-          "grantee": "authenticated",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
-          "grantee": "postgres",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
           "grantee": "sandbox_exec",
           "privileges": [
             "INSERT",
             "SELECT"
-          ]
-        },
-        {
-          "grantee": "sandbox_exec_gialzvvswxadxolnwots",
-          "privileges": [
-            "INSERT",
-            "SELECT"
-          ]
-        },
-        {
-          "grantee": "service_role",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
           ]
         }
       ],
@@ -1880,7 +1821,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         },
         {
           "name": "previous_names",
-          "type": "text[]",
+          "type": "ARRAY",
           "default": "'{}'::text[]",
           "notNull": false,
           "ordinal": 23,
@@ -1948,6 +1889,14 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "default": null,
           "notNull": false,
           "ordinal": 31,
+          "isIdentity": false
+        },
+        {
+          "name": "avatar_path",
+          "type": "text",
+          "default": null,
+          "notNull": false,
+          "ordinal": 32,
           "isIdentity": false
         }
       ],
@@ -2265,69 +2214,10 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "name": "characters",
       "grants": [
         {
-          "grantee": "anon",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
-          "grantee": "authenticated",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
-          "grantee": "postgres",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
           "grantee": "sandbox_exec",
           "privileges": [
             "INSERT",
             "SELECT"
-          ]
-        },
-        {
-          "grantee": "sandbox_exec_gialzvvswxadxolnwots",
-          "privileges": [
-            "INSERT",
-            "SELECT"
-          ]
-        },
-        {
-          "grantee": "service_role",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
           ]
         }
       ],
@@ -2578,6 +2468,14 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "default": "''::text",
           "notNull": false,
           "ordinal": 31,
+          "isIdentity": false
+        },
+        {
+          "name": "avatar_path",
+          "type": "text",
+          "default": null,
+          "notNull": false,
+          "ordinal": 32,
           "isIdentity": false
         }
       ],
@@ -5616,6 +5514,130 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "checkConstraints": [],
       "uniqueConstraints": []
     },
+        {
+      "name": "media_migration_errors",
+      "grants": [
+        {
+          "grantee": "sandbox_exec",
+          "privileges": [
+            "INSERT",
+            "SELECT"
+          ]
+        }
+      ],
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid",
+          "default": "gen_random_uuid()",
+          "notNull": true,
+          "ordinal": 1,
+          "isIdentity": false
+        },
+        {
+          "name": "source_bucket",
+          "type": "text",
+          "default": null,
+          "notNull": true,
+          "ordinal": 2,
+          "isIdentity": false
+        },
+        {
+          "name": "target_bucket",
+          "type": "text",
+          "default": null,
+          "notNull": true,
+          "ordinal": 3,
+          "isIdentity": false
+        },
+        {
+          "name": "source_path",
+          "type": "text",
+          "default": null,
+          "notNull": false,
+          "ordinal": 4,
+          "isIdentity": false
+        },
+        {
+          "name": "target_path",
+          "type": "text",
+          "default": null,
+          "notNull": false,
+          "ordinal": 5,
+          "isIdentity": false
+        },
+        {
+          "name": "owner_user_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": false,
+          "ordinal": 6,
+          "isIdentity": false
+        },
+        {
+          "name": "ref_table",
+          "type": "text",
+          "default": null,
+          "notNull": false,
+          "ordinal": 7,
+          "isIdentity": false
+        },
+        {
+          "name": "ref_id",
+          "type": "uuid",
+          "default": null,
+          "notNull": false,
+          "ordinal": 8,
+          "isIdentity": false
+        },
+        {
+          "name": "error_code",
+          "type": "text",
+          "default": null,
+          "notNull": false,
+          "ordinal": 9,
+          "isIdentity": false
+        },
+        {
+          "name": "error_message",
+          "type": "text",
+          "default": null,
+          "notNull": false,
+          "ordinal": 10,
+          "isIdentity": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "default": "now()",
+          "notNull": true,
+          "ordinal": 11,
+          "isIdentity": false
+        }
+      ],
+      "comment": null,
+      "policies": [
+        {
+          "name": "Admins can read media migration errors",
+          "roles": [
+            "authenticated"
+          ],
+          "using": "has_role(auth.uid(), 'admin'::app_role)",
+          "command": "SELECT",
+          "withCheck": null,
+          "permissive": true
+        }
+      ],
+      "triggers": [],
+      "primaryKey": [
+        "id"
+      ],
+      "rlsEnabled": true,
+      "foreignKeys": [],
+      "approxRowCount": 1,
+      "checkConstraints": [],
+      "uniqueConstraints": []
+    },
     {
       "name": "memories",
       "grants": [
@@ -8373,69 +8395,10 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "name": "side_characters",
       "grants": [
         {
-          "grantee": "anon",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
-          "grantee": "authenticated",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
-          "grantee": "postgres",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
           "grantee": "sandbox_exec",
           "privileges": [
             "INSERT",
             "SELECT"
-          ]
-        },
-        {
-          "grantee": "sandbox_exec_gialzvvswxadxolnwots",
-          "privileges": [
-            "INSERT",
-            "SELECT"
-          ]
-        },
-        {
-          "grantee": "service_role",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
           ]
         }
       ],
@@ -8639,6 +8602,14 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "notNull": true,
           "ordinal": 25,
           "isIdentity": false
+        },
+        {
+          "name": "avatar_path",
+          "type": "text",
+          "default": null,
+          "notNull": false,
+          "ordinal": 26,
+          "isIdentity": false
         }
       ],
       "comment": null,
@@ -8713,69 +8684,10 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "name": "sidebar_backgrounds",
       "grants": [
         {
-          "grantee": "anon",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
-          "grantee": "authenticated",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
-          "grantee": "postgres",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
           "grantee": "sandbox_exec",
           "privileges": [
             "INSERT",
             "SELECT"
-          ]
-        },
-        {
-          "grantee": "sandbox_exec_gialzvvswxadxolnwots",
-          "privileges": [
-            "INSERT",
-            "SELECT"
-          ]
-        },
-        {
-          "grantee": "service_role",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
           ]
         }
       ],
@@ -8800,7 +8712,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "name": "image_url",
           "type": "text",
           "default": null,
-          "notNull": true,
+          "notNull": false,
           "ordinal": 3,
           "isIdentity": false
         },
@@ -8850,6 +8762,14 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "default": "0",
           "notNull": true,
           "ordinal": 9,
+          "isIdentity": false
+        },
+        {
+          "name": "image_path",
+          "type": "text",
+          "default": null,
+          "notNull": false,
+          "ordinal": 10,
           "isIdentity": false
         }
       ],
@@ -8902,69 +8822,10 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "name": "stories",
       "grants": [
         {
-          "grantee": "anon",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
-          "grantee": "authenticated",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
-          "grantee": "postgres",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
           "grantee": "sandbox_exec",
           "privileges": [
             "INSERT",
             "SELECT"
-          ]
-        },
-        {
-          "grantee": "sandbox_exec_gialzvvswxadxolnwots",
-          "privileges": [
-            "INSERT",
-            "SELECT"
-          ]
-        },
-        {
-          "grantee": "service_role",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
           ]
         }
       ],
@@ -9011,7 +8872,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         },
         {
           "name": "tags",
-          "type": "text[]",
+          "type": "ARRAY",
           "default": "'{}'::text[]",
           "notNull": false,
           "ordinal": 6,
@@ -9103,6 +8964,14 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "default": "'{}'::jsonb",
           "notNull": false,
           "ordinal": 17,
+          "isIdentity": false
+        },
+        {
+          "name": "cover_image_path",
+          "type": "text",
+          "default": null,
+          "notNull": false,
+          "ordinal": 18,
           "isIdentity": false
         }
       ],
@@ -9418,69 +9287,10 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       "name": "user_backgrounds",
       "grants": [
         {
-          "grantee": "anon",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
-          "grantee": "authenticated",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
-          "grantee": "postgres",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
-          ]
-        },
-        {
           "grantee": "sandbox_exec",
           "privileges": [
             "INSERT",
             "SELECT"
-          ]
-        },
-        {
-          "grantee": "sandbox_exec_gialzvvswxadxolnwots",
-          "privileges": [
-            "INSERT",
-            "SELECT"
-          ]
-        },
-        {
-          "grantee": "service_role",
-          "privileges": [
-            "DELETE",
-            "INSERT",
-            "MAINTAIN",
-            "REFERENCES",
-            "SELECT",
-            "TRIGGER",
-            "TRUNCATE",
-            "UPDATE"
           ]
         }
       ],
@@ -9505,7 +9315,7 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "name": "image_url",
           "type": "text",
           "default": null,
-          "notNull": true,
+          "notNull": false,
           "ordinal": 3,
           "isIdentity": false
         },
@@ -9563,6 +9373,14 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "default": "0",
           "notNull": true,
           "ordinal": 10,
+          "isIdentity": false
+        },
+        {
+          "name": "image_path",
+          "type": "text",
+          "default": null,
+          "notNull": false,
+          "ordinal": 11,
           "isIdentity": false
         }
       ],
@@ -10304,6 +10122,14 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "allowedMimeTypes": null
       },
       {
+        "id": "character_avatars_private",
+        "name": "character_avatars_private",
+        "public": false,
+        "createdAt": "2026-06-19T10:40:15.536295+00:00",
+        "fileSizeLimit": null,
+        "allowedMimeTypes": null
+      },
+      {
         "id": "covers",
         "name": "covers",
         "public": true,
@@ -10342,15 +10168,57 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "createdAt": "2026-01-16T06:02:07.392815+00:00",
         "fileSizeLimit": null,
         "allowedMimeTypes": null
+      },
+      {
+        "id": "sidebar_backgrounds_private",
+        "name": "sidebar_backgrounds_private",
+        "public": false,
+        "createdAt": "2026-06-19T10:40:13.455891+00:00",
+        "fileSizeLimit": null,
+        "allowedMimeTypes": null
+      },
+      {
+        "id": "story_covers_private",
+        "name": "story_covers_private",
+        "public": false,
+        "createdAt": "2026-06-19T10:40:14.465732+00:00",
+        "fileSizeLimit": null,
+        "allowedMimeTypes": null
+      },
+      {
+        "id": "user_backgrounds_private",
+        "name": "user_backgrounds_private",
+        "public": false,
+        "createdAt": "2026-06-19T10:40:12.134771+00:00",
+        "fileSizeLimit": null,
+        "allowedMimeTypes": null
       }
     ],
     "policies": [
+      {
+        "name": "Admins can delete backgrounds",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'backgrounds'::text) AND has_role(auth.uid(), 'admin'::app_role))",
+        "command": "DELETE",
+        "withCheck": null
+      },
       {
         "name": "Admins can delete finance docs",
         "roles": [
           "authenticated"
         ],
         "using": "((bucket_id = 'finance_documents'::text) AND has_role(auth.uid(), 'admin'::app_role))",
+        "command": "DELETE",
+        "withCheck": null
+      },
+      {
+        "name": "Admins can delete guide images",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'guide_images'::text) AND has_role(auth.uid(), 'admin'::app_role))",
         "command": "DELETE",
         "withCheck": null
       },
@@ -10364,6 +10232,15 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "withCheck": null
       },
       {
+        "name": "Admins can update backgrounds",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'backgrounds'::text) AND has_role(auth.uid(), 'admin'::app_role))",
+        "command": "UPDATE",
+        "withCheck": null
+      },
+      {
         "name": "Admins can update finance docs",
         "roles": [
           "authenticated"
@@ -10373,6 +10250,24 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "withCheck": null
       },
       {
+        "name": "Admins can update guide images",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'guide_images'::text) AND has_role(auth.uid(), 'admin'::app_role))",
+        "command": "UPDATE",
+        "withCheck": "((bucket_id = 'guide_images'::text) AND has_role(auth.uid(), 'admin'::app_role))"
+      },
+      {
+        "name": "Admins can upload backgrounds",
+        "roles": [
+          "authenticated"
+        ],
+        "using": null,
+        "command": "INSERT",
+        "withCheck": "((bucket_id = 'backgrounds'::text) AND has_role(auth.uid(), 'admin'::app_role))"
+      },
+      {
         "name": "Admins can upload finance docs",
         "roles": [
           "authenticated"
@@ -10380,6 +10275,15 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "using": null,
         "command": "INSERT",
         "withCheck": "((bucket_id = 'finance_documents'::text) AND has_role(auth.uid(), 'admin'::app_role))"
+      },
+      {
+        "name": "Admins can upload guide images",
+        "roles": [
+          "authenticated"
+        ],
+        "using": null,
+        "command": "INSERT",
+        "withCheck": "((bucket_id = 'guide_images'::text) AND has_role(auth.uid(), 'admin'::app_role))"
       },
       {
         "name": "Anyone can read guide images",
@@ -10410,25 +10314,13 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "withCheck": null
       },
       {
-        "name": "Admins can delete guide images",
-        "roles": null,
-        "using": "((bucket_id = 'guide_images'::text) AND has_role(auth.uid(), 'admin'::app_role))",
-        "command": "DELETE",
+        "name": "Owners can view own image_library",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'image_library'::text) AND (((auth.uid())::text = (storage.foldername(name))[1]) OR has_role(auth.uid(), 'admin'::app_role)))",
+        "command": "SELECT",
         "withCheck": null
-      },
-      {
-        "name": "Admins can upload guide images",
-        "roles": null,
-        "using": null,
-        "command": "INSERT",
-        "withCheck": "((bucket_id = 'guide_images'::text) AND has_role(auth.uid(), 'admin'::app_role))"
-      },
-      {
-        "name": "Admins can update guide images",
-        "roles": null,
-        "using": "((bucket_id = 'guide_images'::text) AND has_role(auth.uid(), 'admin'::app_role))",
-        "command": "UPDATE",
-        "withCheck": "((bucket_id = 'guide_images'::text) AND has_role(auth.uid(), 'admin'::app_role))"
       },
       {
         "name": "Public can view covers",
@@ -10441,13 +10333,6 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "name": "Users can delete own avatars",
         "roles": null,
         "using": "((bucket_id = 'avatars'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
-        "command": "DELETE",
-        "withCheck": null
-      },
-      {
-        "name": "Users can delete own backgrounds",
-        "roles": null,
-        "using": "((bucket_id = 'backgrounds'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
         "command": "DELETE",
         "withCheck": null
       },
@@ -10466,29 +10351,6 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "withCheck": null
       },
       {
-        "name": "Users can delete their covers",
-        "roles": [
-          "authenticated"
-        ],
-        "using": "((bucket_id = 'covers'::text) AND ((storage.foldername(name))[1] = (auth.uid())::text))",
-        "command": "DELETE",
-        "withCheck": null
-      },
-      {
-        "name": "Users can update own avatars",
-        "roles": null,
-        "using": "((bucket_id = 'avatars'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
-        "command": "UPDATE",
-        "withCheck": null
-      },
-      {
-        "name": "Users can update own backgrounds",
-        "roles": null,
-        "using": "((bucket_id = 'backgrounds'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
-        "command": "UPDATE",
-        "withCheck": null
-      },
-      {
         "name": "Users can update own scenes",
         "roles": null,
         "using": "((bucket_id = 'scenes'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
@@ -10496,36 +10358,22 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
         "withCheck": null
       },
       {
-        "name": "Users can update their covers",
+        "name": "Users can update profile avatars",
         "roles": [
           "authenticated"
         ],
-        "using": "((bucket_id = 'covers'::text) AND ((storage.foldername(name))[1] = (auth.uid())::text))",
+        "using": "((bucket_id = 'avatars'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]) AND (name ~ (('^'::text || (auth.uid())::text) || '/avatar-[0-9]+\\.(jpg|jpeg|png|webp|gif)$'::text)))",
         "command": "UPDATE",
         "withCheck": null
       },
       {
-        "name": "Users can upload avatars",
-        "roles": null,
-        "using": null,
-        "command": "INSERT",
-        "withCheck": "((bucket_id = 'avatars'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))"
-      },
-      {
-        "name": "Users can upload backgrounds",
-        "roles": null,
-        "using": null,
-        "command": "INSERT",
-        "withCheck": "((bucket_id = 'backgrounds'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))"
-      },
-      {
-        "name": "Users can upload covers",
+        "name": "Users can upload profile avatars",
         "roles": [
           "authenticated"
         ],
         "using": null,
         "command": "INSERT",
-        "withCheck": "((bucket_id = 'covers'::text) AND ((storage.foldername(name))[1] = (auth.uid())::text))"
+        "withCheck": "((bucket_id = 'avatars'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]) AND (name ~ (('^'::text || (auth.uid())::text) || '/avatar-[0-9]+\\.(jpg|jpeg|png|webp|gif)$'::text)))"
       },
       {
         "name": "Users can upload scenes",
@@ -10536,17 +10384,184 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
       },
       {
         "name": "Users can upload to image_library",
-        "roles": null,
+        "roles": [
+          "authenticated"
+        ],
         "using": null,
         "command": "INSERT",
         "withCheck": "((bucket_id = 'image_library'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))"
       },
       {
-        "name": "Owners can view own image_library",
-        "roles": null,
-        "using": "((bucket_id = 'image_library'::text) AND (((auth.uid())::text = (storage.foldername(name))[1]) OR has_role(auth.uid(), 'admin'::app_role)))",
+        "name": "char_avatar_priv owner delete",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'character_avatars_private'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
+        "command": "DELETE",
+        "withCheck": null
+      },
+      {
+        "name": "char_avatar_priv owner read",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'character_avatars_private'::text) AND (((auth.uid())::text = (storage.foldername(name))[1]) OR has_role(auth.uid(), 'admin'::app_role)))",
         "command": "SELECT",
         "withCheck": null
+      },
+      {
+        "name": "char_avatar_priv owner update",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'character_avatars_private'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
+        "command": "UPDATE",
+        "withCheck": null
+      },
+      {
+        "name": "char_avatar_priv owner write",
+        "roles": [
+          "authenticated"
+        ],
+        "using": null,
+        "command": "INSERT",
+        "withCheck": "((bucket_id = 'character_avatars_private'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))"
+      },
+      {
+        "name": "covers admin delete",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'covers'::text) AND has_role(auth.uid(), 'admin'::app_role))",
+        "command": "DELETE",
+        "withCheck": null
+      },
+      {
+        "name": "covers admin update",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'covers'::text) AND has_role(auth.uid(), 'admin'::app_role))",
+        "command": "UPDATE",
+        "withCheck": null
+      },
+      {
+        "name": "covers admin write",
+        "roles": [
+          "authenticated"
+        ],
+        "using": null,
+        "command": "INSERT",
+        "withCheck": "((bucket_id = 'covers'::text) AND has_role(auth.uid(), 'admin'::app_role))"
+      },
+      {
+        "name": "sidebar_bg_priv owner delete",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'sidebar_backgrounds_private'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
+        "command": "DELETE",
+        "withCheck": null
+      },
+      {
+        "name": "sidebar_bg_priv owner read",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'sidebar_backgrounds_private'::text) AND (((auth.uid())::text = (storage.foldername(name))[1]) OR has_role(auth.uid(), 'admin'::app_role)))",
+        "command": "SELECT",
+        "withCheck": null
+      },
+      {
+        "name": "sidebar_bg_priv owner update",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'sidebar_backgrounds_private'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
+        "command": "UPDATE",
+        "withCheck": null
+      },
+      {
+        "name": "sidebar_bg_priv owner write",
+        "roles": [
+          "authenticated"
+        ],
+        "using": null,
+        "command": "INSERT",
+        "withCheck": "((bucket_id = 'sidebar_backgrounds_private'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))"
+      },
+      {
+        "name": "story_covers_priv owner delete",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'story_covers_private'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
+        "command": "DELETE",
+        "withCheck": null
+      },
+      {
+        "name": "story_covers_priv owner update",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'story_covers_private'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
+        "command": "UPDATE",
+        "withCheck": null
+      },
+      {
+        "name": "story_covers_priv owner write",
+        "roles": [
+          "authenticated"
+        ],
+        "using": null,
+        "command": "INSERT",
+        "withCheck": "((bucket_id = 'story_covers_private'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))"
+      },
+      {
+        "name": "story_covers_priv published readable",
+        "roles": [
+          "anon",
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'story_covers_private'::text) AND can_read_private_story_media('story_covers_private'::text, name))",
+        "command": "SELECT",
+        "withCheck": null
+      },
+      {
+        "name": "user_bg_priv owner delete",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'user_backgrounds_private'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
+        "command": "DELETE",
+        "withCheck": null
+      },
+      {
+        "name": "user_bg_priv owner read",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'user_backgrounds_private'::text) AND (((auth.uid())::text = (storage.foldername(name))[1]) OR has_role(auth.uid(), 'admin'::app_role)))",
+        "command": "SELECT",
+        "withCheck": null
+      },
+      {
+        "name": "user_bg_priv owner update",
+        "roles": [
+          "authenticated"
+        ],
+        "using": "((bucket_id = 'user_backgrounds_private'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
+        "command": "UPDATE",
+        "withCheck": null
+      },
+      {
+        "name": "user_bg_priv owner write",
+        "roles": [
+          "authenticated"
+        ],
+        "using": null,
+        "command": "INSERT",
+        "withCheck": "((bucket_id = 'user_backgrounds_private'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))"
       }
     ]
   },

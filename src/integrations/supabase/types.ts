@@ -2441,6 +2441,12 @@ export type Database = {
         }
         Returns: undefined
       }
+      scan_legacy_avatar_refs: {
+        Args: { p_names: string[] }
+        Returns: {
+          name: string
+        }[]
+      }
       set_admin_access: {
         Args: { _enabled: boolean; _target_user_id: string }
         Returns: undefined
