@@ -1,10 +1,23 @@
-import { Dispatch, SetStateAction, useCallback, useMemo, useState } from "react";
+import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Character, ScenarioData, TabKey } from "@/types";
 import { aiFillCharacter, aiGenerateCharacter } from "@/services/character-ai";
 import { now, uid, uuid, createDefaultScenarioData } from "@/utils";
 import * as supabaseData from "@/services/supabase-data";
 
 type AppShellTab = TabKey | "library";
+type CharacterEditScope = "story" | "library";
+
+function cloneCharacterForEditSnapshot(character: Character): Character {
+  return JSON.parse(JSON.stringify(character)) as Character;
+}
+
+function getCharacterEditScope(tab: AppShellTab): CharacterEditScope {
+  return tab === "library" ? "library" : "story";
+}
+
+function getCharacterEditSnapshotKey(scope: CharacterEditScope, id: string) {
+  return `${scope}:${id}`;
+}
 
 interface UseIndexCharacterWorkspaceArgs {
   userId?: string;
@@ -52,6 +65,36 @@ export function useIndexCharacterWorkspace({
   const [isAiFilling, setIsAiFilling] = useState(false);
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [isSavingToLibrary, setIsSavingToLibrary] = useState(false);
+  const characterEditSnapshotsRef = useRef<Map<string, Character>>(new Map());
+
+  const selectedCharacterScope = getCharacterEditScope(tab);
+
+  useEffect(() => {
+    if (!selectedCharacterId) return;
+
+    const sourceList = selectedCharacterScope === "library" ? library : activeData?.characters;
+    const selected = sourceList?.find((character) => character.id === selectedCharacterId);
+    if (!selected) return;
+
+    const snapshotKey = getCharacterEditSnapshotKey(selectedCharacterScope, selectedCharacterId);
+    if (!characterEditSnapshotsRef.current.has(snapshotKey)) {
+      characterEditSnapshotsRef.current.set(snapshotKey, cloneCharacterForEditSnapshot(selected));
+    }
+  }, [activeData?.characters, library, selectedCharacterId, selectedCharacterScope]);
+
+  const clearCharacterEditTracking = useCallback(
+    (id: string) => {
+      characterEditSnapshotsRef.current.delete(getCharacterEditSnapshotKey("story", id));
+      characterEditSnapshotsRef.current.delete(getCharacterEditSnapshotKey("library", id));
+      setUnsavedNewCharacterIds((previous) => {
+        if (!previous.has(id)) return previous;
+        const next = new Set(previous);
+        next.delete(id);
+        return next;
+      });
+    },
+    [setUnsavedNewCharacterIds],
+  );
 
   const getSelectedCharacter = useCallback(() => {
     if (!selectedCharacterId) return null;
@@ -90,6 +133,9 @@ export function useIndexCharacterWorkspace({
         if (character) {
           await supabaseData.saveCharacterToLibrary(character, userId);
         }
+        if (selectedCharacterId) {
+          clearCharacterEditTracking(selectedCharacterId);
+        }
         setSelectedCharacterId(null);
       } catch (error: any) {
         console.error("Error saving character:", error.message);
@@ -97,45 +143,82 @@ export function useIndexCharacterWorkspace({
       return;
     }
 
+    if (selectedCharacterId) {
+      clearCharacterEditTracking(selectedCharacterId);
+    }
     setSelectedCharacterId(null);
     setTab("world");
     void saveDraftInBackground();
-  }, [library, saveDraftInBackground, selectedCharacterId, setSelectedCharacterId, setTab, tab, userId]);
+  }, [
+    clearCharacterEditTracking,
+    library,
+    saveDraftInBackground,
+    selectedCharacterId,
+    setSelectedCharacterId,
+    setTab,
+    tab,
+    userId,
+  ]);
 
   const handleCancelCharacterEdit = useCallback(() => {
-    if (!selectedCharacterId) return;
+    if (!selectedCharacterId) {
+      if (tab === "characters") {
+        setTab("world");
+      }
+      return;
+    }
+
+    const editScope = getCharacterEditScope(tab);
+    const snapshotKey = getCharacterEditSnapshotKey(editScope, selectedCharacterId);
+    const snapshot = characterEditSnapshotsRef.current.get(snapshotKey);
+    const isUnsavedNewCharacter = unsavedNewCharacterIds.has(selectedCharacterId);
 
     if (tab === "library") {
-      if (unsavedNewCharacterIds.has(selectedCharacterId)) {
+      if (isUnsavedNewCharacter) {
         setLibrary((previous) => previous.filter((character) => character.id !== selectedCharacterId));
-        setUnsavedNewCharacterIds((previous) => {
-          const next = new Set(previous);
-          next.delete(selectedCharacterId);
-          return next;
-        });
+      } else if (snapshot) {
+        setLibrary((previous) =>
+          previous.map((character) =>
+            character.id === selectedCharacterId ? cloneCharacterForEditSnapshot(snapshot) : character,
+          ),
+        );
       }
     } else {
       setActiveData((previous) => {
         if (!previous) return previous;
+        if (isUnsavedNewCharacter) {
+          return {
+            ...previous,
+            characters: previous.characters.filter((character) => character.id !== selectedCharacterId),
+          };
+        }
+        if (snapshot) {
+          return {
+            ...previous,
+            characters: previous.characters.map((character) =>
+              character.id === selectedCharacterId ? cloneCharacterForEditSnapshot(snapshot) : character,
+            ),
+          };
+        }
         return {
           ...previous,
-          characters: previous.characters.filter((character) => character.id !== selectedCharacterId),
         };
       });
     }
 
+    clearCharacterEditTracking(selectedCharacterId);
     setSelectedCharacterId(null);
 
     if (tab === "characters") {
       setTab("world");
     }
   }, [
+    clearCharacterEditTracking,
     selectedCharacterId,
     setActiveData,
     setLibrary,
     setSelectedCharacterId,
     setTab,
-    setUnsavedNewCharacterIds,
     tab,
     unsavedNewCharacterIds,
   ]);
@@ -202,6 +285,7 @@ export function useIndexCharacterWorkspace({
       };
     });
     setSelectedCharacterId(character.id);
+    setUnsavedNewCharacterIds((previous) => new Set(previous).add(character.id));
   }, [setActiveData, setLibrary, setSelectedCharacterId, setUnsavedNewCharacterIds, tab]);
 
   const handleImportCharacter = useCallback(
@@ -238,6 +322,7 @@ export function useIndexCharacterWorkspace({
         try {
           await supabaseData.deleteCharacterFromLibrary(id);
           setLibrary((previous) => previous.filter((character) => character.id !== id));
+          clearCharacterEditTracking(id);
           if (selectedCharacterId === id) setSelectedCharacterId(null);
         } catch (error: any) {
           console.error("Failed to delete character:", error.message);
@@ -252,9 +337,10 @@ export function useIndexCharacterWorkspace({
           characters: previous.characters.filter((character) => character.id !== id),
         };
       });
+      clearCharacterEditTracking(id);
       if (selectedCharacterId === id) setSelectedCharacterId(null);
     },
-    [selectedCharacterId, setActiveData, setLibrary, setSelectedCharacterId, tab],
+    [clearCharacterEditTracking, selectedCharacterId, setActiveData, setLibrary, setSelectedCharacterId, tab],
   );
 
   const handleAiFill = useCallback(
