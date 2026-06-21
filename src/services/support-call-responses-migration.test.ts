@@ -85,17 +85,20 @@ describe('roleplay support-call Responses migration contracts', () => {
   it('checks Responses body failure status before defaulting missing output to empty state', () => {
     const characterSource = read('supabase/functions/extract-character-updates/index.ts');
     expectOrdered(characterSource, 'extract-character-updates focused retry', [
-      'const focusedData = await focusedResult.response.json();',
+      'let focusedData: unknown;',
+      'focusedData = await focusedResult.response.json();',
       'const focusedBodyError = getXaiResponsesBodyError(focusedData, { requireOutputText: true });',
       'const focusedContent = extractXaiResponsesText(focusedData) || EMPTY_CHARACTER_SYNC_JSON;',
     ]);
     expectOrdered(characterSource, 'extract-character-updates safe retry', [
-      'const safeData = await safeResult.response.json();',
+      'let safeData: unknown;',
+      'safeData = await safeResult.response.json();',
       'const safeBodyError = getXaiResponsesBodyError(safeData, { requireOutputText: true });',
       'const safeContent = extractXaiResponsesText(safeData) || EMPTY_CHARACTER_SYNC_JSON;',
     ]);
     expectOrdered(characterSource, 'extract-character-updates primary', [
-      'const data = await result.response.json();',
+      'let data: unknown;',
+      'data = await result.response.json();',
       'const bodyError = getXaiResponsesBodyError(data, { requireOutputText: true });',
       'const content = extractXaiResponsesText(data) || EMPTY_CHARACTER_SYNC_JSON;',
     ]);
@@ -103,7 +106,8 @@ describe('roleplay support-call Responses migration contracts', () => {
     for (const path of roleplayStateSupportCalls.filter((entry) => entry !== 'supabase/functions/extract-character-updates/index.ts')) {
       const source = read(path);
       expectOrdered(source, path, [
-        'const data = await result.response.json();',
+        'let data: unknown;',
+        'data = await result.response.json();',
         'const bodyError = getXaiResponsesBodyError(data, { requireOutputText: true });',
         'extractXaiResponsesText(data)',
       ]);

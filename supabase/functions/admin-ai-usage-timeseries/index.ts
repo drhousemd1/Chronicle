@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { estimateAiUsageCost } from "../_shared/usage-cost.ts";
 
 type UsagePeriod = "day" | "week" | "month" | "year";
 
@@ -33,10 +34,6 @@ interface UsagePoint {
   textCostUsd: number;
   imageCostUsd: number;
 }
-
-// Cost estimates per call (USD)
-const TEXT_COST_PER_CALL = 0.0127;  // ~avg chat+sync usage at grok-4.3 rates
-const IMAGE_COST_PER_CALL = 0.02;   // grok-imagine-image rate
 
 function createEmptyPoint(label: string): UsagePoint {
   return {
@@ -155,6 +152,11 @@ function isAuthoritativeUsageEventSource(value: unknown): boolean {
   return source.startsWith("server:");
 }
 
+function isSuccessfulGeneratedEvent(metadata: Record<string, unknown>): boolean {
+  const status = typeof metadata.status === "string" ? metadata.status : "";
+  return !status || status === "success" || status === "fallback_success";
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: getCorsHeaders(req) });
@@ -226,7 +228,7 @@ serve(async (req) => {
 
     let eventsQuery = serviceClient
       .from("ai_usage_events")
-      .select("created_at, event_type, event_count, event_source, user_id")
+      .select("created_at, event_type, event_count, event_source, user_id, metadata")
       .gte("created_at", rangeStartIso);
 
     if (userIds) {
@@ -292,54 +294,81 @@ serve(async (req) => {
       const idx = getBucketIndex(createdAt, buckets);
       if (idx < 0) continue;
       const count = safeCount(row.event_count);
+      const metadata = row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)
+        ? row.metadata as Record<string, unknown>
+        : {};
+      const estimate = estimateAiUsageCost(row.event_type, metadata, count);
+      const successfulGeneratedEvent = isSuccessfulGeneratedEvent(metadata);
 
       switch (row.event_type) {
+        case "chat_call_1":
+          points[idx].textCostUsd += estimate.estimatedCostUsd;
+          break;
         case "character_ai_fill":
           points[idx].aiFillClicks += count;
+          points[idx].textCostUsd += estimate.estimatedCostUsd;
           break;
         case "character_card_ai_update":
           points[idx].aiUpdateClicks += count;
+          points[idx].textCostUsd += estimate.estimatedCostUsd;
           break;
         case "character_ai_enhance_precise":
         case "character_ai_enhance_detailed":
         case "world_ai_enhance_precise":
         case "world_ai_enhance_detailed":
           points[idx].aiEnhanceClicks += count;
+          points[idx].textCostUsd += estimate.estimatedCostUsd;
           break;
         case "character_cards_update_call":
           points[idx].characterUpdateCalls += count;
+          points[idx].textCostUsd += estimate.estimatedCostUsd;
           break;
         case "character_cards_updated":
-          points[idx].characterCardsUpdated += count;
+          if (successfulGeneratedEvent) points[idx].characterCardsUpdated += count;
           break;
         case "side_character_card_generated":
-          points[idx].aiCharacterCardsGenerated += count;
+          if (successfulGeneratedEvent) points[idx].aiCharacterCardsGenerated += count;
+          points[idx].textCostUsd += estimate.estimatedCostUsd;
           break;
         case "side_character_avatar_generated":
-          points[idx].sideCharacterAvatarsGenerated += count;
-          points[idx].aiAvatarsGenerated += count;
+          if (successfulGeneratedEvent) {
+            points[idx].sideCharacterAvatarsGenerated += count;
+            points[idx].aiAvatarsGenerated += count;
+          }
+          points[idx].imageCostUsd += estimate.estimatedCostUsd;
           break;
         case "character_avatar_generated":
-          points[idx].characterAvatarsGenerated += count;
-          points[idx].aiAvatarsGenerated += count;
+          if (successfulGeneratedEvent) {
+            points[idx].characterAvatarsGenerated += count;
+            points[idx].aiAvatarsGenerated += count;
+          }
+          points[idx].imageCostUsd += estimate.estimatedCostUsd;
           break;
         case "scene_image_generated":
-          points[idx].sceneImagesGenerated += count;
+          if (successfulGeneratedEvent) points[idx].sceneImagesGenerated += count;
+          points[idx].imageCostUsd += estimate.estimatedCostUsd;
           break;
         case "cover_image_generated":
-          points[idx].coverImagesGenerated += count;
+          if (successfulGeneratedEvent) points[idx].coverImagesGenerated += count;
+          points[idx].imageCostUsd += estimate.estimatedCostUsd;
           break;
         case "memory_extraction_call":
           points[idx].memoryExtractionCalls += count;
+          points[idx].textCostUsd += estimate.estimatedCostUsd;
           break;
         case "memory_events_extracted":
-          points[idx].memoryEventsExtracted += count;
+          if (successfulGeneratedEvent) points[idx].memoryEventsExtracted += count;
           break;
         case "memory_day_compression_call":
           points[idx].memoryCompressionCalls += count;
+          points[idx].textCostUsd += estimate.estimatedCostUsd;
           break;
         case "memory_bullets_compressed":
-          points[idx].memoryBulletsCompressed += count;
+          if (successfulGeneratedEvent) points[idx].memoryBulletsCompressed += count;
+          break;
+        case "goal_progress_eval_call":
+        case "goal_alignment_eval_call":
+          points[idx].textCostUsd += estimate.estimatedCostUsd;
           break;
         default:
           break;
@@ -352,19 +381,8 @@ serve(async (req) => {
         point.characterAvatarsGenerated +
         point.sceneImagesGenerated +
         point.coverImagesGenerated;
-
-      // Calculate cost estimates
-      const textCalls =
-        point.messagesGenerated +
-        point.aiFillClicks +
-        point.aiUpdateClicks +
-        point.aiEnhanceClicks +
-        point.characterUpdateCalls +
-        point.aiCharacterCardsGenerated +
-        point.memoryExtractionCalls +
-        point.memoryCompressionCalls;
-      point.textCostUsd = Math.round(textCalls * TEXT_COST_PER_CALL * 1000) / 1000;
-      point.imageCostUsd = Math.round(point.imagesGenerated * IMAGE_COST_PER_CALL * 1000) / 1000;
+      point.textCostUsd = Math.round(point.textCostUsd * 1000) / 1000;
+      point.imageCostUsd = Math.round(point.imageCostUsd * 1000) / 1000;
     }
 
     return new Response(JSON.stringify({

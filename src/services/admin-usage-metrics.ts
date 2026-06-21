@@ -69,6 +69,12 @@ export interface AdminApiUsageTestRow {
   sessionId: string;
   sessionName: string;
   createdAt: string;
+  endedAt: string;
+  status: string;
+  eventAccountingMode: string;
+  serverEventCount: number;
+  clientDiagnosticEventCount: number;
+  costedEventCount: number;
   messagesSent: number;
   messagesGenerated: number;
   imagesGenerated: number;
@@ -365,6 +371,12 @@ export async function fetchAdminApiUsageTestReport(limit = 50): Promise<AdminApi
       sessionId: typeof row?.sessionId === "string" ? row.sessionId : "",
       sessionName: typeof row?.sessionName === "string" ? row.sessionName : "Untitled Session",
       createdAt: typeof row?.createdAt === "string" ? row.createdAt : "",
+      endedAt: typeof row?.endedAt === "string" ? row.endedAt : "",
+      status: typeof row?.status === "string" ? row.status : "unknown",
+      eventAccountingMode: typeof row?.eventAccountingMode === "string" ? row.eventAccountingMode : "client_diagnostic_estimate",
+      serverEventCount: toFiniteNumber(row?.serverEventCount),
+      clientDiagnosticEventCount: toFiniteNumber(row?.clientDiagnosticEventCount),
+      costedEventCount: toFiniteNumber(row?.costedEventCount),
       messagesSent: toFiniteNumber(row?.messagesSent),
       messagesGenerated: toFiniteNumber(row?.messagesGenerated),
       imagesGenerated: toFiniteNumber(row?.imagesGenerated),

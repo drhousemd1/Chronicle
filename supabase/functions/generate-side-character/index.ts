@@ -9,6 +9,7 @@ import { shouldReturnAdminDebugTrace } from "../_shared/admin-debug.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
 import { recordServerAiUsage } from "../_shared/server-usage.ts";
+import { readXaiErrorText } from "../_shared/xai-responses.ts";
 
 const STRING_FIELD = { type: "string" };
 
@@ -319,15 +320,50 @@ Return ONLY valid JSON, no markdown formatting.`;
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
+      const errorText = await readXaiErrorText(response);
       console.error("xAI error:", response.status, errorText);
+      await recordServerAiUsage({
+        userId: user.id,
+        eventType: "side_character_card_generated",
+        functionName: "generate-side-character",
+        metadata: {
+          modelId: effectiveModelId,
+          status: "provider_http_error",
+          providerRequestCount: 1,
+          providerHttpStatus: response.status,
+          sourceDialogChars: typeof dialogContext === "string" ? dialogContext.length : 0,
+          worldContextChars: typeof worldContext === "string" ? worldContext.length : 0,
+        },
+      });
       return new Response(JSON.stringify({ error: "AI generation failed", details: errorText }), {
         status: 500,
         headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const data = await response.json();
+    let data: any;
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      const providerBodyError = parseError instanceof Error ? parseError.message : "Malformed provider JSON";
+      await recordServerAiUsage({
+        userId: user.id,
+        eventType: "side_character_card_generated",
+        functionName: "generate-side-character",
+        metadata: {
+          modelId: effectiveModelId,
+          status: "provider_response_parse_error",
+          providerBodyError,
+          providerRequestCount: 1,
+          sourceDialogChars: typeof dialogContext === "string" ? dialogContext.length : 0,
+          worldContextChars: typeof worldContext === "string" ? worldContext.length : 0,
+        },
+      });
+      return new Response(JSON.stringify({ error: "Failed to parse provider response", details: providerBodyError }), {
+        status: 500,
+        headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
+      });
+    }
     const content = data.choices?.[0]?.message?.content || "{}";
     
     let cleanContent = content.trim();
@@ -340,6 +376,16 @@ Return ONLY valid JSON, no markdown formatting.`;
       cleanContent = cleanContent.slice(0, -3);
     }
     cleanContent = cleanContent.trim();
+    const promptTokenDetails = data?.usage?.prompt_tokens_details && typeof data.usage.prompt_tokens_details === "object"
+      ? data.usage.prompt_tokens_details as Record<string, unknown>
+      : {};
+    const providerUsageMetadata = {
+      providerRequestCount: 1,
+      providerInputTokens: typeof data?.usage?.prompt_tokens === "number" ? data.usage.prompt_tokens : null,
+      providerCachedInputTokens: typeof promptTokenDetails.cached_tokens === "number" ? promptTokenDetails.cached_tokens : null,
+      providerOutputTokens: typeof data?.usage?.completion_tokens === "number" ? data.usage.completion_tokens : null,
+      providerTotalTokens: typeof data?.usage?.total_tokens === "number" ? data.usage.total_tokens : null,
+    };
     
     try {
       const profile = sanitizeGeneratedProfile(JSON.parse(cleanContent), sourceSupportText, name);
@@ -350,6 +396,7 @@ Return ONLY valid JSON, no markdown formatting.`;
         metadata: {
           modelId: effectiveModelId,
           status: "success",
+          ...providerUsageMetadata,
           sourceDialogChars: typeof dialogContext === "string" ? dialogContext.length : 0,
           worldContextChars: typeof worldContext === "string" ? worldContext.length : 0,
         },
@@ -359,6 +406,18 @@ Return ONLY valid JSON, no markdown formatting.`;
       });
     } catch (parseError) {
       console.error("Failed to parse AI response:", cleanContent);
+      await recordServerAiUsage({
+        userId: user.id,
+        eventType: "side_character_card_generated",
+        functionName: "generate-side-character",
+        metadata: {
+          modelId: effectiveModelId,
+          status: "parse_error",
+          ...providerUsageMetadata,
+          sourceDialogChars: typeof dialogContext === "string" ? dialogContext.length : 0,
+          worldContextChars: typeof worldContext === "string" ? worldContext.length : 0,
+        },
+      });
       return new Response(JSON.stringify({ 
         error: "Failed to parse AI response",
         raw: cleanContent 

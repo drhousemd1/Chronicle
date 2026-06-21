@@ -1220,14 +1220,6 @@ export async function aiFillCharacter(
   userPrompt?: string,
   useExistingDetails: boolean = true
 ): Promise<Partial<Character>> {
-  void trackAiUsageEvent({
-    eventType: "character_ai_fill",
-    eventSource: "character-ai",
-    metadata: {
-      characterId: character.id,
-    },
-  });
-
   const emptyFields = getEmptyHardcodedFields(character);
   const emptyCustomItems = getEmptyCustomSectionItems(character);
   
@@ -1251,6 +1243,15 @@ export async function aiFillCharacter(
   if (totalEmpty === 0) {
     return {}; // Nothing to fill
   }
+
+  void trackAiUsageEvent({
+    eventType: "character_ai_fill",
+    eventSource: "character-ai",
+    metadata: {
+      characterId: character.id,
+      emptyFieldCount: totalEmpty,
+    },
+  });
 
   const worldContext = buildFullContext(appData, character.id);
   const selfContext = buildCharacterSelfContext(character);

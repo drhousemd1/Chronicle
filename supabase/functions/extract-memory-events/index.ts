@@ -8,7 +8,8 @@ import { shouldReturnAdminDebugTrace } from "../_shared/admin-debug.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
 import { recordServerAiUsage } from "../_shared/server-usage.ts";
-import { callXaiResponses, extractXaiResponsesText, getXaiResponsesBodyError } from "../_shared/xai-responses.ts";
+import { buildProviderUsageMetadata } from "../_shared/usage-cost.ts";
+import { callXaiResponses, extractXaiResponsesText, extractXaiResponsesUsage, getXaiResponsesBodyError } from "../_shared/xai-responses.ts";
 
 const MEMORY_POINT_MAX_CHARS = 140;
 const SUPPORT_REASONING_EFFORT = "medium" as const;
@@ -152,21 +153,69 @@ Empty events are acceptable.`;
         }
       : null;
 
-    if (!result.ok) {
-      if (result.status === 429) {
-        return new Response(
+	    if (!result.ok) {
+	      if (result.status === 429) {
+	        return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please try again later.", ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}) }),
           { status: 429, headers: { ...responseHeadersBase, "Content-Type": "application/json" } }
-        );
-      }
-      console.error("xAI Responses error:", result.status, result.errorText);
-      throw new Error("Failed to extract memory events");
-    }
+	        );
+	      }
+	      console.error("xAI Responses error:", result.status, result.errorText);
+	      await recordServerAiUsage({
+	        userId: user.id,
+	        eventType: "memory_extraction_call",
+	        functionName: "extract-memory-events",
+	        metadata: {
+	          modelId: effectiveModel,
+	          status: "provider_http_error",
+	          providerRequestCount: 1,
+	          providerHttpStatus: result.status,
+	        },
+	      });
+	      throw new Error("Failed to extract memory events");
+	    }
 
-    const data = await result.response.json();
+    let data: unknown;
+    try {
+      data = await result.response.json();
+    } catch (parseError) {
+      const providerBodyError = parseError instanceof Error ? parseError.message : "Malformed provider JSON";
+      await recordServerAiUsage({
+        userId: user.id,
+        eventType: "memory_extraction_call",
+        functionName: "extract-memory-events",
+        metadata: {
+          modelId: effectiveModel,
+          status: "provider_response_parse_error",
+          providerBodyError,
+          providerRequestCount: 1,
+        },
+      });
+      return new Response(
+        JSON.stringify({
+          extractedEvents: [],
+          providerBodyError,
+          ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
+        }),
+        { headers: { ...responseHeadersBase, 'Content-Type': 'application/json' } }
+      );
+    }
+    const providerUsageMetadata = buildProviderUsageMetadata(extractXaiResponsesUsage(data));
     const bodyError = getXaiResponsesBodyError(data, { requireOutputText: true });
     if (bodyError) {
       console.error("xAI Responses body error:", bodyError);
+      await recordServerAiUsage({
+        userId: user.id,
+        eventType: "memory_extraction_call",
+        functionName: "extract-memory-events",
+        metadata: {
+          modelId: effectiveModel,
+          status: "provider_body_error",
+          providerBodyError: bodyError,
+          providerRequestCount: 1,
+          ...providerUsageMetadata,
+        },
+      });
       return new Response(
         JSON.stringify({
           extractedEvents: [],
@@ -218,6 +267,8 @@ Empty events are acceptable.`;
         modelId: effectiveModel,
         status: parseError ? "parsed_with_rejections" : "success",
         extractedEventCount: extractedEvents.length,
+        providerRequestCount: 1,
+        ...providerUsageMetadata,
       },
     });
     if (extractedEvents.length > 0) {

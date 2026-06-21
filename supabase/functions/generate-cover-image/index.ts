@@ -8,6 +8,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
 import { recordServerAiUsage } from "../_shared/server-usage.ts";
+import { readXaiErrorText } from "../_shared/xai-responses.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -139,23 +140,73 @@ serve(async (req) => {
       }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Image generation error:", response.status, errorText);
-      return new Response(JSON.stringify({ error: "Image generation failed", details: errorText }), {
+	    if (!response.ok) {
+	      const errorText = await readXaiErrorText(response);
+	      console.error("Image generation error:", response.status, errorText);
+	      await recordServerAiUsage({
+	        userId: user.id,
+	        eventType: "cover_image_generated",
+	        functionName: "generate-cover-image",
+	        metadata: {
+	          modelId: "grok-imagine-image",
+	          status: "provider_http_error",
+	          providerRequestCount: 1,
+	          providerImageRequestCount: 1,
+	          providerHttpStatus: response.status,
+	          imageCount: 1,
+	          promptChars: compressedPrompt.length,
+	          hadStylePrompt: Boolean(resolvedStylePrompt),
+	          styleId: resolvedStyleId,
+	          hadNegativePrompt: Boolean(negativePrompt),
+	        },
+	      });
+	      return new Response(JSON.stringify({ error: "Image generation failed", details: errorText }), {
         status: 500,
         headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const data = await response.json();
+    let data: any;
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      const providerBodyError = parseError instanceof Error ? parseError.message : "Malformed provider JSON";
+      await recordServerAiUsage({
+        userId: user.id,
+        eventType: "cover_image_generated",
+        functionName: "generate-cover-image",
+        metadata: {
+          modelId: "grok-imagine-image",
+          status: "provider_response_parse_error",
+          providerBodyError,
+          providerRequestCount: 1,
+          providerImageRequestCount: 1,
+          imageCount: 1,
+          promptChars: compressedPrompt.length,
+          hadStylePrompt: Boolean(resolvedStylePrompt),
+          styleId: resolvedStyleId,
+          hadNegativePrompt: Boolean(negativePrompt),
+        },
+      });
+      return new Response(JSON.stringify({ error: "Image generation response was unreadable", details: providerBodyError }), {
+        status: 500,
+        headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Resolve bytes from either the b64 or URL response shape.
     let imageBytes: Uint8Array | null = null;
     let contentType = 'image/png';
+    let imageDownloadError: string | null = null;
+    let imageDecodeError: string | null = null;
     if (data.data?.[0]?.b64_json) {
       const raw = data.data[0].b64_json as string;
-      imageBytes = Uint8Array.from(atob(raw), c => c.charCodeAt(0));
+      try {
+        imageBytes = Uint8Array.from(atob(raw), c => c.charCodeAt(0));
+      } catch (err) {
+        imageDecodeError = err instanceof Error ? err.message : String(err);
+        console.error('[generate-cover-image] Failed to decode xAI b64 image:', err);
+      }
     } else if (data.data?.[0]?.url) {
       try {
         const fetched = await fetch(data.data[0].url as string);
@@ -163,14 +214,41 @@ serve(async (req) => {
         contentType = fetched.headers.get('content-type') || 'image/png';
         imageBytes = new Uint8Array(await fetched.arrayBuffer());
       } catch (err) {
+        imageDownloadError = err instanceof Error ? err.message : String(err);
         console.error('[generate-cover-image] Failed to download xAI URL:', err);
       }
     }
 
     if (!imageBytes) {
       console.error("No image URL found in response:", JSON.stringify(data, null, 2));
+      await recordServerAiUsage({
+        userId: user.id,
+        eventType: "cover_image_generated",
+        functionName: "generate-cover-image",
+        metadata: {
+          modelId: "grok-imagine-image",
+          status: imageDecodeError
+            ? "provider_image_decode_failed"
+            : imageDownloadError
+              ? "provider_image_download_failed"
+              : "provider_no_image",
+          ...(imageDecodeError ? { providerImageDecodeError: imageDecodeError } : {}),
+          ...(imageDownloadError ? { providerImageDownloadError: imageDownloadError } : {}),
+          providerRequestCount: 1,
+          providerImageRequestCount: 1,
+          imageCount: 1,
+          promptChars: compressedPrompt.length,
+          hadStylePrompt: Boolean(resolvedStylePrompt),
+          styleId: resolvedStyleId,
+          hadNegativePrompt: Boolean(negativePrompt),
+        },
+      });
       return new Response(JSON.stringify({ 
-        error: "No image generated",
+        error: imageDecodeError
+          ? "Failed to decode generated image"
+          : imageDownloadError
+            ? "Failed to download generated image"
+            : "No image generated",
         debug: data 
       }), {
         status: 500,
@@ -185,6 +263,22 @@ serve(async (req) => {
       .upload(filename, imageBytes, { contentType, upsert: true });
     if (uploadError) {
       console.error('[generate-cover-image] Storage upload failed:', uploadError);
+      await recordServerAiUsage({
+        userId: user.id,
+        eventType: "cover_image_generated",
+        functionName: "generate-cover-image",
+        metadata: {
+          modelId: "grok-imagine-image",
+          status: "storage_upload_failed",
+          providerRequestCount: 1,
+          providerImageRequestCount: 1,
+          imageCount: 1,
+          promptChars: compressedPrompt.length,
+          hadStylePrompt: Boolean(resolvedStylePrompt),
+          styleId: resolvedStyleId,
+          hadNegativePrompt: Boolean(negativePrompt),
+        },
+      });
       throw uploadError;
     }
     const { data: signedData, error: signError } = await supabase.storage
@@ -192,6 +286,22 @@ serve(async (req) => {
       .createSignedUrl(filename, 60 * 60);
     if (signError) {
       console.error('[generate-cover-image] Signed URL failed:', signError);
+      await recordServerAiUsage({
+        userId: user.id,
+        eventType: "cover_image_generated",
+        functionName: "generate-cover-image",
+        metadata: {
+          modelId: "grok-imagine-image",
+          status: "signed_url_failed",
+          providerRequestCount: 1,
+          providerImageRequestCount: 1,
+          imageCount: 1,
+          promptChars: compressedPrompt.length,
+          hadStylePrompt: Boolean(resolvedStylePrompt),
+          styleId: resolvedStyleId,
+          hadNegativePrompt: Boolean(negativePrompt),
+        },
+      });
       throw signError;
     }
     const imageUrl = signedData?.signedUrl || '';
@@ -206,6 +316,9 @@ serve(async (req) => {
       metadata: {
         modelId: "grok-imagine-image",
         status: "success",
+        providerRequestCount: 1,
+        providerImageRequestCount: 1,
+        imageCount: 1,
         promptChars: compressedPrompt.length,
         hadStylePrompt: Boolean(resolvedStylePrompt),
         styleId: resolvedStyleId,

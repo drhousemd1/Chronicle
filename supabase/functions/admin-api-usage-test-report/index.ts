@@ -116,7 +116,7 @@ serve(async (req) => {
 
     const { data: events, error: eventsError } = await serviceClient
       .from("ai_usage_test_events")
-      .select("session_id, event_key, total_tokens_est, est_cost_usd, status_code, error_message, metadata")
+      .select("session_id, event_key, event_source, created_at, input_chars, output_chars, total_tokens_est, est_cost_usd, status_code, error_message, metadata")
       .in("session_id", sessionIds);
 
     if (eventsError) {
@@ -180,37 +180,136 @@ serve(async (req) => {
       { pass: 0, fail: 0, blank: 0 }
     );
 
+    const isServerAuthoritativeEvent = (event: any): boolean =>
+      typeof event?.event_source === "string" && event.event_source.startsWith("server:");
+
+    const isValidationSnapshotEvent = (event: any): boolean => {
+      const metadata = event?.metadata;
+      return Boolean(
+        metadata &&
+        typeof metadata === "object" &&
+        (metadata as Record<string, unknown>).validationSnapshot === true
+      );
+    };
+
+    const eventKeyOf = (event: any): string =>
+      typeof event?.event_key === "string" ? event.event_key : "";
+
+    const countFromEvent = (event: any): number => {
+      const metadata = event?.metadata;
+      const count = metadata && typeof metadata === "object" ? toNum((metadata as Record<string, unknown>).eventCount) : 0;
+      return count > 0 ? count : 1;
+    };
+
+    const statusFromEvent = (event: any): string => {
+      const metadata = event?.metadata;
+      if (!metadata || typeof metadata !== "object") return "";
+      const status = (metadata as Record<string, unknown>).status;
+      return typeof status === "string" ? status : "";
+    };
+
+    const isSuccessfulGeneratedEvent = (event: any): boolean => {
+      if (event?.error_message) return false;
+      if (typeof event?.status_code === "number" && event.status_code !== 200) return false;
+      const status = statusFromEvent(event);
+      const successStatus = !status || status === "success" || status === "fallback_success" || status === "server_authoritative";
+      if (!successStatus) return false;
+
+      // Browser diagnostics can outnumber server rows when a request fails before
+      // server telemetry is available. Treat client-only chat rows as generated
+      // only when they captured assistant output.
+      if (!isServerAuthoritativeEvent(event) && eventKeyOf(event) === "chat_call_1") {
+        const metadata = event?.metadata && typeof event.metadata === "object"
+          ? event.metadata as Record<string, unknown>
+          : {};
+        return toNum(event?.output_chars) > 0 || toNum(metadata.outputChars) > 0;
+      }
+
+      return true;
+    };
+
+    const sortByCreatedAt = (a: any, b: any): number => {
+      const aTime = Date.parse(typeof a?.created_at === "string" ? a.created_at : "");
+      const bTime = Date.parse(typeof b?.created_at === "string" ? b.created_at : "");
+      return (Number.isFinite(aTime) ? aTime : 0) - (Number.isFinite(bTime) ? bTime : 0);
+    };
+
+    const buildMetricEvents = (sessionEvents: any[]): any[] => {
+      const serverEvents = sessionEvents.filter(isServerAuthoritativeEvent);
+      const clientEvents = sessionEvents
+        .filter((event) => !isServerAuthoritativeEvent(event) && !isValidationSnapshotEvent(event))
+        .sort(sortByCreatedAt);
+      const serverCountsByKey = new Map<string, number>();
+      for (const event of serverEvents) {
+        const key = eventKeyOf(event);
+        if (!key) continue;
+        serverCountsByKey.set(key, (serverCountsByKey.get(key) || 0) + countFromEvent(event));
+      }
+
+      const clientCountsSeenByKey = new Map<string, number>();
+      const fallbackClientEvents: any[] = [];
+      for (const event of clientEvents) {
+        const key = eventKeyOf(event);
+        if (!key) {
+          fallbackClientEvents.push(event);
+          continue;
+        }
+
+        const eventCount = countFromEvent(event);
+        const seenBefore = clientCountsSeenByKey.get(key) || 0;
+        const seenAfter = seenBefore + eventCount;
+        clientCountsSeenByKey.set(key, seenAfter);
+
+        const trustedServerCount = serverCountsByKey.get(key) || 0;
+        if (seenAfter > trustedServerCount) {
+          fallbackClientEvents.push(event);
+        }
+      }
+
+      return [...serverEvents, ...fallbackClientEvents];
+    };
+
     const rows = (sessions || []).map((session) => {
       const sessionEvents = eventsBySession.get(session.id) || [];
-      const totalTokens = sessionEvents.reduce((sum, e) => sum + toNum(e.total_tokens_est), 0);
-      const totalCost = sessionEvents.reduce((sum, e) => sum + toNum(e.est_cost_usd), 0);
+      const metricEvents = buildMetricEvents(sessionEvents);
+      const totalTokens = metricEvents.reduce((sum, e) => sum + toNum(e.total_tokens_est), 0);
+      const totalCost = metricEvents.reduce((sum, e) => sum + toNum(e.est_cost_usd), 0);
+      const serverEventCount = sessionEvents.filter(isServerAuthoritativeEvent).length;
+      const clientDiagnosticEventCount = sessionEvents.filter((event) =>
+        !isServerAuthoritativeEvent(event) && !isValidationSnapshotEvent(event)
+      ).length;
+      const costedEventCount = metricEvents.filter((event) => toNum(event.est_cost_usd) > 0).length;
+      const clientFallbackEventCount = metricEvents.filter((event) => !isServerAuthoritativeEvent(event)).length;
 
-      const countFromEvent = (event: any): number => {
-        const metadata = event?.metadata;
-        const count = metadata && typeof metadata === "object" ? toNum((metadata as Record<string, unknown>).eventCount) : 0;
-        return count > 0 ? count : 1;
-      };
-
-      const countByEventKey = (eventKey: string): number =>
-        sessionEvents
+      const countByEventKey = (eventKey: string, options: { successOnly?: boolean } = {}): number =>
+        metricEvents
           .filter((event) => event.event_key === eventKey)
+          .filter((event) => !options.successOnly || isSuccessfulGeneratedEvent(event))
           .reduce((sum, event) => sum + countFromEvent(event), 0);
 
       const messagesSent = countByEventKey("chat_call_1");
-      const messagesGenerated = sessionEvents
-        .filter((event) => event.event_key === "chat_call_1" && !event.error_message && (event.status_code === null || event.status_code === 200))
+      const messagesGenerated = metricEvents
+        .filter((event) => event.event_key === "chat_call_1" && isSuccessfulGeneratedEvent(event))
         .reduce((sum, event) => sum + countFromEvent(event), 0);
 
-      const sceneImagesGenerated = countByEventKey("scene_image_generated");
-      const coverImagesGenerated = countByEventKey("cover_image_generated");
-      const sideCharacterAvatarsGenerated = countByEventKey("side_character_avatar_generated");
-      const characterAvatarsGenerated = countByEventKey("character_avatar_generated");
+      const sceneImagesGenerated = countByEventKey("scene_image_generated", { successOnly: true });
+      const coverImagesGenerated = countByEventKey("cover_image_generated", { successOnly: true });
+      const sideCharacterAvatarsGenerated = countByEventKey("side_character_avatar_generated", { successOnly: true });
+      const characterAvatarsGenerated = countByEventKey("character_avatar_generated", { successOnly: true });
       const imagesGenerated = sceneImagesGenerated + coverImagesGenerated + sideCharacterAvatarsGenerated + characterAvatarsGenerated;
 
       return {
         sessionId: session.id,
         sessionName: session.scenario_name || session.conversation_name || "Untitled Session",
         createdAt: session.started_at,
+        endedAt: session.ended_at,
+        status: session.status || "unknown",
+        eventAccountingMode: serverEventCount > 0
+          ? clientFallbackEventCount > 0 ? "server_authoritative_with_client_fallback" : "server_authoritative"
+          : "client_diagnostic_estimate",
+        serverEventCount,
+        clientDiagnosticEventCount,
+        costedEventCount,
         messagesSent,
         messagesGenerated,
         imagesGenerated,
@@ -221,7 +320,7 @@ serve(async (req) => {
           countByEventKey("character_ai_enhance_detailed") +
           countByEventKey("world_ai_enhance_precise") +
           countByEventKey("world_ai_enhance_detailed"),
-        aiCharacterCards: countByEventKey("side_character_card_generated"),
+        aiCharacterCards: countByEventKey("side_character_card_generated", { successOnly: true }),
         aiAvatars: sideCharacterAvatarsGenerated + characterAvatarsGenerated,
         cardUpdateCalls: countByEventKey("character_cards_update_call"),
         cardsUpdated: countByEventKey("character_cards_updated"),

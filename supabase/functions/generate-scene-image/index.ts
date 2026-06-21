@@ -9,6 +9,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
 import { recordServerAiUsage } from "../_shared/server-usage.ts";
+import { readXaiErrorText } from "../_shared/xai-responses.ts";
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -250,7 +251,10 @@ function normalizeStructuredPromptData(
 // GROK ONLY -- LLM CALLS (all go to xAI)
 // ============================================================================
 
-async function callAnalysisLLM(prompt: string, modelId: string): Promise<string> {
+async function callAnalysisLLM(prompt: string, modelId: string): Promise<{
+  content: string;
+  providerUsageMetadata: Record<string, number | null>;
+}> {
   const XAI_API_KEY = Deno.env.get("XAI_API_KEY");
   if (!XAI_API_KEY) {
     throw new Error("XAI_API_KEY not configured");
@@ -273,13 +277,31 @@ async function callAnalysisLLM(prompt: string, modelId: string): Promise<string>
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText = await readXaiErrorText(response);
     console.error("xAI analysis error:", response.status, errorText);
     throw new Error("Failed to analyze scene");
   }
 
-  const data = await response.json();
-  return data.choices?.[0]?.message?.content || "";
+  let data: any;
+  try {
+    data = await response.json();
+  } catch (parseError) {
+    const providerBodyError = parseError instanceof Error ? parseError.message : "Malformed provider JSON";
+    throw new Error(`provider_response_parse_error:${providerBodyError}`);
+  }
+  const promptTokenDetails = data?.usage?.prompt_tokens_details && typeof data.usage.prompt_tokens_details === "object"
+    ? data.usage.prompt_tokens_details as Record<string, unknown>
+    : {};
+  return {
+    content: data.choices?.[0]?.message?.content || "",
+    providerUsageMetadata: {
+      providerUsageRequestCount: 1,
+      providerInputTokens: typeof data?.usage?.prompt_tokens === "number" ? data.usage.prompt_tokens : null,
+      providerCachedInputTokens: typeof promptTokenDetails.cached_tokens === "number" ? promptTokenDetails.cached_tokens : null,
+      providerOutputTokens: typeof data?.usage?.completion_tokens === "number" ? data.usage.completion_tokens : null,
+      providerTotalTokens: typeof data?.usage?.total_tokens === "number" ? data.usage.total_tokens : null,
+    },
+  };
 }
 
 // GROK ONLY -- image generation always uses grok-imagine-image
@@ -307,7 +329,7 @@ async function generateImage(prompt: string): Promise<string> {
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText = await readXaiErrorText(response);
     console.error("Grok image generation error:", response.status, errorText);
     throw new Error("Image generation failed");
   }
@@ -418,12 +440,14 @@ serve(async (req) => {
 
     // Step 1: Analyze scene with Grok
     const analysisPrompt = buildAnalysisPrompt(characterDescriptions, dialogueContext, sceneLocation || '');
+    let analysisUsageMetadata: Record<string, number | null> = {};
     
     let structuredData: StructuredPromptData;
     try {
       const analysisResult = await callAnalysisLLM(analysisPrompt, effectiveTextModel);
+      analysisUsageMetadata = analysisResult.providerUsageMetadata;
       
-      let cleanResult = analysisResult.trim();
+      let cleanResult = analysisResult.content.trim();
       if (cleanResult.startsWith('```json')) cleanResult = cleanResult.slice(7);
       else if (cleanResult.startsWith('```')) cleanResult = cleanResult.slice(3);
       if (cleanResult.endsWith('```')) cleanResult = cleanResult.slice(0, -3);
@@ -475,9 +499,57 @@ serve(async (req) => {
     const imagePrompt = assemblePromptWithByteLimit(structuredData, styleBlock);
 
     // Step 4: Generate image with Grok
-    const imageUrl = await generateImage(imagePrompt);
+	    let imageUrl: string | null;
+	    try {
+	      imageUrl = await generateImage(imagePrompt);
+    } catch (err) {
+      const providerError = err instanceof Error ? err.message : String(err);
+      const status = providerError.startsWith("provider_response_parse_error:")
+        ? "provider_response_parse_error"
+        : "provider_http_error";
+      console.error("[generate-scene-image] Image generation provider call failed:", err);
+      await recordServerAiUsage({
+        userId: user.id,
+        eventType: "scene_image_generated",
+	        functionName: "generate-scene-image",
+	        metadata: {
+          modelId: "grok-imagine-image",
+          textModelId: effectiveTextModel,
+          status,
+          providerBodyError: status === "provider_response_parse_error" ? providerError.replace("provider_response_parse_error:", "") : undefined,
+          providerRequestCount: 2,
+          providerImageRequestCount: 1,
+	          ...analysisUsageMetadata,
+	          imageCount: 1,
+	          recentMessageCount: Array.isArray(recentMessages) ? recentMessages.length : 0,
+	          characterCount: Array.isArray(characters) ? characters.length : 0,
+	          promptChars: imagePrompt.length,
+	        },
+	      });
+	      return new Response(JSON.stringify({ error: "Image generation failed" }), {
+	        status: 500,
+	        headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
+	      });
+	    }
 
-    if (!imageUrl) {
+	    if (!imageUrl) {
+      await recordServerAiUsage({
+        userId: user.id,
+        eventType: "scene_image_generated",
+        functionName: "generate-scene-image",
+        metadata: {
+          modelId: "grok-imagine-image",
+          textModelId: effectiveTextModel,
+          status: "provider_no_image",
+          providerRequestCount: 2,
+          providerImageRequestCount: 1,
+          ...analysisUsageMetadata,
+          imageCount: 1,
+          recentMessageCount: Array.isArray(recentMessages) ? recentMessages.length : 0,
+          characterCount: Array.isArray(characters) ? characters.length : 0,
+          promptChars: imagePrompt.length,
+        },
+      });
       return new Response(JSON.stringify({ 
         error: "No image generated" 
       }), {
@@ -496,6 +568,10 @@ serve(async (req) => {
         modelId: "grok-imagine-image",
         textModelId: effectiveTextModel,
         status: "success",
+        providerRequestCount: 2,
+        providerImageRequestCount: 1,
+        ...analysisUsageMetadata,
+        imageCount: 1,
         recentMessageCount: Array.isArray(recentMessages) ? recentMessages.length : 0,
         characterCount: Array.isArray(characters) ? characters.length : 0,
         promptChars: imagePrompt.length,

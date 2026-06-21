@@ -4,7 +4,8 @@ import { shouldReturnAdminDebugTrace } from "../_shared/admin-debug.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
 import { recordServerAiUsage } from "../_shared/server-usage.ts";
-import { callXaiResponses, extractXaiResponsesText, getXaiResponsesBodyError } from "../_shared/xai-responses.ts";
+import { buildProviderUsageMetadata } from "../_shared/usage-cost.ts";
+import { callXaiResponses, extractXaiResponsesText, extractXaiResponsesUsage, getXaiResponsesBodyError } from "../_shared/xai-responses.ts";
 
 const SUPPORT_REASONING_EFFORT = "medium" as const;
 const SUPPORT_STORE = false;
@@ -281,9 +282,20 @@ Respond in JSON only:
         }
       : null;
 
-    if (!result.ok) {
-      console.error(`[evaluate-goal-alignment] xAI Responses error: ${result.status} - ${result.errorText}`);
-      return new Response(JSON.stringify({
+	    if (!result.ok) {
+	      console.error(`[evaluate-goal-alignment] xAI Responses error: ${result.status} - ${result.errorText}`);
+	      await recordServerAiUsage({
+	        userId: user.id,
+	        eventType: "goal_alignment_eval_call",
+	        functionName: "evaluate-goal-alignment",
+	        metadata: {
+	          modelId: "grok-4.3",
+	          status: "provider_http_error",
+	          providerRequestCount: 1,
+	          providerHttpStatus: result.status,
+	        },
+	      });
+	      return new Response(JSON.stringify({
         evaluations: [],
         error: "Goal alignment classification failed",
         ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
@@ -292,10 +304,49 @@ Respond in JSON only:
       });
     }
 
-    const data = await result.response.json();
+    let data: unknown;
+    try {
+      data = await result.response.json();
+    } catch (parseError) {
+      const providerBodyError = parseError instanceof Error ? parseError.message : "Malformed provider JSON";
+      await recordServerAiUsage({
+        userId: user.id,
+        eventType: "goal_alignment_eval_call",
+        functionName: "evaluate-goal-alignment",
+        metadata: {
+          modelId: "grok-4.3",
+          status: "provider_response_parse_error",
+          providerBodyError,
+          goalCount: goals.length,
+          providerRequestCount: 1,
+        },
+      });
+      return new Response(JSON.stringify({
+        evaluations: [],
+        error: "Goal alignment classification failed",
+        providerBodyError,
+        ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
+      }), {
+        headers: { ...responseHeadersBase, "Content-Type": "application/json" },
+      });
+    }
+    const providerUsageMetadata = buildProviderUsageMetadata(extractXaiResponsesUsage(data));
     const bodyError = getXaiResponsesBodyError(data, { requireOutputText: true });
     if (bodyError) {
       console.error(`[evaluate-goal-alignment] xAI Responses body error: ${bodyError}`);
+      await recordServerAiUsage({
+        userId: user.id,
+        eventType: "goal_alignment_eval_call",
+        functionName: "evaluate-goal-alignment",
+        metadata: {
+          modelId: "grok-4.3",
+          status: "provider_body_error",
+          providerBodyError: bodyError,
+          goalCount: goals.length,
+          providerRequestCount: 1,
+          ...providerUsageMetadata,
+        },
+      });
       return new Response(JSON.stringify({
         evaluations: [],
         error: "Goal alignment classification failed",
@@ -314,6 +365,18 @@ Respond in JSON only:
     } catch {
       console.error("[evaluate-goal-alignment] Failed to parse classification response:", content);
       const alignmentReviews = [buildMalformedAlignmentReview("parse_error", content)];
+      await recordServerAiUsage({
+        userId: user.id,
+        eventType: "goal_alignment_eval_call",
+        functionName: "evaluate-goal-alignment",
+        metadata: {
+          modelId: "grok-4.3",
+          status: "parse_error",
+          goalCount: goals.length,
+          providerRequestCount: 1,
+          ...providerUsageMetadata,
+        },
+      });
       return new Response(JSON.stringify({
         evaluations: [],
         alignmentReviews,
@@ -327,6 +390,18 @@ Respond in JSON only:
 
     if (!Array.isArray(parsed.evaluations)) {
       const alignmentReviews = [buildMalformedAlignmentReview("evaluations_not_array", content)];
+      await recordServerAiUsage({
+        userId: user.id,
+        eventType: "goal_alignment_eval_call",
+        functionName: "evaluate-goal-alignment",
+        metadata: {
+          modelId: "grok-4.3",
+          status: "evaluations_not_array",
+          goalCount: goals.length,
+          providerRequestCount: 1,
+          ...providerUsageMetadata,
+        },
+      });
       return new Response(JSON.stringify({
         evaluations: [],
         alignmentReviews,
@@ -392,6 +467,8 @@ Respond in JSON only:
         status: "success",
         goalCount: goals.length,
         acceptedEvaluationCount: evaluations.length,
+        providerRequestCount: 1,
+        ...providerUsageMetadata,
       },
     });
 

@@ -8,7 +8,8 @@ import { shouldReturnAdminDebugTrace } from "../_shared/admin-debug.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
 import { recordServerAiUsage } from "../_shared/server-usage.ts";
-import { callXaiResponses, extractXaiResponsesText, getXaiResponsesBodyError } from "../_shared/xai-responses.ts";
+import { buildProviderUsageMetadata } from "../_shared/usage-cost.ts";
+import { callXaiResponses, extractXaiResponsesText, extractXaiResponsesUsage, getXaiResponsesBodyError } from "../_shared/xai-responses.ts";
 
 const DAY_SYNOPSIS_MAX_CHARS = 900;
 const SUPPORT_REASONING_EFFORT = "medium" as const;
@@ -115,9 +116,20 @@ Rules:
         }
       : null;
 
-    if (!result.ok) {
-      console.error("xAI Responses error:", result.status, result.errorText);
-      return new Response(
+	    if (!result.ok) {
+	      console.error("xAI Responses error:", result.status, result.errorText);
+	      await recordServerAiUsage({
+	        userId: user.id,
+	        eventType: "memory_day_compression_call",
+	        functionName: "compress-day-memories",
+	        metadata: {
+	          modelId: "grok-4.3",
+	          status: "provider_http_error",
+	          providerRequestCount: 1,
+	          providerHttpStatus: result.status,
+	        },
+	      });
+	      return new Response(
         JSON.stringify({
           error: "Failed to compress day memories",
           providerBodyError: `xAI Responses HTTP ${result.status}`,
@@ -127,10 +139,51 @@ Rules:
       );
     }
 
-    const data = await result.response.json();
+    let data: unknown;
+    try {
+      data = await result.response.json();
+    } catch (parseError) {
+      const providerBodyError = parseError instanceof Error ? parseError.message : "Malformed provider JSON";
+      await recordServerAiUsage({
+        userId: user.id,
+        eventType: "memory_day_compression_call",
+        functionName: "compress-day-memories",
+        metadata: {
+          modelId: "grok-4.3",
+          day: typeof day === "number" ? day : null,
+          bulletCount: bullets.length,
+          status: "provider_response_parse_error",
+          providerBodyError,
+          providerRequestCount: 1,
+        },
+      });
+      return new Response(
+        JSON.stringify({
+          error: "Failed to compress day memories",
+          providerBodyError,
+          ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
+        }),
+        { headers: { ...responseHeadersBase, 'Content-Type': 'application/json' } }
+      );
+    }
+    const providerUsageMetadata = buildProviderUsageMetadata(extractXaiResponsesUsage(data));
     const bodyError = getXaiResponsesBodyError(data, { requireOutputText: true });
     if (bodyError) {
       console.error("xAI Responses body error:", bodyError);
+      await recordServerAiUsage({
+        userId: user.id,
+        eventType: "memory_day_compression_call",
+        functionName: "compress-day-memories",
+        metadata: {
+          modelId: "grok-4.3",
+          day: typeof day === "number" ? day : null,
+          bulletCount: bullets.length,
+          status: "provider_body_error",
+          providerBodyError: bodyError,
+          providerRequestCount: 1,
+          ...providerUsageMetadata,
+        },
+      });
       return new Response(
         JSON.stringify({
           error: "Failed to compress day memories",
@@ -143,6 +196,20 @@ Rules:
     const synopsis = normalizeSynopsis(extractXaiResponsesText(data) || '');
 
     if (!synopsis) {
+      await recordServerAiUsage({
+        userId: user.id,
+        eventType: "memory_day_compression_call",
+        functionName: "compress-day-memories",
+        metadata: {
+          modelId: "grok-4.3",
+          day: typeof day === "number" ? day : null,
+          bulletCount: bullets.length,
+          status: "empty_output",
+          providerBodyError: "Empty synopsis returned from model",
+          providerRequestCount: 1,
+          ...providerUsageMetadata,
+        },
+      });
       return new Response(
         JSON.stringify({
           error: "Empty synopsis returned from model",
@@ -164,6 +231,8 @@ Rules:
         day: typeof day === "number" ? day : null,
         bulletCount: bullets.length,
         status: "success",
+        providerRequestCount: 1,
+        ...providerUsageMetadata,
       },
     });
     await recordServerAiUsage({

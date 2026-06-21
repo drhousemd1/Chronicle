@@ -20,6 +20,7 @@ import {
   extractXaiResponsesUsage,
   getXaiResponsesBodyError,
   normalizeResponsesStreamEvent,
+  readXaiErrorText,
   type XaiResponsesReasoningEffort,
   type XaiResponsesUsage,
 } from "../_shared/xai-responses.ts";
@@ -287,7 +288,7 @@ async function callXAI(
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText = await readXaiErrorText(response);
     console.error(`[chat] xAI/Grok error: ${response.status}`);
     debugLog(`[chat] xAI/Grok error detail: ${errorText.slice(0, 500)}`);
     return { ok: false, status: response.status, errorText };
@@ -544,6 +545,52 @@ function previewProviderError(errorText: string, max = 800): string {
 
 function messageFromUnknown(error: unknown): string {
   return error instanceof Error ? error.message : String(error || 'Unknown provider error');
+}
+
+function cachedInputTokensFromUsage(usage: XaiResponsesUsage | null | undefined): number | null {
+  const details = usage?.input_tokens_details;
+  if (!details || typeof details !== "object") return null;
+  const cachedTokens = (details as Record<string, unknown>).cached_tokens;
+  return typeof cachedTokens === "number" && Number.isFinite(cachedTokens) ? cachedTokens : null;
+}
+
+function providerMetadataFromResponsesUsage(usage: XaiResponsesUsage | null | undefined): Record<string, number | null> {
+  return {
+    providerInputTokens: usage?.input_tokens ?? null,
+    providerCachedInputTokens: cachedInputTokensFromUsage(usage),
+    providerOutputTokens: usage?.output_tokens ?? null,
+    providerTotalTokens: usage?.total_tokens ?? null,
+    providerReasoningTokens: usage?.reasoning_tokens ?? null,
+  };
+}
+
+function providerMetadataFromChatCompletionsUsage(usage: unknown): Record<string, number | null> {
+  if (!usage || typeof usage !== "object") {
+    return {
+      providerInputTokens: null,
+      providerCachedInputTokens: null,
+      providerOutputTokens: null,
+      providerTotalTokens: null,
+      providerReasoningTokens: null,
+    };
+  }
+  const row = usage as Record<string, unknown>;
+  const promptDetails = row.prompt_tokens_details && typeof row.prompt_tokens_details === "object"
+    ? row.prompt_tokens_details as Record<string, unknown>
+    : {};
+  const completionDetails = row.completion_tokens_details && typeof row.completion_tokens_details === "object"
+    ? row.completion_tokens_details as Record<string, unknown>
+    : {};
+  const numberOrNull = (value: unknown): number | null =>
+    typeof value === "number" && Number.isFinite(value) ? value : null;
+
+  return {
+    providerInputTokens: numberOrNull(row.prompt_tokens),
+    providerCachedInputTokens: numberOrNull(promptDetails.cached_tokens),
+    providerOutputTokens: numberOrNull(row.completion_tokens),
+    providerTotalTokens: numberOrNull(row.total_tokens),
+    providerReasoningTokens: numberOrNull(completionDetails.reasoning_tokens),
+  };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -836,13 +883,35 @@ function appendResponsesMetadataToDebugTrace(
   };
 }
 
+class ResponsesContentError extends Error {
+  readonly responseUsage: XaiResponsesUsage | null;
+  readonly reasoningSummaries: string[];
+
+  constructor(
+    message: string,
+    details: {
+      responseUsage?: XaiResponsesUsage | null;
+      reasoningSummaries?: string[];
+    } = {},
+  ) {
+    super(message);
+    this.name = "ResponsesContentError";
+    this.responseUsage = details.responseUsage ?? null;
+    this.reasoningSummaries = details.reasoningSummaries ?? [];
+  }
+}
+
+function getResponsesContentError(error: unknown): ResponsesContentError | null {
+  return error instanceof ResponsesContentError ? error : null;
+}
+
 async function readResponsesStreamContent(body: ReadableStream<Uint8Array> | null): Promise<{
   text: string;
   reasoningSummaries: string[];
   responseUsage: XaiResponsesUsage | null;
 }> {
   if (!body) {
-    throw new Error("Responses stream missing response body");
+    throw new ResponsesContentError("Responses stream missing response body");
   }
 
   const decoder = new TextDecoder();
@@ -870,7 +939,10 @@ async function readResponsesStreamContent(body: ReadableStream<Uint8Array> | nul
       if (normalized.reasoningSummary) reasoningSummaries.push(normalized.reasoningSummary);
       if (normalized.responseUsage) responseUsage = normalized.responseUsage;
       if (normalized.failed || normalized.incomplete) {
-        throw new Error(normalized.errorMessage || "Responses stream failed");
+        throw new ResponsesContentError(normalized.errorMessage || "Responses stream failed", {
+          responseUsage,
+          reasoningSummaries,
+        });
       }
       if (normalized.completed) {
         completed = true;
@@ -901,10 +973,16 @@ async function readResponsesStreamContent(body: ReadableStream<Uint8Array> | nul
   }
 
   if (!completed) {
-    throw new Error("Responses stream ended before response.completed");
+    throw new ResponsesContentError("Responses stream ended before response.completed", {
+      responseUsage,
+      reasoningSummaries,
+    });
   }
   if (!text.trim()) {
-    throw new Error("Responses stream completed without output_text");
+    throw new ResponsesContentError("Responses stream completed without output_text", {
+      responseUsage,
+      reasoningSummaries,
+    });
   }
 
   return { text, reasoningSummaries, responseUsage };
@@ -917,15 +995,20 @@ async function readResponsesJsonContent(response: Response): Promise<{
   responseUsage: XaiResponsesUsage | null;
 }> {
   const data = await response.json();
+  const responseUsage = extractXaiResponsesUsage(data);
+  const reasoningSummaries = extractXaiResponsesReasoningSummaries(data);
   const bodyError = getXaiResponsesBodyError(data, { requireOutputText: true });
   if (bodyError) {
-    throw new Error(bodyError);
+    throw new ResponsesContentError(bodyError, {
+      responseUsage,
+      reasoningSummaries,
+    });
   }
   return {
     data,
     text: extractXaiResponsesText(data),
-    reasoningSummaries: extractXaiResponsesReasoningSummaries(data),
-    responseUsage: extractXaiResponsesUsage(data),
+    reasoningSummaries,
+    responseUsage,
   };
 }
 
@@ -985,6 +1068,7 @@ async function handleResponsesDirect(
             status: "success",
             providerRequestCount: 1,
             providerInputTokens: streamResult.responseUsage?.input_tokens ?? null,
+            providerCachedInputTokens: cachedInputTokensFromUsage(streamResult.responseUsage),
             providerOutputTokens: streamResult.responseUsage?.output_tokens ?? null,
             providerTotalTokens: streamResult.responseUsage?.total_tokens ?? null,
             providerReasoningTokens: streamResult.responseUsage?.reasoning_tokens ?? null,
@@ -993,7 +1077,26 @@ async function handleResponsesDirect(
         return streamTextAsSSE(normalizedText, modelId, streamHeaders, timedDebugTrace);
       } catch (error) {
         const providerError = messageFromUnknown(error);
-        timedDebugTrace = appendProviderErrorToDebugTrace(timedDebugTrace, primary.modelRequest, providerError);
+        const contentError = getResponsesContentError(error);
+        const errorModelRequest: RoleplayDebugModelRequest = {
+          ...primary.modelRequest,
+          responseUsage: contentError?.responseUsage ?? null,
+          reasoningSummaries: contentError?.reasoningSummaries,
+        };
+        timedDebugTrace = appendProviderErrorToDebugTrace(timedDebugTrace, errorModelRequest, providerError);
+        await recordServerAiUsage({
+          userId,
+          eventType: usageEventType,
+          functionName: "chat",
+          metadata: {
+            modelId,
+            providerTransport: "responses",
+            stream,
+            status: "provider_stream_error",
+            providerRequestCount: 1,
+            ...providerMetadataFromResponsesUsage(contentError?.responseUsage),
+          },
+        });
         return streamProviderErrorAsSSE(
           modelId,
           streamHeaders,
@@ -1009,7 +1112,26 @@ async function handleResponsesDirect(
       content = await readResponsesJsonContent(primary.response);
     } catch (error) {
       const providerError = messageFromUnknown(error);
-      timedDebugTrace = appendProviderErrorToDebugTrace(timedDebugTrace, primary.modelRequest, providerError);
+      const contentError = getResponsesContentError(error);
+      const errorModelRequest: RoleplayDebugModelRequest = {
+        ...primary.modelRequest,
+        responseUsage: contentError?.responseUsage ?? null,
+        reasoningSummaries: contentError?.reasoningSummaries,
+      };
+      timedDebugTrace = appendProviderErrorToDebugTrace(timedDebugTrace, errorModelRequest, providerError);
+      await recordServerAiUsage({
+        userId,
+        eventType: usageEventType,
+        functionName: "chat",
+        metadata: {
+          modelId,
+          providerTransport: "responses",
+          stream,
+          status: "provider_response_parse_error",
+          providerRequestCount: 1,
+          ...providerMetadataFromResponsesUsage(contentError?.responseUsage),
+        },
+      });
       return jsonProviderErrorResponse(
         502,
         "The AI provider returned an unreadable response. Please try again.",
@@ -1045,6 +1167,7 @@ async function handleResponsesDirect(
         status: "success",
         providerRequestCount: 1,
         providerInputTokens: content.responseUsage?.input_tokens ?? null,
+        providerCachedInputTokens: cachedInputTokensFromUsage(content.responseUsage),
         providerOutputTokens: content.responseUsage?.output_tokens ?? null,
         providerTotalTokens: content.responseUsage?.total_tokens ?? null,
         providerReasoningTokens: content.responseUsage?.reasoning_tokens ?? null,
@@ -1108,7 +1231,9 @@ async function handleResponsesDirect(
               stream,
               status: "fallback_success",
               providerRequestCount: 2,
+              providerPreGenerationViolationCount: 1,
               providerInputTokens: streamResult.responseUsage?.input_tokens ?? null,
+              providerCachedInputTokens: cachedInputTokensFromUsage(streamResult.responseUsage),
               providerOutputTokens: streamResult.responseUsage?.output_tokens ?? null,
               providerTotalTokens: streamResult.responseUsage?.total_tokens ?? null,
               providerReasoningTokens: streamResult.responseUsage?.reasoning_tokens ?? null,
@@ -1117,12 +1242,32 @@ async function handleResponsesDirect(
           return streamTextAsSSE(normalizedText, modelId, streamHeaders, timedDebugTrace);
         } catch (error) {
           const providerError = messageFromUnknown(error);
+          const contentError = getResponsesContentError(error);
+          const errorModelRequest: RoleplayDebugModelRequest = {
+            ...retry.modelRequest,
+            responseUsage: contentError?.responseUsage ?? null,
+            reasoningSummaries: contentError?.reasoningSummaries,
+          };
           timedDebugTrace = timedDebugTrace
             ? {
-                ...appendProviderErrorToDebugTrace(timedDebugTrace, retry.modelRequest, providerError)!,
+                ...appendProviderErrorToDebugTrace(timedDebugTrace, errorModelRequest, providerError)!,
                 modelRequests: [priorModelRequest],
               }
             : null;
+          await recordServerAiUsage({
+            userId,
+            eventType: usageEventType,
+            functionName: "chat",
+            metadata: {
+              modelId,
+              providerTransport: "responses",
+              stream,
+              status: "provider_stream_error",
+              providerRequestCount: 2,
+              providerPreGenerationViolationCount: 1,
+                ...providerMetadataFromResponsesUsage(contentError?.responseUsage),
+            },
+          });
           return streamProviderErrorAsSSE(
             modelId,
             streamHeaders,
@@ -1138,12 +1283,32 @@ async function handleResponsesDirect(
         content = await readResponsesJsonContent(retry.response);
       } catch (error) {
         const providerError = messageFromUnknown(error);
+        const contentError = getResponsesContentError(error);
+        const errorModelRequest: RoleplayDebugModelRequest = {
+          ...retry.modelRequest,
+          responseUsage: contentError?.responseUsage ?? null,
+          reasoningSummaries: contentError?.reasoningSummaries,
+        };
         timedDebugTrace = timedDebugTrace
           ? {
-              ...appendProviderErrorToDebugTrace(timedDebugTrace, retry.modelRequest, providerError)!,
+              ...appendProviderErrorToDebugTrace(timedDebugTrace, errorModelRequest, providerError)!,
               modelRequests: [priorModelRequest],
             }
           : null;
+        await recordServerAiUsage({
+          userId,
+          eventType: usageEventType,
+          functionName: "chat",
+          metadata: {
+            modelId,
+            providerTransport: "responses",
+            stream,
+            status: "provider_response_parse_error",
+            providerRequestCount: 2,
+            providerPreGenerationViolationCount: 1,
+              ...providerMetadataFromResponsesUsage(contentError?.responseUsage),
+          },
+        });
         return jsonProviderErrorResponse(
           502,
           "The AI provider returned an unreadable response. Please try again.",
@@ -1172,7 +1337,9 @@ async function handleResponsesDirect(
           stream,
           status: "fallback_success",
           providerRequestCount: 2,
+          providerPreGenerationViolationCount: 1,
           providerInputTokens: content.responseUsage?.input_tokens ?? null,
+          providerCachedInputTokens: cachedInputTokensFromUsage(content.responseUsage),
           providerOutputTokens: content.responseUsage?.output_tokens ?? null,
           providerTotalTokens: content.responseUsage?.total_tokens ?? null,
           providerReasoningTokens: content.responseUsage?.reasoning_tokens ?? null,
@@ -1184,15 +1351,29 @@ async function handleResponsesDirect(
       }, timedDebugTrace);
     }
 
-    if (retry.status !== 403) {
-      const providerError = `Responses retry failed with HTTP ${retry.status}: ${previewProviderError(retry.errorText)}`;
+	    if (retry.status !== 403) {
+	      const providerError = `Responses retry failed with HTTP ${retry.status}: ${previewProviderError(retry.errorText)}`;
       timedDebugTrace = timedDebugTrace
         ? {
             ...appendProviderErrorToDebugTrace(timedDebugTrace, retry.modelRequest, providerError)!,
             modelRequests: [{ ...primary.modelRequest, label: 'Primary Responses request before fallback retry' }],
-          }
-        : null;
-      if (stream) {
+	          }
+	          : null;
+	      await recordServerAiUsage({
+	        userId,
+	        eventType: usageEventType,
+	        functionName: "chat",
+	        metadata: {
+	          modelId,
+	          providerTransport: "responses",
+	          stream,
+	          status: "provider_http_error",
+	          providerRequestCount: 2,
+	          providerPreGenerationViolationCount: 1,
+	          providerHttpStatus: retry.status,
+	        },
+	      });
+	      if (stream) {
         return streamProviderErrorAsSSE(modelId, {
           ...responseHeadersBase,
           "Content-Type": "text/event-stream",
@@ -1209,7 +1390,7 @@ async function handleResponsesDirect(
       );
     }
 
-    const blockedTrace: RoleplayDebugTrace | null = timedDebugTrace
+	    const blockedTrace: RoleplayDebugTrace | null = timedDebugTrace
       ? {
           ...timedDebugTrace,
           modelRequest: retry.modelRequest,
@@ -1222,9 +1403,23 @@ async function handleResponsesDirect(
             'The edge function returned a structured content-filter notice over HTTP 200 so the frontend can avoid a runtime overlay.',
           ],
         }
-      : null;
+	      : null;
 
-    if (stream) {
+	    await recordServerAiUsage({
+	      userId,
+	      eventType: usageEventType,
+	      functionName: "chat",
+	      metadata: {
+	        modelId,
+	        providerTransport: "responses",
+	        stream,
+	        status: "content_filtered",
+	        providerRequestCount: 2,
+	        providerPreGenerationViolationCount: 2,
+	      },
+	    });
+
+	    if (stream) {
       return streamContentFilterNoticeAsSSE(modelId, {
         ...responseHeadersBase,
         "Content-Type": "text/event-stream",
@@ -1246,9 +1441,22 @@ async function handleResponsesDirect(
     );
   }
 
-  const providerError = `Responses request failed with HTTP ${primary.status}: ${previewProviderError(primary.errorText)}`;
-  timedDebugTrace = appendProviderErrorToDebugTrace(timedDebugTrace, primary.modelRequest, providerError);
-  if (stream) {
+	  const providerError = `Responses request failed with HTTP ${primary.status}: ${previewProviderError(primary.errorText)}`;
+	  timedDebugTrace = appendProviderErrorToDebugTrace(timedDebugTrace, primary.modelRequest, providerError);
+	  await recordServerAiUsage({
+	    userId,
+	    eventType: usageEventType,
+	    functionName: "chat",
+	    metadata: {
+	      modelId,
+	      providerTransport: "responses",
+	      stream,
+	      status: "provider_http_error",
+	      providerRequestCount: 1,
+	      providerHttpStatus: primary.status,
+	    },
+	  });
+	  if (stream) {
     return streamProviderErrorAsSSE(modelId, {
       ...responseHeadersBase,
       "Content-Type": "text/event-stream",
@@ -1285,6 +1493,32 @@ async function handleDirect(
 
   if (result.ok) {
     if (stream) {
+      let streamedResponse: Response;
+      try {
+        streamedResponse = await streamSanitizedXAICompletion(result.response.body, modelId, {
+          ...responseHeadersBase,
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive",
+        }, timedDebugTrace);
+      } catch (error) {
+        if (timedDebugTrace) {
+          timedDebugTrace = appendProviderErrorToDebugTrace(timedDebugTrace, primaryModelRequest, messageFromUnknown(error));
+        }
+        await recordServerAiUsage({
+          userId,
+          eventType: usageEventType,
+          functionName: "chat",
+          metadata: {
+            modelId,
+            providerTransport: "chat_completions",
+            stream,
+            status: "provider_stream_error",
+            providerRequestCount: 1,
+          },
+        });
+        throw error;
+      }
       await recordServerAiUsage({
         userId,
         eventType: usageEventType,
@@ -1297,14 +1531,30 @@ async function handleDirect(
           providerRequestCount: 1,
         },
       });
-      return await streamSanitizedXAICompletion(result.response.body, modelId, {
-        ...responseHeadersBase,
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
-      }, timedDebugTrace);
+      return streamedResponse;
     }
-    const data = await result.response.json();
+    let data: any;
+    try {
+      data = await result.response.json();
+    } catch (error) {
+      if (timedDebugTrace) {
+        timedDebugTrace = appendProviderErrorToDebugTrace(timedDebugTrace, primaryModelRequest, messageFromUnknown(error));
+      }
+      await recordServerAiUsage({
+        userId,
+        eventType: usageEventType,
+        functionName: "chat",
+        metadata: {
+          modelId,
+          providerTransport: "chat_completions",
+          stream,
+          status: "provider_response_parse_error",
+          providerRequestCount: 1,
+        },
+      });
+      throw error;
+    }
+    const providerUsageMetadata = providerMetadataFromChatCompletionsUsage(data?.usage);
     if (timedDebugTrace) {
       data.chronicle_debug_trace = timedDebugTrace;
     }
@@ -1316,10 +1566,11 @@ async function handleDirect(
         modelId,
         providerTransport: "chat_completions",
         stream,
-        status: "success",
-        providerRequestCount: 1,
-      },
-    });
+	        status: "success",
+	        providerRequestCount: 1,
+	        ...providerUsageMetadata,
+	      },
+	    });
     return new Response(JSON.stringify(data), {
       headers: { ...responseHeadersBase, "Content-Type": "application/json" },
     });
@@ -1353,6 +1604,33 @@ async function handleDirect(
     }
     if (retry.ok) {
       if (stream) {
+        let streamedResponse: Response;
+        try {
+          streamedResponse = await streamSanitizedXAICompletion(retry.response.body, modelId, {
+            ...responseHeadersBase,
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+          }, timedDebugTrace);
+        } catch (error) {
+          if (timedDebugTrace) {
+            timedDebugTrace = appendProviderErrorToDebugTrace(timedDebugTrace, retryModelRequest, messageFromUnknown(error));
+          }
+          await recordServerAiUsage({
+            userId,
+            eventType: usageEventType,
+            functionName: "chat",
+            metadata: {
+              modelId,
+              providerTransport: "chat_completions",
+              stream,
+              status: "provider_stream_error",
+              providerRequestCount: 2,
+              providerPreGenerationViolationCount: 1,
+            },
+          });
+          throw error;
+        }
         await recordServerAiUsage({
           userId,
           eventType: usageEventType,
@@ -1363,16 +1641,34 @@ async function handleDirect(
             stream,
             status: "fallback_success",
             providerRequestCount: 2,
+            providerPreGenerationViolationCount: 1,
           },
         });
-        return await streamSanitizedXAICompletion(retry.response.body, modelId, {
-          ...responseHeadersBase,
-          "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache",
-          "Connection": "keep-alive",
-        }, timedDebugTrace);
+        return streamedResponse;
       }
-      const data = await retry.response.json();
+      let data: any;
+      try {
+        data = await retry.response.json();
+      } catch (error) {
+        if (timedDebugTrace) {
+          timedDebugTrace = appendProviderErrorToDebugTrace(timedDebugTrace, retryModelRequest, messageFromUnknown(error));
+        }
+        await recordServerAiUsage({
+          userId,
+          eventType: usageEventType,
+          functionName: "chat",
+          metadata: {
+            modelId,
+            providerTransport: "chat_completions",
+            stream,
+            status: "provider_response_parse_error",
+            providerRequestCount: 2,
+            providerPreGenerationViolationCount: 1,
+          },
+        });
+        throw error;
+      }
+      const providerUsageMetadata = providerMetadataFromChatCompletionsUsage(data?.usage);
       if (timedDebugTrace) {
         data.chronicle_debug_trace = timedDebugTrace;
       }
@@ -1386,24 +1682,64 @@ async function handleDirect(
           stream,
           status: "fallback_success",
           providerRequestCount: 2,
+          providerPreGenerationViolationCount: 1,
+          ...providerUsageMetadata,
         },
       });
       return new Response(JSON.stringify(data), {
         headers: { ...responseHeadersBase, "Content-Type": "application/json" },
       });
     }
+    const retryStatus = retry.status === 403 ? "content_filtered" : "provider_http_error";
     const blockedTrace: RoleplayDebugTrace | null = timedDebugTrace
       ? {
           ...timedDebugTrace,
-          finalPath: 'content_filter_notice',
-          fallbackReason: 'provider_content_filter',
+          finalPath: retry.status === 403 ? 'content_filter_notice' : 'provider_http_error',
+          fallbackReason: retry.status === 403 ? 'provider_content_filter' : 'provider_http_error',
           notes: [
             ...timedDebugTrace.notes,
-            'Primary chat request and content-redirect retry were both blocked by the provider.',
-            'The edge function returned a structured content-filter notice over HTTP 200 so the frontend can avoid a runtime overlay.',
+            retry.status === 403
+              ? 'Primary chat request and content-redirect retry were both blocked by the provider.'
+              : `Primary chat request was blocked, then content-redirect retry failed with HTTP ${retry.status}.`,
+            retry.status === 403
+              ? 'The edge function returned a structured content-filter notice over HTTP 200 so the frontend can avoid a runtime overlay.'
+              : 'The edge function returned a provider error response after recording the paid retry attempt.',
           ],
         }
       : null;
+
+	    await recordServerAiUsage({
+	      userId,
+	      eventType: usageEventType,
+	      functionName: "chat",
+	      metadata: {
+          modelId,
+          providerTransport: "chat_completions",
+          stream,
+          status: retryStatus,
+          providerRequestCount: 2,
+          providerPreGenerationViolationCount: retry.status === 403 ? 2 : 1,
+          providerHttpStatus: retry.status,
+        },
+      });
+
+    if (retry.status !== 403) {
+      if (stream) {
+        return streamProviderErrorAsSSE(modelId, {
+          ...responseHeadersBase,
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive",
+        }, "The AI provider failed while generating this turn. Please try again.", 'provider_http_error', blockedTrace);
+      }
+      return jsonProviderErrorResponse(
+        502,
+        "The AI provider failed while generating this turn. Please try again.",
+        'provider_http_error',
+        { ...responseHeadersBase, "Content-Type": "application/json" },
+        blockedTrace,
+      );
+    }
 
     if (stream) {
       return streamContentFilterNoticeAsSSE(modelId, {
@@ -1426,6 +1762,20 @@ async function handleDirect(
       { status: 200, headers: { ...responseHeadersBase, "Content-Type": "application/json" } },
     );
   }
+
+  await recordServerAiUsage({
+    userId,
+    eventType: usageEventType,
+    functionName: "chat",
+    metadata: {
+      modelId,
+      providerTransport: "chat_completions",
+      stream,
+      status: "provider_http_error",
+      providerRequestCount: 1,
+      providerHttpStatus: result.status,
+    },
+  });
 
   throw new Error(`xAI/Grok error: ${result.status}`);
 }

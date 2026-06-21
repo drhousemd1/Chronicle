@@ -10,6 +10,7 @@ import { shouldReturnAdminDebugTrace } from "../_shared/admin-debug.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
 import { recordServerAiUsage, type ServerAiUsageEventType } from "../_shared/server-usage.ts";
+import { readXaiErrorText } from "../_shared/xai-responses.ts";
 
 type DebugModelRequest = {
   label?: string;
@@ -27,7 +28,10 @@ async function generateOptimizedPrompt(
   stylePrompt: string | null,
   negativePrompt: string | null,
   debugModelRequests?: DebugModelRequest[],
-): Promise<string> {
+): Promise<{
+  optimizedPrompt: string;
+  providerUsageMetadata: Record<string, number | null>;
+}> {
   const XAI_API_KEY = Deno.env.get("XAI_API_KEY");
   if (!XAI_API_KEY) throw new Error("XAI_API_KEY not configured");
 
@@ -79,13 +83,25 @@ Write a focused prompt under ${maxLength} characters:`;
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText = await readXaiErrorText(response);
     console.error("[generateOptimizedPrompt] xAI error:", errorText);
     throw new Error("Failed to generate prompt via xAI");
   }
 
   const data = await response.json();
-  return data.choices?.[0]?.message?.content?.trim() || avatarPrompt;
+  const promptTokenDetails = data?.usage?.prompt_tokens_details && typeof data.usage.prompt_tokens_details === "object"
+    ? data.usage.prompt_tokens_details as Record<string, unknown>
+    : {};
+  return {
+    optimizedPrompt: data.choices?.[0]?.message?.content?.trim() || avatarPrompt,
+    providerUsageMetadata: {
+      providerUsageRequestCount: 1,
+      providerInputTokens: typeof data?.usage?.prompt_tokens === "number" ? data.usage.prompt_tokens : null,
+      providerCachedInputTokens: typeof promptTokenDetails.cached_tokens === "number" ? promptTokenDetails.cached_tokens : null,
+      providerOutputTokens: typeof data?.usage?.completion_tokens === "number" ? data.usage.completion_tokens : null,
+      providerTotalTokens: typeof data?.usage?.total_tokens === "number" ? data.usage.total_tokens : null,
+    },
+  };
 }
 
 serve(async (req) => {
@@ -180,15 +196,18 @@ serve(async (req) => {
 
     // Step 1: Generate optimized prompt using Grok
     let optimizedPrompt: string;
+    let promptUsageMetadata: Record<string, number | null> = {};
     const debugModelRequests: DebugModelRequest[] = [];
     try {
-      optimizedPrompt = await generateOptimizedPrompt(
+      const promptResult = await generateOptimizedPrompt(
         characterName,
         avatarPrompt,
         resolvedStylePrompt || null,
         negativePrompt || null,
         debugTraceAllowed ? debugModelRequests : undefined,
       );
+      optimizedPrompt = promptResult.optimizedPrompt;
+      promptUsageMetadata = promptResult.providerUsageMetadata;
       console.log(`[generate-avatar] Optimized prompt (${optimizedPrompt.length} chars):`, optimizedPrompt);
     } catch (err) {
       console.error("[generate-avatar] Prompt generation failed, using fallback:", err);
@@ -228,25 +247,103 @@ serve(async (req) => {
       });
     }
 
-    const response = await fetch("https://api.x.ai/v1/images/generations", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${XAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(imageRequestBody),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("xAI image generation error:", response.status, errorText);
-      return new Response(JSON.stringify({ error: "Image generation failed", details: errorText }), {
+    let response: Response;
+    try {
+      response = await fetch("https://api.x.ai/v1/images/generations", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${XAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(imageRequestBody),
+      });
+    } catch (fetchError) {
+      const providerRequestError = fetchError instanceof Error ? fetchError.message : String(fetchError);
+      await recordServerAiUsage({
+        userId: user.id,
+        eventType: avatarUsageEventType,
+        functionName: "generate-side-character-avatar",
+        metadata: {
+          modelId: "grok-imagine-image",
+          promptModelId: modelId === "grok-4.3" ? modelId : "grok-4.3",
+          status: "provider_request_error",
+          providerRequestError,
+          providerRequestCount: 2,
+          providerImageRequestCount: 1,
+          ...promptUsageMetadata,
+          imageCount: 1,
+          avatarUsageKind: avatarUsageEventType,
+          promptChars: optimizedPrompt.length,
+          optimizedPromptChars: optimizedPrompt.length,
+          styleId: resolvedStyleId,
+          hadStylePrompt: Boolean(resolvedStylePrompt),
+        },
+      });
+      return new Response(JSON.stringify({ error: "Image generation request failed", details: providerRequestError }), {
         status: 500,
         headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const data = await response.json();
+	    if (!response.ok) {
+	      const errorText = await readXaiErrorText(response);
+	      console.error("xAI image generation error:", response.status, errorText);
+	      await recordServerAiUsage({
+	        userId: user.id,
+	        eventType: avatarUsageEventType,
+	        functionName: "generate-side-character-avatar",
+	        metadata: {
+	          modelId: "grok-imagine-image",
+	          promptModelId: modelId === "grok-4.3" ? modelId : "grok-4.3",
+	          status: "provider_http_error",
+	          providerRequestCount: 2,
+	          providerImageRequestCount: 1,
+	          providerHttpStatus: response.status,
+	          ...promptUsageMetadata,
+	          imageCount: 1,
+	          avatarUsageKind: avatarUsageEventType,
+	          promptChars: optimizedPrompt.length,
+	          optimizedPromptChars: optimizedPrompt.length,
+	          styleId: resolvedStyleId,
+	          hadStylePrompt: Boolean(resolvedStylePrompt),
+	        },
+	      });
+	      return new Response(JSON.stringify({ error: "Image generation failed", details: errorText }), {
+        status: 500,
+        headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    let data: any;
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      const providerBodyError = parseError instanceof Error ? parseError.message : "Malformed provider JSON";
+      await recordServerAiUsage({
+        userId: user.id,
+        eventType: avatarUsageEventType,
+        functionName: "generate-side-character-avatar",
+        metadata: {
+          modelId: "grok-imagine-image",
+          promptModelId: modelId === "grok-4.3" ? modelId : "grok-4.3",
+          status: "provider_response_parse_error",
+          providerBodyError,
+          providerRequestCount: 2,
+          providerImageRequestCount: 1,
+          ...promptUsageMetadata,
+          imageCount: 1,
+          avatarUsageKind: avatarUsageEventType,
+          promptChars: optimizedPrompt.length,
+          optimizedPromptChars: optimizedPrompt.length,
+          styleId: resolvedStyleId,
+          hadStylePrompt: Boolean(resolvedStylePrompt),
+        },
+      });
+      return new Response(JSON.stringify({ error: "Image generation response was unreadable", details: providerBodyError }), {
+        status: 500,
+        headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
+      });
+    }
     let imageUrl = data.data?.[0]?.url;
 
     // Single-owner upload contract (Batch D Stage C): this edge function is
@@ -258,9 +355,16 @@ serve(async (req) => {
     let storageSentinel: string | null = null;
     let imageBytes: Uint8Array | null = null;
     let avatarContentType = 'image/png';
+    let imageDownloadError: string | null = null;
+    let imageDecodeError: string | null = null;
     if (data.data?.[0]?.b64_json) {
       const raw = data.data[0].b64_json;
-      imageBytes = Uint8Array.from(atob(raw), c => c.charCodeAt(0));
+      try {
+        imageBytes = Uint8Array.from(atob(raw), c => c.charCodeAt(0));
+      } catch (err) {
+        imageDecodeError = err instanceof Error ? err.message : String(err);
+        console.error('[generate-avatar] Failed to decode xAI b64 image:', err);
+      }
     } else if (imageUrl) {
       try {
         const fetched = await fetch(imageUrl);
@@ -268,8 +372,67 @@ serve(async (req) => {
         avatarContentType = fetched.headers.get('content-type') || 'image/png';
         imageBytes = new Uint8Array(await fetched.arrayBuffer());
       } catch (err) {
+        imageDownloadError = err instanceof Error ? err.message : String(err);
         console.error('[generate-avatar] Failed to download xAI URL:', err);
       }
+    }
+    if (imageDecodeError && !imageBytes) {
+      await recordServerAiUsage({
+        userId: user.id,
+        eventType: avatarUsageEventType,
+        functionName: "generate-side-character-avatar",
+        metadata: {
+          modelId: "grok-imagine-image",
+          promptModelId: modelId === "grok-4.3" ? modelId : "grok-4.3",
+          status: "provider_image_decode_failed",
+          providerImageDecodeError: imageDecodeError,
+          providerRequestCount: 2,
+          providerImageRequestCount: 1,
+          ...promptUsageMetadata,
+          imageCount: 1,
+          avatarUsageKind: avatarUsageEventType,
+          promptChars: optimizedPrompt.length,
+          optimizedPromptChars: optimizedPrompt.length,
+          styleId: resolvedStyleId,
+          hadStylePrompt: Boolean(resolvedStylePrompt),
+        },
+      });
+      return new Response(JSON.stringify({
+        error: "Failed to decode generated image",
+        debug: data,
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (imageDownloadError && !imageBytes) {
+      await recordServerAiUsage({
+        userId: user.id,
+        eventType: avatarUsageEventType,
+        functionName: "generate-side-character-avatar",
+        metadata: {
+          modelId: "grok-imagine-image",
+          promptModelId: modelId === "grok-4.3" ? modelId : "grok-4.3",
+          status: "provider_image_download_failed",
+          providerImageDownloadError: imageDownloadError,
+          providerRequestCount: 2,
+          providerImageRequestCount: 1,
+          ...promptUsageMetadata,
+          imageCount: 1,
+          avatarUsageKind: avatarUsageEventType,
+          promptChars: optimizedPrompt.length,
+          optimizedPromptChars: optimizedPrompt.length,
+          styleId: resolvedStyleId,
+          hadStylePrompt: Boolean(resolvedStylePrompt),
+        },
+      });
+      return new Response(JSON.stringify({
+        error: "Failed to download generated image",
+        debug: data,
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, ...rateHeaders, "Content-Type": "application/json" },
+      });
     }
     if (imageBytes) {
       const ext = avatarContentType.includes('jpeg') ? 'jpg' : 'png';
@@ -280,6 +443,25 @@ serve(async (req) => {
         .upload(finalName, imageBytes, { contentType: avatarContentType, upsert: true });
       if (uploadError) {
         console.error('[generate-avatar] Storage upload failed:', uploadError);
+        await recordServerAiUsage({
+          userId: user.id,
+          eventType: avatarUsageEventType,
+          functionName: "generate-side-character-avatar",
+          metadata: {
+            modelId: "grok-imagine-image",
+            promptModelId: modelId === "grok-4.3" ? modelId : "grok-4.3",
+            status: "storage_upload_failed",
+            providerRequestCount: 2,
+            providerImageRequestCount: 1,
+            ...promptUsageMetadata,
+            imageCount: 1,
+            avatarUsageKind: avatarUsageEventType,
+            promptChars: optimizedPrompt.length,
+            optimizedPromptChars: optimizedPrompt.length,
+            styleId: resolvedStyleId,
+            hadStylePrompt: Boolean(resolvedStylePrompt),
+          },
+        });
         throw uploadError;
       }
       imagePath = finalName;
@@ -289,6 +471,25 @@ serve(async (req) => {
         .createSignedUrl(finalName, 60 * 60);
       if (signError) {
         console.error('[generate-avatar] Signed URL failed:', signError);
+        await recordServerAiUsage({
+          userId: user.id,
+          eventType: avatarUsageEventType,
+          functionName: "generate-side-character-avatar",
+          metadata: {
+            modelId: "grok-imagine-image",
+            promptModelId: modelId === "grok-4.3" ? modelId : "grok-4.3",
+            status: "signed_url_failed",
+            providerRequestCount: 2,
+            providerImageRequestCount: 1,
+            ...promptUsageMetadata,
+            imageCount: 1,
+            avatarUsageKind: avatarUsageEventType,
+            promptChars: optimizedPrompt.length,
+            optimizedPromptChars: optimizedPrompt.length,
+            styleId: resolvedStyleId,
+            hadStylePrompt: Boolean(resolvedStylePrompt),
+          },
+        });
         throw signError;
       }
       imageUrl = signedData?.signedUrl || '';
@@ -297,6 +498,25 @@ serve(async (req) => {
 
     if (!imageUrl) {
       console.error("No image URL in xAI response:", JSON.stringify(data, null, 2));
+      await recordServerAiUsage({
+        userId: user.id,
+        eventType: avatarUsageEventType,
+        functionName: "generate-side-character-avatar",
+        metadata: {
+          modelId: "grok-imagine-image",
+          promptModelId: modelId === "grok-4.3" ? modelId : "grok-4.3",
+          status: "provider_no_image",
+          providerRequestCount: 2,
+          providerImageRequestCount: 1,
+          ...promptUsageMetadata,
+          imageCount: 1,
+          avatarUsageKind: avatarUsageEventType,
+          promptChars: optimizedPrompt.length,
+          optimizedPromptChars: optimizedPrompt.length,
+          styleId: resolvedStyleId,
+          hadStylePrompt: Boolean(resolvedStylePrompt),
+        },
+      });
       return new Response(JSON.stringify({ 
         error: "No image generated",
         debug: data 
@@ -316,7 +536,12 @@ serve(async (req) => {
         modelId: "grok-imagine-image",
         promptModelId: modelId === "grok-4.3" ? modelId : "grok-4.3",
         status: "success",
+        providerRequestCount: 2,
+        providerImageRequestCount: 1,
+        ...promptUsageMetadata,
+        imageCount: 1,
         avatarUsageKind: avatarUsageEventType,
+        promptChars: optimizedPrompt.length,
         optimizedPromptChars: optimizedPrompt.length,
         styleId: resolvedStyleId,
         hadStylePrompt: Boolean(resolvedStylePrompt),

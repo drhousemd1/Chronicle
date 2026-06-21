@@ -252,7 +252,15 @@ function XaiModelPricing() {
 // ══════════════════════════════════════════════════════════════
 // API USAGE
 // ══════════════════════════════════════════════════════════════
-const USAGE_SERIES_META = [
+type UsageSeriesMeta = {
+  key: string;
+  label: string;
+  color: string;
+  group: string;
+  costPerEvent?: number;
+};
+
+const USAGE_SERIES_META: UsageSeriesMeta[] = [
   { key:"messagesSent", label:"Messages Sent", color:"#60a5fa", group:"core", costPerEvent:0.0007 },
   { key:"messagesGenerated", label:"Messages Generated", color:"#22d3ee", group:"core", costPerEvent:0.0021 },
   { key:"imagesGenerated", label:"Images Generated", color:"#a78bfa", group:"core", costPerEvent:0.02 },
@@ -269,6 +277,11 @@ const USAGE_SERIES_META = [
   { key:"aiAvatarsGenerated", label:"AI Avatars", color:"#ec4899", group:"characters", costPerEvent:0.02 },
   { key:"sideCharacterAvatarsGenerated", label:"Side Char Avatars", color:"#c084fc", group:"characters", costPerEvent:0.02 },
   { key:"characterAvatarsGenerated", label:"Character Avatars", color:"#818cf8", group:"characters", costPerEvent:0.02 },
+];
+
+const COST_SERIES_META: UsageSeriesMeta[] = [
+  { key:"textCostUsd", label:"Text Model Spend", color:"#60a5fa", group:"cost" },
+  { key:"imageCostUsd", label:"Image Model Spend", color:"#a78bfa", group:"cost" },
 ];
 
 const UsageMetricHeader = ({ label, help }: { label: string; help: string }) => (
@@ -318,6 +331,7 @@ export function UsagePage() {
   const [testReport, setTestReport] = useState<AdminApiUsageTestReport>(emptyTestReport);
   const [testReportLoading, setTestReportLoading] = useState(false);
   const [testReportError, setTestReportError] = useState<string | null>(null);
+  const [showAllTraceSessions, setShowAllTraceSessions] = useState(false);
   const [billing, setBilling] = useState<XaiBillingSummary | null>(null);
   const [billingLoading, setBillingLoading] = useState(false);
   const [billingError, setBillingError] = useState<string | null>(null);
@@ -402,20 +416,21 @@ export function UsagePage() {
   }, [period, loadUsageTimeseries]);
 
   const activeSeries = useMemo(() => {
+    if (mode === "cost") return COST_SERIES_META;
     if (seriesGroup === "all") return USAGE_SERIES_META;
     return USAGE_SERIES_META.filter((series) => series.group === seriesGroup);
-  }, [seriesGroup]);
+  }, [seriesGroup, mode]);
 
   const chartData = useMemo(() => (
     usageTimeseries.points.map((point) => {
       const row: Record<string, number | string> = { label: point.label };
       activeSeries.forEach((series) => {
         const raw = Number((point as any)[series.key] || 0);
-        row[series.key] = mode === "cost" ? raw * series.costPerEvent : raw;
+        row[series.key] = raw;
       });
       return row;
     })
-  ), [usageTimeseries, activeSeries, mode]);
+  ), [usageTimeseries, activeSeries]);
 
   const yFormatter = mode === "cost"
     ? (v) => `$${Number(v).toFixed(2)}`
@@ -427,8 +442,11 @@ export function UsagePage() {
     return `$${amount.toFixed(5)}`;
   };
   const costByMetric = Object.fromEntries(
-    USAGE_SERIES_META.map((series) => [series.key, series.costPerEvent])
-  ) as Record<string, number>;
+    USAGE_SERIES_META
+      .filter((series) => typeof series.costPerEvent === "number")
+      .map((series) => [series.key, series.costPerEvent])
+  ) as Record<string, number | undefined>;
+  const allSeriesMeta = [...USAGE_SERIES_META, ...COST_SERIES_META];
   const counters = usageSummary.counters;
   const summaryCards = [
     { metric:"messagesSent", label:"Messages Sent", value:counters.messagesSent, callTag:"API Call 1", help:"User turn count only. This is NOT full payload token cost. True API-call cost should include full prompt/context payload plus completion tokens." },
@@ -447,18 +465,46 @@ export function UsagePage() {
     { metric:"memoryBulletsCompressed", label:"Memory Bullets", value:counters.memoryBulletsCompressed, callTag:"API Call 2", help:"Total bullet memories compressed into day synopsis entries." },
   ];
   const sessionColumns = testReport.rows;
+  const visibleSessionColumns = useMemo(
+    () => showAllTraceSessions ? sessionColumns : sessionColumns.slice(0, 5),
+    [sessionColumns, showAllTraceSessions]
+  );
   const MIN_TRACE_COLUMNS = 5;
   const traceColumns = useMemo(() => {
-    const realColumns = sessionColumns.map((session, index) => {
+    const nameCounts = sessionColumns.reduce((map, session) => {
+      const name = session.sessionName || "Untitled Session";
+      map.set(name, (map.get(name) || 0) + 1);
+      return map;
+    }, new Map<string, number>());
+    const runIndexBySessionId = new Map<string, number>();
+    const runIndexByName = new Map<string, number>();
+    [...sessionColumns].reverse().forEach((session) => {
+      const name = session.sessionName || "Untitled Session";
+      const nextIndex = (runIndexByName.get(name) || 0) + 1;
+      runIndexByName.set(name, nextIndex);
+      runIndexBySessionId.set(session.sessionId, nextIndex);
+    });
+
+    const realColumns = visibleSessionColumns.map((session, index) => {
       const createdAt = new Date(session.createdAt);
       const createdLabel = Number.isNaN(createdAt.getTime())
         ? "Tracked session"
-        : createdAt.toLocaleDateString([], { month: "short", day: "numeric" });
+        : createdAt.toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+      const sessionName = session.sessionName || `Session ${index + 1}`;
+      const isDuplicateName = (nameCounts.get(sessionName) || 0) > 1;
+      const runIndex = runIndexBySessionId.get(session.sessionId);
+      const statusLabel = session.status && session.status !== "unknown" ? session.status : "tracked";
+      const accountingLabel = session.eventAccountingMode === "server_authoritative"
+        ? "server-costed"
+        : session.eventAccountingMode === "server_authoritative_with_client_fallback"
+          ? "server+client-est."
+          : "client-estimated";
+      const shortId = session.sessionId ? session.sessionId.slice(0, 8) : `#${index + 1}`;
 
       return {
         key: session.sessionId || `session-${index + 1}`,
-        label: session.sessionName || `Session ${index + 1}`,
-        subLabel: createdLabel,
+        label: isDuplicateName && runIndex ? `${sessionName} · Run ${runIndex}` : sessionName,
+        subLabel: `${createdLabel} · ${statusLabel} · ${accountingLabel} · ${shortId}`,
         session,
         placeholder: false,
       };
@@ -476,7 +522,7 @@ export function UsagePage() {
       });
     }
     return filledColumns;
-  }, [sessionColumns]);
+  }, [sessionColumns, visibleSessionColumns]);
   const hasTrackedSessions = sessionColumns.length > 0;
   const testMetricRows: Array<{ key: keyof AdminApiUsageTestRow; label: string; render: (value: number) => string }> = [
     { key:"messagesSent", label:"Messages Sent", render:(v) => Number(v).toLocaleString() },
@@ -493,8 +539,11 @@ export function UsagePage() {
     { key:"memoryEvents", label:"Memory Events", render:(v) => Number(v).toLocaleString() },
     { key:"memoryCompressed", label:"Memory Compressed", render:(v) => Number(v).toLocaleString() },
     { key:"memoryBullets", label:"Memory Bullets", render:(v) => Number(v).toLocaleString() },
+    { key:"serverEventCount", label:"Trusted Server Events", render:(v) => Number(v).toLocaleString() },
+    { key:"clientDiagnosticEventCount", label:"Client Diagnostic Rows", render:(v) => Number(v).toLocaleString() },
+    { key:"costedEventCount", label:"Costed Rows", render:(v) => Number(v).toLocaleString() },
     { key:"totalTokensEst", label:"Total Tokens (Est.)", render:(v) => Math.round(Number(v)).toLocaleString() },
-    { key:"totalCostEstUsd", label:"Total Cost", render:(v) => `-$${Number(v).toFixed(4)}` },
+    { key:"totalCostEstUsd", label:"Estimated Spend", render:(v) => formatEstimatedCost(Number(v)) },
   ];
   const validationRows = useMemo(
     () => {
@@ -511,6 +560,19 @@ export function UsagePage() {
     const status = sessionMap[rowId];
     return status === "pass" || status === "fail" || status === "blank" ? status : "blank";
   };
+  const visibleValidationSummary = useMemo(() => {
+    const summary = { pass: 0, fail: 0, blank: 0 };
+    for (const session of visibleSessionColumns) {
+      const sessionMap = testReport.validationStatusBySession[session.sessionId] || {};
+      for (const row of validationRows) {
+        const status = sessionMap[row.id];
+        if (status === "pass") summary.pass += 1;
+        else if (status === "fail") summary.fail += 1;
+        else summary.blank += 1;
+      }
+    }
+    return summary;
+  }, [testReport.validationStatusBySession, validationRows, visibleSessionColumns]);
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
@@ -578,7 +640,7 @@ export function UsagePage() {
               <Tooltip contentStyle={{ background:D.shell, border:"none", boxShadow:D.shellShadow,
                 borderRadius:10, fontSize:12, color:D.text }}
                 formatter={(value, name) => {
-                  const series = USAGE_SERIES_META.find((entry) => entry.key === name);
+                  const series = allSeriesMeta.find((entry) => entry.key === name);
                   if (mode === "cost") {
                     return [`$${Number(value).toFixed(4)}`, `${series?.label || name} (est.)`];
                   }
@@ -603,7 +665,7 @@ export function UsagePage() {
               value={period} onChange={setPeriod}/>
           </div>
           <div style={{ fontSize:11, color:D.muted, marginTop:10, textAlign:"right" }}>
-            {timeseriesLoading ? "Loading chart..." : mode === "cost" ? "Cost view uses estimated per-event rates." : "Usage view shows event counts."}
+            {timeseriesLoading ? "Loading chart..." : mode === "cost" ? "Cost view uses server-estimated spend from provider usage metadata." : "Usage view shows event counts."}
           </div>
         </div>
       </ShellCard>
@@ -611,8 +673,28 @@ export function UsagePage() {
       <ShellCard>
         <SlateHeader title="API Test Session Trace" />
         <div style={{ padding:"14px 20px 20px" }}>
-          <div style={{ fontSize:11, color:D.muted, marginBottom:10 }}>
-            Admin-only test runs from Chat Settings toggle. Session names are columns; tracked metrics are rows.
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:12, flexWrap:"wrap", marginBottom:10 }}>
+            <div style={{ fontSize:11, color:D.muted }}>
+              Admin-only test runs from Chat Settings toggle. Repeated story names are kept as separate runs; trusted server rows are preferred over client diagnostics for cost totals.
+            </div>
+            {sessionColumns.length > 5 && (
+              <button
+                type="button"
+                onClick={() => setShowAllTraceSessions((value) => !value)}
+                style={{
+                  border: `1px solid ${D.divider}`,
+                  background: D.tray,
+                  color: D.text,
+                  borderRadius: 10,
+                  padding: "7px 10px",
+                  fontSize: 11,
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
+              >
+                {showAllTraceSessions ? "Show latest 5" : `Show all ${sessionColumns.length}`}
+              </button>
+            )}
           </div>
           {testReportError && (
             <div style={{ fontSize:12, color:D.red, marginBottom:8 }}>{testReportError}</div>
@@ -831,11 +913,11 @@ export function UsagePage() {
           </div>
 
           <div style={{ paddingTop:10, fontSize:11, color:D.muted, textAlign:"right" }}>
-            Pass: <span style={{ color:D.green, fontWeight:700 }}>{testReport.validationSummary.overall.pass}</span>
+            Visible columns — Pass: <span style={{ color:D.green, fontWeight:700 }}>{visibleValidationSummary.pass}</span>
             {" · "}
-            Fail: <span style={{ color:D.red, fontWeight:700 }}>{testReport.validationSummary.overall.fail}</span>
+            Fail: <span style={{ color:D.red, fontWeight:700 }}>{visibleValidationSummary.fail}</span>
             {" · "}
-            Blank: <span style={{ color:D.text, fontWeight:700 }}>{testReport.validationSummary.overall.blank}</span>
+            Blank: <span style={{ color:D.text, fontWeight:700 }}>{visibleValidationSummary.blank}</span>
           </div>
         </div>
       </ShellCard>

@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { estimateAiUsageCost } from "../_shared/usage-cost.ts";
 
 const ALLOWED_EVENT_TYPES = new Set([
   "chat_call_1",
@@ -183,9 +184,7 @@ serve(async (req) => {
     if (activeSession?.id) {
       const inputChars = toNonNegativeInt(metadata.inputChars);
       const outputChars = toNonNegativeInt(metadata.outputChars);
-      const inputTokensEst = Math.ceil(inputChars / 4);
-      const outputTokensEst = Math.ceil(outputChars / 4);
-      const totalTokensEst = inputTokensEst + outputTokensEst;
+      const estimate = estimateAiUsageCost(eventType, { ...metadata, inputChars, outputChars }, 1);
 
       const traceInsert = {
         session_id: activeSession.id,
@@ -198,13 +197,18 @@ serve(async (req) => {
         model_id: typeof metadata.modelId === "string" ? metadata.modelId : null,
         input_chars: inputChars,
         output_chars: outputChars,
-        input_tokens_est: inputTokensEst,
-        output_tokens_est: outputTokensEst,
-        total_tokens_est: totalTokensEst,
-        est_cost_usd: 0,
+        input_tokens_est: estimate.inputTokens,
+        output_tokens_est: estimate.outputTokens,
+        total_tokens_est: estimate.totalTokens,
+        est_cost_usd: estimate.estimatedCostUsd,
         latency_ms: toNonNegativeInt(metadata.latencyMs) || null,
         status: "client_diagnostic",
-        metadata: { ...metadata, eventCount: 1 },
+        metadata: {
+          ...metadata,
+          eventCount: 1,
+          clientDiagnosticOnly: true,
+          costEstimateSource: estimate.costEstimateSource,
+        },
       };
 
       const { error: traceError } = await serviceClient.from("ai_usage_test_events").insert(traceInsert);

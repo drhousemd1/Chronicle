@@ -4,6 +4,7 @@ import { shouldReturnAdminDebugTrace } from "../_shared/admin-debug.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
 import { recordServerAiUsage, type ServerAiUsageEventType } from "../_shared/server-usage.ts";
+import { buildProviderUsageMetadata, combineProviderUsageMetadata } from "../_shared/usage-cost.ts";
 import {
   buildPhysicalStateCompletenessReviews,
   getMissingPhysicalStateReviewNames,
@@ -13,6 +14,7 @@ import {
 import {
   callXaiResponses,
   extractXaiResponsesText,
+  extractXaiResponsesUsage,
   getXaiResponsesBodyError,
   type XaiMessage,
   type XaiResponsesDebugModelRequest,
@@ -1110,13 +1112,25 @@ Return ONLY valid JSON. No explanations.`;
       }
 
       if (!focusedResult.ok) {
-        return { updates: [] as any[], physicalStateReviews: [] as PhysicalStateReview[], parseError: `focused_retry_http_${focusedResult.status}` };
+        return { updates: [] as any[], physicalStateReviews: [] as PhysicalStateReview[], parseError: `focused_retry_http_${focusedResult.status}`, providerUsageMetadata: null };
       }
 
-      const focusedData = await focusedResult.response.json();
+      let focusedData: unknown;
+      try {
+        focusedData = await focusedResult.response.json();
+      } catch (parseError) {
+        const providerBodyError = parseError instanceof Error ? parseError.message : "Malformed provider JSON";
+        return {
+          updates: [] as any[],
+          physicalStateReviews: [] as PhysicalStateReview[],
+          parseError: `focused_retry_response_parse_error:${providerBodyError}`,
+          providerUsageMetadata: null,
+        };
+      }
+      const focusedProviderUsageMetadata = buildProviderUsageMetadata(extractXaiResponsesUsage(focusedData));
       const focusedBodyError = getXaiResponsesBodyError(focusedData, { requireOutputText: true });
       if (focusedBodyError) {
-        return { updates: [] as any[], physicalStateReviews: [] as PhysicalStateReview[], parseError: `focused_retry_body_error:${focusedBodyError}` };
+        return { updates: [] as any[], physicalStateReviews: [] as PhysicalStateReview[], parseError: `focused_retry_body_error:${focusedBodyError}`, providerUsageMetadata: focusedProviderUsageMetadata };
       }
       const focusedContent = extractXaiResponsesText(focusedData) || EMPTY_CHARACTER_SYNC_JSON;
       const parsedFocused = parseCharacterSyncContent(focusedContent);
@@ -1129,6 +1143,7 @@ Return ONLY valid JSON. No explanations.`;
         updates: focusedUpdates,
         physicalStateReviews: normalizePhysicalStateReviews(parsedFocused.physicalStateReviews, missingCharacterNames, 'focused_retry'),
         parseError: parsedFocused.parseError,
+        providerUsageMetadata: focusedProviderUsageMetadata,
       };
     };
 
@@ -1182,12 +1197,57 @@ Return ONLY valid JSON. No explanations.`;
             }
           : null;
         if (safeResult.ok) {
-          const safeData = await safeResult.response.json();
-          const safeBodyError = getXaiResponsesBodyError(safeData, { requireOutputText: true });
-          if (safeBodyError) {
-            console.error("[extract-character-updates] Safe retry Responses body error:", safeBodyError);
+          let safeData: unknown;
+          try {
+            safeData = await safeResult.response.json();
+          } catch (parseError) {
+            const providerBodyError = parseError instanceof Error ? parseError.message : "Malformed provider JSON";
             const missingPhysicalStateReviews = (filteredCharacters as CharacterData[]).map((character) => character.name);
+            await recordServerAiUsage({
+              userId: user.id,
+              eventType: characterUpdateUsageEventType,
+              functionName: "extract-character-updates",
+              metadata: {
+                modelId: "grok-4.3",
+                status: "fallback_response_parse_error",
+                providerBodyError,
+                providerRequestCount: 2,
+                providerPreGenerationViolationCount: 1,
+                fallbackUsed: true,
+              },
+            });
             return new Response(
+              JSON.stringify({
+                updates: [],
+                physicalStateReviews: [],
+                physicalStateCompletenessReviews: buildPhysicalStateCompletenessReviews(filteredCharacters as CharacterData[], []),
+                missingPhysicalStateReviews,
+                providerBodyError,
+                ...(safeDebugPayload ? { chronicle_debug_payload: safeDebugPayload } : {}),
+              }),
+              { headers: { ...responseHeadersBase, "Content-Type": "application/json" } }
+            );
+          }
+          const safeProviderUsageMetadata = buildProviderUsageMetadata(extractXaiResponsesUsage(safeData));
+          const safeBodyError = getXaiResponsesBodyError(safeData, { requireOutputText: true });
+	          if (safeBodyError) {
+	            console.error("[extract-character-updates] Safe retry Responses body error:", safeBodyError);
+	            const missingPhysicalStateReviews = (filteredCharacters as CharacterData[]).map((character) => character.name);
+	            await recordServerAiUsage({
+	              userId: user.id,
+	              eventType: characterUpdateUsageEventType,
+	              functionName: "extract-character-updates",
+	              metadata: {
+	                modelId: "grok-4.3",
+	                status: "fallback_body_error",
+	                providerBodyError: safeBodyError,
+	                providerRequestCount: 2,
+	                providerPreGenerationViolationCount: 1,
+	                fallbackUsed: true,
+	                ...safeProviderUsageMetadata,
+	              },
+	            });
+	            return new Response(
               JSON.stringify({
                 updates: [],
                 physicalStateReviews: [],
@@ -1205,10 +1265,12 @@ Return ONLY valid JSON. No explanations.`;
           let safePhysicalStateReviews = normalizePhysicalStateReviews(parsedSafe.physicalStateReviews, filteredCharacters as CharacterData[], 'primary');
           const missingAfterSafe = getMissingPhysicalStateReviewNames(filteredCharacters as CharacterData[], safePhysicalStateReviews);
           let safeFocusedRetryParseError: string | null = null;
+          let safeFocusedProviderUsageMetadata: Record<string, unknown> | null = null;
           if (missingAfterSafe.length > 0) {
             console.log(`[extract-character-updates] Safe retry omitted physical-state reviews for: ${missingAfterSafe.join(', ')}; running focused retry`);
             const focusedRetry = await runFocusedPhysicalStateRetry(missingAfterSafe);
             safeFocusedRetryParseError = focusedRetry.parseError;
+            safeFocusedProviderUsageMetadata = focusedRetry.providerUsageMetadata ?? null;
             safeExtractedUpdates = [...safeExtractedUpdates, ...focusedRetry.updates];
             safePhysicalStateReviews = [...safePhysicalStateReviews, ...focusedRetry.physicalStateReviews];
           }
@@ -1234,6 +1296,11 @@ Return ONLY valid JSON. No explanations.`;
               status: "fallback_success",
               updateCount: reviewedSafeUpdates.updates.length,
               missingPhysicalStateReviewCount: safeCompletenessReviews.filter((review) => !review.reviewed).length,
+              providerRequestCount: 2 + (missingAfterSafe.length > 0 ? 1 : 0),
+              providerPreGenerationViolationCount: 1,
+              fallbackUsed: true,
+              focusedRetryUsed: missingAfterSafe.length > 0,
+              ...combineProviderUsageMetadata(safeProviderUsageMetadata, safeFocusedProviderUsageMetadata),
             },
           });
           const safeUpdatedCharacters = new Set(
@@ -1274,7 +1341,21 @@ Return ONLY valid JSON. No explanations.`;
         // If safe retry also fails, expose the failure so debug exports do not treat it as completed empty state.
         const missingPhysicalStateReviews = (filteredCharacters as CharacterData[]).map((character) => character.name);
         const safeRetryError = `Safe character-state retry failed: HTTP ${safeResult.status}`;
-        return new Response(
+        const safeRetryStatus = safeResult.status === 403 ? "content_filtered" : "fallback_http_error";
+        await recordServerAiUsage({
+          userId: user.id,
+          eventType: characterUpdateUsageEventType,
+          functionName: "extract-character-updates",
+          metadata: {
+            modelId: "grok-4.3",
+            status: safeRetryStatus,
+            providerRequestCount: 2,
+            providerPreGenerationViolationCount: safeResult.status === 403 ? 2 : 1,
+            providerHttpStatus: safeResult.status,
+            fallbackUsed: true,
+          },
+        });
+	        return new Response(
           JSON.stringify({
             error: safeRetryError,
             providerBodyError: safeRetryError,
@@ -1290,11 +1371,51 @@ Return ONLY valid JSON. No explanations.`;
       throw new Error("Failed to extract character updates");
     }
 
-    const data = await result.response.json();
-    const bodyError = getXaiResponsesBodyError(data, { requireOutputText: true });
-    if (bodyError) {
-      console.error("[extract-character-updates] xAI Responses body error:", bodyError);
+    let data: unknown;
+    try {
+      data = await result.response.json();
+    } catch (parseError) {
+      const providerBodyError = parseError instanceof Error ? parseError.message : "Malformed provider JSON";
+      await recordServerAiUsage({
+        userId: user.id,
+        eventType: characterUpdateUsageEventType,
+        functionName: "extract-character-updates",
+        metadata: {
+          modelId: modelForRequest,
+          status: "provider_response_parse_error",
+          providerBodyError,
+          providerRequestCount: 1,
+        },
+      });
       return new Response(
+        JSON.stringify({
+          updates: [],
+          physicalStateReviews: [],
+          physicalStateCompletenessReviews: buildPhysicalStateCompletenessReviews(filteredCharacters as CharacterData[], []),
+          missingPhysicalStateReviews: (filteredCharacters as CharacterData[]).map((character) => character.name),
+          providerBodyError,
+          ...(primaryDebugPayload ? { chronicle_debug_payload: primaryDebugPayload } : {}),
+        }),
+        { headers: { ...responseHeadersBase, "Content-Type": "application/json" } }
+      );
+    }
+    const primaryProviderUsageMetadata = buildProviderUsageMetadata(extractXaiResponsesUsage(data));
+	    const bodyError = getXaiResponsesBodyError(data, { requireOutputText: true });
+	    if (bodyError) {
+	      console.error("[extract-character-updates] xAI Responses body error:", bodyError);
+	      await recordServerAiUsage({
+	        userId: user.id,
+	        eventType: characterUpdateUsageEventType,
+	        functionName: "extract-character-updates",
+	        metadata: {
+	          modelId: modelForRequest,
+	          status: "provider_body_error",
+	          providerBodyError: bodyError,
+	          providerRequestCount: 1,
+	          ...primaryProviderUsageMetadata,
+	        },
+	      });
+	      return new Response(
         JSON.stringify({
           updates: [],
           physicalStateReviews: [],
@@ -1315,10 +1436,12 @@ Return ONLY valid JSON. No explanations.`;
 
     const missingAfterPrimary = getMissingPhysicalStateReviewNames(filteredCharacters as CharacterData[], physicalStateReviews);
     let focusedRetryParseError: string | null = null;
+    let focusedProviderUsageMetadata: Record<string, unknown> | null = null;
     if (missingAfterPrimary.length > 0) {
       console.log(`[extract-character-updates] Missing physical-state reviews for: ${missingAfterPrimary.join(', ')}; running focused retry`);
       const focusedRetry = await runFocusedPhysicalStateRetry(missingAfterPrimary);
       focusedRetryParseError = focusedRetry.parseError;
+      focusedProviderUsageMetadata = focusedRetry.providerUsageMetadata ?? null;
       extractedUpdates = [...extractedUpdates, ...focusedRetry.updates];
       physicalStateReviews = [...physicalStateReviews, ...focusedRetry.physicalStateReviews];
     }
@@ -1351,6 +1474,9 @@ Return ONLY valid JSON. No explanations.`;
         status: parseError ? "parsed_with_rejections" : "success",
         updateCount: extractedUpdates.length,
         missingPhysicalStateReviewCount: missingPhysicalStateReviews.length,
+        providerRequestCount: 1 + (missingAfterPrimary.length > 0 ? 1 : 0),
+        focusedRetryUsed: missingAfterPrimary.length > 0,
+        ...combineProviderUsageMetadata(primaryProviderUsageMetadata, focusedProviderUsageMetadata),
       },
     });
     const updatedCharacters = new Set(

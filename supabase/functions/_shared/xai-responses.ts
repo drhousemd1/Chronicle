@@ -7,6 +7,7 @@ export type XaiMessage = {
 
 export type XaiResponsesUsage = {
   input_tokens?: number;
+  input_tokens_details?: unknown;
   output_tokens?: number;
   total_tokens?: number;
   reasoning_tokens?: number;
@@ -205,11 +206,20 @@ export async function callXaiResponses(options: XaiResponsesCallOptions): Promis
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText = await readXaiErrorText(response);
     return { ok: false, status: response.status, errorText, modelRequest };
   }
 
   return { ok: true, response, modelRequest };
+}
+
+export async function readXaiErrorText(response: Response): Promise<string> {
+  try {
+    return await response.text();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error || "unknown");
+    return `[failed_to_read_xai_error_body: ${message}]`;
+  }
 }
 
 export function extractXaiResponsesText(payload: unknown): string {
