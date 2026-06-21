@@ -85,12 +85,17 @@ import {
   type DialogDebugComment,
 } from '@/features/chat-debug/types';
 import {
+  buildChatDebugTraceKey,
   buildDialogDebugCommentKey,
 } from '@/features/chat-debug/storage';
 import {
   buildChatReviewHtml,
   slugifyReviewExportFilePart,
 } from '@/features/chat-debug/review-export';
+import {
+  appendChatReviewRetryAttempt,
+  type ChatReviewRetryAttemptHistory,
+} from '@/features/chat-debug/retry-history';
 import {
   buildSupportCallDebugStatus,
   splitEdgeDebugPayload,
@@ -310,6 +315,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   // Admin debug: action tracking refs (Continue / Regenerate clicks)
   const continueEventsRef = useRef<ActionEvent[]>([]);
   const regenerateEventsRef = useRef<ActionEvent[]>([]);
+  const retryAttemptHistoryRef = useRef<ChatReviewRetryAttemptHistory>({});
   const {
     chatDebugTraceStoreRef,
     saveChatDebugTrace,
@@ -4766,6 +4772,16 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         debugLog('[handleRegenerate] Skipping assistant commit because the target message changed before completion.');
         return;
       }
+      if (isAdmin) {
+        const replacedDebugRecord = chatDebugTraceStoreRef.current[
+          buildChatDebugTraceKey(liveTargetMessage.id, liveTargetMessage.generationId || liveTargetMessage.id)
+        ] || null;
+        retryAttemptHistoryRef.current = appendChatReviewRetryAttempt(
+          retryAttemptHistoryRef.current,
+          liveTargetMessage,
+          replacedDebugRecord,
+        );
+      }
       placeholderMapRef.current = responseResult.placeholderMap;
 
       const updatedConvs = latestConversationsRef.current.map(c =>
@@ -6976,6 +6992,7 @@ const updatedChar: SideCharacter = {
                           messageComments: exportDialogDebugComments,
                           postTurnStateChanges: exportPostTurnStateChanges,
                           debugRecords: chatDebugTraceStoreRef.current,
+                          retryAttemptHistory: retryAttemptHistoryRef.current,
                         });
                         const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
                         const url = URL.createObjectURL(blob);

@@ -40,7 +40,7 @@ const appData = {
     },
     {
       name: 'Ashley',
-      nicknames: '',
+      nicknames: 'Ash',
       controlledBy: 'AI',
       characterRole: 'Main',
       avatarDataUrl: 'data:image/png;base64,ashley-avatar',
@@ -80,7 +80,7 @@ Ashley: *Ashley keeps moving her fingers.* "I can feel my thumb."`,
 };
 
 describe('buildChatReviewHtml', () => {
-  it('exports a styled static session log with split speaker cards and live comments', () => {
+  it('exports a styled static session log with speaker cards and one inline live comment per message', () => {
     const html = buildChatReviewHtml({
       appData,
       conversation,
@@ -291,8 +291,9 @@ describe('buildChatReviewHtml', () => {
     expect(html).toContain('Ashley');
     expect(html).not.toContain('What went wrong?');
     expect(html).toContain('Live tester note');
-    expect(html.match(/<section class="live-comment">/g)).toHaveLength(2);
-    expect(html).toContain('Live tester notes index');
+    expect(html.match(/<section class="live-comment">/g)).toHaveLength(1);
+    expect(html).toContain('Tester notes quick links');
+    expect(html).not.toContain('Every saved tester note is listed here and repeated');
     expect(html).toContain('chronicle-session-review-comments');
     expect(html).toContain('data-has-live-comment="true"');
     expect(html).toContain('data-live-comment-note="Ashley answered correctly, but Sarah sounded too mechanical."');
@@ -349,6 +350,119 @@ describe('buildChatReviewHtml', () => {
     expect(html).toContain('chronicle-session-deterministic-metrics-v1');
     expect(html).toContain('deterministicMetrics');
     expect(html).toContain('Regenerated');
+  });
+
+  it('keeps adjacent same-speaker paragraphs in one review card', () => {
+    const singleSpeakerConversation: Conversation = {
+      ...conversation,
+      messages: [
+        {
+          id: 'message-ai-single',
+          generationId: 'generation-ai-single',
+          role: 'assistant',
+          text: `Ash: *Ashley moved closer.* "First."
+
+Ashley rested one hand on the table and watched him.
+
+Ashley: "Second."`,
+          day: 1,
+          timeOfDay: 'sunset',
+          createdAt: 11,
+        },
+      ],
+    };
+
+    const html = buildChatReviewHtml({
+      appData,
+      conversation: singleSpeakerConversation,
+      scenarioTitle: 'Lost',
+      modelId: 'test-model',
+      exportedAt: new Date('2026-04-26T12:00:00.000Z'),
+      sanitizeAssistantText: (text) => text,
+      messageComments: {
+        'message-ai-single': {
+          messageId: 'message-ai-single',
+          generationId: 'generation-ai-single',
+          note: 'This entire assistant response should stay grouped as one Ashley message.',
+          tags: ['Speaker Flow'],
+          createdAt: 1,
+          updatedAt: 2,
+        },
+      },
+    });
+
+    expect(html.match(/class="message-card/g)).toHaveLength(1);
+    expect(html.match(/<section class="live-comment">/g)).toHaveLength(1);
+    expect(html).toContain('Turn 1</span>');
+    expect(html).not.toContain('Turn 1.2');
+    expect(html).not.toContain('Turn 1.3');
+    expect(html).toContain('Ashley rested one hand on the table');
+    expect(html).toContain('This entire assistant response should stay grouped as one Ashley message.');
+  });
+
+  it('renders replaced retry attempts for the current visible assistant message', () => {
+    const html = buildChatReviewHtml({
+      appData,
+      conversation,
+      scenarioTitle: 'Lost',
+      modelId: 'test-model',
+      exportedAt: new Date('2026-04-26T12:00:00.000Z'),
+      sanitizeAssistantText: (text) => text,
+      retryAttemptHistory: {
+        'message-ai-1': [
+          {
+            messageId: 'message-ai-1',
+            generationId: 'generation-ai-original',
+            attemptNumber: 1,
+            capturedAt: 12,
+            text: 'Ashley: *Ashley repeated the same exact approach.* "Same answer."',
+            day: 1,
+            timeOfDay: 'sunset',
+            createdAt: 11,
+            debugRecord: {
+              messageId: 'message-ai-1',
+              generationId: 'generation-ai-original',
+              capturedAt: 12,
+              trace: null,
+              call1Request: {
+                id: 'call1.original',
+                label: 'API Call 1 - Original attempt',
+                apiCallGroup: 'call_1',
+                endpoint: '/functions/v1/chat',
+                method: 'POST',
+                capturedAt: 12,
+                status: 'sent',
+                requestBody: { retry: false },
+              },
+              supportCalls: [],
+            },
+          },
+          {
+            messageId: 'message-ai-1',
+            generationId: 'generation-ai-retry-1',
+            attemptNumber: 2,
+            capturedAt: 13,
+            text: 'Ashley: *Ashley only swapped a few words.* "Same answer, slightly rewritten."',
+            day: 1,
+            timeOfDay: 'sunset',
+            createdAt: 12,
+            debugRecord: null,
+          },
+        ],
+      },
+    });
+
+    expect(html).toContain('Retry Attempt History (2)');
+    expect(html).toContain('Debug-only captured versions that were replaced by Retry');
+    expect(html).toContain('Attempt 1');
+    expect(html).toContain('generation-ai-original');
+    expect(html).toContain('Original attempt');
+    expect(html).toContain('Same answer.');
+    expect(html).toContain('Attempt 2');
+    expect(html).toContain('generation-ai-retry-1');
+    expect(html).toContain('Same answer, slightly rewritten.');
+    expect(html).toContain('chronicle-session-retry-attempt-history-v1');
+    expect(html).toContain('retryAttempts');
   });
 
   it('does not apply regenerate markers to later edited generations', () => {

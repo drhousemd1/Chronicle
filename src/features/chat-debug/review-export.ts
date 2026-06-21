@@ -1,5 +1,6 @@
 import type { Character, Conversation, Message, ScenarioData, SideCharacter, TimeOfDay } from '@/types';
 import { parseMessageSegments, type MessageSegment } from '@/services/side-character-generator';
+import { mergeByRenderedSpeaker } from '@/features/chat-runtime/speaker-resolution';
 import { buildReviewDebugMetrics, type ReviewDebugMetrics, type ReviewSegmentDebugMetrics } from './review-metrics';
 import {
   CHAT_DEBUG_ISSUE_TAGS,
@@ -8,6 +9,10 @@ import {
   type StoredChatDebugTrace,
   type StoredChatDebugTraceMap,
 } from './types';
+import type {
+  ChatReviewRetryAttempt,
+  ChatReviewRetryAttemptHistory,
+} from './retry-history';
 
 type ReviewExportCharacter = {
   name: string;
@@ -40,7 +45,9 @@ type ReviewExportSegment = {
   postTurnStateChanges?: string[];
   debugRecord?: StoredChatDebugTrace | null;
   debugMetrics?: ReviewSegmentDebugMetrics;
+  retryAttempts?: ChatReviewRetryAttempt[];
   localNotice?: Message['localNotice'] | null;
+  isFirstSegmentForMessage: boolean;
 };
 
 export type ChatReviewLiveComment = {
@@ -72,6 +79,7 @@ export type ChatReviewExportInput = {
   messageComments?: Record<string, ChatReviewLiveComment>;
   postTurnStateChanges?: Record<string, string[]>;
   debugRecords?: StoredChatDebugTraceMap;
+  retryAttemptHistory?: ChatReviewRetryAttemptHistory;
 };
 
 function escapeHtml(value: string): string {
@@ -139,6 +147,10 @@ function findCharacter(characters: ReviewExportCharacter[], speakerName: string 
   return characters.find((character) => (
     character.aliases.some((alias) => alias.toLowerCase() === normalized)
   )) || null;
+}
+
+function resolveCanonicalExportSpeakerName(characters: ReviewExportCharacter[], speakerName: string): string | null {
+  return findCharacter(characters, speakerName)?.name || null;
 }
 
 function inferNarrativeSpeaker(segment: MessageSegment, characters: ReviewExportCharacter[]): ReviewExportCharacter | null {
@@ -578,6 +590,48 @@ function renderAppliedUpdatesDetails(segment: ReviewExportSegment): string {
   `;
 }
 
+function renderRetryAttemptHistory(segment: ReviewExportSegment): string {
+  if (segment.role !== 'assistant') return '';
+
+  const attempts = [...(segment.retryAttempts || [])].sort((left, right) => (
+    left.attemptNumber - right.attemptNumber
+    || left.capturedAt - right.capturedAt
+  ));
+  if (attempts.length === 0) return '';
+
+  const attemptsHtml = attempts.map((attempt) => {
+    const call1Label = attempt.debugRecord?.call1Request?.label || null;
+    const call1Status = attempt.debugRecord?.call1Request?.status || null;
+    return `
+      <section class="retry-attempt-card">
+        <div class="retry-attempt-header">
+          <strong>Attempt ${attempt.attemptNumber}</strong>
+          <span>${escapeHtml(attempt.generationId)}</span>
+        </div>
+        <div class="trace-meta-grid">
+          ${renderKeyValueRows([
+            ['Captured', formatDebugDate(attempt.capturedAt)],
+            ['Original created', formatDebugDate(attempt.createdAt)],
+            ['Day', attempt.day != null ? `Day ${attempt.day}` : undefined],
+            ['Time', formatTimeOfDay(attempt.timeOfDay)],
+            ['Trace', call1Label || 'No API Call 1 trace captured'],
+            ['Trace status', call1Status],
+          ])}
+        </div>
+        <div class="retry-attempt-text rendered-message">${renderStyledText(attempt.text)}</div>
+      </section>
+    `;
+  }).join('');
+
+  return `
+    <details class="trace-details retry-history-details">
+      <summary>Retry Attempt History (${attempts.length})</summary>
+      <p>Debug-only captured versions that were replaced by Retry before the current visible assistant response. This is not saved story state and is only included to compare what changed between attempts.</p>
+      <div class="retry-attempt-list">${attemptsHtml}</div>
+    </details>
+  `;
+}
+
 function renderCountList(entries: Array<{ value: string; count: number }>, emptyText: string): string {
   if (!entries.length) return `<p>${escapeHtml(emptyText)}</p>`;
   return `<ul>${entries.map((entry) => `<li><strong>${escapeHtml(entry.value)}</strong> repeated ${entry.count}x</li>`).join('')}</ul>`;
@@ -750,13 +804,22 @@ function buildSegments(input: ChatReviewExportInput): ReviewExportSegment[] {
       ? input.sanitizeAssistantText(message.text)
       : message.text;
     const parsedSegments = parseMessageSegments(rawMessageText);
-    const messageSegments = parsedSegments.length > 0
-      ? parsedSegments
+    const userCharacter = input.appData.characters.find((character) => character.controlledBy === 'User') || null;
+    const mergedSegments = mergeByRenderedSpeaker(
+      parsedSegments,
+      message.role === 'assistant',
+      input.appData,
+      userCharacter,
+      (speakerName) => resolveCanonicalExportSpeakerName(characters, speakerName),
+    );
+    const messageSegments = mergedSegments.length > 0
+      ? mergedSegments
       : [{ speakerName: null, content: rawMessageText }];
     const liveComment = input.messageComments?.[message.id];
     const postTurnStateChanges = input.postTurnStateChanges?.[message.id] || [];
     const generationId = message.generationId || message.id;
     const debugRecord = input.debugRecords?.[debugTraceKey(message.id, generationId)] || null;
+    const retryAttempts = input.retryAttemptHistory?.[message.id] || [];
 
     messageSegments.forEach((segment, segmentIndex) => {
       const speaker = resolveSpeaker(segment, message.role, characters);
@@ -788,6 +851,8 @@ function buildSegments(input: ChatReviewExportInput): ReviewExportSegment[] {
         liveComment,
         postTurnStateChanges,
         debugRecord,
+        isFirstSegmentForMessage: segmentIndex === 0,
+        retryAttempts: segmentIndex === 0 ? retryAttempts : [],
       });
     });
   }
@@ -807,14 +872,14 @@ function renderSegmentCard(segment: ReviewExportSegment, index: number): string 
   const liveCommentTags = selectedTags.length
     ? `<div class="comment-tag-row">${selectedTags.map((tag) => `<span class="comment-tag">${escapeHtml(tag)}</span>`).join('')}</div>`
     : '';
-  const liveCommentBlock = segment.liveComment?.note || selectedTags.length
+  const liveCommentBlock = segment.isFirstSegmentForMessage && (segment.liveComment?.note || selectedTags.length)
     ? `<section class="live-comment"><div>Live tester note</div>${liveCommentTags}${segment.liveComment?.note ? `<p>${escapeHtml(segment.liveComment.note)}</p>` : '<p>No written note. Tags only.</p>'}</section>`
     : '';
   const imageBlock = segment.imageUrl
     ? `<img class="scene-image" src="${escapeAttribute(segment.imageUrl)}" alt="Generated scene image" loading="lazy" />`
     : '';
   const traceBlocks = segment.role === 'assistant'
-    ? `<div class="trace-stack">${renderDebugMetricsDetails(segment)}${renderApiCall1Details(segment)}${renderSupportCallDetails(segment)}${renderAppliedUpdatesDetails(segment)}</div>`
+    ? `<div class="trace-stack">${renderRetryAttemptHistory(segment)}${renderDebugMetricsDetails(segment)}${renderApiCall1Details(segment)}${renderSupportCallDetails(segment)}${renderAppliedUpdatesDetails(segment)}</div>`
     : '';
 
   return `
@@ -870,8 +935,8 @@ function renderLiveCommentIndex(
   return `
     <section class="live-comment-index" data-live-comment-count="${commentEntries.length}">
       <div class="issue-summary-header">
-        <div class="eyebrow">Live tester notes index</div>
-        <p>Every saved tester note is listed here and repeated on each split speaker card for the message it belongs to, so comments are easy to find by eye, search, or parser.</p>
+        <div class="eyebrow">Tester notes quick links</div>
+        <p>Compact navigation for saved tester notes. Full note text appears inline on the first message card it belongs to.</p>
       </div>
       <div class="live-comment-index-list">
         ${commentEntries.map((comment, index) => {
@@ -891,7 +956,7 @@ function renderLiveCommentIndex(
               <span>message ${escapeHtml(comment.messageId)} · generation ${escapeHtml(comment.generationId || comment.messageId)}</span>
             </div>
             ${selectedTags.length ? `<div class="comment-tag-row">${selectedTags.map((tag) => `<span class="comment-tag">${escapeHtml(tag)}</span>`).join('')}</div>` : ''}
-            ${comment.note ? `<p>${escapeHtml(comment.note)}</p>` : '<p>No written note. Tags only.</p>'}
+            ${comment.note ? `<p>${escapeHtml(textPreview(comment.note, 180))}</p>` : '<p>No written note. Tags only.</p>'}
             <div class="comment-index-links">${links}</div>
           </article>
         `;
@@ -1381,6 +1446,42 @@ function reviewStyles(): string {
       margin-bottom: 8px !important;
       padding-top: 8px !important;
     }
+    .retry-history-details {
+      border-color: rgba(120,220,202,0.24);
+      background: rgba(120,220,202,0.055);
+    }
+    .retry-history-details summary { color: var(--accent); }
+    .retry-attempt-list {
+      display: grid;
+      gap: 12px;
+      padding: 0 12px 12px;
+    }
+    .retry-attempt-card {
+      border: 1px solid rgba(120,220,202,0.18);
+      border-radius: 14px;
+      background: rgba(0,0,0,0.16);
+      padding: 12px;
+    }
+    .retry-attempt-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .retry-attempt-header strong { color: var(--text); }
+    .retry-attempt-header span {
+      color: var(--muted);
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+    .retry-attempt-card .trace-meta-grid { padding: 0 0 10px; }
+    .retry-attempt-text {
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding-top: 10px;
+      font-size: 15px;
+      line-height: 1.65;
+    }
     .state-change-details ul { margin: 0; padding: 0 18px 14px 34px; color: #d8e2f2; }
     .state-change-details li { margin: 7px 0; }
     .footer-note { color: var(--muted); text-align: center; margin-top: 26px; }
@@ -1442,10 +1543,12 @@ export function buildChatReviewHtml(input: ChatReviewExportInput): string {
   }));
   const embeddedDebugData = {
     schema: 'chronicle-session-review-v2',
+    retryAttemptHistorySchema: 'chronicle-session-retry-attempt-history-v1',
     exportedAt,
     scenarioTitle: input.scenarioTitle,
     conversationId: input.conversation.id,
     liveComments,
+    retryAttemptHistory: input.retryAttemptHistory || {},
     messages: input.conversation.messages.map((message) => ({
       id: message.id,
       generationId: message.generationId || message.id,
@@ -1458,6 +1561,7 @@ export function buildChatReviewHtml(input: ChatReviewExportInput): string {
       comment: input.messageComments?.[message.id] || null,
       appliedUpdates: input.postTurnStateChanges?.[message.id] || [],
       debugRecord: input.debugRecords?.[debugTraceKey(message.id, message.generationId || message.id)] || null,
+      retryAttempts: input.retryAttemptHistory?.[message.id] || [],
       deterministicMetrics: debugMetrics.segments.filter((metrics) => metrics.messageId === message.id),
     })),
     deterministicMetrics: debugMetrics,
@@ -1476,7 +1580,7 @@ export function buildChatReviewHtml(input: ChatReviewExportInput): string {
     <section class="hero">
       <div class="eyebrow">Chronicle session log</div>
       <h1>${escapeHtml(input.scenarioTitle)}</h1>
-      <p>Styled transcript export with avatars, split speaker blocks, generated images, Continue/Regenerate markers, and any live dialogue debug notes saved while testing.</p>
+      <p>Styled transcript export with avatars, message-level speaker cards, generated images, Continue/Regenerate markers, and any live dialogue debug notes saved while testing.</p>
       <div class="meta-grid">
         <div class="meta-card"><strong>${escapeHtml(input.conversation.title || 'Untitled conversation')}</strong><span>Conversation</span></div>
         <div class="meta-card"><strong>${escapeHtml(input.modelId)}</strong><span>Model</span></div>
