@@ -48,6 +48,11 @@ const DEFAULT_TOOLS: ToolMeta[] = [
     description: 'Repository map for files, folders, components, and ownership flows',
   },
   {
+    id: 'supabase_schema_reference',
+    title: 'Supabase Schema Reference',
+    description: 'Source-backed table, RLS, and storage reference for Lovable/Supabase changes',
+  },
+  {
     id: 'roleplay_pipeline',
     title: 'Roleplay Pipeline',
     description: 'Map of roleplay API calls, prompt assembly, and post-turn state flow',
@@ -139,6 +144,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
   const handleOpenTool = (toolId: string) => {
     if (toolId === 'app_architecture') {
       navigate('/style-guide/app-architecture');
+      return;
+    }
+
+    if (toolId === 'supabase_schema_reference') {
+      navigate('/style-guide/supabase-schema-reference');
       return;
     }
 
