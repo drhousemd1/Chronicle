@@ -16,6 +16,7 @@ const queryClient = new QueryClient();
 const UiAuditPage = lazy(() => import("./pages/style-guide/ui-audit"));
 const ApiInspectorPage = lazy(() => import("./pages/style-guide/api-inspector"));
 const AppArchitecturePage = lazy(() => import("./pages/style-guide/app-architecture"));
+const SupabaseSchemaReferencePage = lazy(() => import("./pages/style-guide/supabase-schema-reference"));
 
 const AdminOnlyRoute = ({ children }: { children: ReactNode }) => {
   const { user, loading, isAuthenticated } = useAuth();
@@ -74,6 +75,7 @@ const App = () => (
               <Route path="/style-guide/ui-audit" element={<AdminOnlyRoute><UiAuditPage /></AdminOnlyRoute>} />
               <Route path="/style-guide/api-inspector" element={<AdminOnlyRoute><ApiInspectorPage /></AdminOnlyRoute>} />
               <Route path="/style-guide/app-architecture" element={<AdminOnlyRoute><AppArchitecturePage /></AdminOnlyRoute>} />
+              <Route path="/style-guide/supabase-schema-reference" element={<AdminOnlyRoute><SupabaseSchemaReferencePage /></AdminOnlyRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
