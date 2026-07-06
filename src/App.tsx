@@ -16,6 +16,7 @@ const queryClient = new QueryClient();
 const UiAuditPage = lazy(() => import("./pages/style-guide/ui-audit"));
 const ApiInspectorPage = lazy(() => import("./pages/style-guide/api-inspector"));
 const AppArchitecturePage = lazy(() => import("./pages/style-guide/app-architecture"));
+const ValidationEvidenceLedgerPage = lazy(() => import("./pages/style-guide/validation-evidence-ledger"));
 
 const AdminOnlyRoute = ({ children }: { children: ReactNode }) => {
   const { user, loading, isAuthenticated } = useAuth();
@@ -74,6 +75,7 @@ const App = () => (
               <Route path="/style-guide/ui-audit" element={<AdminOnlyRoute><UiAuditPage /></AdminOnlyRoute>} />
               <Route path="/style-guide/api-inspector" element={<AdminOnlyRoute><ApiInspectorPage /></AdminOnlyRoute>} />
               <Route path="/style-guide/app-architecture" element={<AdminOnlyRoute><AppArchitecturePage /></AdminOnlyRoute>} />
+              <Route path="/style-guide/validation-evidence-ledger" element={<AdminOnlyRoute><ValidationEvidenceLedgerPage /></AdminOnlyRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
