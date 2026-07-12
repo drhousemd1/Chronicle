@@ -23,6 +23,12 @@ import type { DialogDebugComment } from '@/features/chat-debug/types';
 import type { TablesUpdate } from '@/integrations/supabase/types';
 import { normalizeDialogDebugTags } from '@/features/chat-debug/types';
 import {
+  buildActiveMemoriesWithPruningReport,
+  buildMessageGenerationMap,
+  type ConversationMessageIdentity,
+  type EffectiveStatePruningReport,
+} from '@/features/chat-runtime/effective-state';
+import {
   buildStorageSentinel,
   getSignedMediaUrl,
   isStorageSentinel,
@@ -431,7 +437,6 @@ export async function fetchSessionStates(conversationId: string): Promise<Charac
     sexualOrientation: row.sexual_orientation || undefined,
     roleDescription: row.role_description || undefined,
     location: row.location || '',
-    currentMood: row.current_mood || '',
     physicalAppearance: dbPhysicalAppearanceToApp(row.physical_appearance),
     currentlyWearing: dbCurrentlyWearingToApp(row.currently_wearing),
     preferredClothing: row.preferred_clothing ? dbPreferredClothingToApp(row.preferred_clothing) : undefined,
@@ -468,7 +473,6 @@ export async function createSessionState(
       conversation_id: conversationId,
       user_id: userId,
       location: character.location || '',
-      current_mood: character.currentMood || '',
       physical_appearance: appPhysicalAppearanceToDb(character.physicalAppearance || defaultPhysicalAppearance),
       currently_wearing: appCurrentlyWearingToDb(character.currentlyWearing || defaultCurrentlyWearing),
       preferred_clothing: appPreferredClothingToDb(character.preferredClothing || defaultPreferredClothing),
@@ -492,7 +496,6 @@ export async function createSessionState(
     conversationId: data.conversation_id,
     userId: data.user_id,
     location: data.location || '',
-    currentMood: data.current_mood || '',
     physicalAppearance: dbPhysicalAppearanceToApp(data.physical_appearance),
     currentlyWearing: dbCurrentlyWearingToApp(data.currently_wearing),
     preferredClothing: data.preferred_clothing ? dbPreferredClothingToApp(data.preferred_clothing) : undefined,
@@ -520,7 +523,6 @@ export async function updateSessionState(
     sexualOrientation: string;
     roleDescription: string;
     location: string;
-    currentMood: string;
     physicalAppearance: Partial<PhysicalAppearance>;
     currentlyWearing: any;
     preferredClothing: Partial<PreferredClothing>;
@@ -550,7 +552,6 @@ export async function updateSessionState(
   if (patch.sexualOrientation !== undefined) updateData.sexual_orientation = patch.sexualOrientation;
   if (patch.roleDescription !== undefined) updateData.role_description = patch.roleDescription;
   if (patch.location !== undefined) updateData.location = patch.location;
-  if (patch.currentMood !== undefined) updateData.current_mood = patch.currentMood;
   if (patch.physicalAppearance !== undefined) {
     updateData.physical_appearance = appPhysicalAppearanceToDb(patch.physicalAppearance as PhysicalAppearance);
   }
@@ -632,22 +633,40 @@ function dbToMemory(row: any): Memory {
   };
 }
 
-async function fetchConversationMessageGenerations(
+export async function fetchConversationMessageIdentityIndex(
   conversationId: string,
-): Promise<Map<string, string>> {
+): Promise<ConversationMessageIdentity[]> {
   const { data, error } = await supabase
     .from('messages')
-    .select('id, generation_id')
-    .eq('conversation_id', conversationId);
+    .select('id, generation_id, created_at')
+    .eq('conversation_id', conversationId)
+    .order('created_at', { ascending: true });
 
   if (error) throw error;
 
-  return new Map(
-    (data || []).map((row: any) => [row.id, row.generation_id || row.id]),
-  );
+  return (data || []).map((row: any) => ({
+    id: row.id,
+    generationId: row.generation_id || row.id,
+    createdAt: new Date(row.created_at).getTime(),
+  }));
 }
 
-export async function fetchMemories(conversationId: string): Promise<Memory[]> {
+async function fetchConversationMessageGenerations(
+  conversationId: string,
+): Promise<Map<string, string>> {
+  return buildMessageGenerationMap(await fetchConversationMessageIdentityIndex(conversationId));
+}
+
+export function buildMemoryFetchWithPruningReport(
+  memories: Memory[],
+  messageGenerations: Map<string, string>,
+): { activeMemories: Memory[]; pruningReports: EffectiveStatePruningReport[] } {
+  return buildActiveMemoriesWithPruningReport(memories, messageGenerations);
+}
+
+export async function fetchMemoriesWithPruningReport(
+  conversationId: string,
+): Promise<{ activeMemories: Memory[]; pruningReports: EffectiveStatePruningReport[] }> {
   const [memoryResult, messageGenerations] = await Promise.all([
     supabase
       .from('memories')
@@ -660,15 +679,15 @@ export async function fetchMemories(conversationId: string): Promise<Memory[]> {
 
   if (memoryResult.error) throw memoryResult.error;
 
-  return (memoryResult.data || [])
-    .map(dbToMemory)
-    .filter((memory) => {
-      if (!memory.sourceMessageId) return true;
-      const currentGeneration = messageGenerations.get(memory.sourceMessageId);
-      if (!currentGeneration) return false;
-      if (!memory.sourceGenerationId) return true;
-      return currentGeneration === memory.sourceGenerationId;
-    });
+  return buildMemoryFetchWithPruningReport(
+    (memoryResult.data || []).map(dbToMemory),
+    messageGenerations,
+  );
+}
+
+export async function fetchMemories(conversationId: string): Promise<Memory[]> {
+  const { activeMemories } = await fetchMemoriesWithPruningReport(conversationId);
+  return activeMemories;
 }
 
 export async function createMemory(
@@ -780,6 +799,19 @@ export async function upsertCharacterStateMessageSnapshot(
   if (error) throw error;
 
   return dbToCharacterStateMessageSnapshot(data);
+}
+
+export async function deleteCharacterStateMessageSnapshot(id: string): Promise<void> {
+  const { data, error } = await supabase
+    .from('character_state_message_snapshots')
+    .delete()
+    .eq('id', id)
+    .select('id');
+
+  if (error) throw error;
+  if (!data?.some((row) => row.id === id)) {
+    throw new Error(`Character-state snapshot cleanup did not remove ${id}`);
+  }
 }
 
 function dbToStoryGoalStepDerivation(row: any): StoryGoalStepDerivation {

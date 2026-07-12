@@ -15,6 +15,37 @@ export type ChatReviewRetryAttempt = {
 
 export type ChatReviewRetryAttemptHistory = Record<string, ChatReviewRetryAttempt[]>;
 
+export type ChatReviewRetryLineage = {
+  parentMessageId: string;
+  finalGenerationId: string;
+  attempts: ChatReviewRetryAttempt[];
+  childSegmentIds: string[];
+  storageScope: 'session_debug_only';
+  livePromptReentry: false;
+};
+
+export function buildChatReviewRetryLineage(input: {
+  history: ChatReviewRetryAttemptHistory;
+  parentMessageId: string;
+  finalGenerationId: string;
+  childSegmentIds: string[];
+}): ChatReviewRetryLineage | null {
+  const attempts = [...(input.history[input.parentMessageId] || [])].sort((left, right) => (
+    left.attemptNumber - right.attemptNumber
+    || left.capturedAt - right.capturedAt
+  ));
+  if (attempts.length === 0) return null;
+
+  return {
+    parentMessageId: input.parentMessageId,
+    finalGenerationId: input.finalGenerationId,
+    attempts,
+    childSegmentIds: [...input.childSegmentIds],
+    storageScope: 'session_debug_only',
+    livePromptReentry: false,
+  };
+}
+
 export function appendChatReviewRetryAttempt(
   history: ChatReviewRetryAttemptHistory,
   message: Message,

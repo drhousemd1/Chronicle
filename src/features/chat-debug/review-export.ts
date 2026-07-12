@@ -10,9 +10,14 @@ import {
   type StoredChatDebugTraceMap,
 } from './types';
 import type {
-  ChatReviewRetryAttempt,
   ChatReviewRetryAttemptHistory,
+  ChatReviewRetryLineage,
 } from './retry-history';
+import { buildChatReviewRetryLineage } from './retry-history';
+import { renderResponseJobSummary } from './response-job-summary';
+import type { EffectiveStatePruningReport } from '@/features/chat-runtime/effective-state';
+import type { RoleplayRecentHistoryPacket } from '@/features/chat-runtime/roleplay-recent-history';
+import { deriveRoleplaySupportReviewRows } from '@/features/chat-runtime/roleplay-support-review-projections';
 
 type ReviewExportCharacter = {
   name: string;
@@ -34,7 +39,33 @@ type ReviewExportSegment = {
   speakerRole: string;
   avatarUrl: string;
   text: string;
+};
+
+export type ReviewExportParserOrigin =
+  | 'raw_speaker_label'
+  | 'paragraph_split'
+  | 'inferred_speaker'
+  | 'fallback';
+
+export type ReviewExportParserDiagnostics = {
+  rawSpeakerLabelCount: number;
+  parsedSegmentCount: number;
+  renderedChildCount: number;
+  mergeCount: number;
+  inferredSpeakerCount: number;
+  fallbackSpeakerCount: number;
+  splitOrigins: ReviewExportParserOrigin[];
+};
+
+export type ReviewExportParentMessage = {
+  reviewId: string;
+  messageId: string;
+  generationId: string;
+  turnNumber: number;
+  role: Message['role'];
   rawMessageText: string;
+  childSegments: ReviewExportSegment[];
+  parserDiagnostics: ReviewExportParserDiagnostics;
   day?: number;
   timeOfDay?: TimeOfDay;
   createdAt: number;
@@ -42,12 +73,12 @@ type ReviewExportSegment = {
   isRegenerated: boolean;
   imageUrl?: string;
   liveComment?: ChatReviewLiveComment;
-  postTurnStateChanges?: string[];
-  debugRecord?: StoredChatDebugTrace | null;
-  debugMetrics?: ReviewSegmentDebugMetrics;
-  retryAttempts?: ChatReviewRetryAttempt[];
+  postTurnStateChanges: string[];
+  statePruningReports: EffectiveStatePruningReport[];
+  debugRecord: StoredChatDebugTrace | null;
+  retryLineage: ChatReviewRetryLineage | null;
   localNotice?: Message['localNotice'] | null;
-  isFirstSegmentForMessage: boolean;
+  childMetrics?: ReviewSegmentDebugMetrics[];
 };
 
 export type ChatReviewLiveComment = {
@@ -78,6 +109,7 @@ export type ChatReviewExportInput = {
   sanitizeAssistantText: (text: string) => string;
   messageComments?: Record<string, ChatReviewLiveComment>;
   postTurnStateChanges?: Record<string, string[]>;
+  statePruningReports?: Record<string, EffectiveStatePruningReport[]>;
   debugRecords?: StoredChatDebugTraceMap;
   retryAttemptHistory?: ChatReviewRetryAttemptHistory;
 };
@@ -237,6 +269,15 @@ function asArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
 }
 
+function readRecentHistoryPacket(value: unknown): RoleplayRecentHistoryPacket | null {
+  const requestBody = asRecord(value);
+  const packet = asRecord(requestBody?.recentHistoryPacket);
+  if (!packet || !Array.isArray(packet.providerMessages) || !Array.isArray(packet.receipts) || !Array.isArray(packet.suppressedStyleAnchors)) {
+    return null;
+  }
+  return packet as RoleplayRecentHistoryPacket;
+}
+
 function renderKeyValueRows(rows: Array<[string, unknown]>): string {
   return rows
     .filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== '')
@@ -244,7 +285,94 @@ function renderKeyValueRows(rows: Array<[string, unknown]>): string {
     .join('');
 }
 
-function renderSupportCallSummary(call: NonNullable<StoredChatDebugTrace['supportCalls']>[number]): string {
+const ROLEPLAY_SUPPORT_ENDPOINTS = [
+  'extract-character-updates',
+  'extract-memory-events',
+  'evaluate-goal-progress',
+  'evaluate-goal-alignment',
+  'compress-day-memories',
+];
+
+function renderSupportEnvelopeItems(
+  title: string,
+  items: Array<{
+    label: string;
+    reason: string;
+    evidence?: string;
+    category?: string;
+    claimType?: string;
+    sourceRole?: string;
+    authority?: string;
+    modelFacingAction?: string;
+    sourceMessageId?: string;
+    sourceGenerationId?: string;
+    userCharacterId?: string;
+  }>,
+): string {
+  if (items.length === 0) return '';
+  return `<div class="support-summary-title">${escapeHtml(title)}</div><ul>${items.map((item) => {
+    const metadata = [
+      item.claimType ? `claim type: ${item.claimType}` : '',
+      item.sourceRole ? `source role: ${item.sourceRole}` : '',
+      item.authority ? `authority: ${item.authority}` : '',
+      item.modelFacingAction ? `action: ${item.modelFacingAction}` : '',
+      item.sourceMessageId ? `source message: ${item.sourceMessageId}` : '',
+      item.sourceGenerationId ? `source generation: ${item.sourceGenerationId}` : '',
+      item.userCharacterId ? `user character: ${item.userCharacterId}` : '',
+      item.category ? `category: ${item.category}` : '',
+      item.evidence ? `evidence: ${item.evidence}` : '',
+    ].filter(Boolean).join('; ');
+    return `<li><strong>${escapeHtml(item.label)}</strong> - ${escapeHtml(item.reason)}${metadata ? `; ${escapeHtml(metadata)}` : ''}</li>`;
+  }).join('')}</ul>`;
+}
+
+function renderSupportReviewEnvelope(call: NonNullable<StoredChatDebugTrace['supportCalls']>[number]): string {
+  const envelope = call.roleplaySupportReviewEnvelope;
+  if (!envelope) {
+    return ROLEPLAY_SUPPORT_ENDPOINTS.some((endpoint) => call.endpoint.includes(endpoint))
+      ? `<div class="support-summary"><div class="support-summary-title">Legacy support record</div><p>This captured support call predates RoleplaySupportReviewEnvelope and remains archive-only endpoint evidence.</p></div>`
+      : '';
+  }
+
+  const rows = deriveRoleplaySupportReviewRows(envelope);
+  const reentry = rows.reentry.length > 0
+    ? `<div class="support-summary-title">Future prompt re-entry</div><ul>${rows.reentry.map((row) => `<li><strong>${escapeHtml(row.target)}</strong> - ${escapeHtml(row.reason)}; accepted ids: ${escapeHtml(row.acceptedItemIds.join(', ') || 'none')}; persisted targets: ${escapeHtml(row.persistenceTargets.join(', ') || 'none')}</li>`).join('')}</ul>`
+    : '<p><strong>Future prompt re-entry:</strong> none.</p>';
+  const contextGaps = rows.contextGaps.length > 0
+    ? `<div class="support-summary-title">Context gaps</div><ul>${rows.contextGaps.map((row) => `<li>${escapeHtml(row.message)}</li>`).join('')}</ul>`
+    : '';
+
+  return `
+    <div class="support-summary">
+      <div class="support-summary-title">Roleplay support review envelope</div>
+      <div class="support-summary-grid">
+        ${renderKeyValueRows([
+          ['Worker', envelope.worker],
+          ['Source message', envelope.sourceMessageId || 'unavailable'],
+          ['Source generation', envelope.sourceGenerationId || 'unavailable'],
+          ['Readiness', envelope.readiness],
+          ['Persistence', envelope.persistence.status],
+          ['Future prompt eligible', rows.registry.futurePromptEligible ? 'yes' : 'no'],
+          ['Accepted', envelope.accepted.length],
+          ['Rejected', envelope.rejected.length],
+          ['Omitted', envelope.omitted.length],
+          ['Wrapped legacy response', envelope.legacyWrapped ? 'yes' : 'no'],
+        ])}
+      </div>
+      <p><strong>Persistence reason:</strong> ${escapeHtml(envelope.persistence.reason)}</p>
+      <p><strong>Future-prompt reason:</strong> ${escapeHtml(envelope.futurePromptImpact.reason)}</p>
+      <p><strong>Review scope:</strong> This envelope is stored in Chronicle's browser-local admin debug trace for this playthrough. This implementation does not mirror it to a database or create a broad backend playthrough browser.</p>
+      <p><strong>Future backend boundary:</strong> Any later service-role review path must remain narrow, audited, admin-scoped, session-scoped, and explicitly enabled because service-role access can bypass normal row-level security.</p>
+      ${renderSupportEnvelopeItems('Accepted outcomes', envelope.accepted)}
+      ${renderSupportEnvelopeItems('Rejected outcomes', envelope.rejected)}
+      ${renderSupportEnvelopeItems('Omitted outcomes', envelope.omitted)}
+      ${reentry}
+      ${contextGaps}
+    </div>
+  `;
+}
+
+export function renderSupportCallSummary(call: NonNullable<StoredChatDebugTrace['supportCalls']>[number]): string {
   const response = asRecord(call.responseBody);
   const endpoint = call.endpoint;
   const notes = call.notes?.length
@@ -325,14 +453,29 @@ function renderSupportCallSummary(call: NonNullable<StoredChatDebugTrace['suppor
 
   if (endpoint.includes('extract-character-updates')) {
     const updates = asArray(response?.updates);
-    const reviewRows = asArray(response?.characterUpdateReviews).length
+    const edgeReviewRows = asArray(response?.characterUpdateReviews).length
       ? asArray(response?.characterUpdateReviews)
       : asArray(response?.candidateReviews).length
         ? asArray(response?.candidateReviews)
         : updates;
-    const accepted = reviewRows.filter((entry) => asRecord(entry)?.accepted === true);
-    const rejected = reviewRows.filter((entry) => asRecord(entry)?.accepted === false);
-    const proposedCandidateCount = reviewRows.length || updates.length;
+    const hasFrontendReviewedRows = Boolean(response) && (
+      Object.prototype.hasOwnProperty.call(response, 'acceptedUpdates')
+      || Object.prototype.hasOwnProperty.call(response, 'rejectedUpdates')
+    );
+    const accepted = hasFrontendReviewedRows
+      ? asArray(response?.acceptedUpdates)
+      : edgeReviewRows.filter((entry) => asRecord(entry)?.accepted === true);
+    const rejected = hasFrontendReviewedRows
+      ? asArray(response?.rejectedUpdates)
+      : edgeReviewRows.filter((entry) => asRecord(entry)?.accepted === false);
+    const reviewRows = hasFrontendReviewedRows ? [...accepted, ...rejected] : edgeReviewRows;
+    const proposedCandidateCount = edgeReviewRows.length || updates.length;
+    const characterEligibilityReviews = asArray(response?.characterEligibilityReviews);
+    const reviewedCharacterStateRows = asArray(response?.reviewedCharacterStateRows);
+    const missingCharacterStateReviews = asArray(response?.missingCharacterStateReviews);
+    const applyStageReviews = asArray(response?.applyStageReviews);
+    const persistedUpdates = asArray(response?.persistedUpdates);
+    const rejectedAtApplyStage = asArray(response?.rejectedAtApplyStage);
     const physicalStateReviews = asArray(response?.physicalStateReviews);
     const physicalStateCompletenessReviews = asArray(response?.physicalStateCompletenessReviews);
     const missingPhysicalStateReviews = asArray(response?.missingPhysicalStateReviews);
@@ -344,16 +487,23 @@ function renderSupportCallSummary(call: NonNullable<StoredChatDebugTrace['suppor
             ['Proposed candidates', proposedCandidateCount],
             ['Accepted update candidates', accepted.length],
             ['Rejected updates', rejected.length],
+            ['Eligibility rows', characterEligibilityReviews.length],
+            ['Reviewed character rows', reviewedCharacterStateRows.length],
             ['Physical state review rows', physicalStateReviews.length],
             ['Missing physical state reviews', missingPhysicalStateReviews.length],
+            ['Missing reviewed character rows', missingCharacterStateReviews.length],
+            ['Apply-stage receipts', applyStageReviews.length],
+            ['Persisted apply outcomes', persistedUpdates.length],
+            ['Rejected/skipped apply outcomes', rejectedAtApplyStage.length],
           ])}
         </div>
         ${reviewRows.length ? `<ul>${reviewRows.map((entry) => {
           const item = asRecord(entry) || {};
-          const character = String(item.character || 'Unknown character');
+          const character = String(item.characterName || item.character || 'Unknown character');
           const field = String(item.field || 'unknown field');
           const value = item.value == null ? '' : String(item.value);
-          const statusLabel = item.accepted === true
+          const frontendAccepted = item.frontendAccepted === true || item.accepted === true;
+          const statusLabel = frontendAccepted
             ? 'accepted'
             : item.reason
               ? `rejected: ${String(item.reason)}`
@@ -369,6 +519,28 @@ function renderSupportCallSummary(call: NonNullable<StoredChatDebugTrace['suppor
           const source = item.source ? ` / ${escapeHtml(String(item.source))}` : '';
           const reason = item.reason ? ` — ${escapeHtml(String(item.reason))}` : '';
           return `<li><strong>${escapeHtml(character)}</strong> [${escapeHtml(status)}${source}]${reason}</li>`;
+        }).join('')}</ul>` : ''}
+        ${characterEligibilityReviews.length ? `<div class="support-summary-title">Deterministic character eligibility</div><ul>${characterEligibilityReviews.map((entry) => {
+          const item = asRecord(entry) || {};
+          const character = String(item.characterName || 'Unknown character');
+          const reasons = asArray(item.reasons).map(String).join(', ') || 'unspecified';
+          return `<li><strong>${escapeHtml(character)}</strong> — ${escapeHtml(reasons)}</li>`;
+        }).join('')}</ul>` : ''}
+        ${missingCharacterStateReviews.length ? `<div class="support-summary-title">Missing reviewed character coverage</div><ul>${missingCharacterStateReviews.map((entry) => {
+          const item = asRecord(entry) || {};
+          return `<li><strong>${escapeHtml(String(item.characterName || 'Unknown character'))}</strong> — ${escapeHtml(String(item.missingReviewReason || 'missing_physical_state_review'))}</li>`;
+        }).join('')}</ul>` : ''}
+        ${applyStageReviews.length ? `<div class="support-summary-title">Apply-stage persistence receipts</div><ul>${applyStageReviews.map((entry) => {
+          const item = asRecord(entry) || {};
+          const character = String(item.characterName || 'Unknown character');
+          const field = String(item.field || 'unknown field');
+          const outcome = String(item.outcome || 'unknown');
+          const value = item.value == null ? '' : ` -> ${escapeHtml(textPreview(String(item.value), 180))}`;
+          const target = item.persistenceTargetId ? ` / target ${escapeHtml(String(item.persistenceTargetId))}` : '';
+          const lineage = [item.sourceMessageId, item.sourceGenerationId].filter(Boolean).map(String).join(' / ');
+          const lineageText = lineage ? ` / source ${escapeHtml(lineage)}` : '';
+          const reason = item.reason ? ` — ${escapeHtml(String(item.reason))}` : '';
+          return `<li><strong>${escapeHtml(character)}.${escapeHtml(field)}</strong> [${escapeHtml(outcome)}]${value}${target}${lineageText}${reason}</li>`;
         }).join('')}</ul>` : ''}
         ${notes}
       </div>
@@ -500,7 +672,67 @@ function renderModelRequestBlocks(call: StoredChatDebugTrace['call1Request']): s
   `).join('');
 }
 
-function renderApiCall1Details(segment: ReviewExportSegment): string {
+function renderRoleplaySourceReceiptEvidence(call: StoredChatDebugTrace['call1Request']): string {
+  const receipts = call?.roleplaySourceReceipts || [];
+  const duplicateMetrics = call?.roleplayDuplicateSourceMetrics || [];
+  const receiptCoverage = call?.roleplaySourceReceiptCoverage || [];
+  const providerSectionCoverage = call?.roleplayProviderSectionCoverage || [];
+  if (receipts.length === 0) return '';
+
+  const receiptCards = receipts.map((receipt) => `
+    <section class="support-call-card">
+      <div class="support-call-header">
+        <div>
+          <strong>${escapeHtml(receipt.surface)}</strong>
+          <span>${escapeHtml(receipt.id)}</span>
+        </div>
+        <em>${escapeHtml(receipt.disposition)}</em>
+      </div>
+      <div class="trace-meta-grid">
+        <span><strong>Authority</strong>${escapeHtml(receipt.authority)}</span>
+        <span><strong>Model facing</strong>${receipt.modelFacing ? 'yes' : 'no'}</span>
+        <span><strong>Duplicate group</strong>${escapeHtml(receipt.duplicateGroup || 'none')}</span>
+        <span><strong>Content length</strong>${receipt.contentLength}</span>
+      </div>
+      <p>${escapeHtml(receipt.reason)}</p>
+      ${receipt.preview ? `<div class="debug-json-block"><div class="debug-json-label">Compact source preview</div><pre>${escapeHtml(receipt.preview)}</pre></div>` : ''}
+    </section>
+  `).join('');
+
+  return `
+    <details class="trace-details">
+      <summary>Source Receipt Ledger (${receipts.length})</summary>
+      <p>Frontend-authored telemetry describing model-facing and debug-only source ownership. Receipt metadata is not part of the literal Grok/xAI request.</p>
+      ${duplicateMetrics.length
+        ? renderDebugJsonBlock('Duplicate source groups', duplicateMetrics)
+        : '<p>No exact-text duplicate source groups were detected for this request.</p>'}
+      ${receiptCoverage.length
+        ? renderDebugJsonBlock('Receipt to provider coverage', receiptCoverage)
+        : ''}
+      ${providerSectionCoverage.length
+        ? renderDebugJsonBlock('Provider section to receipt coverage', providerSectionCoverage)
+        : ''}
+      ${receiptCards}
+    </details>
+  `;
+}
+
+function renderCharacterPromptFactEvidence(call: StoredChatDebugTrace['call1Request']): string {
+  const facts = call?.roleplayCharacterPromptFacts || [];
+  const summaries = call?.roleplayCharacterPromptFactSummaries || [];
+  if (facts.length === 0 && summaries.length === 0) return '';
+
+  return `
+    <details class="trace-details">
+      <summary>Character Prompt Fact Ledger (${facts.length})</summary>
+      <p>Deterministic frontend evidence for character-card source shaping. These rows describe the compiled prompt copy and its source policy; they are not model reasoning and do not modify saved card data.</p>
+      ${summaries.length ? renderDebugJsonBlock('Character fact copy-risk metrics', summaries) : ''}
+      ${facts.length ? renderDebugJsonBlock('Compiled character prompt facts', facts) : ''}
+    </details>
+  `;
+}
+
+function renderApiCall1Details(segment: ReviewExportParentMessage): string {
   if (segment.role !== 'assistant') return '';
 
   const call = segment.debugRecord?.call1Request;
@@ -518,6 +750,9 @@ function renderApiCall1Details(segment: ReviewExportSegment): string {
         <span><strong>Status</strong>${escapeHtml(call.status || 'captured')}</span>
         <span><strong>Captured</strong>${escapeHtml(formatDebugDate(call.capturedAt))}</span>
       </div>
+      ${renderResponseJobSummary(call)}
+      ${renderRoleplaySourceReceiptEvidence(call)}
+      ${renderCharacterPromptFactEvidence(call)}
       ${modelRequestBlocks || renderDebugJsonBlock('Browser-to-edge request body captured before Grok call', call.requestBody)}
       ${modelRequestBlocks ? renderDebugJsonBlock('Browser-to-edge request body', call.requestBody) : ''}
     `
@@ -536,7 +771,7 @@ function renderApiCall1Details(segment: ReviewExportSegment): string {
   `;
 }
 
-function renderSupportCallDetails(segment: ReviewExportSegment): string {
+function renderSupportCallDetails(segment: ReviewExportParentMessage): string {
   if (segment.role !== 'assistant') return '';
 
   const supportCalls = segment.debugRecord?.supportCalls || [];
@@ -559,6 +794,7 @@ function renderSupportCallDetails(segment: ReviewExportSegment): string {
         <span><strong>Captured</strong>${escapeHtml(formatDebugDate(call.capturedAt))}</span>
       </div>
       ${call.error ? `<p class="trace-error">${escapeHtml(call.error)}</p>` : ''}
+      ${renderSupportReviewEnvelope(call)}
       ${renderSupportCallSummary(call)}
       ${renderModelRequestBlocks(call)}
       ${renderDebugJsonBlock(call.modelRequest || call.modelRequests?.length ? 'Browser-to-edge request body' : call.endpoint?.startsWith('local://') ? 'Local diagnostic payload' : 'Request body sent', call.requestBody)}
@@ -574,7 +810,7 @@ function renderSupportCallDetails(segment: ReviewExportSegment): string {
   `;
 }
 
-function renderAppliedUpdatesDetails(segment: ReviewExportSegment): string {
+function renderAppliedUpdatesDetails(segment: ReviewExportParentMessage): string {
   if (segment.role !== 'assistant') return '';
 
   const changes = segment.postTurnStateChanges || [];
@@ -590,18 +826,46 @@ function renderAppliedUpdatesDetails(segment: ReviewExportSegment): string {
   `;
 }
 
-function renderRetryAttemptHistory(segment: ReviewExportSegment): string {
+function renderStatePruningReportDetails(segment: ReviewExportParentMessage): string {
   if (segment.role !== 'assistant') return '';
 
-  const attempts = [...(segment.retryAttempts || [])].sort((left, right) => (
-    left.attemptNumber - right.attemptNumber
-    || left.capturedAt - right.capturedAt
-  ));
+  const reports = segment.statePruningReports || [];
+  if (reports.length === 0) return '';
+
+  const activeCount = reports.filter((report) => report.included).length;
+  const prunedCount = reports.length - activeCount;
+
+  return `
+    <details class="trace-details state-pruning-details">
+      <summary>State Pruning Report (${activeCount} active / ${prunedCount} pruned)</summary>
+      <p>Debug-only source lineage report for generation-derived state. Active rows may be used as current state; pruned rows are excluded from prompt truth and preserved here only for review.</p>
+      <ul>${reports.map((report) => `
+        <li>
+          <strong>${escapeHtml(report.itemType)} · ${escapeHtml(report.itemId)}</strong>
+          <span>${escapeHtml(report.included ? 'active' : 'pruned')} / ${escapeHtml(report.reason)}</span>
+          <small>${escapeHtml([
+            report.sourceMessageId ? `source message ${report.sourceMessageId}` : '',
+            report.sourceGenerationId ? `source generation ${report.sourceGenerationId}` : '',
+            report.currentGenerationId ? `current generation ${report.currentGenerationId}` : '',
+          ].filter(Boolean).join(' · '))}</small>
+          ${report.valuePreview ? `<em>${escapeHtml(report.valuePreview)}</em>` : ''}
+        </li>
+      `).join('')}</ul>
+    </details>
+  `;
+}
+
+function renderRetryAttemptHistory(parent: ReviewExportParentMessage): string {
+  if (parent.role !== 'assistant') return '';
+
+  const lineage = parent.retryLineage;
+  const attempts = lineage?.attempts || [];
   if (attempts.length === 0) return '';
 
   const attemptsHtml = attempts.map((attempt) => {
     const call1Label = attempt.debugRecord?.call1Request?.label || null;
     const call1Status = attempt.debugRecord?.call1Request?.status || null;
+    const responseJobSummary = renderResponseJobSummary(attempt.debugRecord?.call1Request);
     return `
       <section class="retry-attempt-card">
         <div class="retry-attempt-header">
@@ -610,6 +874,7 @@ function renderRetryAttemptHistory(segment: ReviewExportSegment): string {
         </div>
         <div class="trace-meta-grid">
           ${renderKeyValueRows([
+            ['Attempt message', attempt.messageId],
             ['Captured', formatDebugDate(attempt.capturedAt)],
             ['Original created', formatDebugDate(attempt.createdAt)],
             ['Day', attempt.day != null ? `Day ${attempt.day}` : undefined],
@@ -618,6 +883,7 @@ function renderRetryAttemptHistory(segment: ReviewExportSegment): string {
             ['Trace status', call1Status],
           ])}
         </div>
+        ${responseJobSummary}
         <div class="retry-attempt-text rendered-message">${renderStyledText(attempt.text)}</div>
       </section>
     `;
@@ -627,6 +893,15 @@ function renderRetryAttemptHistory(segment: ReviewExportSegment): string {
     <details class="trace-details retry-history-details">
       <summary>Retry Attempt History (${attempts.length})</summary>
       <p>Debug-only captured versions that were replaced by Retry before the current visible assistant response. This is not saved story state and is only included to compare what changed between attempts.</p>
+      <div class="trace-meta-grid">
+        ${renderKeyValueRows([
+          ['Parent message', lineage?.parentMessageId],
+          ['Final generation', lineage?.finalGenerationId],
+          ['Storage scope', lineage?.storageScope],
+          ['Live prompt re-entry', lineage?.livePromptReentry ? 'yes' : 'no'],
+          ['Child segments', lineage?.childSegmentIds.length || 0],
+        ])}
+      </div>
       <div class="retry-attempt-list">${attemptsHtml}</div>
     </details>
   `;
@@ -637,10 +912,12 @@ function renderCountList(entries: Array<{ value: string; count: number }>, empty
   return `<ul>${entries.map((entry) => `<li><strong>${escapeHtml(entry.value)}</strong> repeated ${entry.count}x</li>`).join('')}</ul>`;
 }
 
-function renderDebugMetricsDetails(segment: ReviewExportSegment): string {
-  if (segment.role !== 'assistant' || !segment.debugMetrics) return '';
+function renderDebugMetricsDetails(parent: ReviewExportParentMessage): string {
+  if (parent.role !== 'assistant' || !parent.childMetrics?.length) return '';
+  return parent.childMetrics.map(renderDebugMetricsBlock).join('');
+}
 
-  const metrics = segment.debugMetrics;
+function renderDebugMetricsBlock(metrics: ReviewSegmentDebugMetrics): string {
   const modalitySequence = metrics.modalitySequence.length
     ? metrics.modalitySequence.join(' -> ')
     : 'none detected';
@@ -665,10 +942,47 @@ function renderDebugMetricsDetails(segment: ReviewExportSegment): string {
       `<li><strong>${escapeHtml(entry.source)}</strong> ${entry.matchCount} matched term(s)${entry.matchedTerms.length ? ` — ${escapeHtml(entry.matchedTerms.join(', '))}` : ''}</li>`
     )).join('')}</ul>`
     : '<p>No source-overlap scan was run for this block.</p>';
+  const recentHistoryReceipts = metrics.recentHistoryReceipts.length
+    ? `<ul>${metrics.recentHistoryReceipts.map((receipt) => {
+      const repeatedAnchors = receipt.repeatedAnchors?.length
+        ? `; repeated anchors: ${receipt.repeatedAnchors.join(', ')}`
+        : '';
+      const transformedSummary = receipt.transformedContent
+        ? `; transformed summary: ${receipt.transformedContent}`
+        : '';
+      const sourceAuthority = receipt.sourceAuthorityDecisionCount != null
+        ? `; source-authority decisions: ${receipt.sourceAuthorityDecisionCount}; authority classes: ${receipt.sourceAuthorityClasses?.join(', ') || 'none'}`
+        : '';
+      const finalUserLane = receipt.alsoRenderedInFinalUserLane
+        ? `; final-user lane: ${receipt.alsoRenderedInFinalUserLane}`
+        : '';
+      const generation = receipt.generationId
+        ? `; generation: ${receipt.generationId}`
+        : '';
+      const sourceGeneration = receipt.sourceGenerationId
+        ? `; response-job generation: ${receipt.sourceGenerationId}; generation match: ${receipt.generationMatchesResponseJobSource === true ? 'yes' : 'no'}`
+        : '';
+      return `<li><strong>${escapeHtml(receipt.messageId)}</strong> ${escapeHtml(receipt.role)}; ${escapeHtml(receipt.treatment)}; ${receipt.includedInProviderHistory ? 'included in provider history' : 'excluded from provider history'}; source lane: ${escapeHtml(receipt.responseJobSource)}; reason: ${escapeHtml(receipt.reason)}${escapeHtml(generation)}${escapeHtml(sourceGeneration)}${escapeHtml(finalUserLane)}${escapeHtml(repeatedAnchors)}${escapeHtml(sourceAuthority)}${escapeHtml(transformedSummary)}</li>`;
+    }).join('')}</ul>`
+    : '<p>No recent-history treatment receipt was captured for this response.</p>';
+  const suppressedStyleAnchors = metrics.suppressedStyleAnchors.length
+    ? `<ul>${metrics.suppressedStyleAnchors.map((entry) => (
+      `<li><strong>${escapeHtml(entry.messageId)}</strong> ${escapeHtml(entry.repeatedAnchors.join(', '))}</li>`
+    )).join('')}</ul>`
+    : '<p>No older assistant style anchors were suppressed.</p>';
+  const authorityDecisions = metrics.userStateAuthorityDecisions.length
+    ? `<ul>${metrics.userStateAuthorityDecisions.map((decision) => {
+      const source = [
+        decision.sourceMessageId ? `message ${decision.sourceMessageId}` : 'message unavailable',
+        decision.sourceGenerationId ? `generation ${decision.sourceGenerationId}` : '',
+      ].filter(Boolean).join('; ');
+      return `<li><strong>${escapeHtml(decision.claim)}</strong> — claim type: ${escapeHtml(decision.claimType)}; source role: ${escapeHtml(decision.sourceRole)}; ${escapeHtml(source)}; authority: ${escapeHtml(decision.authority)}; action: ${escapeHtml(decision.modelFacingAction)}; reason: ${escapeHtml(decision.reason)}</li>`;
+    }).join('')}</ul>`
+    : '<p>No user-state source-authority decisions were captured for this response.</p>';
 
   return `
     <details class="trace-details metrics-details">
-      <summary>Deterministic Debug Metrics</summary>
+      <summary>Deterministic Debug Metrics - ${escapeHtml(metrics.speakerName)}</summary>
       <div class="support-summary">
         <div class="support-summary-title">Response structure counts</div>
         <div class="support-summary-grid">
@@ -706,9 +1020,36 @@ function renderDebugMetricsDetails(segment: ReviewExportSegment): string {
         ${thoughtDiagnostics}
       </div>
       <div class="support-summary">
+        <div class="support-summary-title">User-state source authority</div>
+        <p>These rows report structured runtime decisions already captured with the request. They do not infer intent from exported prose and do not change the visible response.</p>
+        <div class="support-summary-grid">
+          ${renderKeyValueRows([
+            ['Total decisions', metrics.userStateAuthoritySummary.total],
+            ['Accepted facts or observations', metrics.userStateAuthoritySummary.selected],
+            ['Downgraded interpretations', metrics.userStateAuthoritySummary.downgraded],
+            ['Rejected or debug-only', metrics.userStateAuthoritySummary.rejected],
+          ])}
+        </div>
+        ${authorityDecisions}
+      </div>
+      <div class="support-summary">
         <div class="support-summary-title">Source overlap hints</div>
         <p>Local term overlap only, checked against the current exported app/story state and recent transcript text. This does not prove why the model wrote something or guarantee that every source bucket was present in this exact historical request.</p>
         ${sourceOverlap}
+        <div class="support-summary-title">Recent-history treatment receipts</div>
+        <p>Captured runtime treatment evidence. These rows show what was included, kept in a mode-specific lane, or suppressed; they are not model reasoning and they are not sent as another prompt instruction.</p>
+        ${recentHistoryReceipts}
+        <div class="support-summary-title">Suppressed assistant style anchors</div>
+        ${suppressedStyleAnchors}
+        <div class="support-summary-title">Character prompt fact copy-risk metrics</div>
+        <p>Request-time summaries report transformed/debug-only fact counts, duplicate source values, repeated rendered values, and legacy raw headings. Output-copy metrics separately report exact raw card phrases or creator-authored labels found in this assistant block. Legitimate compact use of a fact is not treated as a failure.</p>
+        <p><strong>Output-copy fact source:</strong> ${escapeHtml(metrics.characterPromptOutputFactSource)}${metrics.characterPromptOutputFactSource === 'current_card_fallback' ? ' (legacy trace fallback; later card edits may not match generation-time data)' : ''}</p>
+        ${metrics.characterPromptFactSummaries.length
+          ? renderDebugJsonBlock('Character prompt fact summaries', metrics.characterPromptFactSummaries)
+          : '<p>No character prompt fact summary was captured for this response.</p>'}
+        ${metrics.characterPromptOutputCopyMetrics.length
+          ? renderDebugJsonBlock('Assistant output card-copy matches', metrics.characterPromptOutputCopyMetrics)
+          : '<p>No exact raw card phrase or creator-label copy was detected in this assistant block.</p>'}
       </div>
     </details>
   `;
@@ -782,7 +1123,11 @@ function buildIssueTagCounts(
     .filter((entry) => entry.count > 0);
 }
 
-function buildSegments(input: ChatReviewExportInput): ReviewExportSegment[] {
+function parserLabelCount(value: string) {
+  return value.match(/(?:^|\n)\s*[A-Za-z][A-Za-z0-9 _'-]{0,40}:/g)?.length ?? 0;
+}
+
+function buildMessageGroups(input: ChatReviewExportInput): ReviewExportParentMessage[] {
   const characters = getCharacters(input.appData);
   const buildEventKey = (messageId: string, generationId?: string) => `${messageId}:${generationId || ''}`;
   const continueSet = new Set(input.continueMessageIds || []);
@@ -793,7 +1138,7 @@ function buildSegments(input: ChatReviewExportInput): ReviewExportSegment[] {
   const regenerateGenerationSet = new Set(
     (input.regenerateMessageEvents || []).map((event) => buildEventKey(event.messageId, event.generationId)),
   );
-  const segments: ReviewExportSegment[] = [];
+  const parents: ReviewExportParentMessage[] = [];
   let visibleTurn = 0;
 
   for (const message of input.conversation.messages) {
@@ -819,12 +1164,18 @@ function buildSegments(input: ChatReviewExportInput): ReviewExportSegment[] {
     const postTurnStateChanges = input.postTurnStateChanges?.[message.id] || [];
     const generationId = message.generationId || message.id;
     const debugRecord = input.debugRecords?.[debugTraceKey(message.id, generationId)] || null;
-    const retryAttempts = input.retryAttemptHistory?.[message.id] || [];
+    const statePruningReports = input.statePruningReports?.[debugTraceKey(message.id, generationId)]
+      || input.statePruningReports?.[message.id]
+      || [];
 
-    messageSegments.forEach((segment, segmentIndex) => {
+    let inferredSpeakerCount = 0;
+    let fallbackSpeakerCount = 0;
+    const childSegments = messageSegments.map((segment, segmentIndex): ReviewExportSegment => {
       const speaker = resolveSpeaker(segment, message.role, characters);
       const fallbackSpeaker = message.role === 'assistant' ? 'AI' : 'User';
-      segments.push({
+      if (!segment.speakerName && speaker) inferredSpeakerCount += 1;
+      if (!speaker && !segment.speakerName) fallbackSpeakerCount += 1;
+      return {
         reviewId: `${message.id}-${segmentIndex}`,
         messageId: message.id,
         generationId,
@@ -836,76 +1187,148 @@ function buildSegments(input: ChatReviewExportInput): ReviewExportSegment[] {
         speakerRole: speaker?.role || '',
         avatarUrl: speaker?.avatarUrl || '',
         text: segment.content,
-        rawMessageText,
-        localNotice: message.localNotice ?? null,
-        day: message.day,
-        timeOfDay: message.timeOfDay,
-        createdAt: message.createdAt,
-        isContinueTarget: continueGenerationSet.size > 0
-          ? continueGenerationSet.has(buildEventKey(message.id, generationId))
-          : continueSet.has(message.id),
-        isRegenerated: regenerateGenerationSet.size > 0
-          ? regenerateGenerationSet.has(buildEventKey(message.id, generationId))
-          : regenerateSet.has(message.id),
-        imageUrl: message.imageUrl,
-        liveComment,
-        postTurnStateChanges,
-        debugRecord,
-        isFirstSegmentForMessage: segmentIndex === 0,
-        retryAttempts: segmentIndex === 0 ? retryAttempts : [],
-      });
+      };
+    });
+
+    const splitOrigins = new Set<ReviewExportParserOrigin>();
+    if (parserLabelCount(rawMessageText) > 0) splitOrigins.add('raw_speaker_label');
+    if (/\n\s*\n/.test(rawMessageText)) splitOrigins.add('paragraph_split');
+    if (inferredSpeakerCount > 0) splitOrigins.add('inferred_speaker');
+    if (fallbackSpeakerCount > 0) splitOrigins.add('fallback');
+
+    parents.push({
+      reviewId: message.id,
+      messageId: message.id,
+      generationId,
+      turnNumber: visibleTurn,
+      role: message.role,
+      rawMessageText,
+      childSegments,
+      parserDiagnostics: {
+        rawSpeakerLabelCount: parserLabelCount(rawMessageText),
+        parsedSegmentCount: parsedSegments.length,
+        renderedChildCount: childSegments.length,
+        mergeCount: Math.max(0, parsedSegments.length - childSegments.length),
+        inferredSpeakerCount,
+        fallbackSpeakerCount,
+        splitOrigins: [...splitOrigins],
+      },
+      localNotice: message.localNotice ?? null,
+      day: message.day,
+      timeOfDay: message.timeOfDay,
+      createdAt: message.createdAt,
+      isContinueTarget: continueGenerationSet.size > 0
+        ? continueGenerationSet.has(buildEventKey(message.id, generationId))
+        : continueSet.has(message.id),
+      isRegenerated: regenerateGenerationSet.size > 0
+        ? regenerateGenerationSet.has(buildEventKey(message.id, generationId))
+        : regenerateSet.has(message.id),
+      imageUrl: message.imageUrl,
+      liveComment,
+      postTurnStateChanges,
+      statePruningReports,
+      debugRecord,
+      retryLineage: buildChatReviewRetryLineage({
+        history: input.retryAttemptHistory || {},
+        parentMessageId: message.id,
+        finalGenerationId: generationId,
+        childSegmentIds: childSegments.map((segment) => segment.reviewId),
+      }),
     });
   }
 
-  return segments;
+  return parents;
 }
 
-function renderSegmentCard(segment: ReviewExportSegment, index: number): string {
-  const classes = [
-    'message-card',
-    segment.role === 'user' ? 'user-card' : 'assistant-card',
-    segment.isRegenerated ? 'is-regenerated' : '',
-    segment.isContinueTarget ? 'is-continue' : '',
-  ].filter(Boolean).join(' ');
-
-  const selectedTags = uniqueIssueTags(segment.liveComment?.tags);
-  const liveCommentTags = selectedTags.length
-    ? `<div class="comment-tag-row">${selectedTags.map((tag) => `<span class="comment-tag">${escapeHtml(tag)}</span>`).join('')}</div>`
-    : '';
-  const liveCommentBlock = segment.isFirstSegmentForMessage && (segment.liveComment?.note || selectedTags.length)
-    ? `<section class="live-comment"><div>Live tester note</div>${liveCommentTags}${segment.liveComment?.note ? `<p>${escapeHtml(segment.liveComment.note)}</p>` : '<p>No written note. Tags only.</p>'}</section>`
-    : '';
-  const imageBlock = segment.imageUrl
-    ? `<img class="scene-image" src="${escapeAttribute(segment.imageUrl)}" alt="Generated scene image" loading="lazy" />`
-    : '';
-  const traceBlocks = segment.role === 'assistant'
-    ? `<div class="trace-stack">${renderRetryAttemptHistory(segment)}${renderDebugMetricsDetails(segment)}${renderApiCall1Details(segment)}${renderSupportCallDetails(segment)}${renderAppliedUpdatesDetails(segment)}</div>`
-    : '';
+function renderChildSegmentCard(parent: ReviewExportParentMessage, segment: ReviewExportSegment): string {
+  const turnLabel = segment.segmentNumber === 1
+    ? `Turn ${parent.turnNumber}`
+    : `Turn ${parent.turnNumber}.${segment.segmentNumber}`;
 
   return `
-    <article id="review-${escapeAttribute(segment.reviewId)}" class="${classes}" data-review-index="${index}" data-review-id="${escapeAttribute(segment.reviewId)}" data-message-id="${escapeAttribute(segment.messageId)}" data-generation-id="${escapeAttribute(segment.generationId)}" data-turn="${segment.turnNumber}" data-role="${escapeAttribute(segment.role)}" data-speaker="${escapeAttribute(segment.speakerName)}" data-has-live-comment="${segment.liveComment ? 'true' : 'false'}" data-live-comment-note="${escapeAttribute(segment.liveComment?.note || '')}" data-live-comment-tags="${escapeAttribute(selectedTags.join(', '))}" data-excerpt="${escapeAttribute(textPreview(segment.text, 260))}">
+    <article id="review-${escapeAttribute(segment.reviewId)}" class="message-child-card" data-review-id="${escapeAttribute(segment.reviewId)}" data-message-id="${escapeAttribute(parent.messageId)}" data-generation-id="${escapeAttribute(parent.generationId)}" data-segment-number="${segment.segmentNumber}" data-speaker="${escapeAttribute(segment.speakerName)}">
       <div class="message-main">
         <div class="avatar">${avatarHtml(segment)}</div>
         <div class="message-content">
           <header class="message-header">
             <div>
-              <span class="turn-label">Turn ${segment.turnNumber}${segment.segmentNumber > 1 ? `.${segment.segmentNumber}` : ''}</span>
+              <span class="turn-label">${turnLabel} ${escapeHtml(segment.speakerName)}</span>
               <h2>${escapeHtml(segment.speakerName)}</h2>
               <p>${escapeHtml(segment.speakerControl)}${segment.speakerRole ? ` / ${escapeHtml(segment.speakerRole)}` : ''}</p>
             </div>
-            <div class="message-meta">
-              <span>${segment.day != null ? `Day ${segment.day}` : 'Day ?'}</span>
-              <span>${escapeHtml(formatTimeOfDay(segment.timeOfDay))}</span>
-              ${segment.isRegenerated ? '<span class="event-pill">Regenerated</span>' : ''}
-              ${segment.isContinueTarget ? '<span class="event-pill">Continue</span>' : ''}
-            </div>
           </header>
           <div class="rendered-message">${renderStyledText(segment.text)}</div>
-          ${liveCommentBlock}
-          ${imageBlock}
-          ${traceBlocks}
         </div>
       </div>
+    </article>
+  `;
+}
+
+function renderParserDiagnostics(parent: ReviewExportParentMessage): string {
+  const diagnostics = parent.parserDiagnostics;
+  return `
+    <details class="trace-details parser-diagnostics-details">
+      <summary>Parser Diagnostics</summary>
+      <p>Export-side parsing facts only. Child cards are review renderings of one saved message, not separate model responses.</p>
+      <div class="trace-meta-grid">
+        ${renderKeyValueRows([
+          ['Raw speaker labels', diagnostics.rawSpeakerLabelCount],
+          ['Parsed segments', diagnostics.parsedSegmentCount],
+          ['Rendered child cards', diagnostics.renderedChildCount],
+          ['Merged segments', diagnostics.mergeCount],
+          ['Inferred speakers', diagnostics.inferredSpeakerCount],
+          ['Fallback speakers', diagnostics.fallbackSpeakerCount],
+          ['Origins', diagnostics.splitOrigins.join(', ') || 'none'],
+        ])}
+      </div>
+    </details>
+  `;
+}
+
+function renderParentMessageCard(parent: ReviewExportParentMessage, index: number): string {
+  const classes = [
+    'message-parent-card',
+    'message-card',
+    parent.role === 'user' ? 'user-card' : 'assistant-card',
+    parent.isRegenerated ? 'is-regenerated' : '',
+    parent.isContinueTarget ? 'is-continue' : '',
+  ].filter(Boolean).join(' ');
+
+  const selectedTags = uniqueIssueTags(parent.liveComment?.tags);
+  const liveCommentTags = selectedTags.length
+    ? `<div class="comment-tag-row">${selectedTags.map((tag) => `<span class="comment-tag">${escapeHtml(tag)}</span>`).join('')}</div>`
+    : '';
+  const liveCommentBlock = parent.liveComment?.note || selectedTags.length
+    ? `<section class="live-comment"><div>Live tester note</div>${liveCommentTags}${parent.liveComment?.note ? `<p>${escapeHtml(parent.liveComment.note)}</p>` : '<p>No written note. Tags only.</p>'}</section>`
+    : '';
+  const imageBlock = parent.imageUrl
+    ? `<img class="scene-image" src="${escapeAttribute(parent.imageUrl)}" alt="Generated scene image" loading="lazy" />`
+    : '';
+  const traceBlocks = parent.role === 'assistant'
+    ? `<div class="trace-stack">${renderRetryAttemptHistory(parent)}${renderDebugMetricsDetails(parent)}${renderApiCall1Details(parent)}${renderSupportCallDetails(parent)}${renderStatePruningReportDetails(parent)}${renderAppliedUpdatesDetails(parent)}</div>`
+    : '';
+  const childCards = parent.childSegments.map((segment) => renderChildSegmentCard(parent, segment)).join('');
+
+  return `
+    <article id="review-${escapeAttribute(parent.reviewId)}" class="${classes}" data-review-index="${index}" data-review-id="${escapeAttribute(parent.reviewId)}" data-parent-message-id="${escapeAttribute(parent.messageId)}" data-generation-id="${escapeAttribute(parent.generationId)}" data-turn="${parent.turnNumber}" data-role="${escapeAttribute(parent.role)}" data-child-count="${parent.childSegments.length}" data-has-live-comment="${parent.liveComment ? 'true' : 'false'}" data-live-comment-note="${escapeAttribute(parent.liveComment?.note || '')}" data-live-comment-tags="${escapeAttribute(selectedTags.join(', '))}" data-excerpt="${escapeAttribute(textPreview(parent.rawMessageText, 260))}">
+      <header class="parent-message-header">
+        <div>
+          <span class="turn-label">Turn ${parent.turnNumber} · Saved ${escapeHtml(parent.role)} message</span>
+          <h2>${parent.childSegments.length} rendered ${parent.childSegments.length === 1 ? 'child' : 'children'}</h2>
+          <p>message ${escapeHtml(parent.messageId)} · generation ${escapeHtml(parent.generationId)}</p>
+        </div>
+        <div class="message-meta">
+          <span>${parent.day != null ? `Day ${parent.day}` : 'Day ?'}</span>
+          <span>${escapeHtml(formatTimeOfDay(parent.timeOfDay))}</span>
+          ${parent.isRegenerated ? '<span class="event-pill">Regenerated</span>' : ''}
+          ${parent.isContinueTarget ? '<span class="event-pill">Continue</span>' : ''}
+        </div>
+      </header>
+      <div class="message-child-list">${childCards}</div>
+      ${liveCommentBlock}
+      ${imageBlock}
+      ${renderParserDiagnostics(parent)}
+      ${traceBlocks}
     </article>
   `;
 }
@@ -924,7 +1347,7 @@ function renderCharacterSummary(characters: ReviewExportCharacter[]): string {
 
 function renderLiveCommentIndex(
   comments: Record<string, ChatReviewLiveComment> | undefined,
-  segments: ReviewExportSegment[],
+  parents: ReviewExportParentMessage[],
 ): string {
   const commentEntries = Object.values(comments || {})
     .filter((comment) => comment.note.trim() || uniqueIssueTags(comment.tags).length > 0)
@@ -940,13 +1363,13 @@ function renderLiveCommentIndex(
       </div>
       <div class="live-comment-index-list">
         ${commentEntries.map((comment, index) => {
-    const matchingSegments = segments.filter((segment) => (
-      segment.messageId === comment.messageId
-      && (!comment.generationId || segment.generationId === comment.generationId)
+    const matchingParent = parents.find((parent) => (
+      parent.messageId === comment.messageId
+      && (!comment.generationId || parent.generationId === comment.generationId)
     ));
     const selectedTags = uniqueIssueTags(comment.tags);
-    const links = matchingSegments.length
-      ? matchingSegments.map((segment) => `<a href="#review-${escapeAttribute(segment.reviewId)}">Turn ${segment.turnNumber}${segment.segmentNumber > 1 ? `.${segment.segmentNumber}` : ''} ${escapeHtml(segment.speakerName)}</a>`).join(' ')
+    const links = matchingParent
+      ? `<a href="#review-${escapeAttribute(matchingParent.reviewId)}">Turn ${matchingParent.turnNumber} parent message</a>`
       : '<span>No rendered message card matched this saved note.</span>';
 
     return `
@@ -1086,6 +1509,28 @@ function reviewStyles(): string {
     }
     .user-card { border-color: rgba(120,220,202,0.28); }
     .assistant-card { border-color: rgba(111,143,191,0.28); }
+    .parent-message-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,0.035);
+    }
+    .parent-message-header h2 { margin: 2px 0 0; }
+    .parent-message-header p { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+    .message-child-list { display: grid; gap: 12px; padding: 16px; }
+    .message-child-card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.035);
+      overflow: hidden;
+    }
+    .message-parent-card > .live-comment,
+    .message-parent-card > .scene-image,
+    .message-parent-card > .trace-details,
+    .message-parent-card > .trace-stack { margin: 0 16px 16px; }
     .message-main { display: grid; grid-template-columns: 74px 1fr; gap: 14px; padding: 18px; }
     .message-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 10px; }
     .turn-label { color: var(--accent); text-transform: uppercase; letter-spacing: 0.12em; font-size: 11px; font-weight: 900; }
@@ -1482,12 +1927,25 @@ function reviewStyles(): string {
       font-size: 15px;
       line-height: 1.65;
     }
-    .state-change-details ul { margin: 0; padding: 0 18px 14px 34px; color: #d8e2f2; }
-    .state-change-details li { margin: 7px 0; }
-    .footer-note { color: var(--muted); text-align: center; margin-top: 26px; }
+     .state-change-details ul { margin: 0; padding: 0 18px 14px 34px; color: #d8e2f2; }
+     .state-change-details li { margin: 7px 0; }
+     .state-pruning-details ul { margin: 0; padding: 0 18px 14px 34px; color: #d8e2f2; }
+     .state-pruning-details li { margin: 9px 0; }
+     .state-pruning-details li span,
+     .state-pruning-details li small,
+     .state-pruning-details li em {
+       display: block;
+       color: var(--muted);
+       font-size: 12px;
+       margin-top: 2px;
+       overflow-wrap: anywhere;
+     }
+     .state-pruning-details li em { color: #d8e2f2; font-style: normal; }
+     .footer-note { color: var(--muted); text-align: center; margin-top: 26px; }
     @media (max-width: 720px) {
       .message-main { grid-template-columns: 1fr; }
       .message-header { display: block; }
+      .parent-message-header { display: block; }
       .message-meta { justify-content: flex-start; margin-top: 10px; }
     }
   `;
@@ -1495,33 +1953,45 @@ function reviewStyles(): string {
 
 export function buildChatReviewHtml(input: ChatReviewExportInput): string {
   const characters = getCharacters(input.appData);
-  const segments = buildSegments(input);
+  const parentMessages = buildMessageGroups(input);
   const debugMetrics = buildReviewDebugMetrics({
     appData: input.appData,
     conversation: input.conversation,
-    segments: segments.map((segment) => ({
+    segments: parentMessages.flatMap((parent) => parent.childSegments.map((segment, childIndex) => ({
       reviewId: segment.reviewId,
-      messageId: segment.messageId,
-      generationId: segment.generationId,
-      turnNumber: segment.turnNumber,
+      messageId: parent.messageId,
+      generationId: parent.generationId,
+      turnNumber: parent.turnNumber,
       segmentNumber: segment.segmentNumber,
-      role: segment.role,
+      role: parent.role,
       speakerName: segment.speakerName,
       text: segment.text,
-      rawMessageText: segment.rawMessageText,
-      localNotice: segment.localNotice ?? null,
-    })),
+      rawMessageText: parent.rawMessageText,
+      localNotice: parent.localNotice ?? null,
+      recentHistoryPacket: childIndex === 0
+        ? readRecentHistoryPacket(parent.debugRecord?.call1Request?.requestBody)
+        : null,
+      userStateAuthorityDecisions: childIndex === 0
+        ? parent.debugRecord?.call1Request?.roleplayUserStateAuthorityDecisions ?? []
+        : [],
+      characterPromptFacts: parent.debugRecord?.call1Request?.roleplayCharacterPromptFacts,
+      characterPromptFactSummaries: childIndex === 0
+        ? parent.debugRecord?.call1Request?.roleplayCharacterPromptFactSummaries ?? []
+        : [],
+    }))),
   });
   const metricsByReviewId = new Map(debugMetrics.segments.map((metrics) => [metrics.reviewId, metrics]));
-  const segmentsWithMetrics = segments.map((segment) => ({
-    ...segment,
-    debugMetrics: metricsByReviewId.get(segment.reviewId),
+  const parentsWithMetrics = parentMessages.map((parent) => ({
+    ...parent,
+    childMetrics: parent.childSegments
+      .map((segment) => metricsByReviewId.get(segment.reviewId))
+      .filter((metrics): metrics is ReviewSegmentDebugMetrics => metrics != null),
   }));
   const exportedAt = formatExportDate(input.exportedAt);
-  const cards = segmentsWithMetrics.map((segment, index) => renderSegmentCard(segment, index)).join('\n');
+  const cards = parentsWithMetrics.map((parent, index) => renderParentMessageCard(parent, index)).join('\n');
   const issueSummary = renderIssueSummary(input.messageComments);
   const transcriptMetricsSummary = renderTranscriptMetricsSummary(debugMetrics);
-  const liveCommentIndex = renderLiveCommentIndex(input.messageComments, segmentsWithMetrics);
+  const liveCommentIndex = renderLiveCommentIndex(input.messageComments, parentsWithMetrics);
   const liveComments = Object.values(input.messageComments || {}).map((comment) => ({
     messageId: comment.messageId,
     generationId: comment.generationId || comment.messageId,
@@ -1529,26 +1999,46 @@ export function buildChatReviewHtml(input: ChatReviewExportInput): string {
     tags: uniqueIssueTags(comment.tags),
     createdAt: comment.createdAt,
     updatedAt: comment.updatedAt,
-    renderedSegments: segmentsWithMetrics
-      .filter((segment) => (
-        segment.messageId === comment.messageId
-        && (!comment.generationId || segment.generationId === comment.generationId)
+    renderedSegments: parentsWithMetrics
+      .filter((parent) => (
+        parent.messageId === comment.messageId
+        && (!comment.generationId || parent.generationId === comment.generationId)
       ))
-      .map((segment) => ({
+      .flatMap((parent) => parent.childSegments.map((segment) => ({
         reviewId: segment.reviewId,
-        turnNumber: segment.turnNumber,
+        parentReviewId: parent.reviewId,
+        turnNumber: parent.turnNumber,
         segmentNumber: segment.segmentNumber,
         speakerName: segment.speakerName,
-      })),
+      }))),
   }));
   const embeddedDebugData = {
     schema: 'chronicle-session-review-v2',
-    retryAttemptHistorySchema: 'chronicle-session-retry-attempt-history-v1',
+    retryLineageSchema: 'chronicle-session-retry-lineage-v1',
     exportedAt,
     scenarioTitle: input.scenarioTitle,
     conversationId: input.conversation.id,
     liveComments,
-    retryAttemptHistory: input.retryAttemptHistory || {},
+    parentMessages: parentsWithMetrics.map((parent) => ({
+      reviewId: parent.reviewId,
+      messageId: parent.messageId,
+      generationId: parent.generationId,
+      role: parent.role,
+      turnNumber: parent.turnNumber,
+      parserDiagnostics: parent.parserDiagnostics,
+      childSegments: parent.childSegments.map((segment) => ({
+        reviewId: segment.reviewId,
+        segmentNumber: segment.segmentNumber,
+        speakerName: segment.speakerName,
+        text: segment.text,
+      })),
+      liveComment: parent.liveComment || null,
+      retryLineage: parent.retryLineage,
+      debugRecord: parent.debugRecord,
+      postTurnStateChanges: parent.postTurnStateChanges,
+      statePruningReports: parent.statePruningReports,
+      parentMetrics: parent.childMetrics || [],
+    })),
     messages: input.conversation.messages.map((message) => ({
       id: message.id,
       generationId: message.generationId || message.id,
@@ -1560,8 +2050,10 @@ export function buildChatReviewHtml(input: ChatReviewExportInput): string {
       createdAt: message.createdAt,
       comment: input.messageComments?.[message.id] || null,
       appliedUpdates: input.postTurnStateChanges?.[message.id] || [],
+      statePruningReports: input.statePruningReports?.[debugTraceKey(message.id, message.generationId || message.id)]
+        || input.statePruningReports?.[message.id]
+        || [],
       debugRecord: input.debugRecords?.[debugTraceKey(message.id, message.generationId || message.id)] || null,
-      retryAttempts: input.retryAttemptHistory?.[message.id] || [],
       deterministicMetrics: debugMetrics.segments.filter((metrics) => metrics.messageId === message.id),
     })),
     deterministicMetrics: debugMetrics,
@@ -1584,7 +2076,8 @@ export function buildChatReviewHtml(input: ChatReviewExportInput): string {
       <div class="meta-grid">
         <div class="meta-card"><strong>${escapeHtml(input.conversation.title || 'Untitled conversation')}</strong><span>Conversation</span></div>
         <div class="meta-card"><strong>${escapeHtml(input.modelId)}</strong><span>Model</span></div>
-        <div class="meta-card"><strong>${segmentsWithMetrics.length}</strong><span>Rendered message blocks</span></div>
+        <div class="meta-card"><strong>${parentsWithMetrics.length}</strong><span>Saved parent messages</span></div>
+        <div class="meta-card"><strong>${parentsWithMetrics.reduce((sum, parent) => sum + parent.childSegments.length, 0)}</strong><span>Rendered child cards</span></div>
         <div class="meta-card"><strong>${escapeHtml(exportedAt)}</strong><span>Exported</span></div>
       </div>
       <div class="character-grid">${renderCharacterSummary(characters)}</div>

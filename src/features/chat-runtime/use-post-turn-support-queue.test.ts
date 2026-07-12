@@ -87,6 +87,45 @@ describe('usePostTurnSupportQueue', () => {
     });
   });
 
+  it('forwards the exact user source message to memory review after persistence', async () => {
+    const { hook, options } = renderQueue();
+    const assistantSource = message();
+    const userSource = message({
+      id: 'user-1',
+      generationId: 'user-generation-1',
+      role: 'user',
+      text: 'user text',
+    });
+
+    act(() => {
+      hook.result.current.queueAssistantDerivedWorkAfterSourcePersist(
+        [assistantSource],
+        userSource.text,
+        assistantSource.text,
+        assistantSource,
+        userSource,
+      );
+    });
+    await flush();
+
+    expect(options.queueMemoryExtraction).toHaveBeenCalledWith(
+      userSource.text,
+      assistantSource.text,
+      assistantSource,
+      userSource,
+    );
+    expect(options.extractCharacterUpdatesFromDialogue).toHaveBeenCalledWith(
+      userSource.text,
+      assistantSource.text,
+      {
+        sourceMessageId: assistantSource.id,
+        sourceMessageGenerationId: assistantSource.generationId,
+        sourceUserMessageId: userSource.id,
+        reason: 'post_turn_state_sync',
+      },
+    );
+  });
+
   it('skips derived work when source persistence fails', async () => {
     const save = deferred();
     const { hook, options } = renderQueue({

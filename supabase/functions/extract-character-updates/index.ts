@@ -45,7 +45,6 @@ interface CharacterData {
   preferredClothing?: Record<string, string>;
   location?: string;
   scenePosition?: string;
-  currentMood?: string;
   goals?: CharacterGoalData[];
   customSections?: Array<{ title: string; items: Array<{ label: string; value: string }> }>;
   // New sections
@@ -195,21 +194,8 @@ function evidenceAppearsInLatestExchange(evidence: string, latestExchangeText: s
   return normalizeEvidenceForMatching(latestExchangeText).includes(normalizedEvidence);
 }
 
-function sanitizeCurrentMood(value: string): string {
-  const cleaned = value
-    .replace(/[*"()[\]{}]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  if (!cleaned) return "";
-
-  const firstSentence = cleaned.split(/[.!?]/)[0].trim();
-  const limited = firstSentence.split(/\s+/).slice(0, 12).join(" ");
-  const forbiddenPattern = /\b(foot|feet|toe|toes|thigh|hips?|breast|boob|cock|penis|pussy|ass|butt|bed|door|shirt|shorts|thong|bra|moves?|moving|walks?|walking|leans?|leaning|touches?|touching|presses?|pressing|curls?|curling|kneads?|kneading|whispers?|whispering|kisses?|kissing)\b/i;
-  return forbiddenPattern.test(limited) ? "" : limited;
-}
-
 function isAllowedUpdateField(field: string): boolean {
-  if (["age", "sexType", "sexualOrientation", "roleDescription", "location", "scenePosition", "currentMood", "nicknames"].includes(field)) return true;
+  if (["age", "sexType", "sexualOrientation", "roleDescription", "location", "scenePosition", "nicknames"].includes(field)) return true;
   if (field.startsWith("goals.")) return true;
   if (field.startsWith("sections.")) {
     const sectionTitle = field.split(".")[1]?.trim().toLowerCase();
@@ -256,12 +242,6 @@ function normalizeUpdateCandidate(candidate: any, latestExchangeText: string): E
   if (!isAllowedUpdateField(field) || !isAllowedUpdateValue(field, value)) return null;
   if (!evidence || isGenericEvidence(evidence) || confidence < 0.72) return null;
   if (!evidenceAppearsInLatestExchange(evidence, latestExchangeText)) return null;
-
-  if (field === "currentMood") {
-    const sanitizedMood = sanitizeCurrentMood(value);
-    if (!sanitizedMood) return null;
-    return { character, field, value: sanitizedMood, evidence, confidence };
-  }
 
   return { character, field, value, evidence, confidence };
 }
@@ -547,7 +527,6 @@ function getCandidateRejectionReason(
   if (!evidence || isGenericEvidence(evidence)) return "missing_evidence";
   if (!evidenceAppearsInLatestExchange(evidence, options.latestExchangeText || "")) return "evidence_not_in_latest_exchange";
   if (confidence < 0.72) return "low_confidence";
-  if (field === "currentMood" && !sanitizeCurrentMood(value)) return "invalid_current_mood";
   return "filtered_by_state_guard";
 }
 
@@ -754,7 +733,6 @@ function buildCharacterStateBlock(c: CharacterData): string {
   ]);
 
   appendBlock(lines, "Current state", [
-    `- currentMood: ${c.currentMood || "(empty)"}`,
     `- location: ${c.location || "(empty)"}`,
     `- scenePosition: ${c.scenePosition || "(empty)"}`,
   ]);
@@ -889,7 +867,6 @@ Top-level fields:
 - nicknames
 - location
 - scenePosition
-- currentMood
 
 Nested detail fields:
 - physicalAppearance.* and physicalAppearance._extras
@@ -944,7 +921,6 @@ ${supportedFields}
 - Every returned update must include a short exact phrase from the latest exchange as evidence and a confidence score from 0 to 1. If you cannot quote the exchange text that supports the change, omit the update.
 
 --- FIELD GUIDANCE ---
-- currentMood: emotional/psychological state only, max 12 words. No body-part prose, clothing, objects, or action sequences.
 - location: broad place only. Do not change location to a destination merely because it was seen, mentioned, chosen, or approached. Update it only when the exchange clearly establishes that the character has actually arrived in, entered, left, or relocated to a different broad place.
 - scenePosition: short factual snapshot of the character's immediate physical situation inside the current location. Update it whenever the latest exchange materially changes that immediate situation, even if the broad location stays the same. Do not leave it blank when the latest exchange establishes a new physical state.
 - physicalStateReviews: one review row per eligible character. This row confirms whether location and scenePosition were considered for that character. A review row is required even when no update is returned because the existing saved state is still accurate or evidence is insufficient.
@@ -1056,7 +1032,7 @@ Review only these omitted eligible characters: ${missingCharacterNames.join(', '
 
 Your job is limited to location and scenePosition. Return one physicalStateReviews row for every omitted character. Return an update only when the latest exchange directly supports a material location or scenePosition change for that character.
 
-Do not review goals, mood, appearance, clothing, personality, relationships, memories, or any other field. Do not fabricate missing movement. Empty updates are valid.
+Do not review goals, appearance, clothing, personality, relationships, memories, or any other field. Do not fabricate missing movement. Empty updates are valid.
 
 --- CURRENT STORY CLOCK ---
 ${storyClock}

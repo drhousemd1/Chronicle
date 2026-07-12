@@ -11,12 +11,126 @@ import type {
 } from '@/types';
 import { buildGoalAlignmentKey, normalizeGoalAlignmentState } from '@/lib/goal-alignment';
 
-export function buildMessageGenerationMap(messages: Message[]): Map<string, string> {
+export type EffectiveStatePruningItemType =
+  | 'memory'
+  | 'goal_derivation'
+  | 'character_state'
+  | 'side_character_state'
+  | 'goal_alignment';
+
+export type EffectiveStatePruningReason =
+  | 'current_generation'
+  | 'manual_or_legacy_no_generation'
+  | 'stale_generation'
+  | 'deleted_source_message'
+  | 'missing_source';
+
+export type EffectiveStatePruningReport = {
+  itemType: EffectiveStatePruningItemType;
+  itemId: string;
+  sourceMessageId?: string;
+  sourceGenerationId?: string;
+  currentGenerationId?: string;
+  included: boolean;
+  reason: EffectiveStatePruningReason;
+  valuePreview?: string;
+};
+
+export type ConversationMessageIdentity = Pick<Message, 'id' | 'generationId' | 'createdAt'>;
+
+export function buildMessageGenerationMap(messages: ConversationMessageIdentity[]): Map<string, string> {
   const map = new Map<string, string>();
   for (const message of messages) {
     map.set(message.id, message.generationId || message.id);
   }
   return map;
+}
+
+export function mergeConversationMessageIdentityIndex(
+  persistedIdentities: ConversationMessageIdentity[],
+  loadedMessages: ConversationMessageIdentity[],
+): ConversationMessageIdentity[] {
+  const merged = new Map<string, ConversationMessageIdentity>();
+  for (const identity of persistedIdentities) merged.set(identity.id, identity);
+  for (const message of loadedMessages) merged.set(message.id, message);
+  return Array.from(merged.values()).sort((a, b) => a.createdAt - b.createdAt || a.id.localeCompare(b.id));
+}
+
+type GenerationSourcedStateItem = {
+  id?: string;
+  sourceMessageId?: string | null;
+  sourceGenerationId?: string | null;
+};
+
+function compactPreview(value: unknown): string | undefined {
+  if (value == null) return undefined;
+  const text = typeof value === 'string' ? value : JSON.stringify(value);
+  const normalized = text.replace(/\s+/g, ' ').trim();
+  if (!normalized) return undefined;
+  return normalized.length > 180 ? `${normalized.slice(0, 177)}...` : normalized;
+}
+
+function buildGenerationPruningReport({
+  item,
+  itemType,
+  itemId,
+  generationMap,
+  valuePreview,
+}: {
+  item: GenerationSourcedStateItem;
+  itemType: EffectiveStatePruningItemType;
+  itemId: string;
+  generationMap: Map<string, string>;
+  valuePreview?: string;
+}): EffectiveStatePruningReport {
+  const sourceMessageId = item.sourceMessageId || undefined;
+  const sourceGenerationId = item.sourceGenerationId || undefined;
+  if (!sourceMessageId) {
+    return {
+      itemType,
+      itemId,
+      included: true,
+      reason: 'manual_or_legacy_no_generation',
+      valuePreview,
+    };
+  }
+
+  const currentGenerationId = generationMap.get(sourceMessageId);
+  if (!currentGenerationId) {
+    return {
+      itemType,
+      itemId,
+      sourceMessageId,
+      sourceGenerationId,
+      included: false,
+      reason: 'deleted_source_message',
+      valuePreview,
+    };
+  }
+
+  if (!sourceGenerationId) {
+    return {
+      itemType,
+      itemId,
+      sourceMessageId,
+      currentGenerationId,
+      included: true,
+      reason: 'manual_or_legacy_no_generation',
+      valuePreview,
+    };
+  }
+
+  const included = currentGenerationId === sourceGenerationId;
+  return {
+    itemType,
+    itemId,
+    sourceMessageId,
+    sourceGenerationId,
+    currentGenerationId,
+    included,
+    reason: included ? 'current_generation' : 'stale_generation',
+    valuePreview,
+  };
 }
 
 export function buildActiveGoalCompletionIds(
@@ -69,13 +183,84 @@ export function buildActiveMemories(
   sourceMemories: Memory[],
   generationMap: Map<string, string>,
 ): Memory[] {
-  return sourceMemories.filter((memory) => {
-    if (!memory.sourceMessageId) return true;
-    const currentGeneration = generationMap.get(memory.sourceMessageId);
-    if (!currentGeneration) return false;
-    if (!memory.sourceGenerationId) return true;
-    return currentGeneration === memory.sourceGenerationId;
-  });
+  return buildActiveMemoriesWithPruningReport(sourceMemories, generationMap).activeMemories;
+}
+
+export function buildActiveMemoriesWithPruningReport(
+  sourceMemories: Memory[],
+  generationMap: Map<string, string>,
+): { activeMemories: Memory[]; pruningReports: EffectiveStatePruningReport[] } {
+  const pruningReports = sourceMemories.map((memory) => buildGenerationPruningReport({
+    item: memory,
+    itemType: 'memory',
+    itemId: memory.id,
+    generationMap,
+    valuePreview: compactPreview(memory.content),
+  }));
+  const includedMemoryIds = new Set(
+    pruningReports
+      .filter((report) => report.included)
+      .map((report) => report.itemId),
+  );
+
+  return {
+    activeMemories: sourceMemories.filter((memory) => includedMemoryIds.has(memory.id)),
+    pruningReports,
+  };
+}
+
+export function buildEffectiveStatePruningReports({
+  generationMap,
+  memories = [],
+  goalDerivations = [],
+  characterSnapshots = [],
+  sideCharacterSnapshots = [],
+  goalAlignmentStates = [],
+}: {
+  generationMap: Map<string, string>;
+  memories?: Memory[];
+  goalDerivations?: StoryGoalStepDerivation[];
+  characterSnapshots?: CharacterStateMessageSnapshot[];
+  sideCharacterSnapshots?: SideCharacterMessageSnapshot[];
+  goalAlignmentStates?: GoalAlignmentState[];
+}): EffectiveStatePruningReport[] {
+  return [
+    ...memories.map((memory) => buildGenerationPruningReport({
+      item: memory,
+      itemType: 'memory',
+      itemId: memory.id,
+      generationMap,
+      valuePreview: compactPreview(memory.content),
+    })),
+    ...goalDerivations.map((derivation) => buildGenerationPruningReport({
+      item: derivation,
+      itemType: 'goal_derivation',
+      itemId: derivation.id,
+      generationMap,
+      valuePreview: compactPreview({ goalId: derivation.goalId, stepId: derivation.stepId, completed: derivation.completed }),
+    })),
+    ...characterSnapshots.map((snapshot) => buildGenerationPruningReport({
+      item: snapshot,
+      itemType: 'character_state',
+      itemId: snapshot.id,
+      generationMap,
+      valuePreview: compactPreview(snapshot.statePayload),
+    })),
+    ...sideCharacterSnapshots.map((snapshot) => buildGenerationPruningReport({
+      item: snapshot,
+      itemType: 'side_character_state',
+      itemId: snapshot.id,
+      generationMap,
+      valuePreview: compactPreview(snapshot.statePayload),
+    })),
+    ...goalAlignmentStates.map((state) => buildGenerationPruningReport({
+      item: state,
+      itemType: 'goal_alignment',
+      itemId: buildGoalAlignmentKey(state.goalKind, state.goalId, state.characterId),
+      generationMap,
+      valuePreview: compactPreview({ score: state.score, status: state.status, trend: state.trend }),
+    })),
+  ];
 }
 
 export function buildEffectiveWorldCore({
@@ -114,7 +299,7 @@ export function buildEffectiveWorldCore({
   };
 }
 
-function buildMessageOrder(messages: Message[]): Map<string, number> {
+function buildMessageOrder(messages: ConversationMessageIdentity[]): Map<string, number> {
   const messageOrder = new Map<string, number>();
   messages.forEach((message, index) => {
     messageOrder.set(message.id, index);
@@ -125,7 +310,7 @@ function buildMessageOrder(messages: Message[]): Map<string, number> {
 export function buildActiveCharacterSnapshotMap(
   snapshots: CharacterStateMessageSnapshot[],
   generationMap: Map<string, string>,
-  messages: Message[],
+  messages: ConversationMessageIdentity[],
 ): Map<string, CharacterStateMessageSnapshot> {
   const messageOrder = buildMessageOrder(messages);
   const latestByCharacter = new Map<string, { order: number; createdAt: number; snapshot: CharacterStateMessageSnapshot }>();
@@ -152,7 +337,7 @@ export function buildActiveCharacterSnapshotMap(
 export function buildActiveSideCharacterSnapshotMap(
   snapshots: SideCharacterMessageSnapshot[],
   generationMap: Map<string, string>,
-  messages: Message[],
+  messages: ConversationMessageIdentity[],
 ): Map<string, SideCharacterMessageSnapshot> {
   const messageOrder = buildMessageOrder(messages);
   const latestByCharacter = new Map<string, { order: number; createdAt: number; snapshot: SideCharacterMessageSnapshot }>();

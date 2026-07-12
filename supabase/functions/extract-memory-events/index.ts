@@ -61,7 +61,16 @@ serve(async (req) => {
     const rateHeaders = getRateLimitHeaders(rateDecision);
     const responseHeadersBase = { ...corsHeaders, ...rateHeaders };
 
-    const { messageText, userMessage, aiResponse, characterNames, recentExistingMemories = [], modelId, debugTrace = false } = await req.json();
+    const {
+      messageText,
+      userMessage,
+      aiResponse,
+      characterNames,
+      userCharacterNames = [],
+      recentExistingMemories = [],
+      modelId,
+      debugTrace = false,
+    } = await req.json();
     const debugTraceAllowed = await shouldReturnAdminDebugTrace(supabase, user.id, debugTrace, "[extract-memory-events]");
     const existingMemoryText = Array.isArray(recentExistingMemories) && recentExistingMemories.length > 0
       ? recentExistingMemories
@@ -92,6 +101,7 @@ serve(async (req) => {
     const systemPrompt = `You are a story memory curator for an adult roleplay. Your job is to identify only durable events from the latest user+AI exchange that will affect future scenes and narrative consistency.
 
 CHARACTERS: ${characterNames?.join(', ') || 'Unknown'}
+USER-CONTROLLED CHARACTERS: ${Array.isArray(userCharacterNames) && userCharacterNames.length > 0 ? userCharacterNames.join(', ') : '(none identified)'}
 
 RECENT SAVED MEMORIES:
 ${existingMemoryText}
@@ -111,6 +121,11 @@ ${existingMemoryText}
 - Keep each point under 140 characters when possible, but preserve why the fact matters.
 - For preferences, intentions, rules, or secrets, state who they belong to.
 - If a recent saved memory already preserves the same durable fact, do not return it again.
+- Return exactly one userStateReviews row for every event, using the event's zero-based index and exact event text.
+- Each review must identify whether the event claims state owned by a user-controlled character, which source role supplied the evidence, and a short exact quote from that source.
+- Set appliesToUserCharacter to true for every event that names a user-controlled character or one of that character's prior names; the frontend independently enforces this identity boundary.
+- User-owned private state is durable fact only when explicitly authored by the user. An accepted assistant response may supply a visible bodily observation, but its interpretation of hidden state, dialogue, or voluntary action is not user-authored fact.
+- Use the shared claim types and evidence-basis values from the response schema. Use not_applicable only when the event does not claim user-owned state.
 
 Return ONLY JSON matching the requested schema.
 Empty events are acceptable.`;
@@ -132,8 +147,60 @@ Empty events are acceptable.`;
               type: "array",
               items: { type: "string" },
             },
+            userStateReviews: {
+              type: "array",
+              items: {
+                type: "object",
+                additionalProperties: false,
+                properties: {
+                  eventIndex: { type: "integer" },
+                  event: { type: "string" },
+                  appliesToUserCharacter: { type: "boolean" },
+                  userCharacterName: { type: ["string", "null"] },
+                  claimType: {
+                    type: ["string", "null"],
+                    enum: [
+                      "emotion",
+                      "intent",
+                      "arousal",
+                      "consent",
+                      "bodily_reaction",
+                      "preference",
+                      "voluntary_action",
+                      "dialogue_assignment",
+                      "internal_thought",
+                      null,
+                    ],
+                  },
+                  sourceRole: { type: "string", enum: ["user", "assistant"] },
+                  evidenceBasis: {
+                    type: "string",
+                    enum: [
+                      "explicit_user_authorship",
+                      "accepted_visible_observation",
+                      "in_character_interpretation",
+                      "unsupported",
+                      "not_applicable",
+                    ],
+                  },
+                  evidence: { type: "string" },
+                  reason: { type: "string" },
+                },
+                required: [
+                  "eventIndex",
+                  "event",
+                  "appliesToUserCharacter",
+                  "userCharacterName",
+                  "claimType",
+                  "sourceRole",
+                  "evidenceBasis",
+                  "evidence",
+                  "reason",
+                ],
+              },
+            },
           },
-          required: ["events"],
+          required: ["events", "userStateReviews"],
         },
       },
     };
@@ -194,6 +261,7 @@ Empty events are acceptable.`;
       return new Response(
         JSON.stringify({
           extractedEvents: [],
+          userStateReviews: [],
           providerBodyError,
           ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
         }),
@@ -219,6 +287,7 @@ Empty events are acceptable.`;
       return new Response(
         JSON.stringify({
           extractedEvents: [],
+          userStateReviews: [],
           providerBodyError: bodyError,
           ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
         }),
@@ -228,6 +297,7 @@ Empty events are acceptable.`;
     const content = extractXaiResponsesText(data);
     
     let extractedEvents: string[] = [];
+    let userStateReviews: unknown[] = [];
     let parseError: string | null = null;
     let malformedContent = "";
     try {
@@ -236,6 +306,11 @@ Empty events are acceptable.`;
         const parsed = JSON.parse(objectMatch[0]);
         if (Array.isArray(parsed.events)) {
           extractedEvents = parsed.events;
+          userStateReviews = Array.isArray(parsed.userStateReviews) ? parsed.userStateReviews : [];
+          if (!Array.isArray(parsed.userStateReviews)) {
+            parseError = "user_state_reviews_not_array";
+            malformedContent = content;
+          }
         } else {
           parseError = "events_not_array";
           malformedContent = content;
@@ -256,6 +331,13 @@ Empty events are acceptable.`;
       .map((e: string) => normalizeMemoryPoint(e))
       .filter((e: string) => e.length > 0)
       .slice(0, 3);
+    userStateReviews = userStateReviews.map((review) => {
+      if (!review || typeof review !== "object" || Array.isArray(review)) return review;
+      const event = typeof (review as Record<string, unknown>).event === "string"
+        ? normalizeMemoryPoint((review as Record<string, unknown>).event as string)
+        : (review as Record<string, unknown>).event;
+      return { ...(review as Record<string, unknown>), event };
+    });
 
     console.log(`[extract-memory-events] Extracted ${extractedEvents.length} events from latest exchange`);
 
@@ -287,6 +369,7 @@ Empty events are acceptable.`;
     return new Response(
       JSON.stringify({
         extractedEvents,
+        userStateReviews,
         ...(parseError ? {
           parseError,
           rejectedEvents: [{

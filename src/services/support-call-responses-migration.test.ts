@@ -148,6 +148,8 @@ describe('roleplay support-call Responses migration contracts', () => {
     expect(chatInterfaceSource).toContain("id: 'call2.memory-compress'");
     expect(chatInterfaceSource).toContain("label: 'Supporting Call - Day memory compression'");
     expect(chatInterfaceSource).toContain("endpoint: '/functions/v1/compress-day-memories'");
-    expect(chatInterfaceSource).toContain('const compressionDebugStatus = buildSupportCallDebugStatus(error, compressionDebug.responseBody);');
+    expect(chatInterfaceSource).toContain('const compressionDebugStatus = buildSupportCallDebugStatus(error, reviewedCompressionResponseBody);');
+    expect(chatInterfaceSource).toContain('inputRowIds: bulletMemories.map((memory) => memory.id)');
+    expect(chatInterfaceSource).toContain("persistenceReason: 'compressed_synopsis_persisted_and_source_bullets_deleted'");
   });
 });

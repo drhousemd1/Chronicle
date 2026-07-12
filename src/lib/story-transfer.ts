@@ -299,7 +299,6 @@ const createBlankCharacter = (name?: string): Character => {
     sexType: '',
     sexualOrientation: '',
     location: '',
-    currentMood: '',
     controlledBy: 'AI',
     characterRole: 'Main',
     roleDescription: '',
@@ -323,6 +322,19 @@ const createBlankCharacter = (name?: string): Character => {
 
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
+const removeRetiredStructuredMood = (value: unknown): void => {
+  if (!value || typeof value !== 'object') return;
+  if (Array.isArray(value)) {
+    value.forEach(removeRetiredStructuredMood);
+    return;
+  }
+
+  const record = value as Record<string, unknown>;
+  delete record.currentMood;
+  delete record.current_mood;
+  Object.values(record).forEach(removeRetiredStructuredMood);
+};
+
 const cloneContentThemes = (themes?: ContentThemes): ContentThemes | undefined => {
   if (!themes) return undefined;
   return {
@@ -340,6 +352,7 @@ const buildScenarioForTransfer = (
   options?: StoryTransferExportOptions
 ): ScenarioData => {
   const scenario = clone(data);
+  removeRetiredStructuredMood(scenario);
   scenario.uiSettings = sanitizeUiSettings(scenario.uiSettings);
   scenario.scenes = (scenario.scenes || []).map((scene) =>
     scene.imagePath
@@ -608,7 +621,6 @@ const toTransferPayload = (data: ScenarioData): TransferPayloadV1 => ({
     sexualOrientation: character.sexualOrientation || '',
     location: character.location || '',
     scenePosition: character.scenePosition || '',
-    currentMood: character.currentMood || '',
     controlledBy: character.controlledBy,
     characterRole: character.characterRole,
     roleDescription: character.roleDescription || '',
@@ -771,7 +783,6 @@ const buildHumanReadable = (payload: TransferPayloadV1): string => {
     pushField(lines, 'Sexual Orientation', character.sexualOrientation, 1);
     pushField(lines, 'Location', character.location, 1);
     pushField(lines, 'Scene Position', character.scenePosition, 1);
-    pushField(lines, 'Current Mood', character.currentMood, 1);
     if (character.controlledBy) lines.push(`  - Controlled By: ${character.controlledBy}`);
     if (character.characterRole) lines.push(`  - Character Role: ${character.characterRole}`);
     pushField(lines, 'Role Description', character.roleDescription, 1);
@@ -1033,7 +1044,6 @@ const buildWordRtf = (payload: TransferPayloadV1): string => {
     pushRtfField(lines, 'Sexual Orientation', character.sexualOrientation);
     pushRtfField(lines, 'Location', character.location);
     pushRtfField(lines, 'Scene Position', character.scenePosition);
-    pushRtfField(lines, 'Current Mood', character.currentMood);
     if (character.controlledBy) lines.push(rtfBullet(`Controlled By: ${character.controlledBy}`, 1080));
     if (character.characterRole) lines.push(rtfBullet(`Character Role: ${character.characterRole}`, 1080));
     pushRtfField(lines, 'Role Description', character.roleDescription);
@@ -1609,7 +1619,10 @@ const parseTextToPayload = (text: string, warnings: string[]): { payload: Transf
       else if (normalizedKey === 'sexidentity' || normalizedKey === 'sextype') character.sexType = value;
       else if (normalizedKey === 'sexualorientation') character.sexualOrientation = value;
       else if (normalizedKey === 'location') character.location = value;
-      else if (normalizedKey === 'currentmood') character.currentMood = value;
+      else if (normalizedKey === 'currentmood') {
+        // Legacy imports may contain Current Mood. Structured mood is retired,
+        // so accept the old field syntactically and discard its value.
+      }
       else if (normalizedKey === 'controlledby') {
         const control = normalize(value);
         if (control === 'user') character.controlledBy = 'User';
@@ -2246,7 +2259,6 @@ const mergePayloadIntoScenario = (
     character.sexualOrientation = mergeScalarText(character.sexualOrientation, incoming.sexualOrientation, mode);
     character.location = mergeText(character.location, incoming.location, mode);
     character.scenePosition = mergeScalarText(character.scenePosition || '', incoming.scenePosition || '', mode);
-    character.currentMood = mergeText(character.currentMood, incoming.currentMood, mode);
     character.roleDescription = mergeText(character.roleDescription, incoming.roleDescription, mode);
     character.tags = mergeTagString(character.tags || '', incoming.tags, mode);
     character.avatarDataUrl = mergeScalarText(character.avatarDataUrl || '', incoming.avatarDataUrl || '', mode);

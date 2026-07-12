@@ -1,10 +1,11 @@
-import { ScenarioData, Character, Conversation } from "@/types";
+import { ScenarioData, Character, Conversation, SideCharacter } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { isApiUsageTestEnabledLocal } from "@/services/api-usage-test-session";
 import {
   API_USAGE_VALIDATION_ROW_BY_ID,
   ApiUsageValidationCallGroup,
 } from "@/data/api-usage-validation-registry";
+import { selectCharacterPromptFactsForRendering } from '@/features/chat-runtime/roleplay-character-card-facts';
 
 export const API_USAGE_VALIDATION_TRACE_VERSION = 1;
 
@@ -47,24 +48,36 @@ function hasSectionObjectData(value: unknown): boolean {
   return false;
 }
 
-function hasCustomSectionData(character: Character): boolean {
+type PlayableCharacter = Character | SideCharacter;
+
+function hasCustomSectionData(character: PlayableCharacter): boolean {
   return Array.isArray(character.sections) && character.sections.some((section) => {
     if (normalizeText(section.freeformValue)) return true;
     return (section.items || []).some((item) => normalizeText(item.label) || normalizeText(item.value));
   });
 }
 
-function hasPersonalityData(character: Character): boolean {
+function hasPersonalityData(character: PlayableCharacter): boolean {
   const personality = character.personality;
   if (!personality) return false;
-  const standard = Array.isArray(personality.traits) && personality.traits.some((trait) => normalizeText(trait.label) || normalizeText(trait.value));
-  const outward = Array.isArray(personality.outwardTraits) && personality.outwardTraits.some((trait) => normalizeText(trait.label) || normalizeText(trait.value));
-  const inward = Array.isArray(personality.inwardTraits) && personality.inwardTraits.some((trait) => normalizeText(trait.label) || normalizeText(trait.value));
+  const standard = Array.isArray(personality.traits) && personality.traits.some((trait) => (
+    typeof trait === "string"
+      ? Boolean(normalizeText(trait))
+      : Boolean(normalizeText(trait.label) || normalizeText(trait.value))
+  ));
+  const outward = "outwardTraits" in personality
+    && Array.isArray(personality.outwardTraits)
+    && personality.outwardTraits.some((trait) => normalizeText(trait.label) || normalizeText(trait.value));
+  const inward = "inwardTraits" in personality
+    && Array.isArray(personality.inwardTraits)
+    && personality.inwardTraits.some((trait) => normalizeText(trait.label) || normalizeText(trait.value));
   return standard || outward || inward;
 }
 
-function hasGoalData(character: Character): boolean {
-  return Array.isArray(character.goals) && character.goals.some((goal) => normalizeText(goal.title) || normalizeText(goal.desiredOutcome));
+function hasGoalData(character: PlayableCharacter): boolean {
+  return "goals" in character
+    && Array.isArray(character.goals)
+    && character.goals.some((goal) => normalizeText(goal.title) || normalizeText(goal.desiredOutcome));
 }
 
 function sampleFromCustomWorldSections(sections: any[] | undefined): string {
@@ -115,10 +128,22 @@ export function buildCall1ValidationPresence(input: {
 }): Record<string, ValidationPresence> {
   const { appData, conversation, systemInstruction, messages, finalUserInput, transport } = input;
   const world = appData.world?.core;
-  const aiCharacters = appData.characters.filter((character) => character.controlledBy === "AI");
-  const userControlledCharacters = appData.characters.filter((character) => character.controlledBy === "User");
+  const playableCharacters = [
+    ...(appData.characters || []),
+    ...(appData.sideCharacters || []),
+  ];
+  const aiCharacters = playableCharacters.filter((character) => character.controlledBy === "AI");
+  const userControlledCharacters = playableCharacters.filter((character) => character.controlledBy === "User");
 
   const detail: Record<string, ValidationPresence> = {};
+  const aiCharacterFacts = aiCharacters.flatMap(selectCharacterPromptFactsForRendering);
+  const factsForPrefix = (prefix: string) => aiCharacterFacts.filter((fact) => (
+    fact.sourceField === prefix || fact.sourceField.startsWith(`${prefix}.`)
+  ));
+  const modelFacingFactsPresent = (prefix: string) => {
+    const facts = factsForPrefix(prefix).filter((fact) => fact.modelFacing);
+    return facts.length > 0 && facts.every((fact) => normalizedIncludes(systemInstruction, fact.value));
+  };
 
   detail["call1.meta.system_instruction"] = Boolean(normalizeText(systemInstruction)) && messages[0]?.role === "system";
 
@@ -209,8 +234,9 @@ export function buildCall1ValidationPresence(input: {
 
     detail["call1.cast.character_basics"] =
       normalizedIncludes(systemInstruction, "CHARACTER:") &&
-      (normalizedIncludes(systemInstruction, "CONTROLLED BY:") || normalizedIncludes(systemInstruction, "CONTROL:")) &&
-      normalizedIncludes(systemInstruction, "ROLE:");
+      normalizedIncludes(systemInstruction, "IDENTITY FACTS") &&
+      normalizedIncludes(systemInstruction, "CONTROLLED BY:") &&
+      normalizedIncludes(systemInstruction, "STORY ROLE:");
   }
 
   if (userControlledCharacters.length > 0) {
@@ -220,45 +246,55 @@ export function buildCall1ValidationPresence(input: {
   }
 
   if (aiCharacters.some((character) => hasSectionObjectData(character.physicalAppearance))) {
-    detail["call1.cast.physical_appearance"] = normalizedIncludes(systemInstruction, "PHYSICAL APPEARANCE");
+    detail["call1.cast.physical_appearance"] =
+      normalizedIncludes(systemInstruction, "CREATOR REFERENCE FACTS") &&
+      modelFacingFactsPresent('physicalAppearance');
   }
 
   if (aiCharacters.some((character) => hasSectionObjectData(character.currentlyWearing))) {
-    detail["call1.cast.currently_wearing"] = normalizedIncludes(systemInstruction, "CURRENTLY WEARING");
+    const visibleClothing = aiCharacters.flatMap((character) => [
+      normalizeText(character.currentlyWearing?.top),
+      normalizeText(character.currentlyWearing?.bottom),
+    ]).filter(Boolean);
+    detail["call1.cast.currently_wearing"] =
+      normalizedIncludes(systemInstruction, "VISIBLE CLOTHING:") &&
+      visibleClothing.every((value) => normalizedIncludes(systemInstruction, value));
   }
 
   if (aiCharacters.some((character) => hasSectionObjectData(character.preferredClothing))) {
-    detail["call1.cast.preferred_clothing"] = normalizedIncludes(systemInstruction, "PREFERRED CLOTHING");
+    detail["call1.cast.preferred_clothing"] = modelFacingFactsPresent('preferredClothing');
   }
 
   if (aiCharacters.some((character) => hasPersonalityData(character))) {
     detail["call1.cast.personality"] =
-      normalizedIncludes(systemInstruction, "PERSONALITY:") ||
-      normalizedIncludes(systemInstruction, "OUTWARD PERSONALITY");
+      normalizedIncludes(systemInstruction, "VOICE AND BEHAVIOR AFFORDANCES") &&
+      modelFacingFactsPresent('personality');
   }
 
-  if (aiCharacters.some((character) => hasSectionObjectData(character.tone))) {
-    detail["call1.cast.tone"] = normalizedIncludes(systemInstruction, "TONE");
+  if (aiCharacters.some((character) => "tone" in character && hasSectionObjectData(character.tone))) {
+    detail["call1.cast.tone"] = modelFacingFactsPresent('tone');
   }
 
   if (aiCharacters.some((character) => hasSectionObjectData(character.background))) {
-    detail["call1.cast.background"] = normalizedIncludes(systemInstruction, "BACKGROUND");
+    detail["call1.cast.background"] = modelFacingFactsPresent('background');
   }
 
-  if (aiCharacters.some((character) => hasSectionObjectData(character.keyLifeEvents))) {
-    detail["call1.cast.key_life_events"] = normalizedIncludes(systemInstruction, "KEY LIFE EVENTS");
+  if (aiCharacters.some((character) => "keyLifeEvents" in character && hasSectionObjectData(character.keyLifeEvents))) {
+    detail["call1.cast.key_life_events"] = modelFacingFactsPresent('keyLifeEvents');
   }
 
-  if (aiCharacters.some((character) => hasSectionObjectData(character.relationships))) {
-    detail["call1.cast.relationships"] = normalizedIncludes(systemInstruction, "RELATIONSHIPS");
+  if (aiCharacters.some((character) => "relationships" in character && hasSectionObjectData(character.relationships))) {
+    detail["call1.cast.relationships"] = modelFacingFactsPresent('relationships');
   }
 
-  if (aiCharacters.some((character) => hasSectionObjectData(character.secrets))) {
-    detail["call1.cast.secrets"] = normalizedIncludes(systemInstruction, "SECRETS");
+  if (aiCharacters.some((character) => "secrets" in character && hasSectionObjectData(character.secrets))) {
+    const secretFacts = factsForPrefix('secrets');
+    detail["call1.cast.secrets"] = secretFacts.length > 0
+      && secretFacts.every((fact) => !fact.modelFacing && !normalizedIncludes(systemInstruction, fact.value));
   }
 
-  if (aiCharacters.some((character) => hasSectionObjectData(character.fears))) {
-    detail["call1.cast.fears"] = normalizedIncludes(systemInstruction, "FEARS");
+  if (aiCharacters.some((character) => "fears" in character && hasSectionObjectData(character.fears))) {
+    detail["call1.cast.fears"] = modelFacingFactsPresent('fears');
   }
 
   if (aiCharacters.some((character) => hasGoalData(character))) {
@@ -270,9 +306,7 @@ export function buildCall1ValidationPresence(input: {
   }
 
   if (aiCharacters.some((character) => hasCustomSectionData(character))) {
-    detail["call1.cast.custom_sections"] =
-      normalizedIncludes(systemInstruction, "CUSTOM TRAITS / CUSTOM CONTENT:") ||
-      normalizedIncludes(systemInstruction, "CUSTOM CONTENT");
+    detail["call1.cast.custom_sections"] = modelFacingFactsPresent('sections');
   }
 
   return detail;

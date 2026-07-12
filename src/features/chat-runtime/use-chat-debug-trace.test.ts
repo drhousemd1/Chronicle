@@ -2,6 +2,10 @@ import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ChatDebugRequestRecord, ChatDebugTrace, StoredChatDebugTraceMap } from '@/features/chat-debug/types';
+import {
+  createPendingRoleplaySupportReviewEnvelope,
+  createRoleplaySupportReviewEnvelope,
+} from './roleplay-support-review-envelope';
 import { useChatDebugTrace } from './use-chat-debug-trace';
 
 function readOnlyStoredDebugRecord(): StoredChatDebugTraceMap {
@@ -20,6 +24,49 @@ const call1Request = (): ChatDebugRequestRecord => ({
   capturedAt: 10,
   status: 'completed',
   requestBody: { prompt: 'redacted' },
+  roleplaySourceReceipts: [
+    {
+      id: 'player_turn:player_turn:fnv1a-12345678',
+      surface: 'player_turn',
+      sourceId: 'player_turn',
+      textHash: 'fnv1a-12345678',
+      authority: 'highest',
+      modelFacing: true,
+      disposition: 'included',
+      duplicateGroup: 'exact:fnv1a-12345678',
+      reason: 'response_job_lane:player_turn',
+      contentLength: 14,
+      preview: 'I step closer.',
+    },
+  ],
+  roleplayDuplicateSourceMetrics: [
+    {
+      duplicateGroup: 'exact:fnv1a-12345678',
+      receiptIds: ['player_turn:player_turn:fnv1a-12345678'],
+      surfaces: ['player_turn'],
+      authorities: ['highest'],
+      dispositions: ['included'],
+      modelFacingCount: 1,
+      totalCount: 1,
+    },
+  ],
+  roleplaySourceReceiptCoverage: [
+    {
+      receiptId: 'player_turn:player_turn:fnv1a-12345678',
+      surface: 'player_turn',
+      status: 'covered',
+      providerMessageIndexes: [1],
+      reason: 'receipt_preview_found_in_rendered_provider_message',
+    },
+  ],
+  roleplayProviderSectionCoverage: [
+    {
+      providerSectionId: 'final-user-lane:player_turn',
+      expectedSurface: 'player_turn',
+      status: 'covered',
+      receiptIds: ['player_turn:player_turn:fnv1a-12345678'],
+    },
+  ],
 });
 
 describe('useChatDebugTrace', () => {
@@ -97,6 +144,12 @@ describe('useChatDebugTrace', () => {
       trace,
       call1Request: {
         id: 'call-1',
+        roleplaySourceReceipts: expect.arrayContaining([
+          expect.objectContaining({ id: 'player_turn:player_turn:fnv1a-12345678' }),
+        ]),
+        roleplayDuplicateSourceMetrics: call1Request().roleplayDuplicateSourceMetrics,
+        roleplaySourceReceiptCoverage: call1Request().roleplaySourceReceiptCoverage,
+        roleplayProviderSectionCoverage: call1Request().roleplayProviderSectionCoverage,
         modelRequest: trace.modelRequest,
         modelRequests: trace.modelRequests,
       },
@@ -121,6 +174,11 @@ describe('useChatDebugTrace', () => {
         capturedAt: 20,
         status: 'sent',
         requestBody: { input: 'first payload' },
+        roleplaySupportReviewEnvelope: createPendingRoleplaySupportReviewEnvelope({
+          worker: 'character_state',
+          sourceMessageId: 'message-1',
+          sourceGenerationId: 'generation-1',
+        }),
       });
       result.current.recordChatDebugSupportCall(message, {
         id: 'support-1',
@@ -132,6 +190,23 @@ describe('useChatDebugTrace', () => {
         status: 'completed',
         requestBody: undefined as unknown,
         responseBody: { updates: [] },
+        roleplaySupportReviewEnvelope: createRoleplaySupportReviewEnvelope({
+          worker: 'character_state',
+          sourceMessageId: 'message-1',
+          sourceGenerationId: 'generation-1',
+          persistence: {
+            status: 'no_updates',
+            targets: [],
+            reason: 'no_persistable_updates',
+          },
+          readiness: 'no_updates',
+          futurePromptImpact: {
+            eligible: false,
+            targets: [],
+            reason: 'no_eligible_persisted_output',
+          },
+          legacyWrapped: true,
+        }),
       });
     });
 
@@ -142,6 +217,13 @@ describe('useChatDebugTrace', () => {
         status: 'completed',
         requestBody: { input: 'first payload' },
         responseBody: { updates: [] },
+        roleplaySupportReviewEnvelope: expect.objectContaining({
+          worker: 'character_state',
+          sourceMessageId: 'message-1',
+          sourceGenerationId: 'generation-1',
+          readiness: 'no_updates',
+          persistence: expect.objectContaining({ status: 'no_updates' }),
+        }),
       }),
     ]);
   });

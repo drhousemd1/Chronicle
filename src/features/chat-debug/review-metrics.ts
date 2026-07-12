@@ -1,4 +1,21 @@
 import type { Conversation, Message, ScenarioData } from '@/types';
+import type {
+  RoleplayRecentHistoryPacket,
+  RoleplayRecentHistoryReceipt,
+  RoleplaySuppressedStyleAnchor,
+} from '@/features/chat-runtime/roleplay-recent-history';
+import {
+  buildRoleplayUserStateAuthorityDebugSummary,
+  type RoleplayUserStateAuthorityDebugSummary,
+  type RoleplayUserStateAuthorityDecision,
+} from '@/features/chat-runtime/roleplay-user-state-authority';
+import {
+  buildCharacterPromptOutputCopyMetric,
+  buildCharacterPromptOutputCopyMetricsFromCapturedFacts,
+  type CharacterPromptFact,
+  type CharacterPromptFactReviewSummary,
+  type CharacterPromptOutputCopyMetric,
+} from '@/features/chat-runtime/roleplay-character-card-facts';
 
 export type ReviewMetricRole = Message['role'];
 export type ReviewMetricModality = 'action' | 'dialogue' | 'internal_thought' | 'plain_text';
@@ -14,6 +31,10 @@ export type ReviewMetricSegmentInput = {
   text: string;
   rawMessageText: string;
   localNotice?: Message['localNotice'] | null;
+  recentHistoryPacket?: RoleplayRecentHistoryPacket | null;
+  userStateAuthorityDecisions?: RoleplayUserStateAuthorityDecision[];
+  characterPromptFacts?: CharacterPromptFact[];
+  characterPromptFactSummaries?: CharacterPromptFactReviewSummary[];
 };
 
 export type ReviewMetricCount = {
@@ -64,6 +85,13 @@ export type ReviewSegmentDebugMetrics = {
   repeatedTermsFromEarlierAssistantBlocks: string[];
   internalThoughtDiagnostics: ReviewInternalThoughtMetric[];
   sourceOverlap: ReviewSourceOverlap[];
+  recentHistoryReceipts: RoleplayRecentHistoryReceipt[];
+  suppressedStyleAnchors: RoleplaySuppressedStyleAnchor[];
+  userStateAuthorityDecisions: RoleplayUserStateAuthorityDecision[];
+  userStateAuthoritySummary: RoleplayUserStateAuthorityDebugSummary;
+  characterPromptFactSummaries: CharacterPromptFactReviewSummary[];
+  characterPromptOutputFactSource: CharacterPromptOutputCopyMetric['factSource'];
+  characterPromptOutputCopyMetrics: CharacterPromptOutputCopyMetric[];
 };
 
 export type ReviewTranscriptDebugMetrics = {
@@ -277,7 +305,6 @@ function currentStateText(appData: ScenarioData): string {
       character.characterRole,
       character.location,
       character.scenePosition,
-      character.currentMood,
     ].filter(Boolean).join(' | '))
     .join('\n');
 }
@@ -385,6 +412,21 @@ function buildSegmentMetrics(
   const narrationWords = countWords(actionText) + countWords(thoughtText) + countWords(plainText);
   const dialogueWords = countWords(dialogueText);
   const totalWords = countWords(segment.text);
+  const userStateAuthorityDecisions = segment.userStateAuthorityDecisions ?? [];
+  const characterPromptOutputFactSource: CharacterPromptOutputCopyMetric['factSource'] =
+    segment.characterPromptFacts != null
+      ? 'generation_captured_facts'
+      : 'current_card_fallback';
+  const characterPromptOutputCopyMetrics = segment.role === 'assistant' && segment.localNotice == null
+    ? (
+      segment.characterPromptFacts != null
+        ? buildCharacterPromptOutputCopyMetricsFromCapturedFacts(segment.characterPromptFacts, segment.text)
+        : [...(appData.characters || []), ...(appData.sideCharacters || [])]
+          .map((character) => buildCharacterPromptOutputCopyMetric(character, segment.text))
+    ).filter((metric) => (
+      metric.exactSourceValueCopies.length > 0 || metric.copiedSourceLabels.length > 0
+    ))
+    : [];
 
   return {
     reviewId: segment.reviewId,
@@ -415,6 +457,13 @@ function buildSegmentMetrics(
     sourceOverlap: segment.role === 'assistant' && segment.localNotice == null
       ? calculateSourceOverlap(segment.text, buildSourceCorpora(appData, conversation, segment))
       : [],
+    recentHistoryReceipts: segment.recentHistoryPacket?.receipts ?? [],
+    suppressedStyleAnchors: segment.recentHistoryPacket?.suppressedStyleAnchors ?? [],
+    userStateAuthorityDecisions,
+    userStateAuthoritySummary: buildRoleplayUserStateAuthorityDebugSummary(userStateAuthorityDecisions),
+    characterPromptFactSummaries: segment.characterPromptFactSummaries ?? [],
+    characterPromptOutputFactSource,
+    characterPromptOutputCopyMetrics,
   };
 }
 

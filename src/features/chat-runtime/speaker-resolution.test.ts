@@ -21,7 +21,6 @@ const baseCharacter = (patch: Partial<Character>): Character => ({
   sexType: '',
   sexualOrientation: '',
   location: '',
-  currentMood: '',
   controlledBy: patch.controlledBy || 'AI',
   characterRole: patch.characterRole || 'Main',
   roleDescription: '',
@@ -59,16 +58,16 @@ const scenario: ScenarioData = {
 
 describe('chat speaker resolution helpers', () => {
   it('extracts hidden system tags and restores them before edited visible text', () => {
-    const text = '[SCENE: Kitchen]\n[UPDATE: mood=tense]\n\nAshley: "Stay here."';
+    const text = '[SCENE: Kitchen]\n[UPDATE: location=Kitchen]\n\nAshley: "Stay here."';
 
     expect(extractHiddenMessageTags(text)).toEqual([
       '[SCENE: Kitchen]',
-      '[UPDATE: mood=tense]',
+      '[UPDATE: location=Kitchen]',
     ]);
     expect(buildInlineEditedMessageText(
       [{ speakerName: 'Ashley', content: ' "Move." ' }],
       extractHiddenMessageTags(text),
-    )).toBe('[SCENE: Kitchen]\n[UPDATE: mood=tense]\n\nAshley: "Move."');
+    )).toBe('[SCENE: Kitchen]\n[UPDATE: location=Kitchen]\n\nAshley: "Move."');
   });
 
   it('merges adjacent explicit and inferred speaker segments by rendered character identity', () => {
@@ -105,7 +104,7 @@ describe('chat speaker resolution helpers', () => {
   });
 
   it('round-trips hidden system tags through inline editing without duplicating them', () => {
-    const savedText = '[SCENE: Kitchen]\n[UPDATE: mood=tense]\n\nAsh: "Stay here."\n\nAshley blocked the hallway.';
+    const savedText = '[SCENE: Kitchen]\n[UPDATE: location=Kitchen]\n\nAsh: "Stay here."\n\nAshley blocked the hallway.';
     const hiddenTags = extractHiddenMessageTags(savedText);
     const editableSegments = buildEditableMessageSegments(
       savedText,
@@ -124,7 +123,7 @@ describe('chat speaker resolution helpers', () => {
       hiddenTags,
     );
 
-    expect(editedText).toBe('[SCENE: Kitchen]\n[UPDATE: mood=tense]\n\nAshley: "Move now."\n\nAshley stepped aside.');
+    expect(editedText).toBe('[SCENE: Kitchen]\n[UPDATE: location=Kitchen]\n\nAshley: "Move now."\n\nAshley stepped aside.');
     expect(editedText.match(/\[SCENE:/g)).toHaveLength(1);
     expect(editedText.match(/\[UPDATE:/g)).toHaveLength(1);
   });

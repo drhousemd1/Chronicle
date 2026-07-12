@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { ChatDebugRequestRecord, ChatDebugTrace } from '@/features/chat-debug/types';
 import type { ScenarioData } from '@/types';
+import { buildNormalSendResponseJob } from './roleplay-response-job';
 import {
   collectRoleplayResponse,
   readRoleplayRequestDebugFromError,
@@ -100,6 +101,41 @@ describe('collectRoleplayResponse', () => {
     expect(result.cleanedText).toBe('Hidden stream');
     expect(onStreamingContent).not.toHaveBeenCalled();
     expect(onFormattedStreamingContent).not.toHaveBeenCalled();
+  });
+
+  it('passes a response job through to the stream generator options', async () => {
+    const responseJob = buildNormalSendResponseJob({
+      conversationId: 'conversation-1',
+      playerTurn: {
+        messageId: 'user-1',
+        text: 'User text',
+      },
+      currentStateSummary: 'Kitchen scene remains active.',
+      responseDetail: 'standard',
+    });
+    const generateStream = vi.fn(async function* (..._args: any[]) {
+      yield 'Job routed';
+    });
+
+    const result = await collectRoleplayResponse({
+      appData,
+      conversationId: 'conversation-1',
+      userMessage: 'User text',
+      responseJob,
+      modelId: 'grok-test',
+      placeholderMap: {},
+      knownCharacterNames: new Set(),
+      sanitizeAssistantOutput,
+      streamToUi: false,
+      generateStream,
+    });
+
+    expect(result.cleanedText).toBe('Job routed');
+    expect(generateStream).toHaveBeenCalledTimes(1);
+    expect(generateStream.mock.calls[0][2]).toBe('User text');
+    expect(generateStream.mock.calls[0][11]).toEqual(expect.objectContaining({
+      responseJob,
+    }));
   });
 
   it('attaches debug metadata to thrown provider errors', async () => {

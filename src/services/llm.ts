@@ -1,4 +1,4 @@
-import { ScenarioData, Character, World, TimeOfDay, Memory, Scene, type Message } from "../types";
+import { ScenarioData, Character, World, TimeOfDay, Memory, Scene, type Message, type SideCharacter } from "../types";
 import { supabase } from "@/integrations/supabase/client";
 import { buildContentThemeDirectives } from "@/constants/tag-injection-registry";
 import { trackAiUsageEvent } from "@/services/usage-tracking";
@@ -11,6 +11,35 @@ import {
   shouldRenderGoalToWriter,
 } from "@/lib/goal-alignment";
 import type { ChatDebugRequestRecord, ChatDebugTrace } from "@/features/chat-debug/types";
+import type { RoleplayUserStateAuthorityDecision } from '@/features/chat-runtime/roleplay-user-state-authority';
+import type {
+  RoleplayFinalUserLaneEvidence,
+  RoleplayResponseJob,
+} from "@/features/chat-runtime/roleplay-response-job";
+import {
+  getRoleplayResponseJobFinalUserLaneEvidence,
+  ROLEPLAY_EXECUTION_BRIEF_TEXT,
+  renderRoleplayResponseJobFinalUserContent,
+} from "@/features/chat-runtime/roleplay-response-job-rendering";
+import {
+  compileRoleplayRecentHistory,
+  type RoleplayRecentHistoryPacket,
+} from "@/features/chat-runtime/roleplay-recent-history";
+import {
+  buildCharacterPromptFactReviewSummary,
+  renderCharacterPromptFacts,
+  selectCharacterPromptFactsForRendering,
+} from '@/features/chat-runtime/roleplay-character-card-facts';
+import { buildResolvedCurrentSceneKnowledgeFacts } from '@/features/chat-runtime/roleplay-knowledge-visibility';
+import {
+  buildRoleplayDuplicateSourceMetrics,
+  buildRoleplaySourceCoverage,
+  buildRoleplaySourceReceipts,
+} from "@/features/chat-runtime/roleplay-source-receipts";
+import {
+  buildRoleplaySceneRoster,
+  renderRoleplaySceneRoster,
+} from '@/features/chat-runtime/roleplay-scene-roster';
 
 /**
  * Detect if a user message contains dialogue/actions written for AI-controlled characters.
@@ -76,14 +105,7 @@ Change the execution rather than the situation: use a meaningfully different mix
 Do not replay the same exchange with synonym swaps, invert character stance, add off-screen characters, jump time, invent physical facts, or author the user-controlled character's response.
 If a present AI-controlled character was directly asked something they can answer now, address it in this version.`;
 
-export const EXECUTION_BRIEF_TEXT = `[EXECUTION BRIEF]
-Continue from the latest established scene change.
-Preserve user-written facts, character awareness, and the current physical state.
-Recent messages provide story state and continuity, not a template for response length or structure.
-Follow the active Response Detail setting.
-Use clear external dialogue when a present AI-controlled character can naturally speak.
-Develop the AI-controlled character's side of the current exchange before stopping for the user.
-Stop before narrating any user-owned response, decision, voluntary follow-up, or interpretation.`;
+export const EXECUTION_BRIEF_TEXT = ROLEPLAY_EXECUTION_BRIEF_TEXT;
 
 export function renderResponseDetailInstruction(responseVerbosity: string = 'balanced'): string {
   if (responseVerbosity === 'concise') {
@@ -97,6 +119,8 @@ export function renderResponseDetailInstruction(responseVerbosity: string = 'bal
 
 export type GenerateRoleplayResponseStreamOptions = {
   debugTrace?: boolean;
+  responseJob?: RoleplayResponseJob;
+  userStateAuthorityDecisions?: RoleplayUserStateAuthorityDecision[];
   onDebugTrace?: (trace: ChatDebugTrace) => void;
   onRequestPayload?: (request: ChatDebugRequestRecord) => void;
 };
@@ -106,7 +130,6 @@ export type RoleplayApiMessage = { role: 'system' | 'user' | 'assistant'; conten
 const CHAT_RESPONSE_TIMEOUT_MS = 180_000;
 const API_CALL_1_PRIOR_HISTORY_MESSAGE_LIMIT = 5;
 const CURRENT_TURN_MEMORY_ANCHOR_LIMIT = 3;
-const CURRENT_TURN_CHARACTER_STATE_LIMIT = 10;
 const ROLEPLAY_PROVIDER_TRANSPORT = 'responses';
 const ROLEPLAY_REASONING_EFFORT = 'medium';
 const ROLEPLAY_STORE = false;
@@ -138,18 +161,12 @@ export function buildCurrentTurnStateDigest(input: {
     rows.push(`- Active scene: ${title || 'untitled scene'}${tags}`);
   }
 
-  const playableCharacters = [...(input.appData.characters || []), ...(input.appData.sideCharacters || [])]
-    .slice(0, CURRENT_TURN_CHARACTER_STATE_LIMIT);
-  for (const character of playableCharacters) {
-    const stateParts = [
-      compactPromptValue(character.location, 80) ? `location=${compactPromptValue(character.location, 80)}` : '',
-      compactPromptValue(character.scenePosition, 110) ? `position=${compactPromptValue(character.scenePosition, 110)}` : '',
-      compactPromptValue(character.currentMood, 70) ? `mood=${compactPromptValue(character.currentMood, 70)}` : '',
-    ].filter(Boolean);
-    if (stateParts.length) {
-      rows.push(`- ${character.name}${character.controlledBy ? ` (${character.controlledBy})` : ''}: ${stateParts.join('; ')}`);
-    }
-  }
+  const sceneRoster = buildRoleplaySceneRoster({
+    mainCharacters: input.appData.characters || [],
+    sideCharacters: input.appData.sideCharacters || [],
+  });
+  const renderedRoster = renderRoleplaySceneRoster(sceneRoster);
+  if (renderedRoster) rows.push(renderedRoster);
 
   if (input.memoriesEnabled !== false && input.memories?.length) {
     const currentDayMemories = input.memories
@@ -186,53 +203,79 @@ export function buildRoleplayApiMessages(input: {
   conversationMessages: Message[];
   systemInstruction: string;
   userMessage: string;
+  responseJob?: RoleplayResponseJob;
+  userStateAuthorityDecisions?: RoleplayUserStateAuthorityDecision[];
   isRegeneration?: boolean;
   currentTurnStateDigest?: string;
   sessionMessageCount?: number;
 }): {
   messages: RoleplayApiMessage[];
   historyMessages: Message[];
+  recentHistoryPacket: RoleplayRecentHistoryPacket;
   finalUserContent: string;
+  finalUserLaneEvidence: RoleplayFinalUserLaneEvidence[];
   historyLimit: number;
 } {
-  const historyMessages = input.conversationMessages
-    .filter((message) => !isLocalRoleplayNoticeMessage(message))
-    .slice(-API_CALL_1_PRIOR_HISTORY_MESSAGE_LIMIT);
+  const { historyMessages, packet: recentHistoryPacket } = compileRoleplayRecentHistory({
+    messages: input.conversationMessages,
+    responseJob: input.responseJob,
+    userStateAuthorityDecisions: input.userStateAuthorityDecisions,
+    limit: API_CALL_1_PRIOR_HISTORY_MESSAGE_LIMIT,
+    isLocalNotice: isLocalRoleplayNoticeMessage,
+  });
   const regenerationDirective = input.isRegeneration ? REGENERATION_DIRECTIVE_TEXT : '';
   const messages: RoleplayApiMessage[] = [
     { role: 'system', content: input.systemInstruction },
-    ...historyMessages.map(m => ({
-      role: m.role === 'assistant' ? 'assistant' as const : 'user' as const,
-      content: m.text
-    })),
+    ...recentHistoryPacket.providerMessages,
   ];
 
-  const appTurnControls = [
-    input.sessionMessageCount != null ? `[SESSION: Message ${input.sessionMessageCount} of current session]` : '',
-    input.currentTurnStateDigest || '',
-    regenerationDirective,
-    EXECUTION_BRIEF_TEXT,
-  ]
-    .filter(Boolean)
-    .join('\n\n')
-    .trim();
-  const playerTurn = input.userMessage.trim();
-  const finalUserContent = [
-    appTurnControls ? `[APP TURN CONTROLS]\n${appTurnControls}` : '',
-    playerTurn ? `[PLAYER TURN]\n${playerTurn}` : '',
-  ]
-    .filter(Boolean)
-    .join('\n\n')
-    .trim();
+  const finalUserContent = input.responseJob
+    ? renderRoleplayResponseJobFinalUserContent(input.responseJob)
+    : renderLegacyFinalUserContent({
+        sessionMessageCount: input.sessionMessageCount,
+        currentTurnStateDigest: input.currentTurnStateDigest,
+        regenerationDirective,
+        userMessage: input.userMessage,
+      });
+  const finalUserLaneEvidence = input.responseJob
+    ? getRoleplayResponseJobFinalUserLaneEvidence(input.responseJob)
+    : [];
 
   messages.push({ role: 'user', content: finalUserContent });
 
   return {
     messages,
     historyMessages,
+    recentHistoryPacket,
     finalUserContent,
+    finalUserLaneEvidence,
     historyLimit: API_CALL_1_PRIOR_HISTORY_MESSAGE_LIMIT,
   };
+}
+
+function renderLegacyFinalUserContent(input: {
+  sessionMessageCount?: number;
+  currentTurnStateDigest?: string;
+  regenerationDirective?: string;
+  userMessage: string;
+}): string {
+  const appTurnControls = [
+    input.sessionMessageCount != null ? `[SESSION: Message ${input.sessionMessageCount} of current session]` : '',
+    input.currentTurnStateDigest || '',
+    input.regenerationDirective || '',
+    EXECUTION_BRIEF_TEXT,
+  ]
+    .filter(Boolean)
+    .join('\n\n')
+    .trim();
+  const playerTurn = input.userMessage.trim();
+  return [
+    appTurnControls ? `[APP TURN CONTROLS]\n${appTurnControls}` : '',
+    playerTurn ? `[PLAYER TURN]\n${playerTurn}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n\n')
+    .trim();
 }
 
 export function getSystemInstruction(
@@ -265,14 +308,6 @@ export function getSystemInstruction(
     return '';
   };
 
-  const titleCase = (key: string): string =>
-    key
-      .replace(/([a-z])([A-Z])/g, '$1 $2')
-      .replace(/[_-]+/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .replace(/\b\w/g, c => c.toUpperCase());
-
   const clean = (value: string): string => value.replace(/\n{3,}/g, '\n\n').trim();
 
   const section = (heading: string, body: string): string => {
@@ -284,35 +319,6 @@ export function getSystemInstruction(
   const bullet = (label: string, value: unknown): string => {
     const normalized = text(value);
     return normalized ? `- ${label}: ${normalized}` : '';
-  };
-
-  const toLabeledPairs = (
-    source: Record<string, unknown> | undefined,
-    opts?: { extrasKey?: string; fallbackLabel?: string }
-  ): Array<{ label: string; value: string }> => {
-    if (!source || typeof source !== 'object') return [];
-    const extrasKey = opts?.extrasKey ?? '_extras';
-    const fallbackLabel = opts?.fallbackLabel ?? 'Details';
-    const pairs: Array<{ label: string; value: string }> = [];
-
-    for (const [key, raw] of Object.entries(source)) {
-      if (key === extrasKey) continue;
-      const value = text(raw);
-      if (!value) continue;
-      pairs.push({ label: titleCase(key), value });
-    }
-
-    const extrasRaw = (source as any)[extrasKey];
-    if (Array.isArray(extrasRaw)) {
-      for (const entry of extrasRaw) {
-        const label = text(entry?.label) || fallbackLabel;
-        const value = text(entry?.value);
-        if (!value) continue;
-        pairs.push({ label, value });
-      }
-    }
-
-    return pairs;
   };
 
   const normalizeCustomSectionItems = (customSection: any): Array<{ label: string; value: string }> => {
@@ -365,25 +371,6 @@ export function getSystemInstruction(
     });
   };
 
-  const renderFieldBlock = (heading: string, rows: Array<{ label: string; value: string }>): string => {
-    if (!rows.length) return '';
-    return `${heading}\n${renderRows(rows)}`;
-  };
-
-  const renderCustomSections = (heading: string, sections: any[] | undefined): string => {
-    if (!Array.isArray(sections) || sections.length === 0) return '';
-    const rendered = sections
-      .map((customSection) => {
-        const title = text(customSection?.title) || 'Untitled';
-        const items = normalizeCustomSectionItems(customSection);
-        if (!items.length) return '';
-        return `${title}\n${renderRows(items)}`;
-      })
-      .filter(Boolean)
-      .join('\n\n');
-    return rendered ? `${heading}\n${rendered}` : '';
-  };
-
   function normalizeFlexibility(value: string | undefined): 'rigid' | 'normal' | 'flexible' {
     const lowered = (value || 'normal').toLowerCase();
     if (lowered === 'rigid' || lowered === 'flexible') return lowered;
@@ -406,12 +393,6 @@ export function getSystemInstruction(
       return 'Flexible. Let this shift or fade if repeated user choices or scene events keep carrying the roleplay somewhere else.';
     }
     return 'Normal. Keep this as background continuity and let it matter when the current scene naturally supports it.';
-  }
-
-  function buildTraitDescription(trait: any): string {
-    const label = text(trait?.label) || text(trait?.value) || 'Unnamed trait';
-    const detail = text(trait?.value);
-    return detail && detail !== label ? `- ${label}: ${detail}` : `- ${label}`;
   }
 
   function buildGoalDescription(goal: any, subject: 'story' | 'character'): string {
@@ -458,73 +439,16 @@ export function getSystemInstruction(
     ].filter(Boolean).join('\n')).join('\n\n')}`;
   };
 
-  const renderPersonalityBlock = (character: any): string => {
-    const p = character?.personality;
-    if (!p || typeof p !== 'object') return '';
-
-    if (p.splitMode) {
-      const outward = (p.outwardTraits || [])
-        .filter((trait: any) => text(trait?.label) || text(trait?.value))
-        .map((trait: any) => buildTraitDescription(trait))
-        .join('\n');
-      const inward = (p.inwardTraits || [])
-        .filter((trait: any) => text(trait?.label) || text(trait?.value))
-        .map((trait: any) => buildTraitDescription(trait))
-        .join('\n');
-      return [
-        outward ? `${text(character?.name) || 'CHARACTER'} PERSONALITY\nOUTWARD PERSONALITY\n${outward}` : '',
-        inward ? `INWARD PERSONALITY\n${inward}` : '',
-      ].filter(Boolean).join('\n\n');
-    }
-
-    if (Array.isArray(p.traits)) {
-      const structuredTraits = p.traits
-        .filter((trait: any) => text(trait?.label) || text(trait?.value))
-        .map((trait: any) => typeof trait === 'string' ? `- ${trait}` : buildTraitDescription(trait))
-        .join('\n');
-      if (structuredTraits) return `${text(character?.name) || 'CHARACTER'} PERSONALITY\n${structuredTraits}`;
-    }
-
-    const fallbackRows = Object.entries(p)
-      .map(([key, raw]) => ({ label: titleCase(key), value: text(raw) }))
-      .filter((row) => row.value);
-    return fallbackRows.length ? `${text(character?.name) || 'CHARACTER'} PERSONALITY\n${renderRows(fallbackRows)}` : '';
-  };
-
-  const renderCharacterCard = (character: any): string => {
-    const name = text(character?.name) || 'Unnamed';
-    const role = text(character?.characterRole) || 'Unknown';
-    const roleLabel = role.toLowerCase() === 'main' ? 'Main character in story' : role.toLowerCase() === 'side' ? 'Side character in story' : role;
-    const basics = [
-      bullet('SEX / TYPE', character?.sexType),
-      bullet('AGE', character?.age),
-      bullet('NICKNAMES', character?.nicknames),
-      bullet('SEXUAL ORIENTATION', character?.sexualOrientation),
-      `- ROLE: ${roleLabel}`,
-      `- CONTROLLED BY: ${text(character?.controlledBy) || 'Unknown'}`,
-      bullet('ROLE DESCRIPTION', character?.roleDescription),
-      bullet('LOCATION', character?.location),
-      bullet('SCENE POSITION', character?.scenePosition),
-      bullet('MOOD', character?.currentMood),
-      bullet('TAGS', character?.tags),
-    ].filter(Boolean).join('\n');
-
-    return [
-      `CHARACTER: ${name}`,
-      `CHARACTER BASICS\n${basics}`,
-      renderFieldBlock(`${name} PHYSICAL APPEARANCE`, toLabeledPairs(character?.physicalAppearance)),
-      renderFieldBlock(`${name} CURRENTLY WEARING`, toLabeledPairs(character?.currentlyWearing)),
-      renderFieldBlock(`${name} PREFERRED CLOTHING`, toLabeledPairs(character?.preferredClothing)),
-      renderPersonalityBlock(character),
-      renderFieldBlock(`${name} TONE`, toLabeledPairs(character?.tone)),
-      renderFieldBlock(`${name} BACKGROUND`, toLabeledPairs(character?.background)),
-      renderFieldBlock(`${name} KEY LIFE EVENTS`, toLabeledPairs(character?.keyLifeEvents)),
-      renderFieldBlock(`${name} RELATIONSHIPS`, toLabeledPairs(character?.relationships)),
-      renderFieldBlock(`${name} SECRETS`, toLabeledPairs(character?.secrets)),
-      renderFieldBlock(`${name} FEARS`, toLabeledPairs(character?.fears)),
-      renderGoalBlock(`${name} GOALS`, character?.goals, 'character', text(character?.controlledBy)),
-      renderCustomSections(`${name} CUSTOM CONTENT`, character?.sections),
-    ].filter(Boolean).join('\n\n');
+  const renderCharacterCard = (character: Character | SideCharacter): string => {
+    const selectedGoals = 'goals' in character
+      ? renderGoalBlock(
+          `${text(character.name) || 'CHARACTER'} GOALS`,
+          character.goals,
+          'character',
+          text(character.controlledBy),
+        )
+      : '';
+    return [renderCharacterPromptFacts(character), selectedGoals].filter(Boolean).join('\n\n');
   };
 
   const renderLocations = (): string => {
@@ -567,21 +491,22 @@ export function getSystemInstruction(
   const sideAiCharacters = aiCharacters.filter((character) => character.characterRole !== 'Main');
   const userCharacterNames = userCharacters.map((character) => character.name).filter(Boolean);
 
-  const renderCharacterList = (characters: any[]): string => characters.map(renderCharacterCard).join('\n\n');
+  const renderCharacterList = (characters: Array<Character | SideCharacter>): string => characters.map(renderCharacterCard).join('\n\n');
 
   const renderSceneStateLine = (character: any): string => {
     const name = text(character?.name);
     if (!name) return '';
     const control = text(character?.controlledBy);
     const role = text(character?.characterRole);
-    const location = text(character?.location);
-    const scenePosition = text(character?.scenePosition);
-    const mood = text(character?.currentMood);
+    const clothing = [
+      text(character?.currentlyWearing?.top) ? `top=${text(character.currentlyWearing.top)}` : '',
+      text(character?.currentlyWearing?.bottom) ? `bottom=${text(character.currentlyWearing.bottom)}` : '',
+    ].filter(Boolean).join('; ');
+    const physicalCondition = text(character?.physicalAppearance?.temporaryConditions);
     const parts = [
       `${name}${control ? ` is ${control.toLowerCase()}-controlled` : ''}${role ? ` and serves as a ${role.toLowerCase()} character` : ''}.`,
-      scenePosition ? `Exact position: ${ensureSentence(scenePosition)}` : '',
-      location ? `Broad location: ${ensureSentence(location)}` : '',
-      mood ? `Current mood: ${ensureSentence(mood)}` : '',
+      clothing ? `Visible clothing: ${ensureSentence(clothing)}` : '',
+      physicalCondition ? `Current physical condition: ${ensureSentence(physicalCondition)}` : '',
     ].filter(Boolean);
     return `- ${parts.join(' ')}`;
   };
@@ -651,7 +576,7 @@ export function getSystemInstruction(
     ].filter(Boolean).join('\n\n'));
   };
 
-  const renderCardReferenceFraming = (): string => section('STORY AND CHARACTER CARD REFERENCE RULE', `The complete story and character card details below are provided as reference context. They define what is true about the world, characters, relationships, history, and each character's current state. Use this information to keep every action, line of dialogue, and internal thought authentic and consistent with the roleplay.\n\nSpecific card details may appear when they matter to what is happening, but do not keep restating an established detail with the same wording or descriptive focus. If a detail remains relevant after it has already been shown, write what changes, what it causes, or how characters respond to it instead of repeating the detail itself.`);
+  const renderCardReferenceFraming = (): string => section('STORY AND CHARACTER CARD REFERENCE RULE', `The character sections below contain selected identity facts, compact references, and voice or behavior guidance derived from saved character cards. The full creator-authored cards remain stored in Chronicle, while current mutable scene facts are supplied separately in the current-scene state section.\n\nUse selected card facts when they matter to the current exchange, but do not repeat creator wording or turn labels into narration or dialogue. If a detail remains relevant after it has already been shown, write what changes, what it causes, or how characters respond to it instead of repeating the detail itself. The latest user message remains the strongest source for what is true right now.`);
 
   const renderMainAiCharacters = (): string => section('SECTION 3 - MAIN AI CHARACTER CARD INFORMATION', `Main character should be the focal point of the story's role-playing.\n\n${renderCharacterList(mainAiCharacters)}`);
 
@@ -759,7 +684,7 @@ When the next meaningful moment depends on the user character's response, stop w
 
 --- CHARACTER AUTHENTICITY ---
 
-- Dialogue, actions, and internal thoughts should fit the character card, current mood, relationships, memories, and present situation.
+- Dialogue, actions, and internal thoughts should fit the character card, relationships, memories, and emotional context established by the latest exchange.
 - Personality should appear through what characters say, do, notice, avoid, want, fear, or withhold.
 - Do not force every trait into every response.
 - Let non-rigid traits shift gradually only when repeated story events earn that change.
@@ -869,12 +794,16 @@ export async function* generateRoleplayResponseStream(
   const {
     messages,
     historyMessages,
+    recentHistoryPacket,
     finalUserContent,
+    finalUserLaneEvidence,
     historyLimit,
   } = buildRoleplayApiMessages({
     conversationMessages: conversation.messages,
     systemInstruction,
     userMessage,
+    responseJob: options?.responseJob,
+    userStateAuthorityDecisions: options?.userStateAuthorityDecisions,
     isRegeneration,
     currentTurnStateDigest,
     sessionMessageCount,
@@ -888,7 +817,7 @@ export async function* generateRoleplayResponseStream(
   // by active ai_usage_test_sessions so no client-local toggle is required.
   const shouldTrackCall1 = true;
   const systemChars = systemInstruction.length;
-  const historyChars = historyMessages.reduce((sum, msg) => sum + (msg.text?.length || 0), 0);
+  const historyChars = recentHistoryPacket.providerMessages.reduce((sum, message) => sum + message.content.length, 0);
   const finalUserChars = messages[messages.length - 1]?.content?.length || 0;
   const inputChars = messages.reduce((sum, msg) => sum + (msg.content?.length || 0), 0);
   const inputTokensEst = Math.ceil(inputChars / 4);
@@ -959,6 +888,8 @@ export async function* generateRoleplayResponseStream(
         modelId,
         messageCount: messages.length,
         historyCount: historyMessages.length,
+        providerHistoryCount: recentHistoryPacket.providerMessages.length,
+        suppressedHistoryCount: recentHistoryPacket.receipts.filter((receipt) => !receipt.includedInProviderHistory).length,
         totalConversationHistoryCount: conversation.messages.length,
         historyLimit,
         systemChars,
@@ -980,19 +911,23 @@ export async function* generateRoleplayResponseStream(
   const maxTokensByVerbosity: Record<string, number> = { concise: 1024, balanced: 2048, detailed: 3072 };
   const maxTokens = maxTokensByVerbosity[verbosity] || 2048;
   const allPlayableCharacters = [...appData.characters, ...(appData.sideCharacters || [])];
+  const roleplaySceneRoster = buildRoleplaySceneRoster({
+    mainCharacters: appData.characters,
+    sideCharacters: appData.sideCharacters || [],
+  });
   const aiCharacterNames = allPlayableCharacters
     .filter((character) => character.controlledBy === 'AI')
     .map((character) => character.name);
   const userCharacterNames = allPlayableCharacters
     .filter((character) => character.controlledBy === 'User')
     .map((character) => character.name);
-  const characterSceneStates = allPlayableCharacters.map((character) => ({
-    name: character.name,
-    controlledBy: character.controlledBy,
-    characterRole: character.characterRole,
-    location: character.location || '',
-    scenePosition: character.scenePosition || '',
-    currentMood: character.currentMood || '',
+  const characterSceneStates = roleplaySceneRoster.map((row) => ({
+    characterId: row.characterId,
+    name: row.name,
+    controlledBy: row.control,
+    characterRole: row.role,
+    location: row.location,
+    scenePosition: row.scenePosition || '',
   }));
   const roleplayContext = {
     conversationId,
@@ -1004,6 +939,28 @@ export async function* generateRoleplayResponseStream(
     userCharacterNames,
     characterSceneStates,
   };
+  const roleplaySourceReceipts = buildRoleplaySourceReceipts({
+    systemInstruction,
+    finalUserLanes: options?.responseJob?.finalUserLanes ?? [],
+    recentHistoryPacket,
+    executionBrief: ROLEPLAY_EXECUTION_BRIEF_TEXT,
+    roleplayContext,
+  });
+  const roleplayDuplicateSourceMetrics = buildRoleplayDuplicateSourceMetrics(roleplaySourceReceipts);
+  const roleplayCharacterPromptFacts = allPlayableCharacters.flatMap(selectCharacterPromptFactsForRendering);
+  const roleplayKnowledgeVisibilityFacts = allPlayableCharacters.flatMap(
+    buildResolvedCurrentSceneKnowledgeFacts,
+  );
+  const roleplayCharacterPromptFactSummaries = allPlayableCharacters.map((character) => (
+    buildCharacterPromptFactReviewSummary(character, systemInstruction)
+  ));
+  const {
+    receiptCoverage: roleplaySourceReceiptCoverage,
+    providerSectionCoverage: roleplayProviderSectionCoverage,
+  } = buildRoleplaySourceCoverage({
+    receipts: roleplaySourceReceipts,
+    providerMessages: messages,
+  });
   const requestBody = {
     messages,
     modelId,
@@ -1014,6 +971,25 @@ export async function* generateRoleplayResponseStream(
     reasoningEffort: ROLEPLAY_REASONING_EFFORT,
     store: ROLEPLAY_STORE,
     debugTrace: options?.debugTrace === true,
+    responseJob: options?.responseJob ?? null,
+    finalUserLaneEvidence,
+    recentHistoryPacket,
+    roleplaySourceReceipts: options?.debugTrace === true ? roleplaySourceReceipts : undefined,
+    roleplayDuplicateSourceMetrics: options?.debugTrace === true ? roleplayDuplicateSourceMetrics : undefined,
+    roleplaySourceReceiptCoverage: options?.debugTrace === true ? roleplaySourceReceiptCoverage : undefined,
+    roleplayProviderSectionCoverage: options?.debugTrace === true ? roleplayProviderSectionCoverage : undefined,
+    roleplayUserStateAuthorityDecisions: options?.debugTrace === true
+      ? options.userStateAuthorityDecisions ?? []
+      : undefined,
+    roleplayCharacterPromptFacts: options?.debugTrace === true
+      ? roleplayCharacterPromptFacts
+      : undefined,
+    roleplayCharacterPromptFactSummaries: options?.debugTrace === true
+      ? roleplayCharacterPromptFactSummaries
+      : undefined,
+    roleplayKnowledgeVisibilityFacts: options?.debugTrace === true
+      ? roleplayKnowledgeVisibilityFacts
+      : undefined,
     roleplayContext,
   };
 
@@ -1027,6 +1003,14 @@ export async function* generateRoleplayResponseStream(
       capturedAt: Date.now(),
       status: 'sent',
       requestBody,
+      roleplaySourceReceipts,
+      roleplayDuplicateSourceMetrics,
+      roleplaySourceReceiptCoverage,
+      roleplayProviderSectionCoverage,
+      roleplayUserStateAuthorityDecisions: options.userStateAuthorityDecisions ?? [],
+      roleplayCharacterPromptFacts,
+      roleplayCharacterPromptFactSummaries,
+      roleplayKnowledgeVisibilityFacts,
       modelRequest: {
         endpoint: 'https://api.x.ai/v1/responses',
         method: 'POST',

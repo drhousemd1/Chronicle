@@ -58,7 +58,6 @@ function makeCharacter(name: string, controlledBy: "AI" | "User", role: "Main" |
     sexualOrientation: `{{${name}.sexualOrientation}}`,
     location: `{{${name}.location}}`,
     scenePosition: `{{${name}.scenePosition}}`,
-    currentMood: `{{${name}.currentMood}}`,
     controlledBy,
     characterRole: role,
     roleDescription: `{{${name}.roleDescription}}`,
@@ -545,7 +544,6 @@ Top-level fields:
 - nicknames
 - location
 - scenePosition
-- currentMood
 
 Nested detail fields:
 - physicalAppearance.* and physicalAppearance._extras
@@ -586,7 +584,6 @@ Character goals:
 - Every returned update must include a short exact phrase from the latest exchange as evidence and a confidence score from 0 to 1. If you cannot quote the exchange text that supports the change, omit the update.
 
 --- FIELD GUIDANCE ---
-- currentMood: emotional/psychological state only, max 12 words. No body-part prose, clothing, objects, or action sequences.
 - location: broad place only. Do not change location to a destination merely because it was seen, mentioned, chosen, or approached. Update it only when the exchange clearly establishes that the character has actually arrived in, entered, left, or relocated to a different broad place.
 - scenePosition: short factual snapshot of the character's immediate physical situation inside the current location. Update it whenever the latest exchange materially changes that immediate situation, even if the broad location stays the same. Do not leave it blank when the latest exchange establishes a new physical state.
 - physicalStateReviews: one review row per eligible character. This row confirms whether location and scenePosition were considered for that character. A review row is required even when no update is returned because the existing saved state is still accurate or evidence is insufficient.
@@ -958,7 +955,7 @@ REQUEST BODY SHAPE
     "activeSceneTags": "{{active scene tags or [] unless an explicit [SCENE] tag has been established}}",
     "aiCharacterNames": "{{AI-controlled character names}}",
     "userCharacterNames": "{{User-controlled character names}}",
-    "characterSceneStates": "{{name/control/role/location/scenePosition/currentMood for all playable characters}}"
+    "characterSceneStates": "{{characterId/name/control/role/location/scenePosition for all playable characters}}"
   }
 }
 
@@ -1052,7 +1049,7 @@ The final role:user message is split into labeled blocks so app controls do not 
 
 [CURRENT TURN STATE]
 Use this as the active scene anchor. It summarizes established state already supplied elsewhere. If the latest player turn changes any item, the latest player turn controls the next response.
-{{compact current day/time, active scene, character location/position/mood rows, and capped current-day memory anchors}}
+{{compact current day/time, active scene, one character location/position roster, and capped current-day memory anchors}}
 
 [REGENERATION REQUEST] only when regenerating
 {{regenerationDirective}}
@@ -1071,7 +1068,8 @@ CURRENT TURN STATE INSIDE [APP TURN CONTROLS]
 Use this as the active scene anchor. It summarizes established state already supplied elsewhere. If the latest player turn changes any item, the latest player turn controls the next response.
 - Story clock: {{current day/time when known}}
 - Active scene: {{active scene title and tags when known}}
-- {{CharacterName}} ({{AI/User}}): location={{broad location}}; position={{scenePosition}}; mood={{currentMood}}
+[SCENE PRESENCE ROSTER]
+- {{CharacterName}}; control={{AI/User}}; role={{Main/Side}}; location={{broad location or Unknown}}; position={{scenePosition when present}}
 - Current-day memory anchors: {{up to 3 compact current-day memory anchors}}
 
 When regenerating, the final user message also includes the exact assistant response being replaced after the triggering user text:
@@ -1256,7 +1254,7 @@ EDGE RESPONSE SHAPE
     {
       "index": 0,
       "accepted": true,
-      "reason": "accepted|invalid_candidate_shape|missing_required_value|unknown_character|ambiguous_character_alias|unsupported_field|unsupported_value|invalid_current_mood|low_confidence|missing_evidence|evidence_not_in_latest_exchange|filtered_by_state_guard|superseded_by_refinement|goals_disabled_in_safe_retry|parse_error|updates_not_array|missing_json_object|no_json_object",
+      "reason": "accepted|invalid_candidate_shape|missing_required_value|unknown_character|ambiguous_character_alias|unsupported_field|unsupported_value|low_confidence|missing_evidence|evidence_not_in_latest_exchange|filtered_by_state_guard|superseded_by_refinement|goals_disabled_in_safe_retry|parse_error|updates_not_array|missing_json_object|no_json_object",
       "character": "{{resolved character name}}",
       "field": "{{supported field path}}",
       "value": "{{proposed value}}",

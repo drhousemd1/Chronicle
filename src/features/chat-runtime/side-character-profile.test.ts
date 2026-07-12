@@ -125,7 +125,6 @@ describe('side-character generated profile sanitization', () => {
       sexType: 'female',
       sexualOrientation: 'bisexual',
       location: 'lounge',
-      currentMood: 'watchful',
       controlledBy: 'AI',
       characterRole: 'Main',
       roleDescription: 'bartender',

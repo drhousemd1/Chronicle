@@ -36,7 +36,6 @@ type CharacterSceneState = {
   characterRole?: string;
   location?: string;
   scenePosition?: string;
-  currentMood?: string;
 };
 
 type RoleplayContext = {

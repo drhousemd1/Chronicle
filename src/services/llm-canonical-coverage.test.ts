@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildCurrentTurnStateDigest, buildRoleplayApiMessages, EXECUTION_BRIEF_TEXT, getSystemInstruction, REGENERATION_DIRECTIVE_TEXT } from '@/services/llm';
+import { buildNormalSendResponseJob } from '@/features/chat-runtime/roleplay-response-job';
 import { createDefaultScenarioData, getHardcodedTestCharacters, now, uid } from '@/utils';
 
 describe('llm canonical prompt coverage', () => {
@@ -18,12 +19,14 @@ describe('llm canonical prompt coverage', () => {
       hairColor: 'Golden',
       eyeColor: 'Green',
       build: 'Athletic',
+      temporaryConditions: 'Fresh bruise on left wrist',
       _extras: [{ id: uid('extra'), label: 'Distinct Mark', value: 'Golden mask scars' }],
     };
     aiCharacter.currentlyWearing = {
       ...aiCharacter.currentlyWearing,
       top: 'Green tunic',
       bottom: 'Dark trousers',
+      undergarments: 'Currently hidden red thong',
       _extras: [{ id: uid('extra'), label: 'Accessory', value: 'Court signet ring' }],
     };
     aiCharacter.preferredClothing = {
@@ -40,6 +43,9 @@ describe('llm canonical prompt coverage', () => {
     };
     aiCharacter.tone = {
       _extras: [{ id: uid('extra'), label: 'Voice', value: 'Measured and restrained' }],
+    };
+    aiCharacter.secrets = {
+      _extras: [{ id: uid('extra'), label: 'Hidden leverage', value: 'Secret pact with the rival court' }],
     };
     aiCharacter.sections = [
       {
@@ -171,25 +177,35 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).not.toContain('[Trigger Warnings]');
 
     expect(prompt).toContain('STORY AND CHARACTER CARD REFERENCE RULE');
-    expect(prompt).toContain('provided as reference context');
-    expect(prompt).toContain("relationships, history, and each character's current state");
-    expect(prompt).toContain('do not keep restating an established detail with the same wording or descriptive focus');
+    expect(prompt).toContain('selected identity facts, compact references, and voice or behavior guidance');
+    expect(prompt).toContain('The full creator-authored cards remain stored in Chronicle');
+    expect(prompt).toContain('current mutable scene facts are supplied separately');
+    expect(prompt).toContain('do not repeat creator wording or turn labels into narration or dialogue');
     expect(prompt).toContain('write what changes, what it causes, or how characters respond to it');
     expect(prompt).toContain('World locations, supplies, and custom world content are creator reference, not automatic character knowledge.');
 
     expect(prompt).toContain('SECTION 3 - MAIN AI CHARACTER CARD INFORMATION');
     expect(prompt).toContain('CHARACTER: Tamlin');
-    expect(prompt).toContain('AGE: 27');
-    expect(prompt).toContain('ROLE DESCRIPTION: High fae ruler trying to protect his court.');
-    expect(prompt).toContain('CONTROLLED BY: AI');
-    expect(prompt).toContain('Tamlin PHYSICAL APPEARANCE');
-    expect(prompt).toContain('Hair Color: Golden');
-    expect(prompt).toContain('Tamlin CURRENTLY WEARING');
-    expect(prompt).toContain('Top: Green tunic');
-    expect(prompt).toContain('Tamlin PREFERRED CLOTHING');
-    expect(prompt).toContain('Casual: Simple linen shirt');
-    expect(prompt).toContain('Tamlin CUSTOM CONTENT');
-    expect(prompt).toContain('Control dynamics and slow-burn teasing.');
+    expect(prompt).toContain('IDENTITY FACTS');
+    expect(prompt).toContain('- Age: 27');
+    expect(prompt).toContain('- Role in story: High · fae · ruler · trying · protect · court.');
+    expect(prompt).not.toContain('High fae ruler trying to protect his court.');
+    expect(prompt).toContain('- Controlled by: AI');
+    expect(prompt).toContain('CREATOR REFERENCE FACTS');
+    expect(prompt).toContain('- Hair Color: Golden');
+    expect(prompt).not.toContain('Tamlin CURRENTLY WEARING');
+    expect(prompt).toContain('Visible clothing: top=Green tunic; bottom=Dark trousers.');
+    expect(prompt).not.toContain('Exact position:');
+    expect(prompt).not.toContain('Broad location:');
+    expect(prompt).not.toContain('Current mood:');
+    expect(prompt).not.toContain('undergarments=');
+    expect(prompt).not.toContain('Currently hidden red thong');
+    expect(prompt).toContain('Current physical condition: Fresh bruise on left wrist.');
+    expect(prompt).not.toContain('Secret pact with the rival court');
+    expect(prompt).toContain('- Casual: Simple linen shirt');
+    expect(prompt).not.toContain('Tamlin CUSTOM CONTENT');
+    expect(prompt).toContain('Control · dynamics · slow-burn · teasing.');
+    expect(prompt).not.toContain('Control dynamics and slow-burn teasing.');
     expect(prompt).toContain('Tamlin GOALS');
     expect(prompt).toContain('CHARACTER GOAL: Protect Feyre');
     expect(prompt).toContain('Long-range direction: Keep her away from political threats.');
@@ -197,7 +213,10 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('SECTION 5 - USER-CONTROLLED CHARACTER CARD INFORMATION');
     expect(prompt).toContain('USER-CONTROLLED CHARACTERS DO NOT GENERATE FOR');
     expect(prompt).toContain('- Feyre');
-    expect(prompt).toContain('CONTROLLED BY: User');
+    expect(prompt).toContain('- Controlled by: User');
+    expect(prompt).not.toContain('CHARACTER BASICS');
+    expect(prompt).not.toContain('Tamlin PHYSICAL APPEARANCE');
+    expect(prompt).not.toContain('Tamlin PREFERRED CLOTHING');
     expect(prompt).toContain('SECTION 7 - DIALOG FORMATTING AND ROLEPLAY RULES');
     expect(prompt).toContain('--- DIALOG FORMATTING RULES ---');
     expect(prompt).toContain("Every AI-written character block must begin with that character's exact card NAME followed by a colon.");
@@ -256,7 +275,6 @@ describe('llm canonical prompt coverage', () => {
     aiCharacter.controlledBy = 'AI';
     aiCharacter.location = 'Abandoned cabin interior';
     aiCharacter.scenePosition = 'Standing beside the hearth with one hand on the blanket';
-    aiCharacter.currentMood = 'focused and worried';
     userCharacter.name = 'James';
     userCharacter.controlledBy = 'User';
     userCharacter.location = 'Abandoned cabin interior';
@@ -278,8 +296,10 @@ describe('llm canonical prompt coverage', () => {
     expect(digest).toContain('Use this as the active scene anchor.');
     expect(digest).toContain('Story clock: Day 2');
     expect(digest).toContain('Active scene: Cabin Shelter tags=cabin');
-    expect(digest).toContain('Sarah (AI): location=Abandoned cabin interior; position=Standing beside the hearth');
-    expect(digest).toContain('James (User): location=Abandoned cabin interior; position=Near Sarah by the fireplace');
+    expect(digest).toContain('[SCENE PRESENCE ROSTER]');
+    expect(digest).toContain('Sarah; control=AI; role=Main; location=Abandoned cabin interior; position=Standing beside the hearth');
+    expect(digest).toContain('James; control=User; role=Main; location=Abandoned cabin interior; position=Near Sarah by the fireplace');
+    expect(digest).not.toMatch(/mood=/i);
     expect(digest).toContain('Current-day memory anchors: Sarah already knows the hidden clothing detail.');
     expect(digest).not.toContain('[CURRENT SCENE SNAPSHOT]');
   });
@@ -303,7 +323,6 @@ describe('llm canonical prompt coverage', () => {
         sexType: 'Female',
         sexualOrientation: '',
         location: 'Cabin',
-        currentMood: 'Anxious',
         controlledBy: 'User',
         characterRole: 'Side',
         roleDescription: 'Sarah’s daughter.',
@@ -339,7 +358,7 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('- Ashley');
     expect(prompt).toContain('SECTION 5 - USER-CONTROLLED CHARACTER CARD INFORMATION');
     expect(prompt).toContain('CHARACTER: Ashley');
-    expect(prompt).toContain('CONTROLLED BY: User');
+    expect(prompt).toContain('- Controlled by: User');
     expect(prompt).not.toContain('SECTION 4 - SIDE AI CHARACTER CARD INFORMATION');
   });
 
@@ -364,7 +383,6 @@ describe('llm canonical prompt coverage', () => {
         sexType: 'Female',
         sexualOrientation: '',
         location: 'Roadside',
-        currentMood: 'Watchful',
         controlledBy: 'AI',
         characterRole: 'Side',
         roleDescription: 'A scout traveling with the group.',
@@ -401,7 +419,7 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('let present side characters speak or act when their established role in the current scene gives them a clear reason to contribute');
     expect(prompt).toContain('Do not let side characters take over the response unless the current scene has naturally shifted focus to them.');
     expect(prompt).toContain('CHARACTER: Iris');
-    expect(prompt).toContain('CONTROLLED BY: AI');
+    expect(prompt).toContain('- Controlled by: AI');
     expect(prompt).not.toContain('do take somewhat of a back seat');
   });
 
@@ -428,8 +446,9 @@ describe('llm canonical prompt coverage', () => {
 
     const prompt = getSystemInstruction(appData, 1, 'night', [], true, null);
 
-    expect(prompt).toContain('Ashley PERSONALITY');
-    expect(prompt).toContain('- Guarded: Keeps her real feelings hidden until trust has been earned.');
+    expect(prompt).toContain('VOICE AND BEHAVIOR AFFORDANCES');
+    expect(prompt).toContain('- Guarded: Keeps · real · feelings · hidden · trust · earned.');
+    expect(prompt).not.toContain('Keeps her real feelings hidden until trust has been earned.');
     expect(prompt).not.toContain('This is a stable tendency');
     expect(prompt).not.toContain('This is a core trait');
     expect(prompt).not.toContain('It should strongly color');
@@ -482,7 +501,6 @@ describe('llm canonical prompt coverage', () => {
     aiCharacter.roleDescription = 'A guide traveling with the group.';
     aiCharacter.tags = 'guide, practical';
     aiCharacter.location = 'Roadside';
-    aiCharacter.currentMood = 'Focused';
     aiCharacter.physicalAppearance = {
       ...aiCharacter.physicalAppearance,
       hairColor: 'Black',
@@ -840,6 +858,209 @@ describe('llm canonical prompt coverage', () => {
     expect(built.finalUserContent.indexOf('[EXECUTION BRIEF]')).toBeLessThan(built.finalUserContent.indexOf('[PLAYER TURN]'));
     expect(built.messages[6]).toEqual({ role: 'user', content: built.finalUserContent });
     expect(built.messages.map((message) => message.content).join('\n')).not.toContain('Chronicle: The model provider blocked');
+  });
+
+  it('builds recent-history treatment receipts and suppresses repeated older assistant style anchors', () => {
+    const messages = [
+      {
+        id: 'message-user-1',
+        role: 'user' as const,
+        text: 'I ask her to make the next move.',
+        createdAt: now(),
+      },
+      {
+        id: 'message-assistant-old',
+        generationId: 'generation-assistant-old',
+        role: 'assistant' as const,
+        text: 'Mara: *Mara circles the same old balcony rail, repeating the old anchor posture.* "What do you do next?"',
+        createdAt: now() + 1,
+      },
+      {
+        id: 'message-user-2',
+        role: 'user' as const,
+        text: 'I wait for her actual decision.',
+        createdAt: now() + 2,
+      },
+      {
+        id: 'message-assistant-latest',
+        generationId: 'generation-assistant-latest',
+        role: 'assistant' as const,
+        text: 'Mara: *Mara circles the same old balcony rail, but finally chooses a direction.* "What do you do next?"',
+        createdAt: now() + 3,
+      },
+    ];
+
+    const built = buildRoleplayApiMessages({
+      conversationMessages: messages as any,
+      systemInstruction: 'SYSTEM',
+      userMessage: 'latest user text',
+      sessionMessageCount: 20,
+    });
+
+    const packet = (built as any).recentHistoryPacket;
+    const providerHistoryText = built.messages
+      .slice(1, -1)
+      .map((message) => message.content)
+      .join('\n');
+
+    expect(packet.receipts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          messageId: 'message-user-1',
+          role: 'user',
+          includedInProviderHistory: true,
+          treatment: 'exact_user',
+        }),
+        expect.objectContaining({
+          messageId: 'message-assistant-old',
+          generationId: 'generation-assistant-old',
+          role: 'assistant',
+          includedInProviderHistory: true,
+          treatment: 'suppressed_style_anchor',
+          reason: 'repeated_assistant_phrase_removed',
+          repeatedAnchors: expect.arrayContaining(['what do you do next?']),
+        }),
+        expect.objectContaining({
+          messageId: 'message-assistant-latest',
+          generationId: 'generation-assistant-latest',
+          role: 'assistant',
+          includedInProviderHistory: true,
+          treatment: 'exact_latest_assistant',
+        }),
+      ]),
+    );
+    expect(packet.suppressedStyleAnchors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          messageId: 'message-assistant-old',
+          repeatedAnchors: expect.arrayContaining(['what do you do next?']),
+        }),
+      ]),
+    );
+    expect(providerHistoryText).toContain('I ask her to make the next move.');
+    expect(providerHistoryText).toContain('I wait for her actual decision.');
+    expect(providerHistoryText).toContain('repeating the old anchor posture');
+    expect(providerHistoryText).toContain('finally chooses a direction');
+    expect(providerHistoryText.match(/What do you do next\?/g)).toHaveLength(1);
+    expect(built.finalUserContent).toContain('[PLAYER TURN]');
+  });
+
+  it('passes structured authority decisions into recent-history outcome transformation', () => {
+    const built = buildRoleplayApiMessages({
+      conversationMessages: [
+        {
+          id: 'message-assistant-old',
+          generationId: 'generation-assistant-old',
+          role: 'assistant',
+          text: 'Distinctive copied assistant wording must disappear.',
+          createdAt: now(),
+        },
+        {
+          id: 'message-user-latest',
+          role: 'user',
+          text: 'I stay where I am.',
+          createdAt: now() + 1,
+        },
+        {
+          id: 'message-assistant-latest',
+          generationId: 'generation-assistant-latest',
+          role: 'assistant',
+          text: 'The latest accepted assistant response stays exact.',
+          createdAt: now() + 2,
+        },
+      ] as any,
+      systemInstruction: 'SYSTEM',
+      userMessage: 'latest user text',
+      userStateAuthorityDecisions: [{
+        claim: 'The user character visibly steadies one hand.',
+        claimType: 'bodily_reaction',
+        sourceMessageId: 'message-assistant-old',
+        sourceGenerationId: 'generation-assistant-old',
+        sourceRole: 'assistant',
+        authority: 'accepted_assistant_observable_change',
+        modelFacingAction: 'allow_as_observation',
+        reason: 'accepted_assistant_generation_with_observable_change',
+      }],
+    });
+
+    const providerHistory = built.messages.slice(1, -1).map((message) => message.content);
+    expect(providerHistory).toContain([
+      'Older assistant outcome summary:',
+      '- Observed change: The user character visibly steadies one hand.',
+    ].join('\n'));
+    expect(providerHistory.join('\n')).not.toContain('Distinctive copied assistant wording');
+    expect(built.recentHistoryPacket.receipts).toContainEqual(expect.objectContaining({
+      messageId: 'message-assistant-old',
+      treatment: 'outcome_summary',
+      sourceAuthorityDecisionCount: 1,
+    }));
+  });
+
+  it('renders a normal_send response job as structured final-user lanes', () => {
+    const responseJob = buildNormalSendResponseJob({
+      conversationId: 'conversation-1',
+      playerTurn: {
+        messageId: 'user-1',
+        text: 'I step closer.',
+      },
+      currentStateSummary: 'Kitchen scene remains active.',
+      responseDetail: 'detailed',
+    });
+
+    const built = buildRoleplayApiMessages({
+      conversationMessages: [],
+      systemInstruction: 'SYSTEM',
+      userMessage: 'loose fallback text that should not render',
+      currentTurnStateDigest: '[CURRENT TURN STATE]\n- fallback current state should not render when responseJob lanes are present',
+      responseJob,
+    });
+
+    expect(built.finalUserContent).toContain('[ROLEPLAY RESPONSE JOB]');
+    expect(built.finalUserContent).toContain('Mode: normal_send');
+    expect(built.finalUserContent).toContain('Purpose: respond_to_player_turn');
+    expect(built.finalUserContent).toContain('History policy: standard_recent_history');
+    expect(built.finalUserContent).toContain('[FINAL USER LANES]');
+    expect(built.finalUserContent).toContain('[player_turn | user | player_turn | model-facing]');
+    expect(built.finalUserContent).toContain('I step closer.');
+    expect(built.finalUserContent).toContain('[current_state | runtime | state | model-facing]');
+    expect(built.finalUserContent).toContain('Kitchen scene remains active.');
+    expect(built.finalUserContent).toContain('[response_detail | runtime | control | model-facing]');
+    expect(built.finalUserContent).toContain('detailed');
+    expect((built as any).finalUserLaneEvidence).toEqual([
+      {
+        id: 'player_turn',
+        kind: 'player_turn',
+        sourceRole: 'user',
+        authority: 'player_turn',
+        modelFacing: true,
+        contentLength: 'I step closer.'.length,
+        contentPreview: 'I step closer.',
+      },
+      {
+        id: 'current_state',
+        kind: 'current_state',
+        sourceRole: 'runtime',
+        authority: 'state',
+        modelFacing: true,
+        contentLength: 'Kitchen scene remains active.'.length,
+        contentPreview: 'Kitchen scene remains active.',
+      },
+      {
+        id: 'response_detail',
+        kind: 'response_detail',
+        sourceRole: 'runtime',
+        authority: 'control',
+        modelFacing: true,
+        contentLength: 'detailed'.length,
+        contentPreview: 'detailed',
+      },
+    ]);
+    expect(built.finalUserContent).not.toContain('loose fallback text that should not render');
+    expect(built.finalUserContent).not.toContain('fallback current state should not render when responseJob lanes are present');
+    expect(built.messages).toEqual([
+      { role: 'system', content: 'SYSTEM' },
+      { role: 'user', content: built.finalUserContent },
+    ]);
   });
 
   it('omits empty world placeholders from API Call 1 prompt output', () => {

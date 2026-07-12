@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { Conversation, ScenarioData } from '@/types';
-import { buildChatReviewHtml } from './review-export';
+import { buildChatReviewHtml, renderSupportCallSummary } from './review-export';
+import {
+  buildContinueAssistantTailResponseJob,
+  buildRetryRegenerateResponseJob,
+} from '@/features/chat-runtime/roleplay-response-job';
 
 const appData = {
   world: {
@@ -80,6 +84,278 @@ Ashley: *Ashley keeps moving her fingers.* "I can feel my thumb."`,
 };
 
 describe('buildChatReviewHtml', () => {
+  it('does not revive edge-accepted candidates when frontend acceptedUpdates is intentionally empty', () => {
+    const html = renderSupportCallSummary({
+      id: 'call2.character-state-sync',
+      label: 'API Call 2 - Character state sync',
+      apiCallGroup: 'call_2',
+      endpoint: '/functions/v1/extract-character-updates',
+      capturedAt: 4,
+      status: 'completed',
+      requestBody: {},
+      responseBody: {
+        candidateReviews: [{
+          accepted: true,
+          character: 'Sarah',
+          field: 'location',
+          value: 'Kitchen',
+          reason: 'accepted_at_edge',
+        }],
+        acceptedUpdates: [],
+        rejectedUpdates: [{
+          characterName: 'Sarah',
+          field: 'location',
+          value: 'Kitchen',
+          edgeAccepted: true,
+          frontendAccepted: false,
+          reason: 'missing_required_review',
+        }],
+      },
+    } as any);
+
+    expect(html).toContain('<strong>Accepted update candidates</strong>0');
+    expect(html).toContain('<strong>Rejected updates</strong>1');
+    expect(html).toContain('<strong>Sarah.location</strong>');
+    expect(html).toContain('rejected: missing_required_review');
+    expect(html).not.toContain('[accepted]');
+  });
+
+  it('renders one saved message parent with nested child speaker cards and parent-owned evidence', () => {
+    const html = buildChatReviewHtml({
+      appData,
+      conversation,
+      scenarioTitle: 'Lost',
+      modelId: 'test-model',
+      exportedAt: new Date('2026-07-10T12:00:00.000Z'),
+      sanitizeAssistantText: (text) => text,
+      messageComments: {
+        'message-ai-1': {
+          messageId: 'message-ai-1',
+          generationId: 'generation-ai-1',
+          note: 'One parent-owned tester note.',
+          tags: ['Speaker Flow'],
+          createdAt: 1,
+          updatedAt: 2,
+        },
+      },
+      debugRecords: {
+        'message-ai-1:generation-ai-1': {
+          messageId: 'message-ai-1',
+          generationId: 'generation-ai-1',
+          capturedAt: 3,
+          trace: null,
+          call1Request: {
+            id: 'call1.parent-boundary',
+            label: 'API Call 1 - Parent boundary fixture',
+            apiCallGroup: 'call_1',
+            endpoint: '/functions/v1/chat',
+            capturedAt: 3,
+            requestBody: { messages: [] },
+            roleplaySourceReceipts: [
+              {
+                id: 'player_turn:player_turn:fnv1a-12345678',
+                surface: 'player_turn',
+                sourceId: 'player_turn',
+                textHash: 'fnv1a-12345678',
+                authority: 'highest',
+                modelFacing: true,
+                disposition: 'included',
+                duplicateGroup: 'exact:fnv1a-12345678',
+                reason: 'response_job_lane:player_turn',
+                contentLength: 14,
+                preview: 'I step closer.',
+              },
+            ],
+            roleplayDuplicateSourceMetrics: [
+              {
+                duplicateGroup: 'exact:fnv1a-12345678',
+                receiptIds: [
+                  'recent_user_history:user-1:fnv1a-12345678',
+                  'player_turn:player_turn:fnv1a-12345678',
+                ],
+                surfaces: ['recent_user_history', 'player_turn'],
+                authorities: ['high', 'highest'],
+                dispositions: ['included'],
+                modelFacingCount: 2,
+                totalCount: 2,
+              },
+            ],
+            roleplaySourceReceiptCoverage: [
+              {
+                receiptId: 'player_turn:player_turn:fnv1a-12345678',
+                surface: 'player_turn',
+                status: 'covered',
+                providerMessageIndexes: [1],
+                reason: 'receipt_preview_found_in_rendered_provider_message',
+              },
+            ],
+            roleplayProviderSectionCoverage: [
+              {
+                providerSectionId: 'final-user-lane:player_turn',
+                expectedSurface: 'player_turn',
+                status: 'covered',
+                receiptIds: ['player_turn:player_turn:fnv1a-12345678'],
+              },
+            ],
+            roleplayCharacterPromptFacts: [{
+              characterId: 'character-sarah',
+              characterName: 'Sarah',
+              sourceField: 'physicalAppearance.eyeColor',
+              sourceLabel: 'Eye color',
+              sourceValue: 'Green',
+              value: 'Green',
+              runtimeUse: 'stable_reference',
+              authority: 'saved_card_reference',
+              relevance: 'conditional',
+              visibility: 'character_knowledge',
+              wordingPolicy: 'do_not_copy_phrase',
+              modelFacing: true,
+              disposition: 'transformed',
+              reason: 'creator_reference_requires_compact_nonverbatim_prompt_copy',
+            }],
+            roleplayCharacterPromptFactSummaries: [{
+              characterId: 'character-sarah',
+              characterName: 'Sarah',
+              totalFacts: 8,
+              modelFacingFacts: 5,
+              transformedFacts: 4,
+              suppressedFacts: 0,
+              debugOnlyFacts: 3,
+              duplicateSourceGroups: [],
+              repeatedRenderedValues: [],
+              legacyRawHeadingsPresent: [],
+            }],
+          },
+          supportCalls: [
+            {
+              id: 'call2.parent-boundary-support',
+              label: 'API Call 2 - Parent boundary support fixture',
+              apiCallGroup: 'call_2',
+              endpoint: '/functions/v1/extract-memory-events',
+              capturedAt: 4,
+              status: 'completed',
+              requestBody: {},
+              responseBody: {},
+              roleplaySupportReviewEnvelope: {
+                version: 1,
+                worker: 'memory_extraction',
+                sourceMessageId: 'message-ai-1',
+                sourceGenerationId: 'generation-ai-1',
+                accepted: [{
+                  id: 'memory-accepted-parent',
+                  label: 'One accepted durable event.',
+                  reason: 'accepted_with_exact_source_evidence',
+                  evidence: 'Accepted evidence.',
+                  sourceMessageId: 'message-ai-1',
+                  sourceGenerationId: 'generation-ai-1',
+                }],
+                rejected: [{
+                  id: 'memory-rejected-parent',
+                  label: 'One rejected unsupported claim.',
+                  reason: 'unsupported_overreach',
+                  evidence: 'Rejected evidence.',
+                  sourceMessageId: 'message-ai-1',
+                  sourceGenerationId: 'generation-ai-1',
+                }],
+                omitted: [{
+                  id: 'memory-omitted-parent',
+                  label: 'One omitted duplicate.',
+                  reason: 'near_duplicate_existing_memory',
+                }],
+                persistence: {
+                  status: 'persisted',
+                  targets: ['memory-row-parent'],
+                  reason: 'reviewed_memory_events_persisted',
+                },
+                readiness: 'completed',
+                futurePromptImpact: {
+                  eligible: true,
+                  targets: ['memory'],
+                  reason: 'accepted_output_persisted_for_future_prompt_use',
+                },
+                contextGaps: ['One source field was unavailable.'],
+                legacyWrapped: false,
+              },
+            },
+          ],
+        },
+      },
+      retryAttemptHistory: {
+        'message-ai-1': [{
+          messageId: 'message-ai-1',
+          generationId: 'generation-ai-retry-1',
+          attemptNumber: 1,
+          capturedAt: 4,
+          text: 'Rejected attempt.',
+          createdAt: 4,
+        }],
+      },
+    });
+
+    expect(html.match(/class="message-parent-card/g)).toHaveLength(2);
+    expect(html.match(/data-parent-message-id="message-ai-1"/g)).toHaveLength(1);
+    expect(html.match(/class="message-child-card/g)).toHaveLength(3);
+    expect(html).toContain('href="#review-message-ai-1"');
+    expect(html).toContain('id="review-message-ai-1-0"');
+    expect(html).toContain('id="review-message-ai-1-1"');
+    expect(html).toContain('data-generation-id="generation-ai-1"');
+    expect(html.match(/<section class="live-comment">/g)).toHaveLength(1);
+    expect(html).toContain('data-live-comment-note="One parent-owned tester note."');
+    expect(html.match(/Retry Attempt History/g)).toHaveLength(1);
+    expect(html.match(/API Call 1 Data/g)).toHaveLength(1);
+    expect(html).toContain('API Call 1 - Parent boundary fixture');
+    expect(html.match(/Source Receipt Ledger \(1\)/g)).toHaveLength(1);
+    expect(html.match(/Character Prompt Fact Ledger \(1\)/g)).toHaveLength(1);
+    expect(html).toContain('physicalAppearance.eyeColor');
+    expect(html).toContain('Eye color');
+    expect(html).toContain('Character fact copy-risk metrics');
+    expect(html).toContain('generation_captured_facts');
+    expect(html).toContain('No exact raw card phrase or creator-label copy was detected in this assistant block.');
+    expect(html.match(/Roleplay support review envelope/g)).toHaveLength(1);
+    expect(html).toContain('One accepted durable event.');
+    expect(html).toContain('One rejected unsupported claim.');
+    expect(html).toContain('One omitted duplicate.');
+    expect(html).toContain('memory-row-parent');
+    expect(html).toContain('accepted_output_persisted_for_future_prompt_use');
+    expect(html).toContain('One source field was unavailable.');
+    const lastChildCard = html.lastIndexOf('class="message-child-card');
+    expect(html.indexOf('Source Receipt Ledger (1)')).toBeGreaterThan(lastChildCard);
+    expect(html.indexOf('Roleplay support review envelope')).toBeGreaterThan(lastChildCard);
+    const embeddedReviewData = html.match(
+      /<script type="application\/json" id="chronicle-session-review-data">([\s\S]*?)<\/script>/,
+    )?.[1];
+    expect(embeddedReviewData).toBeTruthy();
+    const parsedReviewData = JSON.parse(embeddedReviewData || '{}') as {
+      parentMessages?: Array<{
+        childSegments?: Array<Record<string, unknown>>;
+        retryLineage?: Record<string, unknown> | null;
+        parentMetrics?: unknown[];
+      }>;
+    };
+    const assistantParent = parsedReviewData.parentMessages?.[1];
+    const assistantChild = assistantParent?.childSegments?.[0] || {};
+    expect(assistantParent?.retryLineage).toMatchObject({
+      parentMessageId: 'message-ai-1',
+      finalGenerationId: 'generation-ai-1',
+      storageScope: 'session_debug_only',
+      livePromptReentry: false,
+    });
+    expect(assistantParent?.parentMetrics).toHaveLength(2);
+    expect(assistantChild).not.toHaveProperty('debugRecord');
+    expect(assistantChild).not.toHaveProperty('debugMetrics');
+    expect(assistantChild).not.toHaveProperty('retryAttempts');
+    expect(assistantChild).not.toHaveProperty('liveComment');
+    expect(html).toContain('response_job_lane:player_turn');
+    expect(html).toContain('Duplicate source groups');
+    expect(html).toContain('Receipt to provider coverage');
+    expect(html).toContain('Provider section to receipt coverage');
+    expect(html).toContain('"parentMessages"');
+    expect(html).toContain('"parserDiagnostics"');
+    expect(html).toContain('"parentMetrics"');
+    expect(html).toContain('"rawSpeakerLabelCount": 2');
+    expect(html).toContain('"renderedChildCount": 2');
+  });
+
   it('exports a styled static session log with speaker cards and one inline live comment per message', () => {
     const html = buildChatReviewHtml({
       appData,
@@ -101,7 +377,7 @@ describe('buildChatReviewHtml', () => {
         },
       },
       postTurnStateChanges: {
-        'message-ai-1': ['Sarah.currentMood updated at Day 1, sunset -> Worried but focused'],
+        'message-ai-1': ['Sarah.location updated at Day 1, sunset -> Library'],
       },
       debugRecords: {
         'message-ai-1:generation-ai-1': {
@@ -124,6 +400,30 @@ describe('buildChatReviewHtml', () => {
               reasoningEffort: 'medium',
               store: false,
             },
+            roleplayUserStateAuthorityDecisions: [
+              {
+                claim: 'James says the map matters.',
+                userCharacterId: 'james',
+                claimType: 'dialogue_assignment',
+                sourceMessageId: 'message-user-1',
+                sourceGenerationId: 'generation-user-1',
+                sourceRole: 'user',
+                authority: 'raw_user_fact',
+                modelFacingAction: 'allow_as_fact',
+                reason: 'explicit_user_authorship',
+              },
+              {
+                claim: 'James secretly wants Ashley.',
+                userCharacterId: 'james',
+                claimType: 'intent',
+                sourceMessageId: 'message-ai-1',
+                sourceGenerationId: 'generation-ai-1',
+                sourceRole: 'assistant',
+                authority: 'assistant_interpretation',
+                modelFacingAction: 'allow_as_character_interpretation',
+                reason: 'user_owned_state_requires_user_authorship',
+              },
+            ],
             modelRequest: {
               endpoint: 'https://api.x.ai/v1/responses',
               method: 'POST',
@@ -180,6 +480,37 @@ describe('buildChatReviewHtml', () => {
               capturedAt: 4,
               status: 'completed',
               requestBody: { userMessage: 'hello', aiResponse: 'reply' },
+              roleplaySupportReviewEnvelope: {
+                version: 1,
+                worker: 'character_state',
+                sourceMessageId: 'message-ai-1',
+                sourceGenerationId: 'generation-ai-1',
+                accepted: [{
+                  id: 'candidate-1',
+                  label: 'Sarah location Kitchen',
+                  reason: 'accepted',
+                  evidence: 'Sarah enters the kitchen.',
+                }],
+                rejected: [{
+                  id: 'candidate-2',
+                  label: 'Sarah unsupported.path Nope',
+                  reason: 'unsupported_field',
+                }],
+                omitted: [],
+                persistence: {
+                  status: 'persisted',
+                  targets: ['snapshot-sarah-1'],
+                  reason: 'character_state_snapshots_persisted',
+                },
+                readiness: 'completed',
+                futurePromptImpact: {
+                  eligible: true,
+                  targets: ['current_state'],
+                  reason: 'accepted_output_persisted_for_future_prompt_use',
+                },
+                contextGaps: [],
+                legacyWrapped: true,
+              },
               modelRequest: {
                 endpoint: 'https://api.x.ai/v1/responses',
                 method: 'POST',
@@ -199,11 +530,38 @@ describe('buildChatReviewHtml', () => {
               },
               responseBody: {
                 updates: [
-                  { character: 'Sarah', field: 'currentMood', value: 'Focused', evidence: 'Sarah checks the hearth.', confidence: 0.9 },
+                  { character: 'Sarah', field: 'location', value: 'Kitchen', evidence: 'Sarah enters the kitchen.', confidence: 0.9 },
                 ],
                 candidateReviews: [
-                  { index: 0, accepted: true, reason: 'accepted', character: 'Sarah', field: 'currentMood', value: 'Focused', evidence: 'Sarah checks the hearth.', confidence: 0.9 },
+                  { index: 0, accepted: true, reason: 'accepted', character: 'Sarah', field: 'location', value: 'Kitchen', evidence: 'Sarah enters the kitchen.', confidence: 0.9 },
                   { index: 1, accepted: false, reason: 'unsupported_field', character: 'Sarah', field: 'unsupported.path', value: 'Nope', evidence: 'n/a', confidence: 0.5 },
+                ],
+                acceptedUpdates: [
+                  { index: 0, characterName: 'Sarah', field: 'location', value: 'Kitchen', evidence: 'Sarah enters the kitchen.', confidence: 0.9, edgeAccepted: true, reason: 'accepted' },
+                ],
+                rejectedUpdates: [
+                  { index: 1, characterName: 'Sarah', field: 'unsupported.path', value: 'Nope', evidence: 'n/a', confidence: 0.5, edgeAccepted: false, reason: 'unsupported_field' },
+                ],
+                characterEligibilityReviews: [
+                  { characterId: 'character-sarah', characterName: 'Sarah', reasons: ['name_match'] },
+                  { characterId: 'character-ashley', characterName: 'Ashley', reasons: ['speaker_tag', 'name_match'] },
+                ],
+                reviewedCharacterStateRows: [
+                  { characterId: 'character-sarah', characterName: 'Sarah', eligible: true, eligibilityReasons: ['name_match'], reviewedFields: ['location', 'scenePosition'], acceptedUpdates: [{ field: 'location', value: 'Kitchen' }], rejectedUpdates: [] },
+                  { characterId: 'character-ashley', characterName: 'Ashley', eligible: true, eligibilityReasons: ['speaker_tag', 'name_match'], reviewedFields: [], acceptedUpdates: [], rejectedUpdates: [], missingReviewReason: 'missing_physical_state_review' },
+                ],
+                missingCharacterStateReviews: [
+                  { characterId: 'character-ashley', characterName: 'Ashley', missingReviewReason: 'missing_physical_state_review' },
+                ],
+                applyStageReviews: [
+                  { characterId: 'character-sarah', characterName: 'Sarah', field: 'location', value: 'Kitchen', edgeAccepted: true, frontendAccepted: true, persisted: true, outcome: 'persisted', reason: 'character_state_snapshot_persisted', sourceMessageId: 'message-ai-1', sourceGenerationId: 'generation-ai-1', persistenceTargetId: 'snapshot-sarah-1' },
+                  { characterId: 'character-ashley', characterName: 'Ashley', field: 'scenePosition', value: 'Beside Sarah', edgeAccepted: true, frontendAccepted: true, persisted: false, outcome: 'missing_source_metadata', reason: 'canonical_source_message_or_generation_missing' },
+                ],
+                persistedUpdates: [
+                  { characterId: 'character-sarah', characterName: 'Sarah', field: 'location', value: 'Kitchen', persisted: true, outcome: 'persisted', persistenceTargetId: 'snapshot-sarah-1' },
+                ],
+                rejectedAtApplyStage: [
+                  { characterId: 'character-ashley', characterName: 'Ashley', field: 'scenePosition', value: 'Beside Sarah', persisted: false, outcome: 'missing_source_metadata', reason: 'canonical_source_message_or_generation_missing' },
                 ],
                 rejectedCandidates: [
                   { index: 1, accepted: false, reason: 'unsupported_field', character: 'Sarah', field: 'unsupported.path', value: 'Nope', evidence: 'n/a', confidence: 0.5 },
@@ -277,6 +635,44 @@ describe('buildChatReviewHtml', () => {
 	                ],
 	                parseError: 'parse_error',
 	              },
+	              roleplaySupportReviewEnvelope: {
+	                version: 1,
+	                worker: 'memory_extraction',
+	                sourceMessageId: 'message-ai-1',
+	                sourceGenerationId: 'generation-ai-1',
+	                accepted: [{
+	                  id: 'memory-1',
+	                  label: 'James says the map matters.',
+	                  reason: 'explicit_user_authorship',
+	                  evidence: 'That has to matter',
+	                  claimType: 'dialogue_assignment',
+	                  sourceRole: 'user',
+	                  authority: 'raw_user_fact',
+	                  modelFacingAction: 'allow_as_fact',
+	                  sourceMessageId: 'message-user-1',
+	                  sourceGenerationId: 'generation-user-1',
+	                  userCharacterId: 'james',
+	                }],
+	                rejected: [{
+	                  id: 'memory-2',
+	                  label: 'James secretly wants Ashley.',
+	                  reason: 'user_owned_state_requires_user_authorship',
+	                  evidence: 'James secretly wants Ashley',
+	                  claimType: 'intent',
+	                  sourceRole: 'assistant',
+	                  authority: 'assistant_interpretation',
+	                  modelFacingAction: 'reject_from_persistence',
+	                  sourceMessageId: 'message-ai-1',
+	                  sourceGenerationId: 'generation-ai-1',
+	                  userCharacterId: 'james',
+	                }],
+	                omitted: [],
+	                persistence: { status: 'persisted', targets: ['memory-row-1'], reason: 'reviewed_memory_events_persisted' },
+	                readiness: 'completed',
+	                futurePromptImpact: { eligible: true, targets: ['memory'], reason: 'accepted_output_persisted_for_future_prompt_use' },
+	                contextGaps: [],
+	                legacyWrapped: true,
+	              },
 	            },
 	          ],
 	        },
@@ -320,11 +716,47 @@ describe('buildChatReviewHtml', () => {
     expect(html).toContain('Local diagnostic payload');
     expect(html).toContain('repeated_action_first_dialogue_cadence');
     expect(html).toContain('Character state sync summary');
+    expect(html).toContain('Roleplay support review envelope');
+    expect(html).toContain('Source generation');
+    expect(html).toContain('generation-ai-1');
+    expect(html).toContain('Future prompt eligible');
+    expect(html).toContain('character_state_snapshots_persisted');
+    expect(html).toContain('Accepted outcomes');
+    expect(html).toContain('Rejected outcomes');
+    expect(html).toContain('User-state source authority');
+    expect(html).toContain('James secretly wants Ashley.');
+    expect(html).toContain('assistant_interpretation');
+    expect(html).toContain('allow_as_character_interpretation');
+    expect(html).toContain('source message: message-user-1');
+    expect(html).toContain('action: reject_from_persistence');
+    expect(html).toContain('browser-local admin debug trace');
+    expect(html).toContain('service-role access can bypass normal row-level security');
+    const telemetryStart = html.indexOf('Local assistant style telemetry - send');
+    const characterCallStart = html.indexOf('API Call 2 - Character state sync');
+    const envelopeStart = html.indexOf('Roleplay support review envelope', characterCallStart);
+    const characterRawRequestStart = html.indexOf('Browser-to-edge request body', characterCallStart);
+    const goalProgressStart = html.indexOf('Support Call - Goal progress evaluation');
+    const goalAlignmentStart = html.indexOf('Support Call - Goal alignment evaluation');
+    expect(telemetryStart).toBeGreaterThanOrEqual(0);
+    expect(characterCallStart).toBeGreaterThan(telemetryStart);
+    expect(html.slice(telemetryStart, characterCallStart)).not.toContain('Legacy support record');
+    expect(envelopeStart).toBeGreaterThan(characterCallStart);
+    expect(characterRawRequestStart).toBeGreaterThan(envelopeStart);
+    expect(goalProgressStart).toBeGreaterThan(characterCallStart);
+    expect(goalAlignmentStart).toBeGreaterThan(goalProgressStart);
+    expect(html.slice(goalProgressStart, goalAlignmentStart)).toContain('Legacy support record');
     expect(html).toContain('Proposed candidates');
     expect(html).toContain('Accepted update candidates');
     expect(html).toContain('rejected: unsupported_field');
     expect(html).toContain('Physical state completeness review');
     expect(html).toContain('focused_retry');
+    expect(html).toContain('Deterministic character eligibility');
+    expect(html).toContain('Missing reviewed character coverage');
+    expect(html).toContain('Apply-stage persistence receipts');
+    expect(html).toContain('snapshot-sarah-1');
+    expect(html).toContain('missing_source_metadata');
+    expect(html).toContain('Persisted apply outcomes');
+    expect(html).toContain('Rejected/skipped apply outcomes');
 	    expect(html).toContain('Goal progress summary');
 	    expect(html).toContain('Model marked complete');
 	    expect(html).toContain('accepted by gate');
@@ -338,7 +770,7 @@ describe('buildChatReviewHtml', () => {
 	    expect(html).toContain('Rejected memory output');
 	    expect(html).toContain('parse_error');
 	    expect(html).toContain('Applied Updates Summary');
-    expect(html).toContain('Sarah.currentMood updated at Day 1, sunset');
+    expect(html).toContain('Sarah.location updated at Day 1, sunset');
     expect(html).toContain('chronicle-session-review-v2');
     expect(html).toContain('Deterministic debug metrics');
     expect(html).toContain('Response structure counts');
@@ -391,11 +823,17 @@ Ashley: "Second."`,
       },
     });
 
-    expect(html.match(/class="message-card/g)).toHaveLength(1);
+    expect(html.match(/class="message-parent-card/g)).toHaveLength(1);
+    expect(html.match(/class="message-child-card/g)).toHaveLength(1);
     expect(html.match(/<section class="live-comment">/g)).toHaveLength(1);
-    expect(html).toContain('Turn 1</span>');
+    expect(html).toContain('Turn 1 Ashley</span>');
     expect(html).not.toContain('Turn 1.2');
     expect(html).not.toContain('Turn 1.3');
+    expect(html).toContain('"parsedSegmentCount": 3');
+    expect(html).toContain('"renderedChildCount": 1');
+    expect(html).toContain('"mergeCount": 2');
+    expect(html).toContain('"raw_speaker_label"');
+    expect(html).toContain('"paragraph_split"');
     expect(html).toContain('Ashley rested one hand on the table');
     expect(html).toContain('This entire assistant response should stay grouped as one Ashley message.');
   });
@@ -452,17 +890,237 @@ Ashley: "Second."`,
       },
     });
 
-    expect(html).toContain('Retry Attempt History (2)');
+    expect(html.match(/Retry Attempt History \(2\)/g)).toHaveLength(1);
     expect(html).toContain('Debug-only captured versions that were replaced by Retry');
-    expect(html).toContain('Attempt 1');
+    expect(html.match(/<strong>Attempt 1<\/strong>/g)).toHaveLength(1);
     expect(html).toContain('generation-ai-original');
     expect(html).toContain('Original attempt');
     expect(html).toContain('Same answer.');
-    expect(html).toContain('Attempt 2');
+    expect(html.match(/<strong>Attempt 2<\/strong>/g)).toHaveLength(1);
     expect(html).toContain('generation-ai-retry-1');
     expect(html).toContain('Same answer, slightly rewritten.');
-    expect(html).toContain('chronicle-session-retry-attempt-history-v1');
-    expect(html).toContain('retryAttempts');
+    expect(html.match(/<strong>Attempt message<\/strong>message-ai-1/g)).toHaveLength(2);
+    expect(html.indexOf('Retry Attempt History (2)')).toBeGreaterThan(
+      html.lastIndexOf('class="message-child-card'),
+    );
+    expect(html).not.toContain('chronicle-session-retry-attempt-history-v1');
+    expect(html).toContain('chronicle-session-retry-lineage-v1');
+    expect(html).toContain('retryLineage');
+    expect(html).toContain('session_debug_only');
+    expect(html).toContain('Live prompt re-entry</strong>no');
+    expect(html).toContain('"parentMessageId": "message-ai-1"');
+    expect(html).toContain('"finalGenerationId": "generation-ai-1"');
+    expect(html).toContain('"childSegmentIds"');
+    const embeddedReviewData = html.match(
+      /<script type="application\/json" id="chronicle-session-review-data">([\s\S]*?)<\/script>/,
+    )?.[1];
+    expect(embeddedReviewData).toBeTruthy();
+    const parsedReviewData = JSON.parse(embeddedReviewData || '{}') as {
+      retryAttemptHistory?: unknown;
+      parentMessages?: Array<{ retryLineage?: unknown; childSegments?: Array<Record<string, unknown>> }>;
+      messages?: Array<{ retryAttempts?: unknown }>;
+    };
+    expect(parsedReviewData.retryAttemptHistory).toBeUndefined();
+    expect(parsedReviewData.messages?.every((message) => message.retryAttempts === undefined)).toBe(true);
+    expect(parsedReviewData.parentMessages?.[1]?.retryLineage).toBeTruthy();
+    expect(parsedReviewData.parentMessages?.[1]?.childSegments?.every((child) => (
+      !Object.prototype.hasOwnProperty.call(child, 'retryLineage')
+      && !Object.prototype.hasOwnProperty.call(child, 'retryAttempts')
+    ))).toBe(true);
+  });
+
+  it('renders response-job and recent-history treatment metadata for debug review', () => {
+    const retryResponseJob = buildRetryRegenerateResponseJob({
+      conversationId: 'conversation-1',
+      playerTurn: {
+        messageId: 'message-user-1',
+        text: 'James: *James blocks the door with his shoulder.* "Stay close."',
+      },
+      rejectedAttempt: {
+        messageId: 'message-ai-rejected',
+        generationId: 'generation-ai-rejected',
+        text: 'Rejected full assistant text should stay debug-only.',
+        summary: 'The rejected answer repeated the same closing question.',
+      },
+      currentStateSummary: 'Day 1 sunset shelter scene remains active.',
+      responseDetail: 'detailed',
+    });
+    const continueResponseJob = buildContinueAssistantTailResponseJob({
+      conversationId: 'conversation-1',
+      assistantAnchor: {
+        messageId: 'message-ai-1',
+        acceptedTextTail: 'Sarah: *Sarah checks the hearth.* "Fire first."',
+      },
+      currentStateSummary: 'Day 1 sunset shelter scene remains active.',
+      responseDetail: 'standard',
+    });
+
+    const html = buildChatReviewHtml({
+      appData,
+      conversation,
+      scenarioTitle: 'Lost',
+      modelId: 'test-model',
+      exportedAt: new Date('2026-04-26T12:00:00.000Z'),
+      sanitizeAssistantText: (text) => text,
+      debugRecords: {
+        'message-ai-1:generation-ai-1': {
+          messageId: 'message-ai-1',
+          generationId: 'generation-ai-1',
+          capturedAt: 3,
+          trace: null,
+          call1Request: {
+            id: 'call1.roleplay-generation',
+            label: 'API Call 1 - Roleplay generation',
+            apiCallGroup: 'call_1',
+            endpoint: '/functions/v1/chat',
+            method: 'POST',
+            capturedAt: 3,
+            status: 'sent',
+            requestBody: {
+              responseJob: retryResponseJob,
+              recentHistoryPacket: {
+                providerMessages: [
+                  { role: 'user', content: 'James: "Try another answer."' },
+                ],
+                receipts: [
+                  {
+                    messageId: 'message-ai-summary',
+                    generationId: 'generation-ai-summary',
+                    role: 'assistant',
+                    includedInProviderHistory: true,
+                    responseJobSource: 'recent_history',
+                    treatment: 'outcome_summary',
+                    reason: 'structured_source_authority_outcome_summary',
+                    transformedContent: 'Older assistant outcome summary:\n- Observed change: The user character visibly steadies one hand.',
+                    sourceAuthorityDecisionCount: 1,
+                    sourceAuthorityClasses: ['accepted_assistant_observable_change'],
+                  },
+                  {
+                    messageId: 'message-user-1',
+                    role: 'user',
+                    includedInProviderHistory: true,
+                    responseJobSource: 'player_turn',
+                    alsoRenderedInFinalUserLane: 'player_turn',
+                    treatment: 'exact_user',
+                    reason: 'exact_user_turn_also_rendered_in_player_lane',
+                  },
+                  {
+                    messageId: 'message-ai-rejected',
+                    generationId: 'generation-ai-rejected',
+                    role: 'assistant',
+                    includedInProviderHistory: false,
+                    responseJobSource: 'retry_contrast',
+                    sourceGenerationId: 'generation-ai-rejected',
+                    generationMatchesResponseJobSource: true,
+                    alsoRenderedInFinalUserLane: 'retry_rejection',
+                    treatment: 'suppressed_style_anchor',
+                    reason: 'rejected_retry_attempt_not_accepted_history',
+                    repeatedAnchors: ['same closing question'],
+                  },
+                ],
+                suppressedStyleAnchors: [
+                  {
+                    messageId: 'message-ai-rejected',
+                    generationId: 'generation-ai-rejected',
+                    repeatedAnchors: ['same closing question'],
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+      retryAttemptHistory: {
+        'message-ai-1': [
+          {
+            messageId: 'message-ai-1',
+            generationId: 'generation-ai-retry-1',
+            attemptNumber: 1,
+            capturedAt: 12,
+            text: 'Sarah: *Sarah repeats the same answer.* "Same question?"',
+            day: 1,
+            timeOfDay: 'sunset',
+            createdAt: 11,
+            debugRecord: {
+              messageId: 'message-ai-1',
+              generationId: 'generation-ai-retry-1',
+              capturedAt: 12,
+              trace: null,
+              call1Request: {
+                id: 'call1.retry',
+                label: 'API Call 1 - Retry',
+                apiCallGroup: 'call_1',
+                endpoint: '/functions/v1/chat',
+                method: 'POST',
+                capturedAt: 12,
+                status: 'sent',
+                requestBody: {
+                  responseJob: retryResponseJob,
+                },
+              },
+            },
+          },
+          {
+            messageId: 'message-ai-1',
+            generationId: 'generation-ai-continue-1',
+            attemptNumber: 2,
+            capturedAt: 13,
+            text: 'Sarah: *Sarah keeps working with the hearth.* "Keep the door shut."',
+            day: 1,
+            timeOfDay: 'sunset',
+            createdAt: 12,
+            debugRecord: {
+              messageId: 'message-ai-1',
+              generationId: 'generation-ai-continue-1',
+              capturedAt: 13,
+              trace: null,
+              call1Request: {
+                id: 'call1.continue',
+                label: 'API Call 1 - Continue',
+                apiCallGroup: 'call_1',
+                endpoint: '/functions/v1/chat',
+                method: 'POST',
+                capturedAt: 13,
+                status: 'sent',
+                requestBody: {
+                  responseJob: continueResponseJob,
+                },
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    expect(html).toContain('Response Job Summary');
+    expect(html).toContain('Mode</strong>retry_regenerate');
+    expect(html).toContain('History treatment</strong>exclude_rejected_attempt');
+    expect(html).toContain('retry_rejection / assistant / control / model-facing');
+    expect(html).toContain('Rejected attempt summary');
+    expect(html).toContain('The rejected answer repeated the same closing question.');
+    expect(html).toContain('Mode</strong>continue_assistant_tail');
+    expect(html).toContain('History treatment</strong>anchor_on_accepted_assistant_tail');
+    expect(html).toContain('continue_anchor / assistant / state / model-facing');
+    expect(html).toContain('Continue anchor message');
+    expect(html).toContain('message-ai-1');
+    expect(html).toContain('Recent-history treatment receipts');
+    expect(html).toContain('message-ai-summary');
+    expect(html).toContain('structured_source_authority_outcome_summary');
+    expect(html).toContain('source-authority decisions: 1');
+    expect(html).toContain('accepted_assistant_observable_change');
+    expect(html).toContain('transformed summary: Older assistant outcome summary:');
+    expect(html).toContain('Observed change: The user character visibly steadies one hand.');
+    expect(html).toContain('message-ai-rejected');
+    expect(html).toContain('excluded from provider history');
+    expect(html).toContain('rejected_retry_attempt_not_accepted_history');
+    expect(html).toContain('Suppressed assistant style anchors');
+    expect(html).toContain('same closing question');
+    expect(html).toContain('generation: generation-ai-rejected');
+    expect(html).toContain('response-job generation: generation-ai-rejected');
+    expect(html).toContain('generation match: yes');
+    expect(html).toContain('This does not prove why the model wrote something');
+    expect(html).toContain('they are not model reasoning');
+    expect(html).not.toContain('Rejected full assistant text should stay debug-only.');
   });
 
   it('does not apply regenerate markers to later edited generations', () => {
@@ -509,5 +1167,48 @@ Ashley: "Second."`,
     });
 
     expect(html).not.toContain('Continue</span>');
+  });
+
+  it('renders state pruning reports without treating pruned values as applied updates', () => {
+    const html = buildChatReviewHtml({
+      appData,
+      conversation,
+      scenarioTitle: 'Lost',
+      modelId: 'test-model',
+      exportedAt: new Date('2026-04-26T12:00:00.000Z'),
+      sanitizeAssistantText: (text) => text,
+      statePruningReports: {
+        'message-ai-1:generation-ai-1': [
+          {
+            itemType: 'memory',
+            itemId: 'memory-current',
+            sourceMessageId: 'message-ai-1',
+            sourceGenerationId: 'generation-ai-1',
+            currentGenerationId: 'generation-ai-1',
+            included: true,
+            reason: 'current_generation',
+            valuePreview: 'Sarah stayed by the hearth.',
+          },
+          {
+            itemType: 'memory',
+            itemId: 'memory-stale',
+            sourceMessageId: 'message-ai-1',
+            sourceGenerationId: 'generation-ai-stale',
+            currentGenerationId: 'generation-ai-1',
+            included: false,
+            reason: 'stale_generation',
+            valuePreview: 'Sarah walked away in the rejected attempt.',
+          },
+        ],
+      },
+    });
+
+    expect(html).toContain('State Pruning Report');
+    expect(html).toContain('memory-current');
+    expect(html).toContain('current_generation');
+    expect(html).toContain('memory-stale');
+    expect(html).toContain('stale_generation');
+    expect(html).toContain('Sarah walked away in the rejected attempt.');
+    expect(html).not.toContain('Applied Updates Summary (2)');
   });
 });

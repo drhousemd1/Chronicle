@@ -16,7 +16,12 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "validation:roleplay:batch0": "vite-node scripts/write-roleplay-batch0-validation-ledger.ts",
+    "validation:roleplay:batch1": "vite-node scripts/write-roleplay-batch1-validation-ledger.ts",
+    "validation:gate": "vite-node scripts/run-validation-gate.ts",
+    "validation:reconcile": "vite-node scripts/reconcile-validation-evidence.ts",
+    "validation:manual-review": "vite-node scripts/record-validation-manual-review.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

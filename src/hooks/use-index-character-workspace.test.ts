@@ -17,7 +17,6 @@ function makeCharacter(id: string, name: string, controlledBy: Character["contro
     sexType: "",
     sexualOrientation: "",
     location: "",
-    currentMood: "",
     controlledBy,
     characterRole: "Main",
     roleDescription: "",

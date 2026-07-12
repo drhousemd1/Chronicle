@@ -17,6 +17,7 @@ import { uid, now, uuid } from '@/utils';
 import {
   ContentFilteredChatError,
   buildEstablishedFactNote,
+  buildCurrentTurnStateDigest,
   isLocalRoleplayNoticeMessage,
   renderGoalMilestoneTarget,
 } from '../../services/llm';
@@ -100,6 +101,23 @@ import {
   buildSupportCallDebugStatus,
   splitEdgeDebugPayload,
 } from '@/features/chat-runtime/debug-support';
+import { wrapLegacyRoleplaySupportResult } from '@/features/chat-runtime/roleplay-support-review-adapters';
+import { reviewRoleplayMemoryExtractionEvents } from '@/features/chat-runtime/roleplay-memory-user-state-review';
+import {
+  createPendingRoleplaySupportReviewEnvelope,
+  finalizeRoleplaySupportReviewEnvelope,
+  type FinalizeRoleplaySupportReviewEnvelopeInput,
+} from '@/features/chat-runtime/roleplay-support-review-envelope';
+import {
+  buildRoleplayCharacterStateApplyReceipt,
+  buildRoleplayCharacterStateEligibilityRows,
+  buildRoleplayReviewedCharacterStateContract,
+  getRoleplayReviewedCharacterStatePersistenceCandidates,
+  isRoleplayReviewedCharacterStateField,
+  type RoleplayCharacterStateApplyReceipt,
+  type RoleplayReviewedCharacterStatePersistenceCandidate,
+} from '@/features/chat-runtime/roleplay-character-state-review';
+import type { RoleplayUserStateAuthorityDecision } from '@/features/chat-runtime/roleplay-user-state-authority';
 import { usePostTurnSupportQueue } from '@/features/chat-runtime/use-post-turn-support-queue';
 import {
   buildContentFilterNoticeMessage,
@@ -154,6 +172,8 @@ import {
   buildActiveSideCharacterSnapshotMap,
   buildEffectiveWorldCore,
   buildMessageGenerationMap,
+  mergeConversationMessageIdentityIndex,
+  type ConversationMessageIdentity,
   upsertCharacterStateMessageSnapshot,
   upsertSideCharacterStateMessageSnapshot,
 } from '@/features/chat-runtime/effective-state';
@@ -163,6 +183,18 @@ import {
   collectRoleplayResponse,
   readRoleplayRequestDebugFromError,
 } from '@/features/chat-runtime/collect-roleplay-response';
+import {
+  buildContinueAssistantTailResponseJob,
+  buildDeletedAssistantRecoveryResponseJob,
+  buildNormalSendResponseJob,
+  buildRetryRegenerateResponseJob,
+  type RoleplayResponseDetail,
+} from '@/features/chat-runtime/roleplay-response-job';
+import {
+  resolveRoleplayContinueTailAction,
+  type RoleplayDeletedAssistantRecoveryMarker,
+} from '@/features/chat-runtime/continue-tail-action';
+import { persistDynamicSideCharactersBeforeStateReview } from '@/features/chat-runtime/roleplay-side-character-registration';
 
 interface ChatInterfaceTabProps {
   scenarioId: string;
@@ -194,11 +226,19 @@ interface ChatInterfaceTabProps {
 }
 
 type ActionEvent = { messageId: string; generationId?: string; timestamp: number };
+type DeletedAssistantRecoveryRef = RoleplayDeletedAssistantRecoveryMarker & {
+  deletedAt: number;
+};
 
 const TIME_SEQUENCE: TimeOfDay[] = ['sunrise', 'day', 'sunset', 'night'];
 const GOAL_ALIGNMENT_SHADOW_MODE = true;
 
 const DIALOG_DEBUG_ENABLED_STORAGE_KEY = 'chronicle_dialog_debug_enabled_v1';
+
+function normalizeRoleplayResponseDetail(value: NonNullable<ScenarioData['uiSettings']>['responseVerbosity'] | undefined): RoleplayResponseDetail {
+  if (value === 'concise' || value === 'detailed') return value;
+  return 'standard';
+}
 
 let isDebugLogging = false;
 const debugLog = (...args: unknown[]) => {
@@ -275,8 +315,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const [sessionStatesLoaded, setSessionStatesLoaded] = useState(false);
   const [characterStateSnapshots, setCharacterStateSnapshots] = useState<CharacterStateMessageSnapshot[]>([]);
   const [sideCharacterSnapshots, setSideCharacterSnapshots] = useState<SideCharacterMessageSnapshot[]>([]);
+  const [conversationMessageIdentityIndex, setConversationMessageIdentityIndex] = useState<ConversationMessageIdentity[]>([]);
   const characterStateSnapshotsRef = useRef<CharacterStateMessageSnapshot[]>([]);
   const sideCharacterSnapshotsRef = useRef<SideCharacterMessageSnapshot[]>([]);
+  const conversationMessageIdentityIndexRef = useRef<ConversationMessageIdentity[]>([]);
+  const userStateAuthorityDecisionsRef = useRef<RoleplayUserStateAuthorityDecision[]>([]);
   const [goalStepDerivations, setGoalStepDerivations] = useState<StoryGoalStepDerivation[]>([]);
   const [goalAlignmentStates, setGoalAlignmentStates] = useState<GoalAlignmentState[]>([]);
   const [canonicalDerivationsLoaded, setCanonicalDerivationsLoaded] = useState(false);
@@ -315,12 +358,45 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   // Admin debug: action tracking refs (Continue / Regenerate clicks)
   const continueEventsRef = useRef<ActionEvent[]>([]);
   const regenerateEventsRef = useRef<ActionEvent[]>([]);
+  const deletedAssistantRecoveryRef = useRef<DeletedAssistantRecoveryRef | null>(null);
   const retryAttemptHistoryRef = useRef<ChatReviewRetryAttemptHistory>({});
   const {
     chatDebugTraceStoreRef,
     saveChatDebugTrace,
     recordChatDebugSupportCall,
   } = useChatDebugTrace({ scenarioId, conversationId, isAdmin });
+  const updateRoleplaySupportPersistence = useCallback((
+    message: Pick<Message, 'id' | 'generationId'> | null | undefined,
+    callId: string,
+    input: FinalizeRoleplaySupportReviewEnvelopeInput & {
+      responseBodyPatch?: Record<string, unknown>;
+    },
+  ) => {
+    if (!message?.id) return;
+    const generationId = message.generationId || message.id;
+    const traceKey = buildChatDebugTraceKey(message.id, generationId);
+    const existingCall = chatDebugTraceStoreRef.current[traceKey]?.supportCalls
+      ?.find((call) => call.id === callId);
+    if (!existingCall?.roleplaySupportReviewEnvelope) return;
+    const { responseBodyPatch, ...finalizeInput } = input;
+    const existingResponseBody = existingCall.responseBody
+      && typeof existingCall.responseBody === 'object'
+      && !Array.isArray(existingCall.responseBody)
+      ? existingCall.responseBody as Record<string, unknown>
+      : {};
+
+    recordChatDebugSupportCall(message, {
+      ...existingCall,
+      capturedAt: Date.now(),
+      responseBody: responseBodyPatch
+        ? { ...existingResponseBody, ...responseBodyPatch }
+        : existingCall.responseBody,
+      roleplaySupportReviewEnvelope: finalizeRoleplaySupportReviewEnvelope(
+        existingCall.roleplaySupportReviewEnvelope,
+        finalizeInput,
+      ),
+    });
+  }, [chatDebugTraceStoreRef, recordChatDebugSupportCall]);
   const [dialogDebugEnabled, setDialogDebugEnabled] = useState(false);
   const [dialogDebugComments, setDialogDebugComments] = useState<Record<string, DialogDebugComment>>({});
   const [activeDialogDebugMessage, setActiveDialogDebugMessage] = useState<Message | null>(null);
@@ -515,9 +591,18 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     return nextConversations;
   }, [conversationId, currentDay, currentTimeOfDay, onSaveScenario, onUpdate, saveChatDebugTrace]);
 
-  const latestMessageGenerationMap = useMemo(() => {
-    return buildMessageGenerationMap(conversation?.messages || []);
-  }, [conversation?.messages]);
+  const currentConversationMessageIdentityIndex = useMemo(
+    () => mergeConversationMessageIdentityIndex(
+      conversationMessageIdentityIndex,
+      conversation?.messages || [],
+    ),
+    [conversation?.messages, conversationMessageIdentityIndex],
+  );
+
+  const latestMessageGenerationMap = useMemo(
+    () => buildMessageGenerationMap(currentConversationMessageIdentityIndex),
+    [currentConversationMessageIdentityIndex],
+  );
 
   const activeGoalCompletionIds = useMemo(() => {
     return buildActiveGoalCompletionIds(
@@ -683,6 +768,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     previousDayRef.current = currentDayRef.current;
     placeholderMapRef.current = {};
     continueEventsRef.current = [];
+    deletedAssistantRecoveryRef.current = null;
     setWorldCoreSessionOverrides(null);
   }, [conversationId]);
 
@@ -751,8 +837,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     let isCancelled = false;
     characterStateSnapshotsRef.current = [];
     sideCharacterSnapshotsRef.current = [];
+    conversationMessageIdentityIndexRef.current = [];
     setCharacterStateSnapshots([]);
     setSideCharacterSnapshots([]);
+    setConversationMessageIdentityIndex([]);
     setGoalStepDerivations([]);
     setGoalAlignmentStates([]);
     setCanonicalDerivationsLoaded(false);
@@ -764,12 +852,15 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         supabaseData.fetchSideCharacterMessageSnapshots(conversationId),
         supabaseData.fetchStoryGoalStepDerivations(conversationId),
         supabaseData.fetchGoalAlignmentStates(conversationId),
-      ]).then(([snapshots, sideSnapshots, derivations, alignmentStates]) => {
+        supabaseData.fetchConversationMessageIdentityIndex(conversationId),
+      ]).then(([snapshots, sideSnapshots, derivations, alignmentStates, messageIdentities]) => {
         if (isCancelled) return;
         characterStateSnapshotsRef.current = snapshots;
         sideCharacterSnapshotsRef.current = sideSnapshots;
+        conversationMessageIdentityIndexRef.current = messageIdentities;
         setCharacterStateSnapshots(snapshots);
         setSideCharacterSnapshots(sideSnapshots);
+        setConversationMessageIdentityIndex(messageIdentities);
         setGoalStepDerivations(derivations);
         setGoalAlignmentStates(alignmentStates);
         setCanonicalDerivationsLoadError(null);
@@ -944,13 +1035,26 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         capturedAt: Date.now(),
         status: 'sent',
         requestBody,
+        roleplaySupportReviewEnvelope: createPendingRoleplaySupportReviewEnvelope({
+          worker: 'day_memory_compression',
+          sourceMessageId: compressionSourceMessage?.id,
+          sourceGenerationId: compressionSourceMessage?.generationId,
+        }),
       });
 
       supabase.functions.invoke('compress-day-memories', {
         body: requestBody
       }).then(async ({ data, error }) => {
         const compressionDebug = splitEdgeDebugPayload(data);
-        const compressionDebugStatus = buildSupportCallDebugStatus(error, compressionDebug.responseBody);
+        const reviewedCompressionResponseBody = compressionDebug.responseBody && typeof compressionDebug.responseBody === 'object'
+          ? {
+              ...(compressionDebug.responseBody as Record<string, unknown>),
+              inputRowIds: bulletMemories.map((memory) => memory.id),
+              deletionEligibleRowIds: bulletMemories.map((memory) => memory.id),
+              omittedRows: [],
+            }
+          : compressionDebug.responseBody ?? null;
+        const compressionDebugStatus = buildSupportCallDebugStatus(error, reviewedCompressionResponseBody);
         recordChatDebugSupportCall(compressionSourceMessage, {
           id: 'call2.memory-compress',
           label: 'Supporting Call - Day memory compression',
@@ -961,12 +1065,19 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           status: compressionDebugStatus.status,
           error: compressionDebugStatus.error,
           requestBody,
-          responseBody: compressionDebug.responseBody,
+          responseBody: reviewedCompressionResponseBody,
           modelRequest: compressionDebug.modelRequest,
           modelRequests: compressionDebug.modelRequests,
+          roleplaySupportReviewEnvelope: wrapLegacyRoleplaySupportResult({
+            worker: 'day_memory_compression',
+            sourceMessageId: compressionSourceMessage?.id,
+            sourceGenerationId: compressionSourceMessage?.generationId,
+            responseBody: reviewedCompressionResponseBody,
+            error: compressionDebugStatus.error,
+          }),
         });
 
-        const compressionResponseBody = compressionDebug.responseBody as { synopsis?: unknown } | null | undefined;
+        const compressionResponseBody = reviewedCompressionResponseBody as { synopsis?: unknown } | null | undefined;
         const synopsis = typeof compressionResponseBody?.synopsis === 'string'
           ? compressionResponseBody.synopsis
           : '';
@@ -981,16 +1092,83 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
               outputChars: synopsis.length,
             },
           });
-          await handleCreateMemory(synopsis, completedDay, null, undefined, undefined, 'synopsis');
-          for (const bm of bulletMemories) {
-            await handleDeleteMemory(bm.id);
+          let persistedSynopsis: Memory;
+          try {
+            persistedSynopsis = await handleCreateMemory(
+              synopsis,
+              completedDay,
+              null,
+              undefined,
+              undefined,
+              'synopsis',
+            );
+          } catch (persistenceError) {
+            updateRoleplaySupportPersistence(
+              compressionSourceMessage,
+              'call2.memory-compress',
+              {
+                persistenceStatus: 'failed',
+                persistenceReason: 'compressed_synopsis_persistence_failed',
+                contextGap: `Day-memory synopsis persistence failed: ${persistenceError instanceof Error ? persistenceError.message : String(persistenceError)}`,
+              },
+            );
+            console.error('[Day compression] Synopsis persistence failed:', persistenceError);
+            return;
           }
+
+          const failedDeletionRows: Array<{ id: string; error: string }> = [];
+          for (const bm of bulletMemories) {
+            try {
+              await handleDeleteMemory(bm.id);
+            } catch (deletionError) {
+              failedDeletionRows.push({
+                id: bm.id,
+                error: deletionError instanceof Error ? deletionError.message : String(deletionError),
+              });
+            }
+          }
+
+          if (failedDeletionRows.length > 0) {
+            updateRoleplaySupportPersistence(
+              compressionSourceMessage,
+              'call2.memory-compress',
+              {
+                persistenceStatus: 'persisted',
+                persistenceTargets: [persistedSynopsis.id],
+                persistenceReason: 'compressed_synopsis_persisted_with_cleanup_gap',
+                contextGap: `The compressed synopsis persisted, but source bullet cleanup failed for: ${failedDeletionRows
+                  .map((row) => `${row.id} (${row.error})`)
+                  .join(', ')}. The synopsis remains available to future prompts; the undeleted source rows require cleanup.`,
+              },
+            );
+            console.error('[Day compression] Synopsis persisted with source-row cleanup gaps:', failedDeletionRows);
+            return;
+          }
+
+          updateRoleplaySupportPersistence(
+            compressionSourceMessage,
+            'call2.memory-compress',
+            {
+              persistenceStatus: 'persisted',
+              persistenceTargets: [persistedSynopsis.id],
+              persistenceReason: 'compressed_synopsis_persisted_and_source_bullets_deleted',
+            },
+          );
         }
       }).catch(err => {
+        updateRoleplaySupportPersistence(
+          compressionSourceMessage,
+          'call2.memory-compress',
+          {
+            persistenceStatus: 'failed',
+            persistenceReason: 'day_memory_compression_pipeline_failed',
+            contextGap: `Day-memory compression failed before a synopsis was finalized: ${err instanceof Error ? err.message : String(err)}`,
+          },
+        );
         console.error('[Day compression] Failed:', err);
       });
     }
-  }, [activeMemories, currentDay, memoriesEnabled, memoriesLoaded, conversation?.messages, conversationId, isAdmin, modelId, handleCreateMemory, handleDeleteMemory, recordChatDebugSupportCall]);
+  }, [activeMemories, currentDay, memoriesEnabled, memoriesLoaded, conversation?.messages, conversationId, isAdmin, modelId, handleCreateMemory, handleDeleteMemory, recordChatDebugSupportCall, updateRoleplaySupportPersistence]);
 
   // Sidebar background handlers
   const selectedSidebarBgUrl = useMemo(() => {
@@ -1139,7 +1317,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       sexualOrientation: sessionState.sexualOrientation || baseChar.sexualOrientation,
       roleDescription: sessionState.roleDescription || baseChar.roleDescription,
       location: sessionState.location || baseChar.location,
-      currentMood: sessionState.currentMood || baseChar.currentMood,
       physicalAppearance: mergedPhysicalAppearance,
       currentlyWearing: mergedCurrentlyWearing,
       preferredClothing: mergedPreferredClothing,
@@ -1177,18 +1354,18 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     () => buildActiveCharacterSnapshotMap(
       characterStateSnapshots.filter((snapshot) => snapshot.conversationId === conversationId),
       latestMessageGenerationMap,
-      conversation?.messages || [],
+      currentConversationMessageIdentityIndex,
     ),
-    [characterStateSnapshots, conversationId, latestMessageGenerationMap, conversation?.messages],
+    [characterStateSnapshots, conversationId, latestMessageGenerationMap, currentConversationMessageIdentityIndex],
   );
 
   const activeSideCharacterSnapshotMap = useMemo(
     () => buildActiveSideCharacterSnapshotMap(
       sideCharacterSnapshots.filter((snapshot) => snapshot.conversationId === conversationId),
       latestMessageGenerationMap,
-      conversation?.messages || [],
+      currentConversationMessageIdentityIndex,
     ),
-    [sideCharacterSnapshots, conversationId, latestMessageGenerationMap, conversation?.messages],
+    [sideCharacterSnapshots, conversationId, latestMessageGenerationMap, currentConversationMessageIdentityIndex],
   );
 
   const computeEffectiveCharacter = useCallback((
@@ -1226,19 +1403,27 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
   const buildCurrentCharacterSnapshotMap = useCallback(() => {
     const messages = getLatestConversationMessages();
+    const identities = mergeConversationMessageIdentityIndex(
+      conversationMessageIdentityIndexRef.current,
+      messages,
+    );
     return buildActiveCharacterSnapshotMap(
       characterStateSnapshotsRef.current.filter((snapshot) => snapshot.conversationId === conversationId),
-      buildMessageGenerationMap(messages),
-      messages,
+      buildMessageGenerationMap(identities),
+      identities,
     );
   }, [conversationId, getLatestConversationMessages]);
 
   const buildCurrentSideCharacterSnapshotMap = useCallback(() => {
     const messages = getLatestConversationMessages();
+    const identities = mergeConversationMessageIdentityIndex(
+      conversationMessageIdentityIndexRef.current,
+      messages,
+    );
     return buildActiveSideCharacterSnapshotMap(
       sideCharacterSnapshotsRef.current.filter((snapshot) => snapshot.conversationId === conversationId),
-      buildMessageGenerationMap(messages),
-      messages,
+      buildMessageGenerationMap(identities),
+      identities,
     );
   }, [conversationId, getLatestConversationMessages]);
 
@@ -1249,8 +1434,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
   const getCurrentEffectiveSideCharacters = useCallback(() => {
     const snapshotMap = buildCurrentSideCharacterSnapshotMap();
-    return (appData.sideCharacters || []).map((sideChar) => computeEffectiveSideCharacter(sideChar, snapshotMap));
-  }, [appData.sideCharacters, buildCurrentSideCharacterSnapshotMap, computeEffectiveSideCharacter]);
+    return sideCharactersRef.current.map((sideChar) => computeEffectiveSideCharacter(sideChar, snapshotMap));
+  }, [buildCurrentSideCharacterSnapshotMap, computeEffectiveSideCharacter]);
 
   const upsertCharacterSnapshotInRuntimeState = useCallback((snapshot: CharacterStateMessageSnapshot) => {
     const next = upsertCharacterStateMessageSnapshot(characterStateSnapshotsRef.current, snapshot);
@@ -1260,6 +1445,18 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
   const upsertSideCharacterSnapshotInRuntimeState = useCallback((snapshot: SideCharacterMessageSnapshot) => {
     const next = upsertSideCharacterStateMessageSnapshot(sideCharacterSnapshotsRef.current, snapshot);
+    sideCharacterSnapshotsRef.current = next;
+    setSideCharacterSnapshots(next);
+  }, []);
+
+  const removeCharacterSnapshotFromRuntimeState = useCallback((snapshotId: string) => {
+    const next = characterStateSnapshotsRef.current.filter((snapshot) => snapshot.id !== snapshotId);
+    characterStateSnapshotsRef.current = next;
+    setCharacterStateSnapshots(next);
+  }, []);
+
+  const removeSideCharacterSnapshotFromRuntimeState = useCallback((snapshotId: string) => {
+    const next = sideCharacterSnapshotsRef.current.filter((snapshot) => snapshot.id !== snapshotId);
     sideCharacterSnapshotsRef.current = next;
     setSideCharacterSnapshots(next);
   }, []);
@@ -1276,8 +1473,21 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     return [...mainNames, ...sideNames];
   }, [effectiveMainCharacters, effectiveSideCharacters]);
 
+  const userControlledMemoryCharacters = useMemo(() => [
+    ...effectiveMainCharacters
+      .filter((character) => character.controlledBy === 'User')
+      .map((character) => ({
+        id: character.id,
+        name: character.name,
+        previousNames: character.previousNames,
+      })),
+    ...effectiveSideCharacters
+      .filter((character) => character.controlledBy === 'User')
+      .map((character) => ({ id: character.id, name: character.name })),
+  ], [effectiveMainCharacters, effectiveSideCharacters]);
+
   // Build appData with session-merged characters for LLM context
-  // This ensures the AI sees current locations, moods, controlledBy, etc.
+  // This ensures the AI sees current locations, control assignments, and reviewed state.
   const buildLLMAppData = useCallback((overrides?: {
     snapshots?: CharacterStateMessageSnapshot[];
     sideSnapshots?: SideCharacterMessageSnapshot[];
@@ -1285,8 +1495,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     conversationMessages?: Message[];
   }): ScenarioData => {
     const conversationMessages = overrides?.conversationMessages ?? conversation?.messages ?? [];
+    const overrideMessageIdentities = mergeConversationMessageIdentityIndex(
+      conversationMessageIdentityIndex,
+      conversationMessages,
+    );
     const overrideGenerationMap = overrides?.conversationMessages
-      ? buildMessageGenerationMap(conversationMessages)
+      ? buildMessageGenerationMap(overrideMessageIdentities)
       : latestMessageGenerationMap;
 
     const snapshotMap =
@@ -1294,7 +1508,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         ? buildActiveCharacterSnapshotMap(
             (overrides?.snapshots ?? characterStateSnapshots).filter((snapshot) => snapshot.conversationId === conversationId),
             overrideGenerationMap,
-            conversationMessages,
+            overrideMessageIdentities,
           )
         : activeCharacterSnapshotMap;
 
@@ -1303,7 +1517,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         ? buildActiveSideCharacterSnapshotMap(
             (overrides?.sideSnapshots ?? sideCharacterSnapshots).filter((snapshot) => snapshot.conversationId === conversationId),
             overrideGenerationMap,
-            conversationMessages,
+            overrideMessageIdentities,
           )
         : activeSideCharacterSnapshotMap;
 
@@ -1323,6 +1537,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             overrideGenerationMap,
           )
         : activeGoalAlignmentMap;
+
+    userStateAuthorityDecisionsRef.current = [];
 
     const worldCore = buildEffectiveWorldCore({
       baseCore: appData.world.core,
@@ -1351,6 +1567,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     activeSideCharacterSnapshotMap,
     appData,
     characterStateSnapshots,
+    conversationMessageIdentityIndex,
     conversationId,
     computeEffectiveCharacter,
     computeEffectiveSideCharacter,
@@ -2161,10 +2378,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const processResponseForNewCharacters = async (
     responseText: string,
     sourceMessage?: Pick<Message, 'id' | 'generationId'>,
-  ) => {
-    if (!onUpdateSideCharacters) return;
+  ): Promise<SideCharacter[]> => {
+    if (!onUpdateSideCharacters) return [];
 
-    const knownNames = getKnownCharacterNames(effectiveAppData);
+    const knownNames = getKnownCharacterNames({
+      ...effectiveAppData,
+      sideCharacters: sideCharactersRef.current,
+    });
     const newCharacters = detectNewCharacters(responseText, knownNames);
 
     if (newCharacters.length > 0) {
@@ -2186,30 +2406,38 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         });
       });
 
-      // Add to sideCharacters array (optimistic UI update)
-      const updatedSideChars = [...(appData.sideCharacters || []), ...newSideCharacters];
-      onUpdateSideCharacters(updatedSideChars);
-
-      // Persist each new side character to database
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        for (const sc of newSideCharacters) {
+      if (!user) return [];
+
+      const persistedSideCharacters = await persistDynamicSideCharactersBeforeStateReview({
+        currentCharacters: sideCharactersRef.current,
+        newCharacters: newSideCharacters,
+        publish: (characters) => {
+          sideCharactersRef.current = characters;
+          onUpdateSideCharacters(characters);
+        },
+        persist: async (sideCharacter) => {
           try {
-            await supabaseData.saveSideCharacter(sc, conversationId, user.id);
-          } catch (err) {
-            console.error(`Failed to save side character ${sc.name}:`, err);
+            await supabaseData.saveSideCharacter(sideCharacter, conversationId, user.id);
+          } catch (error) {
+            console.error(`Failed to save side character ${sideCharacter.name}:`, error);
+            throw error;
           }
-        }
-      }
+        },
+      });
 
       // Trigger async profile + avatar generation for each
-      newSideCharacters.forEach(sc => {
+      persistedSideCharacters.forEach(sc => {
         const nc = newCharacters.find(c => c.name === sc.name);
         if (nc) {
-          generateSideCharacterDetailsAsync(sc.id, sc.name, nc.dialogContext, sourceMessage);
+          void generateSideCharacterDetailsAsync(sc.id, sc.name, nc.dialogContext, sourceMessage);
         }
       });
+
+      return persistedSideCharacters;
     }
+
+    return [];
   };
 
   // Parse [UPDATE:], [ADDROW:], and [NEWCAT:] tags from AI response
@@ -2500,6 +2728,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         capturedAt: Date.now(),
         status: 'sent',
         requestBody,
+        roleplaySupportReviewEnvelope: createPendingRoleplaySupportReviewEnvelope({
+          worker: 'goal_progress',
+          sourceMessageId: sourceAssistantMessageId,
+          sourceGenerationId: sourceAssistantGenerationId,
+        }),
       });
 
       const { data, error } = await supabase.functions.invoke('evaluate-goal-progress', {
@@ -2570,6 +2803,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           }
         : goalDebug.responseBody ?? null;
       const goalDebugStatus = buildSupportCallDebugStatus(error, reviewedGoalResponseBody);
+      const goalSourceCurrent = isMessageGenerationStillCurrent(
+        sourceAssistantMessageId,
+        sourceAssistantGenerationId,
+      );
 
       recordChatDebugSupportCall(sourceMessage, {
         id: 'call2.goal-progress-eval',
@@ -2584,11 +2821,19 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         modelRequests: goalDebug.modelRequests,
         responseBody: reviewedGoalResponseBody,
         error: goalDebugStatus.error,
+        roleplaySupportReviewEnvelope: wrapLegacyRoleplaySupportResult({
+          worker: 'goal_progress',
+          sourceMessageId: sourceAssistantMessageId,
+          sourceGenerationId: sourceAssistantGenerationId,
+          responseBody: reviewedGoalResponseBody,
+          error: goalDebugStatus.error,
+          sourceCurrent: goalSourceCurrent,
+        }),
       });
 
       if (error || !returnedStepUpdates.length) return;
 
-      if (!isMessageGenerationStillCurrent(sourceAssistantMessageId, sourceAssistantGenerationId)) {
+      if (!goalSourceCurrent) {
         debugLog('[evaluateGoalProgress] Discarded stale result for non-current turn');
         return;
       }
@@ -2604,11 +2849,30 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           };
         })
         .filter(Boolean) as Array<{ goalId: string; stepId: string; completed: boolean }>;
-      if (completions.length === 0 || !sourceAssistantMessageId || !sourceAssistantGenerationId) return;
+      if (completions.length === 0) {
+        updateRoleplaySupportPersistence(sourceMessage, 'call2.goal-progress-eval', {
+          persistenceStatus: 'no_updates',
+          persistenceReason: 'no_accepted_goal_progress_completions',
+        });
+        return;
+      }
+      if (!sourceAssistantMessageId || !sourceAssistantGenerationId) return;
 
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        updateRoleplaySupportPersistence(sourceMessage, 'call2.goal-progress-eval', {
+          persistenceStatus: 'source_not_persisted',
+          persistenceReason: 'authenticated_user_unavailable',
+          contextGap: 'Accepted goal-progress output could not persist because the authenticated user was unavailable.',
+        });
+        return;
+      }
       if (!isMessageGenerationStillCurrent(sourceAssistantMessageId, sourceAssistantGenerationId)) {
+        updateRoleplaySupportPersistence(sourceMessage, 'call2.goal-progress-eval', {
+          persistenceStatus: 'skipped_stale',
+          persistenceReason: 'source_generation_superseded_before_persistence',
+          contextGap: 'Accepted goal-progress output was discarded because its source generation was superseded.',
+        });
         debugLog('[evaluateGoalProgress] Discarded stale result before persistence');
         return;
       }
@@ -2622,6 +2886,16 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         timeOfDay: currentTimeOfDay,
         completions,
       });
+
+      if (!isMessageGenerationStillCurrent(sourceAssistantMessageId, sourceAssistantGenerationId)) {
+        updateRoleplaySupportPersistence(sourceMessage, 'call2.goal-progress-eval', {
+          persistenceStatus: 'skipped_stale',
+          persistenceReason: 'source_generation_superseded_during_persistence',
+          contextGap: 'Goal-progress rows were written for a generation that was superseded before persistence completed; they remain excluded from effective prompt state.',
+        });
+        debugLog('[evaluateGoalProgress] Discarded persisted result after source generation changed during write');
+        return;
+      }
 
       setGoalStepDerivations(prev => {
         const next = [...prev];
@@ -2638,8 +2912,25 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         return next;
       });
 
+      updateRoleplaySupportPersistence(sourceMessage, 'call2.goal-progress-eval', {
+        persistenceStatus: 'persisted',
+        persistenceTargets: persisted.map((derivation) => derivation.id || derivation.stepId),
+        persistenceReason: 'goal_step_derivations_persisted',
+      });
+
       debugLog(`[evaluateGoalProgress] Completed ${completions.length} steps`);
     } catch (err) {
+      updateRoleplaySupportPersistence(
+        sourceAssistantMessageId
+          ? { id: sourceAssistantMessageId, generationId: sourceAssistantGenerationId }
+          : null,
+        'call2.goal-progress-eval',
+        {
+          persistenceStatus: 'failed',
+          persistenceReason: 'goal_progress_persistence_failed',
+          contextGap: `Goal-progress persistence failed: ${err instanceof Error ? err.message : String(err)}`,
+        },
+      );
       console.error('[evaluateGoalProgress] Failed:', err);
     }
   };
@@ -2745,6 +3036,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         capturedAt: Date.now(),
         status: 'sent',
         requestBody,
+        roleplaySupportReviewEnvelope: createPendingRoleplaySupportReviewEnvelope({
+          worker: 'goal_alignment',
+          sourceMessageId: sourceAssistantMessageId,
+          sourceGenerationId: sourceAssistantGenerationId,
+        }),
       });
 
       const { data, error } = await supabase.functions.invoke('evaluate-goal-alignment', {
@@ -2759,6 +3055,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           }
         : alignmentDebug.responseBody ?? null;
       const alignmentDebugStatus = buildSupportCallDebugStatus(error, reviewedAlignmentResponseBody);
+      const alignmentSourceCurrent = isMessageGenerationStillCurrent(
+        sourceAssistantMessageId,
+        sourceAssistantGenerationId,
+      );
 
       recordChatDebugSupportCall(sourceMessage, {
         id: 'call2.goal-alignment-eval',
@@ -2776,6 +3076,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           ? ['Goal alignment shadow mode is enabled; evaluations are shown for review but are not persisted or injected into API Call 1.']
           : undefined,
         error: alignmentDebugStatus.error,
+        roleplaySupportReviewEnvelope: wrapLegacyRoleplaySupportResult({
+          worker: 'goal_alignment',
+          sourceMessageId: sourceAssistantMessageId,
+          sourceGenerationId: sourceAssistantGenerationId,
+          responseBody: reviewedAlignmentResponseBody,
+          error: alignmentDebugStatus.error,
+          sourceCurrent: alignmentSourceCurrent,
+        }),
       });
 
       if (error || !data?.evaluations?.length) return;
@@ -2783,7 +3091,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         debugLog('[evaluateGoalAlignment] Shadow mode active; skipped persistence and prompt steering');
         return;
       }
-      if (!isMessageGenerationStillCurrent(sourceAssistantMessageId, sourceAssistantGenerationId)) {
+      if (!alignmentSourceCurrent) {
         debugLog('[evaluateGoalAlignment] Discarded stale result for non-current turn');
         return;
       }
@@ -2878,11 +3186,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   interface ExtractionRequestMeta {
     sourceMessageId?: string;
     sourceMessageGenerationId?: string;
+    sourceUserMessageId?: string;
     reason?: string;
   }
 
   const isAllowedExtractionField = (field: string): boolean => {
-    if (['age', 'sexType', 'sexualOrientation', 'roleDescription', 'location', 'scenePosition', 'currentMood', 'nicknames'].includes(field)) return true;
+    if (['age', 'sexType', 'sexualOrientation', 'roleDescription', 'location', 'scenePosition', 'nicknames'].includes(field)) return true;
     if (field.startsWith('goals.')) return true;
     if (field.startsWith('sections.')) {
       const sectionTitle = field.split('.')[1]?.trim().toLowerCase();
@@ -3057,54 +3366,23 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     return newText.length >= oldText.length * 1.12 && novelty >= 0.20;
   };
 
-  // Build eligible character set from latest exchange
-  const buildEligibleCharacterNames = useCallback((
+  // Build deterministic eligibility evidence from the latest exchange. This
+  // deliberately does not infer pronoun-only references.
+  const buildCharacterStateEligibilityRows = useCallback((
     userMessage: string,
     aiResponse: string,
     mainCharacters: Array<Character & { previousNames?: string[] }> = effectiveMainCharacters,
     sideCharacters: SideCharacter[] = effectiveSideCharacters,
-  ): Set<string> => {
-    const eligible = new Set<string>();
-    const combinedText = `${userMessage}\n${aiResponse}`;
-    const isAliasMentioned = (alias: string): boolean => {
-      const trimmed = alias.trim();
-      if (!trimmed) return false;
-      const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      return new RegExp(`(^|[^a-zA-Z0-9])${escaped}(?=$|[^a-zA-Z0-9])`, 'i').test(combinedText);
-    };
-
-    const addTaggedSpeaker = (speakerName: string | null | undefined) => {
-      const normalizedSpeaker = speakerName?.trim().toLowerCase();
-      if (!normalizedSpeaker) return;
-      const mainMatch = mainCharacters.find((character) => character.name.toLowerCase() === normalizedSpeaker);
-      if (mainMatch) {
-        eligible.add(mainMatch.name.toLowerCase());
-        return;
-      }
-      const sideMatch = sideCharacters.find((character) => character.name.toLowerCase() === normalizedSpeaker);
-      if (sideMatch) eligible.add(sideMatch.name.toLowerCase());
-    };
-
-    for (const segment of parseMessageSegments(userMessage)) addTaggedSpeaker(segment.speakerName);
-    for (const segment of parseMessageSegments(aiResponse)) addTaggedSpeaker(segment.speakerName);
-
-    // Check all characters (main + side) by name, nicknames, previousNames
-    for (const c of mainCharacters) {
-      const names = [c.name, ...(c.nicknames?.split(',').map(n => n.trim()) || []), ...(c.previousNames || [])].filter(Boolean);
-      const mentioned = names.some(isAliasMentioned);
-      if (mentioned) {
-        eligible.add(c.name.toLowerCase());
-      }
-    }
-    for (const sc of sideCharacters) {
-      const names = [sc.name, ...(sc.nicknames?.split(',').map(n => n.trim()) || [])].filter(Boolean);
-      const mentioned = names.some(isAliasMentioned);
-      if (mentioned) {
-        eligible.add(sc.name.toLowerCase());
-      }
-    }
-    return eligible;
-  }, [effectiveMainCharacters, effectiveSideCharacters]);
+  ) => buildRoleplayCharacterStateEligibilityRows({
+    userMessage,
+    assistantMessage: aiResponse,
+    taggedSpeakerNames: [
+      ...parseMessageSegments(userMessage),
+      ...parseMessageSegments(aiResponse),
+    ].map((segment) => segment.speakerName || '').filter(Boolean),
+    mainCharacters,
+    sideCharacters,
+  }), [effectiveMainCharacters, effectiveSideCharacters]);
 
   // Call the dedicated extraction edge function
   const extractCharacterUpdatesFromDialogue = async (
@@ -3117,11 +3395,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       const currentEffectiveMainCharacters = getCurrentEffectiveMainCharacters();
       const currentEffectiveSideCharacters = getCurrentEffectiveSideCharacters();
       // Build eligible character set
-      const eligibleNames = buildEligibleCharacterNames(
+      const characterEligibilityReviews = buildCharacterStateEligibilityRows(
         userMessage,
         aiResponse,
         currentEffectiveMainCharacters,
         currentEffectiveSideCharacters,
+      );
+      const eligibleNames = new Set(
+        characterEligibilityReviews.map((row) => row.characterName.toLowerCase()),
       );
       debugLog('[extractCharacterUpdates] Eligible characters:', [...eligibleNames]);
       if (eligibleNames.size === 0) return [];
@@ -3164,7 +3445,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           preferredClothing: effective.preferredClothing,
           location: effective.location,
           scenePosition: effective.scenePosition || '',
-          currentMood: effective.currentMood,
           goals: (effective.goals || []).map(g => ({
             title: g.title,
             desiredOutcome: g.desiredOutcome || '',
@@ -3213,7 +3493,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         preferredClothing: sc.preferredClothing,
         location: sc.location,
         scenePosition: sc.scenePosition || '',
-        currentMood: sc.currentMood,
         background: sc.background,
         personality: sc.personality,
       }));
@@ -3259,6 +3538,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           ['call2.character_updates.recent_context', recentContext],
           ['call2.character_updates.characters_payload', allCharacters],
           ['call2.character_updates.eligible_characters', [...eligibleNames]],
+          ['call2.character_updates.character_eligibility_reviews', characterEligibilityReviews],
           ['call2.character_updates.story_clock', { day: currentDay, timeOfDay: currentTimeOfDay }],
         ]),
         diagnostics: {
@@ -3274,8 +3554,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         characters: allCharacters,
         modelId,
         eligibleCharacters: [...eligibleNames],
+        characterEligibilityReviews,
         currentDay,
         currentTimeOfDay,
+        sourceUserMessageId: meta?.sourceUserMessageId,
         debugTrace: isAdmin,
       };
       const sourceMessage = meta?.sourceMessageId
@@ -3290,6 +3572,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         capturedAt: Date.now(),
         status: 'sent',
         requestBody,
+        roleplaySupportReviewEnvelope: createPendingRoleplaySupportReviewEnvelope({
+          worker: 'character_state',
+          sourceMessageId: meta?.sourceMessageId,
+          sourceGenerationId: meta?.sourceMessageGenerationId,
+        }),
       });
 
       const { data, error } = await supabase.functions.invoke('extract-character-updates', {
@@ -3306,7 +3593,26 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         : Array.isArray((data as any)?.candidateReviews)
           ? ((data as any).candidateReviews as any[])
           : [];
-      const characterUpdateReviews = (returnedCandidateReviews.length ? returnedCandidateReviews : rawCharacterUpdates).map((update, index) => {
+      const returnedPhysicalStateReviews = Array.isArray((characterDebug.responseBody as any)?.physicalStateReviews)
+        ? ((characterDebug.responseBody as any).physicalStateReviews as any[])
+        : Array.isArray((data as any)?.physicalStateReviews)
+          ? ((data as any).physicalStateReviews as any[])
+          : [];
+      const missingPhysicalStateReviews = Array.isArray((characterDebug.responseBody as any)?.missingPhysicalStateReviews)
+        ? ((characterDebug.responseBody as any).missingPhysicalStateReviews as unknown[])
+            .filter((name): name is string => typeof name === 'string')
+        : Array.isArray((data as any)?.missingPhysicalStateReviews)
+          ? ((data as any).missingPhysicalStateReviews as unknown[])
+              .filter((name): name is string => typeof name === 'string')
+          : [];
+      const reviewSource = returnedCandidateReviews.length
+        ? returnedCandidateReviews
+        : rawCharacterUpdates.map((update) => ({
+            ...update,
+            accepted: false,
+            reason: 'missing_candidate_review',
+          }));
+      const characterUpdateReviews = reviewSource.map((update, index) => {
         const normalized: ExtractedUpdate = {
           character: String(update?.character || ''),
           field: String(update?.field || ''),
@@ -3319,9 +3625,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         const eligible = eligibleNames.has(normalized.character.toLowerCase());
         const genericEvidence = isGenericEvidenceText(normalized.evidence);
         const edgeAccepted = update?.accepted === true;
-        const accepted = returnedCandidateReviews.length
-          ? edgeAccepted
-          : eligible && isAllowedExtractionUpdate(normalized);
+        const accepted = returnedCandidateReviews.length > 0 && edgeAccepted;
         const reason = accepted
           ? 'accepted'
           : typeof update?.reason === 'string' && update.reason.trim()
@@ -3349,15 +3653,32 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           reason,
         };
       });
+      const reviewedCharacterState = buildRoleplayReviewedCharacterStateContract({
+        eligibleCharacters: characterEligibilityReviews,
+        candidateReviews: characterUpdateReviews,
+        physicalStateReviews: returnedPhysicalStateReviews,
+        missingPhysicalStateReviews,
+      });
       const reviewedCharacterResponseBody = characterDebug.responseBody && typeof characterDebug.responseBody === 'object'
         ? {
             ...(characterDebug.responseBody as Record<string, unknown>),
             characterUpdateReviews,
-            acceptedUpdates: characterUpdateReviews.filter((review) => review.accepted),
-            rejectedUpdates: characterUpdateReviews.filter((review) => !review.accepted),
+            acceptedUpdates: reviewedCharacterState.rows.flatMap((row) => row.acceptedUpdates),
+            rejectedUpdates: [
+              ...reviewedCharacterState.rows.flatMap((row) => row.rejectedUpdates),
+              ...reviewedCharacterState.unmatchedCandidates,
+            ],
+            characterEligibilityReviews,
+            reviewedCharacterStateRows: reviewedCharacterState.rows,
+            missingCharacterStateReviews: reviewedCharacterState.rows.filter((row) => row.missingReviewReason),
+            unmatchedCharacterStateCandidates: reviewedCharacterState.unmatchedCandidates,
           }
         : characterDebug.responseBody ?? null;
       const characterDebugStatus = buildSupportCallDebugStatus(error, reviewedCharacterResponseBody);
+      const characterSourceCurrent = isMessageGenerationStillCurrent(
+        meta?.sourceMessageId,
+        meta?.sourceMessageGenerationId,
+      );
 
       recordChatDebugSupportCall(sourceMessage, {
         id: 'call2.character-state-sync',
@@ -3372,6 +3693,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         modelRequests: characterDebug.modelRequests,
         responseBody: reviewedCharacterResponseBody,
         error: characterDebugStatus.error,
+        roleplaySupportReviewEnvelope: wrapLegacyRoleplaySupportResult({
+          worker: 'character_state',
+          sourceMessageId: meta?.sourceMessageId,
+          sourceGenerationId: meta?.sourceMessageGenerationId,
+          responseBody: reviewedCharacterResponseBody,
+          error: characterDebugStatus.error,
+          sourceCurrent: characterSourceCurrent,
+        }),
       });
 
       if (error) {
@@ -3379,17 +3708,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         return [];
       }
 
-      // Defensive: filter out updates for non-eligible characters and unsupported fields
-      const updates = rawCharacterUpdates
-        .filter((u: any): u is ExtractedUpdate => (
-          typeof u?.character === 'string' &&
-          typeof u?.field === 'string' &&
-          typeof u?.value === 'string'
-        ))
+      // Persistence candidates come only from accepted reviewed rows. Raw model
+      // candidates remain available in debug evidence but cannot reach apply.
+      const updates = getRoleplayReviewedCharacterStatePersistenceCandidates(reviewedCharacterState)
         .filter((u: ExtractedUpdate) => eligibleNames.has(u.character.toLowerCase()))
         .filter((u: ExtractedUpdate) => isAllowedExtractionUpdate(u));
 
-      if (!isMessageGenerationStillCurrent(meta?.sourceMessageId, meta?.sourceMessageGenerationId)) {
+      if (!characterSourceCurrent) {
         debugLog('[extractCharacterUpdates] Discarded stale result for non-current turn');
         return [];
       }
@@ -3420,21 +3745,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       console.error('[extractCharacterUpdates] Failed:', err);
       return [];
     }
-  };
-
-  const sanitizeMoodValue = (raw: string): string => {
-    const cleaned = raw
-      .replace(/[*"()[\]{}]/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-    if (!cleaned) return '';
-
-    const firstSentence = cleaned.split(/[.!?]/)[0].trim();
-    const limited = firstSentence.split(/\s+/).slice(0, 12).join(' ');
-
-    // Guard against stage-direction leakage in mood fields.
-    const forbiddenPattern = /\b(foot|feet|toe|toes|thigh|hips?|breast|boob|cock|penis|pussy|ass|butt|bed|door|shirt|shorts|thong|bra|moves?|moving|walks?|walking|leans?|leaning|touches?|touching|presses?|pressing|curls?|curling|kneads?|kneading|whispers?|whispering|kisses?|kissing)\b/i;
-    return forbiddenPattern.test(limited) ? '' : limited;
   };
 
   const sanitizeScenePositionValue = (raw: string): string => {
@@ -3556,7 +3866,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     previousNames: cloneData(character.previousNames || []),
     location: character.location,
     scenePosition: character.scenePosition,
-    currentMood: character.currentMood,
     physicalAppearance: cloneData(character.physicalAppearance || defaultPhysicalAppearance),
     currentlyWearing: cloneData(character.currentlyWearing || defaultCurrentlyWearing),
     preferredClothing: cloneData(character.preferredClothing || defaultPreferredClothing),
@@ -3582,7 +3891,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     sexualOrientation: character.sexualOrientation,
     location: character.location,
     scenePosition: character.scenePosition,
-    currentMood: character.currentMood,
     controlledBy: character.controlledBy,
     characterRole: character.characterRole,
     roleDescription: character.roleDescription,
@@ -3801,10 +4109,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         }
       }
 
-      if (field === 'currentMood') {
-        const sanitizedMood = sanitizeMoodValue(value);
-        if (sanitizedMood) nextState.currentMood = sanitizedMood;
-      } else if (field === 'scenePosition') {
+      if (field === 'scenePosition') {
         const sanitizedScenePosition = sanitizeScenePositionValue(value);
         if (sanitizedScenePosition) nextState.scenePosition = sanitizedScenePosition;
       } else {
@@ -3933,14 +4238,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         }
       }
 
-      if (field === 'currentMood') {
-        const sanitizedMood = sanitizeMoodValue(value);
-        if (sanitizedMood) {
-          nextState.currentMood = sanitizedMood;
-        }
-        continue;
-      }
-
       if (field === 'scenePosition') {
         const sanitizedScenePosition = sanitizeScenePositionValue(value);
         if (sanitizedScenePosition) {
@@ -3956,56 +4253,278 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   };
 
   // Apply extracted updates to canonical per-message state for main characters.
-  const applyExtractedUpdates = async (updates: ExtractedUpdate[], meta?: ExtractionRequestMeta) => {
+  const applyExtractedUpdates = async (
+    updates: ExtractedUpdate[],
+    meta?: ExtractionRequestMeta,
+  ): Promise<RoleplayCharacterStateApplyReceipt[]> => {
+    const supportSourceMessage = meta?.sourceMessageId
+      ? { id: meta.sourceMessageId, generationId: meta.sourceMessageGenerationId }
+      : null;
+    const toReviewedCandidate = (
+      update: ExtractedUpdate,
+    ): RoleplayReviewedCharacterStatePersistenceCandidate | null => (
+      isRoleplayReviewedCharacterStateField(update.field)
+        ? {
+            character: update.character,
+            field: update.field,
+            value: update.value,
+            evidence: update.evidence || '',
+            confidence: typeof update.confidence === 'number' ? update.confidence : 0,
+          }
+        : null
+    );
+    const buildReceipt = (
+      update: ExtractedUpdate,
+      outcome: Parameters<typeof buildRoleplayCharacterStateApplyReceipt>[0]['outcome'],
+      reason: string,
+      options: { characterId?: string; persistenceTargetId?: string; persisted?: boolean } = {},
+    ): RoleplayCharacterStateApplyReceipt => {
+      const candidate = toReviewedCandidate(update) ?? {
+        character: update.character,
+        field: 'location',
+        value: update.value,
+        evidence: update.evidence || '',
+        confidence: typeof update.confidence === 'number' ? update.confidence : 0,
+      };
+      const receipt = buildRoleplayCharacterStateApplyReceipt({
+        candidate,
+        outcome,
+        reason,
+        sourceMessageId: meta?.sourceMessageId,
+        sourceGenerationId: meta?.sourceMessageGenerationId,
+        sourceUserMessageId: meta?.sourceUserMessageId,
+        ...options,
+      });
+      return isRoleplayReviewedCharacterStateField(update.field)
+        ? receipt
+        : { ...receipt, field: update.field };
+    };
+    const receipts: RoleplayCharacterStateApplyReceipt[] = [];
+    const supportedUpdates = updates.filter((update) => {
+      if (isRoleplayReviewedCharacterStateField(update.field)) return true;
+      receipts.push(buildReceipt(update, 'unsupported_field', 'field_outside_v1_physical_state_scope'));
+      return false;
+    });
+    const candidateKey = (update: Pick<ExtractedUpdate, 'character' | 'field' | 'value'>) => (
+      `${update.character}\u0000${update.field}\u0000${update.value}`
+    );
+    type PersistedCharacterStateWrite = {
+      kind: 'main' | 'side';
+      characterId: string;
+      snapshotId: string;
+      updates: ExtractedUpdate[];
+    };
+    const persistedWrites: PersistedCharacterStateWrite[] = [];
+    const finalizeCharacterStateSupport = (
+      input: FinalizeRoleplaySupportReviewEnvelopeInput,
+      finalReceipts: RoleplayCharacterStateApplyReceipt[],
+    ) => {
+      updateRoleplaySupportPersistence(supportSourceMessage, 'call2.character-state-sync', {
+        ...input,
+        responseBodyPatch: {
+          applyStageReviews: finalReceipts,
+          persistedUpdates: finalReceipts.filter((receipt) => receipt.persisted),
+          rejectedAtApplyStage: finalReceipts.filter((receipt) => !receipt.persisted),
+        },
+      });
+    };
+    const finalizeStaleGeneration = async (
+      reason: string,
+      contextGap: string,
+    ): Promise<RoleplayCharacterStateApplyReceipt[]> => {
+      const cleanupResults = new Map<string, { removed: boolean; error?: string }>();
+      for (const write of persistedWrites) {
+        try {
+          if (write.kind === 'main') {
+            await supabaseData.deleteCharacterStateMessageSnapshot(write.snapshotId);
+          } else {
+            await supabaseData.deleteSideCharacterMessageSnapshot(write.snapshotId);
+          }
+          cleanupResults.set(write.snapshotId, { removed: true });
+        } catch (cleanupError) {
+          cleanupResults.set(write.snapshotId, {
+            removed: false,
+            error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError),
+          });
+        } finally {
+          if (write.kind === 'main') {
+            removeCharacterSnapshotFromRuntimeState(write.snapshotId);
+          } else {
+            removeSideCharacterSnapshotFromRuntimeState(write.snapshotId);
+          }
+        }
+      }
+
+      const writeByCandidate = new Map<string, PersistedCharacterStateWrite>();
+      for (const write of persistedWrites) {
+        for (const update of write.updates) writeByCandidate.set(candidateKey(update), write);
+      }
+      const preservedReceipts = receipts.filter((receipt) => (
+        receipt.outcome !== 'persisted'
+        && !writeByCandidate.has(candidateKey({
+          character: receipt.characterName,
+          field: receipt.field,
+          value: receipt.value,
+        }))
+      ));
+      const preservedKeys = new Set(preservedReceipts.map((receipt) => candidateKey({
+        character: receipt.characterName,
+        field: receipt.field,
+        value: receipt.value,
+      })));
+      const staleCandidateReceipts = supportedUpdates.flatMap((update) => {
+        if (preservedKeys.has(candidateKey(update))) return [];
+        const write = writeByCandidate.get(candidateKey(update));
+        const cleanup = write ? cleanupResults.get(write.snapshotId) : undefined;
+        const cleanupFailed = cleanup?.removed === false;
+        return [buildReceipt(
+          update,
+          'stale_generation',
+          cleanupFailed
+            ? `${reason}_cleanup_failed: ${cleanup.error || 'unknown cleanup error'}`
+            : write
+              ? `${reason}_snapshot_removed`
+              : reason,
+          write
+            ? {
+                characterId: write.characterId,
+                persistenceTargetId: write.snapshotId,
+                persisted: cleanupFailed,
+              }
+            : {},
+        )];
+      });
+      const finalReceipts = [...preservedReceipts, ...staleCandidateReceipts];
+      const remainingTargets = persistedWrites
+        .filter((write) => cleanupResults.get(write.snapshotId)?.removed === false)
+        .map((write) => write.snapshotId);
+      finalizeCharacterStateSupport({
+        persistenceStatus: 'skipped_stale',
+        persistenceTargets: remainingTargets,
+        persistenceReason: remainingTargets.length > 0 ? `${reason}_cleanup_failed` : reason,
+        contextGap: remainingTargets.length > 0
+          ? `${contextGap} Cleanup failed for ${remainingTargets.length} stale snapshot row(s); their target IDs remain recorded, and they stay excluded from effective prompt state.`
+          : contextGap,
+      }, finalReceipts);
+      return finalReceipts;
+    };
+
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user || updates.length === 0) return;
+    if (!user) {
+      const finalReceipts = [
+        ...receipts,
+        ...supportedUpdates.map((update) => buildReceipt(
+          update,
+          'persistence_failed',
+          'authenticated_user_unavailable',
+        )),
+      ];
+      finalizeCharacterStateSupport({
+        persistenceStatus: 'source_not_persisted',
+        persistenceReason: 'authenticated_user_unavailable',
+        contextGap: 'Accepted character-state output could not persist because the authenticated user was unavailable.',
+      }, finalReceipts);
+      return finalReceipts;
+    }
+    if (supportedUpdates.length === 0) {
+      finalizeCharacterStateSupport({
+        persistenceStatus: 'no_updates',
+        persistenceReason: 'no_supported_character_state_candidates',
+      }, receipts);
+      return receipts;
+    }
     if (!isMessageGenerationStillCurrent(meta?.sourceMessageId, meta?.sourceMessageGenerationId)) {
+      const finalReceipts = await finalizeStaleGeneration(
+        'source_generation_superseded_before_persistence',
+        'Accepted character-state output was discarded because its source generation was superseded.',
+      );
       debugLog('[applyExtractedUpdates] Discarded stale updates before persistence');
-      return;
+      return finalReceipts;
     }
 
-    // Group updates by character
-    const updatesByCharacter = new Map<string, ExtractedUpdate[]>();
-    for (const update of updates) {
-      const existing = updatesByCharacter.get(update.character.toLowerCase()) || [];
-      existing.push(update);
-      updatesByCharacter.set(update.character.toLowerCase(), existing);
-    }
+    const persistedTargets: string[] = [];
+    try {
+      // Group updates by character
+      const updatesByCharacter = new Map<string, ExtractedUpdate[]>();
+      for (const update of supportedUpdates) {
+        const existing = updatesByCharacter.get(update.character.toLowerCase()) || [];
+        existing.push(update);
+        updatesByCharacter.set(update.character.toLowerCase(), existing);
+      }
 
-    for (const [charNameLower, charUpdates] of updatesByCharacter) {
+      for (const [charNameLower, charUpdates] of updatesByCharacter) {
       const resolvedMatch = resolveCharacterReference(charNameLower);
       const mainChar = resolvedMatch?.kind === 'main' ? resolvedMatch.base : undefined;
       const sideChar = resolvedMatch?.kind === 'side' ? resolvedMatch.base : undefined;
 
       if (!mainChar && !sideChar) {
         debugLog(`[applyExtractedUpdates] Character not found: ${charNameLower}`);
+        receipts.push(...charUpdates.map((update) => buildReceipt(
+          update,
+          'character_not_found',
+          'character_reference_not_resolved',
+        )));
+        continue;
       }
 
       if (mainChar) {
         if (!meta?.sourceMessageId || !meta?.sourceMessageGenerationId) {
           debugLog(`[applyExtractedUpdates] Missing canonical source metadata for ${mainChar.name}; skipping main-character snapshot persist`);
+          receipts.push(...charUpdates.map((update) => buildReceipt(
+            update,
+            'missing_source_metadata',
+            'canonical_source_message_or_generation_missing',
+            { characterId: mainChar.id },
+          )));
           continue;
         }
 
         if (!isMessageGenerationStillCurrent(meta.sourceMessageId, meta.sourceMessageGenerationId)) {
+          const finalReceipts = await finalizeStaleGeneration(
+            'source_generation_superseded_before_character_persistence',
+            'Character-state output was discarded because its source generation was superseded.',
+          );
           debugLog(`[applyExtractedUpdates] Discarded stale main-character snapshot before persist for ${mainChar.name}`);
-          return;
+          return finalReceipts;
         }
 
         const effectiveChar = computeEffectiveCharacter(mainChar, buildCurrentCharacterSnapshotMap());
-        const nextEffectiveChar = applyUpdatesToCharacterSnapshot(effectiveChar, charUpdates);
+        let nextEffectiveChar = effectiveChar;
+        const changedUpdates: ExtractedUpdate[] = [];
+        for (const update of charUpdates) {
+          const candidateState = applyUpdatesToCharacterSnapshot(nextEffectiveChar, [update]);
+          const previousValue = getFieldValueForMetadata(
+            toCharacterStateSnapshotPayload(nextEffectiveChar) as Record<string, any>,
+            update.field,
+          );
+          const nextValue = getFieldValueForMetadata(
+            toCharacterStateSnapshotPayload(candidateState) as Record<string, any>,
+            update.field,
+          );
+          if (JSON.stringify(previousValue ?? null) === JSON.stringify(nextValue ?? null)) {
+            receipts.push(buildReceipt(
+              update,
+              'no_canonical_delta',
+              'reviewed_value_matches_effective_character_state',
+              { characterId: mainChar.id },
+            ));
+            continue;
+          }
+          changedUpdates.push(update);
+          nextEffectiveChar = candidateState;
+        }
         const currentPayload = toCharacterStateSnapshotPayload(effectiveChar);
         const nextPayload = stampFieldChangeMetadata(
           currentPayload,
           toCharacterStateSnapshotPayload(nextEffectiveChar),
-          charUpdates,
+          changedUpdates,
           {
             sourceMessageId: meta.sourceMessageId,
             sourceMessageGenerationId: meta.sourceMessageGenerationId,
           },
         );
 
-        if (JSON.stringify(currentPayload) === JSON.stringify(nextPayload)) {
+        if (changedUpdates.length === 0 || JSON.stringify(currentPayload) === JSON.stringify(nextPayload)) {
           debugLog(`[applyExtractedUpdates] No canonical delta for ${mainChar.name}`);
           continue;
         }
@@ -4020,35 +4539,89 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           sourceGenerationId: meta.sourceMessageGenerationId,
           statePayload: nextPayload,
         });
+        persistedWrites.push({
+          kind: 'main',
+          characterId: mainChar.id,
+          snapshotId: persistedSnapshot.id,
+          updates: changedUpdates,
+        });
+
+        if (!isMessageGenerationStillCurrent(meta.sourceMessageId, meta.sourceMessageGenerationId)) {
+          const finalReceipts = await finalizeStaleGeneration(
+            'source_generation_superseded_during_character_persistence',
+            'A character-state row was written for a generation that was superseded before persistence completed.',
+          );
+          return finalReceipts;
+        }
 
         upsertCharacterSnapshotInRuntimeState(persistedSnapshot);
+        persistedTargets.push(persistedSnapshot.id);
+        receipts.push(...changedUpdates.map((update) => buildReceipt(
+          update,
+          'persisted',
+          'character_state_snapshot_persisted',
+          { characterId: mainChar.id, persistenceTargetId: persistedSnapshot.id },
+        )));
 
         debugLog(`[applyExtractedUpdates] Persisted canonical snapshot for ${mainChar.name}:`, Object.keys(nextPayload));
       } else if (sideChar) {
         if (!meta?.sourceMessageId || !meta?.sourceMessageGenerationId) {
           debugLog(`[applyExtractedUpdates] Missing canonical source metadata for ${sideChar.name}; skipping side-character snapshot persist`);
+          receipts.push(...charUpdates.map((update) => buildReceipt(
+            update,
+            'missing_source_metadata',
+            'canonical_source_message_or_generation_missing',
+            { characterId: sideChar.id },
+          )));
           continue;
         }
 
         if (!isMessageGenerationStillCurrent(meta.sourceMessageId, meta.sourceMessageGenerationId)) {
+          const finalReceipts = await finalizeStaleGeneration(
+            'source_generation_superseded_before_character_persistence',
+            'Character-state output was discarded because its source generation was superseded.',
+          );
           debugLog(`[applyExtractedUpdates] Discarded stale side-character snapshot before persist for ${sideChar.name}`);
-          return;
+          return finalReceipts;
         }
 
         const effectiveSideChar = computeEffectiveSideCharacter(sideChar, buildCurrentSideCharacterSnapshotMap());
-        const nextEffectiveSideChar = applyUpdatesToSideCharacterSnapshot(effectiveSideChar, charUpdates);
+        let nextEffectiveSideChar = effectiveSideChar;
+        const changedUpdates: ExtractedUpdate[] = [];
+        for (const update of charUpdates) {
+          const candidateState = applyUpdatesToSideCharacterSnapshot(nextEffectiveSideChar, [update]);
+          const previousValue = getFieldValueForMetadata(
+            toSideCharacterStateSnapshotPayload(nextEffectiveSideChar) as Record<string, any>,
+            update.field,
+          );
+          const nextValue = getFieldValueForMetadata(
+            toSideCharacterStateSnapshotPayload(candidateState) as Record<string, any>,
+            update.field,
+          );
+          if (JSON.stringify(previousValue ?? null) === JSON.stringify(nextValue ?? null)) {
+            receipts.push(buildReceipt(
+              update,
+              'no_canonical_delta',
+              'reviewed_value_matches_effective_side_character_state',
+              { characterId: sideChar.id },
+            ));
+            continue;
+          }
+          changedUpdates.push(update);
+          nextEffectiveSideChar = candidateState;
+        }
         const currentPayload = toSideCharacterStateSnapshotPayload(effectiveSideChar);
         const nextPayload = stampFieldChangeMetadata(
           currentPayload,
           toSideCharacterStateSnapshotPayload(nextEffectiveSideChar),
-          charUpdates,
+          changedUpdates,
           {
             sourceMessageId: meta.sourceMessageId,
             sourceMessageGenerationId: meta.sourceMessageGenerationId,
           },
         );
 
-        if (JSON.stringify(currentPayload) === JSON.stringify(nextPayload)) {
+        if (changedUpdates.length === 0 || JSON.stringify(currentPayload) === JSON.stringify(nextPayload)) {
           debugLog(`[applyExtractedUpdates] No canonical delta for ${sideChar.name}`);
           continue;
         }
@@ -4063,17 +4636,83 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           sourceGenerationId: meta.sourceMessageGenerationId,
           statePayload: nextPayload,
         });
+        persistedWrites.push({
+          kind: 'side',
+          characterId: sideChar.id,
+          snapshotId: persistedSnapshot.id,
+          updates: changedUpdates,
+        });
+
+        if (!isMessageGenerationStillCurrent(meta.sourceMessageId, meta.sourceMessageGenerationId)) {
+          const finalReceipts = await finalizeStaleGeneration(
+            'source_generation_superseded_during_character_persistence',
+            'A side-character state row was written for a generation that was superseded before persistence completed.',
+          );
+          return finalReceipts;
+        }
 
         upsertSideCharacterSnapshotInRuntimeState(persistedSnapshot);
+        persistedTargets.push(persistedSnapshot.id);
+        receipts.push(...changedUpdates.map((update) => buildReceipt(
+          update,
+          'persisted',
+          'side_character_state_snapshot_persisted',
+          { characterId: sideChar.id, persistenceTargetId: persistedSnapshot.id },
+        )));
 
         debugLog(`[applyExtractedUpdates] Persisted canonical side-character snapshot for ${sideChar.name}:`, Object.keys(nextPayload));
-      } else {
-        debugLog(`[applyExtractedUpdates] Character not found: ${charNameLower}`);
       }
+      }
+
+      if (!isMessageGenerationStillCurrent(meta?.sourceMessageId, meta?.sourceMessageGenerationId)) {
+        const finalReceipts = await finalizeStaleGeneration(
+          'source_generation_superseded_before_character_finalization',
+          'Character-state persistence completed for a generation that was superseded before envelope finalization.',
+        );
+        return finalReceipts;
+      }
+
+      finalizeCharacterStateSupport({
+        persistenceStatus: persistedTargets.length > 0 ? 'persisted' : 'no_updates',
+        persistenceTargets: persistedTargets,
+        persistenceReason: persistedTargets.length > 0
+          ? 'character_state_snapshots_persisted'
+          : 'no_character_state_snapshot_persisted',
+      }, receipts);
+      return receipts;
+    } catch (error) {
+      const receiptedCandidates = new Set(
+        receipts.map((receipt) => `${receipt.characterName}\u0000${receipt.field}\u0000${receipt.value}`),
+      );
+      const failedReceipts = supportedUpdates
+        .filter((update) => !receiptedCandidates.has(`${update.character}\u0000${update.field}\u0000${update.value}`))
+        .map((update) => buildReceipt(
+          update,
+          'persistence_failed',
+          error instanceof Error ? error.message : String(error),
+        ));
+      const finalReceipts = [...receipts, ...failedReceipts];
+      finalizeCharacterStateSupport({
+        persistenceStatus: persistedTargets.length > 0 ? 'persisted' : 'failed',
+        persistenceTargets: persistedTargets,
+        persistenceReason: persistedTargets.length > 0
+          ? 'character_state_partially_persisted_with_gap'
+          : 'character_state_persistence_failed',
+        contextGap: persistedTargets.length > 0
+          ? `Some character-state snapshots persisted, but a later write failed: ${error instanceof Error ? error.message : String(error)}`
+          : `Character-state persistence failed: ${error instanceof Error ? error.message : String(error)}`,
+      }, finalReceipts);
+      console.error('[applyExtractedUpdates] Persistence failed:', error);
+      return finalReceipts;
     }
   };
 
-  const queueAssistantMemoryExtraction = useCallback((userMessage: string, aiResponse: string, sourceMessage: Message) => {
+  const queueAssistantMemoryExtraction = useCallback((
+    userMessage: string,
+    aiResponse: string,
+    sourceMessage: Message,
+    sourceUserMessage?: Message,
+  ) => {
     if (!memoriesEnabled) return;
     const combinedTextLength = (userMessage?.length || 0) + (aiResponse?.length || 0);
     const recentExistingMemories = activeMemories
@@ -4143,7 +4782,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       userMessage,
       aiResponse,
       characterNames: allCharacterNames,
+      userCharacterNames: userControlledMemoryCharacters.map((character) => character.name),
       recentExistingMemories,
+      sourceUserMessageId: sourceUserMessage?.id,
+      sourceUserGenerationId: sourceUserMessage?.generationId,
+      sourceAssistantMessageId: sourceMessage.id,
+      sourceAssistantGenerationId: sourceMessage.generationId,
       modelId,
       debugTrace: isAdmin,
     };
@@ -4156,13 +4800,43 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       capturedAt: Date.now(),
       status: 'sent',
       requestBody,
+      roleplaySupportReviewEnvelope: createPendingRoleplaySupportReviewEnvelope({
+        worker: 'memory_extraction',
+        sourceMessageId: sourceMessage.id,
+        sourceGenerationId: sourceMessage.generationId,
+      }),
     });
 
     supabase.functions.invoke('extract-memory-events', {
       body: requestBody
-    }).then(({ data, error }) => {
+    }).then(async ({ data, error }) => {
       const memoryDebug = splitEdgeDebugPayload(data);
       const memoryDebugStatus = buildSupportCallDebugStatus(error, memoryDebug.responseBody);
+      const memorySourceCurrent = isMessageGenerationStillCurrent(
+        sourceMessage.id,
+        sourceMessage.generationId,
+      );
+      const memoryReview = reviewRoleplayMemoryExtractionEvents({
+        events: data?.extractedEvents,
+        userStateReviews: data?.userStateReviews,
+        userSourceMessage: sourceUserMessage,
+        assistantSourceMessage: sourceMessage,
+        assistantSourceAccepted: memorySourceCurrent,
+        userCharacters: userControlledMemoryCharacters,
+        isNearDuplicate: (acceptedEvents, candidate) => isNearDuplicateMemory(
+          [...recentExistingMemories, ...acceptedEvents],
+          candidate,
+        ),
+      });
+      const events = memoryReview.acceptedEvents;
+      const reviewedMemoryResponseBody = memoryDebug.responseBody && typeof memoryDebug.responseBody === 'object'
+        ? {
+            ...(memoryDebug.responseBody as Record<string, unknown>),
+            candidateReviews: memoryReview.candidateReviews,
+            acceptedEvents: events,
+            omittedCandidates: memoryReview.omittedCandidates,
+          }
+        : memoryDebug.responseBody ?? null;
       recordChatDebugSupportCall(sourceMessage, {
         id: 'call2.memory-extraction',
         label: 'Supporting Call - Memory extraction',
@@ -4174,21 +4848,21 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         requestBody,
         modelRequest: memoryDebug.modelRequest,
         modelRequests: memoryDebug.modelRequests,
-        responseBody: memoryDebug.responseBody ?? null,
+        responseBody: reviewedMemoryResponseBody,
         error: memoryDebugStatus.error,
+        roleplaySupportReviewEnvelope: wrapLegacyRoleplaySupportResult({
+          worker: 'memory_extraction',
+          sourceMessageId: sourceMessage.id,
+          sourceGenerationId: sourceMessage.generationId,
+          responseBody: reviewedMemoryResponseBody,
+          error: memoryDebugStatus.error,
+          sourceCurrent: memorySourceCurrent,
+        }),
       });
-      if (error || !data?.extractedEvents?.length) return;
-      if (!isMessageGenerationStillCurrent(sourceMessage.id, sourceMessage.generationId)) {
+      if (error || (memoryReview.candidateReviews.length === 0 && memoryReview.omittedCandidates.length === 0)) return;
+      if (!memorySourceCurrent) {
         debugLog('[memoryExtraction] Discarded stale result for non-current turn');
         return;
-      }
-
-      const events: string[] = [];
-      for (const event of data.extractedEvents as string[]) {
-        const trimmed = event.trim();
-        if (!trimmed) continue;
-        if (isNearDuplicateMemory([...recentExistingMemories, ...events], trimmed)) continue;
-        events.push(trimmed);
       }
       if (events.length === 0) return;
 
@@ -4208,13 +4882,36 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         ? events[0]
         : events.map((event: string) => `- ${event}`).join('\n');
 
-      handleCreateMemory(
-        combinedContent,
-        sourceMessage.day ?? currentDay,
-        sourceMessage.timeOfDay ?? currentTimeOfDay,
-        sourceMessage.id,
-        sourceMessage.generationId,
-      );
+      try {
+        const persistedMemory = await handleCreateMemory(
+          combinedContent,
+          sourceMessage.day ?? currentDay,
+          sourceMessage.timeOfDay ?? currentTimeOfDay,
+          sourceMessage.id,
+          sourceMessage.generationId,
+        );
+        if (!isMessageGenerationStillCurrent(sourceMessage.id, sourceMessage.generationId)) {
+          updateRoleplaySupportPersistence(sourceMessage, 'call2.memory-extraction', {
+            persistenceStatus: 'skipped_stale',
+            persistenceReason: 'source_generation_superseded_during_persistence',
+            contextGap: 'The memory row was written for a generation that was superseded before persistence completed; it remains excluded from effective prompt memory.',
+          });
+          debugLog('[memoryExtraction] Persisted row excluded after source generation changed during write');
+          return;
+        }
+        updateRoleplaySupportPersistence(sourceMessage, 'call2.memory-extraction', {
+          persistenceStatus: 'persisted',
+          persistenceTargets: [persistedMemory.id],
+          persistenceReason: 'reviewed_memory_events_persisted',
+        });
+      } catch (persistenceError) {
+        updateRoleplaySupportPersistence(sourceMessage, 'call2.memory-extraction', {
+          persistenceStatus: 'failed',
+          persistenceReason: 'memory_event_persistence_failed',
+          contextGap: `Memory persistence failed: ${persistenceError instanceof Error ? persistenceError.message : String(persistenceError)}`,
+        });
+        console.error('[queueAssistantMemoryExtraction] Memory persistence failed:', persistenceError);
+      }
     }).catch(err => {
       recordChatDebugSupportCall(sourceMessage, {
         id: 'call2.memory-extraction',
@@ -4226,6 +4923,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         status: 'error',
         requestBody,
         error: err instanceof Error ? err.message : String(err),
+        roleplaySupportReviewEnvelope: wrapLegacyRoleplaySupportResult({
+          worker: 'memory_extraction',
+          sourceMessageId: sourceMessage.id,
+          sourceGenerationId: sourceMessage.generationId,
+          responseBody: null,
+          error: err instanceof Error ? err.message : String(err),
+        }),
       });
       console.error('[queueAssistantMemoryExtraction] Memory extraction failed:', err);
     });
@@ -4241,11 +4945,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     memoriesEnabled,
     modelId,
     recordChatDebugSupportCall,
+    updateRoleplaySupportPersistence,
+    userControlledMemoryCharacters,
   ]);
 
   const {
     queueAssistantDerivedWorkAfterSourcePersist,
-  } = usePostTurnSupportQueue<ExtractedUpdate>({
+  } = usePostTurnSupportQueue<ExtractedUpdate, RoleplayCharacterStateApplyReceipt[]>({
     conversationId,
     saveNewMessages: supabaseData.saveNewMessages,
     queueMemoryExtraction: queueAssistantMemoryExtraction,
@@ -4375,11 +5081,29 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       );
       sessionMessageCountRef.current += 1;
 
-      const llmInput = establishedFactNote + input;
+      const normalSendResponseJob = buildNormalSendResponseJob({
+        conversationId,
+        playerTurn: {
+          messageId: userMsg.id,
+          text: userInput,
+        },
+        establishedFactNote,
+        currentStateSummary: buildCurrentTurnStateDigest({
+          appData: llmAppData,
+          currentDay,
+          currentTimeOfDay,
+          memories: activeMemories,
+          memoriesEnabled,
+          activeScene: canonicalActiveScene,
+        }),
+        responseDetail: normalizeRoleplayResponseDetail(llmAppData.uiSettings?.responseVerbosity),
+      });
       const responseResult = await collectRoleplayResponse({
         appData: llmAppData,
         conversationId,
-        userMessage: llmInput,
+        userMessage: userInput,
+        responseJob: normalSendResponseJob,
+        userStateAuthorityDecisions: userStateAuthorityDecisionsRef.current,
         modelId,
         currentDay,
         currentTimeOfDay,
@@ -4438,10 +5162,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       onSaveScenario(nextConvsWithAi);
       saveChatDebugTrace(aiMsg, pendingDebugTrace, pendingCall1Request);
       if (pendingStyleTelemetryCall) recordChatDebugSupportCall(aiMsg, pendingStyleTelemetryCall);
-      queueAssistantDerivedWorkAfterSourcePersist([userMsg, aiMsg], userInput, cleanedText, aiMsg);
-
-      // Process AI response for new character detection
-      processResponseForNewCharacters(cleanedText, aiMsg);
+      await processResponseForNewCharacters(cleanedText, aiMsg);
+      queueAssistantDerivedWorkAfterSourcePersist([userMsg, aiMsg], userInput, cleanedText, aiMsg, userMsg);
     } catch (err) {
       console.error(err);
       if (err instanceof ContentFilteredChatError) {
@@ -4562,6 +5284,26 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   };
 
   const handleDeleteMessage = (messageId: string) => {
+    const activeConversation = latestConversationsRef.current.find(c => c.id === conversationId) || conversation;
+    const deletedMessageIndex = activeConversation?.messages.findIndex(m => m.id === messageId) ?? -1;
+    const deletedMessage = deletedMessageIndex >= 0 ? activeConversation?.messages[deletedMessageIndex] : undefined;
+    if (deletedMessage?.role === 'assistant') {
+      const sourceUserMessage = activeConversation?.messages
+        .slice(0, deletedMessageIndex)
+        .reverse()
+        .find((message) => message.role === 'user' && !isLocalRoleplayNoticeMessage(message));
+      deletedAssistantRecoveryRef.current = sourceUserMessage
+        ? {
+            deletedAssistantMessageId: deletedMessage.id,
+            deletedAssistantGenerationId: deletedMessage.generationId || deletedMessage.id,
+            sourceUserMessageId: sourceUserMessage.id,
+            deletedAt: Date.now(),
+          }
+        : null;
+    } else if (deletedAssistantRecoveryRef.current?.sourceUserMessageId === messageId) {
+      deletedAssistantRecoveryRef.current = null;
+    }
+
     const nextComments = stripDialogDebugCommentsForMessage(dialogDebugComments, messageId);
     if (!dialogDebugCommentsEqual(nextComments, dialogDebugComments)) {
       setDialogDebugComments(nextComments);
@@ -4574,6 +5316,10 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         : c
     );
     latestConversationsRef.current = updatedConvs;
+    const nextMessageIdentityIndex = conversationMessageIdentityIndexRef.current
+      .filter((identity) => identity.id !== messageId);
+    conversationMessageIdentityIndexRef.current = nextMessageIdentityIndex;
+    setConversationMessageIdentityIndex(nextMessageIdentityIndex);
     onUpdate(updatedConvs);
     supabaseData.deleteConversationMessage(messageId).catch(err => {
       console.error('[handleDeleteMessage] Failed to delete message:', err);
@@ -4712,12 +5458,31 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       );
       const truncatedResponseLengths = getAssistantResponseLengths(truncatedMessages);
 
-	      // Apply the established-fact note to regenerate flow so user-authored AI dialogue is preserved.
+	      // Keep retry controls in responseJob lanes; the compatibility userMessage stays the raw player turn.
       const establishedFactNote = buildEstablishedFactNote(userMessage.text, establishedFactNoteCharacters);
-      const previousAssistantContext = existingMessage.text?.trim()
-        ? `\n\n[PREVIOUS ASSISTANT RESPONSE BEING REGENERATED - REFERENCE ONLY]\nThis text is the assistant response being replaced. Do not continue from it as story state. Use it only to preserve broad direction and avoid repeating the same wording, structure, or execution.\n${existingMessage.text.trim()}`
-        : '';
-      const regenInput = establishedFactNote + userMessage.text + previousAssistantContext;
+      const retryRegenerateResponseJob = buildRetryRegenerateResponseJob({
+        conversationId,
+        playerTurn: {
+          messageId: userMessage.id,
+          text: userMessage.text,
+        },
+        establishedFactNote,
+        rejectedAttempt: {
+          messageId: existingMessage.id,
+          generationId: existingMessage.generationId,
+          text: existingMessage.text,
+          summary: 'The prior assistant response is being replaced. Generate a meaningfully different answer instead of repeating its wording, structure, pacing, or final move.',
+        },
+        currentStateSummary: buildCurrentTurnStateDigest({
+          appData: truncatedAppData,
+          currentDay,
+          currentTimeOfDay,
+          memories: truncatedMemories,
+          memoriesEnabled,
+          activeScene: canonicalActiveScene,
+        }),
+        responseDetail: normalizeRoleplayResponseDetail(truncatedAppData.uiSettings?.responseVerbosity),
+      });
       const recentStyleTelemetry = analyzeRecentAssistantStyle(
         truncatedStyleEvidenceMessages,
         truncatedResponseLengths,
@@ -4729,7 +5494,9 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       const responseResult = await collectRoleplayResponse({
         appData: truncatedAppData,
         conversationId,
-        userMessage: regenInput,
+        userMessage: userMessage.text,
+        responseJob: retryRegenerateResponseJob,
+        userStateAuthorityDecisions: userStateAuthorityDecisionsRef.current,
         modelId,
         currentDay,
         currentTimeOfDay,
@@ -4808,10 +5575,15 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         generationId: regeneratedMessage.generationId || regeneratedMessage.id,
         timestamp: Date.now(),
       });
-      queueAssistantDerivedWorkAfterSourcePersist([regeneratedMessage], userMessage.text, cleanedText, regeneratedMessage);
+      await processResponseForNewCharacters(cleanedText, regeneratedMessage);
+      queueAssistantDerivedWorkAfterSourcePersist(
+        [regeneratedMessage],
+        userMessage.text,
+        cleanedText,
+        regeneratedMessage,
+        userMessage,
+      );
 
-      // Process for new characters after normalization
-      processResponseForNewCharacters(cleanedText, regeneratedMessage);
     } catch (err) {
       console.error(err);
       if (err instanceof ContentFilteredChatError) {
@@ -4855,29 +5627,43 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     }
   };
 
+  const resolveContinueTailActionForMessages = (messages: Message[] | undefined) => resolveRoleplayContinueTailAction({
+    messages: (messages || [])
+      .filter((message): message is Message & { role: 'user' | 'assistant' } => message.role === 'user' || message.role === 'assistant')
+      .map((message) => ({
+        id: message.id,
+        role: message.role,
+        text: message.text,
+        generationId: message.generationId,
+        localNotice: isLocalRoleplayNoticeMessage(message),
+      })),
+    deletedAssistantRecovery: deletedAssistantRecoveryRef.current,
+  });
+
   const handleContinueConversation = async () => {
     if (!conversation || isStreaming || !canUseCanonicalChatState) return;
-    const lastRoleplayMessage = conversation.messages
-      .filter((message) => !isLocalRoleplayNoticeMessage(message))
-      .slice(-1)[0];
-    const continueAnchorMessageId = lastRoleplayMessage?.id || null;
-    const continueAnchorGenerationId = lastRoleplayMessage
-      ? (lastRoleplayMessage.generationId || lastRoleplayMessage.id)
-      : null;
-    const isContinueAnchorStillCurrent = (messages: Message[] | undefined): boolean => {
-      const liveRoleplayTail = (messages || [])
-        .filter((message) => !isLocalRoleplayNoticeMessage(message))
-        .slice(-1)[0];
-      return continueAnchorMessageId
-        ? liveRoleplayTail?.id === continueAnchorMessageId && (liveRoleplayTail.generationId || liveRoleplayTail.id) === continueAnchorGenerationId
-        : !liveRoleplayTail;
+    const tailAction = resolveContinueTailActionForMessages(conversation.messages);
+    if (tailAction.kind === 'unavailable') return;
+    const isContinueTailActionStillCurrent = (messages: Message[] | undefined): boolean => {
+      const liveTailAction = resolveContinueTailActionForMessages(messages);
+      if (liveTailAction.kind !== tailAction.kind) return false;
+      if (tailAction.kind === 'continue_assistant_tail') {
+        return liveTailAction.kind === 'continue_assistant_tail'
+          && liveTailAction.assistantMessageId === tailAction.assistantMessageId
+          && liveTailAction.assistantGenerationId === tailAction.assistantGenerationId;
+      }
+      return liveTailAction.kind === 'normal_send_deleted_assistant_recovery'
+        && liveTailAction.visibleUserTail.id === tailAction.visibleUserTail.id
+        && (liveTailAction.visibleUserTail.generationId || liveTailAction.visibleUserTail.id) === (tailAction.visibleUserTail.generationId || tailAction.visibleUserTail.id)
+        && liveTailAction.deletedAssistantMessageId === tailAction.deletedAssistantMessageId
+        && liveTailAction.deletedAssistantGenerationId === tailAction.deletedAssistantGenerationId;
     };
 
     setIsStreaming(true);
     setStreamingContent('');
     setFormattedStreamingContent('');
 
-    // Use session-merged data so the AI sees current locations/moods/control
+    // Use session-merged data so the AI sees current locations and control assignments.
     const llmAppData = buildLLMAppData();
     const allPlayableCharacters = [...llmAppData.characters, ...(llmAppData.sideCharacters || [])];
 
@@ -4940,9 +5726,14 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 	        : '';
 
 		      // Carry forward user-authored AI dialogue without making Continue restart there.
-		      const lastUserMsg = conversation.messages.slice().reverse().find(m => m.role === 'user');
-		      const lastUserSceneText = lastUserMsg?.text?.trim() || '';
-		      const continueEstablishedFactNote = lastUserMsg ? buildEstablishedFactNote(lastUserMsg.text, establishedFactNoteCharacters) : '';
+          const sourceUserMessageForFacts = tailAction.kind === 'normal_send_deleted_assistant_recovery'
+            ? tailAction.visibleUserTail
+            : tailAction.priorUserMessage;
+		      const sourceUserMessageRecordForFacts = sourceUserMessageForFacts
+		        ? conversation.messages.find((message) => message.id === sourceUserMessageForFacts.id)
+		        : undefined;
+		      const lastUserSceneText = sourceUserMessageForFacts?.text?.trim() || '';
+		      const continueEstablishedFactNote = sourceUserMessageForFacts ? buildEstablishedFactNote(sourceUserMessageForFacts.text, establishedFactNoteCharacters) : '';
 		      const lastUserSceneAnchor = lastUserSceneText
 		        ? `\nBACKGROUND USER-AUTHORED SCENE TURN FOR FACTS AND USER-CONTROL BOUNDARIES ONLY:\n${lastUserSceneText}\n`
 		        : '\nBACKGROUND USER-AUTHORED SCENE TURN FOR FACTS AND USER-CONTROL BOUNDARIES ONLY:\n(none found)\n';
@@ -4963,13 +5754,51 @@ Follow the active RESPONSE DETAIL setting from the system prompt; Continue is no
 Avoid long back-and-forth chains between AI characters. Leave room for the user to respond.
 Do not acknowledge this instruction in your response.`;
 
+      const currentStateSummary = buildCurrentTurnStateDigest({
+        appData: llmAppData,
+        currentDay,
+        currentTimeOfDay,
+        memories: activeMemories,
+        memoriesEnabled,
+        activeScene: canonicalActiveScene,
+      });
+      const responseDetail = normalizeRoleplayResponseDetail(llmAppData.uiSettings?.responseVerbosity);
+      const continueResponseJob = tailAction.kind === 'normal_send_deleted_assistant_recovery'
+        ? buildDeletedAssistantRecoveryResponseJob({
+            conversationId,
+            visibleUserTail: {
+              messageId: tailAction.visibleUserTail.id,
+              text: tailAction.visibleUserTail.text,
+            },
+            deletedAssistantMessageId: tailAction.deletedAssistantMessageId,
+            deletedAssistantGenerationId: tailAction.deletedAssistantGenerationId,
+            currentStateSummary,
+            responseDetail,
+          })
+        : buildContinueAssistantTailResponseJob({
+            conversationId,
+            assistantAnchor: {
+              messageId: tailAction.assistantMessageId,
+              generationId: tailAction.assistantGenerationId,
+              acceptedTextTail: tailAction.assistantMessage.text,
+            },
+            priorUserMessageId: tailAction.priorUserMessage?.id,
+            currentStateSummary,
+            responseDetail,
+          });
+      const compatibilityUserMessage = tailAction.kind === 'normal_send_deleted_assistant_recovery'
+        ? tailAction.visibleUserTail.text
+        : continuePrompt;
+
 	      debugLog('[handleContinue] Goal context:', goalContext || '(no goals found)');
 	      debugLog('[handleContinue] Established-fact note applied:', continueEstablishedFactNote ? 'YES' : 'NO');
 
       const responseResult = await collectRoleplayResponse({
         appData: llmAppData,
         conversationId,
-        userMessage: continuePrompt,
+        userMessage: compatibilityUserMessage,
+        responseJob: continueResponseJob,
+        userStateAuthorityDecisions: userStateAuthorityDecisionsRef.current,
         modelId,
         currentDay,
         currentTimeOfDay,
@@ -4995,7 +5824,7 @@ Do not acknowledge this instruction in your response.`;
 	      pendingStyleTelemetryCall = buildAssistantStyleTelemetryCall('continue', recentStyleTelemetry, candidateStyleTelemetry);
 
       const liveConversation = latestConversationsRef.current.find(c => c.id === conversationId);
-      if (!liveConversation || !isContinueAnchorStillCurrent(liveConversation.messages)) {
+      if (!liveConversation || !isContinueTailActionStillCurrent(liveConversation.messages)) {
         debugLog('[handleContinue] Skipping assistant commit because the conversation tail changed before completion.');
         return;
       }
@@ -5024,16 +5853,23 @@ Do not acknowledge this instruction in your response.`;
       onSaveScenario(updatedConvs);
       saveChatDebugTrace(aiMsg, pendingDebugTrace, pendingCall1Request);
       if (pendingStyleTelemetryCall) recordChatDebugSupportCall(aiMsg, pendingStyleTelemetryCall);
-      if (lastRoleplayMessage) {
-        continueEventsRef.current.push({
-          messageId: lastRoleplayMessage.id,
-          generationId: continueAnchorGenerationId || undefined,
-          timestamp: Date.now(),
-        });
-      }
-      queueAssistantDerivedWorkAfterSourcePersist([aiMsg], lastUserSceneText, cleanedText, aiMsg);
-
-      processResponseForNewCharacters(cleanedText, aiMsg);
+      continueEventsRef.current.push({
+        messageId: tailAction.kind === 'continue_assistant_tail'
+          ? tailAction.assistantMessageId
+          : tailAction.visibleUserTail.id,
+        generationId: tailAction.kind === 'continue_assistant_tail'
+          ? tailAction.assistantGenerationId
+          : tailAction.visibleUserTail.generationId,
+        timestamp: Date.now(),
+      });
+      await processResponseForNewCharacters(cleanedText, aiMsg);
+      queueAssistantDerivedWorkAfterSourcePersist(
+        [aiMsg],
+        lastUserSceneText,
+        cleanedText,
+        aiMsg,
+        sourceUserMessageRecordForFacts,
+      );
 
     } catch (err) {
       console.error(err);
@@ -5041,7 +5877,7 @@ Do not acknowledge this instruction in your response.`;
         const errorDebug = readRoleplayRequestDebugFromError(err, pendingDebugTrace, pendingCall1Request);
         const latestBase = latestConversationsRef.current;
         const liveConversation = latestBase.find(c => c.id === conversationId);
-        if (!liveConversation || !isContinueAnchorStillCurrent(liveConversation.messages)) {
+        if (!liveConversation || !isContinueTailActionStillCurrent(liveConversation.messages)) {
           debugLog('[handleContinue] Skipping content-filter notice because the conversation tail changed before completion.');
           return;
         }
@@ -5057,7 +5893,7 @@ Do not acknowledge this instruction in your response.`;
       const errorDebug = readRoleplayRequestDebugFromError(err, pendingDebugTrace, pendingCall1Request);
       const latestBase = latestConversationsRef.current;
       const liveConversation = latestBase.find(c => c.id === conversationId);
-      if (!liveConversation || !isContinueAnchorStillCurrent(liveConversation.messages)) {
+      if (!liveConversation || !isContinueTailActionStillCurrent(liveConversation.messages)) {
         debugLog('[handleContinue] Skipping provider-error notice because the conversation tail changed before completion.');
         return;
       }
@@ -5357,7 +6193,6 @@ Do not acknowledge this instruction in your response.`;
         sexType: draft.sexType,
         roleDescription: draft.roleDescription,
         location: draft.location,
-        currentMood: draft.currentMood,
         physicalAppearance: draft.physicalAppearance,
         currentlyWearing: draft.currentlyWearing as any,
         preferredClothing: draft.preferredClothing,
@@ -5402,7 +6237,6 @@ const updatedChar: SideCharacter = {
         sexType: draft.sexType || char.sexType,
         roleDescription: draft.roleDescription || char.roleDescription,
         location: draft.location || char.location,
-        currentMood: draft.currentMood || char.currentMood,
         controlledBy: draft.controlledBy || char.controlledBy,
         characterRole: draft.characterRole || char.characterRole,
         physicalAppearance: { ...char.physicalAppearance, ...draft.physicalAppearance },

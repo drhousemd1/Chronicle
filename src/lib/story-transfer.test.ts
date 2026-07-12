@@ -90,7 +90,6 @@ const buildScenario = () => {
       sexType: 'Male',
       sexualOrientation: '',
       location: 'Treeline',
-      currentMood: 'Silent',
       controlledBy: 'AI',
       characterRole: 'Side',
       roleDescription: 'A shadowy observer in the storm.',
@@ -408,6 +407,53 @@ describe('story-transfer import/export', () => {
     expect(imported.data.uiSettings?.responseVerbosity).toBe('concise');
     expect((imported.data.uiSettings as any).proactiveCharacterDiscovery).toBeUndefined();
     expect((imported.data.uiSettings as any).proactiveNarrative).toBeUndefined();
+  });
+
+  it('accepts legacy Current Mood input but never restores or exports structured mood', () => {
+    const source = buildScenario();
+    (source.characters[0] as any).currentMood = 'Guarded';
+
+    const exportedJson = exportScenarioToJson(source, buildExportOptions(source));
+    const exportedMarkdown = exportScenarioToText(source, buildExportOptions(source));
+    const exportedWord = exportScenarioToWordDocument(source, buildExportOptions(source));
+
+    expect(exportedJson).not.toMatch(/currentMood|current_mood/i);
+    expect(exportedMarkdown).not.toMatch(/Current Mood|currentMood|current_mood/i);
+    expect(exportedWord).not.toMatch(/Current Mood|currentMood|current_mood/i);
+
+    const legacyJson = JSON.parse(exportedJson);
+    legacyJson.scenario.characters[0].currentMood = 'Anxious';
+    const importedJson = importScenarioFromAny(
+      {
+        text: JSON.stringify(legacyJson),
+        fileName: 'legacy-mood.json',
+        mimeType: 'application/json',
+      },
+      createDefaultScenarioData(),
+      'rewrite',
+    );
+
+    const importedMarkdown = importScenarioFromAny(
+      {
+        text: [
+          '# Characters',
+          '# Character: Legacy Rowan',
+          '- Current Mood: Anxious',
+          '- Location: Gatehouse',
+        ].join('\n'),
+        fileName: 'legacy-mood.md',
+        mimeType: 'text/markdown',
+      },
+      createDefaultScenarioData(),
+      'rewrite',
+    );
+
+    expect((importedJson.data.characters[0] as any).currentMood).toBeUndefined();
+    const importedLegacyCharacter = importedMarkdown.data.characters.find(
+      (character) => character.name === 'Legacy Rowan',
+    );
+    expect((importedLegacyCharacter as any)?.currentMood).toBeUndefined();
+    expect(importedLegacyCharacter?.location).toBe('Gatehouse');
   });
 
   it('omits conversations from default story exports', () => {

@@ -233,7 +233,6 @@ export function useIndexCharacterWorkspace({
       sexType: "",
       sexualOrientation: "",
       location: "",
-      currentMood: "",
       controlledBy: "AI",
       characterRole: "Main",
       roleDescription: "",

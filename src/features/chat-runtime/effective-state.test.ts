@@ -22,13 +22,16 @@ import { buildGoalAlignmentKey } from '@/lib/goal-alignment';
 import {
   applyCharacterSnapshot,
   applySideCharacterSnapshot,
+  buildActiveMemoriesWithPruningReport,
   buildActiveCharacterSnapshotMap,
   buildActiveGoalAlignmentMap,
   buildActiveGoalCompletionIds,
   buildActiveMemories,
   buildActiveSideCharacterSnapshotMap,
   buildEffectiveWorldCore,
+  buildEffectiveStatePruningReports,
   buildMessageGenerationMap,
+  mergeConversationMessageIdentityIndex,
   upsertCharacterStateMessageSnapshot,
   upsertSideCharacterStateMessageSnapshot,
 } from './effective-state';
@@ -90,7 +93,6 @@ const baseCharacter = (patch: Partial<Character> = {}): Character => ({
   sexType: patch.sexType || '',
   sexualOrientation: patch.sexualOrientation || '',
   location: patch.location || 'Base location',
-  currentMood: patch.currentMood || 'calm',
   controlledBy: patch.controlledBy || 'AI',
   characterRole: patch.characterRole || 'Main',
   roleDescription: patch.roleDescription || '',
@@ -115,7 +117,6 @@ const baseSideCharacter = (patch: Partial<SideCharacter> = {}): SideCharacter =>
   sexType: patch.sexType || '',
   sexualOrientation: patch.sexualOrientation || '',
   location: patch.location || 'Base side location',
-  currentMood: patch.currentMood || 'watchful',
   controlledBy: patch.controlledBy || 'AI',
   characterRole: patch.characterRole || 'Side',
   roleDescription: patch.roleDescription || '',
@@ -135,6 +136,19 @@ const baseSideCharacter = (patch: Partial<SideCharacter> = {}): SideCharacter =>
 });
 
 describe('effective roleplay state helpers', () => {
+  it('merges the full identity index with newly loaded messages in chronological order', () => {
+    const merged = mergeConversationMessageIdentityIndex(
+      [message('m1', 'g1'), message('m2', 'old-g2')],
+      [message('m2', 'g2'), message('m3', 'g3')],
+    );
+
+    expect(merged.map((entry) => [entry.id, entry.generationId])).toEqual([
+      ['m1', 'g1'],
+      ['m2', 'g2'],
+      ['m3', 'g3'],
+    ]);
+  });
+
   it('builds generation maps and excludes stale or deleted message-derived memories', () => {
     const generationMap = buildMessageGenerationMap([message('m1', 'g2'), message('m3')]);
 
@@ -238,6 +252,25 @@ describe('effective roleplay state helpers', () => {
     expect(buildActiveCharacterSnapshotMap(mainSnapshots, generationMap, messages).get('char-1')?.statePayload.location).toBe('tie winner');
     expect(buildActiveCharacterSnapshotMap(mainSnapshots, generationMap, messages).has('char-2')).toBe(false);
     expect(buildActiveSideCharacterSnapshotMap(sideSnapshots, generationMap, messages).get('side-1')?.statePayload.location).toBe('side new');
+  });
+
+  it('keeps a valid older snapshot active when its message body is outside the loaded transcript window', () => {
+    const fullIdentityIndex = Array.from({ length: 35 }, (_, index) => message(`m${index + 1}`, `g${index + 1}`));
+    const loadedMessages = fullIdentityIndex.slice(-30);
+    const mergedIdentityIndex = mergeConversationMessageIdentityIndex(fullIdentityIndex, loadedMessages);
+    const generationMap = buildMessageGenerationMap(mergedIdentityIndex);
+    const snapshots: CharacterStateMessageSnapshot[] = [{
+      id: 'older-valid-snapshot',
+      conversationId: 'conversation-1',
+      characterId: 'char-1',
+      sourceMessageId: 'm2',
+      sourceGenerationId: 'g2',
+      statePayload: { location: 'Older but still valid location' },
+      createdAt: 2,
+    }];
+
+    expect(buildActiveCharacterSnapshotMap(snapshots, generationMap, mergedIdentityIndex)
+      .get('char-1')?.statePayload.location).toBe('Older but still valid location');
   });
 
   it('upserts character and side-character message snapshots without mutating the previous array', () => {
@@ -381,5 +414,78 @@ describe('effective roleplay state helpers', () => {
     expect(activeMemoryIds).toEqual(['new-memory']);
     expect(activeSnapshotMap.get('char-1')?.statePayload.location).toBe('new branch');
     expect(Array.from(activeCompletions)).toEqual(['new-step']);
+  });
+
+  it('reports included and pruned generation-derived state without weakening filters', () => {
+    const regeneratedMessages = [message('assistant-1', 'assistant-g2'), message('assistant-2', 'assistant-g3')];
+    const generationMap = buildMessageGenerationMap(regeneratedMessages);
+
+    const memoryResult = buildActiveMemoriesWithPruningReport([
+      memory({ id: 'manual-memory', source: 'user', sourceMessageId: undefined, sourceGenerationId: undefined }),
+      memory({ id: 'current-memory', sourceMessageId: 'assistant-1', sourceGenerationId: 'assistant-g2' }),
+      memory({ id: 'legacy-memory', sourceMessageId: 'assistant-1', sourceGenerationId: undefined }),
+      memory({ id: 'stale-memory', sourceMessageId: 'assistant-1', sourceGenerationId: 'assistant-g1' }),
+      memory({ id: 'deleted-source-memory', sourceMessageId: 'assistant-deleted', sourceGenerationId: 'assistant-old' }),
+    ], generationMap);
+
+    expect(memoryResult.activeMemories.map((entry) => entry.id)).toEqual([
+      'manual-memory',
+      'current-memory',
+      'legacy-memory',
+    ]);
+    expect(memoryResult.pruningReports).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        itemType: 'memory',
+        itemId: 'current-memory',
+        included: true,
+        reason: 'current_generation',
+        sourceMessageId: 'assistant-1',
+        sourceGenerationId: 'assistant-g2',
+        currentGenerationId: 'assistant-g2',
+      }),
+      expect.objectContaining({
+        itemType: 'memory',
+        itemId: 'stale-memory',
+        included: false,
+        reason: 'stale_generation',
+        sourceMessageId: 'assistant-1',
+        sourceGenerationId: 'assistant-g1',
+        currentGenerationId: 'assistant-g2',
+      }),
+      expect.objectContaining({
+        itemType: 'memory',
+        itemId: 'deleted-source-memory',
+        included: false,
+        reason: 'deleted_source_message',
+        sourceMessageId: 'assistant-deleted',
+        sourceGenerationId: 'assistant-old',
+      }),
+    ]));
+
+    const pruningReports = buildEffectiveStatePruningReports({
+      generationMap,
+      memories: memoryResult.activeMemories,
+      goalDerivations: [
+        derivation({ id: 'current-goal', stepId: 'current-step', sourceMessageId: 'assistant-1', sourceGenerationId: 'assistant-g2' }),
+        derivation({ id: 'stale-goal', stepId: 'stale-step', sourceMessageId: 'assistant-1', sourceGenerationId: 'assistant-g1' }),
+      ],
+      characterSnapshots: [
+        { id: 'current-character', conversationId: 'conversation-1', characterId: 'char-1', sourceMessageId: 'assistant-1', sourceGenerationId: 'assistant-g2', statePayload: { location: 'current branch' }, createdAt: 2 },
+        { id: 'stale-character', conversationId: 'conversation-1', characterId: 'char-1', sourceMessageId: 'assistant-1', sourceGenerationId: 'assistant-g1', statePayload: { location: 'old branch' }, createdAt: 1 },
+      ],
+      sideCharacterSnapshots: [
+        { id: 'current-side-character', conversationId: 'conversation-1', sideCharacterId: 'side-1', sourceMessageId: 'assistant-2', sourceGenerationId: 'assistant-g3', statePayload: { location: 'current side branch' }, createdAt: 2 },
+        { id: 'stale-side-character', conversationId: 'conversation-1', sideCharacterId: 'side-1', sourceMessageId: 'assistant-2', sourceGenerationId: 'assistant-g2', statePayload: { location: 'old side branch' }, createdAt: 1 },
+      ],
+    });
+
+    expect(pruningReports).toEqual(expect.arrayContaining([
+      expect.objectContaining({ itemType: 'goal_derivation', itemId: 'current-goal', included: true, reason: 'current_generation' }),
+      expect.objectContaining({ itemType: 'goal_derivation', itemId: 'stale-goal', included: false, reason: 'stale_generation' }),
+      expect.objectContaining({ itemType: 'character_state', itemId: 'current-character', included: true, reason: 'current_generation' }),
+      expect.objectContaining({ itemType: 'character_state', itemId: 'stale-character', included: false, reason: 'stale_generation' }),
+      expect.objectContaining({ itemType: 'side_character_state', itemId: 'current-side-character', included: true, reason: 'current_generation' }),
+      expect.objectContaining({ itemType: 'side_character_state', itemId: 'stale-side-character', included: false, reason: 'stale_generation' }),
+    ]));
   });
 });

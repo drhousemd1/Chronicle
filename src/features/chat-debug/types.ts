@@ -1,3 +1,17 @@
+import type {
+  RoleplayDuplicateSourceMetric,
+  RoleplayProviderSectionCoverage,
+  RoleplaySourceReceipt,
+  RoleplaySourceReceiptCoverage,
+} from '@/features/chat-runtime/roleplay-source-receipts';
+import type { RoleplaySupportReviewEnvelope } from '@/features/chat-runtime/roleplay-support-review-envelope';
+import type { RoleplayUserStateAuthorityDecision } from '@/features/chat-runtime/roleplay-user-state-authority';
+import type {
+  CharacterPromptFact,
+  CharacterPromptFactReviewSummary,
+} from '@/features/chat-runtime/roleplay-character-card-facts';
+import type { KnowledgeVisibilityFact } from '@/features/chat-runtime/roleplay-knowledge-visibility';
+
 export type ChatDebugSelectionReason = 'bridge' | 'scored';
 
 export const CHAT_DEBUG_ISSUE_TAGS = [
@@ -75,12 +89,12 @@ export type ChatDebugTiming = {
 };
 
 export type ChatDebugCharacterSceneState = {
+  characterId?: string;
   name: string;
   controlledBy?: string;
   characterRole?: string;
   location?: string;
   scenePosition?: string;
-  currentMood?: string;
 };
 
 export type ChatDebugTrace = {
@@ -129,6 +143,15 @@ export type ChatDebugRequestRecord = {
   capturedAt: number;
   status?: 'sent' | 'completed' | 'error';
   requestBody: unknown;
+  roleplaySourceReceipts?: RoleplaySourceReceipt[];
+  roleplayDuplicateSourceMetrics?: RoleplayDuplicateSourceMetric[];
+  roleplaySourceReceiptCoverage?: RoleplaySourceReceiptCoverage[];
+  roleplayProviderSectionCoverage?: RoleplayProviderSectionCoverage[];
+  roleplayUserStateAuthorityDecisions?: RoleplayUserStateAuthorityDecision[];
+  roleplayCharacterPromptFacts?: CharacterPromptFact[];
+  roleplayCharacterPromptFactSummaries?: CharacterPromptFactReviewSummary[];
+  roleplayKnowledgeVisibilityFacts?: KnowledgeVisibilityFact[];
+  roleplaySupportReviewEnvelope?: RoleplaySupportReviewEnvelope;
   modelRequest?: {
     endpoint: string;
     method?: string;

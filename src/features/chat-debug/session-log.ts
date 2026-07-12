@@ -15,7 +15,6 @@ function formatCharacterSceneStates(
         state.characterRole ? `role=${state.characterRole}` : '',
         state.location ? `location=${state.location}` : '',
         state.scenePosition ? `scene position=${state.scenePosition}` : '',
-        state.currentMood ? `mood=${state.currentMood}` : '',
       ].filter(Boolean);
 
       return `${state.name}: ${parts.length ? parts.join('; ') : 'no stored scene state'}`;

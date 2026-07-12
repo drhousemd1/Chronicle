@@ -234,7 +234,6 @@ function buildWorldScenarioContext(context: WorldEnhanceContext): string {
         if (character.roleDescription) bits.push(`function: ${character.roleDescription}`);
         if (character.tags) bits.push(`tags: ${character.tags}`);
         if (character.location) bits.push(`location: ${character.location}`);
-        if (character.currentMood) bits.push(`mood: ${character.currentMood}`);
         const personalityBits = character.personality
           ? (
               character.personality.splitMode
