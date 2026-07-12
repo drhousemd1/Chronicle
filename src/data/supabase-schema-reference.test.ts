@@ -16,10 +16,10 @@ function allRows(): SchemaReferenceRow[] {
 
 describe("supabase schema reference data", () => {
   it("ports the full approved mock-up object set", () => {
-    expect(schemaReferenceObjects).toHaveLength(45);
-    expect(schemaReferenceObjects.filter((object) => object.type === "table")).toHaveLength(44);
+    expect(schemaReferenceObjects).toHaveLength(46);
+    expect(schemaReferenceObjects.filter((object) => object.type === "table")).toHaveLength(45);
     expect(schemaReferenceObjects.filter((object) => object.type === "storage")).toHaveLength(1);
-    expect(schemaReferenceObjects.reduce((total, object) => total + object.rows.length, 0)).toBe(517);
+    expect(schemaReferenceObjects.reduce((total, object) => total + object.rows.length, 0)).toBe(521);
   });
 
   it("keeps controlled table values stable", () => {
