@@ -4,6 +4,10 @@ import { describe, expect, it } from 'vitest';
 
 const source = readFileSync('src/components/chronicle/ChatInterfaceTab.tsx', 'utf8');
 const memorySource = source.slice(source.indexOf('const queueAssistantMemoryExtraction'));
+const memoryPersistenceSource = readFileSync(
+  'src/features/chat-runtime/roleplay-memory-candidate-persistence.ts',
+  'utf8',
+);
 
 function expectOrdered(haystack: string, markers: string[]) {
   let previousIndex = -1;
@@ -29,15 +33,16 @@ describe('RoleplaySupportReviewEnvelope runtime wiring', () => {
 
   it('reviews memory source authority and duplicates before recording accepted envelope outcomes', () => {
     expectOrdered(memorySource, [
-      'const memoryReview = reviewRoleplayMemoryExtractionEvents({',
-      'userStateReviews: data?.userStateReviews,',
-      'candidateReviews: memoryReview.candidateReviews,',
+      'const memoryReview = reviewRoleplayMemoryExtractionCandidates({',
+      'candidates: data?.candidates,',
+      'candidateReviews: candidateOutcomes,',
       'roleplaySupportReviewEnvelope: wrapLegacyRoleplaySupportResult({',
-      "const persistedMemory = await handleCreateMemory(",
-      "updateRoleplaySupportPersistence(sourceMessage, 'call2.memory-extraction'",
+      'const persistenceResult = await persistAcceptedRoleplayMemoryCandidates({',
+      'persistCandidate: (candidate) => handleCreateMemory(',
+      'const allPersistenceFailed = persistenceResult.persistedTargets.length === 0',
     ]);
     expect(source).toContain('queueAssistantDerivedWorkAfterSourcePersist([userMsg, aiMsg], userInput, cleanedText, aiMsg, userMsg);');
-    expect(source).toContain('userStateReviews: data?.userStateReviews,');
+    expect(source).toContain('candidates: data?.candidates,');
     expect(source).toContain('sourceUserMessageId: sourceUserMessage?.id,');
   });
 
@@ -47,7 +52,7 @@ describe('RoleplaySupportReviewEnvelope runtime wiring', () => {
   });
 
   it('rechecks source-generation freshness after awaited persistence writes', () => {
-    expect(source).toContain("persistenceReason: 'source_generation_superseded_during_persistence'");
+    expect(memoryPersistenceSource).toContain("'source_generation_superseded_during_candidate_persistence'");
     expect(source).toContain("'source_generation_superseded_during_character_persistence',");
     expect(source).toContain("'source_generation_superseded_before_character_finalization',");
     expectOrdered(source, [
@@ -60,19 +65,21 @@ describe('RoleplaySupportReviewEnvelope runtime wiring', () => {
       "persistenceReason: 'source_generation_superseded_during_persistence'",
       "persistenceReason: 'goal_step_derivations_persisted'",
     ]);
-    expectOrdered(memorySource, [
-      'const persistedMemory = await handleCreateMemory(',
-      "persistenceReason: 'source_generation_superseded_during_persistence'",
-      "persistenceReason: 'reviewed_memory_events_persisted'",
+    expectOrdered(memoryPersistenceSource, [
+      'const persisted = await input.persistCandidate(candidate);',
+      "'source_generation_superseded_during_candidate_persistence'",
     ]);
+    expect(memorySource).toContain("'accepted_memory_candidates_persisted_individually'");
   });
 
   it('keeps a persisted day synopsis truthful when source-row cleanup is only partially successful', () => {
     expectOrdered(source, [
-      'const failedDeletionRows:',
+      'const persistenceResult = await persistReviewedDayCompression({',
       "persistenceReason: 'compressed_synopsis_persisted_with_cleanup_gap'",
-      "persistenceReason: 'compressed_synopsis_persisted_and_source_bullets_deleted'",
+      "persistenceReason: 'compressed_synopsis_persisted_and_accepted_source_rows_deleted'",
     ]);
+    expect(source).toContain('compressedInputMemoryRowIds: persistenceResult.review.compressedInputMemoryRowIds');
+    expect(source).toContain('deletedInputMemoryRowIds: persistenceResult.deletedInputMemoryRowIds');
     expect(source).toContain('The synopsis remains available to future prompts; the undeleted source rows require cleanup.');
     expect(source).toContain("persistenceReason: 'day_memory_compression_pipeline_failed'");
   });

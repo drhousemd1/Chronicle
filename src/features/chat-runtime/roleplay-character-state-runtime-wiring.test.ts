@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 const source = readFileSync('src/components/chronicle/ChatInterfaceTab.tsx', 'utf8');
 const extractionSource = source.slice(
   source.indexOf('const extractCharacterUpdatesFromDialogue'),
-  source.indexOf('const sanitizeMoodValue'),
+  source.indexOf('const sanitizeScenePositionValue'),
 );
 
 function expectOrdered(haystack: string, markers: string[]) {

@@ -51,7 +51,6 @@ describe('reviewed character-state contract', () => {
     expect(isRoleplayReviewedCharacterStateField('location')).toBe(true);
     expect(isRoleplayReviewedCharacterStateField('scenePosition')).toBe(true);
     for (const unsupportedUserStateField of [
-      'currentMood',
       'consent',
       'preference',
       'voluntaryAction',
@@ -164,9 +163,9 @@ describe('reviewed character-state contract', () => {
           accepted: true,
           reason: 'accepted',
           character: 'Avery',
-          field: 'currentMood',
-          value: 'nervous',
-          evidence: 'Avery sounds nervous.',
+          field: 'assignedDialogue',
+          value: 'Leave now.',
+          evidence: 'Avery should say this next.',
           confidence: 0.9,
         },
       ],
@@ -186,7 +185,7 @@ describe('reviewed character-state contract', () => {
       })],
       rejectedUpdates: [
         expect.objectContaining({ field: 'scenePosition', reason: 'unsupported_inference' }),
-        expect.objectContaining({ field: 'currentMood', reason: 'unsupported_field' }),
+        expect.objectContaining({ field: 'assignedDialogue', reason: 'unsupported_field' }),
       ],
     })]);
     expect(contract.unmatchedCandidates).toEqual([]);

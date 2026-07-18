@@ -19,7 +19,6 @@ import {
   buildEstablishedFactNote,
   buildCurrentTurnStateDigest,
   isLocalRoleplayNoticeMessage,
-  renderGoalMilestoneTarget,
 } from '../../services/llm';
 import { RefreshCw, MoreVertical, Copy, Pencil, Trash2, ChevronUp, ChevronDown, Sunrise, Sun, Sunset, Moon, Loader2, StepForward, Settings, Image as ImageIcon, Brain, Check, X, Info, Play, Pause, Move, Palette, MessageSquare } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
@@ -102,12 +101,29 @@ import {
   splitEdgeDebugPayload,
 } from '@/features/chat-runtime/debug-support';
 import { wrapLegacyRoleplaySupportResult } from '@/features/chat-runtime/roleplay-support-review-adapters';
-import { reviewRoleplayMemoryExtractionEvents } from '@/features/chat-runtime/roleplay-memory-user-state-review';
+import { reviewRoleplayMemoryExtractionCandidates } from '@/features/chat-runtime/roleplay-memory-user-state-review';
+import { persistAcceptedRoleplayMemoryCandidates } from '@/features/chat-runtime/roleplay-memory-candidate-persistence';
+import {
+  buildDayCompressionInputRows,
+  persistReviewedDayCompression,
+  reviewDayCompressionResponse,
+} from '@/features/chat-runtime/roleplay-day-compression';
 import {
   createPendingRoleplaySupportReviewEnvelope,
   finalizeRoleplaySupportReviewEnvelope,
   type FinalizeRoleplaySupportReviewEnvelopeInput,
+  type RoleplaySupportPersistenceStatus,
+  type RoleplaySupportWorker,
 } from '@/features/chat-runtime/roleplay-support-review-envelope';
+import {
+  advanceSupportCallReadinessRecord,
+  createSupportCallReadinessRecord,
+  createSupportReadinessSnapshot,
+  markSupportCallReadinessEligible,
+  type SupportCallLifecycle,
+  type SupportCallReadinessRecord,
+  type SupportReadinessSnapshot,
+} from '@/features/chat-runtime/roleplay-support-readiness';
 import {
   buildRoleplayCharacterStateApplyReceipt,
   buildRoleplayCharacterStateEligibilityRows,
@@ -118,7 +134,10 @@ import {
   type RoleplayReviewedCharacterStatePersistenceCandidate,
 } from '@/features/chat-runtime/roleplay-character-state-review';
 import type { RoleplayUserStateAuthorityDecision } from '@/features/chat-runtime/roleplay-user-state-authority';
-import { usePostTurnSupportQueue } from '@/features/chat-runtime/use-post-turn-support-queue';
+import {
+  usePostTurnSupportQueue,
+  type PostTurnSupportLifecycleEvent,
+} from '@/features/chat-runtime/use-post-turn-support-queue';
 import {
   buildContentFilterNoticeMessage,
   buildProviderErrorNoticeMessage,
@@ -360,11 +379,103 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
   const regenerateEventsRef = useRef<ActionEvent[]>([]);
   const deletedAssistantRecoveryRef = useRef<DeletedAssistantRecoveryRef | null>(null);
   const retryAttemptHistoryRef = useRef<ChatReviewRetryAttemptHistory>({});
+  const supportReadinessBySourceRef = useRef(
+    new Map<string, Map<RoleplaySupportWorker, SupportCallReadinessRecord>>(),
+  );
+  const supportReadinessDispatchCountRef = useRef(0);
   const {
     chatDebugTraceStoreRef,
     saveChatDebugTrace,
     recordChatDebugSupportCall,
   } = useChatDebugTrace({ scenarioId, conversationId, isAdmin });
+  const writeRoleplaySupportReadinessRecord = useCallback((
+    sourceMessage: Pick<Message, 'id' | 'generationId'>,
+    record: SupportCallReadinessRecord,
+  ) => {
+    const sourceKey = buildChatDebugTraceKey(
+      sourceMessage.id,
+      sourceMessage.generationId || sourceMessage.id,
+    );
+    const recordsByWorker = new Map(
+      supportReadinessBySourceRef.current.get(sourceKey) || [],
+    );
+    recordsByWorker.set(record.worker, record);
+    supportReadinessBySourceRef.current.set(sourceKey, recordsByWorker);
+
+    recordChatDebugSupportCall(sourceMessage, {
+      id: `local.support-readiness.${record.worker}`,
+      label: `Support readiness - ${record.worker.replace(/_/g, ' ')}`,
+      apiCallGroup: 'support',
+      endpoint: `local://support-readiness/${record.worker}`,
+      method: 'LOCAL',
+      capturedAt: Date.now(),
+      status: record.lifecycle === 'failed'
+        ? 'error'
+        : record.lifecycle === 'completed'
+          || record.lifecycle === 'skipped'
+          || record.lifecycle === 'stale'
+          ? 'completed'
+          : 'sent',
+      requestBody: {
+        sourceMessageId: record.sourceMessageId,
+        sourceGenerationId: record.sourceGenerationId,
+        unavailableToTriggeringResponse: true,
+      },
+      responseBody: record,
+      error: record.lifecycle === 'failed' ? record.reason : undefined,
+      roleplaySupportReadinessRecord: record,
+    });
+  }, [recordChatDebugSupportCall]);
+
+  const recordRoleplaySupportLifecycle = useCallback((
+    event: PostTurnSupportLifecycleEvent,
+  ) => {
+    try {
+      const sourceGenerationId = event.sourceMessage.generationId || event.sourceMessage.id;
+      const sourceKey = buildChatDebugTraceKey(event.sourceMessage.id, sourceGenerationId);
+      const existing = supportReadinessBySourceRef.current
+        .get(sourceKey)
+        ?.get(event.worker);
+      const supportEnvelope = chatDebugTraceStoreRef.current[sourceKey]?.supportCalls
+        ?.find((call) => call.roleplaySupportReviewEnvelope?.worker === event.worker)
+        ?.roleplaySupportReviewEnvelope;
+      const persistenceStatus: RoleplaySupportPersistenceStatus = event.lifecycle === 'failed'
+        ? 'failed'
+        : event.lifecycle === 'stale'
+          ? 'skipped_stale'
+          : event.lifecycle === 'skipped' && event.reason === 'source_message_persistence_failed'
+            ? 'source_not_persisted'
+            : supportEnvelope?.persistence.status ?? existing?.persistenceStatus ?? 'pending';
+      const record = existing
+        ? advanceSupportCallReadinessRecord(existing, {
+            lifecycle: event.lifecycle,
+            occurredAt: Date.now(),
+            persistenceStatus,
+            reason: event.reason,
+          })
+        : createSupportCallReadinessRecord({
+            id: `readiness:${event.worker}:${event.sourceMessage.id}:${sourceGenerationId}`,
+            worker: event.worker,
+            sourceMessageId: event.sourceMessage.id,
+            sourceGenerationId,
+            lifecycle: event.lifecycle,
+            persistenceStatus,
+            queuedAt: event.lifecycle === 'queued' ? Date.now() : undefined,
+            startedAt: event.lifecycle === 'running' ? Date.now() : undefined,
+            completedAt: event.lifecycle === 'completed'
+              || event.lifecycle === 'failed'
+              || event.lifecycle === 'skipped'
+              || event.lifecycle === 'stale'
+              ? Date.now()
+              : undefined,
+            reason: event.reason,
+          });
+      writeRoleplaySupportReadinessRecord(event.sourceMessage, record);
+    } catch (error) {
+      console.error('[supportReadiness] Failed to record lifecycle event:', error);
+    }
+  }, [chatDebugTraceStoreRef, writeRoleplaySupportReadinessRecord]);
+
   const updateRoleplaySupportPersistence = useCallback((
     message: Pick<Message, 'id' | 'generationId'> | null | undefined,
     callId: string,
@@ -385,18 +496,80 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       ? existingCall.responseBody as Record<string, unknown>
       : {};
 
+    const finalizedEnvelope = finalizeRoleplaySupportReviewEnvelope(
+      existingCall.roleplaySupportReviewEnvelope,
+      finalizeInput,
+    );
     recordChatDebugSupportCall(message, {
       ...existingCall,
       capturedAt: Date.now(),
       responseBody: responseBodyPatch
         ? { ...existingResponseBody, ...responseBodyPatch }
         : existingCall.responseBody,
-      roleplaySupportReviewEnvelope: finalizeRoleplaySupportReviewEnvelope(
-        existingCall.roleplaySupportReviewEnvelope,
-        finalizeInput,
-      ),
+      roleplaySupportReviewEnvelope: finalizedEnvelope,
     });
-  }, [chatDebugTraceStoreRef, recordChatDebugSupportCall]);
+
+    const readinessRecord = supportReadinessBySourceRef.current
+      .get(traceKey)
+      ?.get(finalizedEnvelope.worker);
+    if (readinessRecord) {
+      const readinessLifecycle: SupportCallLifecycle = finalizedEnvelope.persistence.status === 'failed'
+        ? 'failed'
+        : finalizedEnvelope.persistence.status === 'skipped_stale'
+          ? 'stale'
+          : finalizedEnvelope.persistence.status === 'source_not_persisted'
+            ? 'skipped'
+            : 'completed';
+      const finalizedReadiness = advanceSupportCallReadinessRecord(readinessRecord, {
+        lifecycle: readinessLifecycle,
+        occurredAt: Date.now(),
+        persistenceStatus: finalizedEnvelope.persistence.status,
+        reason: finalizedEnvelope.persistence.reason,
+      });
+      writeRoleplaySupportReadinessRecord(message, finalizedReadiness);
+    }
+  }, [chatDebugTraceStoreRef, recordChatDebugSupportCall, writeRoleplaySupportReadinessRecord]);
+
+  const captureRoleplaySupportReadinessSnapshot = useCallback((
+    dispatchMessage: Pick<Message, 'id' | 'generationId'>,
+    previousAssistantMessage: Pick<Message, 'id' | 'generationId'> | null | undefined,
+  ): SupportReadinessSnapshot | undefined => {
+    supportReadinessDispatchCountRef.current += 1;
+    const dispatchOrdinal = supportReadinessDispatchCountRef.current;
+    if (!previousAssistantMessage?.id) return undefined;
+    const sourceKey = buildChatDebugTraceKey(
+      previousAssistantMessage.id,
+      previousAssistantMessage.generationId || previousAssistantMessage.id,
+    );
+    const sourceRecords = supportReadinessBySourceRef.current.get(sourceKey);
+    const records = Array.from(sourceRecords?.values() || []).map((record) => {
+      if (
+        record.firstEligibleFutureTurn == null
+        && record.lifecycle === 'completed'
+        && (record.persistenceStatus === 'persisted' || record.persistenceStatus === 'no_updates')
+      ) {
+        const eligibleRecord = markSupportCallReadinessEligible(record, dispatchOrdinal);
+        writeRoleplaySupportReadinessRecord(previousAssistantMessage, eligibleRecord);
+        return eligibleRecord;
+      }
+      return record;
+    });
+    return createSupportReadinessSnapshot({
+      id: `support-readiness-snapshot:${dispatchMessage.id}:${Date.now()}`,
+      dispatchMessageId: dispatchMessage.id,
+      dispatchGenerationId: dispatchMessage.generationId || dispatchMessage.id,
+      previousAssistantMessageId: previousAssistantMessage.id,
+      previousAssistantGenerationId:
+        previousAssistantMessage.generationId || previousAssistantMessage.id,
+      capturedAt: Date.now(),
+      records,
+    });
+  }, [writeRoleplaySupportReadinessRecord]);
+
+  useEffect(() => {
+    supportReadinessBySourceRef.current.clear();
+    supportReadinessDispatchCountRef.current = 0;
+  }, [conversationId]);
   const [dialogDebugEnabled, setDialogDebugEnabled] = useState(false);
   const [dialogDebugComments, setDialogDebugComments] = useState<Record<string, DialogDebugComment>>({});
   const [activeDialogDebugMessage, setActiveDialogDebugMessage] = useState<Message | null>(null);
@@ -993,11 +1166,33 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       );
       if (bulletMemories.length === 0) return;
 
-      const bullets = bulletMemories.map(m => m.content);
+      const inputMemoryRows = buildDayCompressionInputRows(bulletMemories);
       const compressionSourceMessage = conversation?.messages
         .filter((message) => message.role === 'assistant' && !isLocalRoleplayNoticeMessage(message))
         .slice(-1)[0];
-      const requestBody = { bullets, day: completedDay, conversationId, debugTrace: isAdmin };
+      const requestBody = {
+        version: 1,
+        inputMemoryRows,
+        day: completedDay,
+        conversationId,
+        inputTrustBoundary: 'browser_supplied_runtime_rows',
+        debugTrace: isAdmin,
+      };
+
+      if (compressionSourceMessage) {
+        recordRoleplaySupportLifecycle({
+          worker: 'day_memory_compression',
+          lifecycle: 'queued',
+          sourceMessage: compressionSourceMessage,
+          reason: 'queued_after_day_rollover',
+        });
+        recordRoleplaySupportLifecycle({
+          worker: 'day_memory_compression',
+          lifecycle: 'running',
+          sourceMessage: compressionSourceMessage,
+          reason: 'support_worker_started',
+        });
+      }
 
       void trackAiUsageEvent({
         eventType: 'memory_day_compression_call',
@@ -1006,7 +1201,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
           conversationId,
           day: completedDay,
           bulletCount: bulletMemories.length,
-          inputChars: bullets.join('\n').length,
+          inputChars: inputMemoryRows.map((row) => row.content).join('\n').length,
           modelId,
         },
       });
@@ -1017,7 +1212,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         apiCallGroup: 'call_2',
         parentRowId: 'summary.call2.memory_compress',
         detailPresence: buildRequiredPresence([
-          ['call2.memory_compress.bullets', bullets],
+          ['call2.memory_compress.input_memory_rows', inputMemoryRows],
           ['call2.memory_compress.day', completedDay],
           ['call2.memory_compress.conversation_id', conversationId],
         ]),
@@ -1046,12 +1241,20 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         body: requestBody
       }).then(async ({ data, error }) => {
         const compressionDebug = splitEdgeDebugPayload(data);
+        const compressionReview = reviewDayCompressionResponse({
+          inputMemoryRows,
+          response: compressionDebug.responseBody,
+        });
         const reviewedCompressionResponseBody = compressionDebug.responseBody && typeof compressionDebug.responseBody === 'object'
           ? {
               ...(compressionDebug.responseBody as Record<string, unknown>),
-              inputRowIds: bulletMemories.map((memory) => memory.id),
-              deletionEligibleRowIds: bulletMemories.map((memory) => memory.id),
-              omittedRows: [],
+              inputMemoryRows,
+              compressedInputMemoryRowIds: compressionReview.compressedInputMemoryRowIds,
+              rejectedInputMemoryRows: compressionReview.rejectedInputMemoryRows,
+              omittedInputMemoryRowIds: compressionReview.omittedInputMemoryRowIds,
+              warnings: compressionReview.warnings,
+              validationErrors: compressionReview.validationErrors,
+              inputTrustBoundary: requestBody.inputTrustBoundary,
             }
           : compressionDebug.responseBody ?? null;
         const compressionDebugStatus = buildSupportCallDebugStatus(error, reviewedCompressionResponseBody);
@@ -1076,72 +1279,102 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             error: compressionDebugStatus.error,
           }),
         });
-
-        const compressionResponseBody = reviewedCompressionResponseBody as { synopsis?: unknown } | null | undefined;
-        const synopsis = typeof compressionResponseBody?.synopsis === 'string'
-          ? compressionResponseBody.synopsis
-          : '';
-        if (!error && synopsis) {
-          void trackAiUsageEvent({
-            eventType: 'memory_bullets_compressed',
-            eventSource: 'chat-interface',
-            count: bulletMemories.length,
-            metadata: {
-              conversationId,
-              day: completedDay,
-              outputChars: synopsis.length,
-            },
+        if (compressionSourceMessage) {
+          recordRoleplaySupportLifecycle({
+            worker: 'day_memory_compression',
+            lifecycle: compressionDebugStatus.error ? 'failed' : 'completed',
+            sourceMessage: compressionSourceMessage,
+            reason: compressionDebugStatus.error
+              ? 'support_worker_failed'
+              : 'support_worker_completed',
+            error: compressionDebugStatus.error,
           });
-          let persistedSynopsis: Memory;
-          try {
-            persistedSynopsis = await handleCreateMemory(
+        }
+
+        if (!error) {
+          const persistenceResult = await persistReviewedDayCompression({
+            inputMemoryRows,
+            response: reviewedCompressionResponseBody,
+            persistSynopsis: (synopsis) => handleCreateMemory(
               synopsis,
               completedDay,
               null,
               undefined,
               undefined,
               'synopsis',
+            ),
+            deleteInputMemoryRow: handleDeleteMemory,
+          });
+          const responseBodyPatch = {
+            inputMemoryRows,
+            compressedInputMemoryRowIds: persistenceResult.review.compressedInputMemoryRowIds,
+            rejectedInputMemoryRows: persistenceResult.review.rejectedInputMemoryRows,
+            omittedInputMemoryRowIds: persistenceResult.review.omittedInputMemoryRowIds,
+            warnings: persistenceResult.review.warnings,
+            validationErrors: persistenceResult.review.validationErrors,
+            deletedInputMemoryRowIds: persistenceResult.deletedInputMemoryRowIds,
+            failedDeletionRows: persistenceResult.failedDeletionRows,
+            inputTrustBoundary: requestBody.inputTrustBoundary,
+          };
+
+          if (persistenceResult.status === 'rejected') {
+            updateRoleplaySupportPersistence(
+              compressionSourceMessage,
+              'call2.memory-compress',
+              {
+                persistenceStatus: 'no_updates',
+                persistenceReason: 'day_memory_compression_response_rejected',
+                contextGap: `Day-memory compression returned an unsafe row-decision contract: ${persistenceResult.review.validationErrors.join(', ')}`,
+                responseBodyPatch,
+              },
             );
-          } catch (persistenceError) {
+            return;
+          }
+
+          if (persistenceResult.status === 'persistence_failed') {
             updateRoleplaySupportPersistence(
               compressionSourceMessage,
               'call2.memory-compress',
               {
                 persistenceStatus: 'failed',
                 persistenceReason: 'compressed_synopsis_persistence_failed',
-                contextGap: `Day-memory synopsis persistence failed: ${persistenceError instanceof Error ? persistenceError.message : String(persistenceError)}`,
+                contextGap: `Day-memory synopsis persistence failed: ${persistenceResult.persistenceError ?? 'unknown error'}`,
+                responseBodyPatch,
               },
             );
-            console.error('[Day compression] Synopsis persistence failed:', persistenceError);
+            console.error('[Day compression] Synopsis persistence failed:', persistenceResult.persistenceError);
             return;
           }
 
-          const failedDeletionRows: Array<{ id: string; error: string }> = [];
-          for (const bm of bulletMemories) {
-            try {
-              await handleDeleteMemory(bm.id);
-            } catch (deletionError) {
-              failedDeletionRows.push({
-                id: bm.id,
-                error: deletionError instanceof Error ? deletionError.message : String(deletionError),
-              });
-            }
-          }
+          const persistedSynopsisId = persistenceResult.persistedSynopsis?.id;
+          void trackAiUsageEvent({
+            eventType: 'memory_bullets_compressed',
+            eventSource: 'chat-interface',
+            count: persistenceResult.review.compressedInputMemoryRowIds.length,
+            metadata: {
+              conversationId,
+              day: completedDay,
+              outputChars: persistenceResult.review.synopsis.length,
+              rejectedCount: persistenceResult.review.rejectedInputMemoryRows.length,
+              omittedCount: persistenceResult.review.omittedInputMemoryRowIds.length,
+            },
+          });
 
-          if (failedDeletionRows.length > 0) {
+          if (persistenceResult.status === 'persisted_with_cleanup_gap') {
             updateRoleplaySupportPersistence(
               compressionSourceMessage,
               'call2.memory-compress',
               {
                 persistenceStatus: 'persisted',
-                persistenceTargets: [persistedSynopsis.id],
+                persistenceTargets: persistedSynopsisId ? [persistedSynopsisId] : [],
                 persistenceReason: 'compressed_synopsis_persisted_with_cleanup_gap',
-                contextGap: `The compressed synopsis persisted, but source bullet cleanup failed for: ${failedDeletionRows
+                contextGap: `The compressed synopsis persisted, but accepted source-row cleanup failed for: ${persistenceResult.failedDeletionRows
                   .map((row) => `${row.id} (${row.error})`)
                   .join(', ')}. The synopsis remains available to future prompts; the undeleted source rows require cleanup.`,
+                responseBodyPatch,
               },
             );
-            console.error('[Day compression] Synopsis persisted with source-row cleanup gaps:', failedDeletionRows);
+            console.error('[Day compression] Synopsis persisted with source-row cleanup gaps:', persistenceResult.failedDeletionRows);
             return;
           }
 
@@ -1150,12 +1383,22 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
             'call2.memory-compress',
             {
               persistenceStatus: 'persisted',
-              persistenceTargets: [persistedSynopsis.id],
-              persistenceReason: 'compressed_synopsis_persisted_and_source_bullets_deleted',
+              persistenceTargets: persistedSynopsisId ? [persistedSynopsisId] : [],
+              persistenceReason: 'compressed_synopsis_persisted_and_accepted_source_rows_deleted',
+              responseBodyPatch,
             },
           );
         }
       }).catch(err => {
+        if (compressionSourceMessage) {
+          recordRoleplaySupportLifecycle({
+            worker: 'day_memory_compression',
+            lifecycle: 'failed',
+            sourceMessage: compressionSourceMessage,
+            reason: 'support_worker_failed',
+            error: err,
+          });
+        }
         updateRoleplaySupportPersistence(
           compressionSourceMessage,
           'call2.memory-compress',
@@ -1168,7 +1411,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         console.error('[Day compression] Failed:', err);
       });
     }
-  }, [activeMemories, currentDay, memoriesEnabled, memoriesLoaded, conversation?.messages, conversationId, isAdmin, modelId, handleCreateMemory, handleDeleteMemory, recordChatDebugSupportCall, updateRoleplaySupportPersistence]);
+  }, [activeMemories, currentDay, memoriesEnabled, memoriesLoaded, conversation?.messages, conversationId, isAdmin, modelId, handleCreateMemory, handleDeleteMemory, recordChatDebugSupportCall, recordRoleplaySupportLifecycle, updateRoleplaySupportPersistence]);
 
   // Sidebar background handlers
   const selectedSidebarBgUrl = useMemo(() => {
@@ -4807,7 +5050,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       }),
     });
 
-    supabase.functions.invoke('extract-memory-events', {
+    return supabase.functions.invoke('extract-memory-events', {
       body: requestBody
     }).then(async ({ data, error }) => {
       const memoryDebug = splitEdgeDebugPayload(data);
@@ -4816,9 +5059,8 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         sourceMessage.id,
         sourceMessage.generationId,
       );
-      const memoryReview = reviewRoleplayMemoryExtractionEvents({
-        events: data?.extractedEvents,
-        userStateReviews: data?.userStateReviews,
+      const memoryReview = reviewRoleplayMemoryExtractionCandidates({
+        candidates: data?.candidates,
         userSourceMessage: sourceUserMessage,
         assistantSourceMessage: sourceMessage,
         assistantSourceAccepted: memorySourceCurrent,
@@ -4829,10 +5071,25 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         ),
       });
       const events = memoryReview.acceptedEvents;
+      let candidateOutcomes = [
+        ...memoryReview.candidateReviews.map((candidate) => ({
+          ...candidate,
+          persistenceStatus: candidate.accepted ? 'pending' : 'not_requested_rejected',
+          persistenceReason: candidate.accepted
+            ? 'accepted_candidate_waiting_for_persistence'
+            : 'rejected_candidate_is_debug_only',
+        })),
+        ...memoryReview.omittedCandidates.map((candidate) => ({
+          ...candidate,
+          accepted: false,
+          persistenceStatus: 'skipped',
+          persistenceReason: candidate.reason,
+        })),
+      ];
       const reviewedMemoryResponseBody = memoryDebug.responseBody && typeof memoryDebug.responseBody === 'object'
         ? {
             ...(memoryDebug.responseBody as Record<string, unknown>),
-            candidateReviews: memoryReview.candidateReviews,
+            candidateReviews: candidateOutcomes,
             acceptedEvents: events,
             omittedCandidates: memoryReview.omittedCandidates,
           }
@@ -4861,6 +5118,17 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       });
       if (error || (memoryReview.candidateReviews.length === 0 && memoryReview.omittedCandidates.length === 0)) return;
       if (!memorySourceCurrent) {
+        candidateOutcomes = candidateOutcomes.map((candidate) => candidate.accepted ? {
+          ...candidate,
+          persistenceStatus: 'skipped_stale',
+          persistenceReason: 'source_generation_superseded_before_persistence',
+        } : candidate);
+        updateRoleplaySupportPersistence(sourceMessage, 'call2.memory-extraction', {
+          persistenceStatus: 'skipped_stale',
+          persistenceReason: 'source_generation_superseded_before_persistence',
+          contextGap: 'Accepted memory candidates were not persisted because their source generation was no longer current.',
+          responseBodyPatch: { candidateReviews: candidateOutcomes },
+        });
         debugLog('[memoryExtraction] Discarded stale result for non-current turn');
         return;
       }
@@ -4878,40 +5146,48 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         },
       });
 
-      const combinedContent = events.length === 1
-        ? events[0]
-        : events.map((event: string) => `- ${event}`).join('\n');
-
-      try {
-        const persistedMemory = await handleCreateMemory(
-          combinedContent,
-          sourceMessage.day ?? currentDay,
-          sourceMessage.timeOfDay ?? currentTimeOfDay,
+      const persistenceResult = await persistAcceptedRoleplayMemoryCandidates({
+        candidates: memoryReview.candidateReviews,
+        isSourceCurrent: () => isMessageGenerationStillCurrent(
           sourceMessage.id,
           sourceMessage.generationId,
-        );
-        if (!isMessageGenerationStillCurrent(sourceMessage.id, sourceMessage.generationId)) {
-          updateRoleplaySupportPersistence(sourceMessage, 'call2.memory-extraction', {
-            persistenceStatus: 'skipped_stale',
-            persistenceReason: 'source_generation_superseded_during_persistence',
-            contextGap: 'The memory row was written for a generation that was superseded before persistence completed; it remains excluded from effective prompt memory.',
-          });
-          debugLog('[memoryExtraction] Persisted row excluded after source generation changed during write');
-          return;
-        }
-        updateRoleplaySupportPersistence(sourceMessage, 'call2.memory-extraction', {
-          persistenceStatus: 'persisted',
-          persistenceTargets: [persistedMemory.id],
-          persistenceReason: 'reviewed_memory_events_persisted',
-        });
-      } catch (persistenceError) {
-        updateRoleplaySupportPersistence(sourceMessage, 'call2.memory-extraction', {
-          persistenceStatus: 'failed',
-          persistenceReason: 'memory_event_persistence_failed',
-          contextGap: `Memory persistence failed: ${persistenceError instanceof Error ? persistenceError.message : String(persistenceError)}`,
-        });
-        console.error('[queueAssistantMemoryExtraction] Memory persistence failed:', persistenceError);
-      }
+        ),
+        persistCandidate: (candidate) => handleCreateMemory(
+            candidate.label,
+            sourceMessage.day ?? currentDay,
+            sourceMessage.timeOfDay ?? currentTimeOfDay,
+            sourceMessage.id,
+            sourceMessage.generationId,
+          ),
+      });
+      candidateOutcomes = candidateOutcomes.map((candidate) => (
+        persistenceResult.outcomes.find((outcome) => outcome.id === candidate.id) ?? candidate
+      ));
+
+      const allPersistenceFailed = persistenceResult.persistedTargets.length === 0
+        && persistenceResult.failures.length > 0;
+      updateRoleplaySupportPersistence(sourceMessage, 'call2.memory-extraction', {
+        persistenceStatus: persistenceResult.sourceBecameStale
+          ? 'skipped_stale'
+          : allPersistenceFailed ? 'failed' : 'persisted',
+        persistenceTargets: persistenceResult.persistedTargets,
+        persistenceReason: persistenceResult.sourceBecameStale
+          ? 'source_generation_superseded_during_candidate_persistence'
+          : allPersistenceFailed
+            ? 'all_memory_candidate_persistence_failed'
+            : persistenceResult.failures.length > 0
+              ? 'accepted_memory_candidates_partially_persisted'
+              : 'accepted_memory_candidates_persisted_individually',
+        contextGap: persistenceResult.sourceBecameStale
+          ? 'Persisted rows from the superseded source generation remain excluded from effective prompt memory.'
+          : persistenceResult.failures.length > 0
+            ? `Some memory candidates failed to persist: ${persistenceResult.failures.join('; ')}`
+            : undefined,
+        responseBodyPatch: {
+          candidateReviews: candidateOutcomes,
+          persistedMemoryRowIds: persistenceResult.persistedTargets,
+        },
+      });
     }).catch(err => {
       recordChatDebugSupportCall(sourceMessage, {
         id: 'call2.memory-extraction',
@@ -4932,6 +5208,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         }),
       });
       console.error('[queueAssistantMemoryExtraction] Memory extraction failed:', err);
+      throw err;
     });
   }, [
     allCharacterNames,
@@ -4959,6 +5236,7 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
     evaluateGoalAlignment,
     extractCharacterUpdatesFromDialogue,
     applyExtractedUpdates,
+    onSupportLifecycle: recordRoleplaySupportLifecycle,
     debugLog,
   });
 
@@ -5098,6 +5376,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         }),
         responseDetail: normalizeRoleplayResponseDetail(llmAppData.uiSettings?.responseVerbosity),
       });
+      const previousAssistantMessage = [...conversation.messages]
+        .reverse()
+        .find((message) => message.role === 'assistant' && !isLocalRoleplayNoticeMessage(message));
+      const supportReadinessSnapshot = captureRoleplaySupportReadinessSnapshot(
+        userMsg,
+        previousAssistantMessage,
+      );
       const responseResult = await collectRoleplayResponse({
         appData: llmAppData,
         conversationId,
@@ -5121,7 +5406,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       });
       const cleanedText = responseResult.cleanedText;
       pendingDebugTrace = responseResult.debugTrace;
-      pendingCall1Request = responseResult.call1Request;
+      pendingCall1Request = responseResult.call1Request
+        ? {
+            ...responseResult.call1Request,
+            roleplaySupportReadinessSnapshot: supportReadinessSnapshot,
+          }
+        : null;
       const candidateStyleTelemetry = analyzeAssistantCandidateStyle(
         styleEvidenceMessages,
         cleanedText,
@@ -5491,6 +5781,11 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
       // Regeneration is text-variation only: avoid mutating persistent character state here.
 
+      const supportReadinessSnapshot = captureRoleplaySupportReadinessSnapshot(
+        userMessage,
+        existingMessage,
+      );
+
       const responseResult = await collectRoleplayResponse({
         appData: truncatedAppData,
         conversationId,
@@ -5514,7 +5809,12 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
       });
       const cleanedText = responseResult.cleanedText;
       pendingDebugTrace = responseResult.debugTrace;
-      pendingCall1Request = responseResult.call1Request;
+      pendingCall1Request = responseResult.call1Request
+        ? {
+            ...responseResult.call1Request,
+            roleplaySupportReadinessSnapshot: supportReadinessSnapshot,
+          }
+        : null;
       const candidateStyleTelemetry = analyzeAssistantCandidateStyle(
         truncatedStyleEvidenceMessages,
         cleanedText,
@@ -5665,16 +5965,6 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
 
     // Use session-merged data so the AI sees current locations and control assignments.
     const llmAppData = buildLLMAppData();
-    const allPlayableCharacters = [...llmAppData.characters, ...(llmAppData.sideCharacters || [])];
-
-    // Get character control lists from session-merged data
-    const userControlledNames = allPlayableCharacters
-      .filter(c => c.controlledBy === 'User')
-      .map(c => c.name);
-
-    const aiControlledNames = allPlayableCharacters
-      .filter(c => c.controlledBy === 'AI')
-      .map(c => c.name);
 
     let pendingDebugTrace: ChatDebugTrace | null = null;
     let pendingCall1Request: ChatDebugRequestRecord | null = null;
@@ -5689,70 +5979,13 @@ export const ChatInterfaceTab: React.FC<ChatInterfaceTabProps> = ({
         llmAppData.uiSettings?.responseVerbosity,
       );
 
-	      // Build goal-aware continue prompt without turning goals into a task list.
-	      const goalSummaryParts: string[] = [];
-	      const isGoalVisibleToWriter = (goal: any): boolean => {
-	        const flexibility: GoalFlexibility =
-	          goal?.flexibility === 'rigid' || goal?.flexibility === 'flexible'
-	            ? goal.flexibility
-	            : 'normal';
-	        return shouldRenderGoalToWriter(goal?.alignment, flexibility);
-	      };
-	      allPlayableCharacters
-	        .filter(c => c.controlledBy === 'AI')
-	        .forEach(c => {
-	          const goals = 'goals' in c ? c.goals : undefined;
-	          if (Array.isArray(goals)) {
-	            goals.filter(isGoalVisibleToWriter).forEach((g: any) => {
-	              const label = typeof g === 'string' ? g : (g?.title || g?.label || g?.value || '');
-	              const currentStep = g?.steps?.find?.((s: any) => !s.completed)?.description;
-	              if (label) {
-                goalSummaryParts.push(`${c.name}'s current goal: "${label}"${currentStep ? `; current open milestone: "${renderGoalMilestoneTarget(currentStep)}"` : ''}`);
-              }
-            });
-          }
-        });
-
-	      const storyGoalsList = effectiveWorldCore.storyGoals || [];
-	      storyGoalsList.filter(isGoalVisibleToWriter).forEach((g: StoryGoal) => {
-	        const pendingStep = (g.steps || []).find(s => !s.completed);
-	        if (pendingStep) {
-          goalSummaryParts.push(`Story goal "${g.title || g.desiredOutcome}"; current open milestone: "${renderGoalMilestoneTarget(pendingStep.description)}"`);
-        }
-      });
-
-	      const goalContext = goalSummaryParts.length > 0
-	        ? `\nGOAL CONTINUITY:\n${goalSummaryParts.join('\n')}\nUse this as background continuity only. The current open milestone is an eventual direction, not a command or next-action checklist; use it only when the immediate scene and user control boundaries naturally support it.`
-	        : '';
-
-		      // Carry forward user-authored AI dialogue without making Continue restart there.
-          const sourceUserMessageForFacts = tailAction.kind === 'normal_send_deleted_assistant_recovery'
-            ? tailAction.visibleUserTail
-            : tailAction.priorUserMessage;
-		      const sourceUserMessageRecordForFacts = sourceUserMessageForFacts
-		        ? conversation.messages.find((message) => message.id === sourceUserMessageForFacts.id)
-		        : undefined;
-		      const lastUserSceneText = sourceUserMessageForFacts?.text?.trim() || '';
-		      const continueEstablishedFactNote = sourceUserMessageForFacts ? buildEstablishedFactNote(sourceUserMessageForFacts.text, establishedFactNoteCharacters) : '';
-		      const lastUserSceneAnchor = lastUserSceneText
-		        ? `\nBACKGROUND USER-AUTHORED SCENE TURN FOR FACTS AND USER-CONTROL BOUNDARIES ONLY:\n${lastUserSceneText}\n`
-		        : '\nBACKGROUND USER-AUTHORED SCENE TURN FOR FACTS AND USER-CONTROL BOUNDARIES ONLY:\n(none found)\n';
-
-	      const continuePrompt = `${continueEstablishedFactNote}[CONTINUE INSTRUCTION]
-Continue from after the latest visible assistant response. Do not restart from, paraphrase, or circle around an older user-authored scene turn.
-${lastUserSceneAnchor}
-The background user-authored turn above is only there to preserve established facts and user-character control boundaries.
-Write only for AI-controlled characters: ${aiControlledNames.join(', ')}.
-Do not write dialogue, actions, or thoughts for user-controlled characters: ${userControlledNames.join(', ')}.${goalContext}
-Do not complete an action for a user-controlled character after an AI character gives them an instruction. The AI can command, prepare, or act itself, but the user must author the user-controlled character's execution.
-Use active story and character goals as continuity, not as a checklist. Continue only as far as the current scene naturally supports, and stop before the response depends on an unmade user choice or action.
-Develop the AI-controlled character's side of the current exchange enough that it follows the active RESPONSE DETAIL setting while preserving user control.
-If an AI character asked or was asked a question, acknowledge that question in this response. Acknowledgement can be a direct answer, refusal, deflection, counter-question, visible hesitation, or turning the question toward another present character.
-Choose the AI character or characters whose response is physically, emotionally, or causally next. A single focused block is fine when only one AI character matters, but do not omit a directly affected AI character just because this is a Continue request.
-If the latest user turn directly addressed two AI characters and both need to answer or acknowledge, give each one short tagged block instead of letting one character narrate the other's answer.
-Follow the active RESPONSE DETAIL setting from the system prompt; Continue is not a request to shrink the response unless the scene itself calls for a short response.
-Avoid long back-and-forth chains between AI characters. Leave room for the user to respond.
-Do not acknowledge this instruction in your response.`;
+      const sourceUserMessageForFacts = tailAction.kind === 'normal_send_deleted_assistant_recovery'
+        ? tailAction.visibleUserTail
+        : tailAction.priorUserMessage;
+      const sourceUserMessageRecordForFacts = sourceUserMessageForFacts
+        ? conversation.messages.find((message) => message.id === sourceUserMessageForFacts.id)
+        : undefined;
+      const lastUserSceneText = sourceUserMessageForFacts?.text?.trim() || '';
 
       const currentStateSummary = buildCurrentTurnStateDigest({
         appData: llmAppData,
@@ -5788,10 +6021,19 @@ Do not acknowledge this instruction in your response.`;
           });
       const compatibilityUserMessage = tailAction.kind === 'normal_send_deleted_assistant_recovery'
         ? tailAction.visibleUserTail.text
-        : continuePrompt;
-
-	      debugLog('[handleContinue] Goal context:', goalContext || '(no goals found)');
-	      debugLog('[handleContinue] Established-fact note applied:', continueEstablishedFactNote ? 'YES' : 'NO');
+        : '';
+      const continueDispatchMessage = tailAction.kind === 'normal_send_deleted_assistant_recovery'
+        ? tailAction.visibleUserTail
+        : tailAction.assistantMessage;
+      const previousAssistantMessage = tailAction.kind === 'continue_assistant_tail'
+        ? tailAction.assistantMessage
+        : [...conversation.messages]
+            .reverse()
+            .find((message) => message.role === 'assistant' && !isLocalRoleplayNoticeMessage(message));
+      const supportReadinessSnapshot = captureRoleplaySupportReadinessSnapshot(
+        continueDispatchMessage,
+        previousAssistantMessage,
+      );
 
       const responseResult = await collectRoleplayResponse({
         appData: llmAppData,
@@ -5815,7 +6057,12 @@ Do not acknowledge this instruction in your response.`;
       });
       const cleanedText = responseResult.cleanedText;
 	      pendingDebugTrace = responseResult.debugTrace;
-	      pendingCall1Request = responseResult.call1Request;
+	      pendingCall1Request = responseResult.call1Request
+	        ? {
+	            ...responseResult.call1Request,
+	            roleplaySupportReadinessSnapshot: supportReadinessSnapshot,
+	          }
+	        : null;
 	      const candidateStyleTelemetry = analyzeAssistantCandidateStyle(
 	        styleEvidenceMessages,
 	        cleanedText,

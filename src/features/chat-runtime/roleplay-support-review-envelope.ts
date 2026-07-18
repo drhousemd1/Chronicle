@@ -40,6 +40,7 @@ export type RoleplaySupportReviewItem = {
   reason: string;
   evidence?: string;
   category?: string;
+  sourceClassification?: string;
   claimType?: string;
   sourceRole?: string;
   authority?: string;
@@ -47,6 +48,8 @@ export type RoleplaySupportReviewItem = {
   sourceMessageId?: string;
   sourceGenerationId?: string;
   userCharacterId?: string;
+  persistenceStatus?: string;
+  persistenceTargetId?: string;
 };
 
 export type RoleplaySupportPersistence = {

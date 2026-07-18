@@ -50,6 +50,7 @@ const rows: ApiUsageValidationRowSeed[] = [
   { id: "call2.character_updates.recent_context", label: "recentContext", kind: "detail", callGroup: "call_2", parentId: "summary.call2.character_updates", sort: 113 },
   { id: "call2.character_updates.characters_payload", label: "characters", kind: "detail", callGroup: "call_2", parentId: "summary.call2.character_updates", sort: 114 },
   { id: "call2.character_updates.eligible_characters", label: "eligibleCharacters", kind: "detail", callGroup: "call_2", parentId: "summary.call2.character_updates", sort: 115 },
+  { id: "call2.character_updates.character_eligibility_reviews", label: "characterEligibilityReviews", kind: "detail", callGroup: "call_2", parentId: "summary.call2.character_updates", sort: 115.5 },
   { id: "call2.character_updates.story_clock", label: "day/time", kind: "detail", callGroup: "call_2", parentId: "summary.call2.character_updates", sort: 116 },
 
   { id: "summary.call2.memory_extract", label: "Call 2: Memory Extraction", kind: "summary", callGroup: "call_2", sort: 120 },
@@ -74,7 +75,7 @@ const rows: ApiUsageValidationRowSeed[] = [
   { id: "call2.goal_alignment.temporal_context", label: "day/time", kind: "detail", callGroup: "call_2", parentId: "summary.call2.goal_alignment", sort: 139.5 },
 
   { id: "summary.call2.memory_compress", label: "Call 2: Memory Compression", kind: "summary", callGroup: "call_2", sort: 140 },
-  { id: "call2.memory_compress.bullets", label: "bullets", kind: "detail", callGroup: "call_2", parentId: "summary.call2.memory_compress", sort: 141 },
+  { id: "call2.memory_compress.input_memory_rows", label: "inputMemoryRows", kind: "detail", callGroup: "call_2", parentId: "summary.call2.memory_compress", sort: 141 },
   { id: "call2.memory_compress.day", label: "day", kind: "detail", callGroup: "call_2", parentId: "summary.call2.memory_compress", sort: 142 },
   { id: "call2.memory_compress.conversation_id", label: "conversationId", kind: "detail", callGroup: "call_2", parentId: "summary.call2.memory_compress", sort: 143 },
 

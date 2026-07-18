@@ -51,13 +51,13 @@ describe('RoleplaySceneRosterRow', () => {
     );
   });
 
-  it('does not introduce structured mood or observer metadata', () => {
+  it('does not introduce observer metadata', () => {
     const roster = buildRoleplaySceneRoster({
-      mainCharacters: [character(1, { currentMood: 'Anxious' })],
+      mainCharacters: [character(1)],
     });
     const rendered = renderRoleplaySceneRoster(roster);
 
-    expect(rendered).not.toMatch(/mood|observer|observedBy/i);
+    expect(rendered).not.toMatch(/observer|observedBy/i);
     expect(Object.isFrozen(roster[0])).toBe(true);
   });
 });

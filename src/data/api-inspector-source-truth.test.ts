@@ -141,6 +141,21 @@ describe("api inspector source-truth references", () => {
     expect(missingRows).toEqual([]);
   });
 
+  it("registers every runtime validation row emitted by roleplay memory compression", () => {
+    const chatInterfaceSource = readFileSync(
+      toRepoPath("/src/components/chronicle/ChatInterfaceTab.tsx"),
+      "utf8",
+    );
+    const emittedMemoryCompressionRows = Array.from(
+      chatInterfaceSource.matchAll(/['"](call2\.memory_compress\.[^'"]+)['"]/g),
+      (match) => match[1],
+    );
+    const missingRows = Array.from(new Set(emittedMemoryCompressionRows))
+      .filter((rowId) => !API_USAGE_VALIDATION_ROW_BY_ID[rowId]);
+
+    expect(missingRows).toEqual([]);
+  });
+
   it("keeps the API Call 1 collector ownership split explicit in source-truth surfaces", () => {
     const liveMapText = JSON.stringify(apiInspectorLiveSections);
     const codeTruthText = JSON.stringify(apiInspectorCodeTruthRegistry);

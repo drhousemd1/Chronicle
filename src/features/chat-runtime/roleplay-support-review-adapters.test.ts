@@ -196,8 +196,11 @@ describe('legacy support result adapters', () => {
       worker: 'day_memory_compression',
       responseBody: {
         synopsis: 'Day 1 ended with Mara agreeing to return.',
-        inputRowIds: ['memory-1', 'memory-2'],
-        deletionEligibleRowIds: ['memory-1', 'memory-2'],
+        inputMemoryRows: [{ id: 'memory-1' }, { id: 'memory-2' }, { id: 'memory-3' }],
+        compressedInputMemoryRowIds: ['memory-1'],
+        rejectedInputMemoryRows: [{ id: 'memory-2', reason: 'unsupported_inference' }],
+        omittedInputMemoryRowIds: ['memory-3'],
+        deletedInputMemoryRowIds: ['memory-1'],
       },
       persistenceStatus: 'persisted',
       persistenceTargets: ['memory-row-day-1'],
@@ -208,7 +211,14 @@ describe('legacy support result adapters', () => {
       targets: ['summary'],
       reason: 'accepted_output_persisted_for_future_prompt_use',
     });
-    expect(envelope.accepted[0].evidence).toContain('input rows: memory-1, memory-2');
-    expect(envelope.accepted[0].evidence).toContain('deletion eligible: memory-1, memory-2');
+    expect(envelope.accepted[0].evidence).toContain('input rows: memory-1, memory-2, memory-3');
+    expect(envelope.accepted[0].evidence).toContain('compressed rows: memory-1');
+    expect(envelope.accepted[0].evidence).toContain('deleted rows: memory-1');
+    expect(envelope.rejected).toEqual([
+      expect.objectContaining({ id: 'memory-2', reason: 'unsupported_inference' }),
+    ]);
+    expect(envelope.omitted).toEqual([
+      expect.objectContaining({ label: 'memory-3' }),
+    ]);
   });
 });

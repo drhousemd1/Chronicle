@@ -41,7 +41,6 @@ function mkMainCharacter() {
     sexType: 'Female',
     sexualOrientation: 'Bisexual',
     location: 'Clocktower Library',
-    currentMood: 'Focused',
     controlledBy: 'AI',
     characterRole: 'Main',
     roleDescription: 'Strategist and archivist',
@@ -170,7 +169,6 @@ function mkSideCharacter() {
     sexType: 'Female',
     sexualOrientation: 'Pansexual',
     location: 'Signal room',
-    currentMood: 'Guarded',
     controlledBy: 'AI',
     characterRole: 'Side',
     roleDescription: 'Signal intelligence specialist',
@@ -283,13 +281,13 @@ const checks = [
   expectContains(prompt, 'Forbidden Lore\n- Forbidden Lore Notes: Only moonlight reveals the true ink beneath redacted passages.', 'World freeform section serialized into current row format'),
   expectContains(prompt, 'Forbidden Lore Notes: Only moonlight reveals the true ink beneath redacted passages.', 'World freeform value serialized into labeled row'),
   expectContains(prompt, '--- SECTION 3 - MAIN AI CHARACTER CARD INFORMATION ---', 'Main AI character section label matches current renderer'),
-  expectContains(prompt, 'Ariadne CUSTOM CONTENT\nArtifacts\n- Relic: Sun-key etched with star maps\n\nPrivate Notes\n- Private Notes Notes: She records every omen in a cipher only she can read.', 'AI character custom sections serialized'),
-  expectContains(prompt, 'Ariadne PHYSICAL APPEARANCE\n- Hair Color: Black with silver streaks', 'Hardcoded character fields serialized under named headings'),
+  expectContains(prompt, '- Artifacts: Relic: Sun-key · etched · star · maps', 'AI character custom sections serialized'),
+  expectContains(prompt, '- Hair Color: Black with silver streaks', 'Hardcoded character fields serialized as creator reference facts'),
   expectContains(prompt, '--- SECTION 4 - SIDE AI CHARACTER CARD INFORMATION ---', 'Side-character reference section included'),
   expectContains(prompt, 'CHARACTER: Mara', 'Side-character card included'),
   expectContains(prompt, '--- SECTION 5 - USER-CONTROLLED CHARACTER CARD INFORMATION ---', 'User-controlled character reference section included'),
   expectContains(prompt, 'USER-CONTROLLED CHARACTERS DO NOT GENERATE FOR\n- Rowan', 'User-controlled generation boundary included'),
-  expectContains(prompt, 'Rowan CUSTOM CONTENT\nUser Notes\n- User Notes Notes: Rowan keeps hidden routes mapped in charcoal notebooks.', 'User freeform custom section serialized'),
+  expectContains(prompt, '- User Notes: Rowan · keeps · hidden · routes · mapped · charcoal · notebooks.', 'User freeform custom section serialized'),
 ];
 
 const failed = checks.filter((ok) => !ok).length;

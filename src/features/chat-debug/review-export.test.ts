@@ -84,6 +84,41 @@ Ashley: *Ashley keeps moving her fingers.* "I can feel my thumb."`,
 };
 
 describe('buildChatReviewHtml', () => {
+  it('renders row-level day compression decisions and cleanup evidence', () => {
+    const html = renderSupportCallSummary({
+      id: 'call2.memory-compress',
+      label: 'Supporting Call - Day memory compression',
+      apiCallGroup: 'call_2',
+      endpoint: '/functions/v1/compress-day-memories',
+      capturedAt: 4,
+      status: 'completed',
+      requestBody: {},
+      responseBody: {
+        synopsis: 'A durable day summary.',
+        inputTrustBoundary: 'browser_supplied_runtime_rows',
+        inputMemoryRows: [
+          { id: 'memory-1', content: 'Durable event', sourceMessageId: 'message-1', sourceGenerationId: 'generation-1' },
+          { id: 'memory-2', content: 'Unsupported inference' },
+          { id: 'memory-3', content: 'Unclassified event' },
+        ],
+        compressedInputMemoryRowIds: ['memory-1'],
+        rejectedInputMemoryRows: [{ id: 'memory-2', reason: 'unsupported_inference' }],
+        omittedInputMemoryRowIds: ['memory-3'],
+        deletedInputMemoryRowIds: ['memory-1'],
+        failedDeletionRows: [],
+        warnings: ['browser_supplied_runtime_rows'],
+        validationErrors: [],
+      },
+    } as any);
+
+    expect(html).toContain('Day memory compression review');
+    expect(html).toContain('<strong>Accepted for compression:</strong> memory-1');
+    expect(html).toContain('<strong>memory-2</strong> - unsupported_inference');
+    expect(html).toContain('<strong>Omitted and retained:</strong> memory-3');
+    expect(html).toContain('<strong>Deleted after synopsis persistence:</strong> memory-1');
+    expect(html).toContain('source message: message-1');
+  });
+
   it('does not revive edge-accepted candidates when frontend acceptedUpdates is intentionally empty', () => {
     const html = renderSupportCallSummary({
       id: 'call2.character-state-sync',
@@ -189,6 +224,39 @@ describe('buildChatReviewHtml', () => {
                 reason: 'receipt_preview_found_in_rendered_provider_message',
               },
             ],
+            roleplayEffectiveFieldEvidence: [{
+              id: 'scene-roster:sarah:location',
+              entityId: 'sarah',
+              fieldPath: 'location',
+              valuePreview: 'Cabin',
+              sourceKind: 'scene_roster',
+              sourceReceiptIds: ['current_state:current-physical-scene-state:fnv1a-12345678'],
+              authority: 'current_state',
+              modelFacing: true,
+              treatment: 'selected',
+              reason: 'effective_scene_roster_location',
+            }],
+            roleplaySourceBudgetSummary: {
+              id: 'source-budget:1:0',
+              totalReceipts: 1,
+              modelFacingReceipts: 1,
+              debugOnlyReceipts: 0,
+              bySurface: { current_state: 1 },
+              byAuthority: { high: 1 },
+              byTreatment: { included: 1, downgraded: 0, omitted_by_budget: 0, suppressed_conflict: 0, debug_only: 0 },
+              duplicateGroups: [],
+              repeatedSourcePressureReceiptIds: [],
+            },
+            roleplayActiveScenePacketCandidate: {
+              id: 'active-scene-candidate:2:1',
+              strategy: 'active_scene_packet',
+              turnNumber: 2,
+              refreshReason: 'manual_debug',
+              liveShapingEnabled: false,
+              fullContextReceiptIds: ['current_state:current-physical-scene-state:fnv1a-12345678'],
+              includedReceiptIds: ['current_state:current-physical-scene-state:fnv1a-12345678'],
+              omittedReceipts: [],
+            },
             roleplayProviderSectionCoverage: [
               {
                 providerSectionId: 'final-user-lane:player_turn',
@@ -225,6 +293,16 @@ describe('buildChatReviewHtml', () => {
               repeatedRenderedValues: [],
               legacyRawHeadingsPresent: [],
             }],
+            roleplaySupportReadinessSnapshot: {
+              id: 'support-snapshot-user-2',
+              dispatchMessageId: 'message-user-2',
+              dispatchGenerationId: 'generation-user-2',
+              previousAssistantMessageId: 'message-ai-1',
+              previousAssistantGenerationId: 'generation-ai-1',
+              capturedAt: 5,
+              records: [],
+              scope: 'session_debug_only',
+            },
           },
           supportCalls: [
             {
@@ -236,6 +314,20 @@ describe('buildChatReviewHtml', () => {
               status: 'completed',
               requestBody: {},
               responseBody: {},
+              roleplaySupportReadinessRecord: {
+                id: 'readiness:memory:message-ai-1:generation-ai-1',
+                worker: 'memory_extraction',
+                sourceMessageId: 'message-ai-1',
+                sourceGenerationId: 'generation-ai-1',
+                lifecycle: 'completed',
+                persistenceStatus: 'persisted',
+                unavailableToTriggeringResponse: true,
+                queuedAt: 3,
+                startedAt: 3,
+                completedAt: 4,
+                reason: 'reviewed_memory_events_persisted',
+                scope: 'session_debug_only',
+              },
               roleplaySupportReviewEnvelope: {
                 version: 1,
                 worker: 'memory_extraction',
@@ -309,9 +401,14 @@ describe('buildChatReviewHtml', () => {
     expect(html).toContain('physicalAppearance.eyeColor');
     expect(html).toContain('Eye color');
     expect(html).toContain('Character fact copy-risk metrics');
+    expect(html).toContain('Internal Thought Diagnostics - Parent Message');
+    expect(html).toContain('debug-only review evidence for parent message message-ai-1');
     expect(html).toContain('generation_captured_facts');
     expect(html).toContain('No exact raw card phrase or creator-label copy was detected in this assistant block.');
     expect(html.match(/Roleplay support review envelope/g)).toHaveLength(1);
+    expect(html).toContain('Support Readiness At Dispatch (0)');
+    expect(html).toContain('Support worker readiness');
+    expect(html).toContain('unavailable to the assistant response that created this worker');
     expect(html).toContain('One accepted durable event.');
     expect(html).toContain('One rejected unsupported claim.');
     expect(html).toContain('One omitted duplicate.');
@@ -330,6 +427,7 @@ describe('buildChatReviewHtml', () => {
         childSegments?: Array<Record<string, unknown>>;
         retryLineage?: Record<string, unknown> | null;
         parentMetrics?: unknown[];
+        internalThoughtDiagnostics?: Array<{ parentMessageId?: string; thoughtText?: string }>;
       }>;
     };
     const assistantParent = parsedReviewData.parentMessages?.[1];
@@ -341,6 +439,7 @@ describe('buildChatReviewHtml', () => {
       livePromptReentry: false,
     });
     expect(assistantParent?.parentMetrics).toHaveLength(2);
+    expect(assistantParent?.internalThoughtDiagnostics).toEqual([]);
     expect(assistantChild).not.toHaveProperty('debugRecord');
     expect(assistantChild).not.toHaveProperty('debugMetrics');
     expect(assistantChild).not.toHaveProperty('retryAttempts');
@@ -348,6 +447,17 @@ describe('buildChatReviewHtml', () => {
     expect(html).toContain('response_job_lane:player_turn');
     expect(html).toContain('Duplicate source groups');
     expect(html).toContain('Receipt to provider coverage');
+    expect(html).toContain('Source Shaping And Active-Scene Comparison');
+    expect(html).toContain('Effective field evidence');
+    expect(html).toContain('Source budget summary');
+    expect(html).toContain('Full-context vs active-scene candidate');
+    expect(html).toContain('does not change the live provider request');
+    expect(html).toContain('Provider Infrastructure / Request Source Boundary');
+    expect(html).toContain('Provider infrastructure evidence');
+    expect(html).toContain('Request source-discipline evidence');
+    expect(html).toContain('Provider settings cannot substitute for these records.');
+    expect(html).toContain('Post-generation diagnostic boundary');
+    expect(html).toContain('do not start provider fallback, user Retry, an automatic regeneration, a hidden rewrite, or assistant-message replacement');
     expect(html).toContain('Provider section to receipt coverage');
     expect(html).toContain('"parentMessages"');
     expect(html).toContain('"parserDiagnostics"');
@@ -629,7 +739,30 @@ describe('buildChatReviewHtml', () => {
 	              status: 'completed',
 	              requestBody: { userMessage: 'hello', aiResponse: 'reply' },
 	              responseBody: {
-	                extractedEvents: [],
+	                extractedEvents: ['James says the map matters.'],
+	                candidateReviews: [
+	                  {
+	                    id: 'memory-1',
+	                    label: 'James says the map matters.',
+	                    accepted: true,
+	                    reason: 'explicit_user_authorship',
+	                    durabilityCategory: 'durable_scene_or_world_fact',
+	                    sourceClassification: 'raw_user_fact',
+	                    evidence: 'That has to matter',
+	                    persistenceStatus: 'persisted',
+	                    persistenceTargetId: 'memory-row-1',
+	                  },
+	                  {
+	                    id: 'memory-2',
+	                    label: 'James secretly wants Ashley.',
+	                    accepted: false,
+	                    reason: 'user_owned_state_requires_user_authorship',
+	                    durabilityCategory: 'not_memory',
+	                    sourceClassification: 'assistant_interpretation',
+	                    evidence: 'James secretly wants Ashley',
+	                    persistenceStatus: 'not_requested_rejected',
+	                  },
+	                ],
 	                rejectedEvents: [
 	                  { index: 0, accepted: false, reason: 'parse_error', value: 'not json' },
 	                ],
@@ -652,6 +785,10 @@ describe('buildChatReviewHtml', () => {
 	                  sourceMessageId: 'message-user-1',
 	                  sourceGenerationId: 'generation-user-1',
 	                  userCharacterId: 'james',
+	                  category: 'durable_scene_or_world_fact',
+	                  sourceClassification: 'raw_user_fact',
+	                  persistenceStatus: 'persisted',
+	                  persistenceTargetId: 'memory-row-1',
 	                }],
 	                rejected: [{
 	                  id: 'memory-2',
@@ -665,6 +802,9 @@ describe('buildChatReviewHtml', () => {
 	                  sourceMessageId: 'message-ai-1',
 	                  sourceGenerationId: 'generation-ai-1',
 	                  userCharacterId: 'james',
+	                  category: 'not_memory',
+	                  sourceClassification: 'assistant_interpretation',
+	                  persistenceStatus: 'not_requested_rejected',
 	                }],
 	                omitted: [],
 	                persistence: { status: 'persisted', targets: ['memory-row-1'], reason: 'reviewed_memory_events_persisted' },
@@ -766,6 +906,12 @@ describe('buildChatReviewHtml', () => {
 	    expect(html).toContain('evaluations_not_array');
 	    expect(html).toContain('rejected: unknown_goal');
 	    expect(html).toContain('Memory extraction summary');
+	    expect(html).toContain('Reviewed candidates');
+	    expect(html).toContain('durability durable_scene_or_world_fact');
+	    expect(html).toContain('source raw_user_fact');
+	    expect(html).toContain('persistence persisted');
+	    expect(html).toContain('row memory-row-1');
+	    expect(html).toContain('not_requested_rejected');
 	    expect(html).toContain('Rejected/malformed rows');
 	    expect(html).toContain('Rejected memory output');
 	    expect(html).toContain('parse_error');
@@ -1210,5 +1356,112 @@ Ashley: "Second."`,
     expect(html).toContain('stale_generation');
     expect(html).toContain('Sarah walked away in the rejected attempt.');
     expect(html).not.toContain('Applied Updates Summary (2)');
+  });
+
+  it('renders per-turn goal exposure receipts without adding them to provider prose', () => {
+    const html = buildChatReviewHtml({
+      appData,
+      conversation,
+      scenarioTitle: 'Lost',
+      modelId: 'test-model',
+      exportedAt: new Date('2026-04-26T12:00:00.000Z'),
+      sanitizeAssistantText: (text) => text,
+      debugRecords: {
+        'message-ai-1:generation-ai-1': {
+          messageId: 'message-ai-1',
+          generationId: 'generation-ai-1',
+          capturedAt: 3,
+          trace: null,
+          call1Request: {
+            id: 'call1.goal-exposure',
+            label: 'API Call 1 - Goal exposure',
+            apiCallGroup: 'call_1',
+            endpoint: '/functions/v1/chat',
+            capturedAt: 3,
+            requestBody: { messages: [] },
+            roleplayGoalExposureDecision: {
+              mode: 'continue_assistant_tail',
+              receiptId: 'goal-exposure:continue_assistant_tail:12345678',
+              decisions: [{
+                goalId: 'goal-1',
+                title: 'Reach shelter',
+                goalKind: 'story',
+                tier: 'active',
+                reason: 'supported_by_current_turn_evidence',
+                evidence: ['latest_player_turn_goal_terms:reach,shelter'],
+                renderDetail: 'full',
+                openMilestoneId: 'milestone-1',
+                partialProgress: 'debug_only',
+              }, {
+                goalId: 'goal-2',
+                title: 'Future direction',
+                goalKind: 'story',
+                tier: 'hidden_this_turn',
+                reason: 'alignment_not_writer_visible',
+                evidence: ['existing_goal_alignment_policy'],
+                renderDetail: 'debug_only',
+                partialProgress: 'debug_only',
+              }],
+            },
+            effectiveResponseDetail: {
+              requestedSetting: 'detailed',
+              effectiveSetting: 'detailed',
+              source: 'explicit_ui_setting',
+              maxOutputTokens: 3072,
+              instructionHash: 'fnv1a-12345678',
+              instructionPreview: 'RESPONSE DETAIL: Detailed response instruction.',
+            },
+          },
+        },
+      },
+    });
+
+    expect(html).toContain('Goal Exposure Receipts (2)');
+    expect(html).toContain('continue_assistant_tail');
+    expect(html).toContain('goal-exposure:continue_assistant_tail:12345678');
+    expect(html).toContain('supported_by_current_turn_evidence');
+    expect(html).toContain('hidden_this_turn');
+    expect(html).toContain('partial-progress notes remain debug-only');
+    expect(html).toContain('Response Detail Request And Parent Output');
+    expect(html).toContain('Effective response detail');
+    expect(html).toContain('Parent message response detail metrics');
+    expect(html).toContain('3072');
+    expect(html).toContain('Warnings are diagnostic only');
+  });
+
+  it('renders exact internal-thought diagnostics once under the owning parent message', () => {
+    const thoughtConversation: Conversation = {
+      ...conversation,
+      messages: [
+        conversation.messages[0],
+        {
+          ...conversation.messages[1],
+          text: 'Sarah: *Sarah grips the lantern and opens the hatch.* (I am afraid of the hatch and I want the crown.) (Zephyria signed the hidden treaty.)',
+        },
+      ],
+    };
+    const html = buildChatReviewHtml({
+      appData,
+      conversation: thoughtConversation,
+      scenarioTitle: 'Lost',
+      modelId: 'test-model',
+      exportedAt: new Date('2026-04-26T12:00:00.000Z'),
+      sanitizeAssistantText: (text) => text,
+    });
+
+    expect(html.match(/Internal Thought Diagnostics - Parent Message/g)).toHaveLength(1);
+    expect(html).toContain('I am afraid of the hatch and I want the crown.');
+    expect(html).toContain('Zephyria signed the hidden treaty.');
+    expect(html).toContain('multi_concern');
+    expect(html).toContain('unsupported_fact');
+    const embeddedReviewData = html.match(
+      /<script type="application\/json" id="chronicle-session-review-data">([\s\S]*?)<\/script>/,
+    )?.[1];
+    const parsed = JSON.parse(embeddedReviewData || '{}') as {
+      parentMessages?: Array<{ internalThoughtDiagnostics?: Array<{ parentMessageId?: string }> }>;
+    };
+    expect(parsed.parentMessages?.[1]?.internalThoughtDiagnostics).toEqual(expect.arrayContaining([
+      expect.objectContaining({ parentMessageId: 'message-ai-1' }),
+    ]));
   });
 });

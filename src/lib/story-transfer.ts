@@ -16,6 +16,7 @@ import {
   PreferredClothing,
   Scene,
   ScenarioData,
+  SideCharacter,
   TimeOfDay,
   WorldCustomItem,
   WorldCustomSection,
@@ -90,7 +91,6 @@ type TransferCharacter = {
   sexualOrientation?: string;
   location?: string;
   scenePosition?: string;
-  currentMood?: string;
   controlledBy?: CharacterControl;
   characterRole?: CharacterRole;
   roleDescription?: string;
@@ -322,18 +322,200 @@ const createBlankCharacter = (name?: string): Character => {
 
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
-const removeRetiredStructuredMood = (value: unknown): void => {
-  if (!value || typeof value !== 'object') return;
-  if (Array.isArray(value)) {
-    value.forEach(removeRetiredStructuredMood);
-    return;
-  }
+const normalizeExtraRows = (rows?: CharacterExtraRow[]): CharacterExtraRow[] | undefined =>
+  rows?.map(({ id, label, value }) => ({ id, label, value }));
 
-  const record = value as Record<string, unknown>;
-  delete record.currentMood;
-  delete record.current_mood;
-  Object.values(record).forEach(removeRetiredStructuredMood);
-};
+const normalizeTraitSections = (sections?: CharacterTraitSection[]): CharacterTraitSection[] =>
+  (sections || []).map(({ id, title, items, type, freeformValue, createdAt, updatedAt }) => ({
+    id,
+    title,
+    items: (items || []).map(({ id: itemId, label, value, type: itemType, subheading, createdAt: itemCreatedAt, updatedAt: itemUpdatedAt }) => ({
+      id: itemId,
+      label,
+      value,
+      type: itemType,
+      subheading,
+      createdAt: itemCreatedAt,
+      updatedAt: itemUpdatedAt,
+    })),
+    type,
+    freeformValue,
+    createdAt,
+    updatedAt,
+  }));
+
+const normalizeImportedMainCharacter = (source: Character): Character => ({
+  id: source.id,
+  name: source.name,
+  nicknames: source.nicknames,
+  age: source.age,
+  sexType: source.sexType,
+  sexualOrientation: source.sexualOrientation,
+  location: source.location,
+  scenePosition: source.scenePosition,
+  controlledBy: source.controlledBy,
+  characterRole: source.characterRole,
+  roleDescription: source.roleDescription,
+  tags: source.tags,
+  avatarDataUrl: source.avatarDataUrl,
+  avatarPath: source.avatarPath,
+  avatarPosition: source.avatarPosition ? { ...source.avatarPosition } : undefined,
+  physicalAppearance: {
+    hairColor: source.physicalAppearance?.hairColor || '',
+    eyeColor: source.physicalAppearance?.eyeColor || '',
+    build: source.physicalAppearance?.build || '',
+    bodyHair: source.physicalAppearance?.bodyHair || '',
+    height: source.physicalAppearance?.height || '',
+    breastSize: source.physicalAppearance?.breastSize || '',
+    genitalia: source.physicalAppearance?.genitalia || '',
+    skinTone: source.physicalAppearance?.skinTone || '',
+    makeup: source.physicalAppearance?.makeup || '',
+    bodyMarkings: source.physicalAppearance?.bodyMarkings || '',
+    temporaryConditions: source.physicalAppearance?.temporaryConditions || '',
+    _extras: normalizeExtraRows(source.physicalAppearance?._extras),
+  },
+  currentlyWearing: {
+    top: source.currentlyWearing?.top || '',
+    bottom: source.currentlyWearing?.bottom || '',
+    undergarments: source.currentlyWearing?.undergarments || '',
+    miscellaneous: source.currentlyWearing?.miscellaneous || '',
+    _extras: normalizeExtraRows(source.currentlyWearing?._extras),
+  },
+  preferredClothing: {
+    casual: source.preferredClothing?.casual || '',
+    work: source.preferredClothing?.work || '',
+    sleep: source.preferredClothing?.sleep || '',
+    undergarments: source.preferredClothing?.undergarments || '',
+    miscellaneous: source.preferredClothing?.miscellaneous || '',
+    _extras: normalizeExtraRows(source.preferredClothing?._extras),
+  },
+  personality: source.personality
+    ? {
+        splitMode: source.personality.splitMode,
+        traits: (source.personality.traits || []).map(({ id, label, value, flexibility, adherenceScore, scoreTrend }) => ({
+          id,
+          label,
+          value,
+          flexibility,
+          adherenceScore,
+          scoreTrend,
+        })),
+        outwardTraits: (source.personality.outwardTraits || []).map(({ id, label, value, flexibility, adherenceScore, scoreTrend }) => ({
+          id,
+          label,
+          value,
+          flexibility,
+          adherenceScore,
+          scoreTrend,
+        })),
+        inwardTraits: (source.personality.inwardTraits || []).map(({ id, label, value, flexibility, adherenceScore, scoreTrend }) => ({
+          id,
+          label,
+          value,
+          flexibility,
+          adherenceScore,
+          scoreTrend,
+        })),
+      }
+    : undefined,
+  goals: source.goals?.map(({ id, title, desiredOutcome, currentStatus, progress, flexibility, milestones, steps, alignment, createdAt, updatedAt }) => ({
+    id,
+    title,
+    desiredOutcome,
+    currentStatus,
+    progress,
+    flexibility,
+    milestones: milestones?.map((milestone) => ({ ...milestone })),
+    steps: steps?.map((step) => ({ ...step })),
+    alignment: alignment ? clone(alignment) : undefined,
+    createdAt,
+    updatedAt,
+  })),
+  background: source.background
+    ? {
+        jobOccupation: source.background.jobOccupation,
+        educationLevel: source.background.educationLevel,
+        residence: source.background.residence,
+        hobbies: source.background.hobbies,
+        financialStatus: source.background.financialStatus,
+        motivation: source.background.motivation,
+        _extras: normalizeExtraRows(source.background._extras),
+      }
+    : undefined,
+  tone: source.tone ? { _extras: normalizeExtraRows(source.tone._extras) } : undefined,
+  keyLifeEvents: source.keyLifeEvents ? { _extras: normalizeExtraRows(source.keyLifeEvents._extras) } : undefined,
+  relationships: source.relationships ? { _extras: normalizeExtraRows(source.relationships._extras) } : undefined,
+  secrets: source.secrets ? { _extras: normalizeExtraRows(source.secrets._extras) } : undefined,
+  fears: source.fears ? { _extras: normalizeExtraRows(source.fears._extras) } : undefined,
+  sections: normalizeTraitSections(source.sections),
+  createdAt: source.createdAt,
+  updatedAt: source.updatedAt,
+});
+
+const normalizeImportedSideCharacter = (source: SideCharacter): SideCharacter => ({
+  id: source.id,
+  name: source.name,
+  nicknames: source.nicknames,
+  age: source.age,
+  sexType: source.sexType,
+  sexualOrientation: source.sexualOrientation,
+  location: source.location,
+  scenePosition: source.scenePosition,
+  controlledBy: source.controlledBy,
+  characterRole: source.characterRole,
+  roleDescription: source.roleDescription,
+  physicalAppearance: {
+    hairColor: source.physicalAppearance?.hairColor || '',
+    eyeColor: source.physicalAppearance?.eyeColor || '',
+    build: source.physicalAppearance?.build || '',
+    bodyHair: source.physicalAppearance?.bodyHair || '',
+    height: source.physicalAppearance?.height || '',
+    breastSize: source.physicalAppearance?.breastSize || '',
+    genitalia: source.physicalAppearance?.genitalia || '',
+    skinTone: source.physicalAppearance?.skinTone || '',
+    makeup: source.physicalAppearance?.makeup || '',
+    bodyMarkings: source.physicalAppearance?.bodyMarkings || '',
+    temporaryConditions: source.physicalAppearance?.temporaryConditions || '',
+    _extras: normalizeExtraRows(source.physicalAppearance?._extras),
+  },
+  currentlyWearing: {
+    top: source.currentlyWearing?.top || '',
+    bottom: source.currentlyWearing?.bottom || '',
+    undergarments: source.currentlyWearing?.undergarments || '',
+    miscellaneous: source.currentlyWearing?.miscellaneous || '',
+    _extras: normalizeExtraRows(source.currentlyWearing?._extras),
+  },
+  preferredClothing: {
+    casual: source.preferredClothing?.casual || '',
+    work: source.preferredClothing?.work || '',
+    sleep: source.preferredClothing?.sleep || '',
+    undergarments: source.preferredClothing?.undergarments || '',
+    miscellaneous: source.preferredClothing?.miscellaneous || '',
+    _extras: normalizeExtraRows(source.preferredClothing?._extras),
+  },
+  background: {
+    relationshipStatus: source.background?.relationshipStatus || '',
+    residence: source.background?.residence || '',
+    educationLevel: source.background?.educationLevel || '',
+  },
+  personality: {
+    traits: [...(source.personality?.traits || [])],
+    miscellaneous: source.personality?.miscellaneous || '',
+    secrets: source.personality?.secrets || '',
+    fears: source.personality?.fears || '',
+    kinksFantasies: source.personality?.kinksFantasies || '',
+    desires: source.personality?.desires || '',
+  },
+  sections: normalizeTraitSections(source.sections),
+  avatarDataUrl: source.avatarDataUrl,
+  avatarPath: source.avatarPath,
+  avatarPosition: source.avatarPosition ? { ...source.avatarPosition } : undefined,
+  isAvatarGenerating: source.isAvatarGenerating,
+  firstMentionedIn: source.firstMentionedIn,
+  extractedTraits: [...(source.extractedTraits || [])],
+  createdAt: source.createdAt,
+  updatedAt: source.updatedAt,
+});
 
 const cloneContentThemes = (themes?: ContentThemes): ContentThemes | undefined => {
   if (!themes) return undefined;
@@ -352,7 +534,6 @@ const buildScenarioForTransfer = (
   options?: StoryTransferExportOptions
 ): ScenarioData => {
   const scenario = clone(data);
-  removeRetiredStructuredMood(scenario);
   scenario.uiSettings = sanitizeUiSettings(scenario.uiSettings);
   scenario.scenes = (scenario.scenes || []).map((scene) =>
     scene.imagePath
@@ -1619,10 +1800,6 @@ const parseTextToPayload = (text: string, warnings: string[]): { payload: Transf
       else if (normalizedKey === 'sexidentity' || normalizedKey === 'sextype') character.sexType = value;
       else if (normalizedKey === 'sexualorientation') character.sexualOrientation = value;
       else if (normalizedKey === 'location') character.location = value;
-      else if (normalizedKey === 'currentmood') {
-        // Legacy imports may contain Current Mood. Structured mood is retired,
-        // so accept the old field syntactically and discard its value.
-      }
       else if (normalizedKey === 'controlledby') {
         const control = normalize(value);
         if (control === 'user') character.controlledBy = 'User';
@@ -2395,6 +2572,8 @@ const applyTransferPackageToScenario = (
     contentThemes: packagePayload.editorState?.contentThemes ?? packagePayload.scenario.contentThemes,
     includeConversations: true,
   });
+  importedScenario.characters = importedScenario.characters.map(normalizeImportedMainCharacter);
+  importedScenario.sideCharacters = (importedScenario.sideCharacters || []).map(normalizeImportedSideCharacter);
   const editorState = packagePayload.editorState ? clone(packagePayload.editorState) : undefined;
   const transferWarnings: string[] = [];
   const mergedResult = mergePayloadIntoScenario(base, toTransferPayload(importedScenario), 0, transferWarnings, mode);

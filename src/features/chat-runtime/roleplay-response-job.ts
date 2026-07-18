@@ -91,6 +91,7 @@ export type RoleplayResponseJob = {
   historyPolicy: RoleplayHistoryPolicy;
   modeData: RoleplayResponseJobModeData;
   finalUserLanes: RoleplayFinalUserLane[];
+  sourceReceiptIds?: string[];
 };
 
 export type BuildNormalSendResponseJobInput = {

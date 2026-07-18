@@ -37,9 +37,23 @@ import {
   buildRoleplaySourceReceipts,
 } from "@/features/chat-runtime/roleplay-source-receipts";
 import {
+  buildRoleplayActiveScenePacketCandidate,
+  buildRoleplayEffectiveFieldEvidence,
+  buildRoleplaySourceBudgetSummary,
+  linkRoleplayResponseJobSourceReceipts,
+} from '@/features/chat-runtime/roleplay-source-shaping';
+import {
   buildRoleplaySceneRoster,
   renderRoleplaySceneRoster,
 } from '@/features/chat-runtime/roleplay-scene-roster';
+import {
+  selectRoleplayGoalsForTurn,
+  type RoleplayGoalTurnDecision,
+} from '@/features/chat-runtime/roleplay-goal-selector';
+import {
+  resolveEffectiveResponseDetail,
+  type EffectiveResponseDetail,
+} from '@/features/chat-runtime/roleplay-response-detail';
 
 /**
  * Detect if a user message contains dialogue/actions written for AI-controlled characters.
@@ -284,7 +298,9 @@ export function getSystemInstruction(
   currentTimeOfDay?: TimeOfDay,
   memories?: Memory[],
   memoriesEnabled?: boolean,
-  activeScene?: Scene | null
+  activeScene?: Scene | null,
+  goalExposureDecisions?: RoleplayGoalTurnDecision[],
+  effectiveResponseDetail?: EffectiveResponseDetail,
 ): string {
   const text = (value: unknown): string => {
     if (typeof value === 'string') return value.trim();
@@ -421,22 +437,52 @@ export function getSystemInstruction(
     ].filter(Boolean).join('\n');
   }
 
+  function buildCompactGoalDescription(goal: any): string {
+    const desiredOutcome = text(goal?.desiredOutcome);
+    const currentStatus = text(goal?.currentStatus);
+    return [
+      desiredOutcome ? `- Long-range direction: ${ensureSentence(desiredOutcome)}` : '',
+      currentStatus ? `- Current status: ${ensureSentence(currentStatus)}` : '',
+      '- Background context only. Do not steer the current response toward this goal unless the current exchange creates a natural opening.',
+    ].filter(Boolean).join('\n');
+  }
+
   const renderGoalBlock = (
     heading: string,
     goals: any[] | undefined,
     subject: 'story' | 'character',
     ownerControlledBy?: string,
+    ownerCharacterId?: string,
   ): string => {
     if (!Array.isArray(goals) || goals.length === 0) return '';
-    const visibleGoals = goals.filter((goal) => shouldRenderGoalToWriter(goal?.alignment, normalizeFlexibility(goal?.flexibility)));
+    const visibleGoals = goals.filter((goal) => {
+      if (!goalExposureDecisions) {
+        return shouldRenderGoalToWriter(goal?.alignment, normalizeFlexibility(goal?.flexibility));
+      }
+      return goalExposureDecisions.some((decision) => (
+        decision.goalId === goal?.id
+        && decision.goalKind === subject
+        && (subject === 'story' || decision.ownerCharacterId === ownerCharacterId)
+        && decision.tier !== 'hidden_this_turn'
+      ));
+    });
     if (visibleGoals.length === 0) return '';
-    return `${heading}\n${visibleGoals.map((goal) => [
+    return `${heading}\n${visibleGoals.map((goal) => {
+      const decision = goalExposureDecisions?.find((candidate) => (
+        candidate.goalId === goal?.id
+        && candidate.goalKind === subject
+        && (subject === 'story' || candidate.ownerCharacterId === ownerCharacterId)
+      ));
+      return [
       `${subject === 'story' ? 'STORY' : 'CHARACTER'} GOAL: ${text(goal?.title) || 'Untitled'}`,
-      buildGoalDescription(goal, subject),
+      decision?.renderDetail === 'compact'
+        ? buildCompactGoalDescription(goal)
+        : buildGoalDescription(goal, subject),
       subject === 'character' && ownerControlledBy === 'User'
         ? "- User-controlled character goals can inform story direction, but they do not authorize writing the user-controlled character's dialogue, internal thoughts, voluntary response, or next choice."
         : '',
-    ].filter(Boolean).join('\n')).join('\n\n')}`;
+      ].filter(Boolean).join('\n');
+    }).join('\n\n')}`;
   };
 
   const renderCharacterCard = (character: Character | SideCharacter): string => {
@@ -446,6 +492,7 @@ export function getSystemInstruction(
           character.goals,
           'character',
           text(character.controlledBy),
+          character.id,
         )
       : '';
     return [renderCharacterPromptFacts(character), selectedGoals].filter(Boolean).join('\n\n');
@@ -726,7 +773,10 @@ When the next meaningful moment depends on the user character's response, stop w
   };
 
   const renderResponseDetail = (): string => {
-    return `--- RESPONSE DETAIL / DEVELOPMENT LEVEL ---\n\n${renderResponseDetailInstruction(appData.uiSettings?.responseVerbosity || 'balanced')}`;
+    const setting = effectiveResponseDetail?.effectiveSetting
+      || appData.uiSettings?.responseVerbosity
+      || 'balanced';
+    return `--- RESPONSE DETAIL / DEVELOPMENT LEVEL ---\n\n${renderResponseDetailInstruction(setting)}`;
   };
 
   const renderRealismMode = (): string => {
@@ -774,13 +824,34 @@ export async function* generateRoleplayResponseStream(
   const conversation = appData.conversations.find(c => c.id === conversationId);
   if (!conversation) throw new Error("Conversation not found");
 
+  const latestConversationPlayerTurn = [...conversation.messages]
+    .reverse()
+    .find((message) => message.role === 'user')?.text || '';
+  const selectorPlayerTurn = options?.responseJob?.playerTurn?.text
+    || latestConversationPlayerTurn
+    || userMessage;
+  const selectorMode = options?.responseJob?.mode
+    || (isRegeneration ? 'retry_regenerate' : 'normal_send');
+  const roleplayGoalExposureDecision = selectRoleplayGoalsForTurn({
+    appData,
+    latestPlayerTurn: selectorPlayerTurn,
+    activeScene,
+    mode: selectorMode,
+  });
+  const effectiveResponseDetail = resolveEffectiveResponseDetail(
+    appData.uiSettings?.responseVerbosity,
+    renderResponseDetailInstruction,
+  );
+
   const systemInstruction = getSystemInstruction(
     appData,
     currentDay,
     currentTimeOfDay,
     memories,
     memoriesEnabled,
-    activeScene
+    activeScene,
+    roleplayGoalExposureDecision.decisions,
+    effectiveResponseDetail,
   );
   const currentTurnStateDigest = buildCurrentTurnStateDigest({
     appData,
@@ -907,9 +978,7 @@ export async function* generateRoleplayResponseStream(
   }
 
   // Verbosity-based max_tokens cap (Pass 7)
-  const verbosity = appData.uiSettings?.responseVerbosity || 'balanced';
-  const maxTokensByVerbosity: Record<string, number> = { concise: 1024, balanced: 2048, detailed: 3072 };
-  const maxTokens = maxTokensByVerbosity[verbosity] || 2048;
+  const maxTokens = effectiveResponseDetail.maxOutputTokens;
   const allPlayableCharacters = [...appData.characters, ...(appData.sideCharacters || [])];
   const roleplaySceneRoster = buildRoleplaySceneRoster({
     mainCharacters: appData.characters,
@@ -954,6 +1023,24 @@ export async function* generateRoleplayResponseStream(
   const roleplayCharacterPromptFactSummaries = allPlayableCharacters.map((character) => (
     buildCharacterPromptFactReviewSummary(character, systemInstruction)
   ));
+  const roleplayEffectiveFieldEvidence = buildRoleplayEffectiveFieldEvidence({
+    receipts: roleplaySourceReceipts,
+    sceneRoster: roleplaySceneRoster,
+    characterPromptFacts: roleplayCharacterPromptFacts,
+    userStateAuthorityDecisions: options?.userStateAuthorityDecisions ?? [],
+  });
+  const roleplaySourceBudgetSummary = buildRoleplaySourceBudgetSummary({
+    receipts: roleplaySourceReceipts,
+    duplicateMetrics: roleplayDuplicateSourceMetrics,
+  });
+  const roleplayActiveScenePacketCandidate = buildRoleplayActiveScenePacketCandidate({
+    receipts: roleplaySourceReceipts,
+    turnNumber: conversation.messages.filter((message) => message.role !== 'system').length + 1,
+  });
+  const responseJobWithSourceReceipts = linkRoleplayResponseJobSourceReceipts(
+    options?.responseJob,
+    roleplaySourceReceipts,
+  );
   const {
     receiptCoverage: roleplaySourceReceiptCoverage,
     providerSectionCoverage: roleplayProviderSectionCoverage,
@@ -971,13 +1058,16 @@ export async function* generateRoleplayResponseStream(
     reasoningEffort: ROLEPLAY_REASONING_EFFORT,
     store: ROLEPLAY_STORE,
     debugTrace: options?.debugTrace === true,
-    responseJob: options?.responseJob ?? null,
+    responseJob: responseJobWithSourceReceipts,
     finalUserLaneEvidence,
     recentHistoryPacket,
     roleplaySourceReceipts: options?.debugTrace === true ? roleplaySourceReceipts : undefined,
     roleplayDuplicateSourceMetrics: options?.debugTrace === true ? roleplayDuplicateSourceMetrics : undefined,
     roleplaySourceReceiptCoverage: options?.debugTrace === true ? roleplaySourceReceiptCoverage : undefined,
     roleplayProviderSectionCoverage: options?.debugTrace === true ? roleplayProviderSectionCoverage : undefined,
+    roleplayEffectiveFieldEvidence: options?.debugTrace === true ? roleplayEffectiveFieldEvidence : undefined,
+    roleplaySourceBudgetSummary: options?.debugTrace === true ? roleplaySourceBudgetSummary : undefined,
+    roleplayActiveScenePacketCandidate: options?.debugTrace === true ? roleplayActiveScenePacketCandidate : undefined,
     roleplayUserStateAuthorityDecisions: options?.debugTrace === true
       ? options.userStateAuthorityDecisions ?? []
       : undefined,
@@ -989,6 +1079,12 @@ export async function* generateRoleplayResponseStream(
       : undefined,
     roleplayKnowledgeVisibilityFacts: options?.debugTrace === true
       ? roleplayKnowledgeVisibilityFacts
+      : undefined,
+    roleplayGoalExposureDecision: options?.debugTrace === true
+      ? roleplayGoalExposureDecision
+      : undefined,
+    effectiveResponseDetail: options?.debugTrace === true
+      ? effectiveResponseDetail
       : undefined,
     roleplayContext,
   };
@@ -1007,10 +1103,15 @@ export async function* generateRoleplayResponseStream(
       roleplayDuplicateSourceMetrics,
       roleplaySourceReceiptCoverage,
       roleplayProviderSectionCoverage,
+      roleplayEffectiveFieldEvidence,
+      roleplaySourceBudgetSummary,
+      roleplayActiveScenePacketCandidate,
       roleplayUserStateAuthorityDecisions: options.userStateAuthorityDecisions ?? [],
       roleplayCharacterPromptFacts,
       roleplayCharacterPromptFactSummaries,
       roleplayKnowledgeVisibilityFacts,
+      roleplayGoalExposureDecision,
+      effectiveResponseDetail,
       modelRequest: {
         endpoint: 'https://api.x.ai/v1/responses',
         method: 'POST',
@@ -1028,6 +1129,8 @@ export async function* generateRoleplayResponseStream(
           'The chat edge function routes API Call 1 through xAI Responses for the normal direct roleplay path.',
           'The Responses request explicitly sends store:false and reasoning.effort:medium.',
           'If the edge function receives a provider safety retry, the backend debug trace records the fallback path.',
+          'Provider transport and fallback metadata are infrastructure evidence, not proof of source discipline or output quality.',
+          'User-requested Retry remains retry_regenerate; post-generation diagnostics do not trigger provider fallback or hidden repair.',
         ],
       },
     });

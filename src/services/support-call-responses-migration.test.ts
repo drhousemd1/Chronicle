@@ -141,7 +141,10 @@ describe('roleplay support-call Responses migration contracts', () => {
     const compressionSource = read('supabase/functions/compress-day-memories/index.ts');
     const chatInterfaceSource = read('src/components/chronicle/ChatInterfaceTab.tsx');
 
-    expect(compressionSource).toContain('const { bullets, day, conversationId, debugTrace = false } = await req.json();');
+    expect(compressionSource).toContain('inputMemoryRows: rawInputMemoryRows');
+    expect(compressionSource).toContain('const inputMemoryRows = normalizeInputRows(rawInputMemoryRows);');
+    expect(compressionSource).toContain('compressedInputMemoryRowIds');
+    expect(compressionSource).toContain('rejectedInputMemoryRows');
     expect(compressionSource).toContain('providerBodyError: `xAI Responses HTTP ${result.status}`');
     expect(compressionSource).toContain('chronicle_debug_payload: debugPayload');
 
@@ -149,7 +152,8 @@ describe('roleplay support-call Responses migration contracts', () => {
     expect(chatInterfaceSource).toContain("label: 'Supporting Call - Day memory compression'");
     expect(chatInterfaceSource).toContain("endpoint: '/functions/v1/compress-day-memories'");
     expect(chatInterfaceSource).toContain('const compressionDebugStatus = buildSupportCallDebugStatus(error, reviewedCompressionResponseBody);');
-    expect(chatInterfaceSource).toContain('inputRowIds: bulletMemories.map((memory) => memory.id)');
-    expect(chatInterfaceSource).toContain("persistenceReason: 'compressed_synopsis_persisted_and_source_bullets_deleted'");
+    expect(chatInterfaceSource).toContain('const inputMemoryRows = buildDayCompressionInputRows(bulletMemories);');
+    expect(chatInterfaceSource).toContain('const persistenceResult = await persistReviewedDayCompression({');
+    expect(chatInterfaceSource).toContain("persistenceReason: 'compressed_synopsis_persisted_and_accepted_source_rows_deleted'");
   });
 });

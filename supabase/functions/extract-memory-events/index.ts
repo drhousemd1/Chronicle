@@ -16,6 +16,36 @@ const SUPPORT_REASONING_EFFORT = "medium" as const;
 const SUPPORT_STORE = false;
 const SUPPORT_RATE_LIMIT_WINDOW_MS = 60_000;
 const SUPPORT_RATE_LIMIT_MAX = 30;
+const MEMORY_CANDIDATE_MAX = 6;
+const MEMORY_ACCEPTED_MAX = 3;
+const DURABLE_CATEGORIES = new Set([
+  "durable_relationship_dynamic",
+  "meaningful_behavior_shift",
+  "character_status_change",
+  "durable_preference_or_boundary",
+  "durable_scene_or_world_fact",
+  "meaningful_interaction_pattern",
+]);
+const ACCEPTED_SOURCE_CLASSIFICATIONS = new Set([
+  "raw_user_fact",
+  "accepted_assistant_observable_change",
+]);
+
+type MemoryCandidateV1 = {
+  id: string;
+  candidateText: string;
+  decision: "accepted" | "rejected";
+  durabilityCategory: string;
+  sourceClassification: string;
+  evidence: string;
+  rejectionReason: string | null;
+  appliesToUserCharacter: boolean;
+  userCharacterName: string | null;
+  claimType: string | null;
+  sourceRole: "user" | "assistant";
+  evidenceBasis: string;
+  authorityReason: string;
+};
 
 function trimAtWordBoundary(value: string, maxChars: number): string {
   if (value.length <= maxChars) return value;
@@ -28,6 +58,60 @@ function trimAtWordBoundary(value: string, maxChars: number): string {
 function normalizeMemoryPoint(value: string): string {
   const normalized = value.replace(/\s+/g, " ").trim();
   return trimAtWordBoundary(normalized, MEMORY_POINT_MAX_CHARS);
+}
+
+function normalizeCandidate(value: unknown, index: number): MemoryCandidateV1 | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const row = value as Record<string, unknown>;
+  const candidateText = typeof row.candidateText === "string"
+    ? normalizeMemoryPoint(row.candidateText)
+    : "";
+  const evidence = typeof row.evidence === "string" ? row.evidence.trim() : "";
+  const authorityReason = typeof row.authorityReason === "string" ? row.authorityReason.trim() : "";
+  if (
+    !candidateText
+    || !evidence
+    || !authorityReason
+    || (row.decision !== "accepted" && row.decision !== "rejected")
+    || (row.sourceRole !== "user" && row.sourceRole !== "assistant")
+    || typeof row.durabilityCategory !== "string"
+    || typeof row.sourceClassification !== "string"
+    || typeof row.evidenceBasis !== "string"
+    || typeof row.appliesToUserCharacter !== "boolean"
+  ) return null;
+
+  const requestedDecision = row.decision;
+  const structurallyAccepted = DURABLE_CATEGORIES.has(row.durabilityCategory)
+    && ACCEPTED_SOURCE_CLASSIFICATIONS.has(row.sourceClassification);
+  const decision = requestedDecision === "accepted" && structurallyAccepted
+    ? "accepted"
+    : "rejected";
+  const invalidAcceptanceReason = requestedDecision === "accepted" && !structurallyAccepted
+    ? "candidate_failed_durability_or_source_gate"
+    : null;
+
+  return {
+    id: typeof row.id === "string" && row.id.trim() ? row.id.trim() : `memory-candidate-${index + 1}`,
+    candidateText,
+    decision,
+    durabilityCategory: row.durabilityCategory,
+    sourceClassification: row.sourceClassification,
+    evidence,
+    rejectionReason: invalidAcceptanceReason
+      || (typeof row.rejectionReason === "string" && row.rejectionReason.trim()
+        ? row.rejectionReason.trim()
+        : decision === "rejected" ? "worker_rejected_candidate" : null),
+    appliesToUserCharacter: row.appliesToUserCharacter,
+    userCharacterName: typeof row.userCharacterName === "string" && row.userCharacterName.trim()
+      ? row.userCharacterName.trim()
+      : null,
+    claimType: typeof row.claimType === "string" && row.claimType.trim()
+      ? row.claimType.trim()
+      : null,
+    sourceRole: row.sourceRole,
+    evidenceBasis: row.evidenceBasis,
+    authorityReason,
+  };
 }
 
 serve(async (req) => {
@@ -98,7 +182,7 @@ serve(async (req) => {
       throw new Error("XAI_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are a story memory curator for an adult roleplay. Your job is to identify only durable events from the latest user+AI exchange that will affect future scenes and narrative consistency.
+    const systemPrompt = `You are a story memory curator for an adult roleplay. Review possible memory candidates from the latest user+AI exchange before anything can become durable story memory.
 
 CHARACTERS: ${characterNames?.join(', ') || 'Unknown'}
 USER-CONTROLLED CHARACTERS: ${Array.isArray(userCharacterNames) && userCharacterNames.length > 0 ? userCharacterNames.join(', ') : '(none identified)'}
@@ -106,29 +190,18 @@ USER-CONTROLLED CHARACTERS: ${Array.isArray(userCharacterNames) && userCharacter
 RECENT SAVED MEMORIES:
 ${existingMemoryText}
 
---- EXTRACT ---
-- Extract only durable facts that would cause future inconsistency if forgotten.
-- Include durable facts introduced by the USER even if the AI response did not repeat them.
-- Use past tense and include character names.
+Review up to six plausible candidates so rejected contamination stays inspectable. At most three candidates may be accepted. Empty candidates are valid when the exchange contains no useful memory.
 
---- IGNORE ---
-- Minor gestures, routine actions, mood-only moments, atmosphere, flirting/buildup without consequence, or lines that do not reveal new information.
-- Any event already captured by a recent saved memory, even if the wording is different.
+Accept only source-backed information whose future loss would create meaningful inconsistency. Durable categories cover relationship dynamics, meaningful behavior shifts, character status changes, durable preferences or boundaries, durable scene or world facts, and meaningful interaction patterns. Temporary scene state and material that is not memory must be rejected.
 
---- RULES ---
-- Return 0-3 events maximum.
-- Empty array is valid when nothing durable happened.
-- Keep each point under 140 characters when possible, but preserve why the fact matters.
-- For preferences, intentions, rules, or secrets, state who they belong to.
-- If a recent saved memory already preserves the same durable fact, do not return it again.
-- Return exactly one userStateReviews row for every event, using the event's zero-based index and exact event text.
-- Each review must identify whether the event claims state owned by a user-controlled character, which source role supplied the evidence, and a short exact quote from that source.
-- Set appliesToUserCharacter to true for every event that names a user-controlled character or one of that character's prior names; the frontend independently enforces this identity boundary.
-- User-owned private state is durable fact only when explicitly authored by the user. An accepted assistant response may supply a visible bodily observation, but its interpretation of hidden state, dialogue, or voluntary action is not user-authored fact.
-- Use the shared claim types and evidence-basis values from the response schema. Use not_applicable only when the event does not claim user-owned state.
+Source classification must distinguish raw user facts and accepted assistant observable changes from assistant interpretation, unsupported overreach, static descriptors, duplicate existing memory, repeated phrasing, and support artifacts. Only the first two source classes can be accepted. Use a short exact quote from the source as evidence.
+
+Use past tense and identify the relevant character. User-owned private state is durable fact only when explicitly authored by the user. An accepted assistant response may establish an observable change, but its interpretation of hidden state, assigned dialogue, or voluntary action is not a user-authored fact. Set appliesToUserCharacter for every candidate that names a user-controlled character or prior name; the frontend independently enforces that identity boundary.
+
+For every candidate, return the durability category, source classification, evidence, accepted or rejected decision, rejection reason, and the existing user-state authority fields. A rejected decision requires a concise rejection reason. An accepted decision uses null for rejectionReason.
 
 Return ONLY JSON matching the requested schema.
-Empty events are acceptable.`;
+Empty candidates are acceptable.`;
 
     const effectiveModel = modelId === "grok-4.3" ? modelId : "grok-4.3";
     const messages = [
@@ -143,18 +216,43 @@ Empty events are acceptable.`;
           type: "object",
           additionalProperties: false,
           properties: {
-            events: {
-              type: "array",
-              items: { type: "string" },
-            },
-            userStateReviews: {
+            candidates: {
               type: "array",
               items: {
                 type: "object",
                 additionalProperties: false,
                 properties: {
-                  eventIndex: { type: "integer" },
-                  event: { type: "string" },
+                  id: { type: "string" },
+                  candidateText: { type: "string" },
+                  decision: { type: "string", enum: ["accepted", "rejected"] },
+                  durabilityCategory: {
+                    type: "string",
+                    enum: [
+                      "durable_relationship_dynamic",
+                      "meaningful_behavior_shift",
+                      "character_status_change",
+                      "durable_preference_or_boundary",
+                      "durable_scene_or_world_fact",
+                      "meaningful_interaction_pattern",
+                      "temporary_scene_state",
+                      "not_memory",
+                    ],
+                  },
+                  sourceClassification: {
+                    type: "string",
+                    enum: [
+                      "raw_user_fact",
+                      "accepted_assistant_observable_change",
+                      "assistant_interpretation",
+                      "unsupported_overreach",
+                      "static_descriptor",
+                      "duplicate_existing_memory",
+                      "repeated_phrase",
+                      "support_artifact",
+                    ],
+                  },
+                  evidence: { type: "string" },
+                  rejectionReason: { type: ["string", "null"] },
                   appliesToUserCharacter: { type: "boolean" },
                   userCharacterName: { type: ["string", "null"] },
                   claimType: {
@@ -183,24 +281,27 @@ Empty events are acceptable.`;
                       "not_applicable",
                     ],
                   },
-                  evidence: { type: "string" },
-                  reason: { type: "string" },
+                  authorityReason: { type: "string" },
                 },
                 required: [
-                  "eventIndex",
-                  "event",
+                  "id",
+                  "candidateText",
+                  "decision",
+                  "durabilityCategory",
+                  "sourceClassification",
+                  "evidence",
+                  "rejectionReason",
                   "appliesToUserCharacter",
                   "userCharacterName",
                   "claimType",
                   "sourceRole",
                   "evidenceBasis",
-                  "evidence",
-                  "reason",
+                  "authorityReason",
                 ],
               },
             },
           },
-          required: ["events", "userStateReviews"],
+          required: ["candidates"],
         },
       },
     };
@@ -260,6 +361,9 @@ Empty events are acceptable.`;
       });
       return new Response(
         JSON.stringify({
+          version: 1,
+          candidates: [],
+          events: [],
           extractedEvents: [],
           userStateReviews: [],
           providerBodyError,
@@ -286,6 +390,9 @@ Empty events are acceptable.`;
       });
       return new Response(
         JSON.stringify({
+          version: 1,
+          candidates: [],
+          events: [],
           extractedEvents: [],
           userStateReviews: [],
           providerBodyError: bodyError,
@@ -296,23 +403,29 @@ Empty events are acceptable.`;
     }
     const content = extractXaiResponsesText(data);
     
-    let extractedEvents: string[] = [];
-    let userStateReviews: unknown[] = [];
+    let candidates: MemoryCandidateV1[] = [];
     let parseError: string | null = null;
     let malformedContent = "";
     try {
       const objectMatch = content.match(/\{[\s\S]*\}/);
       if (objectMatch) {
         const parsed = JSON.parse(objectMatch[0]);
-        if (Array.isArray(parsed.events)) {
-          extractedEvents = parsed.events;
-          userStateReviews = Array.isArray(parsed.userStateReviews) ? parsed.userStateReviews : [];
-          if (!Array.isArray(parsed.userStateReviews)) {
-            parseError = "user_state_reviews_not_array";
+        if (Array.isArray(parsed.candidates)) {
+          const malformedRows: number[] = [];
+          candidates = parsed.candidates
+            .slice(0, MEMORY_CANDIDATE_MAX)
+            .map((candidate: unknown, index: number) => {
+              const normalized = normalizeCandidate(candidate, index);
+              if (!normalized) malformedRows.push(index);
+              return normalized;
+            })
+            .filter((candidate: MemoryCandidateV1 | null): candidate is MemoryCandidateV1 => Boolean(candidate));
+          if (malformedRows.length > 0) {
+            parseError = `malformed_candidate_rows:${malformedRows.join(",")}`;
             malformedContent = content;
           }
         } else {
-          parseError = "events_not_array";
+          parseError = "candidates_not_array";
           malformedContent = content;
         }
       } else {
@@ -321,23 +434,35 @@ Empty events are acceptable.`;
       }
     } catch (_parseError) {
       console.error("Failed to parse extraction response:", content);
-      extractedEvents = [];
+      candidates = [];
       parseError = "parse_error";
       malformedContent = content;
     }
 
-    extractedEvents = extractedEvents
-      .filter((e: any) => typeof e === 'string' && e.trim().length > 0)
-      .map((e: string) => normalizeMemoryPoint(e))
-      .filter((e: string) => e.length > 0)
-      .slice(0, 3);
-    userStateReviews = userStateReviews.map((review) => {
-      if (!review || typeof review !== "object" || Array.isArray(review)) return review;
-      const event = typeof (review as Record<string, unknown>).event === "string"
-        ? normalizeMemoryPoint((review as Record<string, unknown>).event as string)
-        : (review as Record<string, unknown>).event;
-      return { ...(review as Record<string, unknown>), event };
+    let acceptedCount = 0;
+    candidates = candidates.map((candidate) => {
+      if (candidate.decision !== "accepted") return candidate;
+      acceptedCount += 1;
+      if (acceptedCount <= MEMORY_ACCEPTED_MAX) return candidate;
+      return {
+        ...candidate,
+        decision: "rejected" as const,
+        rejectionReason: "accepted_candidate_limit_exceeded",
+      };
     });
+    const acceptedCandidates = candidates.filter((candidate) => candidate.decision === "accepted");
+    const extractedEvents = acceptedCandidates.map((candidate) => candidate.candidateText);
+    const userStateReviews = acceptedCandidates.map((candidate, eventIndex) => ({
+      eventIndex,
+      event: candidate.candidateText,
+      appliesToUserCharacter: candidate.appliesToUserCharacter,
+      userCharacterName: candidate.userCharacterName,
+      claimType: candidate.claimType,
+      sourceRole: candidate.sourceRole,
+      evidenceBasis: candidate.evidenceBasis,
+      evidence: candidate.evidence,
+      reason: candidate.authorityReason,
+    }));
 
     console.log(`[extract-memory-events] Extracted ${extractedEvents.length} events from latest exchange`);
 
@@ -368,6 +493,9 @@ Empty events are acceptable.`;
 
     return new Response(
       JSON.stringify({
+        version: 1,
+        candidates,
+        events: extractedEvents,
         extractedEvents,
         userStateReviews,
         ...(parseError ? {

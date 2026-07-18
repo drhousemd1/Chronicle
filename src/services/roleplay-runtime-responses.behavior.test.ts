@@ -346,7 +346,12 @@ describe('generateRoleplayResponseStream Responses runtime behavior', () => {
 
     const [, fetchInit] = fetchMock.mock.calls[0];
     const browserBody = JSON.parse(String(fetchInit?.body));
-    expect(browserBody.responseJob).toEqual(responseJob);
+    expect(browserBody.responseJob).toMatchObject(responseJob);
+    expect(browserBody.responseJob.sourceReceiptIds).toEqual(expect.arrayContaining([
+      expect.stringContaining('player_turn:player_turn:'),
+      expect.stringContaining('current_state:current_state:'),
+      expect.stringContaining('response_detail:response_detail:'),
+    ]));
     expect(browserBody.finalUserLaneEvidence).toEqual([
       expect.objectContaining({
         id: 'player_turn',

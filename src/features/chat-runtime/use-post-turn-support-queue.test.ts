@@ -126,6 +126,31 @@ describe('usePostTurnSupportQueue', () => {
     );
   });
 
+  it('reports queued, running, and completed lifecycle independently for each worker', async () => {
+    const onSupportLifecycle = vi.fn();
+    const { hook } = renderQueue({ onSupportLifecycle });
+    const source = message();
+
+    act(() => {
+      hook.result.current.queueAssistantDerivedWork('user', 'assistant', source);
+    });
+    await flush();
+    await flush();
+
+    for (const worker of [
+      'memory_extraction',
+      'goal_progress',
+      'goal_alignment',
+      'character_state',
+    ] as const) {
+      const workerLifecycles = onSupportLifecycle.mock.calls
+        .map(([event]) => event)
+        .filter((event) => event.worker === worker)
+        .map((event) => event.lifecycle);
+      expect(workerLifecycles).toEqual(['queued', 'running', 'completed']);
+    }
+  });
+
   it('skips derived work when source persistence fails', async () => {
     const save = deferred();
     const { hook, options } = renderQueue({

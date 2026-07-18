@@ -197,7 +197,6 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('Visible clothing: top=Green tunic; bottom=Dark trousers.');
     expect(prompt).not.toContain('Exact position:');
     expect(prompt).not.toContain('Broad location:');
-    expect(prompt).not.toContain('Current mood:');
     expect(prompt).not.toContain('undergarments=');
     expect(prompt).not.toContain('Currently hidden red thong');
     expect(prompt).toContain('Current physical condition: Fresh bruise on left wrist.');
@@ -299,7 +298,6 @@ describe('llm canonical prompt coverage', () => {
     expect(digest).toContain('[SCENE PRESENCE ROSTER]');
     expect(digest).toContain('Sarah; control=AI; role=Main; location=Abandoned cabin interior; position=Standing beside the hearth');
     expect(digest).toContain('James; control=User; role=Main; location=Abandoned cabin interior; position=Near Sarah by the fireplace');
-    expect(digest).not.toMatch(/mood=/i);
     expect(digest).toContain('Current-day memory anchors: Sarah already knows the hidden clothing detail.');
     expect(digest).not.toContain('[CURRENT SCENE SNAPSHOT]');
   });

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  advanceSupportCallReadinessRecord,
   createSupportCallReadinessRecord,
   createSupportReadinessSnapshot,
   SUPPORT_CALL_LIFECYCLES,
@@ -149,6 +150,32 @@ describe('support call readiness contracts', () => {
     expect(Object.isFrozen(snapshot)).toBe(true);
     expect(Object.isFrozen(snapshot.records)).toBe(true);
     expect(Object.isFrozen(snapshot.records[0])).toBe(true);
+  });
+
+  it('advances one immutable record through runtime and persistence lifecycle', () => {
+    const queued = record();
+    const running = advanceSupportCallReadinessRecord(queued, {
+      lifecycle: 'running',
+      occurredAt: 12,
+      reason: 'support_worker_started',
+    });
+    const persisted = advanceSupportCallReadinessRecord(running, {
+      lifecycle: 'completed',
+      occurredAt: 20,
+      persistenceStatus: 'persisted',
+      reason: 'reviewed_output_persisted',
+    });
+
+    expect(queued).toMatchObject({ lifecycle: 'queued', startedAt: undefined });
+    expect(running).toMatchObject({ lifecycle: 'running', queuedAt: 10, startedAt: 12 });
+    expect(persisted).toMatchObject({
+      lifecycle: 'completed',
+      persistenceStatus: 'persisted',
+      queuedAt: 10,
+      startedAt: 12,
+      completedAt: 20,
+    });
+    expect(Object.isFrozen(persisted)).toBe(true);
   });
 
   it('rejects records from another source message or generation', () => {

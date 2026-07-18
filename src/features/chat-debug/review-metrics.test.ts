@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { Conversation, ScenarioData } from '@/types';
-import { buildReviewDebugMetrics } from './review-metrics';
+import {
+  buildParentMessageResponseDetailMetrics,
+  buildReviewDebugMetrics,
+} from './review-metrics';
 
 const appData = {
   world: {
@@ -183,6 +186,18 @@ describe('buildReviewDebugMetrics', () => {
     expect(metrics.segments[1].topRepeatedTerms.some((entry) => entry.value === 'checks')).toBe(true);
     expect(metrics.segments[1].repeatedPhrases.some((entry) => entry.value === 'checks the old map')).toBe(true);
     expect(metrics.segments[1].internalThoughtDiagnostics[0].wordCount).toBeGreaterThan(0);
+    expect(metrics.segments[1].internalThoughtDiagnostics[0]).toMatchObject({
+      parentMessageId: 'assistant-2',
+      segmentId: 'assistant-2-0',
+      speakerName: 'Ashley',
+      thoughtText: 'The candle explains the wax.',
+      concernCount: 1,
+      adjacentThoughtCount: 0,
+      backToBackChain: false,
+      anchoredToNearbySceneEvent: true,
+      unsupportedFactRisk: false,
+      warningReasons: [],
+    });
     expect(metrics.segments[1].recentHistoryReceipts).toEqual(expect.arrayContaining([
       expect.objectContaining({
         messageId: 'assistant-summary',
@@ -223,6 +238,41 @@ describe('buildReviewDebugMetrics', () => {
         sourceLabel: 'Archive habits: Map ritual',
       })],
     }));
+  });
+
+  it('flags stitched, adjacent, obvious-action, and unsupported thought signals without changing response text', () => {
+    const responseText = '*Ashley grips the lantern and opens the hatch.* (I am afraid of the hatch and I want the crown.) (The lantern grips the hatch.) (Zephyria signed the hidden treaty.)';
+    const metrics = buildReviewDebugMetrics({
+      appData,
+      conversation,
+      segments: [{
+        reviewId: 'assistant-thoughts-0',
+        messageId: 'assistant-thoughts',
+        generationId: 'gen-thoughts',
+        turnNumber: 4,
+        segmentNumber: 1,
+        role: 'assistant',
+        speakerName: 'Ashley',
+        text: responseText,
+        rawMessageText: responseText,
+      }],
+    });
+
+    const diagnostics = metrics.segments[0].internalThoughtDiagnostics;
+    expect(diagnostics).toHaveLength(3);
+    expect(diagnostics[0]).toMatchObject({
+      parentMessageId: 'assistant-thoughts',
+      concernCount: 2,
+      backToBackChain: true,
+    });
+    expect(diagnostics[0].warningReasons).toEqual(expect.arrayContaining(['multi_concern', 'back_to_back']));
+    expect(diagnostics[1].warningReasons).toEqual(expect.arrayContaining(['back_to_back', 'obvious_echo']));
+    expect(diagnostics[2]).toMatchObject({
+      anchoredToNearbySceneEvent: false,
+      unsupportedFactRisk: true,
+    });
+    expect(diagnostics[2].warningReasons).toContain('unsupported_fact');
+    expect(responseText).toContain('(Zephyria signed the hidden treaty.)');
   });
 
   it('excludes local provider notices from assistant roleplay transcript metrics', () => {
@@ -302,5 +352,50 @@ describe('buildReviewDebugMetrics', () => {
         sourceValue: 'Old card phrase from generation time.',
       })],
     }));
+  });
+});
+
+describe('buildParentMessageResponseDetailMetrics', () => {
+  const detailed = {
+    requestedSetting: 'detailed',
+    effectiveSetting: 'detailed',
+    source: 'explicit_ui_setting',
+    maxOutputTokens: 3072,
+    instructionHash: 'fnv1a-12345678',
+    instructionPreview: 'Detailed response instruction.',
+  } as const;
+
+  it('measures the full parent before child-card breakdowns and keeps warnings diagnostic', () => {
+    const metrics = buildParentMessageResponseDetailMetrics({
+      parentMessageId: 'assistant-parent',
+      generationId: 'generation-1',
+      text: `Ashley: *Ashley crosses the room and studies the latch.* "The mechanism is damaged, but I can repair it if you hold the light steady."
+
+Sarah: *Sarah braces the housing and checks the exposed wiring.* "Then I will keep it stable while you work. We only get one clean attempt."`,
+      childWordCounts: [24, 25],
+      latestPlayerTurn: 'I bring the transmitter to the workbench and ask them to repair it before the storm arrives.',
+      effectiveResponseDetail: detailed,
+    });
+
+    expect(metrics.parentMessageId).toBe('assistant-parent');
+    expect(metrics.totalWords).toBeGreaterThan(30);
+    expect(metrics.dialogueWords).toBeGreaterThan(20);
+    expect(metrics.renderedChildCardCount).toBe(2);
+    expect(metrics.warnings).toContain('uniform_child_card_shape');
+    expect(metrics.allowedEscapeReason).toBeNull();
+  });
+
+  it('allows a naturally brief turn without converting diagnostics into repair behavior', () => {
+    const metrics = buildParentMessageResponseDetailMetrics({
+      parentMessageId: 'assistant-brief',
+      generationId: 'generation-2',
+      text: 'Ashley: "Yes."',
+      childWordCounts: [2],
+      latestPlayerTurn: 'Ready?',
+      effectiveResponseDetail: detailed,
+    });
+
+    expect(metrics.allowedEscapeReason).toBe('brief_player_turn');
+    expect(metrics.warnings).not.toContain('detailed_response_underdeveloped');
   });
 });

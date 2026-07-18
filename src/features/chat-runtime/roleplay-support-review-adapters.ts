@@ -111,6 +111,7 @@ function itemFromRow(row: unknown, index: number, fallbackLabel: string): Rolepl
     || (value.accepted === true ? 'accepted' : 'legacy_response_item');
   const evidence = asText(value.evidence) || undefined;
   const category = asText(value.category) || asText(value.durabilityCategory) || undefined;
+  const sourceClassification = asText(value.sourceClassification) || undefined;
   const claimType = asText(value.claimType) || undefined;
   const sourceRole = asText(value.sourceRole) || undefined;
   const authority = asText(value.authority) || undefined;
@@ -118,6 +119,8 @@ function itemFromRow(row: unknown, index: number, fallbackLabel: string): Rolepl
   const sourceMessageId = asText(value.sourceMessageId) || undefined;
   const sourceGenerationId = asText(value.sourceGenerationId) || undefined;
   const userCharacterId = asText(value.userCharacterId) || undefined;
+  const persistenceStatus = asText(value.persistenceStatus) || undefined;
+  const persistenceTargetId = asText(value.persistenceTargetId) || undefined;
 
   return {
     id,
@@ -125,6 +128,7 @@ function itemFromRow(row: unknown, index: number, fallbackLabel: string): Rolepl
     reason,
     evidence,
     category,
+    sourceClassification,
     claimType,
     sourceRole,
     authority,
@@ -132,6 +136,8 @@ function itemFromRow(row: unknown, index: number, fallbackLabel: string): Rolepl
     sourceMessageId,
     sourceGenerationId,
     userCharacterId,
+    persistenceStatus,
+    persistenceTargetId,
   };
 }
 
@@ -189,17 +195,31 @@ function workerRows(worker: RoleplaySupportWorker, responseBody: unknown): {
     fallbackLabel = 'goal alignment evaluation';
   } else if (worker === 'day_memory_compression') {
     const synopsis = asText(response.synopsis);
-    const inputRowIds = asArray(response.inputRowIds).map(asText).filter(Boolean);
-    const deletionEligibleRowIds = asArray(response.deletionEligibleRowIds).map(asText).filter(Boolean);
-    rows = synopsis ? [{
+    const inputMemoryRowIds = asArray(response.inputMemoryRows)
+      .map((row) => asText(asRecord(row)?.id))
+      .filter(Boolean);
+    const compressedInputMemoryRowIds = asArray(response.compressedInputMemoryRowIds)
+      .map(asText)
+      .filter(Boolean);
+    const deletedInputMemoryRowIds = asArray(response.deletedInputMemoryRowIds)
+      .map(asText)
+      .filter(Boolean);
+    const synopsisRows = synopsis && compressedInputMemoryRowIds.length > 0 ? [{
       id: 'compressed-synopsis',
       label: synopsis,
       accepted: true,
       evidence: [
-        inputRowIds.length ? `input rows: ${inputRowIds.join(', ')}` : '',
-        deletionEligibleRowIds.length ? `deletion eligible: ${deletionEligibleRowIds.join(', ')}` : '',
+        inputMemoryRowIds.length ? `input rows: ${inputMemoryRowIds.join(', ')}` : '',
+        `compressed rows: ${compressedInputMemoryRowIds.join(', ')}`,
+        deletedInputMemoryRowIds.length ? `deleted rows: ${deletedInputMemoryRowIds.join(', ')}` : '',
       ].filter(Boolean).join('; '),
     }] : [];
+    const rejectedRows = asArray(response.rejectedInputMemoryRows).map((row) => ({
+      ...(asRecord(row) || {}),
+      accepted: false,
+      label: asText(asRecord(row)?.id) || 'rejected compression row',
+    }));
+    rows = [...synopsisRows, ...rejectedRows];
     fallbackLabel = 'compressed synopsis';
   }
 
@@ -207,6 +227,7 @@ function workerRows(worker: RoleplaySupportWorker, responseBody: unknown): {
   const omittedRows = asArray(response.omitted)
     .concat(asArray(response.omittedCandidates))
     .concat(asArray(response.omittedRows))
+    .concat(worker === 'day_memory_compression' ? asArray(response.omittedInputMemoryRowIds) : [])
     .concat(worker === 'character_state' ? asArray(response.missingCharacterStateReviews) : []);
 
   return {

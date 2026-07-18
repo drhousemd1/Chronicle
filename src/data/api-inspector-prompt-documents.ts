@@ -461,21 +461,21 @@ Current character state:
 Analyze:
 {{combinedText}}`;
 
-const memoryCompressionSystemPrompt = `You are compressing a list of story memory bullet points from a single day of roleplay into a brief narrative synopsis for long-term storage.
+const memoryCompressionSystemPrompt = `You are reviewing story-memory rows from one completed roleplay day and compressing the durable rows into one brief micro-summary.
 
-INPUT: An array of bullet point strings from one day.
-OUTPUT: A single plain-text synopsis of 2-3 sentences maximum.
+Each input row has a stable ID. Return a synopsis plus the exact IDs represented in that synopsis. Reject a row when it is duplicate, unsupported, unsafe, or not suitable for the synopsis. Omitted rows remain undeleted, so classify every row when possible.
 
 Rules:
 - Capture only changes, revelations, decisions, and events with future impact.
 - Distill the narrative essence of the day.
 - Use past tense.
-- No bullet points or formatting -- plain prose only.
-- Return ONLY the synopsis text, nothing else.`;
+- Keep the synopsis to 2-3 sentences with no bullet formatting.
+- Never invent or alter an input ID.
+- Return only JSON matching the requested schema.`;
 
-const memoryCompressionUserPrompt = `Compress these Day {{day}} memory bullets into a 2-3 sentence synopsis:
+const memoryCompressionUserPrompt = `Review and compress these Day {{day}} memory rows:
 
-{{bullets.map((bullet) => '- ' + bullet).join('\\n')}}`;
+{{inputMemoryRows.map((row) => '[' + row.id + '] ' + row.content).join('\\n')}}`;
 
 const sceneImageAnalysisPrompt = `You are an Image Prompt Optimizer. Analyze the character data and dialogue, then output structured JSON.
 
@@ -713,30 +713,19 @@ Respond in JSON only:
   ]
 }`;
 
-const memoryExtractionSystemPrompt = `You are a story memory curator for an adult roleplay. Your job is to identify only durable events from the latest user+AI exchange that will affect future scenes and narrative consistency.
+const memoryExtractionSystemPrompt = `You are a story memory curator for an adult roleplay. Review possible memory candidates from the latest user+AI exchange before anything can become durable story memory.
 
 CHARACTERS: {{characterNames?.join(', ') || 'Unknown'}}
+USER-CONTROLLED CHARACTERS: {{userCharacterNames?.join(', ') || '(none identified)'}}
 
 RECENT SAVED MEMORIES:
 {{recentExistingMemories as bullet list, or "(none)"}}
 
---- EXTRACT ---
-- Extract only durable facts that would cause future inconsistency if forgotten.
-- Include facts introduced by the USER even if the AI response did not repeat them.
-- Use past tense and include character names.
+Review up to six candidates and accept at most three. Empty candidates are valid. Accept only source-backed information whose future loss would create meaningful inconsistency.
 
---- IGNORE ---
-- Minor gestures, routine actions, mood-only moments, atmosphere, flirting/buildup without consequence, or lines that do not reveal new information.
-- Any event already captured by a recent saved memory, even if the wording is different.
+Each candidate records its text, durability category, source classification, source evidence, accepted or rejected decision, rejection reason, and user-state authority fields. Only durable categories backed by raw user facts or accepted assistant observable changes may be accepted. Temporary scene state, assistant interpretation, unsupported overreach, static descriptors, duplicates, repeated phrasing, and support artifacts remain rejected and inspectable.
 
---- RULES ---
-- Return 0-3 events maximum.
-- Empty array is valid when nothing durable happened.
-- Keep each point under 140 characters when possible, but preserve why the fact matters.
-- For preferences, intentions, rules, or secrets, state who they belong to.
-- If a recent saved memory already preserves the same durable fact, do not return it again.
-
-Return ONLY JSON matching the requested schema. Empty events are acceptable.`;
+Return ONLY JSON matching the requested schema.`;
 
 const sideCharacterSystemPrompt = `You generate source-supported starter profiles for side characters in roleplay stories. Return only the requested JSON object. Do not invent private or hidden details from thin context.`;
 
@@ -1466,7 +1455,12 @@ BROWSER-TO-EDGE REQUEST BODY SHAPE
   "userMessage": "{{latest user text}}",
   "aiResponse": "{{latest AI response}}",
   "characterNames": ["{{character name}}"],
+  "userCharacterNames": ["{{user-controlled character name}}"],
   "recentExistingMemories": ["{{up to 20 recent saved memory contents}}"],
+  "sourceUserMessageId": "{{latest user message id}}",
+  "sourceUserGenerationId": "{{latest user generation id}}",
+  "sourceAssistantMessageId": "{{accepted assistant message id}}",
+  "sourceAssistantGenerationId": "{{accepted assistant generation id}}",
   "modelId": "grok-4.3",
   "debugTrace": "{{true only when requested}}"
 }
@@ -1487,7 +1481,7 @@ RESPONSES REQUEST BODY SHAPE SENT TO xAI
     "format": {
       "type": "json_schema",
       "name": "chronicle_memory_events",
-      "schema": "{{object schema with events string array}}"
+      "schema": "{{MemoryExtractionResponseV1 candidate array schema}}"
     }
   }
 }
@@ -1507,13 +1501,16 @@ Extract durable story-memory events from this latest exchange:
 
 EDGE RESPONSE SHAPE
 {
+  "version": 1,
+  "candidates": "{{reviewed candidate rows with source, durability, decision, evidence, and rejection reason}}",
+  "events": "{{compatibility strings derived from accepted durable candidates only}}",
   "extractedEvents": "{{accepted durable memory event strings}}",
   "rejectedEvents": "{{malformed-output review rows when parsing failed}}",
   "parseError": "{{present only when the model response was malformed}}"
 }
 
 MEMORY OUTPUT CLEANUP NOTE
-The edge function collapses whitespace, removes empty entries, trims overlong memory strings at a word boundary, and returns at most three events before browser-side duplicate filtering runs.
+The edge function normalizes candidate text, caps reviewed candidates at six and accepted candidates at three, and derives compatibility arrays only from accepted durable rows. The browser then rechecks source authority, duplicates, and source-generation freshness before persisting one memory row per accepted candidate.
 
 	================================================================================
 SUPPORT CALL: DAY MEMORY COMPRESSION
@@ -1526,9 +1523,19 @@ ${browserToEdgeHeaders}
 
 BROWSER-TO-EDGE REQUEST BODY SHAPE
 {
-  "bullets": ["{{memory bullet from one day}}"],
+  "version": 1,
+  "inputMemoryRows": [{
+    "id": "{{memory row id}}",
+    "content": "{{memory row content}}",
+    "conversationId": "{{conversationId}}",
+    "day": "{{day number}}",
+    "sourceMessageId": "{{source message id when available}}",
+    "sourceGenerationId": "{{source generation id when available}}",
+    "createdAt": "{{creation timestamp}}"
+  }],
   "day": "{{day number}}",
   "conversationId": "{{conversationId}}",
+  "inputTrustBoundary": "browser_supplied_runtime_rows",
   "debugTrace": "{{true only when requested}}"
 }
 
@@ -1543,7 +1550,8 @@ RESPONSES REQUEST BODY SHAPE SENT TO xAI
   "temperature": 0.3,
   "max_output_tokens": 350,
   "store": false,
-  "reasoning": { "effort": "medium" }
+  "reasoning": { "effort": "medium" },
+  "text": { "format": "{{chronicle_day_memory_compression JSON schema}}" }
 }
 
 ${edgeToXaiResponsesHeaders}
@@ -1558,13 +1566,18 @@ ${memoryCompressionUserPrompt}
 
 EDGE RESPONSE SHAPE
 {
+  "version": 1,
   "synopsis": "{{2-3 sentence compressed day summary}}",
+  "compressedInputMemoryRowIds": ["{{row id represented in synopsis}}"],
+  "rejectedInputMemoryRows": [{ "id": "{{row id}}", "reason": "{{rejection reason}}" }],
+  "warnings": ["{{review warning}}"],
+  "omittedInputMemoryRowIds": ["{{unclassified row retained by frontend}}"],
   "providerBodyError": "{{present only when provider returned a failed or malformed Responses body}}",
   "chronicle_debug_payload": "{{present only when debugTrace=true}}"
 }
 
 OUTPUT CLEANUP NOTE
-The edge function collapses whitespace, removes obvious list-prefix formatting if present, limits the synopsis to at most three sentences, and caps the final saved string before returning it.
+The edge function validates every returned ID against the submitted rows. The browser saves the reviewed synopsis before deleting anything, then deletes only validated compressed row IDs. Rejected, omitted, unknown, duplicated, or malformed rows remain undeleted and are visible in the review export.
 
 ================================================================================
 SUPPORT CALL: SIDE-CHARACTER GENERATION

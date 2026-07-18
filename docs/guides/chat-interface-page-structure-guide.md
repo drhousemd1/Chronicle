@@ -147,7 +147,7 @@ After each AI response, the system can extract character updates:
 - Edge Function: `extract-character-updates` (model: `grok-4.3`)
 - Service: `src/services/character-ai.ts`
 - **Throttled**: Extraction only fires every 5th AI response (controlled by `extractionCountRef` in `ChatInterfaceTab.tsx`, reset on conversation switch)
-- Tracks: physical appearance, clothing, mood, location, relationships, personality changes
+- Tracks: physical appearance, clothing, location, scene position, relationships, personality changes
 - Updates stored in `character_session_states` table
 
 ### 6c. Side Character Discovery
@@ -160,7 +160,7 @@ Service: `src/services/side-character-generator.ts`
 ### 6d. Memory System
 
 - **Auto-extraction**: After every AI response in `handleSend`, `extract-memory-events` is invoked non-blocking. Extracted events are saved as `entryType: 'bullet'` memories tagged with current day/time.
-- **Day-transition compression**: When `currentDay` increments, a `useEffect` (guarded by `currentDay > prevDay && memoriesEnabled && memoriesLoaded`) invokes `compress-day-memories` edge function (`grok-4.3`). Completed-day bullets are compressed into a 2-3 sentence synopsis (`entryType: 'synopsis'`), raw bullets deleted.
+- **Day-transition compression**: When `currentDay` increments, a `useEffect` (guarded by `currentDay > prevDay && memoriesEnabled && memoriesLoaded`) invokes `compress-day-memories` (`grok-4.3`) with traceable completed-day memory rows. The worker returns a synopsis plus explicit compressed, rejected, and omitted row identities. Chronicle saves the synopsis first, then deletes only validated compressed row IDs; rejected, omitted, malformed, or unknown rows remain intact.
 - **Conversation-switch safety**: `previousDayRef.current` is reset in the `conversationId` reset effect to prevent stale-state compression on conversation switch.
 - **Manual save**: `MemoryQuickSaveButton` component for user-initiated memory entries.
 - **Prompt injection**: `memoriesContext` in `llm.ts` separates synopses under "COMPLETED DAYS" and today's bullets under "TODAY" with memory rules preventing contradiction.

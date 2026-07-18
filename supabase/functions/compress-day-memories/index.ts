@@ -17,6 +17,18 @@ const SUPPORT_STORE = false;
 const SUPPORT_RATE_LIMIT_WINDOW_MS = 60_000;
 const SUPPORT_RATE_LIMIT_MAX = 30;
 
+type DayCompressionInputMemoryRow = {
+  id: string;
+  content: string;
+  conversationId: string;
+  day: number | null;
+  sourceMessageId?: string;
+  sourceGenerationId?: string;
+  createdAt: number;
+};
+
+type RejectedInputMemoryRow = { id: string; reason: string };
+
 function trimAtWordBoundary(value: string, maxChars: number): string {
   if (value.length <= maxChars) return value;
   const clipped = value.slice(0, Math.max(0, maxChars - 3)).trimEnd();
@@ -35,6 +47,39 @@ function normalizeSynopsis(value: string): string {
   const sentences = collapsed.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [collapsed];
   const limitedSentences = sentences.slice(0, 3).join(" ").replace(/\s+/g, " ").trim();
   return trimAtWordBoundary(limitedSentences, DAY_SYNOPSIS_MAX_CHARS);
+}
+
+function normalizeInputRows(value: unknown): DayCompressionInputMemoryRow[] | null {
+  if (!Array.isArray(value) || value.length === 0) return null;
+  const rows: DayCompressionInputMemoryRow[] = [];
+  const ids = new Set<string>();
+  for (const candidate of value) {
+    if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) return null;
+    const row = candidate as Record<string, unknown>;
+    const id = typeof row.id === "string" ? row.id.trim() : "";
+    const content = typeof row.content === "string" ? row.content.trim() : "";
+    const conversationId = typeof row.conversationId === "string" ? row.conversationId.trim() : "";
+    const day = typeof row.day === "number" && Number.isFinite(row.day) ? row.day : null;
+    const createdAt = typeof row.createdAt === "number" && Number.isFinite(row.createdAt)
+      ? row.createdAt
+      : 0;
+    if (!id || !content || !conversationId || ids.has(id)) return null;
+    ids.add(id);
+    rows.push({
+      id,
+      content,
+      conversationId,
+      day,
+      sourceMessageId: typeof row.sourceMessageId === "string" && row.sourceMessageId.trim()
+        ? row.sourceMessageId.trim()
+        : undefined,
+      sourceGenerationId: typeof row.sourceGenerationId === "string" && row.sourceGenerationId.trim()
+        ? row.sourceGenerationId.trim()
+        : undefined,
+      createdAt,
+    });
+  }
+  return rows;
 }
 
 serve(async (req) => {
@@ -68,12 +113,19 @@ serve(async (req) => {
     const rateHeaders = getRateLimitHeaders(rateDecision);
     const responseHeadersBase = { ...corsHeaders, ...rateHeaders };
 
-    const { bullets, day, conversationId, debugTrace = false } = await req.json();
+    const {
+      inputMemoryRows: rawInputMemoryRows,
+      day,
+      conversationId,
+      inputTrustBoundary,
+      debugTrace = false,
+    } = await req.json();
     const debugTraceAllowed = await shouldReturnAdminDebugTrace(supabase, user.id, debugTrace, "[compress-day-memories]");
+    const inputMemoryRows = normalizeInputRows(rawInputMemoryRows);
 
-    if (!bullets || !Array.isArray(bullets) || bullets.length === 0) {
+    if (!inputMemoryRows) {
       return new Response(
-        JSON.stringify({ error: 'bullets array is required and must not be empty' }),
+        JSON.stringify({ error: 'inputMemoryRows must contain unique rows with id, content, conversationId, and createdAt' }),
         { status: 400, headers: { ...responseHeadersBase, 'Content-Type': 'application/json' } }
       );
     }
@@ -84,19 +136,61 @@ serve(async (req) => {
       throw new Error("XAI_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are compressing a list of story memory bullet points from a single day of roleplay into a brief narrative synopsis for long-term storage.
+    const systemPrompt = `You are reviewing story-memory rows from one completed roleplay day and compressing the durable rows into one brief micro-summary.
 
-INPUT: An array of bullet point strings from one day.
-OUTPUT: A single plain-text synopsis of 2-3 sentences maximum.
+Each input row has a stable ID. Return a synopsis plus the exact IDs represented in that synopsis. Reject a row when it is duplicate, unsupported, unsafe, or not suitable for the synopsis. Omitted rows remain undeleted, so classify every row when possible.
 
 Rules:
 - Capture only changes, revelations, decisions, and events with future impact.
 - Distill the narrative essence of the day.
 - Use past tense.
-- No bullet points or formatting -- plain prose only.
-- Return ONLY the synopsis text, nothing else.`;
+- Keep the synopsis to 2-3 sentences with no bullet formatting.
+- Never invent or alter an input ID.
+- Return only JSON matching the requested schema.`;
 
-    const userMessage = `Compress these Day ${day} memory bullets into a 2-3 sentence synopsis:\n\n${bullets.map((b: string) => `- ${b}`).join('\n')}`;
+    const userMessage = `Review and compress these Day ${day} memory rows:\n\n${inputMemoryRows
+      .map((row) => `[${row.id}] ${row.content}`)
+      .join('\n')}`;
+
+    const responseFormat = {
+      type: "json_schema",
+      json_schema: {
+        name: "chronicle_day_memory_compression",
+        schema: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            synopsis: { type: "string" },
+            compressedInputMemoryRowIds: {
+              type: "array",
+              items: { type: "string" },
+            },
+            rejectedInputMemoryRows: {
+              type: "array",
+              items: {
+                type: "object",
+                additionalProperties: false,
+                properties: {
+                  id: { type: "string" },
+                  reason: { type: "string" },
+                },
+                required: ["id", "reason"],
+              },
+            },
+            warnings: {
+              type: "array",
+              items: { type: "string" },
+            },
+          },
+          required: [
+            "synopsis",
+            "compressedInputMemoryRowIds",
+            "rejectedInputMemoryRows",
+            "warnings",
+          ],
+        },
+      },
+    };
 
     const result = await callXaiResponses({
       apiKey: XAI_API_KEY,
@@ -109,6 +203,7 @@ Rules:
       maxOutputTokens: 350,
       store: SUPPORT_STORE,
       reasoningEffort: SUPPORT_REASONING_EFFORT,
+      textFormat: responseFormat,
     });
     const debugPayload = debugTraceAllowed
       ? {
@@ -151,7 +246,7 @@ Rules:
         metadata: {
           modelId: "grok-4.3",
           day: typeof day === "number" ? day : null,
-          bulletCount: bullets.length,
+          inputRowCount: inputMemoryRows.length,
           status: "provider_response_parse_error",
           providerBodyError,
           providerRequestCount: 1,
@@ -177,7 +272,7 @@ Rules:
         metadata: {
           modelId: "grok-4.3",
           day: typeof day === "number" ? day : null,
-          bulletCount: bullets.length,
+          inputRowCount: inputMemoryRows.length,
           status: "provider_body_error",
           providerBodyError: bodyError,
           providerRequestCount: 1,
@@ -193,9 +288,87 @@ Rules:
         { headers: { ...responseHeadersBase, 'Content-Type': 'application/json' } }
       );
     }
-    const synopsis = normalizeSynopsis(extractXaiResponsesText(data) || '');
+    const content = extractXaiResponsesText(data) || '';
+    const inputIdSet = new Set(inputMemoryRows.map((row) => row.id));
+    let synopsis = '';
+    let compressedInputMemoryRowIds: string[] = [];
+    let rejectedInputMemoryRows: RejectedInputMemoryRow[] = [];
+    let warnings: string[] = [
+      inputTrustBoundary === "browser_supplied_runtime_rows"
+        ? "browser_supplied_runtime_rows"
+        : "input_trust_boundary_unspecified",
+    ];
+    const validationErrors: string[] = [];
+    try {
+      const objectMatch = content.match(/\{[\s\S]*\}/);
+      const parsed = objectMatch ? JSON.parse(objectMatch[0]) as Record<string, unknown> : null;
+      if (!parsed) throw new Error("missing_json_object");
+      synopsis = normalizeSynopsis(typeof parsed.synopsis === "string" ? parsed.synopsis : "");
+      const rawCompressedIds = Array.isArray(parsed.compressedInputMemoryRowIds)
+        ? parsed.compressedInputMemoryRowIds
+        : null;
+      const rawRejectedRows = Array.isArray(parsed.rejectedInputMemoryRows)
+        ? parsed.rejectedInputMemoryRows
+        : null;
+      const rawWarnings = Array.isArray(parsed.warnings) ? parsed.warnings : null;
+      if (!rawCompressedIds) validationErrors.push("missing_compressed_input_memory_row_ids");
+      if (!rawRejectedRows) validationErrors.push("missing_rejected_input_memory_rows");
+      if (!rawWarnings) validationErrors.push("missing_warnings");
+      compressedInputMemoryRowIds = (rawCompressedIds || [])
+        .filter((id): id is string => typeof id === "string" && id.trim().length > 0)
+        .map((id) => id.trim());
+      rejectedInputMemoryRows = (rawRejectedRows || [])
+        .map((value): RejectedInputMemoryRow | null => {
+          if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+          const row = value as Record<string, unknown>;
+          const id = typeof row.id === "string" ? row.id.trim() : "";
+          const reason = typeof row.reason === "string" ? row.reason.trim() : "";
+          return id && reason ? { id, reason } : null;
+        })
+        .filter((row): row is RejectedInputMemoryRow => Boolean(row));
+      warnings.push(...(rawWarnings || [])
+        .filter((warning): warning is string => typeof warning === "string" && warning.trim().length > 0)
+        .map((warning) => warning.trim()));
+      if (new Set(compressedInputMemoryRowIds).size !== compressedInputMemoryRowIds.length) {
+        validationErrors.push("duplicate_compressed_input_memory_row_ids");
+      }
+      if (compressedInputMemoryRowIds.some((id) => !inputIdSet.has(id))) {
+        validationErrors.push("unknown_compressed_input_memory_row_id");
+      }
+      const rejectedIds = rejectedInputMemoryRows.map((row) => row.id);
+      if (new Set(rejectedIds).size !== rejectedIds.length) {
+        validationErrors.push("duplicate_rejected_input_memory_row_id");
+      }
+      if (rejectedIds.some((id) => !inputIdSet.has(id))) {
+        validationErrors.push("unknown_rejected_input_memory_row_id");
+      }
+      if (rejectedIds.some((id) => compressedInputMemoryRowIds.includes(id))) {
+        validationErrors.push("row_both_compressed_and_rejected");
+      }
+    } catch (parseError) {
+      validationErrors.push(parseError instanceof Error ? parseError.message : "parse_error");
+    }
 
-    if (!synopsis) {
+    const decidedIds = new Set([
+      ...compressedInputMemoryRowIds,
+      ...rejectedInputMemoryRows.map((row) => row.id),
+    ]);
+    const omittedInputMemoryRowIds = inputMemoryRows
+      .map((row) => row.id)
+      .filter((id) => !decidedIds.has(id));
+    if (omittedInputMemoryRowIds.length > 0) {
+      warnings.push(`omitted_input_memory_rows:${omittedInputMemoryRowIds.join(",")}`);
+    }
+    if (!synopsis) validationErrors.push("empty_synopsis");
+    if (compressedInputMemoryRowIds.length === 0) {
+      validationErrors.push("no_compressed_input_memory_rows");
+    }
+    if (validationErrors.length > 0) {
+      compressedInputMemoryRowIds = [];
+      warnings = [...warnings, ...validationErrors.map((error) => `validation_error:${error}`)];
+    }
+
+    if (!synopsis || compressedInputMemoryRowIds.length === 0) {
       await recordServerAiUsage({
         userId: user.id,
         eventType: "memory_day_compression_call",
@@ -203,24 +376,29 @@ Rules:
         metadata: {
           modelId: "grok-4.3",
           day: typeof day === "number" ? day : null,
-          bulletCount: bullets.length,
-          status: "empty_output",
-          providerBodyError: "Empty synopsis returned from model",
+          inputRowCount: inputMemoryRows.length,
+          status: "compression_response_rejected",
+          providerBodyError: validationErrors.join(",") || "No rows were safely compressed",
           providerRequestCount: 1,
           ...providerUsageMetadata,
         },
       });
       return new Response(
         JSON.stringify({
-          error: "Empty synopsis returned from model",
-          providerBodyError: "Empty synopsis returned from model",
+          version: 1,
+          synopsis,
+          compressedInputMemoryRowIds: [],
+          rejectedInputMemoryRows,
+          warnings,
+          omittedInputMemoryRowIds,
+          parseError: validationErrors.join(",") || "no_compressed_input_memory_rows",
           ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
         }),
         { headers: { ...responseHeadersBase, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`[compress-day-memories] Compressed ${bullets.length} bullets from Day ${day} into synopsis`);
+    console.log(`[compress-day-memories] Compressed ${compressedInputMemoryRowIds.length}/${inputMemoryRows.length} rows from Day ${day} into synopsis`);
 
     await recordServerAiUsage({
       userId: user.id,
@@ -229,7 +407,8 @@ Rules:
       metadata: {
         modelId: "grok-4.3",
         day: typeof day === "number" ? day : null,
-        bulletCount: bullets.length,
+        inputRowCount: inputMemoryRows.length,
+        compressedInputRowCount: compressedInputMemoryRowIds.length,
         status: "success",
         providerRequestCount: 1,
         ...providerUsageMetadata,
@@ -239,7 +418,7 @@ Rules:
       userId: user.id,
       eventType: "memory_bullets_compressed",
       functionName: "compress-day-memories",
-      count: bullets.length,
+      count: compressedInputMemoryRowIds.length,
       metadata: {
         modelId: "grok-4.3",
         day: typeof day === "number" ? day : null,
@@ -249,7 +428,12 @@ Rules:
 
     return new Response(
       JSON.stringify({
+        version: 1,
         synopsis,
+        compressedInputMemoryRowIds,
+        rejectedInputMemoryRows,
+        warnings,
+        omittedInputMemoryRowIds,
         ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
       }),
       { headers: { ...responseHeadersBase, 'Content-Type': 'application/json' } }

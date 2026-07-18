@@ -41,6 +41,14 @@ export type SupportReadinessSnapshot = Readonly<{
   scope: 'session_debug_only';
 }>;
 
+export type AdvanceSupportCallReadinessInput = Readonly<{
+  lifecycle: SupportCallLifecycle;
+  occurredAt: number;
+  persistenceStatus?: RoleplaySupportPersistenceStatus;
+  reason: string;
+  firstEligibleFutureTurn?: number;
+}>;
+
 function requiredText(value: string, fieldName: string): string {
   const normalized = value.replace(/\s+/g, ' ').trim();
   if (!normalized) throw new Error(`Support readiness requires ${fieldName}`);
@@ -173,5 +181,41 @@ export function createSupportReadinessSnapshot(input: Omit<
     capturedAt: optionalTimestamp(input.capturedAt, 'capturedAt')!,
     records,
     scope: 'session_debug_only',
+  });
+}
+
+export function advanceSupportCallReadinessRecord(
+  record: SupportCallReadinessRecord,
+  input: AdvanceSupportCallReadinessInput,
+): SupportCallReadinessRecord {
+  const occurredAt = optionalTimestamp(input.occurredAt, 'occurredAt')!;
+  const isTerminal = input.lifecycle === 'completed'
+    || input.lifecycle === 'failed'
+    || input.lifecycle === 'skipped'
+    || input.lifecycle === 'stale';
+  const queuedAt = record.queuedAt ?? occurredAt;
+  const startedAt = input.lifecycle === 'queued'
+    ? undefined
+    : record.startedAt ?? occurredAt;
+
+  return createSupportCallReadinessRecord({
+    ...record,
+    lifecycle: input.lifecycle,
+    persistenceStatus: input.persistenceStatus ?? record.persistenceStatus,
+    firstEligibleFutureTurn: input.firstEligibleFutureTurn ?? record.firstEligibleFutureTurn,
+    queuedAt,
+    startedAt,
+    completedAt: isTerminal ? occurredAt : undefined,
+    reason: input.reason,
+  });
+}
+
+export function markSupportCallReadinessEligible(
+  record: SupportCallReadinessRecord,
+  firstEligibleFutureTurn: number,
+): SupportCallReadinessRecord {
+  return createSupportCallReadinessRecord({
+    ...record,
+    firstEligibleFutureTurn,
   });
 }

@@ -25,6 +25,8 @@ export type RoleplayMemoryCandidateReview = {
   accepted: boolean;
   reason: string;
   evidence?: string;
+  durabilityCategory?: RoleplayMemoryDurabilityCategory;
+  sourceClassification?: RoleplayMemorySourceClassification;
   claimType?: RoleplayUserStateClaimType;
   sourceRole?: 'user' | 'assistant';
   evidenceBasis?: RoleplayUserStateEvidenceBasis;
@@ -33,6 +35,57 @@ export type RoleplayMemoryCandidateReview = {
   sourceMessageId?: string;
   sourceGenerationId?: string;
   userCharacterId?: string;
+};
+
+export const ROLEPLAY_MEMORY_DURABILITY_CATEGORIES = [
+  'durable_relationship_dynamic',
+  'meaningful_behavior_shift',
+  'character_status_change',
+  'durable_preference_or_boundary',
+  'durable_scene_or_world_fact',
+  'meaningful_interaction_pattern',
+  'temporary_scene_state',
+  'not_memory',
+] as const;
+
+export type RoleplayMemoryDurabilityCategory =
+  (typeof ROLEPLAY_MEMORY_DURABILITY_CATEGORIES)[number];
+
+export const ROLEPLAY_MEMORY_SOURCE_CLASSIFICATIONS = [
+  'raw_user_fact',
+  'accepted_assistant_observable_change',
+  'assistant_interpretation',
+  'unsupported_overreach',
+  'static_descriptor',
+  'duplicate_existing_memory',
+  'repeated_phrase',
+  'support_artifact',
+] as const;
+
+export type RoleplayMemorySourceClassification =
+  (typeof ROLEPLAY_MEMORY_SOURCE_CLASSIFICATIONS)[number];
+
+export type MemoryExtractionCandidateV1 = {
+  id: string;
+  candidateText: string;
+  decision: 'accepted' | 'rejected';
+  durabilityCategory: RoleplayMemoryDurabilityCategory;
+  sourceClassification: RoleplayMemorySourceClassification;
+  evidence: string;
+  rejectionReason?: string;
+  appliesToUserCharacter: boolean;
+  userCharacterName?: string;
+  claimType?: RoleplayUserStateClaimType;
+  sourceRole: 'user' | 'assistant';
+  evidenceBasis: RoleplayUserStateEvidenceBasis | 'not_applicable';
+  authorityReason: string;
+};
+
+export type MemoryExtractionResponseV1 = {
+  version: 1;
+  candidates: MemoryExtractionCandidateV1[];
+  events: string[];
+  extractedEvents: string[];
 };
 
 export type RoleplayMemoryOmittedCandidate = Omit<RoleplayMemoryCandidateReview, 'accepted'>;
@@ -62,6 +115,20 @@ const EVIDENCE_BASIS_SET = new Set<string>([
   'in_character_interpretation',
   'unsupported',
   'not_applicable',
+]);
+const DURABILITY_CATEGORY_SET = new Set<string>(ROLEPLAY_MEMORY_DURABILITY_CATEGORIES);
+const SOURCE_CLASSIFICATION_SET = new Set<string>(ROLEPLAY_MEMORY_SOURCE_CLASSIFICATIONS);
+const ACCEPTED_DURABILITY_CATEGORY_SET = new Set<RoleplayMemoryDurabilityCategory>([
+  'durable_relationship_dynamic',
+  'meaningful_behavior_shift',
+  'character_status_change',
+  'durable_preference_or_boundary',
+  'durable_scene_or_world_fact',
+  'meaningful_interaction_pattern',
+]);
+const ACCEPTED_SOURCE_CLASSIFICATION_SET = new Set<RoleplayMemorySourceClassification>([
+  'raw_user_fact',
+  'accepted_assistant_observable_change',
 ]);
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -127,6 +194,178 @@ function normalizeReviewRow(value: unknown): NormalizedReviewRow | null {
     evidenceBasis,
     evidence: asText(row.evidence),
     reason: asText(row.reason),
+  };
+}
+
+function normalizeMemoryCandidate(value: unknown, index: number): MemoryExtractionCandidateV1 | null {
+  const row = asRecord(value);
+  if (!row) return null;
+  const candidateText = asText(row.candidateText);
+  const decision = row.decision === 'accepted' || row.decision === 'rejected'
+    ? row.decision
+    : null;
+  const durabilityCategory = DURABILITY_CATEGORY_SET.has(asText(row.durabilityCategory))
+    ? asText(row.durabilityCategory) as RoleplayMemoryDurabilityCategory
+    : null;
+  const sourceClassification = SOURCE_CLASSIFICATION_SET.has(asText(row.sourceClassification))
+    ? asText(row.sourceClassification) as RoleplayMemorySourceClassification
+    : null;
+  const sourceRole = row.sourceRole === 'user' || row.sourceRole === 'assistant'
+    ? row.sourceRole
+    : null;
+  const evidenceBasis = EVIDENCE_BASIS_SET.has(asText(row.evidenceBasis))
+    ? asText(row.evidenceBasis) as MemoryExtractionCandidateV1['evidenceBasis']
+    : null;
+  const claimType = CLAIM_TYPE_SET.has(asText(row.claimType))
+    ? asText(row.claimType) as RoleplayUserStateClaimType
+    : undefined;
+
+  if (
+    !candidateText
+    || !decision
+    || !durabilityCategory
+    || !sourceClassification
+    || !sourceRole
+    || !evidenceBasis
+    || typeof row.appliesToUserCharacter !== 'boolean'
+    || !asText(row.evidence)
+    || !asText(row.authorityReason)
+  ) {
+    return null;
+  }
+
+  return {
+    id: asText(row.id) || `memory-candidate-${index + 1}`,
+    candidateText,
+    decision,
+    durabilityCategory,
+    sourceClassification,
+    evidence: asText(row.evidence),
+    rejectionReason: asText(row.rejectionReason) || undefined,
+    appliesToUserCharacter: row.appliesToUserCharacter,
+    userCharacterName: asText(row.userCharacterName) || undefined,
+    claimType,
+    sourceRole,
+    evidenceBasis,
+    authorityReason: asText(row.authorityReason),
+  };
+}
+
+export function reviewRoleplayMemoryExtractionCandidates(input: {
+  candidates: unknown;
+  userSourceMessage?: RoleplayMemorySourceMessage;
+  assistantSourceMessage: RoleplayMemorySourceMessage;
+  assistantSourceAccepted: boolean;
+  userCharacters: RoleplayMemoryUserCharacter[];
+  isNearDuplicate: (acceptedEvents: string[], candidate: string) => boolean;
+}): RoleplayMemoryExtractionReview {
+  const rawCandidates = Array.isArray(input.candidates) ? input.candidates : [];
+  const candidateReviews: RoleplayMemoryCandidateReview[] = [];
+  const omittedCandidates: RoleplayMemoryOmittedCandidate[] = [];
+  const eligibleCandidates: MemoryExtractionCandidateV1[] = [];
+
+  rawCandidates.forEach((value, index) => {
+    const candidate = normalizeMemoryCandidate(value, index);
+    if (!candidate) {
+      candidateReviews.push({
+        id: `memory-candidate-${index + 1}`,
+        label: asText(asRecord(value)?.candidateText) || `memory candidate ${index + 1}`,
+        accepted: false,
+        reason: 'malformed_memory_candidate',
+      });
+      return;
+    }
+    if (candidate.decision === 'rejected') {
+      candidateReviews.push({
+        id: candidate.id,
+        label: candidate.candidateText,
+        accepted: false,
+        reason: candidate.rejectionReason || 'worker_rejected_candidate',
+        evidence: candidate.evidence,
+        durabilityCategory: candidate.durabilityCategory,
+        sourceClassification: candidate.sourceClassification,
+        claimType: candidate.claimType,
+        sourceRole: candidate.sourceRole,
+      });
+      return;
+    }
+    if (!ACCEPTED_DURABILITY_CATEGORY_SET.has(candidate.durabilityCategory)) {
+      candidateReviews.push({
+        id: candidate.id,
+        label: candidate.candidateText,
+        accepted: false,
+        reason: 'candidate_not_durable',
+        evidence: candidate.evidence,
+        durabilityCategory: candidate.durabilityCategory,
+        sourceClassification: candidate.sourceClassification,
+        claimType: candidate.claimType,
+        sourceRole: candidate.sourceRole,
+      });
+      return;
+    }
+    if (!ACCEPTED_SOURCE_CLASSIFICATION_SET.has(candidate.sourceClassification)) {
+      candidateReviews.push({
+        id: candidate.id,
+        label: candidate.candidateText,
+        accepted: false,
+        reason: 'unsafe_source_classification',
+        evidence: candidate.evidence,
+        durabilityCategory: candidate.durabilityCategory,
+        sourceClassification: candidate.sourceClassification,
+        claimType: candidate.claimType,
+        sourceRole: candidate.sourceRole,
+      });
+      return;
+    }
+    eligibleCandidates.push(candidate);
+  });
+
+  const authorityReview = reviewRoleplayMemoryExtractionEvents({
+    events: eligibleCandidates.map((candidate) => candidate.candidateText),
+    userStateReviews: eligibleCandidates.map((candidate, eventIndex) => ({
+      eventIndex,
+      event: candidate.candidateText,
+      appliesToUserCharacter: candidate.appliesToUserCharacter,
+      userCharacterName: candidate.userCharacterName ?? null,
+      claimType: candidate.claimType ?? null,
+      sourceRole: candidate.sourceRole,
+      evidenceBasis: candidate.evidenceBasis,
+      evidence: candidate.evidence,
+      reason: candidate.authorityReason,
+    })),
+    userSourceMessage: input.userSourceMessage,
+    assistantSourceMessage: input.assistantSourceMessage,
+    assistantSourceAccepted: input.assistantSourceAccepted,
+    userCharacters: input.userCharacters,
+    isNearDuplicate: input.isNearDuplicate,
+  });
+
+  authorityReview.candidateReviews.forEach((review, index) => {
+    const candidate = eligibleCandidates[index];
+    candidateReviews.push(candidate ? {
+      ...review,
+      id: candidate.id,
+      label: candidate.candidateText,
+      durabilityCategory: candidate.durabilityCategory,
+      sourceClassification: candidate.sourceClassification,
+    } : review);
+  });
+  authorityReview.omittedCandidates.forEach((review) => {
+    const candidateIndex = Number(review.id.replace('memory-candidate-', '')) - 1;
+    const candidate = eligibleCandidates[candidateIndex];
+    omittedCandidates.push(candidate ? {
+      ...review,
+      id: candidate.id,
+      label: candidate.candidateText,
+      durabilityCategory: candidate.durabilityCategory,
+      sourceClassification: candidate.sourceClassification,
+    } : review);
+  });
+
+  return {
+    acceptedEvents: authorityReview.acceptedEvents,
+    candidateReviews,
+    omittedCandidates,
   };
 }
 

@@ -135,7 +135,8 @@ async function structuredFinalUserRenderingArtifact() {
     debugExportShowsPlayerLaneAuthority: debugExportSummary.includes('player_turn / user / player_turn / model-facing'),
     debugExportShowsCurrentStateLaneAuthority: debugExportSummary.includes('current_state / runtime / state / model-facing'),
     debugExportShowsResponseDetailLaneAuthority: debugExportSummary.includes('response_detail / runtime / control / model-facing'),
-    liveRequestCaptureIncludesResponseJob: llmSource.includes('responseJob: options?.responseJob ?? null'),
+    liveRequestCaptureIncludesResponseJob:
+      llmSource.includes('responseJob: responseJobWithSourceReceipts'),
     liveRequestCaptureIncludesLaneEvidence: llmSource.includes('finalUserLaneEvidence,'),
     reviewExportReadsResponseJobFromCapturedRequestBody: responseJobSummarySource.includes('requestBody?.responseJob'),
     fallbackTextRendered: built.finalUserContent.includes(fallbackUserText),

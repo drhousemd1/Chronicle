@@ -342,7 +342,7 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
           { path: "src/services/llm.ts", lines: "324-358" },
         ],
         codeSource:
-          "CHARACTER: name (sexType) + NICKNAMES + SEXUAL ORIENTATION\nROLE\nCONTROL + LOCATION + MOOD\n...",
+          "CHARACTER: name (sexType) + NICKNAMES + SEXUAL ORIENTATION\nROLE\nCONTROL + LOCATION\n...",
         review: ROLEPLAY_PIPELINE_REVIEW_20260515,
         fields: [
           { label: "Name", status: "connected", detail: "Serialized in CHARACTER header." },
@@ -361,7 +361,6 @@ export const phaseOneAuditGroups: PhaseOneAuditGroup[] = [
           { label: "Controlled By", status: "connected", detail: "Serialized in CONTROL line." },
           { label: "Character Role", status: "connected", detail: "Serialized in ROLE line." },
           { label: "Location", status: "connected", detail: "Serialized when non-empty." },
-          { label: "Current Mood", status: "connected", detail: "Serialized when non-empty." },
           {
             label: "Role Description",
             status: "connected",
