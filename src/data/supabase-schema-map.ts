@@ -2343,14 +2343,6 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "isIdentity": false
         },
         {
-          "name": "current_mood",
-          "type": "text",
-          "default": "''::text",
-          "notNull": false,
-          "ordinal": 17,
-          "isIdentity": false
-        },
-        {
           "name": "role_description",
           "type": "text",
           "default": "''::text",
