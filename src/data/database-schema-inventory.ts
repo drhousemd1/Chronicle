@@ -789,12 +789,6 @@ export const databaseSchemaInventory = {
           "default": "''"
         },
         {
-          "name": "current_mood",
-          "type": "text",
-          "nullable": true,
-          "default": "''"
-        },
-        {
           "name": "avatar_url",
           "type": "text",
           "nullable": true,
@@ -1028,12 +1022,6 @@ export const databaseSchemaInventory = {
         },
         {
           "name": "location",
-          "type": "text",
-          "nullable": true,
-          "default": "''"
-        },
-        {
-          "name": "current_mood",
           "type": "text",
           "nullable": true,
           "default": "''"
@@ -3044,12 +3032,6 @@ export const databaseSchemaInventory = {
         },
         {
           "name": "location",
-          "type": "text",
-          "nullable": true,
-          "default": "''"
-        },
-        {
-          "name": "current_mood",
           "type": "text",
           "nullable": true,
           "default": "''"
