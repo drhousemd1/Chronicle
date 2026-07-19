@@ -343,7 +343,6 @@ export type Database = {
           controlled_by: string | null
           conversation_id: string
           created_at: string | null
-          current_mood: string | null
           currently_wearing: Json | null
           custom_sections: Json | null
           fears: Json | null
@@ -377,7 +376,6 @@ export type Database = {
           controlled_by?: string | null
           conversation_id: string
           created_at?: string | null
-          current_mood?: string | null
           currently_wearing?: Json | null
           custom_sections?: Json | null
           fears?: Json | null
@@ -411,7 +409,6 @@ export type Database = {
           controlled_by?: string | null
           conversation_id?: string
           created_at?: string | null
-          current_mood?: string | null
           currently_wearing?: Json | null
           custom_sections?: Json | null
           fears?: Json | null
@@ -516,7 +513,6 @@ export type Database = {
           character_role: string | null
           controlled_by: string | null
           created_at: string | null
-          current_mood: string | null
           currently_wearing: Json | null
           fears: Json | null
           goals: Json | null
@@ -550,7 +546,6 @@ export type Database = {
           character_role?: string | null
           controlled_by?: string | null
           created_at?: string | null
-          current_mood?: string | null
           currently_wearing?: Json | null
           fears?: Json | null
           goals?: Json | null
@@ -584,7 +579,6 @@ export type Database = {
           character_role?: string | null
           controlled_by?: string | null
           created_at?: string | null
-          current_mood?: string | null
           currently_wearing?: Json | null
           fears?: Json | null
           goals?: Json | null
@@ -1897,7 +1891,6 @@ export type Database = {
           controlled_by: string | null
           conversation_id: string
           created_at: string | null
-          current_mood: string | null
           currently_wearing: Json | null
           custom_sections: Json
           extracted_traits: Json | null
@@ -1925,7 +1918,6 @@ export type Database = {
           controlled_by?: string | null
           conversation_id: string
           created_at?: string | null
-          current_mood?: string | null
           currently_wearing?: Json | null
           custom_sections?: Json
           extracted_traits?: Json | null
@@ -1953,7 +1945,6 @@ export type Database = {
           controlled_by?: string | null
           conversation_id?: string
           created_at?: string | null
-          current_mood?: string | null
           currently_wearing?: Json | null
           custom_sections?: Json
           extracted_traits?: Json | null
