@@ -6383,20 +6383,6 @@ export const schemaReferenceObjects = [
         "appLocation": "Chat interface, Story builder page"
       },
       {
-        "field": "current_mood",
-        "type": "text",
-        "purpose": "Stores current mood for the side character record.",
-        "category": "Private roleplay content",
-        "sensitivity": "High",
-        "rawExposure": "Yes",
-        "read": "Owner",
-        "write": "Owner",
-        "update": "Owner",
-        "delete": "Owner",
-        "feedsUi": "Yes",
-        "appLocation": "Chat interface, Story builder page"
-      },
-      {
         "field": "role_description",
         "type": "text",
         "purpose": "Stores role description for the side character record.",
