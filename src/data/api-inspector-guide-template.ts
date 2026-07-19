@@ -1136,7 +1136,6 @@ src/components/chronicle/CharacterEditForm.tsx (UI fields)</div>
  <div class="item-sub"><span class="tag context-injection"><span class="tag-icon">📥</span> context injection</span> <span class="sub-name injection">Controlled By</span>: <span class="sub-desc">AI or User: determines if character gets full serialization or a "DO NOT GENERATE" tag</span></div>
  <div class="item-sub"><span class="tag context-injection"><span class="tag-icon">📥</span> context injection</span> <span class="sub-name injection">Character Role</span>: <span class="sub-desc">Main or Side character</span></div>
  <div class="item-sub"><span class="tag context-injection"><span class="tag-icon">📥</span> context injection</span> <span class="sub-name injection">Location</span>: <span class="sub-desc">Where the character currently is: critical for Scene Presence checks</span></div>
- <div class="item-sub"><span class="tag context-injection"><span class="tag-icon">📥</span> context injection</span> <span class="sub-name injection">Mood</span>: <span class="sub-desc">Current emotional state</span></div>
  <div class="item-sub"><span class="tag context-injection"><span class="tag-icon">📥</span> context injection</span> <span class="sub-name injection">Role Description</span>: <span class="sub-desc">Free-text summary of the character's role in the story</span></div>
  </div>
  </div>
@@ -2371,7 +2370,6 @@ src/components/chronicle/CharacterEditForm.tsx (UI fields)</div>
  <div class="item-sub"><span class="tag context-injection"><span class="tag-icon">📥</span> context injection</span> <span class="sub-name injection">Controlled By</span>: <span class="sub-desc">AI or User: determines if character gets full serialization or a "DO NOT GENERATE" tag</span></div>
  <div class="item-sub"><span class="tag context-injection"><span class="tag-icon">📥</span> context injection</span> <span class="sub-name injection">Character Role</span>: <span class="sub-desc">Main or Side character</span></div>
  <div class="item-sub"><span class="tag context-injection"><span class="tag-icon">📥</span> context injection</span> <span class="sub-name injection">Location</span>: <span class="sub-desc">Where the character currently is: critical for Scene Presence checks</span></div>
- <div class="item-sub"><span class="tag context-injection"><span class="tag-icon">📥</span> context injection</span> <span class="sub-name injection">Mood</span>: <span class="sub-desc">Current emotional state</span></div>
  <div class="item-sub"><span class="tag context-injection"><span class="tag-icon">📥</span> context injection</span> <span class="sub-name injection">Role Description</span>: <span class="sub-desc">Free-text summary of the character's role in the story</span></div>
  </div>
  </div>

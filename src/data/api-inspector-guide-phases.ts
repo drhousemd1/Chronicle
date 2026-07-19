@@ -137,7 +137,7 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
               {
                 "id": "sub-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-current-turn-state",
                 "title": "Current Turn State",
-                "description": "A compact active scene anchor containing current day/time, active scene, character location/position/mood rows, and capped current-day memory anchors"
+                "description": "A compact active scene anchor containing current day/time, active scene, one character location/position roster, and capped current-day memory anchors"
               },
               {
                 "id": "sub-phase-user-sends-message-section-phase-user-sends-message-pre-send-processing-style-telemetry",
@@ -246,11 +246,6 @@ export const apiInspectorGuidePhases: ApiMapPhase[] = [
                 "id": "sub-phase-system-prompt-assembly-section-phase-system-prompt-assembly-cast-character-card-assembly-location",
                 "title": "Location",
                 "description": "Where the character currently is: critical for Scene Presence checks"
-              },
-              {
-                "id": "sub-phase-system-prompt-assembly-section-phase-system-prompt-assembly-cast-character-card-assembly-mood",
-                "title": "Mood",
-                "description": "Current emotional state"
               },
               {
                 "id": "sub-phase-system-prompt-assembly-section-phase-system-prompt-assembly-cast-character-card-assembly-role-description",

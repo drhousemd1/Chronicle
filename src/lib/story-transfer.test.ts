@@ -90,7 +90,6 @@ const buildScenario = () => {
       sexType: 'Male',
       sexualOrientation: '',
       location: 'Treeline',
-      currentMood: 'Silent',
       controlledBy: 'AI',
       characterRole: 'Side',
       roleDescription: 'A shadowy observer in the storm.',
@@ -408,6 +407,43 @@ describe('story-transfer import/export', () => {
     expect(imported.data.uiSettings?.responseVerbosity).toBe('concise');
     expect((imported.data.uiSettings as any).proactiveCharacterDiscovery).toBeUndefined();
     expect((imported.data.uiSettings as any).proactiveNarrative).toBeUndefined();
+  });
+
+  it('drops unsupported machine character fields during import normalization', () => {
+    const source = buildScenario();
+    source.characters[1].name = source.characters[0].name;
+    source.characters[0].avatarPath = 'owner/main-character.webp';
+    source.sideCharacters[0].avatarPath = 'owner/side-character.webp';
+    const sourceCharacterIds = source.characters.map((character) => character.id);
+    const sourceCharacterNames = source.characters.map((character) => character.name);
+    const exportedJson = exportScenarioToJson(source, buildExportOptions(source));
+    const packageWithUnknownField = JSON.parse(exportedJson);
+    packageWithUnknownField.scenario.characters[0].unsupportedRuntimeField = 'discard me';
+    packageWithUnknownField.scenario.characters[0].physicalAppearance.unsupportedNestedField = 'discard me';
+    packageWithUnknownField.scenario.sideCharacters[0].unsupportedRuntimeField = 'discard me';
+    packageWithUnknownField.scenario.sideCharacters[0].personality.unsupportedNestedField = 'discard me';
+    const importedJson = importScenarioFromAny(
+      {
+        text: JSON.stringify(packageWithUnknownField),
+        fileName: 'unsupported-character-field.json',
+        mimeType: 'application/json',
+      },
+      createDefaultScenarioData(),
+      'rewrite',
+    );
+
+    expect((importedJson.data.characters[0] as any).unsupportedRuntimeField).toBeUndefined();
+    expect((importedJson.data.characters[0].physicalAppearance as any).unsupportedNestedField).toBeUndefined();
+    expect((importedJson.data.sideCharacters[0] as any).unsupportedRuntimeField).toBeUndefined();
+    expect((importedJson.data.sideCharacters[0].personality as any).unsupportedNestedField).toBeUndefined();
+    expect(importedJson.data.characters.map((character) => character.id)).toEqual(sourceCharacterIds);
+    expect(importedJson.data.characters.map((character) => character.name)).toEqual(sourceCharacterNames);
+    expect(importedJson.data.characters[0].avatarPath).toBe(source.characters[0].avatarPath);
+    expect(importedJson.data.characters[0].personality).toEqual(source.characters[0].personality);
+    expect(importedJson.data.characters[0].goals).toEqual(source.characters[0].goals);
+    expect(importedJson.data.characters[0].sections).toEqual(source.characters[0].sections);
+    expect(importedJson.data.sideCharacters[0].avatarPath).toBe(source.sideCharacters[0].avatarPath);
+    expect(importedJson.data.sideCharacters[0].sections).toEqual(source.sideCharacters[0].sections);
   });
 
   it('omits conversations from default story exports', () => {

@@ -132,7 +132,6 @@ function buildFullContext(appData: ScenarioData, targetCharacterId: string): str
       if (c.sexType) bits.push(c.sexType);
       if (c.tags) bits.push(`tags: ${c.tags}`);
       if (c.location) bits.push(`at: ${c.location}`);
-      if (c.currentMood) bits.push(`mood: ${c.currentMood}`);
       // Key personality summary
       const pers = c.personality;
       if (pers) {
@@ -190,7 +189,6 @@ function buildCharacterSelfContext(character: Character): string {
   if (character.roleDescription) parts.push(`Role: ${character.roleDescription}`);
   if (character.tags) parts.push(`Tags: ${character.tags}`);
   if (character.location) parts.push(`Location: ${character.location}`);
-  if (character.currentMood) parts.push(`Current Mood: ${character.currentMood}`);
   if (character.nicknames) parts.push(`Nicknames: ${character.nicknames}`);
 
   // Physical appearance (filled fields only)
@@ -779,7 +777,6 @@ function getEmptyHardcodedFields(character: Character) {
   if (!character.sexualOrientation) emptyFields.basics.push("sexualOrientation");
   if (!character.roleDescription) emptyFields.basics.push("roleDescription");
   if (!character.location) emptyFields.basics.push("location");
-  if (!character.currentMood) emptyFields.basics.push("currentMood");
 
   // Check physical appearance
   const pa = character.physicalAppearance;
@@ -1305,7 +1302,6 @@ export async function aiFillCharacter(
       if (isNonEmpty(result.basics.sexualOrientation) && emptyFields.basics.includes("sexualOrientation")) { patch.sexualOrientation = result.basics.sexualOrientation; fieldsApplied++; }
       if (isNonEmpty(result.basics.roleDescription) && emptyFields.basics.includes("roleDescription")) { patch.roleDescription = result.basics.roleDescription; fieldsApplied++; }
       if (isNonEmpty(result.basics.location) && emptyFields.basics.includes("location")) { patch.location = result.basics.location; fieldsApplied++; }
-      if (isNonEmpty(result.basics.currentMood) && emptyFields.basics.includes("currentMood")) { patch.currentMood = result.basics.currentMood; fieldsApplied++; }
     }
 
     // Apply physical appearance (only empty fields)
@@ -1493,7 +1489,6 @@ export async function aiGenerateCharacter(
         if (fill.basics.sexualOrientation && emptyFields.basics.includes("sexualOrientation")) patch.sexualOrientation = fill.basics.sexualOrientation;
         if (fill.basics.roleDescription && emptyFields.basics.includes("roleDescription")) patch.roleDescription = fill.basics.roleDescription;
         if (fill.basics.location && emptyFields.basics.includes("location")) patch.location = fill.basics.location;
-        if (fill.basics.currentMood && emptyFields.basics.includes("currentMood")) patch.currentMood = fill.basics.currentMood;
       }
 
       if (fill.physicalAppearance) {

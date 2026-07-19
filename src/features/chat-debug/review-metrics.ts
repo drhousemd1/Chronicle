@@ -1,4 +1,22 @@
 import type { Conversation, Message, ScenarioData } from '@/types';
+import type {
+  RoleplayRecentHistoryPacket,
+  RoleplayRecentHistoryReceipt,
+  RoleplaySuppressedStyleAnchor,
+} from '@/features/chat-runtime/roleplay-recent-history';
+import {
+  buildRoleplayUserStateAuthorityDebugSummary,
+  type RoleplayUserStateAuthorityDebugSummary,
+  type RoleplayUserStateAuthorityDecision,
+} from '@/features/chat-runtime/roleplay-user-state-authority';
+import {
+  buildCharacterPromptOutputCopyMetric,
+  buildCharacterPromptOutputCopyMetricsFromCapturedFacts,
+  type CharacterPromptFact,
+  type CharacterPromptFactReviewSummary,
+  type CharacterPromptOutputCopyMetric,
+} from '@/features/chat-runtime/roleplay-character-card-facts';
+import type { EffectiveResponseDetail } from '@/features/chat-runtime/roleplay-response-detail';
 
 export type ReviewMetricRole = Message['role'];
 export type ReviewMetricModality = 'action' | 'dialogue' | 'internal_thought' | 'plain_text';
@@ -14,6 +32,10 @@ export type ReviewMetricSegmentInput = {
   text: string;
   rawMessageText: string;
   localNotice?: Message['localNotice'] | null;
+  recentHistoryPacket?: RoleplayRecentHistoryPacket | null;
+  userStateAuthorityDecisions?: RoleplayUserStateAuthorityDecision[];
+  characterPromptFacts?: CharacterPromptFact[];
+  characterPromptFactSummaries?: CharacterPromptFactReviewSummary[];
 };
 
 export type ReviewMetricCount = {
@@ -29,11 +51,22 @@ export type ReviewSourceOverlap = {
 
 export type ReviewInternalThoughtMetric = {
   index: number;
+  parentMessageId: string;
+  segmentId: string;
+  speakerName: string;
+  thoughtText: string;
   wordCount: number;
   sentenceCount: number;
+  concernCount: number;
+  adjacentThoughtCount: number;
   possibleMultiTopicWarning: boolean;
   backToBackThoughtWarning: boolean;
+  backToBackChain: boolean;
+  repeatsVisibleAction: boolean;
   repeatsVisibleActionTerms: string[];
+  unsupportedFactRisk: boolean;
+  anchoredToNearbySceneEvent: boolean;
+  warningReasons: Array<'multi_concern' | 'back_to_back' | 'obvious_echo' | 'unsupported_fact'>;
   preview: string;
 };
 
@@ -64,6 +97,13 @@ export type ReviewSegmentDebugMetrics = {
   repeatedTermsFromEarlierAssistantBlocks: string[];
   internalThoughtDiagnostics: ReviewInternalThoughtMetric[];
   sourceOverlap: ReviewSourceOverlap[];
+  recentHistoryReceipts: RoleplayRecentHistoryReceipt[];
+  suppressedStyleAnchors: RoleplaySuppressedStyleAnchor[];
+  userStateAuthorityDecisions: RoleplayUserStateAuthorityDecision[];
+  userStateAuthoritySummary: RoleplayUserStateAuthorityDebugSummary;
+  characterPromptFactSummaries: CharacterPromptFactReviewSummary[];
+  characterPromptOutputFactSource: CharacterPromptOutputCopyMetric['factSource'];
+  characterPromptOutputCopyMetrics: CharacterPromptOutputCopyMetric[];
 };
 
 export type ReviewTranscriptDebugMetrics = {
@@ -82,6 +122,26 @@ export type ReviewDebugMetrics = {
   explanation: string;
   transcript: ReviewTranscriptDebugMetrics;
   segments: ReviewSegmentDebugMetrics[];
+};
+
+export type ParentMessageResponseDetailWarning =
+  | 'detailed_response_underdeveloped'
+  | 'detailed_dialogue_underdeveloped'
+  | 'uniform_child_card_shape'
+  | 'repeated_phrase_signal';
+
+export type ParentMessageResponseDetailMetrics = {
+  parentMessageId: string;
+  generationId: string;
+  totalWords: number;
+  dialogueWords: number;
+  actionNarrationWords: number;
+  internalThoughtCount: number;
+  paragraphCount: number;
+  renderedChildCardCount: number;
+  repeatedPhraseHits: ReviewMetricCount[];
+  warnings: ParentMessageResponseDetailWarning[];
+  allowedEscapeReason: 'brief_player_turn' | 'scene_transition_turn' | null;
 };
 
 type TextToken = {
@@ -108,6 +168,15 @@ const TERM_STOPWORDS = new Set([
   'there', 'these', 'they', 'thing', 'this', 'those', 'through', 'time', 'toward', 'under', 'until',
   'want', 'were', 'what', 'when', 'where', 'which', 'while', 'will', 'with', 'would', 'your', 'their',
 ]);
+
+const INTERNAL_THOUGHT_CONCERN_TERMS = {
+  motive: ['motive', 'reason', 'because', 'purpose', 'why'],
+  fear: ['afraid', 'fear', 'fearful', 'scared', 'terrified', 'worry', 'worried'],
+  desire: ['desire', 'hope', 'need', 'want', 'wish', 'yearn'],
+  uncertainty: ['doubt', 'maybe', 'perhaps', 'uncertain', 'unsure', 'wonder'],
+  memory: ['memory', 'recall', 'remember', 'remembered', 'forgot'],
+  decision: ['choose', 'decide', 'decision', 'must', 'should', 'will'],
+} as const;
 
 function normalizeWhitespace(value: string): string {
   return value.replace(/\s+/g, ' ').trim();
@@ -277,7 +346,6 @@ function currentStateText(appData: ScenarioData): string {
       character.characterRole,
       character.location,
       character.scenePosition,
-      character.currentMood,
     ].filter(Boolean).join(' | '))
     .join('\n');
 }
@@ -341,7 +409,11 @@ function calculateSourceOverlap(responseText: string, corpora: SourceCorpus[]): 
     : [{ source: 'no_obvious_source_found', matchedTerms: [], matchCount: 0 }];
 }
 
-function internalThoughtDiagnostics(tokens: TextToken[]): ReviewInternalThoughtMetric[] {
+function internalThoughtDiagnostics(
+  segment: ReviewMetricSegmentInput,
+  tokens: TextToken[],
+  corpora: SourceCorpus[],
+): ReviewInternalThoughtMetric[] {
   const actionTerms = new Set(
     tokens
       .filter((token) => token.modality === 'action')
@@ -353,16 +425,55 @@ function internalThoughtDiagnostics(tokens: TextToken[]): ReviewInternalThoughtM
     .filter(({ token }) => token.modality === 'internal_thought')
     .map(({ token, index }, thoughtIndex) => {
       const thoughtTerms = Array.from(new Set(extractTerms(token.inner)));
-      const connectorCount = (token.inner.match(/\b(and|but|because|while|then|also|still|meanwhile)\b/gi) || []).length;
       const sentenceCount = countSentences(token.inner);
       const repeatedActionTerms = thoughtTerms.filter((term) => actionTerms.has(term)).slice(0, 8);
+      const normalizedThought = token.inner.toLowerCase();
+      const concernCount = Math.max(1, Object.values(INTERNAL_THOUGHT_CONCERN_TERMS).filter((terms) => (
+        terms.some((term) => new RegExp(`\\b${term}\\b`, 'i').test(normalizedThought))
+      )).length);
+      const previousVisibleTerms = index > 0 && tokens[index - 1]?.modality !== 'internal_thought'
+        ? extractTerms(tokens[index - 1].inner)
+        : [];
+      const nextVisibleTerms = index < tokens.length - 1 && tokens[index + 1]?.modality !== 'internal_thought'
+        ? extractTerms(tokens[index + 1].inner)
+        : [];
+      const nearbyTerms = new Set([...previousVisibleTerms, ...nextVisibleTerms]);
+      const sourceTerms = new Set(corpora.flatMap((corpus) => extractTerms(corpus.text)));
+      const anchoredToNearbySceneEvent = thoughtTerms.some((term) => nearbyTerms.has(term) || sourceTerms.has(term));
+      let adjacentThoughtCount = 0;
+      for (let cursor = index - 1; cursor >= 0 && tokens[cursor]?.modality === 'internal_thought'; cursor -= 1) {
+        adjacentThoughtCount += 1;
+      }
+      for (let cursor = index + 1; cursor < tokens.length && tokens[cursor]?.modality === 'internal_thought'; cursor += 1) {
+        adjacentThoughtCount += 1;
+      }
+      const possibleMultiTopicWarning = concernCount >= 2 || sentenceCount >= 3;
+      const backToBackThoughtWarning = adjacentThoughtCount > 0;
+      const repeatsVisibleAction = repeatedActionTerms.length >= 2;
+      const unsupportedFactRisk = thoughtTerms.length >= 3 && !anchoredToNearbySceneEvent;
+      const warningReasons: ReviewInternalThoughtMetric['warningReasons'] = [];
+      if (possibleMultiTopicWarning) warningReasons.push('multi_concern');
+      if (backToBackThoughtWarning) warningReasons.push('back_to_back');
+      if (repeatsVisibleAction) warningReasons.push('obvious_echo');
+      if (unsupportedFactRisk) warningReasons.push('unsupported_fact');
       return {
         index: thoughtIndex + 1,
+        parentMessageId: segment.messageId,
+        segmentId: segment.reviewId,
+        speakerName: segment.speakerName,
+        thoughtText: normalizeWhitespace(token.inner),
         wordCount: countWords(token.inner),
         sentenceCount,
-        possibleMultiTopicWarning: sentenceCount > 1 || (countWords(token.inner) >= 36 && connectorCount >= 2),
-        backToBackThoughtWarning: tokens[index - 1]?.modality === 'internal_thought' || tokens[index + 1]?.modality === 'internal_thought',
+        concernCount,
+        adjacentThoughtCount,
+        possibleMultiTopicWarning,
+        backToBackThoughtWarning,
+        backToBackChain: backToBackThoughtWarning,
+        repeatsVisibleAction,
         repeatsVisibleActionTerms: repeatedActionTerms,
+        unsupportedFactRisk,
+        anchoredToNearbySceneEvent,
+        warningReasons,
         preview: preview(token.inner),
       };
     });
@@ -375,6 +486,7 @@ function buildSegmentMetrics(
   previousAssistantTerms: Set<string>,
 ): ReviewSegmentDebugMetrics {
   const tokens = tokenizeRoleplayText(segment.text);
+  const sourceCorpora = buildSourceCorpora(appData, conversation, segment);
   const modalitySequence = tokens.map((token) => token.modality);
   const actionText = tokens.filter((token) => token.modality === 'action').map((token) => token.inner).join(' ');
   const dialogueText = tokens.filter((token) => token.modality === 'dialogue').map((token) => token.inner).join(' ');
@@ -385,6 +497,21 @@ function buildSegmentMetrics(
   const narrationWords = countWords(actionText) + countWords(thoughtText) + countWords(plainText);
   const dialogueWords = countWords(dialogueText);
   const totalWords = countWords(segment.text);
+  const userStateAuthorityDecisions = segment.userStateAuthorityDecisions ?? [];
+  const characterPromptOutputFactSource: CharacterPromptOutputCopyMetric['factSource'] =
+    segment.characterPromptFacts != null
+      ? 'generation_captured_facts'
+      : 'current_card_fallback';
+  const characterPromptOutputCopyMetrics = segment.role === 'assistant' && segment.localNotice == null
+    ? (
+      segment.characterPromptFacts != null
+        ? buildCharacterPromptOutputCopyMetricsFromCapturedFacts(segment.characterPromptFacts, segment.text)
+        : [...(appData.characters || []), ...(appData.sideCharacters || [])]
+          .map((character) => buildCharacterPromptOutputCopyMetric(character, segment.text))
+    ).filter((metric) => (
+      metric.exactSourceValueCopies.length > 0 || metric.copiedSourceLabels.length > 0
+    ))
+    : [];
 
   return {
     reviewId: segment.reviewId,
@@ -410,11 +537,18 @@ function buildSegmentMetrics(
     topRepeatedTerms: topCounts(segmentTerms, 2, 10),
     repeatedPhrases: extractRepeatedPhrases(segment.text),
     repeatedTermsFromEarlierAssistantBlocks,
-    internalThoughtDiagnostics: internalThoughtDiagnostics(tokens),
+    internalThoughtDiagnostics: internalThoughtDiagnostics(segment, tokens, sourceCorpora),
     isLocalNotice: segment.localNotice != null,
     sourceOverlap: segment.role === 'assistant' && segment.localNotice == null
-      ? calculateSourceOverlap(segment.text, buildSourceCorpora(appData, conversation, segment))
+      ? calculateSourceOverlap(segment.text, sourceCorpora)
       : [],
+    recentHistoryReceipts: segment.recentHistoryPacket?.receipts ?? [],
+    suppressedStyleAnchors: segment.recentHistoryPacket?.suppressedStyleAnchors ?? [],
+    userStateAuthorityDecisions,
+    userStateAuthoritySummary: buildRoleplayUserStateAuthorityDebugSummary(userStateAuthorityDecisions),
+    characterPromptFactSummaries: segment.characterPromptFactSummaries ?? [],
+    characterPromptOutputFactSource,
+    characterPromptOutputCopyMetrics,
   };
 }
 
@@ -446,6 +580,66 @@ function transcriptMetrics(segments: ReviewSegmentDebugMetrics[]): ReviewTranscr
 
 function segmentMetricsText(segment: Pick<ReviewSegmentDebugMetrics, 'reviewId'> & Partial<ReviewSegmentDebugMetrics>): string {
   return (segment as { _sourceText?: string })._sourceText || '';
+}
+
+export function buildParentMessageResponseDetailMetrics(input: {
+  parentMessageId: string;
+  generationId: string;
+  text: string;
+  childWordCounts: number[];
+  latestPlayerTurn: string;
+  effectiveResponseDetail: EffectiveResponseDetail;
+}): ParentMessageResponseDetailMetrics {
+  const tokens = tokenizeRoleplayText(input.text);
+  const dialogueWords = tokens
+    .filter((token) => token.modality === 'dialogue')
+    .reduce((sum, token) => sum + countWords(token.inner), 0);
+  const actionNarrationWords = tokens
+    .filter((token) => token.modality === 'action' || token.modality === 'plain_text')
+    .reduce((sum, token) => sum + countWords(token.inner), 0);
+  const totalWords = countWords(input.text);
+  const repeatedPhraseHits = extractRepeatedPhrases(input.text);
+  const paragraphCount = input.text.trim()
+    ? input.text.trim().split(/\n\s*\n+/).filter(Boolean).length
+    : 0;
+  const allowedEscapeReason = countWords(input.latestPlayerTurn) <= 8
+    ? 'brief_player_turn'
+    : /\[SCENE:\s*.*?\]/i.test(input.text)
+      ? 'scene_transition_turn'
+      : null;
+  const warnings: ParentMessageResponseDetailWarning[] = [];
+
+  if (input.effectiveResponseDetail.effectiveSetting === 'detailed') {
+    if (totalWords < 90 && !allowedEscapeReason) {
+      warnings.push('detailed_response_underdeveloped');
+    }
+    if (dialogueWords < 20 && totalWords >= 90) {
+      warnings.push('detailed_dialogue_underdeveloped');
+    }
+  }
+
+  if (input.childWordCounts.length >= 2) {
+    const minimum = Math.min(...input.childWordCounts);
+    const maximum = Math.max(...input.childWordCounts);
+    if (minimum > 0 && (maximum - minimum) / minimum <= 0.25) {
+      warnings.push('uniform_child_card_shape');
+    }
+  }
+  if (repeatedPhraseHits.length > 0) warnings.push('repeated_phrase_signal');
+
+  return {
+    parentMessageId: input.parentMessageId,
+    generationId: input.generationId,
+    totalWords,
+    dialogueWords,
+    actionNarrationWords,
+    internalThoughtCount: tokens.filter((token) => token.modality === 'internal_thought').length,
+    paragraphCount,
+    renderedChildCardCount: input.childWordCounts.length,
+    repeatedPhraseHits,
+    warnings,
+    allowedEscapeReason,
+  };
 }
 
 export function buildReviewDebugMetrics(args: {

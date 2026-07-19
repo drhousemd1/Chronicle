@@ -1,17 +1,38 @@
 import { useCallback, useRef } from 'react';
 
 import type { Message } from '@/types';
+import type {
+  RoleplaySupportWorker,
+} from './roleplay-support-review-envelope';
+import type {
+  SupportCallLifecycle,
+} from './roleplay-support-readiness';
 
 export interface PostTurnExtractionMeta {
   sourceMessageId?: string;
   sourceMessageGenerationId?: string;
+  sourceUserMessageId?: string;
   reason: 'post_turn_state_sync';
 }
 
-export interface UsePostTurnSupportQueueOptions<TCharacterUpdate> {
+export interface PostTurnSupportLifecycleEvent {
+  worker: RoleplaySupportWorker;
+  lifecycle: SupportCallLifecycle;
+  sourceMessage: Message;
+  sourceUserMessage?: Message;
+  reason: string;
+  error?: unknown;
+}
+
+export interface UsePostTurnSupportQueueOptions<TCharacterUpdate, TApplyResult = void> {
   conversationId: string;
   saveNewMessages: (conversationId: string, messages: Message[]) => Promise<unknown>;
-  queueMemoryExtraction: (userText: string, aiText: string, sourceMessage: Message) => void;
+  queueMemoryExtraction: (
+    userText: string,
+    aiText: string,
+    sourceMessage: Message,
+    sourceUserMessage?: Message,
+  ) => void | Promise<void>;
   evaluateGoalProgress: (
     userText: string,
     aiText: string,
@@ -32,7 +53,8 @@ export interface UsePostTurnSupportQueueOptions<TCharacterUpdate> {
   applyExtractedUpdates: (
     updates: TCharacterUpdate[],
     meta: PostTurnExtractionMeta,
-  ) => Promise<void> | void;
+  ) => Promise<TApplyResult> | TApplyResult;
+  onSupportLifecycle?: (event: PostTurnSupportLifecycleEvent) => void;
   debugLog?: (...args: unknown[]) => void;
   logger?: Pick<Console, 'error'>;
 }
@@ -41,13 +63,17 @@ type PersistResult =
   | { ok: true }
   | { ok: false; error: unknown };
 
-type LatestPostTurnOptions<TCharacterUpdate> = Required<
-  Omit<UsePostTurnSupportQueueOptions<TCharacterUpdate>, 'debugLog'>
+type LatestPostTurnOptions<TCharacterUpdate, TApplyResult> = Required<
+  Omit<
+    UsePostTurnSupportQueueOptions<TCharacterUpdate, TApplyResult>,
+    'debugLog' | 'onSupportLifecycle'
+  >
 > & {
   debugLog?: (...args: unknown[]) => void;
+  onSupportLifecycle?: (event: PostTurnSupportLifecycleEvent) => void;
 };
 
-export function usePostTurnSupportQueue<TCharacterUpdate>({
+export function usePostTurnSupportQueue<TCharacterUpdate, TApplyResult = void>({
   conversationId,
   saveNewMessages,
   queueMemoryExtraction,
@@ -55,10 +81,11 @@ export function usePostTurnSupportQueue<TCharacterUpdate>({
   evaluateGoalAlignment,
   extractCharacterUpdatesFromDialogue,
   applyExtractedUpdates,
+  onSupportLifecycle,
   debugLog,
   logger = console,
-}: UsePostTurnSupportQueueOptions<TCharacterUpdate>) {
-  const latestOptionsRef = useRef<LatestPostTurnOptions<TCharacterUpdate>>({
+}: UsePostTurnSupportQueueOptions<TCharacterUpdate, TApplyResult>) {
+  const latestOptionsRef = useRef<LatestPostTurnOptions<TCharacterUpdate, TApplyResult>>({
     conversationId,
     saveNewMessages,
     queueMemoryExtraction,
@@ -66,6 +93,7 @@ export function usePostTurnSupportQueue<TCharacterUpdate>({
     evaluateGoalAlignment,
     extractCharacterUpdatesFromDialogue,
     applyExtractedUpdates,
+    onSupportLifecycle,
     debugLog,
     logger,
   });
@@ -77,10 +105,11 @@ export function usePostTurnSupportQueue<TCharacterUpdate>({
     evaluateGoalAlignment,
     extractCharacterUpdatesFromDialogue,
     applyExtractedUpdates,
+    onSupportLifecycle,
     debugLog,
     logger,
   };
-  const optionsByConversationRef = useRef(new Map<string, LatestPostTurnOptions<TCharacterUpdate>>());
+  const optionsByConversationRef = useRef(new Map<string, LatestPostTurnOptions<TCharacterUpdate, TApplyResult>>());
   optionsByConversationRef.current.set(conversationId, latestOptionsRef.current);
   const sourcePersistQueueRef = useRef<Promise<void>>(Promise.resolve());
   const goalAlignmentEvalQueueRef = useRef<Promise<void>>(Promise.resolve());
@@ -90,15 +119,60 @@ export function usePostTurnSupportQueue<TCharacterUpdate>({
     return optionsByConversationRef.current.get(sourceConversationId);
   }, []);
 
+  const emitSupportLifecycle = useCallback((
+    sourceConversationId: string,
+    event: PostTurnSupportLifecycleEvent,
+  ) => {
+    getOptionsForConversation(sourceConversationId)?.onSupportLifecycle?.(event);
+  }, [getOptionsForConversation]);
+
+  const runSupportWorker = useCallback(async (
+    sourceConversationId: string,
+    worker: RoleplaySupportWorker,
+    sourceMessage: Message,
+    sourceUserMessage: Message | undefined,
+    work: () => void | Promise<void>,
+  ) => {
+    emitSupportLifecycle(sourceConversationId, {
+      worker,
+      lifecycle: 'running',
+      sourceMessage,
+      sourceUserMessage,
+      reason: 'support_worker_started',
+    });
+    try {
+      await work();
+      emitSupportLifecycle(sourceConversationId, {
+        worker,
+        lifecycle: 'completed',
+        sourceMessage,
+        sourceUserMessage,
+        reason: 'support_worker_completed',
+      });
+    } catch (error) {
+      emitSupportLifecycle(sourceConversationId, {
+        worker,
+        lifecycle: 'failed',
+        sourceMessage,
+        sourceUserMessage,
+        reason: 'support_worker_failed',
+        error,
+      });
+      throw error;
+    }
+  }, [emitSupportLifecycle]);
+
   const runCharacterStateSync = useCallback(async (
     sourceConversationId: string,
     userText: string,
     aiText: string,
     sourceMessage: Message,
+    sourceUserMessage?: Message,
   ) => {
     const extractionMeta: PostTurnExtractionMeta = {
       sourceMessageId: sourceMessage.id,
       sourceMessageGenerationId: sourceMessage.generationId,
+      ...(sourceUserMessage?.id ? { sourceUserMessageId: sourceUserMessage.id } : {}),
       reason: 'post_turn_state_sync',
     };
 
@@ -125,6 +199,7 @@ export function usePostTurnSupportQueue<TCharacterUpdate>({
     userText: string,
     aiText: string,
     sourceMessage: Message,
+    sourceUserMessage?: Message,
   ) => {
     const latest = getOptionsForConversation(sourceConversationId);
     if (!latest) {
@@ -134,13 +209,43 @@ export function usePostTurnSupportQueue<TCharacterUpdate>({
       );
       return;
     }
-    latest.queueMemoryExtraction(userText, aiText, sourceMessage);
+    const queuedWorkers: RoleplaySupportWorker[] = [
+      'memory_extraction',
+      'goal_progress',
+      'goal_alignment',
+      'character_state',
+    ];
+    queuedWorkers.forEach((worker) => emitSupportLifecycle(sourceConversationId, {
+      worker,
+      lifecycle: 'queued',
+      sourceMessage,
+      sourceUserMessage,
+      reason: 'queued_after_source_message_persisted',
+    }));
 
-    latest.evaluateGoalProgress(
-      userText,
-      aiText,
-      sourceMessage.id,
-      sourceMessage.generationId,
+    void runSupportWorker(
+      sourceConversationId,
+      'memory_extraction',
+      sourceMessage,
+      sourceUserMessage,
+      () => sourceUserMessage
+        ? latest.queueMemoryExtraction(userText, aiText, sourceMessage, sourceUserMessage)
+        : latest.queueMemoryExtraction(userText, aiText, sourceMessage),
+    ).catch(err => {
+      latestOptionsRef.current.logger.error('[queueAssistantDerivedWork] Memory extraction failed:', err);
+    });
+
+    void runSupportWorker(
+      sourceConversationId,
+      'goal_progress',
+      sourceMessage,
+      sourceUserMessage,
+      () => latest.evaluateGoalProgress(
+        userText,
+        aiText,
+        sourceMessage.id,
+        sourceMessage.generationId,
+      ),
     ).catch(err => {
       latestOptionsRef.current.logger.error('[queueAssistantDerivedWork] Goal progress evaluation failed:', err);
     });
@@ -156,11 +261,17 @@ export function usePostTurnSupportQueue<TCharacterUpdate>({
           );
           return undefined;
         }
-        return conversationOptions.evaluateGoalAlignment(
-          userText,
-          aiText,
-          sourceMessage.id,
-          sourceMessage.generationId,
+        return runSupportWorker(
+          sourceConversationId,
+          'goal_alignment',
+          sourceMessage,
+          sourceUserMessage,
+          () => conversationOptions.evaluateGoalAlignment(
+            userText,
+            aiText,
+            sourceMessage.id,
+            sourceMessage.generationId,
+          ),
         );
       })
       .catch(err => {
@@ -170,23 +281,37 @@ export function usePostTurnSupportQueue<TCharacterUpdate>({
 
     characterStateSyncQueueRef.current = characterStateSyncQueueRef.current
       .catch(() => undefined)
-      .then(() => runCharacterStateSync(sourceConversationId, userText, aiText, sourceMessage))
+      .then(() => runSupportWorker(
+        sourceConversationId,
+        'character_state',
+        sourceMessage,
+        sourceUserMessage,
+        () => runCharacterStateSync(
+          sourceConversationId,
+          userText,
+          aiText,
+          sourceMessage,
+          sourceUserMessage,
+        ),
+      ))
       .catch(err => {
         latestOptionsRef.current.logger.error('[queueAssistantDerivedWork] Character extraction failed:', err);
       });
     void characterStateSyncQueueRef.current;
-  }, [getOptionsForConversation, runCharacterStateSync]);
+  }, [emitSupportLifecycle, getOptionsForConversation, runCharacterStateSync, runSupportWorker]);
 
   const queueAssistantDerivedWork = useCallback((
     userText: string,
     aiText: string,
     sourceMessage: Message,
+    sourceUserMessage?: Message,
   ) => {
     queueAssistantDerivedWorkForConversation(
       latestOptionsRef.current.conversationId,
       userText,
       aiText,
       sourceMessage,
+      sourceUserMessage,
     );
   }, [queueAssistantDerivedWorkForConversation]);
 
@@ -195,6 +320,7 @@ export function usePostTurnSupportQueue<TCharacterUpdate>({
     userText: string,
     aiText: string,
     sourceMessage: Message,
+    sourceUserMessage?: Message,
   ) => {
     const sourceConversationId = latestOptionsRef.current.conversationId;
     const sourceOptions = getOptionsForConversation(sourceConversationId);
@@ -219,9 +345,30 @@ export function usePostTurnSupportQueue<TCharacterUpdate>({
             '[queueAssistantDerivedWork] Skipped derived work because source messages failed to persist:',
             persistResult.error,
           );
+          const sourceOptionsForFailure = getOptionsForConversation(sourceConversationId);
+          const skippedWorkers: RoleplaySupportWorker[] = [
+            'memory_extraction',
+            'goal_progress',
+            'goal_alignment',
+            'character_state',
+          ];
+          skippedWorkers.forEach((worker) => sourceOptionsForFailure?.onSupportLifecycle?.({
+            worker,
+            lifecycle: 'skipped',
+            sourceMessage,
+            sourceUserMessage,
+            reason: 'source_message_persistence_failed',
+            error: persistResult.error,
+          }));
           return;
         }
-        queueAssistantDerivedWorkForConversation(sourceConversationId, userText, aiText, sourceMessage);
+        queueAssistantDerivedWorkForConversation(
+          sourceConversationId,
+          userText,
+          aiText,
+          sourceMessage,
+          sourceUserMessage,
+        );
       });
     void sourcePersistQueueRef.current;
   }, [getOptionsForConversation, queueAssistantDerivedWorkForConversation]);

@@ -969,7 +969,6 @@ Only completed steps are persisted. Each row is tied to the source assistant gen
               codeSourceLabel: "Character extractor field guidance",
               promptViewEnabled: true,
 	              codeSource: `Field guidance:
-- currentMood: short emotional state only
 - location: broad place, updated only after actual arrival/entry/exit/relocation
 - scenePosition: short factual snapshot of the character's immediate physical situation inside the current location
 - structured sections use Label: Description
@@ -1008,7 +1007,7 @@ Character goals:
               tagType: "validation-check",
               icon: "✓",
               purpose:
-                "Filters unsupported fields, sanitizes mood content, reconciles structured updates to avoid duplicate semantic entries, and supports safe retry on 403.",
+                "Filters unsupported fields, reconciles structured updates to avoid duplicate semantic entries, and supports safe retry on 403.",
               whyItExists:
                 "Extractor output still needs deterministic cleanup and allowlist enforcement before it can touch saved character state.",
               problemSolved:
@@ -1019,7 +1018,7 @@ Character goals:
               ],
               codeSourceLabel: "Validation/reconciliation checkpoints",
               promptViewEnabled: true,
-              codeSource: `isAllowedUpdateField(...)\nevidenceAppearsInLatestExchange(...)\nreconcileStructuredUpdates(...)\nsanitizeCurrentMood(...)\n403 -> safe extraction retry prompt`,
+              codeSource: `isAllowedUpdateField(...)\nevidenceAppearsInLatestExchange(...)\nreconcileStructuredUpdates(...)\n403 -> safe extraction retry prompt`,
             },
           ],
         },

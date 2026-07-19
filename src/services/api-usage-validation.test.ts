@@ -187,4 +187,66 @@ describe("api-usage-validation call1 coverage", () => {
     expect(presence["call1.cast.tone"]).toBeUndefined();
     expect(presence["call1.meta.history_messages"]).toBeUndefined();
   });
+
+  it("validates AI side-character facts through the same compiled representation", () => {
+    const appData = createDefaultScenarioData();
+    const [aiCharacter, userCharacter] = getHardcodedTestCharacters();
+    userCharacter.controlledBy = "User";
+    userCharacter.name = "James";
+    appData.characters = [userCharacter];
+    appData.sideCharacters = [{
+      ...aiCharacter,
+      id: uid("side"),
+      name: "Iris",
+      controlledBy: "AI",
+      characterRole: "Side",
+      roleDescription: "A discreet envoy assigned to the current negotiation.",
+      physicalAppearance: {
+        ...aiCharacter.physicalAppearance,
+        eyeColor: "Amber-gold",
+      },
+      background: {
+        relationshipStatus: "Single",
+        residence: "East wing",
+        educationLevel: "Court tutor",
+      },
+      personality: {
+        traits: ["Observant under pressure"],
+        miscellaneous: "",
+        secrets: "",
+        fears: "",
+        kinksFantasies: "",
+        desires: "",
+      },
+      sections: [],
+      firstMentionedIn: "conversation-1",
+      extractedTraits: [],
+    }];
+
+    const conversation: Conversation = {
+      ...appData.conversations[0],
+      messages: [],
+      updatedAt: now(),
+    };
+    const systemInstruction = getSystemInstruction(appData, 1, "night", [], true, null);
+    const finalUserInput = "I wait for Iris to answer.";
+    const messages = [
+      { role: "system" as const, content: systemInstruction },
+      { role: "user" as const, content: finalUserInput },
+    ];
+
+    const presence = buildCall1ValidationPresence({
+      appData,
+      conversation,
+      systemInstruction,
+      messages,
+      finalUserInput,
+    });
+
+    expect(systemInstruction).toContain("CHARACTER: Iris");
+    expect(systemInstruction).toContain("Amber-gold");
+    expect(presence["call1.cast.ai_characters"]).toBe(true);
+    expect(presence["call1.cast.physical_appearance"]).toBe(true);
+    expect(presence["call1.cast.personality"]).toBe(true);
+  });
 });

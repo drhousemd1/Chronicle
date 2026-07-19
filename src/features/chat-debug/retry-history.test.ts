@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { Message } from '@/types';
-import { appendChatReviewRetryAttempt } from './retry-history';
+import {
+  appendChatReviewRetryAttempt,
+  buildChatReviewRetryLineage,
+} from './retry-history';
 
 describe('appendChatReviewRetryAttempt', () => {
   it('appends replaced assistant generations without mutating existing history', () => {
@@ -44,5 +47,51 @@ describe('appendChatReviewRetryAttempt', () => {
       text: 'Ashley: "First retry response."',
       debugRecord: null,
     });
+  });
+
+  it('builds one final-parent lineage with explicit debug-only scope', () => {
+    const history = {
+      'message-ai-1': [
+        {
+          messageId: 'message-ai-1',
+          generationId: 'generation-retry-2',
+          attemptNumber: 2,
+          capturedAt: 2000,
+          text: 'Second replaced response.',
+          createdAt: 200,
+        },
+        {
+          messageId: 'message-ai-1',
+          generationId: 'generation-original',
+          attemptNumber: 1,
+          capturedAt: 1000,
+          text: 'First replaced response.',
+          createdAt: 100,
+        },
+      ],
+    };
+
+    expect(buildChatReviewRetryLineage({
+      history,
+      parentMessageId: 'message-ai-1',
+      finalGenerationId: 'generation-final',
+      childSegmentIds: ['message-ai-1-0', 'message-ai-1-1'],
+    })).toEqual({
+      parentMessageId: 'message-ai-1',
+      finalGenerationId: 'generation-final',
+      attempts: [history['message-ai-1'][1], history['message-ai-1'][0]],
+      childSegmentIds: ['message-ai-1-0', 'message-ai-1-1'],
+      storageScope: 'session_debug_only',
+      livePromptReentry: false,
+    });
+  });
+
+  it('does not create lineage for a parent with no replaced attempts', () => {
+    expect(buildChatReviewRetryLineage({
+      history: {},
+      parentMessageId: 'message-ai-1',
+      finalGenerationId: 'generation-final',
+      childSegmentIds: ['message-ai-1-0'],
+    })).toBeNull();
   });
 });

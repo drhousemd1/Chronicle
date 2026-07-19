@@ -62,7 +62,7 @@ grid-cols-1 lg:grid-cols-3 gap-10
 **Left Column (1/3)** -- Avatar Panel:
 - Sticky sidebar: `lg:sticky lg:top-0 lg:max-h-[calc(100vh-9rem)]`
 - Avatar image with action buttons
-- Basic info fields (Name, Nicknames, Age, Sex/Identity, Sexual Orientation, Location, Current Mood)
+- Basic info fields (Name, Nicknames, Age, Sex/Identity, Sexual Orientation, Location)
 - Controlled By toggle (AI/User)
 - Character Role toggle (Main/Side)
 - Role Description with AI enhance
@@ -161,7 +161,7 @@ Shows back arrow, "Character Builder" title, and context-sensitive buttons:
 
 Top-level fields:
 - `name`, `nicknames`, `age`, `sexType`, `sexualOrientation`, `roleDescription`
-- `location`, `currentMood`, `controlledBy` (AI/User), `characterRole` (Main/Side)
+- `location`, `controlledBy` (AI/User), `characterRole` (Main/Side)
 - `tags` (comma-separated string), `avatarDataUrl`, `avatarPosition: {x, y}`
 
 ### Structured Sub-Objects
@@ -224,7 +224,7 @@ Index.tsx
         > Avatar image + reposition overlay
         > AvatarActionButtons
         > Reposition toggle button
-        > Basic info fields (Name, Nicknames, Age, Sex, Orientation, Location, Mood)
+        > Basic info fields (Name, Nicknames, Age, Sex, Orientation, Location)
         > Controlled By toggle (AI/User)
         > Character Role toggle (Main/Side)
         > Role Description + AI enhance
@@ -306,7 +306,6 @@ Every character field is injected into the LLM system prompt (built in `llm.ts`)
 | `characterRole` | `ROLE: {value}` (Main or Side) |
 | `roleDescription` | `ROLE DESCRIPTION: {value}` |
 | `location` | `LOCATION: {value}` |
-| `currentMood` | `MOOD: {value}` |
 | `personality` | `PERSONALITY:` block -- standard mode: `{label}: {value}` per trait; split mode: `(outward) ...` / `(inward) ...` with `[{flexibility}]` tags |
 | `tone._extras` | `TONE: {label}={value}, ...` |
 | `background` fields | `BACKGROUND: Job: ..., Education: ..., Residence: ..., Hobbies: ..., Financial: ..., Motivation: ...` plus extras |

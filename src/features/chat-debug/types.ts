@@ -1,3 +1,28 @@
+import type {
+  RoleplayDuplicateSourceMetric,
+  RoleplayProviderSectionCoverage,
+  RoleplaySourceReceipt,
+  RoleplaySourceReceiptCoverage,
+} from '@/features/chat-runtime/roleplay-source-receipts';
+import type {
+  RoleplayActiveScenePacketCandidate,
+  RoleplayEffectiveFieldEvidence,
+  RoleplaySourceBudgetSummary,
+} from '@/features/chat-runtime/roleplay-source-shaping';
+import type { RoleplaySupportReviewEnvelope } from '@/features/chat-runtime/roleplay-support-review-envelope';
+import type {
+  SupportCallReadinessRecord,
+  SupportReadinessSnapshot,
+} from '@/features/chat-runtime/roleplay-support-readiness';
+import type { RoleplayUserStateAuthorityDecision } from '@/features/chat-runtime/roleplay-user-state-authority';
+import type {
+  CharacterPromptFact,
+  CharacterPromptFactReviewSummary,
+} from '@/features/chat-runtime/roleplay-character-card-facts';
+import type { KnowledgeVisibilityFact } from '@/features/chat-runtime/roleplay-knowledge-visibility';
+import type { RoleplayGoalExposureDecision } from '@/features/chat-runtime/roleplay-goal-selector';
+import type { EffectiveResponseDetail } from '@/features/chat-runtime/roleplay-response-detail';
+
 export type ChatDebugSelectionReason = 'bridge' | 'scored';
 
 export const CHAT_DEBUG_ISSUE_TAGS = [
@@ -75,12 +100,12 @@ export type ChatDebugTiming = {
 };
 
 export type ChatDebugCharacterSceneState = {
+  characterId?: string;
   name: string;
   controlledBy?: string;
   characterRole?: string;
   location?: string;
   scenePosition?: string;
-  currentMood?: string;
 };
 
 export type ChatDebugTrace = {
@@ -129,6 +154,22 @@ export type ChatDebugRequestRecord = {
   capturedAt: number;
   status?: 'sent' | 'completed' | 'error';
   requestBody: unknown;
+  roleplaySourceReceipts?: RoleplaySourceReceipt[];
+  roleplayDuplicateSourceMetrics?: RoleplayDuplicateSourceMetric[];
+  roleplaySourceReceiptCoverage?: RoleplaySourceReceiptCoverage[];
+  roleplayProviderSectionCoverage?: RoleplayProviderSectionCoverage[];
+  roleplayEffectiveFieldEvidence?: RoleplayEffectiveFieldEvidence[];
+  roleplaySourceBudgetSummary?: RoleplaySourceBudgetSummary;
+  roleplayActiveScenePacketCandidate?: RoleplayActiveScenePacketCandidate;
+  roleplayUserStateAuthorityDecisions?: RoleplayUserStateAuthorityDecision[];
+  roleplayCharacterPromptFacts?: CharacterPromptFact[];
+  roleplayCharacterPromptFactSummaries?: CharacterPromptFactReviewSummary[];
+  roleplayKnowledgeVisibilityFacts?: KnowledgeVisibilityFact[];
+  roleplayGoalExposureDecision?: RoleplayGoalExposureDecision;
+  effectiveResponseDetail?: EffectiveResponseDetail;
+  roleplaySupportReviewEnvelope?: RoleplaySupportReviewEnvelope;
+  roleplaySupportReadinessRecord?: SupportCallReadinessRecord;
+  roleplaySupportReadinessSnapshot?: SupportReadinessSnapshot;
   modelRequest?: {
     endpoint: string;
     method?: string;

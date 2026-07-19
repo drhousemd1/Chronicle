@@ -297,7 +297,6 @@ export type Character = {
   sexualOrientation: string;
   location: string;
   scenePosition?: string;
-  currentMood: string;
   controlledBy: CharacterControl;
   characterRole: CharacterRole;
   roleDescription: string;
@@ -348,7 +347,6 @@ export type CharacterSessionState = {
   sexualOrientation?: string;
   roleDescription?: string;
   location: string;
-  currentMood: string;
   // Appearance overrides
   physicalAppearance: Partial<PhysicalAppearance>;
   currentlyWearing: CurrentlyWearing;
@@ -410,7 +408,6 @@ export type SideCharacter = {
   sexualOrientation: string;
   location: string;
   scenePosition?: string;
-  currentMood: string;
   controlledBy: CharacterControl;   // Can be changed by user during session
   characterRole: CharacterRole;     // Can be promoted to Main by user
   roleDescription: string;          // Their role in the story

@@ -36,7 +36,6 @@ type CharacterSceneState = {
   characterRole?: string;
   location?: string;
   scenePosition?: string;
-  currentMood?: string;
 };
 
 type RoleplayContext = {
@@ -1200,7 +1199,7 @@ async function handleResponsesDirect(
     timedDebugTrace = withDebugTiming(timedDebugTrace, { fallbackMs: elapsedMs(fallbackStartedAt) });
 
     if (retry.ok) {
-      const priorModelRequest = { ...primary.modelRequest, label: 'Primary Responses request before fallback retry' };
+      const priorModelRequest = { ...primary.modelRequest, label: 'Primary Responses request before provider fallback attempt' };
       if (stream) {
         const streamHeaders = {
           ...responseHeadersBase,
@@ -1352,11 +1351,11 @@ async function handleResponsesDirect(
     }
 
 	    if (retry.status !== 403) {
-	      const providerError = `Responses retry failed with HTTP ${retry.status}: ${previewProviderError(retry.errorText)}`;
+	      const providerError = `Responses provider fallback attempt failed with HTTP ${retry.status}: ${previewProviderError(retry.errorText)}`;
       timedDebugTrace = timedDebugTrace
         ? {
             ...appendProviderErrorToDebugTrace(timedDebugTrace, retry.modelRequest, providerError)!,
-            modelRequests: [{ ...primary.modelRequest, label: 'Primary Responses request before fallback retry' }],
+            modelRequests: [{ ...primary.modelRequest, label: 'Primary Responses request before provider fallback attempt' }],
 	          }
 	          : null;
 	      await recordServerAiUsage({
@@ -1394,7 +1393,7 @@ async function handleResponsesDirect(
       ? {
           ...timedDebugTrace,
           modelRequest: retry.modelRequest,
-          modelRequests: [{ ...primary.modelRequest, label: 'Primary Responses request before fallback retry' }],
+          modelRequests: [{ ...primary.modelRequest, label: 'Primary Responses request before provider fallback attempt' }],
           finalPath: 'content_filter_notice',
           fallbackReason: 'provider_content_filter',
           notes: [
@@ -1599,7 +1598,7 @@ async function handleDirect(
       timedDebugTrace = {
         ...timedDebugTrace,
         modelRequest: retryModelRequest,
-        modelRequests: [{ ...primaryModelRequest, label: 'Primary request before fallback retry' }],
+        modelRequests: [{ ...primaryModelRequest, label: 'Primary request before provider fallback attempt' }],
       };
     }
     if (retry.ok) {
@@ -1700,7 +1699,7 @@ async function handleDirect(
             ...timedDebugTrace.notes,
             retry.status === 403
               ? 'Primary chat request and content-redirect retry were both blocked by the provider.'
-              : `Primary chat request was blocked, then content-redirect retry failed with HTTP ${retry.status}.`,
+              : `Primary chat request was blocked, then the provider content-redirect fallback failed with HTTP ${retry.status}.`,
             retry.status === 403
               ? 'The edge function returned a structured content-filter notice over HTTP 200 so the frontend can avoid a runtime overlay.'
               : 'The edge function returned a provider error response after recording the paid retry attempt.',

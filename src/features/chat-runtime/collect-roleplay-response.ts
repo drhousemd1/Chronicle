@@ -1,5 +1,7 @@
 import type { Memory, Scene, ScenarioData, TimeOfDay } from '@/types';
 import type { ChatDebugRequestRecord, ChatDebugTrace } from '@/features/chat-debug/types';
+import type { RoleplayResponseJob } from '@/features/chat-runtime/roleplay-response-job';
+import type { RoleplayUserStateAuthorityDecision } from '@/features/chat-runtime/roleplay-user-state-authority';
 import {
   generateRoleplayResponseStream,
   type GenerateRoleplayResponseStreamOptions,
@@ -28,6 +30,8 @@ export interface CollectRoleplayResponseOptions {
   appData: ScenarioData;
   conversationId: string;
   userMessage: string;
+  responseJob?: RoleplayResponseJob;
+  userStateAuthorityDecisions?: RoleplayUserStateAuthorityDecision[];
   modelId: string;
   currentDay?: number;
   currentTimeOfDay?: TimeOfDay;
@@ -86,6 +90,8 @@ export async function collectRoleplayResponse({
   appData,
   conversationId,
   userMessage,
+  responseJob,
+  userStateAuthorityDecisions,
   modelId,
   currentDay,
   currentTimeOfDay,
@@ -122,6 +128,8 @@ export async function collectRoleplayResponse({
     activeScene,
     {
       debugTrace,
+      responseJob,
+      userStateAuthorityDecisions,
       onDebugTrace: (trace) => {
         responseDebugTrace = trace;
       },

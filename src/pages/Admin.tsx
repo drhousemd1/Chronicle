@@ -63,6 +63,11 @@ const DEFAULT_TOOLS: ToolMeta[] = [
     description: 'Scan runs, issue registry, changelog, and validation history',
   },
   {
+    id: 'validation_evidence_ledger',
+    title: 'Validation Evidence Ledger',
+    description: 'Track validation results, failure causes, and evidence artifacts',
+  },
+  {
     id: 'finance_dashboard',
     title: 'Finance Dashboard',
     description: 'Business finance operations, projections, users, reporting, and API cost insights',
@@ -159,6 +164,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
 
     if (toolId === 'quality_hub') {
       navigate('/style-guide/ui-audit');
+      return;
+    }
+
+    if (toolId === 'validation_evidence_ledger') {
+      navigate('/style-guide/validation-evidence-ledger');
       return;
     }
 

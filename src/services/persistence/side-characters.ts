@@ -25,7 +25,6 @@ function dbToSideCharacter(row: any): SideCharacter {
     sexType: row.sex_type || '',
     sexualOrientation: row.sexual_orientation || '',
     location: row.location || '',
-    currentMood: row.current_mood || '',
     controlledBy: row.controlled_by || 'AI',
     characterRole: row.character_role || 'Side',
     roleDescription: row.role_description || '',
@@ -96,7 +95,6 @@ export async function saveSideCharacter(
       sex_type: sideChar.sexType,
       sexual_orientation: sideChar.sexualOrientation || '',
       location: sideChar.location,
-      current_mood: sideChar.currentMood,
       role_description: sideChar.roleDescription,
       physical_appearance: appPhysicalAppearanceToDb(sideChar.physicalAppearance),
       currently_wearing: appCurrentlyWearingToDb(sideChar.currentlyWearing),
@@ -125,7 +123,6 @@ export async function updateSideCharacter(
   if (patch.sexType !== undefined) updateData.sex_type = patch.sexType;
   if (patch.sexualOrientation !== undefined) updateData.sexual_orientation = patch.sexualOrientation;
   if (patch.location !== undefined) updateData.location = patch.location;
-  if (patch.currentMood !== undefined) updateData.current_mood = patch.currentMood;
   if (patch.roleDescription !== undefined) updateData.role_description = patch.roleDescription;
   if (patch.physicalAppearance !== undefined) {
     updateData.physical_appearance = appPhysicalAppearanceToDb(patch.physicalAppearance);
@@ -244,4 +241,17 @@ export async function upsertSideCharacterMessageSnapshot(
   if (error) throw error;
 
   return dbToSideCharacterMessageSnapshot(data);
+}
+
+export async function deleteSideCharacterMessageSnapshot(id: string): Promise<void> {
+  const { data, error } = await supabase
+    .from('side_character_message_snapshots')
+    .delete()
+    .eq('id', id)
+    .select('id');
+
+  if (error) throw error;
+  if (!data?.some((row) => row.id === id)) {
+    throw new Error(`Side-character snapshot cleanup did not remove ${id}`);
+  }
 }

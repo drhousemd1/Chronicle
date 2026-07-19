@@ -29,8 +29,11 @@ describe('support-call hardening source contracts', () => {
     const source = read('supabase/functions/extract-memory-events/index.ts');
 
     expect(source).toContain('const MEMORY_POINT_MAX_CHARS = 140;');
-    expect(source).toContain('Extract only durable facts that would cause future inconsistency if forgotten.');
-    expect(source).toContain('Keep each point under 140 characters when possible, but preserve why the fact matters.');
+    expect(source).toContain('Accept only source-backed information whose future loss would create meaningful inconsistency.');
+    expect(source).toContain('At most three candidates may be accepted.');
+    expect(source).toContain('candidateText');
+    expect(source).toContain('durabilityCategory');
+    expect(source).toContain('sourceClassification');
     expect(source).toContain('normalizeMemoryPoint');
     expect(source).not.toContain('Keep each point under 90 characters.');
     expect(source).not.toContain('Relationship milestones, intimacy milestones');
@@ -85,8 +88,6 @@ describe('support-call hardening source contracts', () => {
     expect(source).toContain('SCENE_IMAGE_CLOTHING_KEYS');
     expect(source).toContain('SCENE_IMAGE_APPEARANCE_KEYS.has(key) && value');
     expect(source).toContain('SCENE_IMAGE_CLOTHING_KEYS.has(key) && value');
-    expect(source).not.toContain('current mood=');
-    expect(source).not.toContain('c.currentMood');
     expect(source).not.toContain('age=${c.age');
     expect(source).toContain("typeof m.content === 'string' ? m.content : typeof m.text === 'string' ? m.text : ''");
     expect(source).toContain('normalizeStructuredPromptData({}, characters || [], sceneLocation || \'\')');

@@ -14,5 +14,6 @@ describe('App internal tool route authorization', () => {
     expect(source).toContain('<Route path="/style-guide/ui-audit" element={<AdminOnlyRoute><UiAuditPage /></AdminOnlyRoute>} />');
     expect(source).toContain('<Route path="/style-guide/api-inspector" element={<AdminOnlyRoute><ApiInspectorPage /></AdminOnlyRoute>} />');
     expect(source).toContain('<Route path="/style-guide/app-architecture" element={<AdminOnlyRoute><AppArchitecturePage /></AdminOnlyRoute>} />');
+    expect(source).toContain('<Route path="/style-guide/validation-evidence-ledger" element={<AdminOnlyRoute><ValidationEvidenceLedgerPage /></AdminOnlyRoute>} />');
   });
 });

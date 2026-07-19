@@ -55,7 +55,6 @@ export const calculateCharacterSectionProgress = (character: Character, sectionK
         character.sexType,
         character.sexualOrientation,
         character.location,
-        character.currentMood,
         character.roleDescription,
       ]);
       return toProgress(basics.completed, basics.total);

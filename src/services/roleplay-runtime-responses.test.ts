@@ -80,6 +80,105 @@ describe('roleplay runtime Responses migration source contracts', () => {
     expectCollectorResultCommittedAfterGuard(continueSlice);
   });
 
+  it('routes normal send through a first-class normal_send response job', () => {
+    const chatInterfaceSource = read('src/components/chronicle/ChatInterfaceTab.tsx');
+    const sendSlice = sliceBetween(
+      chatInterfaceSource,
+      'const handleSend = async () => {',
+      'const handleCopyMessage',
+    );
+
+    expect(chatInterfaceSource).toContain('buildNormalSendResponseJob');
+    expect(sendSlice).toContain('const normalSendResponseJob = buildNormalSendResponseJob({');
+    expect(sendSlice).toContain('responseJob: normalSendResponseJob');
+    expect(sendSlice.indexOf('const normalSendResponseJob = buildNormalSendResponseJob({'))
+      .toBeLessThan(sendSlice.indexOf('const responseResult = await collectRoleplayResponse({'));
+  });
+
+  it('routes retry through a first-class retry_regenerate response job', () => {
+    const chatInterfaceSource = read('src/components/chronicle/ChatInterfaceTab.tsx');
+    const regenerateSlice = sliceBetween(
+      chatInterfaceSource,
+      'const handleRegenerateMessage = async',
+      'const handleContinueConversation = async',
+    );
+
+    expect(chatInterfaceSource).toContain('buildRetryRegenerateResponseJob');
+    expect(regenerateSlice).toContain('const retryRegenerateResponseJob = buildRetryRegenerateResponseJob({');
+    expect(regenerateSlice).toContain('rejectedAttempt: {');
+    expect(regenerateSlice).toContain('messageId: existingMessage.id');
+    expect(regenerateSlice).toContain('responseJob: retryRegenerateResponseJob');
+    expect(regenerateSlice.indexOf('const retryRegenerateResponseJob = buildRetryRegenerateResponseJob({'))
+      .toBeLessThan(regenerateSlice.indexOf('const responseResult = await collectRoleplayResponse({'));
+  });
+
+  it('keeps retry rejected text out of the live compatibility user message', () => {
+    const chatInterfaceSource = read('src/components/chronicle/ChatInterfaceTab.tsx');
+    const regenerateSlice = sliceBetween(
+      chatInterfaceSource,
+      'const handleRegenerateMessage = async',
+      'const handleContinueConversation = async',
+    );
+
+    expect(regenerateSlice).toContain('establishedFactNote,');
+    expect(regenerateSlice).toContain('text: userMessage.text');
+    expect(regenerateSlice).toContain('userMessage: userMessage.text');
+    expect(regenerateSlice).not.toContain('previousAssistantContext');
+    expect(regenerateSlice).not.toContain('regenInput');
+    expect(regenerateSlice).not.toContain('PREVIOUS ASSISTANT RESPONSE BEING REGENERATED');
+    expect(regenerateSlice).not.toContain('text: establishedFactNote + userMessage.text');
+  });
+
+  it('captures the replaced retry generation as admin debug evidence after the stale guard', () => {
+    const chatInterfaceSource = read('src/components/chronicle/ChatInterfaceTab.tsx');
+    const regenerateSlice = sliceBetween(
+      chatInterfaceSource,
+      'const handleRegenerateMessage = async',
+      'const handleContinueConversation = async',
+    );
+
+    const staleGuardIndex = regenerateSlice.indexOf('if (!liveConversation || !liveTargetMessage ||');
+    const adminScopeIndex = regenerateSlice.indexOf('if (isAdmin) {', staleGuardIndex);
+    const appendIndex = regenerateSlice.indexOf('appendChatReviewRetryAttempt(', adminScopeIndex);
+    const replacementIndex = regenerateSlice.indexOf('messages: c.messages.map', appendIndex);
+    const newTraceIndex = regenerateSlice.indexOf('saveChatDebugTrace(regeneratedMessage', replacementIndex);
+
+    expect(staleGuardIndex).toBeGreaterThanOrEqual(0);
+    expect(adminScopeIndex).toBeGreaterThan(staleGuardIndex);
+    expect(appendIndex).toBeGreaterThan(adminScopeIndex);
+    expect(replacementIndex).toBeGreaterThan(appendIndex);
+    expect(newTraceIndex).toBeGreaterThan(replacementIndex);
+    expect(regenerateSlice).toContain('retryAttemptHistoryRef.current = appendChatReviewRetryAttempt(');
+    expect(regenerateSlice).toContain('retryAttemptHistoryRef.current,');
+    expect(regenerateSlice).toContain('liveTargetMessage,');
+    expect(regenerateSlice).toContain('replacedDebugRecord,');
+    expect(regenerateSlice).not.toContain('handleCreateMemory(liveTargetMessage.text');
+    expect(regenerateSlice).not.toContain('messages: [...c.messages, liveTargetMessage]');
+  });
+
+  it('routes continue through a first-class continue_assistant_tail response job', () => {
+    const chatInterfaceSource = read('src/components/chronicle/ChatInterfaceTab.tsx');
+    const continueSlice = sliceBetween(
+      chatInterfaceSource,
+      'const handleContinueConversation = async',
+      '// Generate scene image from recent conversation context',
+    );
+
+    expect(chatInterfaceSource).toContain('buildContinueAssistantTailResponseJob');
+    expect(chatInterfaceSource).toContain('buildDeletedAssistantRecoveryResponseJob');
+    expect(continueSlice).toContain('const tailAction = resolveContinueTailActionForMessages(conversation.messages);');
+    expect(continueSlice).toContain("if (tailAction.kind === 'unavailable') return;");
+    expect(continueSlice).toContain("tailAction.kind === 'normal_send_deleted_assistant_recovery'");
+    expect(continueSlice).toContain('buildDeletedAssistantRecoveryResponseJob({');
+    expect(continueSlice).toContain('buildContinueAssistantTailResponseJob({');
+    expect(continueSlice).toContain('assistantAnchor: {');
+    expect(continueSlice).toContain('messageId: tailAction.assistantMessageId');
+    expect(continueSlice).toContain('responseJob: continueResponseJob');
+    expect(continueSlice).not.toContain("lastRoleplayMessage.role !== 'assistant'");
+    expect(continueSlice.indexOf('const continueResponseJob = tailAction.kind'))
+      .toBeLessThan(continueSlice.indexOf('const responseResult = await collectRoleplayResponse({'));
+  });
+
   it('routes the chat edge direct lane through Responses by default while keeping an explicit legacy lane', () => {
     const source = read('supabase/functions/chat/index.ts');
 

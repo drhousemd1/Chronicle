@@ -58,7 +58,6 @@ function makeCharacter(name: string, controlledBy: "AI" | "User", role: "Main" |
     sexualOrientation: `{{${name}.sexualOrientation}}`,
     location: `{{${name}.location}}`,
     scenePosition: `{{${name}.scenePosition}}`,
-    currentMood: `{{${name}.currentMood}}`,
     controlledBy,
     characterRole: role,
     roleDescription: `{{${name}.roleDescription}}`,
@@ -462,21 +461,21 @@ Current character state:
 Analyze:
 {{combinedText}}`;
 
-const memoryCompressionSystemPrompt = `You are compressing a list of story memory bullet points from a single day of roleplay into a brief narrative synopsis for long-term storage.
+const memoryCompressionSystemPrompt = `You are reviewing story-memory rows from one completed roleplay day and compressing the durable rows into one brief micro-summary.
 
-INPUT: An array of bullet point strings from one day.
-OUTPUT: A single plain-text synopsis of 2-3 sentences maximum.
+Each input row has a stable ID. Return a synopsis plus the exact IDs represented in that synopsis. Reject a row when it is duplicate, unsupported, unsafe, or not suitable for the synopsis. Omitted rows remain undeleted, so classify every row when possible.
 
 Rules:
 - Capture only changes, revelations, decisions, and events with future impact.
 - Distill the narrative essence of the day.
 - Use past tense.
-- No bullet points or formatting -- plain prose only.
-- Return ONLY the synopsis text, nothing else.`;
+- Keep the synopsis to 2-3 sentences with no bullet formatting.
+- Never invent or alter an input ID.
+- Return only JSON matching the requested schema.`;
 
-const memoryCompressionUserPrompt = `Compress these Day {{day}} memory bullets into a 2-3 sentence synopsis:
+const memoryCompressionUserPrompt = `Review and compress these Day {{day}} memory rows:
 
-{{bullets.map((bullet) => '- ' + bullet).join('\\n')}}`;
+{{inputMemoryRows.map((row) => '[' + row.id + '] ' + row.content).join('\\n')}}`;
 
 const sceneImageAnalysisPrompt = `You are an Image Prompt Optimizer. Analyze the character data and dialogue, then output structured JSON.
 
@@ -545,7 +544,6 @@ Top-level fields:
 - nicknames
 - location
 - scenePosition
-- currentMood
 
 Nested detail fields:
 - physicalAppearance.* and physicalAppearance._extras
@@ -586,7 +584,6 @@ Character goals:
 - Every returned update must include a short exact phrase from the latest exchange as evidence and a confidence score from 0 to 1. If you cannot quote the exchange text that supports the change, omit the update.
 
 --- FIELD GUIDANCE ---
-- currentMood: emotional/psychological state only, max 12 words. No body-part prose, clothing, objects, or action sequences.
 - location: broad place only. Do not change location to a destination merely because it was seen, mentioned, chosen, or approached. Update it only when the exchange clearly establishes that the character has actually arrived in, entered, left, or relocated to a different broad place.
 - scenePosition: short factual snapshot of the character's immediate physical situation inside the current location. Update it whenever the latest exchange materially changes that immediate situation, even if the broad location stays the same. Do not leave it blank when the latest exchange establishes a new physical state.
 - physicalStateReviews: one review row per eligible character. This row confirms whether location and scenePosition were considered for that character. A review row is required even when no update is returned because the existing saved state is still accurate or evidence is insufficient.
@@ -716,30 +713,19 @@ Respond in JSON only:
   ]
 }`;
 
-const memoryExtractionSystemPrompt = `You are a story memory curator for an adult roleplay. Your job is to identify only durable events from the latest user+AI exchange that will affect future scenes and narrative consistency.
+const memoryExtractionSystemPrompt = `You are a story memory curator for an adult roleplay. Review possible memory candidates from the latest user+AI exchange before anything can become durable story memory.
 
 CHARACTERS: {{characterNames?.join(', ') || 'Unknown'}}
+USER-CONTROLLED CHARACTERS: {{userCharacterNames?.join(', ') || '(none identified)'}}
 
 RECENT SAVED MEMORIES:
 {{recentExistingMemories as bullet list, or "(none)"}}
 
---- EXTRACT ---
-- Extract only durable facts that would cause future inconsistency if forgotten.
-- Include facts introduced by the USER even if the AI response did not repeat them.
-- Use past tense and include character names.
+Review up to six candidates and accept at most three. Empty candidates are valid. Accept only source-backed information whose future loss would create meaningful inconsistency.
 
---- IGNORE ---
-- Minor gestures, routine actions, mood-only moments, atmosphere, flirting/buildup without consequence, or lines that do not reveal new information.
-- Any event already captured by a recent saved memory, even if the wording is different.
+Each candidate records its text, durability category, source classification, source evidence, accepted or rejected decision, rejection reason, and user-state authority fields. Only durable categories backed by raw user facts or accepted assistant observable changes may be accepted. Temporary scene state, assistant interpretation, unsupported overreach, static descriptors, duplicates, repeated phrasing, and support artifacts remain rejected and inspectable.
 
---- RULES ---
-- Return 0-3 events maximum.
-- Empty array is valid when nothing durable happened.
-- Keep each point under 140 characters when possible, but preserve why the fact matters.
-- For preferences, intentions, rules, or secrets, state who they belong to.
-- If a recent saved memory already preserves the same durable fact, do not return it again.
-
-Return ONLY JSON matching the requested schema. Empty events are acceptable.`;
+Return ONLY JSON matching the requested schema.`;
 
 const sideCharacterSystemPrompt = `You generate source-supported starter profiles for side characters in roleplay stories. Return only the requested JSON object. Do not invent private or hidden details from thin context.`;
 
@@ -958,7 +944,7 @@ REQUEST BODY SHAPE
     "activeSceneTags": "{{active scene tags or [] unless an explicit [SCENE] tag has been established}}",
     "aiCharacterNames": "{{AI-controlled character names}}",
     "userCharacterNames": "{{User-controlled character names}}",
-    "characterSceneStates": "{{name/control/role/location/scenePosition/currentMood for all playable characters}}"
+    "characterSceneStates": "{{characterId/name/control/role/location/scenePosition for all playable characters}}"
   }
 }
 
@@ -1052,7 +1038,7 @@ The final role:user message is split into labeled blocks so app controls do not 
 
 [CURRENT TURN STATE]
 Use this as the active scene anchor. It summarizes established state already supplied elsewhere. If the latest player turn changes any item, the latest player turn controls the next response.
-{{compact current day/time, active scene, character location/position/mood rows, and capped current-day memory anchors}}
+{{compact current day/time, active scene, one character location/position roster, and capped current-day memory anchors}}
 
 [REGENERATION REQUEST] only when regenerating
 {{regenerationDirective}}
@@ -1071,7 +1057,8 @@ CURRENT TURN STATE INSIDE [APP TURN CONTROLS]
 Use this as the active scene anchor. It summarizes established state already supplied elsewhere. If the latest player turn changes any item, the latest player turn controls the next response.
 - Story clock: {{current day/time when known}}
 - Active scene: {{active scene title and tags when known}}
-- {{CharacterName}} ({{AI/User}}): location={{broad location}}; position={{scenePosition}}; mood={{currentMood}}
+[SCENE PRESENCE ROSTER]
+- {{CharacterName}}; control={{AI/User}}; role={{Main/Side}}; location={{broad location or Unknown}}; position={{scenePosition when present}}
 - Current-day memory anchors: {{up to 3 compact current-day memory anchors}}
 
 When regenerating, the final user message also includes the exact assistant response being replaced after the triggering user text:
@@ -1256,7 +1243,7 @@ EDGE RESPONSE SHAPE
     {
       "index": 0,
       "accepted": true,
-      "reason": "accepted|invalid_candidate_shape|missing_required_value|unknown_character|ambiguous_character_alias|unsupported_field|unsupported_value|invalid_current_mood|low_confidence|missing_evidence|evidence_not_in_latest_exchange|filtered_by_state_guard|superseded_by_refinement|goals_disabled_in_safe_retry|parse_error|updates_not_array|missing_json_object|no_json_object",
+      "reason": "accepted|invalid_candidate_shape|missing_required_value|unknown_character|ambiguous_character_alias|unsupported_field|unsupported_value|low_confidence|missing_evidence|evidence_not_in_latest_exchange|filtered_by_state_guard|superseded_by_refinement|goals_disabled_in_safe_retry|parse_error|updates_not_array|missing_json_object|no_json_object",
       "character": "{{resolved character name}}",
       "field": "{{supported field path}}",
       "value": "{{proposed value}}",
@@ -1468,7 +1455,12 @@ BROWSER-TO-EDGE REQUEST BODY SHAPE
   "userMessage": "{{latest user text}}",
   "aiResponse": "{{latest AI response}}",
   "characterNames": ["{{character name}}"],
+  "userCharacterNames": ["{{user-controlled character name}}"],
   "recentExistingMemories": ["{{up to 20 recent saved memory contents}}"],
+  "sourceUserMessageId": "{{latest user message id}}",
+  "sourceUserGenerationId": "{{latest user generation id}}",
+  "sourceAssistantMessageId": "{{accepted assistant message id}}",
+  "sourceAssistantGenerationId": "{{accepted assistant generation id}}",
   "modelId": "grok-4.3",
   "debugTrace": "{{true only when requested}}"
 }
@@ -1489,7 +1481,7 @@ RESPONSES REQUEST BODY SHAPE SENT TO xAI
     "format": {
       "type": "json_schema",
       "name": "chronicle_memory_events",
-      "schema": "{{object schema with events string array}}"
+      "schema": "{{MemoryExtractionResponseV1 candidate array schema}}"
     }
   }
 }
@@ -1509,13 +1501,16 @@ Extract durable story-memory events from this latest exchange:
 
 EDGE RESPONSE SHAPE
 {
+  "version": 1,
+  "candidates": "{{reviewed candidate rows with source, durability, decision, evidence, and rejection reason}}",
+  "events": "{{compatibility strings derived from accepted durable candidates only}}",
   "extractedEvents": "{{accepted durable memory event strings}}",
   "rejectedEvents": "{{malformed-output review rows when parsing failed}}",
   "parseError": "{{present only when the model response was malformed}}"
 }
 
 MEMORY OUTPUT CLEANUP NOTE
-The edge function collapses whitespace, removes empty entries, trims overlong memory strings at a word boundary, and returns at most three events before browser-side duplicate filtering runs.
+The edge function normalizes candidate text, caps reviewed candidates at six and accepted candidates at three, and derives compatibility arrays only from accepted durable rows. The browser then rechecks source authority, duplicates, and source-generation freshness before persisting one memory row per accepted candidate.
 
 	================================================================================
 SUPPORT CALL: DAY MEMORY COMPRESSION
@@ -1528,9 +1523,19 @@ ${browserToEdgeHeaders}
 
 BROWSER-TO-EDGE REQUEST BODY SHAPE
 {
-  "bullets": ["{{memory bullet from one day}}"],
+  "version": 1,
+  "inputMemoryRows": [{
+    "id": "{{memory row id}}",
+    "content": "{{memory row content}}",
+    "conversationId": "{{conversationId}}",
+    "day": "{{day number}}",
+    "sourceMessageId": "{{source message id when available}}",
+    "sourceGenerationId": "{{source generation id when available}}",
+    "createdAt": "{{creation timestamp}}"
+  }],
   "day": "{{day number}}",
   "conversationId": "{{conversationId}}",
+  "inputTrustBoundary": "browser_supplied_runtime_rows",
   "debugTrace": "{{true only when requested}}"
 }
 
@@ -1545,7 +1550,8 @@ RESPONSES REQUEST BODY SHAPE SENT TO xAI
   "temperature": 0.3,
   "max_output_tokens": 350,
   "store": false,
-  "reasoning": { "effort": "medium" }
+  "reasoning": { "effort": "medium" },
+  "text": { "format": "{{chronicle_day_memory_compression JSON schema}}" }
 }
 
 ${edgeToXaiResponsesHeaders}
@@ -1560,13 +1566,18 @@ ${memoryCompressionUserPrompt}
 
 EDGE RESPONSE SHAPE
 {
+  "version": 1,
   "synopsis": "{{2-3 sentence compressed day summary}}",
+  "compressedInputMemoryRowIds": ["{{row id represented in synopsis}}"],
+  "rejectedInputMemoryRows": [{ "id": "{{row id}}", "reason": "{{rejection reason}}" }],
+  "warnings": ["{{review warning}}"],
+  "omittedInputMemoryRowIds": ["{{unclassified row retained by frontend}}"],
   "providerBodyError": "{{present only when provider returned a failed or malformed Responses body}}",
   "chronicle_debug_payload": "{{present only when debugTrace=true}}"
 }
 
 OUTPUT CLEANUP NOTE
-The edge function collapses whitespace, removes obvious list-prefix formatting if present, limits the synopsis to at most three sentences, and caps the final saved string before returning it.
+The edge function validates every returned ID against the submitted rows. The browser saves the reviewed synopsis before deleting anything, then deletes only validated compressed row IDs. Rejected, omitted, unknown, duplicated, or malformed rows remain undeleted and are visible in the review export.
 
 ================================================================================
 SUPPORT CALL: SIDE-CHARACTER GENERATION

@@ -1231,11 +1231,6 @@ export const CharacterBuilderScreen: React.FC<CharacterBuilderScreenProps> = ({
                           <AutoResizeTextareaField value={selected.location || ''} onChange={(v) => onUpdate(selected.id, { location: v })} placeholder="Current location" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
                         </div>
                         <div>
-                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Current Mood</label>
-                          <AutoResizeTextareaField value={selected.currentMood || ''} onChange={(v) => onUpdate(selected.id, { currentMood: v })} placeholder="Happy, Tired" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
-                        </div>
-
-                        <div>
                           <div className="flex items-center gap-2 mb-1">
                             <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Role Description</label>
                             <button
@@ -1287,9 +1282,6 @@ export const CharacterBuilderScreen: React.FC<CharacterBuilderScreenProps> = ({
                           {selected.sexType && <span>{selected.sexType}</span>}
                           {selected.location && <span className="text-zinc-400">{selected.location}</span>}
                         </div>
-                        {selected.currentMood && (
-                          <p className="text-xs text-zinc-400 italic">Mood: {selected.currentMood}</p>
-                        )}
                       </div>
                     </div>
                   )}

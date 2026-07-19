@@ -81,7 +81,6 @@ export interface CharacterEditDraft {
   sexualOrientation?: string;
   roleDescription?: string;
   location?: string;
-  currentMood?: string;
   controlledBy?: 'AI' | 'User';
   characterRole?: 'Main' | 'Side';
   physicalAppearance?: Partial<PhysicalAppearance>;
@@ -525,7 +524,6 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
         sexualOrientation: (character as any).sexualOrientation || '',
         roleDescription: character.roleDescription || '',
         location: character.location || '',
-        currentMood: character.currentMood || '',
         physicalAppearance: { ...character.physicalAppearance },
         currentlyWearing: { ...character.currentlyWearing },
         preferredClothing: { ...character.preferredClothing },
@@ -646,7 +644,6 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
           currentlyWearing: c.currentlyWearing,
           preferredClothing: c.preferredClothing,
           location: c.location,
-          currentMood: c.currentMood,
           goals: ('goals' in c && (c as Character).goals) 
             ? (c as Character).goals!.map(g => ({
                 title: g.title,
@@ -1379,10 +1376,6 @@ export const CharacterEditorModalScreen: React.FC<CharacterEditorModalScreenProp
         <div>
           <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Location</label>
           <AutoResizeTextarea value={draft.location || ''} onChange={(v) => updateField('location', v)} placeholder="Current location" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
-        </div>
-        <div>
-          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1 block">Current Mood</label>
-          <AutoResizeTextarea value={draft.currentMood || ''} onChange={(v) => updateField('currentMood', v)} placeholder="Happy, Tired" className="w-full px-3 py-2 text-sm bg-[#1c1c1f] border border-black/35 text-white placeholder:text-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" />
         </div>
         <FieldTextarea label="Role Description" value={draft.roleDescription || ''} onChange={(v) => updateField('roleDescription', v)} placeholder="Character's role in the story..." rows={3} />
       </div>
