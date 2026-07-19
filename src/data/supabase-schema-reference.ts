@@ -1338,20 +1338,6 @@ export const schemaReferenceObjects = [
         "appLocation": "Chat interface"
       },
       {
-        "field": "current_mood",
-        "type": "text",
-        "purpose": "Stores current mood for the character session state record.",
-        "category": "Private roleplay content",
-        "sensitivity": "High",
-        "rawExposure": "Yes",
-        "read": "Owner",
-        "write": "Owner",
-        "update": "Owner",
-        "delete": "Owner",
-        "feedsUi": "Yes",
-        "appLocation": "Chat interface"
-      },
-      {
         "field": "physical_appearance",
         "type": "jsonb",
         "purpose": "Stores private roleplay structure or continuity data used by builder, chat, or support-call logic.",
