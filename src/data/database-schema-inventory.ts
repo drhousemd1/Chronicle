@@ -1027,12 +1027,6 @@ export const databaseSchemaInventory = {
           "default": "''"
         },
         {
-          "name": "current_mood",
-          "type": "text",
-          "nullable": true,
-          "default": "''"
-        },
-        {
           "name": "physical_appearance",
           "type": "jsonb",
           "nullable": true,
