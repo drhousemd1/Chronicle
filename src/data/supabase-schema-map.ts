@@ -1684,14 +1684,6 @@ export const supabaseSchemaMap: SupabaseSchemaSnapshot = {
           "isIdentity": false
         },
         {
-          "name": "current_mood",
-          "type": "text",
-          "default": "''::text",
-          "notNull": false,
-          "ordinal": 6,
-          "isIdentity": false
-        },
-        {
           "name": "physical_appearance",
           "type": "jsonb",
           "default": "'{}'::jsonb",
