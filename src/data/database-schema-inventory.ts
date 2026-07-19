@@ -3037,12 +3037,6 @@ export const databaseSchemaInventory = {
           "default": "''"
         },
         {
-          "name": "current_mood",
-          "type": "text",
-          "nullable": true,
-          "default": "''"
-        },
-        {
           "name": "avatar_url",
           "type": "text",
           "nullable": true,
