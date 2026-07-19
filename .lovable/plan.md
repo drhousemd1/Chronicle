@@ -1,99 +1,322 @@
-## Goal
+# Issue #16 — Terminal `current_mood` Removal (Revised Plan)
 
-Make `/style-guide/supabase-schema-reference` an accurate source of truth. Data-only edits in `src/data/supabase-schema-reference.ts`. No page redesign, no schema/RLS/storage/migration changes.
+## 1. Live-object scan (unchanged, confirmed)
 
-## Scope
+- Columns (all `text NULL DEFAULT ''::text`, no indexes / CHECKs / FKs):
+  - `public.characters.current_mood`
+  - `public.side_characters.current_mood`
+  - `public.character_session_states.current_mood`
+- Functions referencing `current_mood` (via `pg_proc.prosrc`): only `public.save_scenario_atomic(uuid, uuid, jsonb, jsonb, jsonb, jsonb)`.
+- Views: none. Triggers: none. Policies: none. Indexes / constraints / generated cols: none.
 
-Only these files may change:
+## 2. Execution gate (blocking)
 
-- `src/data/supabase-schema-reference.ts` (data corrections + add missing `scenario_plays` object)
-- `src/data/supabase-schema-reference.test.ts` (only if object/row counts change; keep drift + controlled-vocabulary tests intact)
+Do NOT approve or apply this migration until the application-side removal of `current_mood` reads/writes is **deployed** (not just passing local checks). Current repo still references `current_mood` in:
 
-Out of scope: page component, styling, admin route gate, legend behavior, table columns, edge functions, migrations, RLS, storage policies, docs guides, other snapshot files.
+- `src/services/persistence/characters.ts`
+- `src/services/persistence/side-characters.ts`
+- `src/services/persistence/conversations.ts`
+- `src/data/api-inspector-prompt-documents.ts`
+- `supabase/functions/extract-character-updates/index.ts`
+- Snapshot artifacts: `src/integrations/supabase/types.ts`, `src/data/supabase-schema-map.ts`, `src/data/database-schema-inventory.ts`, `src/data/supabase-schema-reference.ts`
 
-## Classification rules (final)
+Frontend + edge function commits removing all live reads/writes of `current_mood` must be pushed and deployed first. Only then does Thomas approve the SQL below.
 
-### Raw Backend Exposure
+## 3. Exact terminal migration SQL (approval-ready)
 
-Mark `Yes` when any human role — including the row's owner — can directly `SELECT`/list the raw table row or read the raw storage file through Supabase RLS/grants, outside the intended app UI (e.g. via the Data API, PostgREST, a signed-in supabase-js `.select('*')`, or a public bucket URL). Also `Yes` when an RPC/edge function is a thin passthrough returning raw rows/files with no meaningful curation.
+```sql
+-- Issue #16 terminal: remove structured mood.
+-- Preserves save_scenario_atomic behavior verbatim except for three deletions:
+--   1) `current_mood` removed from characters INSERT column list
+--   2) `COALESCE(char_record->>'current_mood', '')` removed from VALUES list
+--   3) `current_mood = EXCLUDED.current_mood,` removed from ON CONFLICT DO UPDATE SET
+-- All ownership guards, row-count guards, delete-orphans logic, story/codex/scenes
+-- handling, SECURITY DEFINER, and search_path are unchanged.
+BEGIN;
 
-Mark `No` only when user-facing access goes through curated SECURITY DEFINER RPCs (masked/filtered fields, privacy branches, aggregates), edge functions with service-role gating, signed URLs to private buckets, or aggregate counters — i.e. app-controlled paths that never hand back the raw row/file.
+CREATE OR REPLACE FUNCTION public.save_scenario_atomic(
+  p_scenario_id uuid,
+  p_user_id uuid,
+  p_story jsonb,
+  p_characters jsonb DEFAULT '[]'::jsonb,
+  p_codex_entries jsonb DEFAULT '[]'::jsonb,
+  p_scenes jsonb DEFAULT '[]'::jsonb
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $function$
+DECLARE
+  char_record jsonb;
+  codex_record jsonb;
+  scene_record jsonb;
+  incoming_char_ids uuid[];
+  incoming_codex_ids uuid[];
+  incoming_scene_ids uuid[];
+  v_story_existed boolean := false;
+  v_rows integer;
+  v_id uuid;
+BEGIN
+  IF auth.uid() IS NULL OR auth.uid() <> p_user_id THEN
+    RAISE EXCEPTION 'Unauthorized';
+  END IF;
 
-Consequence: **owner-scoped CRUD tables with a direct `USING (auth.uid() = user_id)` SELECT policy are `rawExposure: Yes`** even though other users' rows are blocked. Only tables where the base SELECT is denied to the owner and access flows exclusively through a curated definer path stay `No`.
+  PERFORM 1 FROM public.stories
+    WHERE id = p_scenario_id AND user_id <> p_user_id;
+  IF FOUND THEN
+    RAISE EXCEPTION 'Unauthorized: scenario owned by another user';
+  END IF;
 
-### Read / Write / Update / Delete cells
+  SELECT EXISTS(
+    SELECT 1 FROM public.stories WHERE id = p_scenario_id AND user_id = p_user_id
+  ) INTO v_story_existed;
 
-Controlled values only: `Admin`, `None`, `Owner`, `Public`, `Signed-in`, `System` (combine with `/` when a policy legitimately grants two actors). **No explanatory prose, parentheticals, or function names in these cells.** All context — which RPC performs the write, why an owner cannot directly SELECT, published-scenario branches, service-role paths — goes in `purpose` or the object-level access/security rationale text.
+  INSERT INTO stories (
+    id, user_id, title, description, cover_image_url, cover_image_path, cover_image_position,
+    tags, world_core, ui_settings, opening_dialog, selected_model,
+    selected_art_style, version, is_draft, nav_button_images
+  ) VALUES (
+    p_scenario_id,
+    p_user_id,
+    COALESCE(p_story->>'title', 'Untitled Story'),
+    COALESCE(p_story->>'description', ''),
+    COALESCE(p_story->>'cover_image_url', ''),
+    NULLIF(p_story->>'cover_image_path', ''),
+    COALESCE((p_story->'cover_image_position')::jsonb, '{"x":50,"y":50}'::jsonb),
+    COALESCE(ARRAY(SELECT jsonb_array_elements_text(p_story->'tags')), '{}'::text[]),
+    COALESCE((p_story->'world_core')::jsonb, '{}'::jsonb),
+    COALESCE((p_story->'ui_settings')::jsonb, '{"darkMode":false,"showBackgrounds":true,"transparentBubbles":false}'::jsonb),
+    COALESCE((p_story->'opening_dialog')::jsonb, '{"text":"","enabled":true}'::jsonb),
+    p_story->>'selected_model',
+    COALESCE(p_story->>'selected_art_style', 'cinematic-2-5d'),
+    COALESCE((p_story->>'version')::int, 3),
+    COALESCE((p_story->>'is_draft')::boolean, false),
+    COALESCE((p_story->'nav_button_images')::jsonb, '{}'::jsonb)
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    title = EXCLUDED.title,
+    description = EXCLUDED.description,
+    cover_image_url = EXCLUDED.cover_image_url,
+    cover_image_path = EXCLUDED.cover_image_path,
+    cover_image_position = EXCLUDED.cover_image_position,
+    tags = EXCLUDED.tags,
+    world_core = EXCLUDED.world_core,
+    ui_settings = EXCLUDED.ui_settings,
+    opening_dialog = EXCLUDED.opening_dialog,
+    selected_model = EXCLUDED.selected_model,
+    selected_art_style = EXCLUDED.selected_art_style,
+    version = EXCLUDED.version,
+    is_draft = EXCLUDED.is_draft,
+    nav_button_images = EXCLUDED.nav_button_images,
+    updated_at = now()
+  WHERE public.stories.user_id = p_user_id;
 
-For tables reachable only through SECURITY DEFINER functions with no direct SELECT policy: `Read` = `None` unless a real backend/system/admin process directly reads the raw table (`System` / `Admin`). Do not label `Read` as `Owner`/`Public` just because a definer RPC returns derived data. `Write`/`Update`/`Delete` reflect the actor whose action causes the change — usually `Owner` when a user action triggers a definer insert on their own row, `System` when service role writes independently.
+  GET DIAGNOSTICS v_rows = ROW_COUNT;
+  IF v_story_existed AND v_rows = 0 THEN
+    RAISE EXCEPTION 'Unauthorized: story ownership guard blocked update for scenario %', p_scenario_id;
+  END IF;
 
-## Findings before editing
+  SELECT ARRAY(SELECT (elem->>'id')::uuid FROM jsonb_array_elements(p_characters) AS elem)
+    INTO incoming_char_ids;
 
-- Live DB has 45 tables. The data file has 44 → **`scenario_plays` is missing** and must be added.
-- 11 storage buckets already present in the `media-storage-buckets` object; access strings need verification.
-- Many existing rows have filler `purpose` and single-role access guesses that need per-table review against real RLS.
+  DELETE FROM characters
+    WHERE scenario_id = p_scenario_id
+    AND id != ALL(incoming_char_ids);
 
-## Work plan (single pass)
+  FOR char_record IN SELECT * FROM jsonb_array_elements(p_characters) LOOP
+    v_id := (char_record->>'id')::uuid;
+    INSERT INTO characters (
+      id, user_id, scenario_id, name, nicknames, age, sex_type, sexual_orientation,
+      location, controlled_by, character_role, role_description,
+      tags, avatar_url, avatar_path, avatar_position, physical_appearance, currently_wearing,
+      preferred_clothing, personality, goals, background, tone, key_life_events,
+      relationships, secrets, fears, sections, is_library
+    ) VALUES (
+      v_id,
+      p_user_id,
+      p_scenario_id,
+      COALESCE(char_record->>'name', ''),
+      COALESCE(char_record->>'nicknames', ''),
+      COALESCE(char_record->>'age', ''),
+      char_record->>'sex_type',
+      COALESCE(char_record->>'sexual_orientation', ''),
+      COALESCE(char_record->>'location', ''),
+      char_record->>'controlled_by',
+      char_record->>'character_role',
+      COALESCE(char_record->>'role_description', ''),
+      char_record->>'tags',
+      char_record->>'avatar_url',
+      NULLIF(char_record->>'avatar_path', ''),
+      COALESCE((char_record->'avatar_position')::jsonb, '{"x":50,"y":50}'::jsonb),
+      COALESCE((char_record->'physical_appearance')::jsonb, '{}'::jsonb),
+      COALESCE((char_record->'currently_wearing')::jsonb, '{}'::jsonb),
+      COALESCE((char_record->'preferred_clothing')::jsonb, '{}'::jsonb),
+      (char_record->'personality')::jsonb,
+      COALESCE((char_record->'goals')::jsonb, '[]'::jsonb),
+      COALESCE((char_record->'background')::jsonb, '{}'::jsonb),
+      COALESCE((char_record->'tone')::jsonb, '{}'::jsonb),
+      COALESCE((char_record->'key_life_events')::jsonb, '{}'::jsonb),
+      COALESCE((char_record->'relationships')::jsonb, '{}'::jsonb),
+      COALESCE((char_record->'secrets')::jsonb, '{}'::jsonb),
+      COALESCE((char_record->'fears')::jsonb, '{}'::jsonb),
+      COALESCE((char_record->'sections')::jsonb, '[]'::jsonb),
+      COALESCE((char_record->>'is_library')::boolean, false)
+    )
+    ON CONFLICT (id) DO UPDATE SET
+      name = EXCLUDED.name,
+      nicknames = EXCLUDED.nicknames,
+      age = EXCLUDED.age,
+      sex_type = EXCLUDED.sex_type,
+      sexual_orientation = EXCLUDED.sexual_orientation,
+      location = EXCLUDED.location,
+      controlled_by = EXCLUDED.controlled_by,
+      character_role = EXCLUDED.character_role,
+      role_description = EXCLUDED.role_description,
+      tags = EXCLUDED.tags,
+      avatar_url = EXCLUDED.avatar_url,
+      avatar_path = EXCLUDED.avatar_path,
+      avatar_position = EXCLUDED.avatar_position,
+      physical_appearance = EXCLUDED.physical_appearance,
+      currently_wearing = EXCLUDED.currently_wearing,
+      preferred_clothing = EXCLUDED.preferred_clothing,
+      personality = EXCLUDED.personality,
+      goals = EXCLUDED.goals,
+      background = EXCLUDED.background,
+      tone = EXCLUDED.tone,
+      key_life_events = EXCLUDED.key_life_events,
+      relationships = EXCLUDED.relationships,
+      secrets = EXCLUDED.secrets,
+      fears = EXCLUDED.fears,
+      sections = EXCLUDED.sections,
+      is_library = EXCLUDED.is_library,
+      updated_at = now()
+    WHERE public.characters.user_id = p_user_id
+      AND public.characters.scenario_id = p_scenario_id;
 
-For each of the 45 tables and 11 storage buckets:
+    GET DIAGNOSTICS v_rows = ROW_COUNT;
+    IF v_rows = 0 THEN
+      RAISE EXCEPTION 'Unauthorized: characters row % blocked by ownership guard', v_id;
+    END IF;
+  END LOOP;
 
-1. Pull live policies from `pg_policies` and columns from `information_schema.columns` via `supabase--read_query`; cross-check with known RLS-relevant functions (`has_role`, `can_read_scene_storage_object`, `can_read_private_story_media`, `get_public_creator_profile`, `get_public_profiles`, `get_public_app_flags`, `get_public_art_styles`, `fetch_gallery_scenarios`, `record_scenario_play`, `record_scenario_view`, `save_scenario_atomic`, `set_admin_access`, `get_my_*`).
-2. Reconcile each row's `field` and `type` with the real column set.
-3. For each row, correct:
-   - `purpose` — real column role; when a definer function is the only write path, or a curated RPC is the only read path, name it here (not in the access cells).
-   - `category` — from existing taxonomy.
-   - `sensitivity` — High for private user/session content, private media paths, moderation/finance/admin/security, account-linked behavior; Medium for user-specific non-catastrophic; Low for timestamps, keys, safe operational metadata.
-   - `rawExposure` — per rule above; owner-SELECT tables = `Yes`.
-   - `read/write/update/delete` — controlled values only; per rule above.
-   - `feedsUi` + `appLocation` — `appLocation` = `None` when `feedsUi` = `No`; otherwise a controlled surface name.
+  SELECT ARRAY(SELECT (elem->>'id')::uuid FROM jsonb_array_elements(p_codex_entries) AS elem)
+    INTO incoming_codex_ids;
 
-### New object: `scenario_plays`
+  DELETE FROM codex_entries
+    WHERE scenario_id = p_scenario_id
+    AND id != ALL(incoming_codex_ids);
 
-Columns: `id`, `published_scenario_id`, `user_id`, `played_at`. Only 1 policy (owner-scoped insert triggered by `record_scenario_play` SECURITY DEFINER; no SELECT policy).
+  FOR codex_record IN SELECT * FROM jsonb_array_elements(p_codex_entries) LOOP
+    v_id := (codex_record->>'id')::uuid;
+    INSERT INTO codex_entries (id, scenario_id, title, body)
+    VALUES (
+      v_id,
+      p_scenario_id,
+      COALESCE(codex_record->>'title', ''),
+      COALESCE(codex_record->>'body', '')
+    )
+    ON CONFLICT (id) DO UPDATE SET
+      title = EXCLUDED.title,
+      body = EXCLUDED.body,
+      updated_at = now()
+    WHERE public.codex_entries.scenario_id = p_scenario_id;
 
-- `Read` = `None`, `Write` = `Owner`, `Update` = `None`, `Delete` = `None`.
-- `rawExposure` = `No` (no direct SELECT for owner or anyone; only aggregate `play_count` surfaces).
-- `feedsUi` = `No`, `appLocation` = `None`.
-- Sensitivity: High. `purpose` explains that `record_scenario_play` performs the write and that reads happen only via the aggregate counter on `published_scenarios`.
+    GET DIAGNOSTICS v_rows = ROW_COUNT;
+    IF v_rows = 0 THEN
+      RAISE EXCEPTION 'Unauthorized: codex_entries row % blocked by ownership guard', v_id;
+    END IF;
+  END LOOP;
 
-### Expected corrections (illustrative)
+  SELECT ARRAY(SELECT (elem->>'id')::uuid FROM jsonb_array_elements(p_scenes) AS elem)
+    INTO incoming_scene_ids;
 
-- Owner-scoped roleplay/session/library tables (`stories`, `characters`, `codex_entries`, `scenes`, `content_themes`, `side_characters`, `memories`, `messages`, `conversations`, `character_session_states`, `character_state_message_snapshots`, `side_character_message_snapshots`, `conversation_world_state_snapshots`, `conversation_state_change_events`, `conversation_api_call_traces`, `conversation_dialog_debug_comments`, `goal_alignment_states`, `story_goal_step_derivations`, `image_folders`, `library_images`, `user_backgrounds`, `sidebar_backgrounds`, `saved_scenarios`, `creator_follows`, `scenario_likes`, `scenario_reviews`, `remixed_scenarios`): if the base SELECT policy is `auth.uid() = user_id`, mark `rawExposure: Yes`, read `Owner` (or `Owner/Admin` where has_role branch exists). Sensitivity stays High.
-- `profiles`: base table SELECT policy determines `rawExposure`; fields returned only via `get_public_creator_profile`/`get_public_profiles` and not by the base policy stay `No`.
-- `published_scenarios`: `rawExposure: Yes` if base policy allows anyone to SELECT `is_published AND NOT is_hidden` directly; otherwise `No` with read `None`/`System`.
-- `app_settings`: base `Admin`; `get_public_app_flags` is curated → `No`.
-- `art_styles`, `guide_documents`: `rawExposure` per base SELECT policy; curated RPC output alone doesn't flip it.
-- `user_roles`: read via `has_role` definer only → `Read: None`, write/update/delete `Admin` via `set_admin_access`.
-- Behavior/moderation tables (`reports`, `user_strikes`, `scenario_views`, `scenario_plays`): definer-only rule.
-- Admin/system tables (`admin_notes`, `media_migration_errors`, `ai_usage_events`, `ai_usage_test_events`, `ai_usage_test_sessions`, `finance_documents`, `ad_spend`, `quality_hub_registries`): admin/system, High sensitivity.
-- Storage buckets: reconcile with `can_read_scene_storage_object` / `can_read_private_story_media`. Public buckets (`avatars`, `covers`, `backgrounds`, `guide_images`) = `rawExposure: Yes` for reads. Private buckets accessed via signed URLs stay `No`. Access cells hold only controlled values; the published-scenario branch explanation goes in `purpose`/rationale.
+  DELETE FROM scenes
+    WHERE scenario_id = p_scenario_id
+    AND id != ALL(incoming_scene_ids);
 
-## Tests
+  FOR scene_record IN SELECT * FROM jsonb_array_elements(p_scenes) LOOP
+    v_id := (scene_record->>'id')::uuid;
+    INSERT INTO scenes (id, scenario_id, image_url, image_path, tags, is_starting_scene)
+    VALUES (
+      v_id,
+      p_scenario_id,
+      COALESCE(scene_record->>'image_url', ''),
+      NULLIF(scene_record->>'image_path', ''),
+      COALESCE(ARRAY(SELECT jsonb_array_elements_text(scene_record->'tags')), '{}'::text[]),
+      COALESCE((scene_record->>'is_starting_scene')::boolean, false)
+    )
+    ON CONFLICT (id) DO UPDATE SET
+      image_url = EXCLUDED.image_url,
+      image_path = EXCLUDED.image_path,
+      tags = EXCLUDED.tags,
+      is_starting_scene = EXCLUDED.is_starting_scene
+    WHERE public.scenes.scenario_id = p_scenario_id;
 
-Update `src/data/supabase-schema-reference.test.ts` only if counts change:
+    GET DIAGNOSTICS v_rows = ROW_COUNT;
+    IF v_rows = 0 THEN
+      RAISE EXCEPTION 'Unauthorized: scenes row % blocked by ownership guard', v_id;
+    END IF;
+  END LOOP;
+END;
+$function$;
 
-- Objects 45 → **46** (add `scenario_plays`).
-- Tables 44 → **45**. Storage = 1.
-- Row total recomputed after edits.
+ALTER TABLE public.characters               DROP COLUMN current_mood;
+ALTER TABLE public.side_characters          DROP COLUMN current_mood;
+ALTER TABLE public.character_session_states DROP COLUMN current_mood;
 
-Keep intact: controlled-vocabulary test (now also effectively enforces the "no prose in access cells" rule via `splitSchemaReferenceAccess` + `accessValues`), rejected-actors test, App Location ↔ Feeds UI test, reports-search test.
+COMMIT;
+```
 
-## Validation
+CASCADE is intentionally omitted from the DROP COLUMNs — the pre-scan showed no dependent objects. If any unexpected dependency exists at execution time, the migration aborts cleanly.
 
-1. `npm run test -- src/data/supabase-schema-reference.test.ts`
-2. `npm run typecheck`
-3. `npm run lint`
-4. `npm run build`
-5. Playwright against `http://localhost:8080/style-guide/supabase-schema-reference`: search, All/Tables/Storage filters, jump links, collapse/expand, Legend toggle, no console errors; verify Admin Panel tile still opens the route.
+## 4. Exact verification queries (post-execution)
 
-## What I will not change
+```sql
+-- (a) No current_mood columns remain anywhere.
+SELECT table_schema || '.' || table_name || '.' || column_name AS ref
+FROM information_schema.columns
+WHERE column_name = 'current_mood';
+-- Expect: 0 rows.
 
-Page component, layout, styling, legend, columns, admin gate; any Supabase schema, RLS, storage policy, edge function, secret, migration; snapshot files (`supabase-schema-map.ts`, `database-schema-inventory.ts`, `integrations/supabase/types.ts`); Quality Hub registry; controlled vocabulary; test intent.
+-- (b) No function body in public references current_mood.
+SELECT n.nspname || '.' || p.proname AS fn
+FROM pg_proc p
+JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname = 'public'
+  AND p.prosrc ILIKE '%current_mood%';
+-- Expect: 0 rows.
 
-## Report back
+-- (c) No view references current_mood.
+SELECT table_schema || '.' || table_name AS view_ref
+FROM information_schema.views
+WHERE view_definition ILIKE '%current_mood%';
+-- Expect: 0 rows.
 
-- Tables added (`scenario_plays`) and tables updated with per-row deltas.
-- Storage bucket rows updated.
-- Sources checked (pg_policies per table, information_schema.columns per table, referenced db functions).
-- Rows flagged for human review — likely candidates: exact base-SELECT posture on `profiles` and `published_scenarios`; owner-visibility on debug/trace tables (`conversation_api_call_traces`, `conversation_dialog_debug_comments`); any table where base policy and definer function disagree on effective actor.
-- Which validation commands passed.
+-- (d) No policy references current_mood.
+SELECT schemaname || '.' || tablename || '.' || policyname AS policy_ref
+FROM pg_policies
+WHERE qual ILIKE '%current_mood%'
+   OR with_check ILIKE '%current_mood%';
+-- Expect: 0 rows.
+
+-- (e) save_scenario_atomic still exists with SECURITY DEFINER and unchanged signature.
+SELECT p.proname,
+       p.prosecdef                                  AS security_definer,
+       pg_get_function_identity_arguments(p.oid)    AS args
+FROM pg_proc p
+JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname = 'public'
+  AND p.proname = 'save_scenario_atomic';
+-- Expect: 1 row; prosecdef = t;
+-- args = 'p_scenario_id uuid, p_user_id uuid, p_story jsonb,
+--         p_characters jsonb, p_codex_entries jsonb, p_scenes jsonb'.
+```
+
+Plus a smoke run of `save_scenario_atomic` from an owning user through the app to confirm ownership guards and unrelated save behavior are intact.
+
+## 5. Out of scope (unchanged)
+
+No changes to RLS, auth, storage, other policies, secrets, or unrelated schema. Only the three columns and the mood-related tokens inside `save_scenario_atomic` change.
+
+Stopping here. Awaiting Thomas's explicit approval AND confirmation that the application-side removal is deployed before any migration call.
