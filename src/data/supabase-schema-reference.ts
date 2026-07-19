@@ -2060,20 +2060,6 @@ export const schemaReferenceObjects = [
         "appLocation": "Character library, Story builder page, Chat interface, Community gallery"
       },
       {
-        "field": "current_mood",
-        "type": "text",
-        "purpose": "Stores current mood for the character record.",
-        "category": "Private roleplay content",
-        "sensitivity": "High",
-        "rawExposure": "Yes",
-        "read": "Owner/Admin/Public",
-        "write": "Owner",
-        "update": "Owner",
-        "delete": "Owner",
-        "feedsUi": "Yes",
-        "appLocation": "Character library, Story builder page, Chat interface, Community gallery"
-      },
-      {
         "field": "role_description",
         "type": "text",
         "purpose": "Stores role description for the character record.",
