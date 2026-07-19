@@ -287,7 +287,7 @@ describe('runRoleplayBatch1Validation', () => {
       id: 'issue-03-regenerate-state-pruning-fixture',
       issueNumber: 3,
       issueTitle: 'Retry Superseded-Generation Contamination',
-      validationPhase: 'Validation Phase 1: Regenerate State Pruning Fixture',
+      validationPhase: 'Validation Phase 1: Regenerate State Fixture',
       result: 'Pass',
       failureCause: '',
     }));
@@ -304,7 +304,7 @@ describe('runRoleplayBatch1Validation', () => {
       id: 'issue-03-persistence-memory-pruning-proof',
       issueNumber: 3,
       issueTitle: 'Retry Superseded-Generation Contamination',
-      validationPhase: 'Validation Phase 2: Persistence Memory Pruning Proof',
+      validationPhase: 'Validation Phase 2: Persistence Memory Proof',
       result: 'Pass',
       failureCause: '',
     }));
@@ -319,7 +319,7 @@ describe('runRoleplayBatch1Validation', () => {
       id: 'issue-03-review-export-pruning-proof',
       issueNumber: 3,
       issueTitle: 'Retry Superseded-Generation Contamination',
-      validationPhase: 'Validation Phase 3: Debug Export Pruning Report',
+      validationPhase: 'Validation Phase 3: Review Export Proof',
       result: 'Pass',
       failureCause: '',
     }));
