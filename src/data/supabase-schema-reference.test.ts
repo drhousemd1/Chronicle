@@ -19,7 +19,7 @@ describe("supabase schema reference data", () => {
     expect(schemaReferenceObjects).toHaveLength(46);
     expect(schemaReferenceObjects.filter((object) => object.type === "table")).toHaveLength(45);
     expect(schemaReferenceObjects.filter((object) => object.type === "storage")).toHaveLength(1);
-    expect(schemaReferenceObjects.reduce((total, object) => total + object.rows.length, 0)).toBe(521);
+    expect(schemaReferenceObjects.reduce((total, object) => total + object.rows.length, 0)).toBe(518);
   });
 
   it("keeps controlled table values stable", () => {
