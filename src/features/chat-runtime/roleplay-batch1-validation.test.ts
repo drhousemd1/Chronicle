@@ -10,6 +10,14 @@ describe('runRoleplayBatch1Validation', () => {
     const recorder = createFixtureExecutionCollector();
     const run = await runRoleplayBatch1Validation({ recordExecution: recorder.recordExecution });
 
+    const failedFixtures = run.results
+      .filter((result) => result.result === 'fail')
+      .map((result) => ({
+        id: result.id,
+        failedAssertions: result.failedAssertions,
+        assertionResults: result.assertionResults.filter((assertion) => !assertion.passed),
+      }));
+    expect(failedFixtures).toEqual([]);
     expect(run.summary).toEqual({ total: 22, passed: 22, failed: 0 });
 
     const ledger = { rows: recorder.rows };
@@ -101,7 +109,8 @@ describe('runRoleplayBatch1Validation', () => {
     expect(oldContractPreview).toContain('"responseJobWinsOverLegacyUserMessage": true');
     expect(oldContractPreview).toContain('"responseJobWinsOverLegacyCurrentState": true');
     expect(oldContractPreview).toContain('"responseJobWinsOverLegacyRegenerationDirective": true');
-    expect(oldContractPreview).toContain('"legacyPathStillExistsWithoutResponseJob": true');
+    expect(oldContractPreview).toContain('"missingResponseJobRejected": true');
+    expect(oldContractPreview).toContain('RoleplayResponseJob is required to build roleplay API messages.');
     expect(oldContractPreview).toContain('"finalMessageUsesResponseJobContent": true');
     expect(oldContractPreview).toContain('"responseJobLaneEvidencePresent": true');
     expect(oldContractPreview).toContain('"legacyFallbackTextRendered": false');

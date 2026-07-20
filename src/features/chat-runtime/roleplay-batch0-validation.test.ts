@@ -137,13 +137,13 @@ describe('runRoleplayBatch0Validation', () => {
     const detailVisibilityRow = ledger.rows.find((row) => row.id === 'issue-24-detail-visibility-physical-state-fixtures');
     const detailVisibilityArtifactPreview = (detailVisibilityRow?.rawReport as { artifactPreview?: string } | undefined)?.artifactPreview;
     expect(detailVisibilityArtifactPreview).toContain('"responseDetailLane": "detailed"');
-    expect(detailVisibilityArtifactPreview).toContain('"visibilitySignal": "partial_visibility_is_not_confirmation"');
-    expect(detailVisibilityArtifactPreview).toContain('"physicalStateSignal": "latest_user_physical_change_preserved"');
-    expect(detailVisibilityArtifactPreview).toContain('"internalThoughtDiagnostics": "diagnostic_only"');
-    expect(detailVisibilityArtifactPreview).toContain('"storySpecificRuleAdded": false');
-    expect(detailVisibilityArtifactPreview).not.toContain('door');
-    expect(detailVisibilityArtifactPreview).not.toContain('cabin');
-    expect(detailVisibilityArtifactPreview).not.toContain('storm');
+    expect(detailVisibilityArtifactPreview).toContain('"thoughtTokenCount": 1');
+    expect(detailVisibilityArtifactPreview).toContain('"privateTextWithheld": true');
+    expect(detailVisibilityArtifactPreview).toContain('"privacyEvaluationResult": "pass"');
+    expect(detailVisibilityArtifactPreview).toContain('"activeSnapshotId": "snapshot-valid-old"');
+    expect(detailVisibilityArtifactPreview).toContain('"physicalStateLocation": "Shared workspace"');
+    expect(detailVisibilityArtifactPreview).toContain('"staleSnapshotExcluded": true');
+    expect(detailVisibilityArtifactPreview).not.toContain('I do not want anyone else to know that I am worried.');
 
     const debugSupportRow = ledger.rows.find((row) => row.id === 'issue-24-debug-export-support-fixtures');
     const debugSupportArtifactPreview = (debugSupportRow?.rawReport as { artifactPreview?: string } | undefined)?.artifactPreview;
@@ -154,10 +154,6 @@ describe('runRoleplayBatch0Validation', () => {
     expect(debugSupportArtifactPreview).toContain('"hasPhysicalStateReviewRows": true');
     expect(debugSupportArtifactPreview).toContain('"hasGoalAlignmentDiagnosticOnly": true');
     expect(debugSupportArtifactPreview).toContain('"hasMemoryRejectedOutcome": true');
-    expect(debugSupportArtifactPreview).toContain('"ownerPrivateRuntimeReceipts": true');
-    expect(debugSupportArtifactPreview).toContain('"adminTestSessionOptInReviewExport": true');
-    expect(debugSupportArtifactPreview).toContain('"serviceRoleAuditedCaveat": true');
-    expect(debugSupportArtifactPreview).not.toContain('"supportCallsRepairCurrentGeneration": true');
 
     const targetedCommandRow = ledger.rows.find((row) => row.id === 'issue-24-targeted-command-documentation');
     const targetedCommandArtifactPreview = (targetedCommandRow?.rawReport as { artifactPreview?: string } | undefined)?.artifactPreview;

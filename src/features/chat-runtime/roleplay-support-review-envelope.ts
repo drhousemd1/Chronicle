@@ -22,6 +22,7 @@ export type RoleplaySupportPersistenceStatus =
   | 'not_requested'
   | 'pending'
   | 'persisted'
+  | 'persisted_runtime_state_pending'
   | 'no_updates'
   | 'failed'
   | 'skipped_stale'
@@ -34,6 +35,16 @@ export type RoleplaySupportPromptTarget =
   | 'goal_state'
   | 'summary';
 
+export const ROLEPLAY_SUPPORT_REVIEW_ENVELOPE_CONTRACT = 'RoleplaySupportReviewEnvelope' as const;
+export const ROLEPLAY_SUPPORT_REVIEW_ENVELOPE_VERSION = 2 as const;
+
+export type RoleplaySupportWorkerArtifact = {
+  worker: string;
+  contract: string;
+  version: number;
+  artifactVersion: string;
+};
+
 export type RoleplaySupportReviewItem = {
   id: string;
   label: string;
@@ -43,6 +54,7 @@ export type RoleplaySupportReviewItem = {
   sourceClassification?: string;
   claimType?: string;
   sourceRole?: string;
+  evidenceBasis?: string;
   authority?: string;
   modelFacingAction?: string;
   sourceMessageId?: string;
@@ -65,8 +77,10 @@ export type RoleplaySupportFuturePromptImpact = {
 };
 
 export type RoleplaySupportReviewEnvelope = {
-  version: 1;
+  contract: typeof ROLEPLAY_SUPPORT_REVIEW_ENVELOPE_CONTRACT;
+  version: typeof ROLEPLAY_SUPPORT_REVIEW_ENVELOPE_VERSION;
   worker: RoleplaySupportWorker;
+  workerArtifact?: RoleplaySupportWorkerArtifact;
   sourceMessageId?: string;
   sourceGenerationId?: string;
   accepted: RoleplaySupportReviewItem[];
@@ -76,18 +90,16 @@ export type RoleplaySupportReviewEnvelope = {
   readiness: RoleplaySupportReadiness;
   futurePromptImpact: RoleplaySupportFuturePromptImpact;
   contextGaps: string[];
-  legacyWrapped: boolean;
 };
 
 export type CreateRoleplaySupportReviewEnvelopeInput = Omit<
   RoleplaySupportReviewEnvelope,
-  'version' | 'accepted' | 'rejected' | 'omitted' | 'contextGaps' | 'legacyWrapped'
+  'contract' | 'version' | 'accepted' | 'rejected' | 'omitted' | 'contextGaps'
 > & {
   accepted?: RoleplaySupportReviewItem[];
   rejected?: RoleplaySupportReviewItem[];
   omitted?: RoleplaySupportReviewItem[];
   contextGaps?: string[];
-  legacyWrapped?: boolean;
 };
 
 export type FinalizeRoleplaySupportReviewEnvelopeInput = {
@@ -95,6 +107,9 @@ export type FinalizeRoleplaySupportReviewEnvelopeInput = {
   persistenceTargets?: string[];
   persistenceReason: string;
   contextGap?: string;
+  accepted?: RoleplaySupportReviewItem[];
+  rejected?: RoleplaySupportReviewItem[];
+  omitted?: RoleplaySupportReviewItem[];
 };
 
 const ROLEPLAY_SUPPORT_WORKER_SET = new Set<string>(ROLEPLAY_SUPPORT_WORKERS);
@@ -118,8 +133,10 @@ export function createRoleplaySupportReviewEnvelope(
 ): RoleplaySupportReviewEnvelope {
   const accepted = input.accepted ?? [];
   const envelope: RoleplaySupportReviewEnvelope = {
-    version: 1,
+    contract: ROLEPLAY_SUPPORT_REVIEW_ENVELOPE_CONTRACT,
+    version: ROLEPLAY_SUPPORT_REVIEW_ENVELOPE_VERSION,
     worker: input.worker,
+    workerArtifact: input.workerArtifact,
     sourceMessageId: input.sourceMessageId,
     sourceGenerationId: input.sourceGenerationId,
     accepted,
@@ -129,7 +146,6 @@ export function createRoleplaySupportReviewEnvelope(
     readiness: input.readiness,
     futurePromptImpact: input.futurePromptImpact,
     contextGaps: input.contextGaps ?? [],
-    legacyWrapped: input.legacyWrapped ?? false,
   };
 
   if (!isRoleplaySupportReviewEnvelopePromptEligible(envelope)) {
@@ -148,10 +164,15 @@ export function createRoleplaySupportReviewEnvelope(
 export function isRoleplaySupportReviewEnvelopePromptEligible(
   envelope: RoleplaySupportReviewEnvelope,
 ): boolean {
+  const persistedAcceptedItems = envelope.accepted.filter((item) => (
+    item.persistenceStatus
+      ? item.persistenceStatus === 'persisted'
+      : envelope.persistence.status === 'persisted'
+  ));
   return envelope.worker !== 'goal_alignment'
     && envelope.readiness === 'completed'
     && envelope.persistence.status === 'persisted'
-    && envelope.accepted.length > 0
+    && persistedAcceptedItems.length > 0
     && envelope.futurePromptImpact.eligible
     && envelope.futurePromptImpact.targets.length > 0;
 }
@@ -181,25 +202,36 @@ export function finalizeRoleplaySupportReviewEnvelope(
   envelope: RoleplaySupportReviewEnvelope,
   input: FinalizeRoleplaySupportReviewEnvelopeInput,
 ): RoleplaySupportReviewEnvelope {
+  const accepted = input.accepted ?? envelope.accepted;
+  const rejected = input.rejected ?? envelope.rejected;
+  const omitted = input.omitted ?? envelope.omitted;
+  const hasPersistedAcceptedItem = accepted.some((item) => (
+    item.persistenceStatus
+      ? item.persistenceStatus === 'persisted'
+      : input.persistenceStatus === 'persisted'
+  ));
   const readiness: RoleplaySupportReadiness = input.persistenceStatus === 'failed'
     ? 'failed'
     : input.persistenceStatus === 'skipped_stale'
       ? 'skipped_stale'
       : input.persistenceStatus === 'source_not_persisted'
         ? 'source_not_persisted'
-        : envelope.accepted.length > 0
+        : accepted.length > 0
           ? 'completed'
-          : envelope.rejected.length > 0
+          : rejected.length > 0
             ? 'rejected_only'
             : 'no_updates';
   const promptTargets = getRoleplaySupportPromptTargets(envelope.worker);
   const eligible = input.persistenceStatus === 'persisted'
     && envelope.worker !== 'goal_alignment'
-    && envelope.accepted.length > 0
+    && hasPersistedAcceptedItem
     && promptTargets.length > 0;
 
   return createRoleplaySupportReviewEnvelope({
     ...envelope,
+    accepted,
+    rejected,
+    omitted,
     persistence: {
       status: input.persistenceStatus,
       targets: input.persistenceTargets ?? [],

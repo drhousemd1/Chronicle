@@ -6,6 +6,25 @@ export type MessageToken = {
 
 export type PlainTextMode = 'default' | 'action';
 
+export type MessageFormattingWarning = Readonly<{
+  code: 'unmatched_opening_parenthesis' | 'unmatched_closing_parenthesis';
+  index: number;
+  delimiter: '(' | ')';
+}>;
+
+export type BalancedParentheticalSpan = Readonly<{
+  start: number;
+  end: number;
+  rawText: string;
+  content: string;
+}>;
+
+export type MessageTokenizationResult = Readonly<{
+  tokens: MessageToken[];
+  parentheticalSpans: BalancedParentheticalSpan[];
+  warnings: MessageFormattingWarning[];
+}>;
+
 const CHAT_RENDER_ARTIFACT_LINE_REGEX = /^\s*(?:(?:[-—*_]){3,}|```(?:\w+)?|<\/?writer_draft>)\s*$/gim;
 const DOUBLE_COLON_SPEAKER_REGEX = /^(\s*(?:\*\*)?[A-Z][a-zA-Z\s'-]{0,29}(?:\*\*)?)\s*:{2,}\s*/gm;
 const THOUGHT_WRAPPED_AS_ACTION_REGEX = /\*\(\s*([\s\S]*?)\s*\)\*/g;
@@ -29,25 +48,69 @@ export function sanitizeAssistantMessageText(text: string): string {
     .trim();
 }
 
-export function parseMessageTokens(text: string, preserveWhitespace = false): MessageToken[] {
-  let cleanRaw = text.replace(/\[SCENE:\s*.*?\]/g, '');
-  cleanRaw = cleanRaw.replace(THOUGHT_WRAPPED_AS_ACTION_REGEX, '($1)');
-  if (!preserveWhitespace) cleanRaw = cleanRaw.trim();
-  const regex = /(\*[\s\S]*?\*)|([“"][\s\S]*?[”"][,.!?;:]?)|(\([\s\S]*?\))/g;
+export function scanBalancedParentheticalSpans(text: string): Readonly<{
+  spans: BalancedParentheticalSpan[];
+  warnings: MessageFormattingWarning[];
+}> {
+  const openIndexes: number[] = [];
+  const spans: BalancedParentheticalSpan[] = [];
+  const warnings: MessageFormattingWarning[] = [];
 
+  for (let index = 0; index < text.length; index += 1) {
+    const character = text[index];
+    if (character === '(') {
+      openIndexes.push(index);
+      continue;
+    }
+    if (character !== ')') continue;
+
+    if (openIndexes.length === 0) {
+      warnings.push({
+        code: 'unmatched_closing_parenthesis',
+        index,
+        delimiter: ')',
+      });
+      continue;
+    }
+
+    const start = openIndexes.pop() as number;
+    if (openIndexes.length === 0) {
+      spans.push({
+        start,
+        end: index + 1,
+        rawText: text.slice(start, index + 1),
+        content: text.slice(start + 1, index),
+      });
+    }
+  }
+
+  openIndexes.forEach((index) => warnings.push({
+    code: 'unmatched_opening_parenthesis',
+    index,
+    delimiter: '(',
+  }));
+
+  return {
+    spans,
+    warnings: warnings.sort((left, right) => left.index - right.index),
+  };
+}
+
+function parseVisibleMessageTokens(text: string): MessageToken[] {
+  const regex = /(\*[\s\S]*?\*)|([“"][\s\S]*?[”"][,.!?;:]?)/g;
   const parts: MessageToken[] = [];
   let lastIndex = 0;
-  let match;
+  let match: RegExpExecArray | null;
 
-  while ((match = regex.exec(cleanRaw)) !== null) {
+  while ((match = regex.exec(text)) !== null) {
     if (match.index > lastIndex) {
-      parts.push({ type: 'plain', content: cleanRaw.slice(lastIndex, match.index) });
+      parts.push({ type: 'plain', content: text.slice(lastIndex, match.index) });
     }
 
     const found = match[0];
     if (found.startsWith('*')) {
       parts.push({ type: 'action', content: found.slice(1, -1) });
-    } else if (found.startsWith('"') || found.startsWith('“')) {
+    } else {
       const speechMatch = found.match(/^([“"])([\s\S]*?)([”"])([,.!?;:]?)$/);
       if (speechMatch) {
         parts.push({
@@ -58,18 +121,45 @@ export function parseMessageTokens(text: string, preserveWhitespace = false): Me
       } else {
         parts.push({ type: 'speech', content: found.replace(/^["“]|["”]$/g, '') });
       }
-    } else if (found.startsWith('(')) {
-      parts.push({ type: 'thought', content: found.slice(1, -1) });
     }
 
     lastIndex = regex.lastIndex;
   }
 
-  if (lastIndex < cleanRaw.length) {
-    parts.push({ type: 'plain', content: cleanRaw.slice(lastIndex) });
+  if (lastIndex < text.length) {
+    parts.push({ type: 'plain', content: text.slice(lastIndex) });
+  }
+  return parts;
+}
+
+export function parseMessageTokensWithWarnings(
+  text: string,
+  preserveWhitespace = false,
+): MessageTokenizationResult {
+  let cleanRaw = text.replace(/\[SCENE:\s*.*?\]/g, '');
+  cleanRaw = cleanRaw.replace(THOUGHT_WRAPPED_AS_ACTION_REGEX, '($1)');
+  if (!preserveWhitespace) cleanRaw = cleanRaw.trim();
+  const { spans, warnings } = scanBalancedParentheticalSpans(cleanRaw);
+  const parts: MessageToken[] = [];
+  let lastIndex = 0;
+
+  for (const span of spans) {
+    if (span.start > lastIndex) {
+      parts.push(...parseVisibleMessageTokens(cleanRaw.slice(lastIndex, span.start)));
+    }
+    parts.push({ type: 'thought', content: span.content });
+    lastIndex = span.end;
   }
 
-  return parts;
+  if (lastIndex < cleanRaw.length) {
+    parts.push(...parseVisibleMessageTokens(cleanRaw.slice(lastIndex)));
+  }
+
+  return { tokens: parts, parentheticalSpans: spans, warnings };
+}
+
+export function parseMessageTokens(text: string, preserveWhitespace = false): MessageToken[] {
+  return parseMessageTokensWithWarnings(text, preserveWhitespace).tokens;
 }
 
 export function escapeHtml(str: string): string {

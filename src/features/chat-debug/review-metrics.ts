@@ -17,6 +17,13 @@ import {
   type CharacterPromptOutputCopyMetric,
 } from '@/features/chat-runtime/roleplay-character-card-facts';
 import type { EffectiveResponseDetail } from '@/features/chat-runtime/roleplay-response-detail';
+import {
+  buildResponseDevelopmentReview,
+  evaluateRoleplayCandidateBehavior,
+  type RoleplayCandidateBehaviorEvaluation,
+  type ResponseDevelopmentReview,
+} from '@/features/chat-runtime/roleplay-candidate-behavior';
+import type { RoleplayResponseMode } from '@/features/chat-runtime/roleplay-response-job';
 
 export type ReviewMetricRole = Message['role'];
 export type ReviewMetricModality = 'action' | 'dialogue' | 'internal_thought' | 'plain_text';
@@ -128,7 +135,10 @@ export type ParentMessageResponseDetailWarning =
   | 'detailed_response_underdeveloped'
   | 'detailed_dialogue_underdeveloped'
   | 'uniform_child_card_shape'
-  | 'repeated_phrase_signal';
+  | 'repeated_phrase_signal'
+  | 'high_restatement_overlap'
+  | 'repeated_closing_function'
+  | 'length_increase_without_new_development';
 
 export type ParentMessageResponseDetailMetrics = {
   parentMessageId: string;
@@ -140,6 +150,8 @@ export type ParentMessageResponseDetailMetrics = {
   paragraphCount: number;
   renderedChildCardCount: number;
   repeatedPhraseHits: ReviewMetricCount[];
+  developmentReview: ResponseDevelopmentReview;
+  modeBehaviorReview: RoleplayCandidateBehaviorEvaluation | null;
   warnings: ParentMessageResponseDetailWarning[];
   allowedEscapeReason: 'brief_player_turn' | 'scene_transition_turn' | null;
 };
@@ -588,6 +600,9 @@ export function buildParentMessageResponseDetailMetrics(input: {
   text: string;
   childWordCounts: number[];
   latestPlayerTurn: string;
+  mode?: RoleplayResponseMode;
+  referenceResponse?: string;
+  modeReferenceResponse?: string;
   effectiveResponseDetail: EffectiveResponseDetail;
 }): ParentMessageResponseDetailMetrics {
   const tokens = tokenizeRoleplayText(input.text);
@@ -608,6 +623,24 @@ export function buildParentMessageResponseDetailMetrics(input: {
       ? 'scene_transition_turn'
       : null;
   const warnings: ParentMessageResponseDetailWarning[] = [];
+  const mode = input.mode ?? 'normal_send';
+  const developmentReview = buildResponseDevelopmentReview({
+    mode,
+    playerTurn: input.latestPlayerTurn,
+    candidateResponse: input.text,
+    referenceResponse: input.referenceResponse,
+  });
+  const modeBehaviorReview = mode === 'retry_regenerate' || mode === 'continue_assistant_tail'
+    ? evaluateRoleplayCandidateBehavior({
+        criterion: mode === 'retry_regenerate'
+          ? 'retry_strategy_difference'
+          : 'continue_advancement',
+        mode,
+        playerTurn: input.latestPlayerTurn,
+        candidateResponse: input.text,
+        referenceResponse: input.modeReferenceResponse,
+      })
+    : null;
 
   if (input.effectiveResponseDetail.effectiveSetting === 'detailed') {
     if (totalWords < 90 && !allowedEscapeReason) {
@@ -626,6 +659,15 @@ export function buildParentMessageResponseDetailMetrics(input: {
     }
   }
   if (repeatedPhraseHits.length > 0) warnings.push('repeated_phrase_signal');
+  if (developmentReview.evaluation.reasons.includes('response_restates_reference_instead_of_developing')) {
+    warnings.push('high_restatement_overlap');
+  }
+  if (developmentReview.evaluation.warnings.includes('repeated_closing_function')) {
+    warnings.push('repeated_closing_function');
+  }
+  if (developmentReview.evaluation.warnings.includes('length_increase_without_new_development')) {
+    warnings.push('length_increase_without_new_development');
+  }
 
   return {
     parentMessageId: input.parentMessageId,
@@ -637,6 +679,8 @@ export function buildParentMessageResponseDetailMetrics(input: {
     paragraphCount,
     renderedChildCardCount: input.childWordCounts.length,
     repeatedPhraseHits,
+    developmentReview,
+    modeBehaviorReview,
     warnings,
     allowedEscapeReason,
   };

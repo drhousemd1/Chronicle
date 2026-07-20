@@ -2,6 +2,11 @@ import type {
   RoleplaySupportPersistenceStatus,
   RoleplaySupportWorker,
 } from './roleplay-support-review-envelope';
+import type {
+  RoleplayResponseJob,
+  RoleplayResponseMode,
+  RoleplayResponsePurpose,
+} from './roleplay-response-job';
 
 export const SUPPORT_CALL_LIFECYCLES = [
   'queued',
@@ -22,6 +27,8 @@ export type SupportCallReadinessRecord = Readonly<{
   lifecycle: SupportCallLifecycle;
   persistenceStatus: RoleplaySupportPersistenceStatus;
   firstEligibleFutureTurn?: number;
+  firstEligibleResponseJobId?: string;
+  firstEligibleAt?: number;
   unavailableToTriggeringResponse: true;
   queuedAt?: number;
   startedAt?: number;
@@ -34,6 +41,9 @@ export type SupportReadinessSnapshot = Readonly<{
   id: string;
   dispatchMessageId: string;
   dispatchGenerationId?: string;
+  responseJobId: string;
+  responseJobMode: RoleplayResponseMode;
+  responseJobPurpose: RoleplayResponsePurpose;
   previousAssistantMessageId: string;
   previousAssistantGenerationId?: string;
   capturedAt: number;
@@ -47,6 +57,24 @@ export type AdvanceSupportCallReadinessInput = Readonly<{
   persistenceStatus?: RoleplaySupportPersistenceStatus;
   reason: string;
   firstEligibleFutureTurn?: number;
+}>;
+
+export type CaptureSupportReadinessForResponseJobInput = Readonly<{
+  snapshotId: string;
+  dispatchMessageId: string;
+  dispatchGenerationId?: string;
+  previousAssistantMessageId: string;
+  previousAssistantGenerationId?: string;
+  capturedAt: number;
+  dispatchOrdinal: number;
+  responseJob: Pick<RoleplayResponseJob, 'id' | 'mode' | 'purpose'>;
+  records: readonly SupportCallReadinessRecord[];
+}>;
+
+export type CapturedSupportReadiness = Readonly<{
+  snapshot: SupportReadinessSnapshot;
+  updatedRecords: readonly SupportCallReadinessRecord[];
+  newlyEligibleRecords: readonly SupportCallReadinessRecord[];
 }>;
 
 function requiredText(value: string, fieldName: string): string {
@@ -66,7 +94,7 @@ function optionalTimestamp(value: number | undefined, fieldName: string): number
 function isFutureTurnEligiblePersistence(
   status: RoleplaySupportPersistenceStatus,
 ): boolean {
-  return status === 'persisted' || status === 'no_updates';
+  return status === 'persisted';
 }
 
 export function createSupportCallReadinessRecord(input: Omit<
@@ -76,6 +104,7 @@ export function createSupportCallReadinessRecord(input: Omit<
   const queuedAt = optionalTimestamp(input.queuedAt, 'queuedAt');
   const startedAt = optionalTimestamp(input.startedAt, 'startedAt');
   const completedAt = optionalTimestamp(input.completedAt, 'completedAt');
+  const firstEligibleAt = optionalTimestamp(input.firstEligibleAt, 'firstEligibleAt');
   if (queuedAt != null && startedAt != null && startedAt < queuedAt) {
     throw new Error('Support readiness startedAt cannot precede queuedAt');
   }
@@ -96,7 +125,7 @@ export function createSupportCallReadinessRecord(input: Omit<
     && input.lifecycle !== 'completed'
   ) {
     throw new Error(
-      'Support readiness persisted/no_updates status requires completed lifecycle',
+      'Support readiness persisted status requires completed lifecycle',
     );
   }
   if (
@@ -117,9 +146,17 @@ export function createSupportCallReadinessRecord(input: Omit<
       || !isFutureTurnEligiblePersistence(input.persistenceStatus)
     ) {
       throw new Error(
-        'Support readiness future-turn eligibility requires completed lifecycle and persisted/no_updates status',
+        'Support readiness future-turn eligibility requires completed lifecycle and persisted status',
       );
     }
+    if (!input.firstEligibleResponseJobId?.trim()) {
+      throw new Error('Support readiness future-turn eligibility requires response job identity');
+    }
+    if (firstEligibleAt == null) {
+      throw new Error('Support readiness future-turn eligibility requires capture timestamp');
+    }
+  } else if (input.firstEligibleResponseJobId != null || firstEligibleAt != null) {
+    throw new Error('Support readiness response-job eligibility fields require future-turn eligibility');
   }
 
   return Object.freeze({
@@ -130,6 +167,8 @@ export function createSupportCallReadinessRecord(input: Omit<
     lifecycle: input.lifecycle,
     persistenceStatus: input.persistenceStatus,
     firstEligibleFutureTurn: input.firstEligibleFutureTurn,
+    firstEligibleResponseJobId: input.firstEligibleResponseJobId?.trim() || undefined,
+    firstEligibleAt,
     unavailableToTriggeringResponse: true,
     queuedAt,
     startedAt,
@@ -151,31 +190,24 @@ export function createSupportReadinessSnapshot(input: Omit<
   );
   const previousAssistantGenerationId = input.previousAssistantGenerationId?.trim() || undefined;
   const records = Object.freeze(input.records.map((sourceRecord) => {
-    const record = createSupportCallReadinessRecord(sourceRecord);
-    if (record.sourceMessageId !== previousAssistantMessageId) {
-      throw new Error(
-        `Support readiness record ${record.id} does not belong to the previous assistant message`,
-      );
-    }
-    if (
-      previousAssistantGenerationId
-      && record.sourceGenerationId !== previousAssistantGenerationId
-    ) {
-      throw new Error(
-        `Support readiness record ${record.id} does not belong to the previous assistant generation`,
-      );
-    }
-    return record;
+    return createSupportCallReadinessRecord(sourceRecord);
   }));
-  const workerIds = records.map((record) => record.worker);
-  if (new Set(workerIds).size !== workerIds.length) {
-    throw new Error('Support readiness snapshot requires at most one record per worker');
+  const recordKeys = records.map((record) => [
+    record.worker,
+    record.sourceMessageId,
+    record.sourceGenerationId || '',
+  ].join(':'));
+  if (new Set(recordKeys).size !== recordKeys.length) {
+    throw new Error('Support readiness snapshot requires at most one record per worker and source generation');
   }
 
   return Object.freeze({
     id: requiredText(input.id, 'id'),
     dispatchMessageId: requiredText(input.dispatchMessageId, 'dispatchMessageId'),
     dispatchGenerationId: input.dispatchGenerationId?.trim() || undefined,
+    responseJobId: requiredText(input.responseJobId, 'responseJobId'),
+    responseJobMode: input.responseJobMode,
+    responseJobPurpose: input.responseJobPurpose,
     previousAssistantMessageId,
     previousAssistantGenerationId,
     capturedAt: optionalTimestamp(input.capturedAt, 'capturedAt')!,
@@ -213,9 +245,57 @@ export function advanceSupportCallReadinessRecord(
 export function markSupportCallReadinessEligible(
   record: SupportCallReadinessRecord,
   firstEligibleFutureTurn: number,
+  firstEligibleResponseJobId: string,
+  firstEligibleAt: number,
 ): SupportCallReadinessRecord {
   return createSupportCallReadinessRecord({
     ...record,
     firstEligibleFutureTurn,
+    firstEligibleResponseJobId,
+    firstEligibleAt,
+  });
+}
+
+export function captureSupportReadinessForResponseJob(
+  input: CaptureSupportReadinessForResponseJobInput,
+): CapturedSupportReadiness {
+  if (!Number.isInteger(input.dispatchOrdinal) || input.dispatchOrdinal < 1) {
+    throw new Error('Support readiness dispatch ordinal must be a positive integer');
+  }
+
+  const newlyEligibleRecords: SupportCallReadinessRecord[] = [];
+  const updatedRecords = input.records.map((record) => {
+    if (
+      record.firstEligibleFutureTurn == null
+      && record.lifecycle === 'completed'
+      && record.persistenceStatus === 'persisted'
+    ) {
+      const eligibleRecord = markSupportCallReadinessEligible(
+        record,
+        input.dispatchOrdinal,
+        input.responseJob.id,
+        input.capturedAt,
+      );
+      newlyEligibleRecords.push(eligibleRecord);
+      return eligibleRecord;
+    }
+    return record;
+  });
+
+  return Object.freeze({
+    snapshot: createSupportReadinessSnapshot({
+      id: input.snapshotId,
+      dispatchMessageId: input.dispatchMessageId,
+      dispatchGenerationId: input.dispatchGenerationId,
+      responseJobId: input.responseJob.id,
+      responseJobMode: input.responseJob.mode,
+      responseJobPurpose: input.responseJob.purpose,
+      previousAssistantMessageId: input.previousAssistantMessageId,
+      previousAssistantGenerationId: input.previousAssistantGenerationId,
+      capturedAt: input.capturedAt,
+      records: updatedRecords,
+    }),
+    updatedRecords: Object.freeze(updatedRecords),
+    newlyEligibleRecords: Object.freeze(newlyEligibleRecords),
   });
 }

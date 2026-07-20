@@ -564,6 +564,18 @@ export type FieldChangeMetadata = {
   updatedAt: number;
   previousValuePreview?: string;
   nextValuePreview?: string;
+  userStateAuthorityDecision?: {
+    claim: string;
+    userCharacterId?: string;
+    claimType: 'emotion' | 'intent' | 'arousal' | 'consent' | 'bodily_reaction' | 'preference' | 'voluntary_action' | 'dialogue_assignment' | 'internal_thought';
+    sourceMessageId: string;
+    sourceGenerationId: string;
+    sourceRole: 'user' | 'assistant';
+    evidenceBasis: 'explicit_user_authorship' | 'accepted_visible_observation' | 'in_character_interpretation' | 'unsupported';
+    authority: 'raw_user_fact' | 'accepted_assistant_observable_change' | 'assistant_interpretation' | 'unsupported_overreach';
+    modelFacingAction: 'allow_as_fact' | 'allow_as_observation' | 'allow_as_character_interpretation' | 'debug_only' | 'reject_from_persistence';
+    reason: string;
+  };
 };
 
 export type FieldChangeMetadataMap = Record<string, FieldChangeMetadata>;

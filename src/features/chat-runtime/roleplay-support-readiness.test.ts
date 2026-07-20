@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   advanceSupportCallReadinessRecord,
+  captureSupportReadinessForResponseJob,
   createSupportCallReadinessRecord,
   createSupportReadinessSnapshot,
   SUPPORT_CALL_LIFECYCLES,
@@ -19,6 +20,8 @@ function record(
     lifecycle: overrides.lifecycle ?? 'queued',
     persistenceStatus: overrides.persistenceStatus ?? 'pending',
     firstEligibleFutureTurn: overrides.firstEligibleFutureTurn,
+    firstEligibleResponseJobId: overrides.firstEligibleResponseJobId,
+    firstEligibleAt: overrides.firstEligibleAt,
     queuedAt: 'queuedAt' in overrides ? overrides.queuedAt : 10,
     startedAt: overrides.startedAt,
     completedAt: overrides.completedAt,
@@ -44,11 +47,13 @@ describe('support call readiness contracts', () => {
     });
   });
 
-  it('allows future-turn eligibility only after completed persisted/no-update results', () => {
+  it('allows future-turn eligibility only after a completed persisted result', () => {
     const persisted = record({
       lifecycle: 'completed',
       persistenceStatus: 'persisted',
       firstEligibleFutureTurn: 8,
+      firstEligibleResponseJobId: 'response-job-8',
+      firstEligibleAt: 25,
       startedAt: 12,
       completedAt: 20,
       reason: 'accepted_output_persisted_for_future_turn',
@@ -58,19 +63,19 @@ describe('support call readiness contracts', () => {
       worker: 'goal_progress',
       lifecycle: 'completed',
       persistenceStatus: 'no_updates',
-      firstEligibleFutureTurn: 8,
       startedAt: 12,
       completedAt: 20,
       reason: 'worker_proved_no_persistable_updates',
     });
 
     expect(persisted.firstEligibleFutureTurn).toBe(8);
-    expect(noUpdates.firstEligibleFutureTurn).toBe(8);
+    expect(noUpdates.firstEligibleFutureTurn).toBeUndefined();
   });
 
   it.each([
     ['running', 'pending'],
     ['completed', 'pending'],
+    ['completed', 'no_updates'],
     ['completed', 'failed'],
     ['failed', 'failed'],
     ['stale', 'skipped_stale'],
@@ -81,7 +86,9 @@ describe('support call readiness contracts', () => {
         lifecycle,
         persistenceStatus,
         firstEligibleFutureTurn: 3,
-      })).toThrow('future-turn eligibility requires completed lifecycle and persisted/no_updates status');
+        firstEligibleResponseJobId: 'response-job-3',
+        firstEligibleAt: 30,
+      })).toThrow('future-turn eligibility requires completed lifecycle and persisted status');
     },
   );
 
@@ -102,7 +109,7 @@ describe('support call readiness contracts', () => {
     expect(() => record({
       lifecycle: 'queued',
       persistenceStatus: 'persisted',
-    })).toThrow('persisted/no_updates status requires completed lifecycle');
+    })).toThrow('persisted status requires completed lifecycle');
 
     expect(() => record({
       lifecycle: 'running',
@@ -127,6 +134,9 @@ describe('support call readiness contracts', () => {
       id: 'snapshot:dispatch-2',
       dispatchMessageId: 'user-2',
       dispatchGenerationId: 'user-generation-2',
+      responseJobId: 'response-job-2',
+      responseJobMode: 'normal_send',
+      responseJobPurpose: 'respond_to_player_turn',
       previousAssistantMessageId: 'assistant-1',
       previousAssistantGenerationId: 'generation-1',
       capturedAt: 30,
@@ -138,6 +148,8 @@ describe('support call readiness contracts', () => {
           lifecycle: 'completed',
           persistenceStatus: 'persisted',
           firstEligibleFutureTurn: 2,
+          firstEligibleResponseJobId: 'response-job-2',
+          firstEligibleAt: 30,
           startedAt: 11,
           completedAt: 25,
           reason: 'character_state_persisted',
@@ -178,34 +190,93 @@ describe('support call readiness contracts', () => {
     expect(Object.isFrozen(persisted)).toBe(true);
   });
 
-  it('rejects records from another source message or generation', () => {
-    expect(() => createSupportReadinessSnapshot({
-      id: 'snapshot-1',
-      dispatchMessageId: 'user-2',
-      previousAssistantMessageId: 'assistant-1',
-      previousAssistantGenerationId: 'generation-1',
-      capturedAt: 30,
-      records: [record({ sourceMessageId: 'assistant-other' })],
-    })).toThrow('does not belong to the previous assistant message');
-
-    expect(() => createSupportReadinessSnapshot({
+  it('retains delayed records from older source turns in the current response-job snapshot', () => {
+    const snapshot = createSupportReadinessSnapshot({
       id: 'snapshot-2',
-      dispatchMessageId: 'user-2',
-      previousAssistantMessageId: 'assistant-1',
-      previousAssistantGenerationId: 'generation-1',
+      dispatchMessageId: 'user-3',
+      responseJobId: 'response-job-3',
+      responseJobMode: 'normal_send',
+      responseJobPurpose: 'respond_to_player_turn',
+      previousAssistantMessageId: 'assistant-2',
+      previousAssistantGenerationId: 'generation-2',
       capturedAt: 30,
-      records: [record({ sourceGenerationId: 'generation-other' })],
-    })).toThrow('does not belong to the previous assistant generation');
+      records: [record({ sourceMessageId: 'assistant-1', sourceGenerationId: 'generation-1' })],
+    });
+
+    expect(snapshot.records[0]).toMatchObject({
+      sourceMessageId: 'assistant-1',
+      sourceGenerationId: 'generation-1',
+    });
   });
 
   it('rejects aggregate duplicate worker status', () => {
     expect(() => createSupportReadinessSnapshot({
       id: 'snapshot-1',
       dispatchMessageId: 'user-2',
+      responseJobId: 'response-job-2',
+      responseJobMode: 'normal_send',
+      responseJobPurpose: 'respond_to_player_turn',
       previousAssistantMessageId: 'assistant-1',
       capturedAt: 30,
       records: [record(), record({ id: 'duplicate-memory' })],
-    })).toThrow('at most one record per worker');
+    })).toThrow('at most one record per worker and source generation');
+  });
+
+  it('proves a delayed persisted result is absent from turn N and first eligible for turn N+1', () => {
+    const pending = record({
+      lifecycle: 'running',
+      persistenceStatus: 'pending',
+      startedAt: 12,
+      reason: 'support_worker_started',
+    });
+    const turnN = captureSupportReadinessForResponseJob({
+      snapshotId: 'snapshot-turn-n',
+      dispatchMessageId: 'user-2',
+      responseJob: {
+        id: 'response-job-turn-n',
+        mode: 'normal_send',
+        purpose: 'respond_to_player_turn',
+      },
+      previousAssistantMessageId: 'assistant-1',
+      previousAssistantGenerationId: 'generation-1',
+      capturedAt: 15,
+      dispatchOrdinal: 1,
+      records: [pending],
+    });
+    const persistedAfterDispatch = advanceSupportCallReadinessRecord(pending, {
+      lifecycle: 'completed',
+      occurredAt: 20,
+      persistenceStatus: 'persisted',
+      reason: 'reviewed_output_persisted_after_turn_n_dispatch',
+    });
+    const turnNPlus1 = captureSupportReadinessForResponseJob({
+      snapshotId: 'snapshot-turn-n-plus-1',
+      dispatchMessageId: 'user-3',
+      responseJob: {
+        id: 'response-job-turn-n-plus-1',
+        mode: 'normal_send',
+        purpose: 'respond_to_player_turn',
+      },
+      previousAssistantMessageId: 'assistant-2',
+      previousAssistantGenerationId: 'generation-2',
+      capturedAt: 30,
+      dispatchOrdinal: 2,
+      records: [persistedAfterDispatch],
+    });
+
+    expect(turnN.snapshot.records[0]).toMatchObject({
+      lifecycle: 'running',
+      firstEligibleResponseJobId: undefined,
+    });
+    expect(turnN.newlyEligibleRecords).toEqual([]);
+    expect(turnNPlus1.snapshot.records[0]).toMatchObject({
+      lifecycle: 'completed',
+      persistenceStatus: 'persisted',
+      firstEligibleFutureTurn: 2,
+      firstEligibleResponseJobId: 'response-job-turn-n-plus-1',
+      firstEligibleAt: 30,
+    });
+    expect(turnNPlus1.newlyEligibleRecords).toHaveLength(1);
   });
 
   it.each(['id', 'sourceMessageId', 'reason'] as const)(

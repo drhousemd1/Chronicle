@@ -10,6 +10,8 @@ import {
   writeRawReport,
 } from './ledger-file';
 import { getRoleplayValidationGate, type CommandGateRunner } from './roleplay-gates';
+import type { RoleplayArtifactIdentity } from './roleplay-artifact-identity';
+import { buildRoleplayArtifactIdentityReport } from './roleplay-artifact-identity-node';
 import { readValidationSourceIdentity } from './source-identity';
 
 const MAX_CAPTURED_OUTPUT = 1_000_000;
@@ -89,6 +91,7 @@ export type RecordFixtureExecutionInput = {
   durationMs: number;
   evidenceRoot?: string;
   repositoryRoot?: string;
+  observedArtifactIdentities?: readonly RoleplayArtifactIdentity[];
 };
 
 export async function recordFixtureExecution(input: RecordFixtureExecutionInput) {
@@ -98,8 +101,17 @@ export async function recordFixtureExecution(input: RecordFixtureExecutionInput)
   }
   const executedAt = new Date().toISOString();
   const sourceIdentity = await readValidationSourceIdentity(input.repositoryRoot);
+  const repositoryRoot = input.repositoryRoot ?? process.cwd();
+  const artifactIdentityReport = await buildRoleplayArtifactIdentityReport(
+    repositoryRoot,
+    sourceIdentity,
+    input.observedArtifactIdentities,
+  );
   const executionId = createExecutionId(gate.gateId, executedAt);
-  const rawReportPath = await writeRawReport(executionId, input.report, input.evidenceRoot);
+  const rawReportPath = await writeRawReport(executionId, {
+    evidence: input.report,
+    artifactIdentityReport,
+  }, input.evidenceRoot);
   const record: AutomatedExecutionRecord = {
     schemaVersion: 1,
     executionId,
@@ -114,6 +126,7 @@ export async function recordFixtureExecution(input: RecordFixtureExecutionInput)
     sourceState: sourceIdentity.state,
     durationMs: input.durationMs,
     rawReportPath,
+    artifactIdentityReport,
     legacy: false,
   };
   await appendAutomatedExecution(record, input.evidenceRoot);
@@ -132,6 +145,7 @@ export async function runPredefinedCommandGate(gateId: string, repositoryRoot: s
   const spawnSpec = buildCommandSpawnSpec(runner, repositoryRoot);
   const evidenceRoot = resolve(repositoryRoot, '.validation-evidence/roleplay-pipeline');
   const sourceIdentity = await readValidationSourceIdentity(repositoryRoot);
+  const artifactIdentityReport = await buildRoleplayArtifactIdentityReport(repositoryRoot, sourceIdentity);
   const executedAt = new Date().toISOString();
   const executionId = createExecutionId(gate.gateId, executedAt);
   const startedAt = Date.now();
@@ -200,6 +214,7 @@ export async function runPredefinedCommandGate(gateId: string, repositoryRoot: s
     signal: outcome.signal,
     stdout: sanitizeOutput(outcome.stdout),
     stderr: sanitizeOutput(outcome.stderr),
+    artifactIdentityReport,
   };
   const rawReportPath = await writeRawReport(executionId, report, evidenceRoot);
   const record: AutomatedExecutionRecord = {
@@ -216,6 +231,7 @@ export async function runPredefinedCommandGate(gateId: string, repositoryRoot: s
     sourceState: sourceIdentity.state,
     durationMs: Date.now() - startedAt,
     rawReportPath,
+    artifactIdentityReport,
     legacy: false,
   };
   await appendAutomatedExecution(record, evidenceRoot);

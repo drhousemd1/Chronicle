@@ -8,10 +8,10 @@ import {
 } from "@/services/api-usage-validation";
 import {
   describeGoalAlignmentForPrompt,
-  shouldRenderGoalToWriter,
 } from "@/lib/goal-alignment";
 import type { ChatDebugRequestRecord, ChatDebugTrace } from "@/features/chat-debug/types";
 import type { RoleplayUserStateAuthorityDecision } from '@/features/chat-runtime/roleplay-user-state-authority';
+import type { RoleplayAssistantOutcomeRecord } from '@/features/chat-runtime/roleplay-assistant-outcome';
 import type {
   RoleplayFinalUserLaneEvidence,
   RoleplayResponseJob,
@@ -34,13 +34,21 @@ import { buildResolvedCurrentSceneKnowledgeFacts } from '@/features/chat-runtime
 import {
   buildRoleplayDuplicateSourceMetrics,
   buildRoleplaySourceCoverage,
-  buildRoleplaySourceReceipts,
+  buildRoleplaySourceArtifacts,
+  hashRoleplaySourceText,
 } from "@/features/chat-runtime/roleplay-source-receipts";
 import {
+  applyRoleplaySourceSelectionToReceipts,
   buildRoleplayActiveScenePacketCandidate,
   buildRoleplayEffectiveFieldEvidence,
+  buildRoleplaySelectedProviderPacket,
   buildRoleplaySourceBudgetSummary,
+  buildRoleplaySourceSelectionEvidence,
   linkRoleplayResponseJobSourceReceipts,
+  resolveRoleplaySourceRefreshReason,
+  selectRoleplaySources,
+  type RoleplaySourceRefreshReason,
+  type RoleplaySourceRefreshState,
 } from '@/features/chat-runtime/roleplay-source-shaping';
 import {
   buildRoleplaySceneRoster,
@@ -54,6 +62,12 @@ import {
   resolveEffectiveResponseDetail,
   type EffectiveResponseDetail,
 } from '@/features/chat-runtime/roleplay-response-detail';
+import {
+  applyPlayerTurnVisibilityToResponseJob,
+  projectPlayerTurnVisibility,
+  type PlayerTurnVisibilityProjection,
+} from '@/features/chat-runtime/player-turn-visibility';
+import { buildRoleplayFrontendArtifactIdentity } from '@/features/validation-evidence/roleplay-artifact-identity';
 
 /**
  * Detect if a user message contains dialogue/actions written for AI-controlled characters.
@@ -91,6 +105,7 @@ export function buildEstablishedFactNote(
   userText: string,
   characters: Array<{ name: string; controlledBy?: string }>,
 ): string {
+  const visibleUserText = projectPlayerTurnVisibility(userText).visibleText;
   const aiCharNames = characters.filter(c => c.controlledBy === 'AI').map(c => c.name);
   const hasEstablishedFactContent = aiCharNames.some(name => {
     const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -99,7 +114,7 @@ export function buildEstablishedFactNote(
       `\\b${escapedName}\\b\\s+(?:\\w+\\s+){0,4}(?:sat|stood|leaned|looked|turned|moved|walked|ran|reached|touched|pulled|pushed|grabbed|held|placed|lowered|raised|pressed|kissed|wrapped|guided|led|opened|closed|entered|left|began|started|continued)\\b`,
       'i',
     );
-    return taggedBlock.test(userText) || authoredAction.test(userText);
+    return taggedBlock.test(visibleUserText) || authoredAction.test(visibleUserText);
   });
   return hasEstablishedFactContent
     ? '[ESTABLISHED FACT NOTE: User wrote content for AI character(s) in this message. That content is already true in the scene -- do not re-narrate it. Continue the story from after those events.] '
@@ -133,8 +148,10 @@ export function renderResponseDetailInstruction(responseVerbosity: string = 'bal
 
 export type GenerateRoleplayResponseStreamOptions = {
   debugTrace?: boolean;
-  responseJob?: RoleplayResponseJob;
+  responseJob: RoleplayResponseJob;
+  sourceRefreshReason?: RoleplaySourceRefreshReason;
   userStateAuthorityDecisions?: RoleplayUserStateAuthorityDecision[];
+  assistantOutcomeRecords?: RoleplayAssistantOutcomeRecord[];
   onDebugTrace?: (trace: ChatDebugTrace) => void;
   onRequestPayload?: (request: ChatDebugRequestRecord) => void;
 };
@@ -147,6 +164,8 @@ const CURRENT_TURN_MEMORY_ANCHOR_LIMIT = 3;
 const ROLEPLAY_PROVIDER_TRANSPORT = 'responses';
 const ROLEPLAY_REASONING_EFFORT = 'medium';
 const ROLEPLAY_STORE = false;
+const ROLEPLAY_SOURCE_REFRESH_STATE_LIMIT = 200;
+const roleplaySourceRefreshStateByConversation = new Map<string, RoleplaySourceRefreshState>();
 
 function compactPromptValue(value: unknown, max = 140): string {
   const text = typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
@@ -216,12 +235,10 @@ export function renderGoalMilestoneTarget(description: string): string {
 export function buildRoleplayApiMessages(input: {
   conversationMessages: Message[];
   systemInstruction: string;
-  userMessage: string;
-  responseJob?: RoleplayResponseJob;
+  responseJob: RoleplayResponseJob;
   userStateAuthorityDecisions?: RoleplayUserStateAuthorityDecision[];
-  isRegeneration?: boolean;
-  currentTurnStateDigest?: string;
-  sessionMessageCount?: number;
+  assistantOutcomeRecords?: RoleplayAssistantOutcomeRecord[];
+  playerTurnVisibilityProjection?: PlayerTurnVisibilityProjection | null;
 }): {
   messages: RoleplayApiMessage[];
   historyMessages: Message[];
@@ -229,31 +246,44 @@ export function buildRoleplayApiMessages(input: {
   finalUserContent: string;
   finalUserLaneEvidence: RoleplayFinalUserLaneEvidence[];
   historyLimit: number;
+  responseJob: RoleplayResponseJob;
+  playerTurnVisibilityProjection: PlayerTurnVisibilityProjection | null;
 } {
+  if (!input.responseJob) {
+    throw new Error('RoleplayResponseJob is required to build roleplay API messages.');
+  }
+
+  let responseJob = input.responseJob;
+  let playerTurnVisibilityProjection = input.playerTurnVisibilityProjection;
+  if (playerTurnVisibilityProjection === undefined) {
+    const sourcePlayerMessage = input.responseJob.playerTurn
+      ? input.conversationMessages.find((message) => (
+        message.role === 'user' && message.id === input.responseJob.playerTurn?.messageId
+      ))
+      : undefined;
+    const visibilityResult = applyPlayerTurnVisibilityToResponseJob({
+      responseJob: input.responseJob,
+      rawPlayerText: sourcePlayerMessage?.text ?? input.responseJob.playerTurn?.text,
+    });
+    responseJob = visibilityResult.responseJob;
+    playerTurnVisibilityProjection = visibilityResult.projection;
+  }
+
   const { historyMessages, packet: recentHistoryPacket } = compileRoleplayRecentHistory({
     messages: input.conversationMessages,
-    responseJob: input.responseJob,
+    responseJob,
     userStateAuthorityDecisions: input.userStateAuthorityDecisions,
+    assistantOutcomeRecords: input.assistantOutcomeRecords,
     limit: API_CALL_1_PRIOR_HISTORY_MESSAGE_LIMIT,
     isLocalNotice: isLocalRoleplayNoticeMessage,
   });
-  const regenerationDirective = input.isRegeneration ? REGENERATION_DIRECTIVE_TEXT : '';
   const messages: RoleplayApiMessage[] = [
     { role: 'system', content: input.systemInstruction },
     ...recentHistoryPacket.providerMessages,
   ];
 
-  const finalUserContent = input.responseJob
-    ? renderRoleplayResponseJobFinalUserContent(input.responseJob)
-    : renderLegacyFinalUserContent({
-        sessionMessageCount: input.sessionMessageCount,
-        currentTurnStateDigest: input.currentTurnStateDigest,
-        regenerationDirective,
-        userMessage: input.userMessage,
-      });
-  const finalUserLaneEvidence = input.responseJob
-    ? getRoleplayResponseJobFinalUserLaneEvidence(input.responseJob)
-    : [];
+  const finalUserContent = renderRoleplayResponseJobFinalUserContent(responseJob);
+  const finalUserLaneEvidence = getRoleplayResponseJobFinalUserLaneEvidence(responseJob);
 
   messages.push({ role: 'user', content: finalUserContent });
 
@@ -264,32 +294,9 @@ export function buildRoleplayApiMessages(input: {
     finalUserContent,
     finalUserLaneEvidence,
     historyLimit: API_CALL_1_PRIOR_HISTORY_MESSAGE_LIMIT,
+    responseJob,
+    playerTurnVisibilityProjection,
   };
-}
-
-function renderLegacyFinalUserContent(input: {
-  sessionMessageCount?: number;
-  currentTurnStateDigest?: string;
-  regenerationDirective?: string;
-  userMessage: string;
-}): string {
-  const appTurnControls = [
-    input.sessionMessageCount != null ? `[SESSION: Message ${input.sessionMessageCount} of current session]` : '',
-    input.currentTurnStateDigest || '',
-    input.regenerationDirective || '',
-    EXECUTION_BRIEF_TEXT,
-  ]
-    .filter(Boolean)
-    .join('\n\n')
-    .trim();
-  const playerTurn = input.userMessage.trim();
-  return [
-    appTurnControls ? `[APP TURN CONTROLS]\n${appTurnControls}` : '',
-    playerTurn ? `[PLAYER TURN]\n${playerTurn}` : '',
-  ]
-    .filter(Boolean)
-    .join('\n\n')
-    .trim();
 }
 
 export function getSystemInstruction(
@@ -437,16 +444,6 @@ export function getSystemInstruction(
     ].filter(Boolean).join('\n');
   }
 
-  function buildCompactGoalDescription(goal: any): string {
-    const desiredOutcome = text(goal?.desiredOutcome);
-    const currentStatus = text(goal?.currentStatus);
-    return [
-      desiredOutcome ? `- Long-range direction: ${ensureSentence(desiredOutcome)}` : '',
-      currentStatus ? `- Current status: ${ensureSentence(currentStatus)}` : '',
-      '- Background context only. Do not steer the current response toward this goal unless the current exchange creates a natural opening.',
-    ].filter(Boolean).join('\n');
-  }
-
   const renderGoalBlock = (
     heading: string,
     goals: any[] | undefined,
@@ -456,14 +453,13 @@ export function getSystemInstruction(
   ): string => {
     if (!Array.isArray(goals) || goals.length === 0) return '';
     const visibleGoals = goals.filter((goal) => {
-      if (!goalExposureDecisions) {
-        return shouldRenderGoalToWriter(goal?.alignment, normalizeFlexibility(goal?.flexibility));
-      }
+      if (!goalExposureDecisions) return false;
       return goalExposureDecisions.some((decision) => (
         decision.goalId === goal?.id
         && decision.goalKind === subject
         && (subject === 'story' || decision.ownerCharacterId === ownerCharacterId)
-        && decision.tier !== 'hidden_this_turn'
+        && decision.tier === 'active'
+        && decision.renderDetail === 'full'
       ));
     });
     if (visibleGoals.length === 0) return '';
@@ -475,9 +471,7 @@ export function getSystemInstruction(
       ));
       return [
       `${subject === 'story' ? 'STORY' : 'CHARACTER'} GOAL: ${text(goal?.title) || 'Untitled'}`,
-      decision?.renderDetail === 'compact'
-        ? buildCompactGoalDescription(goal)
-        : buildGoalDescription(goal, subject),
+      buildGoalDescription(goal, subject),
       subject === 'character' && ownerControlledBy === 'User'
         ? "- User-controlled character goals can inform story direction, but they do not authorize writing the user-controlled character's dialogue, internal thoughts, voluntary response, or next choice."
         : '',
@@ -702,14 +696,7 @@ When the next meaningful moment depends on the user character's response, stop w
 
 --- INTERNAL THOUGHTS ---
 
-- Internal thoughts are optional.
-- Use internal thoughts only when they reveal private conflict, withheld emotion, motive, uncertainty, desire, fear, shame, restraint, temptation, realization, or interpretation the character would not say aloud.
-- Each internal thought should read as one coherent, private thought about only one particular issue or concern at a time, structured as a well-written sentence.
-- Do not combine or stitch multiple unrelated internal thoughts together inside one parenthetical.
-- If a character has more than one internal thought in one character block, place each thought at a separate moment in the response so it clearly connects to the scene detail or event that triggered it.
-- Do not chain multiple internal thoughts back-to-back.
-- Internal thoughts must follow the established facts of the current scene, character card data, and story card data.
-- Do not use thoughts to introduce unsupported facts, assume off-screen actions, summarize events that have not happened, repeat obvious facts, restate the current action, or echo information already clear from the preceding dialogue or narration.
+- An internal thought is optional and should appear only when it adds one coherent piece of private character meaning that is not already obvious from visible action, dialogue, recent reasoning, or established information; if more than one appears, each must arise at a distinct moment in the scene.
 
 --- MULTI-CHARACTER FLOW ---
 
@@ -823,19 +810,44 @@ export async function* generateRoleplayResponseStream(
 ): AsyncGenerator<string, void, unknown> {
   const conversation = appData.conversations.find(c => c.id === conversationId);
   if (!conversation) throw new Error("Conversation not found");
+  if (!options?.responseJob) {
+    throw new Error('RoleplayResponseJob is required for every roleplay response request.');
+  }
 
-  const latestConversationPlayerTurn = [...conversation.messages]
+  const sourcePlayerMessage = options.responseJob.playerTurn
+    ? conversation.messages.find((message) => (
+      message.role === 'user' && message.id === options.responseJob.playerTurn?.messageId
+    ))
+    : undefined;
+  const {
+    responseJob: visibilitySafeResponseJob,
+    projection: initialPlayerTurnVisibilityProjection,
+  } = applyPlayerTurnVisibilityToResponseJob({
+    responseJob: options.responseJob,
+    rawPlayerText: sourcePlayerMessage?.text ?? options.responseJob.playerTurn?.text,
+  });
+  const latestConversationPlayerMessage = [...conversation.messages]
     .reverse()
-    .find((message) => message.role === 'user')?.text || '';
-  const selectorPlayerTurn = options?.responseJob?.playerTurn?.text
-    || latestConversationPlayerTurn
-    || userMessage;
-  const selectorMode = options?.responseJob?.mode
-    || (isRegeneration ? 'retry_regenerate' : 'normal_send');
+    .find((message) => message.role === 'user');
+  const continuePriorUserMessageId = visibilitySafeResponseJob.modeData.kind === 'continue_assistant_tail'
+    ? visibilitySafeResponseJob.modeData.priorUserMessageId
+    : undefined;
+  const continuePriorPlayerMessage = continuePriorUserMessageId
+    ? conversation.messages.find((message) => (
+        message.role === 'user'
+        && message.id === continuePriorUserMessageId
+      ))
+    : undefined;
+  const selectorSourceMessage = sourcePlayerMessage
+    ?? continuePriorPlayerMessage
+    ?? latestConversationPlayerMessage;
+  const selectorPlayerTurn = visibilitySafeResponseJob.playerTurn?.text
+    || projectPlayerTurnVisibility(selectorSourceMessage?.text || userMessage).visibleText;
+  const selectorMode = visibilitySafeResponseJob.mode;
   const roleplayGoalExposureDecision = selectRoleplayGoalsForTurn({
     appData,
     latestPlayerTurn: selectorPlayerTurn,
-    activeScene,
+    sourceMessageId: visibilitySafeResponseJob.playerTurn?.messageId ?? selectorSourceMessage?.id,
     mode: selectorMode,
   });
   const effectiveResponseDetail = resolveEffectiveResponseDetail(
@@ -853,31 +865,163 @@ export async function* generateRoleplayResponseStream(
     roleplayGoalExposureDecision.decisions,
     effectiveResponseDetail,
   );
-  const currentTurnStateDigest = buildCurrentTurnStateDigest({
-    appData,
-    currentDay,
-    currentTimeOfDay,
-    memories,
-    memoriesEnabled,
-    activeScene,
-  });
-  
   const {
-    messages,
-    historyMessages,
+    messages: fullMessages,
+    historyMessages: fullHistoryMessages,
     recentHistoryPacket,
     finalUserContent,
     finalUserLaneEvidence,
     historyLimit,
+    responseJob: requestResponseJob,
+    playerTurnVisibilityProjection,
   } = buildRoleplayApiMessages({
     conversationMessages: conversation.messages,
     systemInstruction,
-    userMessage,
-    responseJob: options?.responseJob,
-    userStateAuthorityDecisions: options?.userStateAuthorityDecisions,
-    isRegeneration,
-    currentTurnStateDigest,
-    sessionMessageCount,
+    responseJob: visibilitySafeResponseJob,
+    userStateAuthorityDecisions: options.userStateAuthorityDecisions,
+    assistantOutcomeRecords: options.assistantOutcomeRecords,
+    playerTurnVisibilityProjection: initialPlayerTurnVisibilityProjection,
+  });
+
+  const allPlayableCharacters = [...appData.characters, ...(appData.sideCharacters || [])];
+  const roleplaySceneRoster = buildRoleplaySceneRoster({
+    mainCharacters: appData.characters,
+    sideCharacters: appData.sideCharacters || [],
+  });
+  const aiCharacterNames = allPlayableCharacters
+    .filter((character) => character.controlledBy === 'AI')
+    .map((character) => character.name);
+  const userCharacterNames = allPlayableCharacters
+    .filter((character) => character.controlledBy === 'User')
+    .map((character) => character.name);
+  const characterSceneStates = roleplaySceneRoster.map((row) => ({
+    characterId: row.characterId,
+    name: row.name,
+    controlledBy: row.control,
+    characterRole: row.role,
+    location: row.location,
+    scenePosition: row.scenePosition || '',
+  }));
+  const roleplayContext = {
+    conversationId,
+    currentDay: currentDay ?? null,
+    currentTimeOfDay: currentTimeOfDay ?? null,
+    activeSceneTitle: activeScene?.title || null,
+    activeSceneTags: activeScene?.tags || [],
+    aiCharacterNames,
+    userCharacterNames,
+    characterSceneStates,
+  };
+  const roleplaySourceArtifacts = buildRoleplaySourceArtifacts({
+    systemInstruction,
+    finalUserLanes: requestResponseJob.finalUserLanes,
+    recentHistoryPacket,
+    executionBrief: ROLEPLAY_EXECUTION_BRIEF_TEXT,
+    relevanceText: [
+      selectorPlayerTurn,
+      activeScene?.title,
+      ...(activeScene?.tags || []),
+      ...roleplaySceneRoster.map((row) => `${row.name} ${row.location} ${row.scenePosition || ''}`),
+    ].filter(Boolean).join('\n'),
+    roleplayContext,
+    playerTurnVisibilityProjection,
+  });
+  const playerTurnCount = conversation.messages.filter((message) => message.role === 'user').length;
+  const sourceRefreshState: RoleplaySourceRefreshState = {
+    sourceFingerprint: hashRoleplaySourceText(roleplaySourceArtifacts.candidates
+      .filter((candidate) => (
+        candidate.sourceClass === 'story_reference'
+        || candidate.sourceClass === 'character_card'
+        || candidate.sourceClass === 'goal'
+        || candidate.sourceClass === 'memory'
+      ))
+      .map((candidate) => (
+        `${candidate.sourceClass}:${candidate.sourceRecordId || candidate.sourceId || candidate.id}:${candidate.contentHash}`
+      ))
+      .sort()
+      .join('|')),
+    sceneFingerprint: hashRoleplaySourceText(JSON.stringify({
+      activeSceneId: activeScene?.id ?? null,
+      activeSceneTitle: activeScene?.title ?? null,
+      activeSceneTags: [...(activeScene?.tags ?? [])].sort(),
+      currentDay: currentDay ?? null,
+      currentTimeOfDay: currentTimeOfDay ?? null,
+    })),
+  };
+  const sourceRefreshReason = resolveRoleplaySourceRefreshReason({
+    playerTurnCount,
+    current: sourceRefreshState,
+    previous: roleplaySourceRefreshStateByConversation.get(conversationId),
+    requestedReason: options?.sourceRefreshReason,
+  });
+  roleplaySourceRefreshStateByConversation.delete(conversationId);
+  roleplaySourceRefreshStateByConversation.set(conversationId, sourceRefreshState);
+  if (roleplaySourceRefreshStateByConversation.size > ROLEPLAY_SOURCE_REFRESH_STATE_LIMIT) {
+    const oldestConversationId = roleplaySourceRefreshStateByConversation.keys().next().value;
+    if (oldestConversationId) roleplaySourceRefreshStateByConversation.delete(oldestConversationId);
+  }
+  const roleplaySourceSelection = selectRoleplaySources({
+    candidates: roleplaySourceArtifacts.candidates,
+    receipts: roleplaySourceArtifacts.receipts,
+    refreshReason: sourceRefreshReason,
+    liveShapingEnabled: true,
+  });
+  const roleplaySelectedProviderPacket = buildRoleplaySelectedProviderPacket({
+    fullMessages,
+    receipts: roleplaySourceArtifacts.receipts,
+    selection: roleplaySourceSelection,
+    finalUserContent,
+  });
+  const roleplaySourceSelectionEvidence = buildRoleplaySourceSelectionEvidence(roleplaySourceSelection);
+  const roleplaySourcePacketComparison = {
+    fullMessageCount: fullMessages.length,
+    selectedMessageCount: roleplaySelectedProviderPacket.messages.length,
+    fullChars: roleplaySelectedProviderPacket.fullChars,
+    selectedChars: roleplaySelectedProviderPacket.selectedChars,
+    removedChars: roleplaySelectedProviderPacket.removedChars,
+  };
+  const messages: RoleplayApiMessage[] = roleplaySelectedProviderPacket.messages.map((message) => ({
+    role: message.role,
+    content: message.content,
+  }));
+  const selectedSystemInstruction = roleplaySelectedProviderPacket.systemInstruction;
+  const selectedHistoryMessages = roleplaySelectedProviderPacket.historyMessages;
+  const roleplaySourceReceipts = applyRoleplaySourceSelectionToReceipts({
+    receipts: roleplaySourceArtifacts.receipts,
+    selection: roleplaySourceSelection,
+  });
+  const roleplayDuplicateSourceMetrics = buildRoleplayDuplicateSourceMetrics(roleplaySourceReceipts);
+  const roleplayCharacterPromptFacts = allPlayableCharacters.flatMap(selectCharacterPromptFactsForRendering);
+  const roleplayKnowledgeVisibilityFacts = allPlayableCharacters.flatMap(
+    buildResolvedCurrentSceneKnowledgeFacts,
+  );
+  const roleplayCharacterPromptFactSummaries = allPlayableCharacters.map((character) => (
+    buildCharacterPromptFactReviewSummary(character, selectedSystemInstruction)
+  ));
+  const roleplayEffectiveFieldEvidence = buildRoleplayEffectiveFieldEvidence({
+    receipts: roleplaySourceReceipts,
+    sceneRoster: roleplaySceneRoster,
+    characterPromptFacts: roleplayCharacterPromptFacts,
+    userStateAuthorityDecisions: options?.userStateAuthorityDecisions ?? [],
+  });
+  const roleplaySourceBudgetSummary = buildRoleplaySourceBudgetSummary({
+    receipts: roleplaySourceReceipts,
+    duplicateMetrics: roleplayDuplicateSourceMetrics,
+  });
+  const roleplayActiveScenePacketCandidate = buildRoleplayActiveScenePacketCandidate({
+    receipts: roleplaySourceArtifacts.receipts,
+    turnNumber: conversation.messages.filter((message) => message.role !== 'system').length + 1,
+  });
+  const responseJobWithSourceReceipts = linkRoleplayResponseJobSourceReceipts(
+    requestResponseJob,
+    roleplaySourceReceipts,
+  );
+  const {
+    receiptCoverage: roleplaySourceReceiptCoverage,
+    providerSectionCoverage: roleplayProviderSectionCoverage,
+  } = buildRoleplaySourceCoverage({
+    receipts: roleplaySourceReceipts,
+    providerMessages: messages,
   });
 
   if (import.meta.env.DEV) {
@@ -887,8 +1031,8 @@ export async function* generateRoleplayResponseStream(
   // Emit call-1 telemetry for every chat turn; test-session mirroring is gated server-side
   // by active ai_usage_test_sessions so no client-local toggle is required.
   const shouldTrackCall1 = true;
-  const systemChars = systemInstruction.length;
-  const historyChars = recentHistoryPacket.providerMessages.reduce((sum, message) => sum + message.content.length, 0);
+  const systemChars = selectedSystemInstruction.length;
+  const historyChars = selectedHistoryMessages.reduce((sum, message) => sum + message.content.length, 0);
   const finalUserChars = messages[messages.length - 1]?.content?.length || 0;
   const inputChars = messages.reduce((sum, msg) => sum + (msg.content?.length || 0), 0);
   const inputTokensEst = Math.ceil(inputChars / 4);
@@ -921,6 +1065,9 @@ export async function* generateRoleplayResponseStream(
         historyChars,
         finalUserChars,
         inputChars,
+        fullInputChars: roleplaySelectedProviderPacket.fullChars,
+        sourceSelectionRemovedChars: roleplaySelectedProviderPacket.removedChars,
+        sourceSelectionRefreshReason: roleplaySourceSelection.refreshReason,
         outputChars,
         tokenEstimateMethod: "local_chars_div_4",
         inputTokensEst,
@@ -945,10 +1092,12 @@ export async function* generateRoleplayResponseStream(
     parentRowId: "summary.call1.chat_payload",
     detailPresence: buildCall1ValidationPresence({
       appData,
-      conversation: { ...conversation, messages: historyMessages },
-      systemInstruction,
+      conversation: { ...conversation, messages: fullHistoryMessages },
+      systemInstruction: selectedSystemInstruction,
       messages,
-      finalUserInput: userMessage,
+      expectedHistoryMessages: selectedHistoryMessages,
+      expectedFinalUserContent: finalUserContent,
+      sourceReceipts: roleplaySourceReceipts,
       transport: {
         providerTransport: ROLEPLAY_PROVIDER_TRANSPORT,
         store: ROLEPLAY_STORE,
@@ -958,9 +1107,12 @@ export async function* generateRoleplayResponseStream(
       diagnostics: {
         modelId,
         messageCount: messages.length,
-        historyCount: historyMessages.length,
-        providerHistoryCount: recentHistoryPacket.providerMessages.length,
+        historyCount: selectedHistoryMessages.length,
+        providerHistoryCount: selectedHistoryMessages.length,
+        fullProviderHistoryCount: recentHistoryPacket.providerMessages.length,
         suppressedHistoryCount: recentHistoryPacket.receipts.filter((receipt) => !receipt.includedInProviderHistory).length,
+        sourceSelectionOmittedCount: roleplaySourceSelection.omittedCandidateIds.length,
+        sourceSelectionRemovedChars: roleplaySelectedProviderPacket.removedChars,
         totalConversationHistoryCount: conversation.messages.length,
         historyLimit,
         systemChars,
@@ -979,75 +1131,6 @@ export async function* generateRoleplayResponseStream(
 
   // Verbosity-based max_tokens cap (Pass 7)
   const maxTokens = effectiveResponseDetail.maxOutputTokens;
-  const allPlayableCharacters = [...appData.characters, ...(appData.sideCharacters || [])];
-  const roleplaySceneRoster = buildRoleplaySceneRoster({
-    mainCharacters: appData.characters,
-    sideCharacters: appData.sideCharacters || [],
-  });
-  const aiCharacterNames = allPlayableCharacters
-    .filter((character) => character.controlledBy === 'AI')
-    .map((character) => character.name);
-  const userCharacterNames = allPlayableCharacters
-    .filter((character) => character.controlledBy === 'User')
-    .map((character) => character.name);
-  const characterSceneStates = roleplaySceneRoster.map((row) => ({
-    characterId: row.characterId,
-    name: row.name,
-    controlledBy: row.control,
-    characterRole: row.role,
-    location: row.location,
-    scenePosition: row.scenePosition || '',
-  }));
-  const roleplayContext = {
-    conversationId,
-    currentDay: currentDay ?? null,
-    currentTimeOfDay: currentTimeOfDay ?? null,
-    activeSceneTitle: activeScene?.title || null,
-    activeSceneTags: activeScene?.tags || [],
-    aiCharacterNames,
-    userCharacterNames,
-    characterSceneStates,
-  };
-  const roleplaySourceReceipts = buildRoleplaySourceReceipts({
-    systemInstruction,
-    finalUserLanes: options?.responseJob?.finalUserLanes ?? [],
-    recentHistoryPacket,
-    executionBrief: ROLEPLAY_EXECUTION_BRIEF_TEXT,
-    roleplayContext,
-  });
-  const roleplayDuplicateSourceMetrics = buildRoleplayDuplicateSourceMetrics(roleplaySourceReceipts);
-  const roleplayCharacterPromptFacts = allPlayableCharacters.flatMap(selectCharacterPromptFactsForRendering);
-  const roleplayKnowledgeVisibilityFacts = allPlayableCharacters.flatMap(
-    buildResolvedCurrentSceneKnowledgeFacts,
-  );
-  const roleplayCharacterPromptFactSummaries = allPlayableCharacters.map((character) => (
-    buildCharacterPromptFactReviewSummary(character, systemInstruction)
-  ));
-  const roleplayEffectiveFieldEvidence = buildRoleplayEffectiveFieldEvidence({
-    receipts: roleplaySourceReceipts,
-    sceneRoster: roleplaySceneRoster,
-    characterPromptFacts: roleplayCharacterPromptFacts,
-    userStateAuthorityDecisions: options?.userStateAuthorityDecisions ?? [],
-  });
-  const roleplaySourceBudgetSummary = buildRoleplaySourceBudgetSummary({
-    receipts: roleplaySourceReceipts,
-    duplicateMetrics: roleplayDuplicateSourceMetrics,
-  });
-  const roleplayActiveScenePacketCandidate = buildRoleplayActiveScenePacketCandidate({
-    receipts: roleplaySourceReceipts,
-    turnNumber: conversation.messages.filter((message) => message.role !== 'system').length + 1,
-  });
-  const responseJobWithSourceReceipts = linkRoleplayResponseJobSourceReceipts(
-    options?.responseJob,
-    roleplaySourceReceipts,
-  );
-  const {
-    receiptCoverage: roleplaySourceReceiptCoverage,
-    providerSectionCoverage: roleplayProviderSectionCoverage,
-  } = buildRoleplaySourceCoverage({
-    receipts: roleplaySourceReceipts,
-    providerMessages: messages,
-  });
   const requestBody = {
     messages,
     modelId,
@@ -1058,9 +1141,12 @@ export async function* generateRoleplayResponseStream(
     reasoningEffort: ROLEPLAY_REASONING_EFFORT,
     store: ROLEPLAY_STORE,
     debugTrace: options?.debugTrace === true,
+    frontendArtifactIdentity: options?.debugTrace === true
+      ? buildRoleplayFrontendArtifactIdentity()
+      : undefined,
     responseJob: responseJobWithSourceReceipts,
-    finalUserLaneEvidence,
-    recentHistoryPacket,
+    finalUserLaneEvidence: options?.debugTrace === true ? finalUserLaneEvidence : undefined,
+    recentHistoryPacket: options?.debugTrace === true ? recentHistoryPacket : undefined,
     roleplaySourceReceipts: options?.debugTrace === true ? roleplaySourceReceipts : undefined,
     roleplayDuplicateSourceMetrics: options?.debugTrace === true ? roleplayDuplicateSourceMetrics : undefined,
     roleplaySourceReceiptCoverage: options?.debugTrace === true ? roleplaySourceReceiptCoverage : undefined,
@@ -1068,6 +1154,8 @@ export async function* generateRoleplayResponseStream(
     roleplayEffectiveFieldEvidence: options?.debugTrace === true ? roleplayEffectiveFieldEvidence : undefined,
     roleplaySourceBudgetSummary: options?.debugTrace === true ? roleplaySourceBudgetSummary : undefined,
     roleplayActiveScenePacketCandidate: options?.debugTrace === true ? roleplayActiveScenePacketCandidate : undefined,
+    roleplaySourceSelection: options?.debugTrace === true ? roleplaySourceSelectionEvidence : undefined,
+    roleplaySourcePacketComparison: options?.debugTrace === true ? roleplaySourcePacketComparison : undefined,
     roleplayUserStateAuthorityDecisions: options?.debugTrace === true
       ? options.userStateAuthorityDecisions ?? []
       : undefined,
@@ -1086,7 +1174,7 @@ export async function* generateRoleplayResponseStream(
     effectiveResponseDetail: options?.debugTrace === true
       ? effectiveResponseDetail
       : undefined,
-    roleplayContext,
+    roleplayContext: options?.debugTrace === true ? roleplayContext : undefined,
   };
 
   if (options?.debugTrace === true) {
@@ -1099,6 +1187,7 @@ export async function* generateRoleplayResponseStream(
       capturedAt: Date.now(),
       status: 'sent',
       requestBody,
+      roleplayArtifactIdentity: buildRoleplayFrontendArtifactIdentity(),
       roleplaySourceReceipts,
       roleplayDuplicateSourceMetrics,
       roleplaySourceReceiptCoverage,
@@ -1106,6 +1195,8 @@ export async function* generateRoleplayResponseStream(
       roleplayEffectiveFieldEvidence,
       roleplaySourceBudgetSummary,
       roleplayActiveScenePacketCandidate,
+      roleplaySourceSelection: roleplaySourceSelectionEvidence,
+      roleplaySourcePacketComparison,
       roleplayUserStateAuthorityDecisions: options.userStateAuthorityDecisions ?? [],
       roleplayCharacterPromptFacts,
       roleplayCharacterPromptFactSummaries,
@@ -1130,6 +1221,7 @@ export async function* generateRoleplayResponseStream(
           'The Responses request explicitly sends store:false and reasoning.effort:medium.',
           'If the edge function receives a provider safety retry, the backend debug trace records the fallback path.',
           'Provider transport and fallback metadata are infrastructure evidence, not proof of source discipline or output quality.',
+          'The input shown here is the live selected provider packet; omitted sources remain available only in receipt and selection evidence.',
           'User-requested Retry remains retry_regenerate; post-generation diagnostics do not trigger provider fallback or hidden repair.',
         ],
       },

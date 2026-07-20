@@ -27,12 +27,15 @@ const call1Request = (): ChatDebugRequestRecord => ({
   roleplaySourceReceipts: [
     {
       id: 'player_turn:player_turn:fnv1a-12345678',
+      packetVersion: 'roleplay-source-packet-v1',
       surface: 'player_turn',
+      sourceClass: 'player_turn',
       sourceId: 'player_turn',
       textHash: 'fnv1a-12345678',
       authority: 'highest',
       modelFacing: true,
       disposition: 'included',
+      transformation: 'exact',
       duplicateGroup: 'exact:fnv1a-12345678',
       reason: 'response_job_lane:player_turn',
       contentLength: 14,
@@ -205,7 +208,6 @@ describe('useChatDebugTrace', () => {
             targets: [],
             reason: 'no_eligible_persisted_output',
           },
-          legacyWrapped: true,
         }),
       });
     });

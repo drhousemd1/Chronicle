@@ -16,6 +16,20 @@ export type RoleplayRegressionNegativeAssertion = {
   excludes: string;
 };
 
+export type RoleplayRegressionArtifactAssertion = {
+  id: string;
+  label: string;
+  evaluate: (artifact: RoleplayRegressionArtifact) => boolean;
+  failureMessage?: string;
+};
+
+export type RoleplayRegressionAssertionResult = {
+  id: string;
+  label: string;
+  passed: boolean;
+  failureMessage?: string;
+};
+
 export type RoleplayRegressionFixture = {
   id: string;
   issueNumber: number;
@@ -23,9 +37,11 @@ export type RoleplayRegressionFixture = {
   validationPhase: string;
   commandOrFixture: string;
   manualReview: string;
+  timeoutMs?: number;
   createArtifact: () => RoleplayRegressionArtifact | Promise<RoleplayRegressionArtifact>;
   positiveAssertions: RoleplayRegressionPositiveAssertion[];
   negativeAssertions: RoleplayRegressionNegativeAssertion[];
+  artifactAssertions?: RoleplayRegressionArtifactAssertion[];
 };
 
 export type RoleplayRegressionFixtureResult = {
@@ -37,6 +53,8 @@ export type RoleplayRegressionFixtureResult = {
   result: 'pass' | 'fail';
   passedAssertions: string[];
   failedAssertions: string[];
+  assertionInventory: string[];
+  assertionResults: RoleplayRegressionAssertionResult[];
   manualReview: string;
   artifactPreview: string;
   metadata: unknown;
@@ -61,24 +79,91 @@ export type RoleplayRegressionFixtureRun = {
   summary: RoleplayRegressionFixtureRunSummary;
 };
 
+const DEFAULT_FIXTURE_TIMEOUT_MS = 10_000;
+const MAX_FIXTURE_TIMEOUT_MS = 120_000;
+
+function assertionId(prefix: string, label: string): string {
+  const slug = label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+  return `${prefix}:${slug || 'assertion'}`;
+}
+
+function validateArtifact(value: unknown): asserts value is RoleplayRegressionArtifact {
+  if (!value || typeof value !== 'object' || typeof (value as { text?: unknown }).text !== 'string') {
+    throw new Error('Fixture returned a malformed artifact; expected an object with a string text field.');
+  }
+}
+
+async function createArtifactWithTimeout(fixture: RoleplayRegressionFixture): Promise<RoleplayRegressionArtifact> {
+  const timeoutMs = fixture.timeoutMs ?? DEFAULT_FIXTURE_TIMEOUT_MS;
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0 || timeoutMs > MAX_FIXTURE_TIMEOUT_MS) {
+    throw new Error(`Fixture timeout must be between 1 and ${MAX_FIXTURE_TIMEOUT_MS} milliseconds.`);
+  }
+
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const artifact = await Promise.race([
+      Promise.resolve().then(() => fixture.createArtifact()),
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => reject(new Error(`Fixture timed out after ${timeoutMs} milliseconds.`)), timeoutMs);
+      }),
+    ]);
+    validateArtifact(artifact);
+    return artifact;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 function evaluateFixture(fixture: RoleplayRegressionFixture, artifact: RoleplayRegressionArtifact): Omit<RoleplayRegressionFixtureResult, 'executionId'> {
   const passedAssertions: string[] = [];
   const failedAssertions: string[] = [];
+  const assertionResults: RoleplayRegressionAssertionResult[] = [];
+
+  const record = (result: RoleplayRegressionAssertionResult) => {
+    assertionResults.push(result);
+    if (result.passed) passedAssertions.push(result.label);
+    else failedAssertions.push(result.label);
+  };
 
   for (const assertion of fixture.positiveAssertions) {
-    if (artifact.text.includes(assertion.includes)) {
-      passedAssertions.push(assertion.label);
-    } else {
-      failedAssertions.push(assertion.label);
-    }
+    const passed = artifact.text.includes(assertion.includes);
+    record({
+      id: assertionId('includes', assertion.label),
+      label: assertion.label,
+      passed,
+      failureMessage: passed ? undefined : `Artifact did not include required text: ${assertion.includes}`,
+    });
   }
 
   for (const assertion of fixture.negativeAssertions) {
-    if (artifact.text.includes(assertion.excludes)) {
-      failedAssertions.push(assertion.label);
-    } else {
-      passedAssertions.push(assertion.label);
-    }
+    const passed = !artifact.text.includes(assertion.excludes);
+    record({
+      id: assertionId('excludes', assertion.label),
+      label: assertion.label,
+      passed,
+      failureMessage: passed ? undefined : `Artifact included forbidden text: ${assertion.excludes}`,
+    });
+  }
+
+  for (const assertion of fixture.artifactAssertions ?? []) {
+    const passed = assertion.evaluate(artifact);
+    record({
+      id: assertion.id,
+      label: assertion.label,
+      passed,
+      failureMessage: passed ? undefined : assertion.failureMessage,
+    });
+  }
+
+  if (assertionResults.length === 0) {
+    throw new Error(`Fixture has no assertions: ${fixture.id}`);
+  }
+  const assertionIds = assertionResults.map((assertion) => assertion.id);
+  if (new Set(assertionIds).size !== assertionIds.length) {
+    throw new Error(`Fixture contains duplicate assertion identities: ${fixture.id}`);
   }
 
   return {
@@ -90,6 +175,8 @@ function evaluateFixture(fixture: RoleplayRegressionFixture, artifact: RoleplayR
     result: failedAssertions.length > 0 ? 'fail' : 'pass',
     passedAssertions,
     failedAssertions,
+    assertionInventory: assertionIds,
+    assertionResults,
     manualReview: fixture.manualReview,
     artifactPreview: artifact.text,
     metadata: artifact.metadata ?? null,
@@ -127,7 +214,7 @@ export async function runRoleplayRegressionFixtures({
     const startedAt = Date.now();
     let result: Omit<RoleplayRegressionFixtureResult, 'executionId'>;
     try {
-      result = evaluateFixture(fixture, await fixture.createArtifact());
+      result = evaluateFixture(fixture, await createArtifactWithTimeout(fixture));
     } catch (error) {
       const failureCause = error instanceof Error ? error.message : String(error);
       await recordExecution({

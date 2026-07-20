@@ -1,8 +1,69 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildCurrentTurnStateDigest, buildRoleplayApiMessages, EXECUTION_BRIEF_TEXT, getSystemInstruction, REGENERATION_DIRECTIVE_TEXT } from '@/services/llm';
-import { buildNormalSendResponseJob } from '@/features/chat-runtime/roleplay-response-job';
+import { buildCurrentTurnStateDigest, buildEstablishedFactNote, buildRoleplayApiMessages, EXECUTION_BRIEF_TEXT, getSystemInstruction, REGENERATION_DIRECTIVE_TEXT } from '@/services/llm';
+import {
+  buildContinueAssistantTailResponseJob,
+  buildDeletedAssistantRecoveryResponseJob,
+  buildNormalSendResponseJob,
+  buildRetryRegenerateResponseJob,
+} from '@/features/chat-runtime/roleplay-response-job';
+import { applyPlayerTurnVisibilityToResponseJob } from '@/features/chat-runtime/player-turn-visibility';
+import { buildRoleplaySourceReceipts } from '@/features/chat-runtime/roleplay-source-receipts';
+import type { RoleplayGoalTurnDecision } from '@/features/chat-runtime/roleplay-goal-selector';
 import { createDefaultScenarioData, getHardcodedTestCharacters, now, uid } from '@/utils';
+
+function buildCoverageResponseJob(playerText: string, currentStateSummary = '') {
+  return buildNormalSendResponseJob({
+    conversationId: 'conversation-1',
+    playerTurn: {
+      messageId: 'coverage-player-turn',
+      text: playerText,
+    },
+    currentStateSummary,
+    responseDetail: 'standard',
+  });
+}
+
+function buildActiveGoalDecisions(appData: ReturnType<typeof createDefaultScenarioData>): RoleplayGoalTurnDecision[] {
+  const storyGoals = (appData.world.core.storyGoals || [])
+    .filter((goal) => goal.alignment?.status !== 'dropped')
+    .map((goal): RoleplayGoalTurnDecision => ({
+      goalId: goal.id,
+      title: goal.title,
+      goalKind: 'story',
+      tier: 'active',
+      reason: 'test_selected_goal',
+      evidence: ['test_selected_goal'],
+      evidenceConfidence: 'explicit',
+      sourceMessageId: 'coverage-player-turn',
+      renderDetail: 'full',
+      openMilestoneId: goal.steps?.find((step) => !step.completed)?.id,
+      openMilestoneDescription: goal.steps?.find((step) => !step.completed)?.description,
+      partialProgress: 'none',
+    }));
+  const characterGoals = appData.characters.flatMap((character) => (
+    (character.goals || [])
+      .filter((goal) => goal.alignment?.status !== 'dropped')
+      .map((goal): RoleplayGoalTurnDecision => ({
+        goalId: goal.id,
+        title: goal.title,
+        goalKind: 'character',
+        ownerCharacterId: character.id,
+        ownerCharacterName: character.name,
+        tier: 'active',
+        reason: 'test_selected_goal',
+        evidence: ['test_selected_goal'],
+        evidenceConfidence: 'explicit',
+        sourceMessageId: 'coverage-player-turn',
+        renderDetail: 'full',
+        openMilestoneId: goal.steps?.find((step) => !step.completed)?.id,
+        openMilestoneDescription: goal.steps?.find((step) => !step.completed)?.description,
+        partialProgress: 'none',
+      }))
+  ));
+
+  return [...storyGoals, ...characterGoals];
+}
 
 describe('llm canonical prompt coverage', () => {
   it('serializes canonical story + character authored fields, including custom/freeform values', () => {
@@ -134,7 +195,15 @@ describe('llm canonical prompt coverage', () => {
       },
     ];
 
-    const prompt = getSystemInstruction(appData, 4, 'night', [], true, appData.scenes[0]);
+    const prompt = getSystemInstruction(
+      appData,
+      4,
+      'night',
+      [],
+      true,
+      appData.scenes[0],
+      buildActiveGoalDecisions(appData),
+    );
 
     expect(prompt.indexOf('SECTION 1 - CORE ROLE LOGIC')).toBeLessThan(prompt.indexOf('SECTION 2 - STORY AND WORLD CONTEXT'));
     expect(prompt.indexOf('SECTION 2 - STORY AND WORLD CONTEXT')).toBeLessThan(prompt.indexOf('SECTION 3 - MAIN AI CHARACTER CARD INFORMATION'));
@@ -188,11 +257,11 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('CHARACTER: Tamlin');
     expect(prompt).toContain('IDENTITY FACTS');
     expect(prompt).toContain('- Age: 27');
-    expect(prompt).toContain('- Role in story: High · fae · ruler · trying · protect · court.');
+    expect(prompt).toContain('- Tamlin serves in the role of high fae ruler. Tamlin aims to protect his court.');
     expect(prompt).not.toContain('High fae ruler trying to protect his court.');
     expect(prompt).toContain('- Controlled by: AI');
     expect(prompt).toContain('CREATOR REFERENCE FACTS');
-    expect(prompt).toContain('- Hair Color: Golden');
+    expect(prompt).toContain("- Tamlin's hair color is golden.");
     expect(prompt).not.toContain('Tamlin CURRENTLY WEARING');
     expect(prompt).toContain('Visible clothing: top=Green tunic; bottom=Dark trousers.');
     expect(prompt).not.toContain('Exact position:');
@@ -201,10 +270,12 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).not.toContain('Currently hidden red thong');
     expect(prompt).toContain('Current physical condition: Fresh bruise on left wrist.');
     expect(prompt).not.toContain('Secret pact with the rival court');
-    expect(prompt).toContain('- Casual: Simple linen shirt');
+    expect(prompt).toContain("- Tamlin's casual clothing includes a simple linen shirt.");
+    expect(prompt).toContain('- For Tamlin, Legacy: Inherited ancient obligations.');
     expect(prompt).not.toContain('Tamlin CUSTOM CONTENT');
-    expect(prompt).toContain('Control · dynamics · slow-burn · teasing.');
-    expect(prompt).not.toContain('Control dynamics and slow-burn teasing.');
+    expect(prompt).toContain('- Kinks: Control dynamics and slow-burn teasing.');
+    expect(prompt).not.toMatch(/\n- Control dynamics and slow-burn teasing\./u);
+    expect(prompt).not.toContain(' · ');
     expect(prompt).toContain('Tamlin GOALS');
     expect(prompt).toContain('CHARACTER GOAL: Protect Feyre');
     expect(prompt).toContain('Long-range direction: Keep her away from political threats.');
@@ -213,6 +284,8 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('USER-CONTROLLED CHARACTERS DO NOT GENERATE FOR');
     expect(prompt).toContain('- Feyre');
     expect(prompt).toContain('- Controlled by: User');
+    expect(prompt).toContain('- Basics: Status: Active.');
+    expect(prompt).not.toContain("Feyre's basics status include active.");
     expect(prompt).not.toContain('CHARACTER BASICS');
     expect(prompt).not.toContain('Tamlin PHYSICAL APPEARANCE');
     expect(prompt).not.toContain('Tamlin PREFERRED CLOTHING');
@@ -228,13 +301,8 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).toContain('A character block should follow one clear conversational thread.');
     expect(prompt).toContain('--- USER-DEFINED DIALOG FORMATTING FROM STORY BUILDER ---');
     expect(prompt).toContain('--- INTERNAL THOUGHTS ---');
-    expect(prompt).toContain('Use internal thoughts only when they reveal private conflict');
-    expect(prompt).toContain('Each internal thought should read as one coherent, private thought about only one particular issue or concern at a time');
-    expect(prompt).toContain('Do not combine or stitch multiple unrelated internal thoughts together inside one parenthetical.');
-    expect(prompt).toContain('If a character has more than one internal thought in one character block');
-    expect(prompt).toContain('Do not chain multiple internal thoughts back-to-back.');
-    expect(prompt).toContain('Internal thoughts must follow the established facts of the current scene, character card data, and story card data');
-    expect(prompt).toContain('Do not use thoughts to introduce unsupported facts, assume off-screen actions, summarize events that have not happened, repeat obvious facts');
+    expect(prompt).toContain('An internal thought is optional and should appear only when it adds one coherent piece of private character meaning');
+    expect(prompt).toContain('if more than one appears, each must arise at a distinct moment in the scene.');
     expect(prompt).toContain('--- PHYSICAL LOGIC, VISIBILITY, AND CONTINUITY ---');
     expect(prompt).toContain('Suspicion, possibility, fear, partial visibility, or hidden detail is not confirmation.');
     expect(prompt).toContain('Covered, concealed, off-screen, or otherwise unperceived details cannot be named as exact facts');
@@ -445,8 +513,9 @@ describe('llm canonical prompt coverage', () => {
     const prompt = getSystemInstruction(appData, 1, 'night', [], true, null);
 
     expect(prompt).toContain('VOICE AND BEHAVIOR AFFORDANCES');
-    expect(prompt).toContain('- Guarded: Keeps · real · feelings · hidden · trust · earned.');
+    expect(prompt).toContain('- For Ashley, Guarded: Ashley keeps her real feelings hidden until trust has been earned.');
     expect(prompt).not.toContain('Keeps her real feelings hidden until trust has been earned.');
+    expect(prompt).not.toContain(' · ');
     expect(prompt).not.toContain('This is a stable tendency');
     expect(prompt).not.toContain('This is a core trait');
     expect(prompt).not.toContain('It should strongly color');
@@ -595,7 +664,15 @@ describe('llm canonical prompt coverage', () => {
       },
     ];
 
-    const prompt = getSystemInstruction(appData, 1, 'sunset', [], true, null);
+    const prompt = getSystemInstruction(
+      appData,
+      1,
+      'sunset',
+      [],
+      true,
+      null,
+      buildActiveGoalDecisions(appData),
+    );
 
     expect(prompt).toContain('STORY GOAL: Survive the storm');
     expect(prompt).toContain('Long-range direction: Reach shelter and keep everyone alive.');
@@ -616,7 +693,7 @@ describe('llm canonical prompt coverage', () => {
     expect(prompt).not.toContain('Right now,');
   });
 
-  it('renders all eligible goals while exposing only each goal next unfinished milestone', () => {
+  it('renders selected goals while exposing only each goal next unfinished milestone', () => {
     const appData = createDefaultScenarioData();
     const [aiCharacter, userCharacter] = getHardcodedTestCharacters();
 
@@ -687,7 +764,15 @@ describe('llm canonical prompt coverage', () => {
       },
     ];
 
-    const prompt = getSystemInstruction(appData, 1, 'day', [], true, null);
+    const prompt = getSystemInstruction(
+      appData,
+      1,
+      'day',
+      [],
+      true,
+      null,
+      buildActiveGoalDecisions(appData),
+    );
 
     expect(prompt).toContain('STORY GOAL: Stabilize the city');
     expect(prompt).toContain('STORY GOAL: Expose the conspiracy');
@@ -789,7 +874,15 @@ describe('llm canonical prompt coverage', () => {
       },
     ];
 
-    const prompt = getSystemInstruction(appData, 1, 'day', [], true, null);
+    const prompt = getSystemInstruction(
+      appData,
+      1,
+      'day',
+      [],
+      true,
+      null,
+      buildActiveGoalDecisions(appData),
+    );
 
     expect(prompt).not.toContain('Dropped story goal');
     expect(prompt).not.toContain('Hidden dropped story milestone');
@@ -819,9 +912,10 @@ describe('llm canonical prompt coverage', () => {
     const built = buildRoleplayApiMessages({
       conversationMessages: messages as any,
       systemInstruction: 'SYSTEM',
-      userMessage: 'latest user text',
-      sessionMessageCount: 12,
-      currentTurnStateDigest: '[CURRENT TURN STATE]\n- Sarah: location=Room',
+      responseJob: buildCoverageResponseJob(
+        'latest user text',
+        '[CURRENT TURN STATE]\n- Sarah: location=Room',
+      ),
     });
 
     expect(built.historyLimit).toBe(5);
@@ -832,30 +926,214 @@ describe('llm canonical prompt coverage', () => {
       'history 7',
       'history 8',
     ]);
-    expect(built.messages).toHaveLength(7);
+    expect(built.messages).toHaveLength(5);
     expect(built.messages[0]).toEqual({ role: 'system', content: 'SYSTEM' });
-    expect(built.messages.slice(1, 6).map((message) => message.content)).toEqual([
-      'history 4',
+    expect(built.messages.slice(1, -1).map((message) => message.content)).toEqual([
       'history 5',
-      'history 6',
       'history 7',
       'history 8',
     ]);
-    expect(built.finalUserContent).toContain('[SESSION: Message 12 of current session]');
+    expect(built.finalUserContent).toContain('[ROLEPLAY RESPONSE JOB]');
     expect(built.finalUserContent).toContain('[CURRENT TURN STATE]');
     expect(built.finalUserContent).toContain('Sarah: location=Room');
     expect(built.finalUserContent).not.toContain('[CURRENT SCENE SNAPSHOT]');
     expect(built.finalUserContent).not.toContain('[STYLE ADJUSTMENT FOR THIS TURN]');
     expect(built.finalUserContent).not.toContain('[STYLE CORRECTION]');
     expect(built.finalUserContent).not.toContain('[OUTPUT REVISION REQUIRED]');
-    expect(built.finalUserContent).toContain('[APP TURN CONTROLS]');
-    expect(built.finalUserContent).toContain('[PLAYER TURN]');
+    expect(built.finalUserContent).not.toContain('[APP TURN CONTROLS]');
+    expect(built.finalUserContent).not.toContain('[SESSION: Message 12 of current session]');
+    expect(built.finalUserContent).toContain('[player_turn | user | player_turn | model-facing]');
     expect(built.finalUserContent).toContain('latest user text');
     expect(built.finalUserContent).toContain('[EXECUTION BRIEF]');
-    expect(built.finalUserContent.indexOf('[APP TURN CONTROLS]')).toBeLessThan(built.finalUserContent.indexOf('[PLAYER TURN]'));
-    expect(built.finalUserContent.indexOf('[EXECUTION BRIEF]')).toBeLessThan(built.finalUserContent.indexOf('[PLAYER TURN]'));
-    expect(built.messages[6]).toEqual({ role: 'user', content: built.finalUserContent });
+    expect(built.finalUserContent.indexOf('[player_turn | user | player_turn | model-facing]')).toBeLessThan(built.finalUserContent.indexOf('[current_state | runtime | state | model-facing]'));
+    expect(built.finalUserContent.indexOf('[current_state | runtime | state | model-facing]')).toBeLessThan(built.finalUserContent.indexOf('[EXECUTION BRIEF]'));
+    expect(built.messages.at(-1)).toEqual({ role: 'user', content: built.finalUserContent });
     expect(built.messages.map((message) => message.content).join('\n')).not.toContain('Chronicle: The model provider blocked');
+  });
+
+  it('projects private player spans out of the current lane and older provider history', () => {
+    const currentRawText = 'I lock the case. (I cannot let her know why.) "We are done."';
+    const olderRawText = 'I cross the room. (I am still angry.) "Sit down."';
+    const responseJob = buildNormalSendResponseJob({
+      conversationId: 'conversation-1',
+      playerTurn: {
+        messageId: 'message-user-current',
+        text: currentRawText,
+      },
+      currentStateSummary: 'The office remains occupied.',
+      responseDetail: 'standard',
+    });
+    const built = buildRoleplayApiMessages({
+      conversationMessages: [
+        {
+          id: 'message-user-older',
+          role: 'user',
+          text: olderRawText,
+          createdAt: now(),
+        },
+        {
+          id: 'message-assistant-older',
+          generationId: 'generation-assistant-older',
+          role: 'assistant',
+          text: 'Mara studies the locked case.',
+          createdAt: now() + 1,
+        },
+        {
+          id: 'message-user-current',
+          role: 'user',
+          text: currentRawText,
+          createdAt: now() + 2,
+        },
+      ] as any,
+      systemInstruction: 'SYSTEM',
+      responseJob,
+    });
+    const providerText = built.messages.map((message) => message.content).join('\n');
+
+    expect(providerText).toContain('I cross the room. "Sit down."');
+    expect(providerText).toContain('I lock the case. "We are done."');
+    expect(providerText).not.toContain('I am still angry.');
+    expect(providerText).not.toContain('I cannot let her know why.');
+    expect(built.recentHistoryPacket.receipts).toContainEqual(expect.objectContaining({
+      messageId: 'message-user-current',
+      responseJobSource: 'player_turn',
+      includedInProviderHistory: false,
+    }));
+    expect(built.playerTurnVisibilityProjection).toMatchObject({
+      sourceMessageId: 'message-user-current',
+      visibleText: 'I lock the case. "We are done."',
+      changed: true,
+    });
+    expect(built.responseJob.playerTurn?.text).toBe('I lock the case. "We are done."');
+    expect(responseJob.playerTurn?.text).toBe(currentRawText);
+  });
+
+  it('preserves current-turn withholding evidence when the source message is absent from history', () => {
+    const rawPlayerText = 'I lock the case. (I cannot let her know why.) "We are done."';
+    const rawResponseJob = buildNormalSendResponseJob({
+      conversationId: 'conversation-1',
+      playerTurn: {
+        messageId: 'message-user-current',
+        text: rawPlayerText,
+      },
+      currentStateSummary: 'The office remains occupied.',
+      responseDetail: 'standard',
+    });
+    const initialProjection = applyPlayerTurnVisibilityToResponseJob({
+      responseJob: rawResponseJob,
+      rawPlayerText,
+    });
+    const built = buildRoleplayApiMessages({
+      conversationMessages: [],
+      systemInstruction: 'SYSTEM',
+      responseJob: initialProjection.responseJob,
+      playerTurnVisibilityProjection: initialProjection.projection,
+    });
+    const receipts = buildRoleplaySourceReceipts({
+      systemInstruction: 'SYSTEM',
+      finalUserLanes: built.responseJob.finalUserLanes,
+      recentHistoryPacket: built.recentHistoryPacket,
+      executionBrief: EXECUTION_BRIEF_TEXT,
+      playerTurnVisibilityProjection: built.playerTurnVisibilityProjection,
+    });
+
+    expect(built.finalUserContent).toContain('I lock the case. "We are done."');
+    expect(built.finalUserContent).not.toContain('I cannot let her know why.');
+    expect(built.playerTurnVisibilityProjection).toMatchObject({
+      sourceMessageId: 'message-user-current',
+      changed: true,
+      privateSpans: [expect.objectContaining({ rawText: '(I cannot let her know why.)' })],
+    });
+    expect(receipts).toContainEqual(expect.objectContaining({
+      surface: 'player_turn',
+      sourceField: 'visible_text',
+      transformation: 'visible_projection',
+      modelFacing: true,
+    }));
+    expect(receipts).toContainEqual(expect.objectContaining({
+      sourceField: 'private_parenthetical.0',
+      disposition: 'suppressed',
+      modelFacing: false,
+      omissionReason: 'balanced_parenthetical_private_thought',
+    }));
+  });
+
+  it('does not infer an established-fact note from private parenthetical text', () => {
+    expect(buildEstablishedFactNote(
+      'I stay still. (Ashley: she opens the hidden drawer.)',
+      [{ name: 'Ashley', controlledBy: 'AI' }],
+    )).toBe('');
+  });
+
+  it('applies the same private-player boundary to Retry, Continue, and deleted-assistant recovery', () => {
+    const rawPlayerText = 'I turn away. (I am planning to leave at dawn.) "Try again."';
+    const visiblePlayerText = 'I turn away. "Try again."';
+    const conversationMessages = [
+      {
+        id: 'message-user-mode',
+        role: 'user' as const,
+        text: rawPlayerText,
+        createdAt: now(),
+      },
+      {
+        id: 'message-assistant-rejected',
+        generationId: 'generation-assistant-rejected',
+        role: 'assistant' as const,
+        text: 'Rejected assistant response.',
+        createdAt: now() + 1,
+      },
+      {
+        id: 'message-assistant-accepted',
+        generationId: 'generation-assistant-accepted',
+        role: 'assistant' as const,
+        text: 'Accepted assistant response.',
+        createdAt: now() + 2,
+      },
+    ];
+    const jobs = [
+      buildRetryRegenerateResponseJob({
+        conversationId: 'conversation-1',
+        playerTurn: { messageId: 'message-user-mode', text: rawPlayerText },
+        rejectedAttempt: {
+          messageId: 'message-assistant-rejected',
+          generationId: 'generation-assistant-rejected',
+          text: 'Rejected assistant response.',
+          summary: 'The rejected response used the wrong approach.',
+        },
+        currentStateSummary: 'The room remains occupied.',
+        responseDetail: 'standard',
+      }),
+      buildContinueAssistantTailResponseJob({
+        conversationId: 'conversation-1',
+        assistantAnchor: {
+          messageId: 'message-assistant-accepted',
+          generationId: 'generation-assistant-accepted',
+          acceptedTextTail: 'Accepted assistant response.',
+        },
+        priorUserMessageId: 'message-user-mode',
+        currentStateSummary: 'The room remains occupied.',
+        responseDetail: 'standard',
+      }),
+      buildDeletedAssistantRecoveryResponseJob({
+        conversationId: 'conversation-1',
+        visibleUserTail: { messageId: 'message-user-mode', text: rawPlayerText },
+        deletedAssistantMessageId: 'message-assistant-deleted',
+        deletedAssistantGenerationId: 'generation-assistant-deleted',
+        currentStateSummary: 'The room remains occupied.',
+        responseDetail: 'standard',
+      }),
+    ];
+
+    for (const responseJob of jobs) {
+      const built = buildRoleplayApiMessages({
+        conversationMessages: conversationMessages as any,
+        systemInstruction: 'SYSTEM',
+        responseJob,
+      });
+      const providerText = built.messages.map((message) => message.content).join('\n');
+      expect(providerText).toContain(visiblePlayerText);
+      expect(providerText).not.toContain('I am planning to leave at dawn.');
+    }
   });
 
   it('builds recent-history treatment receipts and suppresses repeated older assistant style anchors', () => {
@@ -891,8 +1169,7 @@ describe('llm canonical prompt coverage', () => {
     const built = buildRoleplayApiMessages({
       conversationMessages: messages as any,
       systemInstruction: 'SYSTEM',
-      userMessage: 'latest user text',
-      sessionMessageCount: 20,
+      responseJob: buildCoverageResponseJob('latest user text'),
     });
 
     const packet = (built as any).recentHistoryPacket;
@@ -913,9 +1190,9 @@ describe('llm canonical prompt coverage', () => {
           messageId: 'message-assistant-old',
           generationId: 'generation-assistant-old',
           role: 'assistant',
-          includedInProviderHistory: true,
+          includedInProviderHistory: false,
           treatment: 'suppressed_style_anchor',
-          reason: 'repeated_assistant_phrase_removed',
+          reason: 'older_assistant_without_outcome_record_omitted',
           repeatedAnchors: expect.arrayContaining(['what do you do next?']),
         }),
         expect.objectContaining({
@@ -937,13 +1214,13 @@ describe('llm canonical prompt coverage', () => {
     );
     expect(providerHistoryText).toContain('I ask her to make the next move.');
     expect(providerHistoryText).toContain('I wait for her actual decision.');
-    expect(providerHistoryText).toContain('repeating the old anchor posture');
+    expect(providerHistoryText).not.toContain('repeating the old anchor posture');
     expect(providerHistoryText).toContain('finally chooses a direction');
     expect(providerHistoryText.match(/What do you do next\?/g)).toHaveLength(1);
-    expect(built.finalUserContent).toContain('[PLAYER TURN]');
+    expect(built.finalUserContent).toContain('[player_turn | user | player_turn | model-facing]');
   });
 
-  it('passes structured authority decisions into recent-history outcome transformation', () => {
+  it('passes persisted assistant outcomes into recent-history transformation', () => {
     const built = buildRoleplayApiMessages({
       conversationMessages: [
         {
@@ -968,7 +1245,7 @@ describe('llm canonical prompt coverage', () => {
         },
       ] as any,
       systemInstruction: 'SYSTEM',
-      userMessage: 'latest user text',
+      responseJob: buildCoverageResponseJob('latest user text'),
       userStateAuthorityDecisions: [{
         claim: 'The user character visibly steadies one hand.',
         claimType: 'bodily_reaction',
@@ -979,12 +1256,40 @@ describe('llm canonical prompt coverage', () => {
         modelFacingAction: 'allow_as_observation',
         reason: 'accepted_assistant_generation_with_observable_change',
       }],
+      assistantOutcomeRecords: [{
+        contract: 'RoleplayAssistantOutcomeRecord',
+        version: 1,
+        messageId: 'message-assistant-old',
+        generationId: 'generation-assistant-old',
+        facts: [{
+          id: 'memory-1',
+          category: 'memory',
+          label: 'Persisted bullet',
+          content: 'The user character visibly steadies one hand.',
+          artifactId: 'memory-1',
+          sourceMessageId: 'message-assistant-old',
+          sourceGenerationId: 'generation-assistant-old',
+        }],
+        categoryStatus: [
+          { category: 'character_state', availability: 'pending_or_unknown', reason: 'none_loaded', factCount: 0 },
+          { category: 'side_character_state', availability: 'pending_or_unknown', reason: 'none_loaded', factCount: 0 },
+          { category: 'memory', availability: 'available', reason: 'persisted', factCount: 1 },
+          { category: 'goal_step', availability: 'pending_or_unknown', reason: 'none_loaded', factCount: 0 },
+        ],
+        authoritySummary: {
+          acceptedObservationCount: 1,
+          excludedInterpretationCount: 0,
+          excludedUnsupportedCount: 0,
+          authorityClasses: ['accepted_assistant_observable_change'],
+        },
+      }],
     });
 
     const providerHistory = built.messages.slice(1, -1).map((message) => message.content);
     expect(providerHistory).toContain([
-      'Older assistant outcome summary:',
-      '- Observed change: The user character visibly steadies one hand.',
+      '[OLDER ASSISTANT OUTCOME]',
+      'Use these persisted consequences for continuity. They replace the older assistant prose and are not a style example.',
+      '- The user character visibly steadies one hand.',
     ].join('\n'));
     expect(providerHistory.join('\n')).not.toContain('Distinctive copied assistant wording');
     expect(built.recentHistoryPacket.receipts).toContainEqual(expect.objectContaining({
@@ -1008,8 +1313,6 @@ describe('llm canonical prompt coverage', () => {
     const built = buildRoleplayApiMessages({
       conversationMessages: [],
       systemInstruction: 'SYSTEM',
-      userMessage: 'loose fallback text that should not render',
-      currentTurnStateDigest: '[CURRENT TURN STATE]\n- fallback current state should not render when responseJob lanes are present',
       responseJob,
     });
 

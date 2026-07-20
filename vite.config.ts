@@ -9,6 +9,7 @@ function packageChunk(id: string) {
 
   if (id.includes("@supabase")) return "vendor-supabase";
   if (id.includes("recharts")) return "vendor-charts";
+  if (id.includes("/compromise/")) return "vendor-nlp";
 
   if (
     id.includes("react-dom") ||

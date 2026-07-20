@@ -5,6 +5,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { shouldReturnAdminDebugTrace } from "../_shared/admin-debug.ts";
+import { buildRoleplayEdgeArtifactIdentity } from "../_shared/roleplay-artifact-identity.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
 import { recordServerAiUsage } from "../_shared/server-usage.ts";
@@ -18,6 +19,9 @@ const SUPPORT_RATE_LIMIT_WINDOW_MS = 60_000;
 const SUPPORT_RATE_LIMIT_MAX = 30;
 const MEMORY_CANDIDATE_MAX = 6;
 const MEMORY_ACCEPTED_MAX = 3;
+const MEMORY_RESPONSE_CONTRACT = "MemoryExtractionResponseV1" as const;
+const MEMORY_RESPONSE_VERSION = 1 as const;
+const MEMORY_WORKER_ARTIFACT_VERSION = "extract-memory-events-candidates-v1";
 const DURABLE_CATEGORIES = new Set([
   "durable_relationship_dynamic",
   "meaningful_behavior_shift",
@@ -46,6 +50,15 @@ type MemoryCandidateV1 = {
   evidenceBasis: string;
   authorityReason: string;
 };
+
+function memoryWorkerArtifact() {
+  return {
+    worker: "extract-memory-events" as const,
+    contract: MEMORY_RESPONSE_CONTRACT,
+    version: MEMORY_RESPONSE_VERSION,
+    artifactVersion: MEMORY_WORKER_ARTIFACT_VERSION,
+  };
+}
 
 function trimAtWordBoundary(value: string, maxChars: number): string {
   if (value.length <= maxChars) return value;
@@ -318,6 +331,7 @@ Empty candidates are acceptable.`;
     const debugPayload = debugTraceAllowed
       ? {
           modelRequest: result.modelRequest,
+          artifactIdentity: buildRoleplayEdgeArtifactIdentity('extract-memory-events'),
         }
       : null;
 
@@ -359,14 +373,13 @@ Empty candidates are acceptable.`;
           providerRequestCount: 1,
         },
       });
-      return new Response(
-        JSON.stringify({
-          version: 1,
-          candidates: [],
-          events: [],
-          extractedEvents: [],
-          userStateReviews: [],
-          providerBodyError,
+	      return new Response(
+	        JSON.stringify({
+	          contract: MEMORY_RESPONSE_CONTRACT,
+	          version: MEMORY_RESPONSE_VERSION,
+	          workerArtifact: memoryWorkerArtifact(),
+	          candidates: [],
+	          providerBodyError,
           ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
         }),
         { headers: { ...responseHeadersBase, 'Content-Type': 'application/json' } }
@@ -388,14 +401,13 @@ Empty candidates are acceptable.`;
           ...providerUsageMetadata,
         },
       });
-      return new Response(
-        JSON.stringify({
-          version: 1,
-          candidates: [],
-          events: [],
-          extractedEvents: [],
-          userStateReviews: [],
-          providerBodyError: bodyError,
+	      return new Response(
+	        JSON.stringify({
+	          contract: MEMORY_RESPONSE_CONTRACT,
+	          version: MEMORY_RESPONSE_VERSION,
+	          workerArtifact: memoryWorkerArtifact(),
+	          candidates: [],
+	          providerBodyError: bodyError,
           ...(debugPayload ? { chronicle_debug_payload: debugPayload } : {}),
         }),
         { headers: { ...responseHeadersBase, 'Content-Type': 'application/json' } }
@@ -449,22 +461,10 @@ Empty candidates are acceptable.`;
         decision: "rejected" as const,
         rejectionReason: "accepted_candidate_limit_exceeded",
       };
-    });
-    const acceptedCandidates = candidates.filter((candidate) => candidate.decision === "accepted");
-    const extractedEvents = acceptedCandidates.map((candidate) => candidate.candidateText);
-    const userStateReviews = acceptedCandidates.map((candidate, eventIndex) => ({
-      eventIndex,
-      event: candidate.candidateText,
-      appliesToUserCharacter: candidate.appliesToUserCharacter,
-      userCharacterName: candidate.userCharacterName,
-      claimType: candidate.claimType,
-      sourceRole: candidate.sourceRole,
-      evidenceBasis: candidate.evidenceBasis,
-      evidence: candidate.evidence,
-      reason: candidate.authorityReason,
-    }));
+	    });
+	    const acceptedCandidates = candidates.filter((candidate) => candidate.decision === "accepted");
 
-    console.log(`[extract-memory-events] Extracted ${extractedEvents.length} events from latest exchange`);
+	    console.log(`[extract-memory-events] Accepted ${acceptedCandidates.length} candidates from latest exchange`);
 
     await recordServerAiUsage({
       userId: user.id,
@@ -473,17 +473,17 @@ Empty candidates are acceptable.`;
       metadata: {
         modelId: effectiveModel,
         status: parseError ? "parsed_with_rejections" : "success",
-        extractedEventCount: extractedEvents.length,
+	        acceptedCandidateCount: acceptedCandidates.length,
         providerRequestCount: 1,
         ...providerUsageMetadata,
       },
     });
-    if (extractedEvents.length > 0) {
+	    if (acceptedCandidates.length > 0) {
       await recordServerAiUsage({
         userId: user.id,
         eventType: "memory_events_extracted",
         functionName: "extract-memory-events",
-        count: extractedEvents.length,
+	        count: acceptedCandidates.length,
         metadata: {
           modelId: effectiveModel,
           status: "success",
@@ -491,13 +491,12 @@ Empty candidates are acceptable.`;
       });
     }
 
-    return new Response(
-      JSON.stringify({
-        version: 1,
-        candidates,
-        events: extractedEvents,
-        extractedEvents,
-        userStateReviews,
+	    return new Response(
+	      JSON.stringify({
+	        contract: MEMORY_RESPONSE_CONTRACT,
+	        version: MEMORY_RESPONSE_VERSION,
+	        workerArtifact: memoryWorkerArtifact(),
+	        candidates,
         ...(parseError ? {
           parseError,
           rejectedEvents: [{

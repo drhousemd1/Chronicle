@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { shouldReturnAdminDebugTrace } from "../_shared/admin-debug.ts";
+import { buildRoleplayEdgeArtifactIdentity } from "../_shared/roleplay-artifact-identity.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
 import { recordServerAiUsage } from "../_shared/server-usage.ts";
@@ -279,6 +280,7 @@ Respond in JSON only:
     const debugPayload = debugTraceAllowed
       ? {
           modelRequest: result.modelRequest,
+          artifactIdentity: buildRoleplayEdgeArtifactIdentity('evaluate-goal-alignment'),
         }
       : null;
 

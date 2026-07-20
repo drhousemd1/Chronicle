@@ -25,6 +25,12 @@ import { renderResponseJobSummary } from './response-job-summary';
 import type { EffectiveStatePruningReport } from '@/features/chat-runtime/effective-state';
 import type { RoleplayRecentHistoryPacket } from '@/features/chat-runtime/roleplay-recent-history';
 import { deriveRoleplaySupportReviewRows } from '@/features/chat-runtime/roleplay-support-review-projections';
+import { projectPlayerTurnVisibility } from '@/features/chat-runtime/player-turn-visibility';
+import {
+  buildThoughtFunctionReview,
+  type ThoughtFunctionReview,
+} from '@/features/chat-runtime/roleplay-candidate-behavior';
+import type { RoleplayResponseMode } from '@/features/chat-runtime/roleplay-response-job';
 
 type ReviewExportCharacter = {
   name: string;
@@ -87,6 +93,7 @@ export type ReviewExportParentMessage = {
   localNotice?: Message['localNotice'] | null;
   childMetrics?: ReviewSegmentDebugMetrics[];
   internalThoughtDiagnostics?: ReviewInternalThoughtMetric[];
+  thoughtFunctionReview?: ThoughtFunctionReview;
   responseDetailMetrics?: ParentMessageResponseDetailMetrics;
 };
 
@@ -287,6 +294,26 @@ function readRecentHistoryPacket(value: unknown): RoleplayRecentHistoryPacket | 
   return packet as RoleplayRecentHistoryPacket;
 }
 
+function readResponseJobMode(value: unknown): RoleplayResponseMode {
+  const requestBody = asRecord(value);
+  const responseJob = asRecord(requestBody?.responseJob);
+  const mode = responseJob?.mode;
+  return mode === 'retry_regenerate' || mode === 'continue_assistant_tail'
+    ? mode
+    : 'normal_send';
+}
+
+function readResponseJobLaneContent(value: unknown, kind: string): string | undefined {
+  const requestBody = asRecord(value);
+  const responseJob = asRecord(requestBody?.responseJob);
+  const lane = asArray(responseJob?.finalUserLanes)
+    .map(asRecord)
+    .find((candidate) => candidate?.kind === kind);
+  return typeof lane?.content === 'string' && lane.content.trim()
+    ? lane.content
+    : undefined;
+}
+
 function renderKeyValueRows(rows: Array<[string, unknown]>): string {
   return rows
     .filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== '')
@@ -312,6 +339,7 @@ function renderSupportEnvelopeItems(
     sourceClassification?: string;
     claimType?: string;
     sourceRole?: string;
+    evidenceBasis?: string;
     authority?: string;
     modelFacingAction?: string;
     sourceMessageId?: string;
@@ -326,6 +354,7 @@ function renderSupportEnvelopeItems(
     const metadata = [
       item.claimType ? `claim type: ${item.claimType}` : '',
       item.sourceRole ? `source role: ${item.sourceRole}` : '',
+      item.evidenceBasis ? `evidence basis: ${item.evidenceBasis}` : '',
       item.authority ? `authority: ${item.authority}` : '',
       item.modelFacingAction ? `action: ${item.modelFacingAction}` : '',
       item.sourceMessageId ? `source message: ${item.sourceMessageId}` : '',
@@ -363,6 +392,12 @@ function renderSupportReviewEnvelope(call: NonNullable<StoredChatDebugTrace['sup
       <div class="support-summary-grid">
         ${renderKeyValueRows([
           ['Worker', envelope.worker],
+          ['Envelope contract', envelope.contract],
+          ['Envelope version', envelope.version],
+          ['Worker artifact', envelope.workerArtifact?.artifactVersion || 'unavailable'],
+          ['Worker response contract', envelope.workerArtifact
+            ? `${envelope.workerArtifact.contract} v${envelope.workerArtifact.version}`
+            : 'unavailable'],
           ['Source message', envelope.sourceMessageId || 'unavailable'],
           ['Source generation', envelope.sourceGenerationId || 'unavailable'],
           ['Readiness', envelope.readiness],
@@ -371,7 +406,6 @@ function renderSupportReviewEnvelope(call: NonNullable<StoredChatDebugTrace['sup
           ['Accepted', envelope.accepted.length],
           ['Rejected', envelope.rejected.length],
           ['Omitted', envelope.omitted.length],
-          ['Wrapped legacy response', envelope.legacyWrapped ? 'yes' : 'no'],
         ])}
       </div>
       <p><strong>Persistence reason:</strong> ${escapeHtml(envelope.persistence.reason)}</p>
@@ -552,10 +586,15 @@ export function renderSupportCallSummary(call: NonNullable<StoredChatDebugTrace[
           const outcome = String(item.outcome || 'unknown');
           const value = item.value == null ? '' : ` -> ${escapeHtml(textPreview(String(item.value), 180))}`;
           const target = item.persistenceTargetId ? ` / target ${escapeHtml(String(item.persistenceTargetId))}` : '';
+          const runtimeState = item.runtimeStateApplied === true
+            ? ' / runtime state applied'
+            : item.runtimeStateApplied === false
+              ? ' / runtime state not applied'
+              : '';
           const lineage = [item.sourceMessageId, item.sourceGenerationId].filter(Boolean).map(String).join(' / ');
           const lineageText = lineage ? ` / source ${escapeHtml(lineage)}` : '';
           const reason = item.reason ? ` — ${escapeHtml(String(item.reason))}` : '';
-          return `<li><strong>${escapeHtml(character)}.${escapeHtml(field)}</strong> [${escapeHtml(outcome)}]${value}${target}${lineageText}${reason}</li>`;
+          return `<li><strong>${escapeHtml(character)}.${escapeHtml(field)}</strong> [${escapeHtml(outcome)}]${value}${target}${runtimeState}${lineageText}${reason}</li>`;
         }).join('')}</ul>` : ''}
         ${notes}
       </div>
@@ -598,14 +637,18 @@ export function renderSupportCallSummary(call: NonNullable<StoredChatDebugTrace[
 	    `;
 	  }
 
-	  if (endpoint.includes('extract-memory-events')) {
-	    const events = asArray(response?.extractedEvents);
-	    const candidates = asArray(response?.candidateReviews).length
-	      ? asArray(response?.candidateReviews)
-	      : asArray(response?.candidates);
-	    const rejectedEvents = asArray(response?.rejectedEvents);
-	    const acceptedCandidates = candidates.filter((entry) => asRecord(entry)?.accepted === true || asRecord(entry)?.decision === 'accepted');
-	    const rejectedCandidates = candidates.filter((entry) => asRecord(entry)?.accepted === false || asRecord(entry)?.decision === 'rejected');
+		  if (endpoint.includes('extract-memory-events')) {
+		    const acceptedMemoryTexts = asArray(response?.acceptedCandidates);
+		    const contractRejected = response?.responseContractStatus === 'rejected';
+		    const reviewedCandidates = asArray(response?.candidateReviews);
+		    const candidates = reviewedCandidates.length
+		      ? reviewedCandidates
+		      : asArray(response?.candidates);
+		    const rejectedEvents = asArray(response?.rejectedEvents);
+		    const acceptedCandidates = contractRejected
+		      ? []
+		      : candidates.filter((entry) => asRecord(entry)?.accepted === true || asRecord(entry)?.decision === 'accepted');
+		    const rejectedCandidates = candidates.filter((entry) => asRecord(entry)?.accepted === false || asRecord(entry)?.decision === 'rejected');
 	    return `
 	      <div class="support-summary">
 	        <div class="support-summary-title">Memory extraction summary</div>
@@ -614,7 +657,11 @@ export function renderSupportCallSummary(call: NonNullable<StoredChatDebugTrace[
 	            ['Reviewed candidates', candidates.length],
 	            ['Accepted candidates', acceptedCandidates.length],
 	            ['Rejected candidates', rejectedCandidates.length],
-	            ['Events extracted', events.length],
+	            ['Accepted memory texts', acceptedMemoryTexts.length],
+	            ['Response contract', response?.contract],
+	            ['Response version', response?.version],
+	            ['Contract review', response?.responseContractStatus],
+	            ['Contract rejection reason', response?.responseContractReason],
 	            ['Rejected/malformed rows', rejectedEvents.length],
 	            ['Parse error', response?.parseError],
 	            ['Error', response?.error],
@@ -623,8 +670,13 @@ export function renderSupportCallSummary(call: NonNullable<StoredChatDebugTrace[
 	        ${candidates.length ? `<ul>${candidates.map((entry) => {
 	          const item = asRecord(entry) || {};
 	          const label = String(item.label || item.candidateText || 'memory candidate');
-	          const accepted = item.accepted === true || item.decision === 'accepted';
-	          const reason = String(item.reason || item.rejectionReason || (accepted ? 'accepted' : 'rejected'));
+		          const accepted = !contractRejected
+		            && (item.accepted === true || item.decision === 'accepted');
+		          const reason = String(
+		            contractRejected
+		              ? 'contract_rejected_unreviewed_candidate'
+		              : item.reason || item.rejectionReason || (accepted ? 'accepted' : 'rejected'),
+		          );
 	          const metadata = [
 	            item.durabilityCategory ? `durability ${String(item.durabilityCategory)}` : '',
 	            item.sourceClassification ? `source ${String(item.sourceClassification)}` : '',
@@ -775,6 +827,10 @@ function renderRoleplaySourceReceiptEvidence(call: StoredChatDebugTrace['call1Re
         <span><strong>Model facing</strong>${receipt.modelFacing ? 'yes' : 'no'}</span>
         <span><strong>Duplicate group</strong>${escapeHtml(receipt.duplicateGroup || 'none')}</span>
         <span><strong>Content length</strong>${receipt.contentLength}</span>
+        ${receipt.privacy ? `<span><strong>Privacy</strong>${escapeHtml(receipt.privacy.sensitivity)}</span>` : ''}
+        ${receipt.privacy ? `<span><strong>Owner</strong>${escapeHtml(receipt.privacy.owner.scope)}</span>` : ''}
+        ${receipt.privacy ? `<span><strong>Audience</strong>${escapeHtml(receipt.privacy.audience)}</span>` : ''}
+        ${receipt.privacy ? `<span><strong>Selection</strong>${escapeHtml(receipt.privacy.selectionEligibility)}</span>` : ''}
       </div>
       <p>${escapeHtml(receipt.reason)}</p>
       ${receipt.preview ? `<div class="debug-json-block"><div class="debug-json-label">Compact source preview</div><pre>${escapeHtml(receipt.preview)}</pre></div>` : ''}
@@ -804,15 +860,19 @@ function renderRoleplaySourceShapingEvidence(call: StoredChatDebugTrace['call1Re
   const effectiveFields = call.roleplayEffectiveFieldEvidence || [];
   const budget = call.roleplaySourceBudgetSummary;
   const candidate = call.roleplayActiveScenePacketCandidate;
-  if (effectiveFields.length === 0 && !budget && !candidate) return '';
+  const selection = call.roleplaySourceSelection;
+  const comparison = call.roleplaySourcePacketComparison;
+  if (effectiveFields.length === 0 && !budget && !candidate && !selection && !comparison) return '';
 
   return `
     <details class="trace-details">
-      <summary>Source Shaping And Active-Scene Comparison</summary>
-      <p>Debug-only evidence assembled from the existing source owners. The candidate packet does not change the live provider request and does not enable provider-side stored conversation state.</p>
+      <summary>Source Selection And Provider-Packet Comparison</summary>
+      <p>The selected packet is the live request sent to the provider. Full-packet counts, omission decisions, and the older active-scene comparator remain debug evidence only and do not enable provider-side stored conversation state.</p>
       ${effectiveFields.length ? renderDebugJsonBlock('Effective field evidence', effectiveFields) : ''}
       ${budget ? renderDebugJsonBlock('Source budget summary', budget) : ''}
-      ${candidate ? renderDebugJsonBlock('Full-context vs active-scene candidate', candidate) : ''}
+      ${selection ? renderDebugJsonBlock('Live source-selection decisions', selection) : ''}
+      ${comparison ? renderDebugJsonBlock('Full vs selected provider-packet counts', comparison) : ''}
+      ${candidate ? renderDebugJsonBlock('Legacy active-scene debug comparator', candidate) : ''}
     </details>
   `;
 }
@@ -853,7 +913,11 @@ function renderProviderSourceBoundaryEvidence(call: StoredChatDebugTrace['call1R
             ['Source receipts', sourceReceipts.length],
             ['Missing model-facing coverage', missingCoverage],
             ['Source budget', call.roleplaySourceBudgetSummary?.id || 'unavailable'],
-            ['Active-scene candidate live', call.roleplayActiveScenePacketCandidate ? 'no - debug comparison only' : 'unavailable'],
+            ['Live source selection', call.roleplaySourceSelection?.liveShapingEnabled ? 'yes' : 'unavailable'],
+            ['Selected sources', call.roleplaySourceSelection?.selectedCandidateIds.length ?? 'unavailable'],
+            ['Omitted sources', call.roleplaySourceSelection?.omittedCandidateIds.length ?? 'unavailable'],
+            ['Full request characters', call.roleplaySourcePacketComparison?.fullChars ?? 'unavailable'],
+            ['Selected request characters', call.roleplaySourcePacketComparison?.selectedChars ?? 'unavailable'],
           ])}
         </div>
       </div>
@@ -921,9 +985,12 @@ function renderSupportReadinessSnapshot(call: StoredChatDebugTrace['call1Request
   return `
     <details class="trace-details">
       <summary>Support Readiness At Dispatch (${snapshot.records.length})</summary>
-      <p>This session-local snapshot records which prior-turn support workers had finished before API Call 1 was dispatched. It is debug evidence only and was not sent to Grok/xAI.</p>
+      <p>This session-local snapshot records the known support-worker state captured before this exact response job entered API Call 1. It includes delayed records from older turns so a result cannot disappear merely because a newer assistant message became the visible tail. It is debug evidence only and was not sent to Grok/xAI.</p>
       <div class="trace-meta-grid">
         ${renderKeyValueRows([
+          ['Response job', snapshot.responseJobId],
+          ['Response mode', snapshot.responseJobMode],
+          ['Response purpose', snapshot.responseJobPurpose],
           ['Dispatch message', snapshot.dispatchMessageId],
           ['Previous assistant message', snapshot.previousAssistantMessageId],
           ['Previous assistant generation', snapshot.previousAssistantGenerationId || 'unavailable'],
@@ -957,11 +1024,78 @@ function renderSupportReadinessRecord(
           ['Started', formatDebugDate(record.startedAt)],
           ['Completed', formatDebugDate(record.completedAt)],
           ['Future-turn eligibility', record.firstEligibleFutureTurn || 'not established'],
+          ['First eligible response job', record.firstEligibleResponseJobId || 'not established'],
+          ['First eligible capture', formatDebugDate(record.firstEligibleAt)],
         ])}
       </div>
       <p><strong>Reason:</strong> ${escapeHtml(record.reason)}</p>
       <p><strong>Triggering response boundary:</strong> unavailable to the assistant response that created this worker; only a later request may consume persisted results.</p>
     </div>
+  `;
+}
+
+function renderArtifactIdentityEvidence(
+  call: StoredChatDebugTrace['call1Request'],
+  trace: StoredChatDebugTrace['trace'],
+): string {
+  const browserRequest = asRecord(call?.requestBody);
+  const frontendIdentity = call?.roleplayArtifactIdentity || browserRequest?.frontendArtifactIdentity;
+  const edgeIdentity = trace?.artifactIdentity;
+  const frontendRecord = asRecord(frontendIdentity);
+  const edgeRecord = asRecord(edgeIdentity);
+  const frontendRevision = typeof frontendRecord?.sourceRevision === 'string'
+    ? frontendRecord.sourceRevision
+    : null;
+  const edgeRevision = typeof edgeRecord?.sourceRevision === 'string'
+    ? edgeRecord.sourceRevision
+    : null;
+  const revisionsMatch = frontendRevision && edgeRevision
+    ? frontendRevision === edgeRevision
+    : null;
+  const migrationsMatch = frontendRecord && edgeRecord
+    ? frontendRecord.terminalMigration === edgeRecord.terminalMigration
+    : null;
+  const contractsMatch = frontendRecord && edgeRecord
+    ? JSON.stringify(frontendRecord.contractVersions) === JSON.stringify(edgeRecord.contractVersions)
+    : null;
+  const status = !frontendRecord || !edgeRecord
+    ? 'unknown - one or both artifact identities are missing'
+    : revisionsMatch === false || migrationsMatch === false || contractsMatch === false
+      ? 'mismatch - do not treat this export as exact-revision evidence'
+      : revisionsMatch === true
+        ? 'matched exact source revision and shared contracts'
+        : 'unknown freshness - source digests are available but exact revision is unavailable';
+
+  return `
+    <details class="trace-details">
+      <summary>Artifact Identity</summary>
+      <p>${escapeHtml(status)}</p>
+      ${frontendIdentity
+        ? renderDebugJsonBlock('Frontend artifact identity', frontendIdentity)
+        : '<p>Frontend artifact identity was not captured.</p>'}
+      ${edgeIdentity
+        ? renderDebugJsonBlock('Chat edge-function artifact identity', edgeIdentity)
+        : '<p>Chat edge-function artifact identity was not returned.</p>'}
+    </details>
+  `;
+}
+
+function renderSupportArtifactIdentityEvidence(
+  call: NonNullable<StoredChatDebugTrace['supportCalls']>[number],
+): string {
+  const identity = call.roleplayArtifactIdentity;
+  if (!identity) return '';
+
+  const status = identity.sourceRevision
+    ? `captured source revision ${identity.sourceRevision}`
+    : 'unknown freshness - source digest is available but exact revision is unavailable';
+
+  return `
+    <details class="trace-details">
+      <summary>Support Worker Artifact Identity</summary>
+      <p>${escapeHtml(status)}</p>
+      ${renderDebugJsonBlock(`${call.label} artifact identity`, identity)}
+    </details>
   `;
 }
 
@@ -990,6 +1124,7 @@ function renderApiCall1Details(segment: ReviewExportParentMessage): string {
       ${renderRoleplayGoalExposureEvidence(call)}
       ${renderCharacterPromptFactEvidence(call)}
       ${renderSupportReadinessSnapshot(call)}
+      ${renderArtifactIdentityEvidence(call, trace)}
       ${modelRequestBlocks || renderDebugJsonBlock('Browser-to-edge request body captured before Grok call', call.requestBody)}
       ${modelRequestBlocks ? renderDebugJsonBlock('Browser-to-edge request body', call.requestBody) : ''}
     `
@@ -1034,6 +1169,7 @@ function renderSupportCallDetails(segment: ReviewExportParentMessage): string {
       ${renderSupportReadinessRecord(call)}
       ${renderSupportReviewEnvelope(call)}
       ${renderSupportCallSummary(call)}
+      ${renderSupportArtifactIdentityEvidence(call)}
       ${renderModelRequestBlocks(call)}
       ${renderDebugJsonBlock(call.modelRequest || call.modelRequests?.length ? 'Browser-to-edge request body' : call.endpoint?.startsWith('local://') ? 'Local diagnostic payload' : 'Request body sent', call.requestBody)}
       ${renderDebugJsonBlock('Response body received', call.responseBody ?? '(not captured yet)')}
@@ -1176,6 +1312,9 @@ function renderParentInternalThoughtDiagnostics(parent: ReviewExportParentMessag
       <div class="support-summary">
         <p>Deterministic, debug-only review evidence for parent message ${escapeHtml(parent.messageId)}. These diagnostics do not rewrite the response, trigger a provider retry, or require internal thoughts.</p>
         <ul>${rows}</ul>
+        ${parent.thoughtFunctionReview
+          ? renderDebugJsonBlock('Thought function review', parent.thoughtFunctionReview)
+          : ''}
       </div>
     </details>
   `;
@@ -2231,28 +2370,57 @@ export function buildChatReviewHtml(input: ChatReviewExportInput): string {
     }))),
   });
   const metricsByReviewId = new Map(debugMetrics.segments.map((metrics) => [metrics.reviewId, metrics]));
-  const parentsWithMetrics = parentMessages.map((parent) => {
+  const parentsWithMetrics = parentMessages.map((parent, parentIndex) => {
     const childMetrics = parent.childSegments
       .map((segment) => metricsByReviewId.get(segment.reviewId))
       .filter((metrics): metrics is ReviewSegmentDebugMetrics => metrics != null);
     const effectiveResponseDetail = parent.debugRecord?.call1Request?.effectiveResponseDetail;
     const messageIndex = input.conversation.messages.findIndex((message) => message.id === parent.messageId);
-    const latestPlayerTurn = messageIndex > 0
+    const latestPlayerTurnRaw = messageIndex > 0
       ? [...input.conversation.messages.slice(0, messageIndex)]
           .reverse()
           .find((message) => message.role === 'user')?.text || ''
       : '';
+    const playerTurnProjection = projectPlayerTurnVisibility(latestPlayerTurnRaw);
+    const priorAssistantResponses = parentMessages
+      .slice(0, parentIndex)
+      .filter((candidate) => candidate.role === 'assistant' && candidate.localNotice == null)
+      .map((candidate) => candidate.rawMessageText)
+      .slice(-3);
+    const referenceResponse = priorAssistantResponses.at(-1);
+    const mode = readResponseJobMode(parent.debugRecord?.call1Request?.requestBody);
+    const modeReferenceResponse = mode === 'retry_regenerate'
+      ? parent.retryLineage?.attempts.at(-1)?.text
+      : mode === 'continue_assistant_tail'
+        ? readResponseJobLaneContent(
+            parent.debugRecord?.call1Request?.requestBody,
+            'continue_anchor',
+          )
+        : undefined;
     return {
       ...parent,
       childMetrics,
       internalThoughtDiagnostics: childMetrics.flatMap((metrics) => metrics.internalThoughtDiagnostics),
+      thoughtFunctionReview: parent.role === 'assistant' && parent.localNotice == null
+        ? buildThoughtFunctionReview({
+            mode,
+            playerTurn: playerTurnProjection.visibleText,
+            candidateResponse: parent.rawMessageText,
+            referenceResponse,
+            priorAssistantResponses,
+            withheldPlayerText: playerTurnProjection.privateSpans.map((span) => span.content),
+          })
+        : undefined,
       responseDetailMetrics: parent.role === 'assistant' && effectiveResponseDetail
         ? buildParentMessageResponseDetailMetrics({
             parentMessageId: parent.messageId,
             generationId: parent.generationId,
             text: parent.rawMessageText,
             childWordCounts: childMetrics.map((metrics) => metrics.wordCount),
-            latestPlayerTurn,
+            latestPlayerTurn: playerTurnProjection.visibleText,
+            mode,
+            referenceResponse,
+            modeReferenceResponse,
             effectiveResponseDetail,
           })
         : undefined,
@@ -2310,6 +2478,7 @@ export function buildChatReviewHtml(input: ChatReviewExportInput): string {
       statePruningReports: parent.statePruningReports,
       parentMetrics: parent.childMetrics || [],
       internalThoughtDiagnostics: parent.internalThoughtDiagnostics || [],
+      thoughtFunctionReview: parent.thoughtFunctionReview || null,
       responseDetailMetrics: parent.responseDetailMetrics || null,
     })),
     messages: input.conversation.messages.map((message) => ({

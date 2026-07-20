@@ -14,6 +14,15 @@ const appData = {
 
 const trace = { requestId: 'trace-1' } as unknown as ChatDebugTrace;
 const request = { id: 'request-1' } as unknown as ChatDebugRequestRecord;
+const requiredResponseJob = buildNormalSendResponseJob({
+  conversationId: 'conversation-1',
+  playerTurn: {
+    messageId: 'user-1',
+    text: 'User text',
+  },
+  currentStateSummary: 'Test scene remains active.',
+  responseDetail: 'standard',
+});
 
 const sanitizeAssistantOutput = (text: string) =>
   text
@@ -37,6 +46,7 @@ describe('collectRoleplayResponse', () => {
       appData,
       conversationId: 'conversation-1',
       userMessage: 'User text',
+      responseJob: requiredResponseJob,
       modelId: 'grok-test',
       currentDay: 2,
       currentTimeOfDay: 'day',
@@ -88,6 +98,7 @@ describe('collectRoleplayResponse', () => {
       appData,
       conversationId: 'conversation-1',
       userMessage: 'User text',
+      responseJob: requiredResponseJob,
       modelId: 'grok-test',
       placeholderMap: {},
       knownCharacterNames: new Set(),
@@ -116,12 +127,27 @@ describe('collectRoleplayResponse', () => {
     const generateStream = vi.fn(async function* (..._args: any[]) {
       yield 'Job routed';
     });
+    const assistantOutcomeRecords = [{
+      contract: 'RoleplayAssistantOutcomeRecord' as const,
+      version: 1 as const,
+      messageId: 'assistant-old',
+      generationId: 'generation-old',
+      facts: [],
+      categoryStatus: [],
+      authoritySummary: {
+        acceptedObservationCount: 0,
+        excludedInterpretationCount: 0,
+        excludedUnsupportedCount: 0,
+        authorityClasses: [],
+      },
+    }];
 
     const result = await collectRoleplayResponse({
       appData,
       conversationId: 'conversation-1',
       userMessage: 'User text',
       responseJob,
+      assistantOutcomeRecords,
       modelId: 'grok-test',
       placeholderMap: {},
       knownCharacterNames: new Set(),
@@ -135,6 +161,7 @@ describe('collectRoleplayResponse', () => {
     expect(generateStream.mock.calls[0][2]).toBe('User text');
     expect(generateStream.mock.calls[0][11]).toEqual(expect.objectContaining({
       responseJob,
+      assistantOutcomeRecords,
     }));
   });
 
@@ -154,6 +181,7 @@ describe('collectRoleplayResponse', () => {
       appData,
       conversationId: 'conversation-1',
       userMessage: 'User text',
+      responseJob: requiredResponseJob,
       modelId: 'grok-test',
       placeholderMap: {},
       knownCharacterNames: new Set(),

@@ -44,6 +44,11 @@ export function deriveRoleplaySupportReviewRows(
   envelope: RoleplaySupportReviewEnvelope,
 ): RoleplaySupportReviewRows {
   const futurePromptEligible = isRoleplaySupportReviewEnvelopePromptEligible(envelope);
+  const persistedAcceptedItems = envelope.accepted.filter((item) => (
+    item.persistenceStatus
+      ? item.persistenceStatus === 'persisted'
+      : envelope.persistence.status === 'persisted'
+  ));
 
   return {
     registry: {
@@ -63,7 +68,7 @@ export function deriveRoleplaySupportReviewRows(
           sourceMessageId: envelope.sourceMessageId,
           sourceGenerationId: envelope.sourceGenerationId,
           target,
-          acceptedItemIds: envelope.accepted.map((item) => item.id),
+          acceptedItemIds: persistedAcceptedItems.map((item) => item.id),
           persistenceTargets: envelope.persistence.targets,
           reason: envelope.futurePromptImpact.reason,
         }))

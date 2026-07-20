@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { getSystemInstruction } from "@/services/llm";
 import { buildCall1ValidationPresence } from "@/services/api-usage-validation";
+import { buildContinueAssistantTailResponseJob } from "@/features/chat-runtime/roleplay-response-job";
+import { renderRoleplayResponseJobFinalUserContent } from "@/features/chat-runtime/roleplay-response-job-rendering";
 import { createDefaultScenarioData, getHardcodedTestCharacters, now, uid } from "@/utils";
 import type { Conversation } from "@/types";
 
@@ -42,15 +44,17 @@ describe("api-usage-validation call1 coverage", () => {
     aiCharacter.fears = {
       _extras: [{ id: uid("fear"), label: "Fear", value: "Losing control" }],
     };
+    const characterGoalId = uid("goal");
+    const characterStepId = uid("step");
     aiCharacter.goals = [
       {
-        id: uid("goal"),
+        id: characterGoalId,
         title: "Extract confession",
         desiredOutcome: "James admits everything.",
         currentStatus: "Setting up game flow.",
         flexibility: "normal",
         progress: 20,
-        steps: [{ id: uid("step"), description: "Probe gently", completed: false }],
+        steps: [{ id: characterStepId, description: "Probe gently", completed: false }],
         createdAt: now(),
         updatedAt: now(),
       },
@@ -73,14 +77,16 @@ describe("api-usage-validation call1 coverage", () => {
         items: [{ id: uid("item"), label: "Pace", value: "Subtle first, escalate later" }],
       },
     ];
+    const storyGoalId = uid("sgoal");
+    const storyStepId = uid("sstep");
     appData.world.core.storyGoals = [
       {
-        id: uid("sgoal"),
+        id: storyGoalId,
         title: "Keep tension coherent",
         desiredOutcome: "No random jumps.",
         currentStatus: "In progress",
         flexibility: "normal",
-        steps: [{ id: uid("sstep"), description: "Follow game turn order", completed: false }],
+        steps: [{ id: storyStepId, description: "Follow game turn order", completed: false }],
         createdAt: now(),
         updatedAt: now(),
       },
@@ -95,7 +101,38 @@ describe("api-usage-validation call1 coverage", () => {
       updatedAt: now(),
     };
 
-    const systemInstruction = getSystemInstruction(appData, 1, "night", [], true, null);
+    const systemInstruction = getSystemInstruction(appData, 1, "night", [], true, null, [
+      {
+        goalId: storyGoalId,
+        title: "Keep tension coherent",
+        goalKind: "story",
+        tier: "active",
+        reason: "explicit_test_activation",
+        evidence: ["Keep tension coherent"],
+        evidenceConfidence: "explicit",
+        sourceMessageId: conversation.messages[0].id,
+        renderDetail: "full",
+        openMilestoneId: storyStepId,
+        openMilestoneDescription: "Follow game turn order",
+        partialProgress: "none",
+      },
+      {
+        goalId: characterGoalId,
+        title: "Extract confession",
+        goalKind: "character",
+        ownerCharacterId: aiCharacter.id,
+        ownerCharacterName: aiCharacter.name,
+        tier: "active",
+        reason: "explicit_test_activation",
+        evidence: ["Extract confession"],
+        evidenceConfidence: "explicit",
+        sourceMessageId: conversation.messages[0].id,
+        renderDetail: "full",
+        openMilestoneId: characterStepId,
+        openMilestoneDescription: "Probe gently",
+        partialProgress: "none",
+      },
+    ]);
     const finalUserInput = "Can we keep it playful but subtle?";
     const messages = [
       { role: "system" as const, content: systemInstruction },
@@ -111,7 +148,7 @@ describe("api-usage-validation call1 coverage", () => {
       conversation,
       systemInstruction,
       messages,
-      finalUserInput,
+      expectedFinalUserContent: messages.at(-1)?.content || "",
       transport: {
         providerTransport: "responses",
         store: false,
@@ -140,6 +177,144 @@ describe("api-usage-validation call1 coverage", () => {
     expect(presence["call1.cast.secrets"]).toBe(true);
     expect(presence["call1.cast.fears"]).toBe(true);
     expect(presence["call1.cast.character_goals"]).toBe(true);
+  });
+
+  it("accepts strict Continue when the rendered response-job wrapper has no player turn", () => {
+    const appData = createDefaultScenarioData();
+    const conversation: Conversation = {
+      ...appData.conversations[0],
+      id: "conversation-continue-validation",
+      messages: [],
+      updatedAt: now(),
+    };
+    const systemInstruction = getSystemInstruction(appData, 1, "night", [], true, null);
+    const responseJob = buildContinueAssistantTailResponseJob({
+      conversationId: conversation.id,
+      assistantAnchor: {
+        messageId: "assistant-1",
+        generationId: "assistant-generation-1",
+        acceptedTextTail: "Ashley pauses with her hand still resting on the table.",
+      },
+      currentStateSummary: "Day 1 at night. Ashley remains beside the table.",
+      responseDetail: "standard",
+    });
+    const expectedFinalUserContent = renderRoleplayResponseJobFinalUserContent(responseJob);
+    const messages = [
+      { role: "system" as const, content: systemInstruction },
+      { role: "user" as const, content: expectedFinalUserContent },
+    ];
+
+    const presence = buildCall1ValidationPresence({
+      appData,
+      conversation,
+      systemInstruction,
+      messages,
+      expectedFinalUserContent,
+    });
+    const alteredPresence = buildCall1ValidationPresence({
+      appData,
+      conversation,
+      systemInstruction,
+      messages: [
+        messages[0],
+        { role: "user", content: `${expectedFinalUserContent}\nUnexpected extra wrapper text.` },
+      ],
+      expectedFinalUserContent,
+    });
+
+    expect(responseJob.playerTurn).toBeNull();
+    expect(presence["call1.meta.final_user_wrapper"]).toBe(true);
+    expect(alteredPresence["call1.meta.final_user_wrapper"]).toBe(false);
+  });
+
+  it("does not report deliberately omitted optional sources as missing from a selected packet", () => {
+    const appData = createDefaultScenarioData();
+    const [aiCharacter, userCharacter] = getHardcodedTestCharacters();
+    aiCharacter.controlledBy = "AI";
+    aiCharacter.characterRole = "Main";
+    aiCharacter.name = "Ashley";
+    userCharacter.controlledBy = "User";
+    userCharacter.name = "James";
+    appData.characters = [aiCharacter, userCharacter];
+    appData.sideCharacters = [{
+      ...aiCharacter,
+      id: uid("side"),
+      name: "Iris",
+      characterRole: "Side",
+      background: {
+        relationshipStatus: "",
+        residence: "",
+        educationLevel: "",
+      },
+      personality: {
+        traits: [],
+        miscellaneous: "",
+        secrets: "",
+        fears: "",
+        kinksFantasies: "",
+        desires: "",
+      },
+      firstMentionedIn: "conversation-selection-validation",
+      extractedTraits: [],
+    }];
+    appData.world.core.storyPremise = "A deliberately optional archived premise.";
+    appData.world.core.structuredLocations = [{
+      id: uid("loc"),
+      label: "Remote archive",
+      description: "Not relevant to the current exchange.",
+    }];
+
+    const conversation: Conversation = {
+      ...appData.conversations[0],
+      id: "conversation-selection-validation",
+      messages: [],
+      updatedAt: now(),
+    };
+    const systemInstruction = getSystemInstruction(appData, 1, "night", [], true, null);
+    const finalUserInput = "I ask Ashley to stay with me.";
+    const messages = [
+      { role: "system" as const, content: systemInstruction },
+      { role: "user" as const, content: finalUserInput },
+    ];
+    const selectedSourceReceipts = [
+      {
+        surface: "main_character_cards" as const,
+        sourceId: "section-3:ashley",
+        sourceRecordId: "main_character_cards:ashley",
+        modelFacing: true,
+      },
+      {
+        surface: "user_character_cards" as const,
+        sourceId: "section-5:james",
+        sourceRecordId: "user_character_cards:james",
+        modelFacing: true,
+      },
+    ];
+
+    const selectedPresence = buildCall1ValidationPresence({
+      appData,
+      conversation,
+      systemInstruction,
+      messages,
+      expectedFinalUserContent: finalUserInput,
+      sourceReceipts: selectedSourceReceipts,
+    });
+    const brokenSelectedPresence = buildCall1ValidationPresence({
+      appData,
+      conversation,
+      systemInstruction: systemInstruction.replace("CHARACTER: Ashley", "CHARACTER: Missing"),
+      messages: [
+        { role: "system", content: systemInstruction.replace("CHARACTER: Ashley", "CHARACTER: Missing") },
+        { role: "user", content: finalUserInput },
+      ],
+      expectedFinalUserContent: finalUserInput,
+      sourceReceipts: selectedSourceReceipts,
+    });
+
+    expect(selectedPresence["call1.story.story_premise"]).toBeUndefined();
+    expect(selectedPresence["call1.story.structured_locations"]).toBeUndefined();
+    expect(selectedPresence["call1.cast.ai_characters"]).toBe(true);
+    expect(brokenSelectedPresence["call1.cast.ai_characters"]).toBe(false);
   });
 
   it("marks authored fields as missing when prompt content is removed, and leaves non-authored rows undefined", () => {
@@ -172,7 +347,7 @@ describe("api-usage-validation call1 coverage", () => {
       conversation,
       systemInstruction: brokenInstruction,
       messages,
-      finalUserInput,
+      expectedFinalUserContent: finalUserInput,
       transport: {
         providerTransport: "chat_completions",
         store: true,
@@ -186,6 +361,55 @@ describe("api-usage-validation call1 coverage", () => {
     expect(presence["call1.transport.reasoning_medium"]).toBe(false);
     expect(presence["call1.cast.tone"]).toBeUndefined();
     expect(presence["call1.meta.history_messages"]).toBeUndefined();
+  });
+
+  it("validates projected provider history instead of treating withheld private text as missing", () => {
+    const appData = createDefaultScenarioData();
+    const conversation: Conversation = {
+      ...appData.conversations[0],
+      messages: [
+        { id: uid("m"), role: "user", text: "I open the door. (I hope she follows.)", createdAt: now() },
+        { id: uid("m"), role: "assistant", text: "Mara follows.", createdAt: now() },
+        { id: uid("m"), role: "user", text: "This is the active player lane.", createdAt: now() },
+      ],
+      updatedAt: now(),
+    };
+    const expectedHistoryMessages = [
+      { role: "user" as const, content: "I open the door." },
+      { role: "assistant" as const, content: "Mara follows." },
+    ];
+    const systemInstruction = getSystemInstruction(appData, 1, "night", [], true, null);
+    const finalUserInput = "This is the active player lane.";
+    const messages = [
+      { role: "system" as const, content: systemInstruction },
+      ...expectedHistoryMessages,
+      { role: "user" as const, content: finalUserInput },
+    ];
+
+    const projectedPresence = buildCall1ValidationPresence({
+      appData,
+      conversation,
+      systemInstruction,
+      messages,
+      expectedHistoryMessages,
+      expectedFinalUserContent: finalUserInput,
+    });
+    const rawHistoryPresence = buildCall1ValidationPresence({
+      appData,
+      conversation,
+      systemInstruction,
+      messages: [
+        { role: "system", content: systemInstruction },
+        { role: "user", content: conversation.messages[0].text },
+        { role: "assistant", content: conversation.messages[1].text },
+        { role: "user", content: finalUserInput },
+      ],
+      expectedHistoryMessages,
+      expectedFinalUserContent: finalUserInput,
+    });
+
+    expect(projectedPresence["call1.meta.history_messages"]).toBe(true);
+    expect(rawHistoryPresence["call1.meta.history_messages"]).toBe(false);
   });
 
   it("validates AI side-character facts through the same compiled representation", () => {
@@ -240,11 +464,11 @@ describe("api-usage-validation call1 coverage", () => {
       conversation,
       systemInstruction,
       messages,
-      finalUserInput,
+      expectedFinalUserContent: finalUserInput,
     });
 
     expect(systemInstruction).toContain("CHARACTER: Iris");
-    expect(systemInstruction).toContain("Amber-gold");
+    expect(systemInstruction.toLowerCase()).toContain("amber-gold");
     expect(presence["call1.cast.ai_characters"]).toBe(true);
     expect(presence["call1.cast.physical_appearance"]).toBe(true);
     expect(presence["call1.cast.personality"]).toBe(true);

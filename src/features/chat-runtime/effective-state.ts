@@ -10,6 +10,7 @@ import type {
   WorldCore,
 } from '@/types';
 import { buildGoalAlignmentKey, normalizeGoalAlignmentState } from '@/lib/goal-alignment';
+import { isPersistedRoleplayUserStateAuthorityDecision } from './roleplay-user-state-authority';
 
 export type EffectiveStatePruningItemType =
   | 'memory'
@@ -89,8 +90,9 @@ function buildGenerationPruningReport({
     return {
       itemType,
       itemId,
-      included: true,
-      reason: 'manual_or_legacy_no_generation',
+      sourceGenerationId,
+      included: !sourceGenerationId,
+      reason: sourceGenerationId ? 'missing_source' : 'manual_or_legacy_no_generation',
       valuePreview,
     };
   }
@@ -114,8 +116,8 @@ function buildGenerationPruningReport({
       itemId,
       sourceMessageId,
       currentGenerationId,
-      included: true,
-      reason: 'manual_or_legacy_no_generation',
+      included: false,
+      reason: 'missing_source',
       valuePreview,
     };
   }
@@ -307,6 +309,44 @@ function buildMessageOrder(messages: ConversationMessageIdentity[]): Map<string,
   return messageOrder;
 }
 
+function deleteSnapshotField(payload: Record<string, unknown>, fieldPath: string): void {
+  const parts = fieldPath.split('.').filter(Boolean);
+  if (parts.length === 0) return;
+  let current: Record<string, unknown> = payload;
+  for (const part of parts.slice(0, -1)) {
+    const next = current[part];
+    if (!next || typeof next !== 'object' || Array.isArray(next)) return;
+    current = next as Record<string, unknown>;
+  }
+  delete current[parts.at(-1) as string];
+}
+
+function pruneStaleUserAuthorityFields<TPayload extends { _fieldChangeMetadata?: Record<string, unknown> }>(
+  payload: TPayload,
+  generationMap: Map<string, string>,
+): TPayload {
+  const metadata = payload._fieldChangeMetadata;
+  if (!metadata) return payload;
+  const nextPayload = typeof structuredClone === 'function'
+    ? structuredClone(payload)
+    : JSON.parse(JSON.stringify(payload)) as TPayload;
+  const nextMetadata = nextPayload._fieldChangeMetadata ?? {};
+
+  for (const [fieldPath, rawMetadata] of Object.entries(metadata)) {
+    if (!rawMetadata || typeof rawMetadata !== 'object') continue;
+    const decision = (rawMetadata as { userStateAuthorityDecision?: unknown }).userStateAuthorityDecision;
+    if (decision == null) continue;
+    const decisionIsCurrent = isPersistedRoleplayUserStateAuthorityDecision(decision)
+      && generationMap.get(decision.sourceMessageId) === decision.sourceGenerationId;
+    if (decisionIsCurrent) continue;
+    deleteSnapshotField(nextPayload as Record<string, unknown>, fieldPath);
+    delete nextMetadata[fieldPath];
+  }
+
+  nextPayload._fieldChangeMetadata = nextMetadata;
+  return nextPayload;
+}
+
 export function buildActiveCharacterSnapshotMap(
   snapshots: CharacterStateMessageSnapshot[],
   generationMap: Map<string, string>,
@@ -319,12 +359,16 @@ export function buildActiveCharacterSnapshotMap(
     if (generationMap.get(snapshot.sourceMessageId) !== snapshot.sourceGenerationId) continue;
     const order = messageOrder.get(snapshot.sourceMessageId);
     if (order == null) continue;
+    const currentSnapshot = {
+      ...snapshot,
+      statePayload: pruneStaleUserAuthorityFields(snapshot.statePayload, generationMap),
+    };
     const existing = latestByCharacter.get(snapshot.characterId);
     if (!existing || order > existing.order || (order === existing.order && snapshot.createdAt >= existing.createdAt)) {
       latestByCharacter.set(snapshot.characterId, {
         order,
         createdAt: snapshot.createdAt,
-        snapshot,
+        snapshot: currentSnapshot,
       });
     }
   }
@@ -346,12 +390,16 @@ export function buildActiveSideCharacterSnapshotMap(
     if (generationMap.get(snapshot.sourceMessageId) !== snapshot.sourceGenerationId) continue;
     const order = messageOrder.get(snapshot.sourceMessageId);
     if (order == null) continue;
+    const currentSnapshot = {
+      ...snapshot,
+      statePayload: pruneStaleUserAuthorityFields(snapshot.statePayload, generationMap),
+    };
     const existing = latestByCharacter.get(snapshot.sideCharacterId);
     if (!existing || order > existing.order || (order === existing.order && snapshot.createdAt >= existing.createdAt)) {
       latestByCharacter.set(snapshot.sideCharacterId, {
         order,
         createdAt: snapshot.createdAt,
-        snapshot,
+        snapshot: currentSnapshot,
       });
     }
   }

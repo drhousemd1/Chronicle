@@ -31,10 +31,13 @@ export type ReviewedDayCompressionResponse = DayCompressionResponseV1 & {
 
 export type DayCompressionPersistenceResult<T extends { id: string }> = {
   review: ReviewedDayCompressionResponse;
-  status: 'rejected' | 'persistence_failed' | 'persisted' | 'persisted_with_cleanup_gap';
+  status: 'rejected' | 'stale' | 'stale_with_rollback_gap' | 'persistence_failed' | 'persisted' | 'persisted_with_cleanup_gap';
   persistedSynopsis?: T;
   deletedInputMemoryRowIds: string[];
   failedDeletionRows: Array<{ id: string; error: string }>;
+  staleInputMemoryRowIds?: string[];
+  rolledBackPersistedSynopsis?: boolean;
+  synopsisRollbackError?: string;
   persistenceError?: string;
 };
 
@@ -58,6 +61,27 @@ export function buildDayCompressionInputRows(memories: Memory[]): DayCompression
     sourceGenerationId: memory.sourceGenerationId,
     createdAt: memory.createdAt,
   }));
+}
+
+export function isDayCompressionInputMemoryRowCurrent(input: {
+  row: DayCompressionInputMemoryRow;
+  currentMemory?: Memory;
+  currentGenerationId?: string | null;
+}): boolean {
+  const { row, currentMemory, currentGenerationId } = input;
+  if (!currentMemory) return false;
+  if (
+    currentMemory.content.trim() !== row.content
+    || currentMemory.conversationId !== row.conversationId
+    || currentMemory.day !== row.day
+    || currentMemory.sourceMessageId !== row.sourceMessageId
+    || currentMemory.sourceGenerationId !== row.sourceGenerationId
+    || currentMemory.createdAt !== row.createdAt
+  ) {
+    return false;
+  }
+  if (!row.sourceMessageId) return true;
+  return currentGenerationId === (row.sourceGenerationId || row.sourceMessageId);
 }
 
 export function reviewDayCompressionResponse(input: {
@@ -134,7 +158,9 @@ export async function persistReviewedDayCompression<T extends { id: string }>(in
   inputMemoryRows: DayCompressionInputMemoryRow[];
   response: unknown;
   persistSynopsis: (synopsis: string) => Promise<T>;
+  rollbackPersistedSynopsis?: (persistedSynopsis: T) => Promise<void>;
   deleteInputMemoryRow: (id: string) => Promise<void>;
+  isInputMemoryRowCurrent?: (row: DayCompressionInputMemoryRow) => boolean | Promise<boolean>;
 }): Promise<DayCompressionPersistenceResult<T>> {
   const review = reviewDayCompressionResponse(input);
   if (!review.valid) {
@@ -143,6 +169,24 @@ export async function persistReviewedDayCompression<T extends { id: string }>(in
       status: 'rejected',
       deletedInputMemoryRowIds: [],
       failedDeletionRows: [],
+    };
+  }
+
+  const staleInputMemoryRowIds: string[] = [];
+  if (input.isInputMemoryRowCurrent) {
+    for (const row of input.inputMemoryRows) {
+      if (!await input.isInputMemoryRowCurrent(row)) {
+        staleInputMemoryRowIds.push(row.id);
+      }
+    }
+  }
+  if (staleInputMemoryRowIds.length > 0) {
+    return {
+      review,
+      status: 'stale',
+      deletedInputMemoryRowIds: [],
+      failedDeletionRows: [],
+      staleInputMemoryRowIds,
     };
   }
 
@@ -157,6 +201,52 @@ export async function persistReviewedDayCompression<T extends { id: string }>(in
       failedDeletionRows: [],
       persistenceError: error instanceof Error ? error.message : String(error),
     };
+  }
+
+  const staleAfterPersistenceInputMemoryRowIds: string[] = [];
+  if (input.isInputMemoryRowCurrent) {
+    for (const row of input.inputMemoryRows) {
+      if (!await input.isInputMemoryRowCurrent(row)) {
+        staleAfterPersistenceInputMemoryRowIds.push(row.id);
+      }
+    }
+  }
+  if (staleAfterPersistenceInputMemoryRowIds.length > 0) {
+    if (!input.rollbackPersistedSynopsis) {
+      return {
+        review,
+        status: 'stale_with_rollback_gap',
+        persistedSynopsis,
+        deletedInputMemoryRowIds: [],
+        failedDeletionRows: [],
+        staleInputMemoryRowIds: staleAfterPersistenceInputMemoryRowIds,
+        rolledBackPersistedSynopsis: false,
+        synopsisRollbackError: 'rollback_callback_unavailable',
+      };
+    }
+    try {
+      await input.rollbackPersistedSynopsis(persistedSynopsis);
+      return {
+        review,
+        status: 'stale',
+        persistedSynopsis,
+        deletedInputMemoryRowIds: [],
+        failedDeletionRows: [],
+        staleInputMemoryRowIds: staleAfterPersistenceInputMemoryRowIds,
+        rolledBackPersistedSynopsis: true,
+      };
+    } catch (error) {
+      return {
+        review,
+        status: 'stale_with_rollback_gap',
+        persistedSynopsis,
+        deletedInputMemoryRowIds: [],
+        failedDeletionRows: [],
+        staleInputMemoryRowIds: staleAfterPersistenceInputMemoryRowIds,
+        rolledBackPersistedSynopsis: false,
+        synopsisRollbackError: error instanceof Error ? error.message : String(error),
+      };
+    }
   }
 
   const deletedInputMemoryRowIds: string[] = [];

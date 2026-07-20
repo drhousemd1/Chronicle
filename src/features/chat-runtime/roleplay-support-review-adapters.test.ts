@@ -1,50 +1,70 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  reviewLegacyMemoryExtractionEvents,
-  wrapLegacyRoleplaySupportResult,
+  createRoleplaySupportReviewEnvelopeFromWorkerResult,
 } from './roleplay-support-review-adapters';
 
-describe('legacy support result adapters', () => {
-  it('classifies near-duplicate memory output as omitted before building accepted outcomes', () => {
-    const review = reviewLegacyMemoryExtractionEvents({
-      events: ['Mara promised to return.', 'Mara promised to return.', 'The key was buried outside.'],
-      isNearDuplicate: (accepted, candidate) => accepted.includes(candidate),
-    });
-
-    expect(review.acceptedEvents).toEqual([
-      'Mara promised to return.',
-      'The key was buried outside.',
-    ]);
-    expect(review.candidateReviews).toHaveLength(2);
-    expect(review.omittedCandidates).toEqual([{
-      id: 'memory-candidate-2',
-      label: 'Mara promised to return.',
-      reason: 'near_duplicate_existing_memory',
-    }]);
-  });
+describe('support result adapters', () => {
   it('wraps character-state accepted and rejected candidates without claiming persistence', () => {
-    const envelope = wrapLegacyRoleplaySupportResult({
+    const envelope = createRoleplaySupportReviewEnvelopeFromWorkerResult({
       worker: 'character_state',
       sourceMessageId: 'assistant-1',
       sourceGenerationId: 'generation-1',
       responseBody: {
         characterUpdateReviews: [
-          { id: 'candidate-1', character: 'Mara', value: 'near the door', evidence: 'Mara moved to the door.', accepted: true, reason: 'accepted' },
-          { id: 'candidate-2', character: 'Mara', value: 'secretly afraid', accepted: false, reason: 'unsupported_inference' },
+          {
+            id: 'candidate-1',
+            character: 'Mara',
+            value: 'near the door',
+            evidence: 'I moved to the door.',
+            accepted: true,
+            reason: 'explicit_user_authorship',
+            claimType: 'voluntary_action',
+            sourceRole: 'user',
+            evidenceBasis: 'explicit_user_authorship',
+            authority: 'raw_user_fact',
+            modelFacingAction: 'allow_as_fact',
+            sourceMessageId: 'user-1',
+            userCharacterId: 'mara',
+          },
+          {
+            id: 'candidate-2',
+            character: 'Mara',
+            value: 'secretly afraid',
+            accepted: false,
+            reason: 'user_owned_state_requires_user_authorship',
+            claimType: 'voluntary_action',
+            sourceRole: 'assistant',
+            evidenceBasis: 'accepted_visible_observation',
+            authority: 'assistant_interpretation',
+            modelFacingAction: 'reject_from_persistence',
+            sourceMessageId: 'assistant-1',
+            sourceGenerationId: 'generation-1',
+            userCharacterId: 'mara',
+          },
         ],
       },
     });
 
     expect(envelope.accepted).toHaveLength(1);
     expect(envelope.rejected).toHaveLength(1);
+    expect(envelope.accepted[0]).toMatchObject({
+      authority: 'raw_user_fact',
+      evidenceBasis: 'explicit_user_authorship',
+      sourceMessageId: 'user-1',
+    });
+    expect(envelope.rejected[0]).toMatchObject({
+      authority: 'assistant_interpretation',
+      modelFacingAction: 'reject_from_persistence',
+      sourceGenerationId: 'generation-1',
+    });
     expect(envelope.persistence.status).toBe('pending');
     expect(envelope.readiness).toBe('completed');
     expect(envelope.futurePromptImpact).toMatchObject({ eligible: false, targets: [] });
   });
 
   it('prefers reviewed character-state rows and treats missing coverage as omitted evidence', () => {
-    const envelope = wrapLegacyRoleplaySupportResult({
+    const envelope = createRoleplaySupportReviewEnvelopeFromWorkerResult({
       worker: 'character_state',
       sourceMessageId: 'assistant-1',
       sourceGenerationId: 'generation-1',
@@ -90,7 +110,7 @@ describe('legacy support result adapters', () => {
   });
 
   it('wraps memory events, semantic rejections, and omitted duplicates separately', () => {
-    const envelope = wrapLegacyRoleplaySupportResult({
+    const envelope = createRoleplaySupportReviewEnvelopeFromWorkerResult({
       worker: 'memory_extraction',
       responseBody: {
         candidateReviews: [
@@ -109,11 +129,17 @@ describe('legacy support result adapters', () => {
   });
 
   it('preserves memory source-authority metadata in the support envelope', () => {
-    const envelope = wrapLegacyRoleplaySupportResult({
+    const envelope = createRoleplaySupportReviewEnvelopeFromWorkerResult({
       worker: 'memory_extraction',
       sourceMessageId: 'assistant-1',
       sourceGenerationId: 'assistant-generation-1',
       responseBody: {
+        workerArtifact: {
+          worker: 'extract-memory-events',
+          contract: 'MemoryExtractionResponseV1',
+          version: 1,
+          artifactVersion: 'extract-memory-events-candidates-v1',
+        },
         candidateReviews: [{
           id: 'memory-1',
           label: 'Avery stated that they were afraid.',
@@ -122,6 +148,7 @@ describe('legacy support result adapters', () => {
           evidence: 'I am afraid',
           claimType: 'emotion',
           sourceRole: 'user',
+          evidenceBasis: 'explicit_user_authorship',
           authority: 'raw_user_fact',
           modelFacingAction: 'allow_as_fact',
           sourceMessageId: 'user-1',
@@ -133,15 +160,26 @@ describe('legacy support result adapters', () => {
 
     expect(envelope.accepted[0]).toMatchObject({
       authority: 'raw_user_fact',
+      evidenceBasis: 'explicit_user_authorship',
       modelFacingAction: 'allow_as_fact',
       sourceMessageId: 'user-1',
       sourceGenerationId: 'user-generation-1',
       userCharacterId: 'avery',
     });
+    expect(envelope).toMatchObject({
+      contract: 'RoleplaySupportReviewEnvelope',
+      version: 2,
+      workerArtifact: {
+        worker: 'extract-memory-events',
+        contract: 'MemoryExtractionResponseV1',
+        version: 1,
+        artifactVersion: 'extract-memory-events-candidates-v1',
+      },
+    });
   });
 
   it('keeps goal alignment diagnostic-only and ineligible for future prompts', () => {
-    const envelope = wrapLegacyRoleplaySupportResult({
+    const envelope = createRoleplaySupportReviewEnvelopeFromWorkerResult({
       worker: 'goal_alignment',
       responseBody: { evaluations: [{ id: 'goal-1', label: 'Alignment review' }] },
       persistenceStatus: 'persisted',
@@ -153,10 +191,33 @@ describe('legacy support result adapters', () => {
       targets: [],
       reason: 'goal_alignment_is_diagnostic_only',
     });
+    expect(envelope.accepted).toEqual([]);
+    expect(envelope.omitted).toEqual([
+      expect.objectContaining({ id: 'goal-1', reason: 'unclassified_worker_response_item' }),
+    ]);
+  });
+
+  it('does not classify an unreviewed worker row as accepted', () => {
+    const envelope = createRoleplaySupportReviewEnvelopeFromWorkerResult({
+      worker: 'memory_extraction',
+      responseBody: {
+        candidateReviews: [{ id: 'memory-unknown', label: 'Unclassified memory row' }],
+      },
+    });
+
+    expect(envelope.accepted).toEqual([]);
+    expect(envelope.rejected).toEqual([]);
+    expect(envelope.omitted).toEqual([
+      expect.objectContaining({
+        id: 'memory-unknown',
+        reason: 'unclassified_worker_response_item',
+      }),
+    ]);
+    expect(envelope.readiness).toBe('no_updates');
   });
 
   it('marks superseded output as stale review evidence rather than prompt material', () => {
-    const envelope = wrapLegacyRoleplaySupportResult({
+    const envelope = createRoleplaySupportReviewEnvelopeFromWorkerResult({
       worker: 'goal_progress',
       sourceMessageId: 'assistant-1',
       sourceGenerationId: 'generation-old',
@@ -173,12 +234,12 @@ describe('legacy support result adapters', () => {
   });
 
   it('distinguishes parse or request failure from a valid rejected-only result', () => {
-    const failed = wrapLegacyRoleplaySupportResult({
+    const failed = createRoleplaySupportReviewEnvelopeFromWorkerResult({
       worker: 'memory_extraction',
       responseBody: { parseError: 'missing_json_object' },
       error: 'parseError: missing_json_object',
     });
-    const rejectedOnly = wrapLegacyRoleplaySupportResult({
+    const rejectedOnly = createRoleplaySupportReviewEnvelopeFromWorkerResult({
       worker: 'memory_extraction',
       responseBody: {
         candidateReviews: [{ id: 'memory-1', label: 'Temporary detail', accepted: false, reason: 'not_durable' }],
@@ -192,7 +253,7 @@ describe('legacy support result adapters', () => {
   });
 
   it('makes persisted accepted compression eligible only for summary re-entry', () => {
-    const envelope = wrapLegacyRoleplaySupportResult({
+    const envelope = createRoleplaySupportReviewEnvelopeFromWorkerResult({
       worker: 'day_memory_compression',
       responseBody: {
         synopsis: 'Day 1 ended with Mara agreeing to return.',

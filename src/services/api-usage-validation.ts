@@ -6,6 +6,7 @@ import {
   ApiUsageValidationCallGroup,
 } from "@/data/api-usage-validation-registry";
 import { selectCharacterPromptFactsForRendering } from '@/features/chat-runtime/roleplay-character-card-facts';
+import type { RoleplaySourceReceipt, RoleplaySourceSurface } from '@/features/chat-runtime/roleplay-source-receipts';
 
 export const API_USAGE_VALIDATION_TRACE_VERSION = 1;
 
@@ -21,6 +22,11 @@ export type ValidationSnapshotInput = {
   includeParent?: boolean;
 };
 
+type Call1ValidationSourceReceipt = Pick<
+  RoleplaySourceReceipt,
+  'surface' | 'sourceId' | 'sourceRecordId' | 'modelFacing'
+>;
+
 function normalizeText(value: unknown): string {
   if (typeof value === "string") return value.trim();
   if (Array.isArray(value)) return value.map((item) => normalizeText(item)).filter(Boolean).join(" ");
@@ -32,6 +38,16 @@ function normalizedIncludes(haystack: string, needle: string): boolean {
   const n = normalizeText(needle).toLowerCase().replace(/\s+/g, " ");
   if (!n) return false;
   return h.includes(n);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function hasCharacterCardHeading(systemInstruction: string, characterName: string): boolean {
+  const name = normalizeText(characterName);
+  if (!name) return false;
+  return new RegExp(`^CHARACTER:\\s*${escapeRegExp(name)}\\s*$`, 'imu').test(systemInstruction);
 }
 
 function hasSectionObjectData(value: unknown): boolean {
@@ -119,19 +135,51 @@ export function buildCall1ValidationPresence(input: {
   conversation: Conversation;
   systemInstruction: string;
   messages: Array<{ role: "system" | "user" | "assistant"; content: string }>;
-  finalUserInput: string;
+  expectedHistoryMessages?: Array<{ role: "user" | "assistant"; content: string }>;
+  expectedFinalUserContent: string;
+  sourceReceipts?: readonly Call1ValidationSourceReceipt[];
   transport?: {
     providerTransport?: string;
     store?: boolean;
     reasoningEffort?: string;
   };
 }): Record<string, ValidationPresence> {
-  const { appData, conversation, systemInstruction, messages, finalUserInput, transport } = input;
+  const {
+    appData,
+    conversation,
+    systemInstruction,
+    messages,
+    expectedHistoryMessages,
+    expectedFinalUserContent,
+    sourceReceipts,
+    transport,
+  } = input;
   const world = appData.world?.core;
-  const playableCharacters = [
+  const authoredPlayableCharacters = [
     ...(appData.characters || []),
     ...(appData.sideCharacters || []),
   ];
+  const selectedReceipts = sourceReceipts?.filter((receipt) => receipt.modelFacing) ?? null;
+  const sourceWasSelected = (...sourceIds: string[]) => (
+    selectedReceipts === null
+    || selectedReceipts.some((receipt) => receipt.sourceId && sourceIds.includes(receipt.sourceId))
+  );
+  const characterSurface = (character: PlayableCharacter): RoleplaySourceSurface => {
+    if (character.controlledBy === 'User') return 'user_character_cards';
+    return character.characterRole === 'Main' ? 'main_character_cards' : 'side_character_cards';
+  };
+  const characterRecordId = (character: PlayableCharacter): string => {
+    const slug = character.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    return `${characterSurface(character)}:${slug}`;
+  };
+  const characterWasSelected = (character: PlayableCharacter): boolean => (
+    selectedReceipts === null
+    || selectedReceipts.some((receipt) => (
+      receipt.surface === characterSurface(character)
+      && (!receipt.sourceRecordId || receipt.sourceRecordId === characterRecordId(character))
+    ))
+  );
+  const playableCharacters = authoredPlayableCharacters.filter(characterWasSelected);
   const aiCharacters = playableCharacters.filter((character) => character.controlledBy === "AI");
   const userControlledCharacters = playableCharacters.filter((character) => character.controlledBy === "User");
 
@@ -147,15 +195,18 @@ export function buildCall1ValidationPresence(input: {
 
   detail["call1.meta.system_instruction"] = Boolean(normalizeText(systemInstruction)) && messages[0]?.role === "system";
 
-  if (conversation.messages.length > 0) {
-    const historySlice = messages.slice(1, 1 + conversation.messages.length);
+  const expectedHistory = expectedHistoryMessages ?? conversation.messages.map((message) => ({
+    role: message.role === 'assistant' ? 'assistant' as const : 'user' as const,
+    content: message.text,
+  }));
+  if (expectedHistory.length > 0) {
+    const historySlice = messages.slice(1, 1 + expectedHistory.length);
     const historyOk =
-      historySlice.length === conversation.messages.length &&
-      conversation.messages.every((msg, idx) => {
+      historySlice.length === expectedHistory.length &&
+      expectedHistory.every((expected, idx) => {
         const serialized = historySlice[idx];
         if (!serialized) return false;
-        const expectedRole = msg.role === "assistant" ? "assistant" : "user";
-        return serialized.role === expectedRole && serialized.content === msg.text;
+        return serialized.role === expected.role && serialized.content === expected.content;
       });
     detail["call1.meta.history_messages"] = historyOk;
   }
@@ -163,7 +214,8 @@ export function buildCall1ValidationPresence(input: {
   const finalMessage = messages[messages.length - 1];
   detail["call1.meta.final_user_wrapper"] =
     finalMessage?.role === "user" &&
-    normalizedIncludes(finalMessage?.content || "", finalUserInput);
+    Boolean(normalizeText(expectedFinalUserContent)) &&
+    normalizeText(finalMessage.content) === normalizeText(expectedFinalUserContent);
 
   if (transport) {
     detail["call1.transport.responses"] = transport.providerTransport === "responses";
@@ -171,25 +223,29 @@ export function buildCall1ValidationPresence(input: {
     detail["call1.transport.reasoning_medium"] = transport.reasoningEffort === "medium";
   }
 
-  if (normalizeText(world?.scenarioName)) {
+  if (normalizeText(world?.scenarioName) && sourceWasSelected('world-context')) {
     detail["call1.story.scenario_name"] =
       normalizedIncludes(systemInstruction, "STORY NAME:") &&
       normalizedIncludes(systemInstruction, world?.scenarioName || "");
   }
 
-  if (normalizeText(world?.briefDescription)) {
+  if (normalizeText(world?.briefDescription) && sourceWasSelected('world-context')) {
     detail["call1.story.brief_description"] =
       normalizedIncludes(systemInstruction, "BRIEF DESCRIPTION:") &&
       normalizedIncludes(systemInstruction, world?.briefDescription || "");
   }
 
-  if (normalizeText(world?.storyPremise)) {
+  if (normalizeText(world?.storyPremise) && sourceWasSelected('world-context')) {
     detail["call1.story.story_premise"] =
       normalizedIncludes(systemInstruction, "STORY PREMISE:") &&
       normalizedIncludes(systemInstruction, world?.storyPremise || "");
   }
 
-  if (Array.isArray(world?.structuredLocations) && world.structuredLocations.length > 0) {
+  if (
+    Array.isArray(world?.structuredLocations)
+    && world.structuredLocations.length > 0
+    && sourceWasSelected('locations')
+  ) {
     const sampleLocation = world.structuredLocations.find((entry) => normalizeText(entry.label) || normalizeText(entry.description));
     detail["call1.story.structured_locations"] =
       normalizedIncludes(systemInstruction, "LOCATIONS:") &&
@@ -204,14 +260,22 @@ export function buildCall1ValidationPresence(input: {
       normalizedIncludes(systemInstruction, "STRICT FORMATTING RULES");
   }
 
-  if (Array.isArray(world?.customWorldSections) && world.customWorldSections.length > 0) {
+  if (
+    Array.isArray(world?.customWorldSections)
+    && world.customWorldSections.length > 0
+    && sourceWasSelected('custom-world-content')
+  ) {
     const sample = sampleFromCustomWorldSections(world.customWorldSections);
     detail["call1.story.custom_world_sections"] =
       normalizedIncludes(systemInstruction, "CUSTOM WORLD CONTENT") &&
       (sample ? normalizedIncludes(systemInstruction, sample) : true);
   }
 
-  if (Array.isArray(world?.storyGoals) && world.storyGoals.length > 0) {
+  if (
+    Array.isArray(world?.storyGoals)
+    && world.storyGoals.length > 0
+    && sourceWasSelected('main-story-goals')
+  ) {
     const goalSample = world.storyGoals.find((goal) => normalizeText(goal.title) || normalizeText(goal.desiredOutcome));
     detail["call1.story.story_goals"] =
       (
@@ -230,7 +294,7 @@ export function buildCall1ValidationPresence(input: {
         normalizedIncludes(systemInstruction, "SIDE AI CHARACTER CARD INFORMATION") ||
         normalizedIncludes(systemInstruction, "CAST:")
       ) &&
-      aiCharacters.slice(0, 3).every((character) => normalizedIncludes(systemInstruction, character.name));
+      aiCharacters.slice(0, 3).every((character) => hasCharacterCardHeading(systemInstruction, character.name));
 
     detail["call1.cast.character_basics"] =
       normalizedIncludes(systemInstruction, "CHARACTER:") &&
@@ -242,7 +306,7 @@ export function buildCall1ValidationPresence(input: {
   if (userControlledCharacters.length > 0) {
     detail["call1.cast.user_controlled_exclusions"] =
       normalizedIncludes(systemInstruction, "USER-CONTROLLED") &&
-      userControlledCharacters.slice(0, 3).every((character) => normalizedIncludes(systemInstruction, character.name));
+      userControlledCharacters.slice(0, 3).every((character) => hasCharacterCardHeading(systemInstruction, character.name));
   }
 
   if (aiCharacters.some((character) => hasSectionObjectData(character.physicalAppearance))) {

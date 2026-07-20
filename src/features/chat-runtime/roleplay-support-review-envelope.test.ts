@@ -58,18 +58,17 @@ describe('RoleplaySupportReviewEnvelope', () => {
         reason: 'persistence_pending',
       },
       contextGaps: ['Accepted memory is not available to the next prompt yet.'],
-      legacyWrapped: true,
     });
 
     expect(envelope).toMatchObject({
-      version: 1,
+      contract: 'RoleplaySupportReviewEnvelope',
+      version: 2,
       worker: 'memory_extraction',
       sourceMessageId: 'assistant-1',
       sourceGenerationId: 'generation-1',
       readiness: 'completed',
       persistence: { status: 'pending' },
       futurePromptImpact: { eligible: false },
-      legacyWrapped: true,
     });
     expect(envelope.accepted).toHaveLength(1);
     expect(envelope.rejected).toHaveLength(1);
@@ -131,7 +130,6 @@ describe('RoleplaySupportReviewEnvelope', () => {
       persistence: { status: 'pending', targets: [], reason: 'pending' },
       readiness: 'completed',
       futurePromptImpact: { eligible: false, targets: [], reason: 'persistence_pending' },
-      legacyWrapped: true,
     });
     const persisted = finalizeRoleplaySupportReviewEnvelope(pending, {
       persistenceStatus: 'persisted',
@@ -154,6 +152,34 @@ describe('RoleplaySupportReviewEnvelope', () => {
     });
     expect(persisted.accepted).toEqual(pending.accepted);
     expect(persisted.rejected).toEqual(pending.rejected);
+  });
+
+  it('replaces pending item outcomes with final per-item persistence evidence', () => {
+    const pending = createRoleplaySupportReviewEnvelope({
+      worker: 'memory_extraction',
+      accepted: [
+        { id: 'memory-1', label: 'Persisted memory', reason: 'accepted', persistenceStatus: 'pending' },
+        { id: 'memory-2', label: 'Failed memory', reason: 'accepted', persistenceStatus: 'pending' },
+      ],
+      persistence: { status: 'pending', targets: [], reason: 'pending' },
+      readiness: 'completed',
+      futurePromptImpact: { eligible: false, targets: [], reason: 'persistence_pending' },
+    });
+    const finalized = finalizeRoleplaySupportReviewEnvelope(pending, {
+      persistenceStatus: 'persisted',
+      persistenceTargets: ['memory-row-1'],
+      persistenceReason: 'accepted_memory_candidates_partially_persisted',
+      accepted: [
+        { id: 'memory-1', label: 'Persisted memory', reason: 'accepted', persistenceStatus: 'persisted', persistenceTargetId: 'memory-row-1' },
+        { id: 'memory-2', label: 'Failed memory', reason: 'accepted', persistenceStatus: 'failed' },
+      ],
+    });
+
+    expect(finalized.accepted).toEqual([
+      expect.objectContaining({ id: 'memory-1', persistenceStatus: 'persisted' }),
+      expect.objectContaining({ id: 'memory-2', persistenceStatus: 'failed' }),
+    ]);
+    expect(isRoleplaySupportReviewEnvelopePromptEligible(finalized)).toBe(true);
   });
 
   it('keeps persisted day-compression output prompt-eligible while preserving a cleanup gap', () => {
@@ -189,5 +215,34 @@ describe('RoleplaySupportReviewEnvelope', () => {
       contextGaps: ['Source bullet cleanup failed for row bullet-2.'],
     });
     expect(isRoleplaySupportReviewEnvelopePromptEligible(persistedWithCleanupGap)).toBe(true);
+  });
+
+  it('does not mark persisted character state prompt-ready while runtime state is pending', () => {
+    const reviewed = createRoleplaySupportReviewEnvelope({
+      worker: 'character_state',
+      accepted: [{ id: 'location-1', label: 'Avery.location', reason: 'accepted' }],
+      persistence: { status: 'pending', targets: [], reason: 'pending' },
+      readiness: 'completed',
+      futurePromptImpact: { eligible: false, targets: [], reason: 'persistence_pending' },
+    });
+    const runtimePending = finalizeRoleplaySupportReviewEnvelope(reviewed, {
+      persistenceStatus: 'persisted_runtime_state_pending',
+      persistenceTargets: ['snapshot-1'],
+      persistenceReason: 'character_state_snapshots_persisted_with_runtime_state_sync_gap',
+      contextGap: 'Reload is required before the persisted row can affect the active prompt.',
+    });
+
+    expect(runtimePending).toMatchObject({
+      readiness: 'completed',
+      persistence: {
+        status: 'persisted_runtime_state_pending',
+        targets: ['snapshot-1'],
+      },
+      futurePromptImpact: {
+        eligible: false,
+        targets: [],
+      },
+    });
+    expect(isRoleplaySupportReviewEnvelopePromptEligible(runtimePending)).toBe(false);
   });
 });

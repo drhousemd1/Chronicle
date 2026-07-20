@@ -291,9 +291,12 @@ describe('roleplay memory user-state review', () => {
     })]);
   });
 
-  it('locks the existing edge response to one structured authority review collection', () => {
+  it('locks the edge response to the versioned candidate-only contract', () => {
     const edgeSource = readFileSync('supabase/functions/extract-memory-events/index.ts', 'utf8');
-    expect(edgeSource).toContain('userStateReviews');
+    expect(edgeSource).toContain('MEMORY_RESPONSE_CONTRACT');
+    expect(edgeSource).toContain('workerArtifact: memoryWorkerArtifact()');
+    expect(edgeSource).not.toContain('userStateReviews');
+    expect(edgeSource).not.toContain('extractedEvents');
     expect(edgeSource).toContain('appliesToUserCharacter');
     expect(edgeSource).toContain('accepted_visible_observation');
     expect(edgeSource).toContain('in_character_interpretation');

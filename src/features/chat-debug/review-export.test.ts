@@ -155,6 +155,35 @@ describe('buildChatReviewHtml', () => {
     expect(html).not.toContain('[accepted]');
   });
 
+  it('does not label raw candidates accepted when the memory response contract was rejected', () => {
+    const html = renderSupportCallSummary({
+      id: 'call2.memory-extraction',
+      label: 'Supporting Call - Memory extraction',
+      apiCallGroup: 'call_2',
+      endpoint: '/functions/v1/extract-memory-events',
+      capturedAt: 4,
+      status: 'error',
+      requestBody: {},
+      responseBody: {
+        responseContractStatus: 'rejected',
+        responseContractReason: 'memory_response_worker_artifact_invalid',
+        candidates: [{
+          id: 'legacy-memory-1',
+          candidateText: 'A stale worker called this accepted.',
+          decision: 'accepted',
+        }],
+        candidateReviews: [],
+        acceptedCandidates: [],
+      },
+    } as any);
+
+    expect(html).toContain('Contract review');
+    expect(html).toContain('rejected');
+    expect(html).toContain('<span><strong>Accepted candidates</strong>0</span>');
+    expect(html).toContain('contract_rejected_unreviewed_candidate');
+    expect(html).not.toContain('[accepted]');
+  });
+
   it('renders one saved message parent with nested child speaker cards and parent-owned evidence', () => {
     const html = buildChatReviewHtml({
       appData,
@@ -186,15 +215,28 @@ describe('buildChatReviewHtml', () => {
             endpoint: '/functions/v1/chat',
             capturedAt: 3,
             requestBody: { messages: [] },
+            roleplayArtifactIdentity: {
+              schemaVersion: 1,
+              artifactName: 'frontend',
+              sourceRevision: null,
+              sourceState: 'unknown',
+              sourceDigest: 'frontend-digest',
+              sourceFiles: [],
+              terminalMigration: 'migration.sql',
+              contractVersions: { responseJob: 'v1' },
+            },
             roleplaySourceReceipts: [
               {
                 id: 'player_turn:player_turn:fnv1a-12345678',
+                packetVersion: 'roleplay-source-packet-v1',
                 surface: 'player_turn',
+                sourceClass: 'player_turn',
                 sourceId: 'player_turn',
                 textHash: 'fnv1a-12345678',
                 authority: 'highest',
                 modelFacing: true,
                 disposition: 'included',
+                transformation: 'exact',
                 duplicateGroup: 'exact:fnv1a-12345678',
                 reason: 'response_job_lane:player_turn',
                 contentLength: 14,
@@ -257,6 +299,52 @@ describe('buildChatReviewHtml', () => {
               includedReceiptIds: ['current_state:current-physical-scene-state:fnv1a-12345678'],
               omittedReceipts: [],
             },
+            roleplaySourceSelection: {
+              id: 'source-selection:routine_turn:2:1',
+              packetVersion: 'roleplay-source-packet-v1',
+              policyVersion: 'roleplay-source-selection-v1',
+              liveShapingEnabled: true,
+              refreshReason: 'routine_turn',
+              candidateCount: 2,
+              selectedCandidateIds: ['candidate:player-turn'],
+              omittedCandidateIds: ['candidate:background'],
+              decisions: [
+                {
+                  candidateId: 'candidate:player-turn',
+                  receiptId: 'player_turn:player_turn:fnv1a-12345678',
+                  disposition: 'selected',
+                  reason: 'mandatory_source_selected',
+                  modelFacingSection: 'final_player_turn',
+                },
+                {
+                  candidateId: 'candidate:background',
+                  receiptId: 'story_world:background:fnv1a-87654321',
+                  disposition: 'omitted',
+                  reason: 'section_budget_exceeded:10000+2000>10000',
+                  modelFacingSection: 'system_story_world',
+                },
+              ],
+              sectionBudgets: [{
+                sectionId: 'final_player_turn',
+                sourceClass: 'player_turn',
+                maxChars: 40000,
+                usedChars: 14,
+                selectedCount: 1,
+              }],
+              mandatorySourceCoverage: [{
+                candidateId: 'candidate:player-turn',
+                receiptId: 'player_turn:player_turn:fnv1a-12345678',
+                status: 'covered',
+                reason: 'mandatory_candidate_selected',
+              }],
+            },
+            roleplaySourcePacketComparison: {
+              fullMessageCount: 5,
+              selectedMessageCount: 3,
+              fullChars: 1200,
+              selectedChars: 700,
+              removedChars: 500,
+            },
             roleplayProviderSectionCoverage: [
               {
                 providerSectionId: 'final-user-lane:player_turn',
@@ -271,7 +359,9 @@ describe('buildChatReviewHtml', () => {
               sourceField: 'physicalAppearance.eyeColor',
               sourceLabel: 'Eye color',
               sourceValue: 'Green',
+              sourceSurface: 'main_character_cards',
               value: 'Green',
+              semanticKey: 'physicalAppearance.eyeColor:green',
               runtimeUse: 'stable_reference',
               authority: 'saved_card_reference',
               relevance: 'conditional',
@@ -297,6 +387,9 @@ describe('buildChatReviewHtml', () => {
               id: 'support-snapshot-user-2',
               dispatchMessageId: 'message-user-2',
               dispatchGenerationId: 'generation-user-2',
+              responseJobId: 'response-job-user-2',
+              responseJobMode: 'normal_send',
+              responseJobPurpose: 'respond_to_player_turn',
               previousAssistantMessageId: 'message-ai-1',
               previousAssistantGenerationId: 'generation-ai-1',
               capturedAt: 5,
@@ -314,6 +407,16 @@ describe('buildChatReviewHtml', () => {
               status: 'completed',
               requestBody: {},
               responseBody: {},
+              roleplayArtifactIdentity: {
+                schemaVersion: 1,
+                artifactName: 'extract-memory-events',
+                sourceRevision: 'revision-123',
+                sourceState: 'clean',
+                sourceDigest: 'memory-worker-digest',
+                sourceFiles: [],
+                terminalMigration: 'migration.sql',
+                contractVersions: { responseJob: 'v1' },
+              },
               roleplaySupportReadinessRecord: {
                 id: 'readiness:memory:message-ai-1:generation-ai-1',
                 worker: 'memory_extraction',
@@ -329,7 +432,8 @@ describe('buildChatReviewHtml', () => {
                 scope: 'session_debug_only',
               },
               roleplaySupportReviewEnvelope: {
-                version: 1,
+                contract: 'RoleplaySupportReviewEnvelope',
+                version: 2,
                 worker: 'memory_extraction',
                 sourceMessageId: 'message-ai-1',
                 sourceGenerationId: 'generation-ai-1',
@@ -366,7 +470,6 @@ describe('buildChatReviewHtml', () => {
                   reason: 'accepted_output_persisted_for_future_prompt_use',
                 },
                 contextGaps: ['One source field was unavailable.'],
-                legacyWrapped: false,
               },
             },
           ],
@@ -407,6 +510,9 @@ describe('buildChatReviewHtml', () => {
     expect(html).toContain('No exact raw card phrase or creator-label copy was detected in this assistant block.');
     expect(html.match(/Roleplay support review envelope/g)).toHaveLength(1);
     expect(html).toContain('Support Readiness At Dispatch (0)');
+    expect(html).toContain('response-job-user-2');
+    expect(html).toContain('normal_send');
+    expect(html).toContain('respond_to_player_turn');
     expect(html).toContain('Support worker readiness');
     expect(html).toContain('unavailable to the assistant response that created this worker');
     expect(html).toContain('One accepted durable event.');
@@ -415,6 +521,11 @@ describe('buildChatReviewHtml', () => {
     expect(html).toContain('memory-row-parent');
     expect(html).toContain('accepted_output_persisted_for_future_prompt_use');
     expect(html).toContain('One source field was unavailable.');
+    expect(html).toContain('Artifact Identity');
+    expect(html).toContain('unknown - one or both artifact identities are missing');
+    expect(html).toContain('Support Worker Artifact Identity');
+    expect(html).toContain('captured source revision revision-123');
+    expect(html).toContain('memory-worker-digest');
     const lastChildCard = html.lastIndexOf('class="message-child-card');
     expect(html.indexOf('Source Receipt Ledger (1)')).toBeGreaterThan(lastChildCard);
     expect(html.indexOf('Roleplay support review envelope')).toBeGreaterThan(lastChildCard);
@@ -447,11 +558,14 @@ describe('buildChatReviewHtml', () => {
     expect(html).toContain('response_job_lane:player_turn');
     expect(html).toContain('Duplicate source groups');
     expect(html).toContain('Receipt to provider coverage');
-    expect(html).toContain('Source Shaping And Active-Scene Comparison');
+    expect(html).toContain('Source Selection And Provider-Packet Comparison');
     expect(html).toContain('Effective field evidence');
     expect(html).toContain('Source budget summary');
-    expect(html).toContain('Full-context vs active-scene candidate');
-    expect(html).toContain('does not change the live provider request');
+    expect(html).toContain('Live source-selection decisions');
+    expect(html).toContain('Full vs selected provider-packet counts');
+    expect(html).toContain('Legacy active-scene debug comparator');
+    expect(html).toContain('The selected packet is the live request sent to the provider.');
+    expect(html).toContain('Live source selection');
     expect(html).toContain('Provider Infrastructure / Request Source Boundary');
     expect(html).toContain('Provider infrastructure evidence');
     expect(html).toContain('Request source-discipline evidence');
@@ -591,7 +705,8 @@ describe('buildChatReviewHtml', () => {
               status: 'completed',
               requestBody: { userMessage: 'hello', aiResponse: 'reply' },
               roleplaySupportReviewEnvelope: {
-                version: 1,
+                contract: 'RoleplaySupportReviewEnvelope',
+                version: 2,
                 worker: 'character_state',
                 sourceMessageId: 'message-ai-1',
                 sourceGenerationId: 'generation-ai-1',
@@ -619,7 +734,6 @@ describe('buildChatReviewHtml', () => {
                   reason: 'accepted_output_persisted_for_future_prompt_use',
                 },
                 contextGaps: [],
-                legacyWrapped: true,
               },
               modelRequest: {
                 endpoint: 'https://api.x.ai/v1/responses',
@@ -664,11 +778,13 @@ describe('buildChatReviewHtml', () => {
                   { characterId: 'character-ashley', characterName: 'Ashley', missingReviewReason: 'missing_physical_state_review' },
                 ],
                 applyStageReviews: [
-                  { characterId: 'character-sarah', characterName: 'Sarah', field: 'location', value: 'Kitchen', edgeAccepted: true, frontendAccepted: true, persisted: true, outcome: 'persisted', reason: 'character_state_snapshot_persisted', sourceMessageId: 'message-ai-1', sourceGenerationId: 'generation-ai-1', persistenceTargetId: 'snapshot-sarah-1' },
+                  { characterId: 'character-sarah', characterName: 'Sarah', field: 'location', value: 'Kitchen', edgeAccepted: true, frontendAccepted: true, persisted: true, runtimeStateApplied: true, outcome: 'persisted', reason: 'character_state_snapshot_persisted', sourceMessageId: 'message-ai-1', sourceGenerationId: 'generation-ai-1', persistenceTargetId: 'snapshot-sarah-1' },
+                  { characterId: 'character-morgan', characterName: 'Morgan', field: 'scenePosition', value: 'At the door', edgeAccepted: true, frontendAccepted: true, persisted: true, runtimeStateApplied: false, outcome: 'runtime_state_sync_failed', reason: 'side_character_state_snapshot_persisted_but_runtime_state_sync_failed', sourceMessageId: 'message-ai-1', sourceGenerationId: 'generation-ai-1', persistenceTargetId: 'snapshot-morgan-1' },
                   { characterId: 'character-ashley', characterName: 'Ashley', field: 'scenePosition', value: 'Beside Sarah', edgeAccepted: true, frontendAccepted: true, persisted: false, outcome: 'missing_source_metadata', reason: 'canonical_source_message_or_generation_missing' },
                 ],
                 persistedUpdates: [
                   { characterId: 'character-sarah', characterName: 'Sarah', field: 'location', value: 'Kitchen', persisted: true, outcome: 'persisted', persistenceTargetId: 'snapshot-sarah-1' },
+                  { characterId: 'character-morgan', characterName: 'Morgan', field: 'scenePosition', value: 'At the door', persisted: true, runtimeStateApplied: false, outcome: 'runtime_state_sync_failed', persistenceTargetId: 'snapshot-morgan-1' },
                 ],
                 rejectedAtApplyStage: [
                   { characterId: 'character-ashley', characterName: 'Ashley', field: 'scenePosition', value: 'Beside Sarah', persisted: false, outcome: 'missing_source_metadata', reason: 'canonical_source_message_or_generation_missing' },
@@ -737,9 +853,17 @@ describe('buildChatReviewHtml', () => {
 	              method: 'POST',
 	              capturedAt: 7,
 	              status: 'completed',
-	              requestBody: { userMessage: 'hello', aiResponse: 'reply' },
-	              responseBody: {
-	                extractedEvents: ['James says the map matters.'],
+		              requestBody: { userMessage: 'hello', aiResponse: 'reply' },
+		              responseBody: {
+		                contract: 'MemoryExtractionResponseV1',
+		                version: 1,
+		                workerArtifact: {
+		                  worker: 'extract-memory-events',
+		                  contract: 'MemoryExtractionResponseV1',
+		                  version: 1,
+		                  artifactVersion: 'extract-memory-events-candidates-v1',
+		                },
+		                acceptedCandidates: ['James says the map matters.'],
 	                candidateReviews: [
 	                  {
 	                    id: 'memory-1',
@@ -767,10 +891,17 @@ describe('buildChatReviewHtml', () => {
 	                  { index: 0, accepted: false, reason: 'parse_error', value: 'not json' },
 	                ],
 	                parseError: 'parse_error',
-	              },
-	              roleplaySupportReviewEnvelope: {
-	                version: 1,
-	                worker: 'memory_extraction',
+		              },
+		              roleplaySupportReviewEnvelope: {
+		                contract: 'RoleplaySupportReviewEnvelope',
+		                version: 2,
+		                worker: 'memory_extraction',
+		                workerArtifact: {
+		                  worker: 'extract-memory-events',
+		                  contract: 'MemoryExtractionResponseV1',
+		                  version: 1,
+		                  artifactVersion: 'extract-memory-events-candidates-v1',
+		                },
 	                sourceMessageId: 'message-ai-1',
 	                sourceGenerationId: 'generation-ai-1',
 	                accepted: [{
@@ -780,6 +911,7 @@ describe('buildChatReviewHtml', () => {
 	                  evidence: 'That has to matter',
 	                  claimType: 'dialogue_assignment',
 	                  sourceRole: 'user',
+	                  evidenceBasis: 'explicit_user_authorship',
 	                  authority: 'raw_user_fact',
 	                  modelFacingAction: 'allow_as_fact',
 	                  sourceMessageId: 'message-user-1',
@@ -797,6 +929,7 @@ describe('buildChatReviewHtml', () => {
 	                  evidence: 'James secretly wants Ashley',
 	                  claimType: 'intent',
 	                  sourceRole: 'assistant',
+	                  evidenceBasis: 'in_character_interpretation',
 	                  authority: 'assistant_interpretation',
 	                  modelFacingAction: 'reject_from_persistence',
 	                  sourceMessageId: 'message-ai-1',
@@ -810,8 +943,7 @@ describe('buildChatReviewHtml', () => {
 	                persistence: { status: 'persisted', targets: ['memory-row-1'], reason: 'reviewed_memory_events_persisted' },
 	                readiness: 'completed',
 	                futurePromptImpact: { eligible: true, targets: ['memory'], reason: 'accepted_output_persisted_for_future_prompt_use' },
-	                contextGaps: [],
-	                legacyWrapped: true,
+		                contextGaps: [],
 	              },
 	            },
 	          ],
@@ -868,6 +1000,8 @@ describe('buildChatReviewHtml', () => {
     expect(html).toContain('assistant_interpretation');
     expect(html).toContain('allow_as_character_interpretation');
     expect(html).toContain('source message: message-user-1');
+    expect(html).toContain('evidence basis: explicit_user_authorship');
+    expect(html).toContain('evidence basis: in_character_interpretation');
     expect(html).toContain('action: reject_from_persistence');
     expect(html).toContain('browser-local admin debug trace');
     expect(html).toContain('service-role access can bypass normal row-level security');
@@ -894,6 +1028,8 @@ describe('buildChatReviewHtml', () => {
     expect(html).toContain('Missing reviewed character coverage');
     expect(html).toContain('Apply-stage persistence receipts');
     expect(html).toContain('snapshot-sarah-1');
+    expect(html).toContain('snapshot-morgan-1');
+    expect(html).toContain('runtime state not applied');
     expect(html).toContain('missing_source_metadata');
     expect(html).toContain('Persisted apply outcomes');
     expect(html).toContain('Rejected/skipped apply outcomes');
@@ -1389,6 +1525,7 @@ Ashley: "Second."`,
                 tier: 'active',
                 reason: 'supported_by_current_turn_evidence',
                 evidence: ['latest_player_turn_goal_terms:reach,shelter'],
+                evidenceConfidence: 'explicit',
                 renderDetail: 'full',
                 openMilestoneId: 'milestone-1',
                 partialProgress: 'debug_only',
@@ -1399,6 +1536,7 @@ Ashley: "Second."`,
                 tier: 'hidden_this_turn',
                 reason: 'alignment_not_writer_visible',
                 evidence: ['existing_goal_alignment_policy'],
+                evidenceConfidence: 'none',
                 renderDetail: 'debug_only',
                 partialProgress: 'debug_only',
               }],
@@ -1425,6 +1563,7 @@ Ashley: "Second."`,
     expect(html).toContain('Response Detail Request And Parent Output');
     expect(html).toContain('Effective response detail');
     expect(html).toContain('Parent message response detail metrics');
+    expect(html).toContain('response_development_review');
     expect(html).toContain('3072');
     expect(html).toContain('Warnings are diagnostic only');
   });
@@ -1450,6 +1589,9 @@ Ashley: "Second."`,
     });
 
     expect(html.match(/Internal Thought Diagnostics - Parent Message/g)).toHaveLength(1);
+    expect(html).toContain('Thought function review');
+    expect(html).toContain('thought_function_review');
+    expect(html).toContain('internal_thought_stitches_unrelated_concerns');
     expect(html).toContain('I am afraid of the hatch and I want the crown.');
     expect(html).toContain('Zephyria signed the hidden treaty.');
     expect(html).toContain('multi_concern');
@@ -1458,10 +1600,14 @@ Ashley: "Second."`,
       /<script type="application\/json" id="chronicle-session-review-data">([\s\S]*?)<\/script>/,
     )?.[1];
     const parsed = JSON.parse(embeddedReviewData || '{}') as {
-      parentMessages?: Array<{ internalThoughtDiagnostics?: Array<{ parentMessageId?: string }> }>;
+      parentMessages?: Array<{
+        internalThoughtDiagnostics?: Array<{ parentMessageId?: string }>;
+        thoughtFunctionReview?: { kind?: string };
+      }>;
     };
     expect(parsed.parentMessages?.[1]?.internalThoughtDiagnostics).toEqual(expect.arrayContaining([
       expect.objectContaining({ parentMessageId: 'message-ai-1' }),
     ]));
+    expect(parsed.parentMessages?.[1]?.thoughtFunctionReview?.kind).toBe('thought_function_review');
   });
 });

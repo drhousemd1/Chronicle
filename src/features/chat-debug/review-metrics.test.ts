@@ -332,7 +332,9 @@ describe('buildReviewDebugMetrics', () => {
           sourceField: 'roleDescription',
           sourceLabel: 'Role in story',
           sourceValue: 'Old card phrase from generation time.',
+          sourceSurface: 'main_character_cards',
           value: 'Old · card · phrase · generation · time.',
+          semanticKey: 'roleDescription:old-card-phrase-generation-time',
           runtimeUse: 'stable_reference',
           authority: 'saved_card_reference',
           relevance: 'conditional',
@@ -383,6 +385,12 @@ Sarah: *Sarah braces the housing and checks the exposed wiring.* "Then I will ke
     expect(metrics.renderedChildCardCount).toBe(2);
     expect(metrics.warnings).toContain('uniform_child_card_shape');
     expect(metrics.allowedEscapeReason).toBeNull();
+    expect(metrics.developmentReview).toMatchObject({
+      kind: 'response_development_review',
+      diagnosticOnly: true,
+      hiddenRetryAllowed: false,
+      evaluation: { result: 'review_required' },
+    });
   });
 
   it('allows a naturally brief turn without converting diagnostics into repair behavior', () => {
@@ -397,5 +405,63 @@ Sarah: *Sarah braces the housing and checks the exposed wiring.* "Then I will ke
 
     expect(metrics.allowedEscapeReason).toBe('brief_player_turn');
     expect(metrics.warnings).not.toContain('detailed_response_underdeveloped');
+  });
+
+  it('distinguishes a longer stagnant restatement from meaningful development', () => {
+    const metrics = buildParentMessageResponseDetailMetrics({
+      parentMessageId: 'assistant-stagnant',
+      generationId: 'generation-3',
+      text: 'She remains silent beside the sealed case. She remains silent beside the sealed case. She remains silent beside the sealed case.',
+      childWordCounts: [24],
+      latestPlayerTurn: 'I ask her to choose whether the case should be opened or returned.',
+      referenceResponse: 'She remains silent beside the sealed case.',
+      effectiveResponseDetail: detailed,
+    });
+
+    expect(metrics.developmentReview.evaluation.result).toBe('fail');
+    expect(metrics.developmentReview.evaluation.reasons).toContain('response_restates_reference_instead_of_developing');
+    expect(metrics.warnings).toEqual(expect.arrayContaining([
+      'high_restatement_overlap',
+      'length_increase_without_new_development',
+    ]));
+  });
+
+  it('evaluates a Retry response against the rejected attempt without triggering a hidden retry', () => {
+    const metrics = buildParentMessageResponseDetailMetrics({
+      parentMessageId: 'assistant-retry',
+      generationId: 'generation-retry',
+      text: 'She steadies the folder with one hand and asks which clause should be challenged first. She waits.',
+      childWordCounts: [16],
+      latestPlayerTurn: 'I wait for her decision.',
+      mode: 'retry_regenerate',
+      modeReferenceResponse: 'She steadies the folder with one hand and asks which clause should be challenged first.',
+      effectiveResponseDetail: detailed,
+    });
+
+    expect(metrics.modeBehaviorReview).toMatchObject({
+      criterion: 'retry_strategy_difference',
+      result: 'fail',
+      reasons: expect.arrayContaining(['six_word_source_anchor_reused']),
+    });
+    expect(metrics.developmentReview.hiddenRetryAllowed).toBe(false);
+  });
+
+  it('evaluates a Continue response against the accepted assistant tail', () => {
+    const metrics = buildParentMessageResponseDetailMetrics({
+      parentMessageId: 'assistant-continue',
+      generationId: 'generation-continue',
+      text: 'She turns the folder toward the player and taps the unsigned clause. She pauses.',
+      childWordCounts: [15],
+      latestPlayerTurn: '',
+      mode: 'continue_assistant_tail',
+      modeReferenceResponse: 'She turns the folder toward the player and taps the unsigned clause.',
+      effectiveResponseDetail: detailed,
+    });
+
+    expect(metrics.modeBehaviorReview).toMatchObject({
+      criterion: 'continue_advancement',
+      result: 'fail',
+      reasons: expect.arrayContaining(['six_word_source_anchor_reused']),
+    });
   });
 });

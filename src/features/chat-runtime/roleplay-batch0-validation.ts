@@ -6,6 +6,13 @@ import {
   buildNormalSendResponseJob,
   buildRetryRegenerateResponseJob,
 } from './roleplay-response-job';
+import { evaluateRoleplayCandidateBehavior } from './roleplay-candidate-behavior';
+import { createRoleplayFixtureScenario } from './roleplay-fixture-scenarios';
+import {
+  buildRoleplayHarnessContractArtifact,
+  evaluateRoleplayHarnessContractArtifact,
+} from './roleplay-harness-contract-artifact';
+import { projectPlayerTurnVisibility } from './player-turn-visibility';
 import { renderRoleplayResponseJobFinalUserContent } from './roleplay-response-job-rendering';
 import {
   buildActiveCharacterSnapshotMap,
@@ -17,6 +24,7 @@ import {
 } from './roleplay-regression-fixture';
 import { buildChatReviewHtml } from '../chat-debug/review-export';
 import { renderResponseJobSummary } from '../chat-debug/response-job-summary';
+import { auditRoleplayValidationRunnerReuse } from '@/features/validation-evidence/roleplay-gates';
 import type {
   CharacterStateMessageSnapshot,
   Conversation,
@@ -179,37 +187,118 @@ function buildModeSeparationArtifact() {
 }
 
 function buildDetailVisibilityPhysicalStateArtifact() {
-  const responseJob = buildNormalSendResponseJob({
-    conversationId: 'conversation-1',
-    playerTurn: {
-      messageId: 'message-user-physical-change',
-      text: 'I make an explicit physical movement and keep my private thought to myself.',
+  const scenario = createRoleplayFixtureScenario({
+    id: 'issue-24-detail-visibility-physical-state',
+    sideCharacterCount: 12,
+  });
+  const latestPlayerMessage = scenario.messages.find((message) => message.id === 'message-user-latest');
+  if (!latestPlayerMessage) throw new Error('Realistic fixture is missing its latest player message.');
+  const playerProjection = projectPlayerTurnVisibility(
+    latestPlayerMessage.text,
+    latestPlayerMessage.id,
+  );
+  const visiblePlayerTurn = playerProjection.visibleText;
+  const acceptedMessages = scenario.messages
+    .filter((message) => message.accepted && !message.deleted && !message.superseded)
+    .map((message) => ({
+      id: message.id,
+      role: message.role,
+      text: message.text,
+      generationId: message.generationId,
+      createdAt: message.createdAt,
+    } satisfies Message));
+  const generationMap = buildMessageGenerationMap(acceptedMessages);
+  const snapshots = scenario.snapshots.map((snapshot, index) => ({
+    id: snapshot.id,
+    conversationId: scenario.conversationId,
+    characterId: snapshot.characterId,
+    sourceMessageId: snapshot.sourceMessageId,
+    sourceGenerationId: snapshot.sourceGenerationId ?? snapshot.sourceMessageId,
+    statePayload: {
+      location: snapshot.location,
+      scenePosition: snapshot.scenePosition,
     },
-    currentStateSummary: [
-      'latest_user_physical_change_preserved',
-      'partial_visibility_is_not_confirmation',
-      'unsupported hidden-state confirmation is forbidden',
-    ].join('; '),
+    createdAt: index + 1,
+  } satisfies CharacterStateMessageSnapshot));
+  const activeSnapshot = buildActiveCharacterSnapshotMap(
+    snapshots,
+    generationMap,
+    acceptedMessages,
+  ).get('character-companion');
+  const currentStateSummary = [
+    `Primary Companion location: ${activeSnapshot?.statePayload?.location ?? 'Unknown'}`,
+    activeSnapshot?.statePayload?.scenePosition
+      ? `Primary Companion position: ${activeSnapshot.statePayload.scenePosition}`
+      : '',
+  ].filter(Boolean).join('\n');
+  const responseJob = buildNormalSendResponseJob({
+    conversationId: scenario.conversationId,
+    playerTurn: {
+      messageId: latestPlayerMessage.id,
+      text: visiblePlayerTurn,
+    },
+    currentStateSummary,
     responseDetail: 'detailed',
   });
   const rendered = renderRoleplayResponseJobFinalUserContent(responseJob);
   const responseDetailLane = responseJob.finalUserLanes.find((lane) => lane.kind === 'response_detail');
-  const currentStateLane = responseJob.finalUserLanes.find((lane) => lane.kind === 'current_state');
+  const privacyEvaluation = evaluateRoleplayCandidateBehavior({
+    criterion: 'private_information_leakage',
+    mode: 'normal_send',
+    playerTurn: visiblePlayerTurn,
+    candidateResponse: 'The companion turns the documents toward the player and identifies the immediate choice.',
+    forbiddenPhrases: [scenario.privatePlayerText],
+  });
 
   return pretty({
     responseDetailLane: responseDetailLane?.content,
     renderedIncludesResponseDetailLane: rendered.includes('[response_detail | runtime | control | model-facing]'),
-    visibilitySignal: currentStateLane?.content.includes('partial_visibility_is_not_confirmation')
-      ? 'partial_visibility_is_not_confirmation'
-      : 'missing_visibility_signal',
-    physicalStateSignal: currentStateLane?.content.includes('latest_user_physical_change_preserved')
-      ? 'latest_user_physical_change_preserved'
-      : 'missing_physical_state_signal',
-    internalThoughtDiagnostics: 'diagnostic_only',
-    internalThoughtModelFacingState: 'not_confirmed_without_user_source',
-    unsupportedHiddenStateConfirmed: false,
-    storySpecificRuleAdded: false,
+    visiblePlayerTurn,
+    thoughtTokenCount: playerProjection.privateSpans.length,
+    privateTextWithheld: !rendered.includes(scenario.privatePlayerText),
+    privacyEvaluationResult: privacyEvaluation.result,
+    activeSnapshotId: activeSnapshot?.id,
+    physicalStateLocation: activeSnapshot?.statePayload?.location,
+    staleSnapshotExcluded: activeSnapshot?.id !== 'snapshot-rejected',
     finalUserLaneKinds: responseJob.finalUserLanes.map((lane) => lane.kind),
+  });
+}
+
+function buildFixtureHarnessReadinessArtifact() {
+  const scenario = createRoleplayFixtureScenario({
+    id: 'issue-24-harness-readiness',
+    sideCharacterCount: 12,
+  });
+  const retryEvaluation = evaluateRoleplayCandidateBehavior({
+    criterion: 'retry_strategy_difference',
+    mode: 'retry_regenerate',
+    playerTurn: 'I place the sealed folder between us and wait.',
+    referenceResponse: '"I promise I am here for you." She offers a quiet smile. "What do you want to do?"',
+    candidateResponse: '*She rotates the sealed folder and points to the unsigned page.* "Choose which clause we challenge first."',
+    requiredFacts: ['sealed folder'],
+    requiredDevelopments: ['unsigned page'],
+  });
+  const reuseGroups = auditRoleplayValidationRunnerReuse();
+  const contractChecks = evaluateRoleplayHarnessContractArtifact(
+    buildRoleplayHarnessContractArtifact(),
+  );
+
+  return pretty({
+    scenarioCharacterCount: scenario.characters.length,
+    denseCharacterCardCount: scenario.characterCards.filter((card) => card.facts.length >= 10).length,
+    hasDynamicSideCharacter: scenario.characters.some((character) => character.origin === 'dynamic_side'),
+    hasPrivatePlayerText: scenario.messages.some((message) => message.text.includes(scenario.privatePlayerText)),
+    hasRejectedGeneration: scenario.messages.some((message) => message.superseded && !message.accepted),
+    hasRetryChain: scenario.generationChains.some((chain) => chain.kind === 'retry'),
+    hasContinueChain: scenario.generationChains.some((chain) => chain.kind === 'continue'),
+    hasDayTransition: scenario.dayTransitions.length > 0,
+    retryEvaluationResult: retryEvaluation.result,
+    retryEvaluationReasons: retryEvaluation.reasons,
+    contractChecks,
+    sharedRunnerGroups: reuseGroups.map((group) => ({
+      runnerIdentity: group.runnerIdentity,
+      gateCount: group.gateIds.length,
+    })),
   });
 }
 
@@ -363,7 +452,16 @@ function buildDebugExportSupportArtifact() {
             status: 'completed',
             requestBody: { userMessage: 'fixture user turn', aiResponse: 'fixture assistant response' },
             responseBody: {
-              extractedEvents: [],
+              contract: 'MemoryExtractionResponseV1',
+              version: 1,
+              workerArtifact: {
+                worker: 'extract-memory-events',
+                contract: 'MemoryExtractionResponseV1',
+                version: 1,
+                artifactVersion: 'extract-memory-events-candidates-v1',
+              },
+              candidates: [],
+              acceptedCandidates: [],
               rejectedEvents: [
                 { index: 0, accepted: false, reason: 'parse_error', value: 'not json' },
               ],
@@ -383,10 +481,6 @@ function buildDebugExportSupportArtifact() {
     hasPhysicalStateReviewRows: html.includes('Physical state review rows') && html.includes('Physical state completeness review'),
     hasGoalAlignmentDiagnosticOnly: html.includes('Goal alignment summary') && html.includes('diagnostic_only'),
     hasMemoryRejectedOutcome: html.includes('Memory extraction summary') && html.includes('Rejected memory output'),
-    ownerPrivateRuntimeReceipts: true,
-    adminTestSessionOptInReviewExport: true,
-    serviceRoleAuditedCaveat: true,
-    supportCallsRepairCurrentGeneration: false,
   });
 }
 
@@ -578,9 +672,9 @@ export async function runRoleplayBatch0Validation({
               continueBranchGuardsAssistantTail: chatInterfaceSource.includes('resolveRoleplayContinueTailAction({')
                 && chatInterfaceSource.includes("if (tailAction.kind === 'unavailable') return;"),
               continueBranchPassesResponseJob: chatInterfaceSource.includes('responseJob: continueResponseJob'),
-              collectorAcceptsResponseJob: collectorSource.includes('responseJob?: RoleplayResponseJob'),
+              collectorRequiresResponseJob: collectorSource.includes('responseJob: RoleplayResponseJob'),
               collectorForwardsResponseJob: collectorSource.includes('responseJob,'),
-              llmUsesResponseJobRenderer: llmSource.includes('renderRoleplayResponseJobFinalUserContent(input.responseJob)'),
+              llmUsesResponseJobRenderer: llmSource.includes('renderRoleplayResponseJobFinalUserContent(responseJob)'),
               responseJobMode: responseJob.mode,
               renderedFinalUserContent,
               retryRenderedMode: retryResponseJob.mode,
@@ -601,8 +695,8 @@ export async function runRoleplayBatch0Validation({
           { label: 'continue branch builds continue_assistant_tail response job', includes: '"continueBranchBuildsContinueJob": true' },
           { label: 'continue branch guards assistant-tail anchor', includes: '"continueBranchGuardsAssistantTail": true' },
           { label: 'continue branch passes continue response job to collector', includes: '"continueBranchPassesResponseJob": true' },
-          { label: 'collector accepts response job option', includes: '"collectorAcceptsResponseJob": true' },
-          { label: 'collector forwards response job option', includes: '"collectorForwardsResponseJob": true' },
+          { label: 'collector requires a typed response job', includes: '"collectorRequiresResponseJob": true' },
+          { label: 'collector forwards the typed response job', includes: '"collectorForwardsResponseJob": true' },
           { label: 'llm renderer uses response job path', includes: '"llmUsesResponseJobRenderer": true' },
           { label: 'response job mode is normal_send', includes: '"responseJobMode": "normal_send"' },
           { label: 'retry rendered mode is retry_regenerate', includes: '"retryRenderedMode": "retry_regenerate"' },
@@ -688,22 +782,25 @@ export async function runRoleplayBatch0Validation({
         validationPhase: 'Validation Phase 1: New Fixture Harness Command',
         commandOrFixture: COMMAND,
         manualReview: 'No manual review required for provider-free harness smoke.',
-        createArtifact: () => ({
-          text: [
-            'fixtureHarness=ready',
-            'providerCalls=none',
-            'ledgerRows=written',
-            'reportFiles=written',
-          ].join('\n'),
-        }),
+        createArtifact: () => ({ text: buildFixtureHarnessReadinessArtifact() }),
         positiveAssertions: [
-          { label: 'fixture harness is callable', includes: 'fixtureHarness=ready' },
-          { label: 'fixture harness is provider-free', includes: 'providerCalls=none' },
-          { label: 'fixture harness writes ledger rows', includes: 'ledgerRows=written' },
-          { label: 'fixture harness writes report files', includes: 'reportFiles=written' },
+          { label: 'realistic scenario includes more than ten playable characters', includes: '"scenarioCharacterCount": 14' },
+          { label: 'realistic scenario includes dense character cards', includes: '"denseCharacterCardCount": 14' },
+          { label: 'realistic scenario includes a dynamic side character', includes: '"hasDynamicSideCharacter": true' },
+          { label: 'realistic scenario includes private player text', includes: '"hasPrivatePlayerText": true' },
+          { label: 'realistic scenario includes a rejected generation', includes: '"hasRejectedGeneration": true' },
+          { label: 'realistic scenario includes a Retry chain', includes: '"hasRetryChain": true' },
+          { label: 'realistic scenario includes a Continue chain', includes: '"hasContinueChain": true' },
+          { label: 'realistic scenario includes a day transition', includes: '"hasDayTransition": true' },
+          { label: 'candidate evaluator calculates a passing Retry strategy', includes: '"retryEvaluationResult": "pass"' },
+          { label: 'real source selector keeps the highest-authority duplicate', includes: '"highestAuthoritySourceSelected": true' },
+          { label: 'real player projection withholds private text', includes: '"privatePlayerTextWithheld": true' },
+          { label: 'real Retry history excludes the rejected generation', includes: '"rejectedRetryGenerationExcluded": true' },
+          { label: 'real persistence receipt preserves accepted generation identity', includes: '"acceptedPersistenceGenerationPreserved": true' },
+          { label: 'shared runner identities are reported transparently', includes: '"runnerIdentity": "fixture:batch0"' },
         ],
         negativeAssertions: [
-          { label: 'fixture harness does not call a live provider', excludes: 'providerCalls=live' },
+          { label: 'candidate evaluator does not require manual review for the clear Retry fixture', excludes: '"retryEvaluationResult": "review_required"' },
         ],
       },
       {
@@ -741,16 +838,16 @@ export async function runRoleplayBatch0Validation({
         positiveAssertions: [
           { label: 'response detail lane is detailed', includes: '"responseDetailLane": "detailed"' },
           { label: 'response detail lane renders as runtime lane', includes: '"renderedIncludesResponseDetailLane": true' },
-          { label: 'partial visibility remains uncertain', includes: '"visibilitySignal": "partial_visibility_is_not_confirmation"' },
-          { label: 'latest user physical change is preserved', includes: '"physicalStateSignal": "latest_user_physical_change_preserved"' },
-          { label: 'internal thought evidence stays diagnostic-only', includes: '"internalThoughtDiagnostics": "diagnostic_only"' },
-          { label: 'story-specific prompt rule was not added', includes: '"storySpecificRuleAdded": false' },
+          { label: 'message parser identifies one private thought span', includes: '"thoughtTokenCount": 1' },
+          { label: 'private player text is withheld from rendered provider content', includes: '"privateTextWithheld": true' },
+          { label: 'privacy evaluator passes the nonleaking candidate', includes: '"privacyEvaluationResult": "pass"' },
+          { label: 'generation-matched physical snapshot remains active', includes: '"activeSnapshotId": "snapshot-valid-old"' },
+          { label: 'active physical location is derived from the valid snapshot', includes: '"physicalStateLocation": "Shared workspace"' },
+          { label: 'rejected generation snapshot is excluded', includes: '"staleSnapshotExcluded": true' },
         ],
         negativeAssertions: [
-          { label: 'unsupported hidden state is not confirmed', excludes: '"unsupportedHiddenStateConfirmed": true' },
-          { label: 'fixture does not encode story-specific object rule A', excludes: 'door' },
-          { label: 'fixture does not encode story-specific location rule B', excludes: 'cabin' },
-          { label: 'fixture does not encode story-specific weather rule C', excludes: 'storm' },
+          { label: 'private player sentence is absent from provider artifact', excludes: 'I do not want anyone else to know that I am worried.' },
+          { label: 'rejected physical snapshot is not selected', excludes: '"activeSnapshotId": "snapshot-rejected"' },
         ],
       },
       {
@@ -796,13 +893,8 @@ export async function runRoleplayBatch0Validation({
           { label: 'support fixture exposes physical-state review rows', includes: '"hasPhysicalStateReviewRows": true' },
           { label: 'goal alignment remains diagnostic-only', includes: '"hasGoalAlignmentDiagnosticOnly": true' },
           { label: 'memory fixture exposes rejected output', includes: '"hasMemoryRejectedOutcome": true' },
-          { label: 'owner-private receipt boundary is recorded', includes: '"ownerPrivateRuntimeReceipts": true' },
-          { label: 'admin test-session export is opt-in', includes: '"adminTestSessionOptInReviewExport": true' },
-          { label: 'service-role caveat is audited', includes: '"serviceRoleAuditedCaveat": true' },
         ],
-        negativeAssertions: [
-          { label: 'support calls do not repair the current generation', excludes: '"supportCallsRepairCurrentGeneration": true' },
-        ],
+        negativeAssertions: [],
       },
       {
         id: 'issue-24-targeted-command-documentation',

@@ -31,7 +31,6 @@ describe('conversation memory pruning reports', () => {
     expect(result.activeMemories.map((entry) => entry.id)).toEqual([
       'manual-memory',
       'current-memory',
-      'legacy-memory',
     ]);
     expect(result.pruningReports).toEqual(expect.arrayContaining([
       expect.objectContaining({
@@ -39,6 +38,14 @@ describe('conversation memory pruning reports', () => {
         itemId: 'current-memory',
         included: true,
         reason: 'current_generation',
+        currentGenerationId: 'generation-current',
+      }),
+      expect.objectContaining({
+        itemType: 'memory',
+        itemId: 'legacy-memory',
+        included: false,
+        reason: 'missing_source',
+        sourceMessageId: 'assistant-1',
         currentGenerationId: 'generation-current',
       }),
       expect.objectContaining({

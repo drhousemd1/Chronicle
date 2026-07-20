@@ -7,7 +7,9 @@ import type {
 import type {
   RoleplayActiveScenePacketCandidate,
   RoleplayEffectiveFieldEvidence,
+  RoleplaySourcePacketComparison,
   RoleplaySourceBudgetSummary,
+  RoleplaySourceSelectionEvidence,
 } from '@/features/chat-runtime/roleplay-source-shaping';
 import type { RoleplaySupportReviewEnvelope } from '@/features/chat-runtime/roleplay-support-review-envelope';
 import type {
@@ -22,6 +24,7 @@ import type {
 import type { KnowledgeVisibilityFact } from '@/features/chat-runtime/roleplay-knowledge-visibility';
 import type { RoleplayGoalExposureDecision } from '@/features/chat-runtime/roleplay-goal-selector';
 import type { EffectiveResponseDetail } from '@/features/chat-runtime/roleplay-response-detail';
+import type { RoleplayArtifactIdentity } from '@/features/validation-evidence/roleplay-artifact-identity';
 
 export type ChatDebugSelectionReason = 'bridge' | 'scored';
 
@@ -143,6 +146,7 @@ export type ChatDebugTrace = {
   modelRequest?: ChatDebugRequestRecord['modelRequest'];
   modelRequests?: ChatDebugRequestRecord['modelRequests'];
   notes: string[];
+  artifactIdentity?: RoleplayArtifactIdentity;
 };
 
 export type ChatDebugRequestRecord = {
@@ -154,6 +158,7 @@ export type ChatDebugRequestRecord = {
   capturedAt: number;
   status?: 'sent' | 'completed' | 'error';
   requestBody: unknown;
+  roleplayArtifactIdentity?: RoleplayArtifactIdentity;
   roleplaySourceReceipts?: RoleplaySourceReceipt[];
   roleplayDuplicateSourceMetrics?: RoleplayDuplicateSourceMetric[];
   roleplaySourceReceiptCoverage?: RoleplaySourceReceiptCoverage[];
@@ -161,6 +166,8 @@ export type ChatDebugRequestRecord = {
   roleplayEffectiveFieldEvidence?: RoleplayEffectiveFieldEvidence[];
   roleplaySourceBudgetSummary?: RoleplaySourceBudgetSummary;
   roleplayActiveScenePacketCandidate?: RoleplayActiveScenePacketCandidate;
+  roleplaySourceSelection?: RoleplaySourceSelectionEvidence;
+  roleplaySourcePacketComparison?: RoleplaySourcePacketComparison;
   roleplayUserStateAuthorityDecisions?: RoleplayUserStateAuthorityDecision[];
   roleplayCharacterPromptFacts?: CharacterPromptFact[];
   roleplayCharacterPromptFactSummaries?: CharacterPromptFactReviewSummary[];

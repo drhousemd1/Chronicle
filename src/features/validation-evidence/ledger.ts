@@ -1,4 +1,5 @@
 import type { ValidationGateDefinition } from './roleplay-gates';
+import type { RoleplayArtifactIdentityReport } from './roleplay-artifact-identity';
 
 export const ROLEPLAY_PIPELINE_LEDGER_DEV_PATH = '/__validation-evidence/roleplay-pipeline-ledger.json';
 export const ROLEPLAY_PIPELINE_REPORT_DEV_PATH = '/__validation-evidence/report';
@@ -33,6 +34,7 @@ export type AutomatedExecutionRecord = {
   sourceState: 'clean' | 'dirty' | 'unknown';
   durationMs: number | null;
   rawReportPath: string | null;
+  artifactIdentityReport?: RoleplayArtifactIdentityReport | null;
   legacy: boolean;
 };
 
@@ -127,7 +129,20 @@ export function deriveExecutionFreshness(
     return 'unknown';
   }
 
-  return execution.sourceRevision === options.currentSourceRevision ? 'current' : 'stale';
+  if (execution.sourceRevision !== options.currentSourceRevision) return 'stale';
+
+  const artifactReport = execution.artifactIdentityReport;
+  if (!artifactReport) return 'unknown';
+  if (artifactReport.state === 'mismatch') return 'stale';
+  if (
+    artifactReport.state !== 'current'
+    || artifactReport.sourceState !== 'clean'
+    || !artifactReport.sourceRevision
+  ) {
+    return 'unknown';
+  }
+
+  return artifactReport.sourceRevision === execution.sourceRevision ? 'current' : 'stale';
 }
 
 export function deriveValidationGate(

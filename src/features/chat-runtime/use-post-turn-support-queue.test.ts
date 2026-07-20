@@ -64,6 +64,7 @@ describe('usePostTurnSupportQueue', () => {
     act(() => {
       hook.result.current.queueAssistantDerivedWorkAfterSourcePersist([source], 'user', 'assistant', source);
     });
+    await flush();
 
     expect(options.saveNewMessages).toHaveBeenCalledWith('conversation-1', [source]);
     expect(options.queueMemoryExtraction).not.toHaveBeenCalled();
@@ -121,9 +122,63 @@ describe('usePostTurnSupportQueue', () => {
         sourceMessageId: assistantSource.id,
         sourceMessageGenerationId: assistantSource.generationId,
         sourceUserMessageId: userSource.id,
+        sourceUserMessageGenerationId: userSource.generationId,
         reason: 'post_turn_state_sync',
       },
     );
+  });
+
+  it('withholds balanced private player spans from every support worker while preserving the raw source message', async () => {
+    const { hook, options } = renderQueue();
+    const assistantSource = message();
+    const userSource = message({
+      id: 'user-private-1',
+      generationId: 'user-private-generation-1',
+      role: 'user',
+      text: 'I set the book down. (I hope she does not notice my hands shaking.) "Read it."',
+    });
+    const visibleUserText = 'I set the book down. "Read it."';
+
+    act(() => {
+      hook.result.current.queueAssistantDerivedWorkAfterSourcePersist(
+        [assistantSource],
+        userSource.text,
+        assistantSource.text,
+        assistantSource,
+        userSource,
+      );
+    });
+    await flush();
+    await flush();
+
+    expect(options.queueMemoryExtraction).toHaveBeenCalledWith(
+      visibleUserText,
+      assistantSource.text,
+      assistantSource,
+      expect.objectContaining({
+        id: userSource.id,
+        generationId: userSource.generationId,
+        text: visibleUserText,
+      }),
+    );
+    expect(options.evaluateGoalProgress).toHaveBeenCalledWith(
+      visibleUserText,
+      assistantSource.text,
+      assistantSource.id,
+      assistantSource.generationId,
+    );
+    expect(options.evaluateGoalAlignment).toHaveBeenCalledWith(
+      visibleUserText,
+      assistantSource.text,
+      assistantSource.id,
+      assistantSource.generationId,
+    );
+    expect(options.extractCharacterUpdatesFromDialogue).toHaveBeenCalledWith(
+      visibleUserText,
+      assistantSource.text,
+      expect.objectContaining({ sourceUserMessageId: userSource.id }),
+    );
+    expect(userSource.text).toContain('I hope she does not notice my hands shaking.');
   });
 
   it('reports queued, running, and completed lifecycle independently for each worker', async () => {
@@ -149,6 +204,68 @@ describe('usePostTurnSupportQueue', () => {
         .map((event) => event.lifecycle);
       expect(workerLifecycles).toEqual(['queued', 'running', 'completed']);
     }
+  });
+
+  it('skips every worker when the source generation is already stale', async () => {
+    const onSupportLifecycle = vi.fn();
+    const { hook, options } = renderQueue({
+      isSourceCurrent: () => false,
+      onSupportLifecycle,
+    });
+    const source = message();
+
+    act(() => {
+      hook.result.current.queueAssistantDerivedWork('user', 'assistant', source);
+    });
+    await flush();
+    await flush();
+
+    expect(options.queueMemoryExtraction).not.toHaveBeenCalled();
+    expect(options.evaluateGoalProgress).not.toHaveBeenCalled();
+    expect(options.evaluateGoalAlignment).not.toHaveBeenCalled();
+    expect(options.extractCharacterUpdatesFromDialogue).not.toHaveBeenCalled();
+    for (const worker of [
+      'memory_extraction',
+      'goal_progress',
+      'goal_alignment',
+      'character_state',
+    ] as const) {
+      const events = onSupportLifecycle.mock.calls
+        .map(([event]) => event)
+        .filter((event) => event.worker === worker);
+      expect(events.map((event) => event.lifecycle)).toEqual(['queued', 'stale']);
+      expect(events.at(-1)?.reason).toBe('source_generation_superseded_before_worker_start');
+    }
+  });
+
+  it('reports a worker as stale rather than completed when Retry replaces its source during execution', async () => {
+    const memory = deferred();
+    let sourceCurrent = true;
+    const onSupportLifecycle = vi.fn();
+    const { hook } = renderQueue({
+      queueMemoryExtraction: vi.fn(() => memory.promise),
+      isSourceCurrent: () => sourceCurrent,
+      onSupportLifecycle,
+    });
+    const source = message();
+
+    act(() => {
+      hook.result.current.queueAssistantDerivedWork('user', 'assistant', source);
+    });
+    await flush();
+    sourceCurrent = false;
+    await act(async () => {
+      memory.resolve();
+      await memory.promise;
+    });
+    await flush();
+
+    const memoryEvents = onSupportLifecycle.mock.calls
+      .map(([event]) => event)
+      .filter((event) => event.worker === 'memory_extraction');
+    expect(memoryEvents.map((event) => event.lifecycle)).toEqual(['queued', 'running', 'stale']);
+    expect(memoryEvents.at(-1)?.reason).toBe('source_generation_superseded_during_worker_run');
+    expect(memoryEvents.some((event) => event.lifecycle === 'completed')).toBe(false);
   });
 
   it('skips derived work when source persistence fails', async () => {
@@ -177,7 +294,7 @@ describe('usePostTurnSupportQueue', () => {
     );
   });
 
-  it('preserves queued turn order when source-message persistence resolves out of order', async () => {
+  it('serializes source-message persistence before a later Retry generation can start', async () => {
     const firstSave = deferred();
     const secondSave = deferred();
     const events: string[] = [];
@@ -200,24 +317,36 @@ describe('usePostTurnSupportQueue', () => {
       }),
     });
     const first = message({ id: 'assistant-1', generationId: 'generation-1' });
-    const second = message({ id: 'assistant-2', generationId: 'generation-2' });
+    const second = message({ id: 'assistant-1', generationId: 'generation-2' });
 
     act(() => {
       hook.result.current.queueAssistantDerivedWorkAfterSourcePersist([first], 'user-1', 'assistant-1', first);
       hook.result.current.queueAssistantDerivedWorkAfterSourcePersist([second], 'user-2', 'assistant-2', second);
     });
-
-    await act(async () => {
-      secondSave.resolve();
-      await secondSave.promise;
-    });
     await flush();
 
+    expect(options.saveNewMessages).toHaveBeenCalledTimes(1);
+    expect(options.saveNewMessages).toHaveBeenNthCalledWith(1, 'conversation-1', [first]);
     expect(events).toEqual([]);
 
     await act(async () => {
       firstSave.resolve();
       await firstSave.promise;
+    });
+    await flush();
+
+    expect(options.saveNewMessages).toHaveBeenCalledTimes(2);
+    expect(options.saveNewMessages).toHaveBeenNthCalledWith(2, 'conversation-1', [second]);
+    expect(events).toEqual([
+      'memory:user-1',
+      'progress:user-1',
+      'alignment:user-1',
+      'extract:user-1',
+    ]);
+
+    await act(async () => {
+      secondSave.resolve();
+      await secondSave.promise;
     });
     await flush();
 
@@ -233,8 +362,6 @@ describe('usePostTurnSupportQueue', () => {
       'alignment:user-2',
       'extract:user-2',
     ]);
-    expect(options.saveNewMessages).toHaveBeenNthCalledWith(1, 'conversation-1', [first]);
-    expect(options.saveNewMessages).toHaveBeenNthCalledWith(2, 'conversation-1', [second]);
   });
 
   it('serializes goal alignment evaluation while leaving memory and progress fan-out immediate', async () => {

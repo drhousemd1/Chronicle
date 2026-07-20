@@ -82,6 +82,7 @@ export type RoleplayResponseJobModeData =
   | RoleplayContinueAssistantTailModeData;
 
 export type RoleplayResponseJob = {
+  id: string;
   conversationId: string;
   mode: RoleplayResponseMode;
   purpose: RoleplayResponsePurpose;
@@ -95,6 +96,7 @@ export type RoleplayResponseJob = {
 };
 
 export type BuildNormalSendResponseJobInput = {
+  jobId?: string;
   conversationId: string;
   playerTurn: RoleplayPlayerTurn;
   establishedFactNote?: string;
@@ -103,6 +105,7 @@ export type BuildNormalSendResponseJobInput = {
 };
 
 export type BuildRetryRegenerateResponseJobInput = {
+  jobId?: string;
   conversationId: string;
   playerTurn: RoleplayPlayerTurn;
   establishedFactNote?: string;
@@ -119,6 +122,7 @@ export type BuildRetryRegenerateResponseJobInput = {
 };
 
 export type BuildContinueAssistantTailResponseJobInput = {
+  jobId?: string;
   conversationId: string;
   assistantAnchor: {
     messageId: string;
@@ -131,6 +135,7 @@ export type BuildContinueAssistantTailResponseJobInput = {
 };
 
 export type BuildDeletedAssistantRecoveryResponseJobInput = {
+  jobId?: string;
   conversationId: string;
   visibleUserTail: RoleplayPlayerTurn;
   deletedAssistantMessageId: string;
@@ -191,7 +196,23 @@ const DEFAULT_RETRY_REQUIRED_DIFFERENCE =
 const DEFAULT_RETRY_PRESERVE_RULE =
   'Preserve established facts and user-controlled actions; keep the full rejected assistant text debug-only by default.';
 
+function buildResponseJobId(
+  mode: RoleplayResponseMode,
+  conversationId: string,
+  sourceMessageId: string,
+  sourceGenerationId?: string,
+): string {
+  return [
+    'roleplay-response-job',
+    mode,
+    conversationId,
+    sourceMessageId,
+    sourceGenerationId,
+  ].filter(Boolean).join(':');
+}
+
 export function buildNormalSendResponseJob({
+  jobId,
   conversationId,
   playerTurn,
   establishedFactNote,
@@ -199,6 +220,7 @@ export function buildNormalSendResponseJob({
   responseDetail,
 }: BuildNormalSendResponseJobInput): RoleplayResponseJob {
   return {
+    id: jobId?.trim() || buildResponseJobId('normal_send', conversationId, playerTurn.messageId),
     conversationId,
     mode: 'normal_send',
     purpose: 'respond_to_player_turn',
@@ -216,6 +238,7 @@ export function buildNormalSendResponseJob({
 }
 
 export function buildRetryRegenerateResponseJob({
+  jobId,
   conversationId,
   playerTurn,
   establishedFactNote,
@@ -226,6 +249,12 @@ export function buildRetryRegenerateResponseJob({
   responseDetail,
 }: BuildRetryRegenerateResponseJobInput): RoleplayResponseJob {
   return {
+    id: jobId?.trim() || buildResponseJobId(
+      'retry_regenerate',
+      conversationId,
+      rejectedAttempt.messageId,
+      rejectedAttempt.generationId,
+    ),
     conversationId,
     mode: 'retry_regenerate',
     purpose: 'replace_rejected_assistant_response',
@@ -262,6 +291,7 @@ export function buildRetryRegenerateResponseJob({
 }
 
 export function buildContinueAssistantTailResponseJob({
+  jobId,
   conversationId,
   assistantAnchor,
   priorUserMessageId,
@@ -269,6 +299,12 @@ export function buildContinueAssistantTailResponseJob({
   responseDetail,
 }: BuildContinueAssistantTailResponseJobInput): RoleplayResponseJob {
   return {
+    id: jobId?.trim() || buildResponseJobId(
+      'continue_assistant_tail',
+      conversationId,
+      assistantAnchor.messageId,
+      assistantAnchor.generationId,
+    ),
     conversationId,
     mode: 'continue_assistant_tail',
     purpose: 'extend_accepted_assistant_response',
@@ -297,6 +333,7 @@ export function buildContinueAssistantTailResponseJob({
 }
 
 export function buildDeletedAssistantRecoveryResponseJob({
+  jobId,
   conversationId,
   visibleUserTail,
   deletedAssistantMessageId,
@@ -306,11 +343,18 @@ export function buildDeletedAssistantRecoveryResponseJob({
 }: BuildDeletedAssistantRecoveryResponseJobInput): RoleplayResponseJob {
   return {
     ...buildNormalSendResponseJob({
+      jobId,
       conversationId,
       playerTurn: visibleUserTail,
       currentStateSummary,
       responseDetail,
     }),
+    id: jobId?.trim() || buildResponseJobId(
+      'normal_send',
+      conversationId,
+      deletedAssistantMessageId,
+      deletedAssistantGenerationId,
+    ),
     purpose: 'recover_after_deleted_assistant_response',
     modeData: {
       kind: 'normal_send',

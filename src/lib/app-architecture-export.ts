@@ -18,8 +18,8 @@ export interface AppArchitectureExportFile {
   name: string;
   type: string;
   description: string;
-  lineCount: number;
-  lineCountStatus: string;
+  metric: string;
+  metricDescription: string;
   fileNote?: string;
   fileSignal?: string;
   imports: string[];
@@ -175,8 +175,8 @@ export function buildAppArchitectureMarkdown(model: AppArchitectureExportModel) 
     lines.push("");
     pushMarkdownDetail(lines, "Name", file.name);
     pushMarkdownDetail(lines, "Type", file.type);
-    pushMarkdownDetail(lines, "Line count", `${file.lineCount.toLocaleString()} lines`);
-    pushMarkdownDetail(lines, "Line count status", file.lineCountStatus);
+    pushMarkdownDetail(lines, "Metric", file.metric);
+    pushMarkdownDetail(lines, "Metric meaning", file.metricDescription);
     pushMarkdownDetail(lines, "File signal", file.fileSignal);
     pushMarkdownDetail(lines, "File note", file.fileNote);
     pushMarkdownDetail(lines, "Description", file.description);

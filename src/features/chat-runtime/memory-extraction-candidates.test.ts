@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { reviewRoleplayMemoryExtractionCandidates } from './roleplay-memory-user-state-review';
+import {
+  MEMORY_EXTRACTION_RESPONSE_CONTRACT,
+  MEMORY_EXTRACTION_RESPONSE_VERSION,
+  parseMemoryExtractionResponseV1,
+  reviewRoleplayMemoryExtractionCandidates,
+} from './roleplay-memory-user-state-review';
 
 const userSource = {
   id: 'user-1',
@@ -34,6 +39,47 @@ function candidate(overrides: Record<string, unknown>) {
 }
 
 describe('MemoryExtractionResponseV1 candidate review', () => {
+  const workerArtifact = {
+    worker: 'extract-memory-events',
+    contract: MEMORY_EXTRACTION_RESPONSE_CONTRACT,
+    version: MEMORY_EXTRACTION_RESPONSE_VERSION,
+    artifactVersion: 'extract-memory-events-candidates-v1',
+  };
+
+  it('accepts only the versioned candidate-only worker response', () => {
+    expect(parseMemoryExtractionResponseV1({
+      contract: MEMORY_EXTRACTION_RESPONSE_CONTRACT,
+      version: MEMORY_EXTRACTION_RESPONSE_VERSION,
+      workerArtifact,
+      candidates: [candidate({})],
+    })).toMatchObject({
+      ok: true,
+      response: {
+        contract: MEMORY_EXTRACTION_RESPONSE_CONTRACT,
+        version: MEMORY_EXTRACTION_RESPONSE_VERSION,
+        workerArtifact,
+      },
+    });
+  });
+
+  it.each([
+    [{ version: 1, workerArtifact, candidates: [] }, 'memory_response_contract_mismatch'],
+    [{ contract: MEMORY_EXTRACTION_RESPONSE_CONTRACT, version: 2, workerArtifact, candidates: [] }, 'memory_response_version_mismatch'],
+    [{ contract: MEMORY_EXTRACTION_RESPONSE_CONTRACT, version: 1, workerArtifact, events: [], candidates: [] }, 'memory_response_contains_obsolete_aliases'],
+    [{ contract: MEMORY_EXTRACTION_RESPONSE_CONTRACT, version: 1, workerArtifact, extractedEvents: [], candidates: [] }, 'memory_response_contains_obsolete_aliases'],
+    [{ contract: MEMORY_EXTRACTION_RESPONSE_CONTRACT, version: 1, workerArtifact, userStateReviews: [], candidates: [] }, 'memory_response_contains_obsolete_aliases'],
+    [{ contract: MEMORY_EXTRACTION_RESPONSE_CONTRACT, version: 1, workerArtifact, candidates: null }, 'memory_response_candidates_not_array'],
+    [{ contract: MEMORY_EXTRACTION_RESPONSE_CONTRACT, version: 1, candidates: [] }, 'memory_response_worker_artifact_invalid'],
+    [{
+      contract: MEMORY_EXTRACTION_RESPONSE_CONTRACT,
+      version: 1,
+      workerArtifact: { ...workerArtifact, artifactVersion: 'extract-memory-events-events-v0' },
+      candidates: [],
+    }, 'memory_response_worker_artifact_invalid'],
+  ] as const)('fails closed for a mismatched or obsolete response %#', (response, reason) => {
+    expect(parseMemoryExtractionResponseV1(response)).toEqual({ ok: false, reason });
+  });
+
   it('accepts a durable source-backed candidate through the shared authority classifier', () => {
     const review = reviewRoleplayMemoryExtractionCandidates({
       candidates: [candidate({})],
@@ -91,6 +137,30 @@ describe('MemoryExtractionResponseV1 candidate review', () => {
     });
   });
 
+  it('preserves verified source identity and authority on an early rejected candidate', () => {
+    const review = reviewRoleplayMemoryExtractionCandidates({
+      candidates: [candidate({
+        decision: 'rejected',
+        rejectionReason: 'worker_rejected_candidate',
+      })],
+      userSourceMessage: userSource,
+      assistantSourceMessage: assistantSource,
+      assistantSourceAccepted: true,
+      userCharacters: [{ id: 'avery', name: 'Avery' }],
+      isNearDuplicate: () => false,
+    });
+
+    expect(review.candidateReviews[0]).toMatchObject({
+      accepted: false,
+      evidenceBasis: 'explicit_user_authorship',
+      authority: 'raw_user_fact',
+      modelFacingAction: 'reject_from_persistence',
+      sourceMessageId: 'user-1',
+      sourceGenerationId: 'user-generation-1',
+      userCharacterId: 'avery',
+    });
+  });
+
   it('fails closed for malformed, temporary, unsafe, duplicate, or stale candidates', () => {
     const review = reviewRoleplayMemoryExtractionCandidates({
       candidates: [
@@ -126,6 +196,56 @@ describe('MemoryExtractionResponseV1 candidate review', () => {
     expect(review.omittedCandidates).toEqual([
       expect.objectContaining({
         id: 'duplicate',
+        reason: 'near_duplicate_existing_memory',
+      }),
+    ]);
+  });
+
+  it('preserves accepted candidate identity after an omitted duplicate', () => {
+    const review = reviewRoleplayMemoryExtractionCandidates({
+      candidates: [
+        candidate({ id: 'accepted-user-fact' }),
+        candidate({
+          id: 'duplicate-user-fact',
+          candidateText: 'Duplicate candidate.',
+        }),
+        candidate({
+          id: 'accepted-assistant-observation',
+          candidateText: 'Mara recorded the promise.',
+          durabilityCategory: 'durable_scene_or_world_fact',
+          sourceClassification: 'accepted_assistant_observable_change',
+          evidence: 'Mara writes the promise down',
+          appliesToUserCharacter: false,
+          userCharacterName: null,
+          claimType: null,
+          sourceRole: 'assistant',
+          evidenceBasis: 'not_applicable',
+        }),
+      ],
+      userSourceMessage: userSource,
+      assistantSourceMessage: assistantSource,
+      assistantSourceAccepted: true,
+      userCharacters: [{ id: 'avery', name: 'Avery' }],
+      isNearDuplicate: (_accepted, value) => value === 'Duplicate candidate.',
+    });
+
+    expect(review.candidateReviews).toEqual([
+      expect.objectContaining({
+        id: 'accepted-user-fact',
+        accepted: true,
+        sourceMessageId: 'user-1',
+        sourceGenerationId: 'user-generation-1',
+      }),
+      expect.objectContaining({
+        id: 'accepted-assistant-observation',
+        accepted: true,
+        sourceMessageId: 'assistant-1',
+        sourceGenerationId: 'assistant-generation-1',
+      }),
+    ]);
+    expect(review.omittedCandidates).toEqual([
+      expect.objectContaining({
+        id: 'duplicate-user-fact',
         reason: 'near_duplicate_existing_memory',
       }),
     ]);

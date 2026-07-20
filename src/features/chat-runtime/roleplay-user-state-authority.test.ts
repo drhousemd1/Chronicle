@@ -5,6 +5,9 @@ import {
   ROLEPLAY_USER_STATE_CLAIM_TYPES,
   buildRoleplayUserStateAuthorityDebugSummary,
   classifyRoleplayUserStateClaim,
+  collectPersistedRoleplayUserStateAuthorityDecisions,
+  isPersistedRoleplayUserStateAuthorityDecision,
+  mergeRoleplayUserStateAuthorityDecisions,
 } from './roleplay-user-state-authority';
 
 describe('roleplay user-state source authority', () => {
@@ -218,5 +221,138 @@ describe('roleplay user-state source authority', () => {
         unsupported_overreach: 1,
       },
     });
+  });
+
+  it('merges current decisions without retaining superseded user or assistant generations', () => {
+    const userDecision = classifyRoleplayUserStateClaim({
+      claim: 'I move to the window.',
+      claimType: 'voluntary_action',
+      sourceMessageId: 'user-message-1',
+      sourceGenerationId: 'user-generation-current',
+      sourceRole: 'user',
+      evidenceBasis: 'explicit_user_authorship',
+      intendedUse: 'persistence',
+    });
+    const staleUserDecision = classifyRoleplayUserStateClaim({
+      claim: 'I stay beside the door.',
+      claimType: 'voluntary_action',
+      sourceMessageId: 'user-message-stale',
+      sourceGenerationId: 'user-generation-old',
+      sourceRole: 'user',
+      evidenceBasis: 'explicit_user_authorship',
+      intendedUse: 'persistence',
+    });
+    const staleAssistantDecision = classifyRoleplayUserStateClaim({
+      claim: 'The player moves to the door.',
+      claimType: 'voluntary_action',
+      sourceMessageId: 'assistant-message-1',
+      sourceGenerationId: 'generation-old',
+      sourceRole: 'assistant',
+      sourceGenerationAccepted: true,
+      evidenceBasis: 'accepted_visible_observation',
+      intendedUse: 'persistence',
+    });
+    const currentAssistantDecision = classifyRoleplayUserStateClaim({
+      claim: 'The player trembles visibly.',
+      claimType: 'bodily_reaction',
+      sourceMessageId: 'assistant-message-2',
+      sourceGenerationId: 'generation-current',
+      sourceRole: 'assistant',
+      sourceGenerationAccepted: true,
+      evidenceBasis: 'accepted_visible_observation',
+      intendedUse: 'prompt',
+    });
+
+    expect(mergeRoleplayUserStateAuthorityDecisions({
+      existing: [staleAssistantDecision, staleUserDecision, userDecision],
+      incoming: [userDecision, currentAssistantDecision],
+      isSourceCurrent: (messageId, generationId) => (
+        (messageId === 'assistant-message-2' && generationId === 'generation-current')
+        || (messageId === 'user-message-1' && generationId === 'user-generation-current')
+      ),
+    })).toEqual([userDecision, currentAssistantDecision]);
+  });
+
+  it('rehydrates only valid authority decisions stored with durable state metadata', () => {
+    const persisted = classifyRoleplayUserStateClaim({
+      claim: 'Avery is at the kitchen.',
+      userCharacterId: 'avery',
+      claimType: 'voluntary_action',
+      sourceMessageId: 'user-message-1',
+      sourceGenerationId: 'user-generation-1',
+      sourceRole: 'user',
+      evidenceBasis: 'explicit_user_authorship',
+      intendedUse: 'persistence',
+    });
+
+    expect(collectPersistedRoleplayUserStateAuthorityDecisions([{
+      location: {
+        fieldPath: 'location',
+        storyDay: 1,
+        timeOfDay: 'day',
+        sourceMessageId: 'assistant-message-1',
+        sourceGenerationId: 'assistant-generation-1',
+        updatedAt: 1,
+        userStateAuthorityDecision: {
+          ...persisted,
+          sourceMessageId: 'user-message-1',
+          sourceGenerationId: 'user-generation-1',
+          sourceRole: 'user',
+          evidenceBasis: 'explicit_user_authorship',
+        },
+      },
+      scenePosition: {
+        fieldPath: 'scenePosition',
+        storyDay: 1,
+        timeOfDay: 'day',
+        sourceMessageId: 'assistant-message-1',
+        sourceGenerationId: 'assistant-generation-1',
+        updatedAt: 1,
+        userStateAuthorityDecision: {
+          ...persisted,
+          authority: 'invented_authority',
+        } as never,
+      },
+    }])).toEqual([persisted]);
+  });
+
+  it('fails closed when persisted authority metadata is incomplete or semantically impossible', () => {
+    const validUserDecision = classifyRoleplayUserStateClaim({
+      claim: 'Avery moves to the kitchen.',
+      userCharacterId: 'avery',
+      claimType: 'voluntary_action',
+      sourceMessageId: 'user-message-1',
+      sourceGenerationId: 'user-generation-1',
+      sourceRole: 'user',
+      evidenceBasis: 'explicit_user_authorship',
+      intendedUse: 'persistence',
+    });
+    const validAssistantDecision = classifyRoleplayUserStateClaim({
+      claim: 'Avery trembles visibly.',
+      userCharacterId: 'avery',
+      claimType: 'bodily_reaction',
+      sourceMessageId: 'assistant-message-1',
+      sourceGenerationId: 'assistant-generation-1',
+      sourceRole: 'assistant',
+      sourceGenerationAccepted: true,
+      evidenceBasis: 'accepted_visible_observation',
+      intendedUse: 'persistence',
+    });
+
+    expect(isPersistedRoleplayUserStateAuthorityDecision(validUserDecision)).toBe(true);
+    expect(isPersistedRoleplayUserStateAuthorityDecision(validAssistantDecision)).toBe(true);
+    expect(isPersistedRoleplayUserStateAuthorityDecision({
+      ...validUserDecision,
+      sourceGenerationId: undefined,
+    })).toBe(false);
+    expect(isPersistedRoleplayUserStateAuthorityDecision({
+      ...validUserDecision,
+      sourceRole: 'assistant',
+    })).toBe(false);
+    expect(isPersistedRoleplayUserStateAuthorityDecision({
+      ...validAssistantDecision,
+      authority: 'assistant_interpretation',
+      modelFacingAction: 'reject_from_persistence',
+    })).toBe(false);
   });
 });

@@ -7,9 +7,20 @@ import type {
   RoleplayUserStateAuthority,
   RoleplayUserStateAuthorityDecision,
 } from './roleplay-user-state-authority';
+import {
+  renderRoleplayAssistantOutcomeRecord,
+  type RoleplayAssistantOutcomeCategoryStatus,
+  type RoleplayAssistantOutcomeRecord,
+} from './roleplay-assistant-outcome';
+import type { MessageFormattingWarning } from './message-formatting-utils';
+import {
+  projectPlayerTurnVisibility,
+  type PlayerTurnPrivateSpan,
+} from './player-turn-visibility';
 
 export type RoleplayRecentHistoryTreatment =
   | 'exact_user'
+  | 'visible_user_projection'
   | 'exact_latest_assistant'
   | 'exact_assistant_history'
   | 'outcome_summary'
@@ -37,6 +48,10 @@ export type RoleplayRecentHistoryReceipt = {
   transformedContent?: string;
   sourceAuthorityDecisionCount?: number;
   sourceAuthorityClasses?: RoleplayUserStateAuthority[];
+  outcomeFactCount?: number;
+  outcomeCategoryStatus?: RoleplayAssistantOutcomeCategoryStatus[];
+  privateSpans?: readonly PlayerTurnPrivateSpan[];
+  visibilityWarnings?: readonly MessageFormattingWarning[];
 };
 
 export type RoleplaySuppressedStyleAnchor = {
@@ -54,12 +69,14 @@ export type RoleplayRecentHistoryPacket = {
   providerMessages: RoleplayRecentHistoryProviderMessage[];
   receipts: RoleplayRecentHistoryReceipt[];
   suppressedStyleAnchors: RoleplaySuppressedStyleAnchor[];
+  assistantOutcomeRecords?: RoleplayAssistantOutcomeRecord[];
 };
 
 type CompileRoleplayRecentHistoryInput = {
   messages: Message[];
   responseJob?: RoleplayResponseJob;
   userStateAuthorityDecisions?: RoleplayUserStateAuthorityDecision[];
+  assistantOutcomeRecords?: RoleplayAssistantOutcomeRecord[];
   limit: number;
   isLocalNotice: (message: Message) => boolean;
 };
@@ -121,56 +138,22 @@ function collectAnchorCandidates(text: string): AnchorCandidate[] {
   return [...unique.values()];
 }
 
-function removeRepeatedFragments(text: string, candidates: AnchorCandidate[]) {
-  const stripped = [...candidates]
-    .sort((a, b) => b.fragment.length - a.fragment.length)
-    .reduce((value, candidate) => value.split(candidate.fragment).join(''), text)
-    .replace(/\s+([,.;!?])/g, '$1')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
-  return {
-    text: stripped,
-    hasMeaningfulContent: anchorWordCount(stripped) >= 3,
-  };
-}
-
-function buildStructuredOutcomeSummary(
+function authorityEvidenceForMessage(
   message: Message,
   decisions: RoleplayUserStateAuthorityDecision[],
-): {
-  content: string;
-  decisions: RoleplayUserStateAuthorityDecision[];
-  authorityClasses: RoleplayUserStateAuthority[];
-} | null {
+): Pick<RoleplayRecentHistoryReceipt, 'sourceAuthorityDecisionCount' | 'sourceAuthorityClasses'> {
   const generationId = message.generationId || message.id;
-  const seen = new Set<string>();
-  const selected = decisions.filter((decision) => {
-    if (decision.sourceRole !== 'assistant') return false;
-    if (decision.sourceMessageId !== message.id) return false;
-    if (!decision.sourceGenerationId || decision.sourceGenerationId !== generationId) return false;
-    const supportedObservation = decision.authority === 'accepted_assistant_observable_change'
-      && decision.modelFacingAction === 'allow_as_observation';
-    const labeledInterpretation = decision.authority === 'assistant_interpretation'
-      && decision.modelFacingAction === 'allow_as_character_interpretation';
-    if (!supportedObservation && !labeledInterpretation) return false;
-    const claim = normalizeHistoryText(decision.claim);
-    const key = `${decision.authority}:${claim.toLocaleLowerCase()}`;
-    if (!claim || seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-  if (selected.length === 0) return null;
-
-  const lines = selected.map((decision) => (
-    decision.authority === 'accepted_assistant_observable_change'
-      ? `- Observed change: ${normalizeHistoryText(decision.claim)}`
-      : `- Character interpretation, not established fact: ${normalizeHistoryText(decision.claim)}`
+  const matching = decisions.filter((decision) => (
+    decision.sourceRole === 'assistant'
+      && decision.sourceMessageId === message.id
+      && decision.sourceGenerationId === generationId
   ));
-  return {
-    content: ['Older assistant outcome summary:', ...lines].join('\n'),
-    decisions: selected,
-    authorityClasses: [...new Set(selected.map((decision) => decision.authority))],
-  };
+  return matching.length > 0
+    ? {
+        sourceAuthorityDecisionCount: matching.length,
+        sourceAuthorityClasses: [...new Set(matching.map((decision) => decision.authority))],
+      }
+    : {};
 }
 
 function responseJobSourceForMessage(
@@ -186,8 +169,7 @@ function responseJobSourceForMessage(
     };
   }
 
-  if (responseJob.playerTurn?.messageId === message.id
-    && normalizeHistoryText(responseJob.playerTurn.text) === normalizeHistoryText(message.text)) {
+  if (responseJob.playerTurn?.messageId === message.id) {
     return {
       responseJobSource: 'player_turn',
       alsoRenderedInFinalUserLane: 'player_turn',
@@ -236,6 +218,7 @@ export function compileRoleplayRecentHistory({
   messages,
   responseJob,
   userStateAuthorityDecisions = [],
+  assistantOutcomeRecords = [],
   limit,
   isLocalNotice,
 }: CompileRoleplayRecentHistoryInput): {
@@ -279,8 +262,6 @@ export function compileRoleplayRecentHistory({
     };
 
     if (role === 'user') {
-      const playerTurnIdMatchedWithDifferentText = responseJob?.playerTurn?.messageId === message.id
-        && normalizeHistoryText(responseJob.playerTurn.text) !== normalizeHistoryText(message.text);
       if (source.responseJobSource === 'player_turn'
         && source.alsoRenderedInFinalUserLane === 'player_turn') {
         receipts.push({
@@ -292,16 +273,31 @@ export function compileRoleplayRecentHistory({
         return;
       }
 
-      providerMessages.push({ role, content: message.text });
+      const projection = projectPlayerTurnVisibility(message.text, message.id);
+      if (!projection.visibleText) {
+        receipts.push({
+          ...base,
+          includedInProviderHistory: false,
+          treatment: 'visible_user_projection',
+          reason: 'private_user_history_has_no_model_visible_text',
+          transformedContent: '',
+          privateSpans: projection.privateSpans,
+          visibilityWarnings: projection.warnings,
+        });
+        return;
+      }
+
+      providerMessages.push({ role, content: projection.visibleText });
       receipts.push({
         ...base,
         includedInProviderHistory: true,
-        treatment: 'exact_user',
-        reason: playerTurnIdMatchedWithDifferentText
-          ? 'player_turn_id_matched_but_content_differed_preserved_in_history'
-          : source.responseJobSource === 'player_turn'
-          ? 'exact_user_turn_also_rendered_in_player_lane'
+        treatment: projection.changed ? 'visible_user_projection' : 'exact_user',
+        reason: projection.changed
+          ? 'private_parenthetical_spans_removed_from_user_history'
           : 'exact_user_continuity',
+        transformedContent: projection.changed ? projection.visibleText : undefined,
+        privateSpans: projection.privateSpans,
+        visibilityWarnings: projection.warnings,
       });
       return;
     }
@@ -337,17 +333,28 @@ export function compileRoleplayRecentHistory({
       return;
     }
 
-    const outcomeSummary = buildStructuredOutcomeSummary(message, userStateAuthorityDecisions);
-    if (outcomeSummary) {
-      providerMessages.push({ role, content: outcomeSummary.content });
+    const generationId = message.generationId || message.id;
+    const outcomeRecord = assistantOutcomeRecords.find((record) => (
+      record.messageId === message.id && record.generationId === generationId
+    ));
+    const renderedOutcome = outcomeRecord
+      ? renderRoleplayAssistantOutcomeRecord(outcomeRecord)
+      : null;
+    if (outcomeRecord && renderedOutcome) {
+      providerMessages.push({ role, content: renderedOutcome });
       receipts.push({
         ...base,
         includedInProviderHistory: true,
         treatment: 'outcome_summary',
-        reason: 'structured_source_authority_outcome_summary',
-        transformedContent: outcomeSummary.content,
-        sourceAuthorityDecisionCount: outcomeSummary.decisions.length,
-        sourceAuthorityClasses: outcomeSummary.authorityClasses,
+        reason: 'generation_matched_persisted_assistant_outcome',
+        transformedContent: renderedOutcome,
+        sourceAuthorityDecisionCount:
+          outcomeRecord.authoritySummary.acceptedObservationCount
+          + outcomeRecord.authoritySummary.excludedInterpretationCount
+          + outcomeRecord.authoritySummary.excludedUnsupportedCount,
+        sourceAuthorityClasses: outcomeRecord.authoritySummary.authorityClasses,
+        outcomeFactCount: outcomeRecord.facts.length,
+        outcomeCategoryStatus: outcomeRecord.categoryStatus,
       });
       return;
     }
@@ -362,36 +369,23 @@ export function compileRoleplayRecentHistory({
       .map((candidate) => candidate.display);
 
     if (repeatedAnchors.length) {
-      const stripped = removeRepeatedFragments(
-        message.text,
-        (assistantCandidates.get(index) ?? []).filter((candidate) => repeatedAnchors.includes(candidate.display)),
-      );
-      if (stripped.hasMeaningfulContent) {
-        providerMessages.push({ role, content: stripped.text });
-      }
-      receipts.push({
-        ...base,
-        includedInProviderHistory: stripped.hasMeaningfulContent,
-        treatment: 'suppressed_style_anchor',
-        reason: stripped.hasMeaningfulContent
-          ? 'repeated_assistant_phrase_removed'
-          : 'repeated_assistant_message_suppressed',
-        repeatedAnchors,
-      });
       suppressedStyleAnchors.push({
         messageId: message.id,
         generationId: message.generationId,
         repeatedAnchors,
       });
-      return;
     }
-
-    providerMessages.push({ role, content: message.text });
     receipts.push({
       ...base,
-      includedInProviderHistory: true,
-      treatment: 'exact_assistant_history',
-      reason: 'accepted_assistant_history',
+      ...authorityEvidenceForMessage(message, userStateAuthorityDecisions),
+      includedInProviderHistory: false,
+      treatment: 'suppressed_style_anchor',
+      reason: outcomeRecord
+        ? 'older_assistant_without_safe_persisted_outcome_omitted'
+        : 'older_assistant_without_outcome_record_omitted',
+      repeatedAnchors: repeatedAnchors.length ? repeatedAnchors : undefined,
+      outcomeFactCount: outcomeRecord?.facts.length,
+      outcomeCategoryStatus: outcomeRecord?.categoryStatus,
     });
   });
 
@@ -401,6 +395,7 @@ export function compileRoleplayRecentHistory({
       providerMessages,
       receipts,
       suppressedStyleAnchors,
+      assistantOutcomeRecords,
     },
   };
 }

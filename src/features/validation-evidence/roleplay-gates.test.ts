@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { listActiveRoleplayValidationGates, ROLEPLAY_VALIDATION_GATES } from './roleplay-gates';
+import {
+  auditRoleplayValidationRunnerReuse,
+  listActiveRoleplayValidationGates,
+  ROLEPLAY_VALIDATION_GATES,
+} from './roleplay-gates';
 
 describe('roleplay validation gate catalog', () => {
   it('uses unique stable gate identities', () => {
@@ -42,5 +46,16 @@ describe('roleplay validation gate catalog', () => {
       manualReviewRequired: true,
       runner: { kind: 'manual' },
     }));
+  });
+
+  it('reports shared runner identities without treating them as independent commands', () => {
+    const reuseGroups = auditRoleplayValidationRunnerReuse();
+    const batch0 = reuseGroups.find((group) => group.runnerIdentity === 'fixture:batch0');
+    const batch1 = reuseGroups.find((group) => group.runnerIdentity === 'fixture:batch1');
+
+    expect(batch0?.gateIds).toContain('issue-24-fixture-harness-command');
+    expect(batch0?.gateIds.length).toBeGreaterThan(1);
+    expect(batch1?.gateIds.length).toBeGreaterThan(1);
+    expect(reuseGroups.every((group) => group.gateIds.length > 1)).toBe(true);
   });
 });

@@ -21,7 +21,7 @@ export type RoleplayMemoryCandidatePersistenceResult = {
 
 export async function persistAcceptedRoleplayMemoryCandidates<T extends { id: string }>(input: {
   candidates: RoleplayMemoryCandidateReview[];
-  isSourceCurrent: () => boolean;
+  isSourceCurrent: (candidate: RoleplayMemoryCandidateReview) => boolean;
   persistCandidate: (candidate: RoleplayMemoryCandidateReview) => Promise<T>;
 }): Promise<RoleplayMemoryCandidatePersistenceResult> {
   const outcomes: RoleplayMemoryCandidatePersistenceOutcome[] = [];
@@ -30,7 +30,18 @@ export async function persistAcceptedRoleplayMemoryCandidates<T extends { id: st
   let sourceBecameStale = false;
 
   for (const candidate of input.candidates.filter((entry) => entry.accepted)) {
-    if (!input.isSourceCurrent()) {
+    if (!candidate.sourceMessageId || !candidate.sourceGenerationId) {
+      const failure = `${candidate.id}:missing_candidate_source_lineage`;
+      failures.push(failure);
+      outcomes.push({
+        ...candidate,
+        persistenceStatus: 'failed',
+        persistenceReason: 'missing_candidate_source_lineage',
+      });
+      continue;
+    }
+
+    if (!input.isSourceCurrent(candidate)) {
       sourceBecameStale = true;
       outcomes.push({
         ...candidate,
@@ -43,7 +54,7 @@ export async function persistAcceptedRoleplayMemoryCandidates<T extends { id: st
     try {
       const persisted = await input.persistCandidate(candidate);
       persistedTargets.push(persisted.id);
-      const sourceStillCurrent = input.isSourceCurrent();
+      const sourceStillCurrent = input.isSourceCurrent(candidate);
       if (!sourceStillCurrent) sourceBecameStale = true;
       outcomes.push({
         ...candidate,

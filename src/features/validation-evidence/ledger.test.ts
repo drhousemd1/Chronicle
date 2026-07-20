@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  deriveExecutionFreshness,
   deriveValidationGate,
   isAutomatedExecutionResult,
   summarizeDerivedValidationGates,
   type AutomatedExecutionRecord,
   type ManualReviewRecord,
 } from './ledger';
+import type { RoleplayArtifactIdentityReport } from './roleplay-artifact-identity';
 import { getRoleplayValidationGate } from './roleplay-gates';
 
 function gate(gateId: string) {
@@ -32,6 +34,22 @@ function execution(overrides: Partial<AutomatedExecutionRecord> = {}): Automated
     rawReportPath: 'reports/execution-1.json',
     legacy: false,
     ...overrides,
+  };
+}
+
+function artifactReport(
+  state: RoleplayArtifactIdentityReport['state'],
+  sourceRevision: string | null = 'revision-1',
+): RoleplayArtifactIdentityReport {
+  return {
+    schemaVersion: 1,
+    state,
+    sourceRevision,
+    sourceState: sourceRevision ? 'clean' : 'unknown',
+    terminalMigration: 'migration.sql',
+    generatedAt: '2026-07-10T01:00:00.000Z',
+    artifacts: [],
+    reasons: [],
   };
 }
 
@@ -112,6 +130,42 @@ describe('validation evidence derived state', () => {
 
     expect(pending.state).toBe('manual_pending');
     expect(approved.state).toBe('manual_approved');
+  });
+
+  it('requires exact artifact identity before evidence can be current', () => {
+    const base = execution({
+      sourceRevision: 'revision-1',
+      sourceState: 'clean',
+    });
+    const options = {
+      currentSourceRevision: 'revision-1',
+      currentSourceState: 'clean' as const,
+    };
+
+    expect(deriveExecutionFreshness(base, options)).toBe('unknown');
+    expect(deriveExecutionFreshness({
+      ...base,
+      artifactIdentityReport: artifactReport('unknown'),
+    }, options)).toBe('unknown');
+    expect(deriveExecutionFreshness({
+      ...base,
+      artifactIdentityReport: artifactReport('mismatch'),
+    }, options)).toBe('stale');
+    expect(deriveExecutionFreshness({
+      ...base,
+      artifactIdentityReport: artifactReport('current'),
+    }, options)).toBe('current');
+  });
+
+  it('treats an artifact report from a different source revision as stale', () => {
+    expect(deriveExecutionFreshness(execution({
+      sourceRevision: 'revision-1',
+      sourceState: 'clean',
+      artifactIdentityReport: artifactReport('current', 'revision-2'),
+    }), {
+      currentSourceRevision: 'revision-1',
+      currentSourceState: 'clean',
+    })).toBe('stale');
   });
 
   it('counts gate coverage rather than execution-history volume', () => {

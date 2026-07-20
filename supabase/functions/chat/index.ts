@@ -10,6 +10,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { shouldReturnAdminDebugTrace } from "../_shared/admin-debug.ts";
+import { buildRoleplayEdgeArtifactIdentity } from "../_shared/roleplay-artifact-identity.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
 import { recordServerAiUsage, type ServerAiUsageEventType } from "../_shared/server-usage.ts";
@@ -172,6 +173,7 @@ type RoleplayDebugTrace = {
   modelRequest?: RoleplayDebugModelRequest;
   modelRequests?: RoleplayDebugModelRequest[];
   notes: string[];
+  artifactIdentity: ReturnType<typeof buildRoleplayEdgeArtifactIdentity>;
 };
 
 const CONTENT_REDIRECT_DIRECTIVE = `[CONTENT REDIRECT]
@@ -374,6 +376,7 @@ function buildRoleplayDebugTrace(args: {
     },
     timing: buildDebugTiming(args.timing),
     notes: args.notes ?? [],
+    artifactIdentity: buildRoleplayEdgeArtifactIdentity('chat'),
   };
 }
 

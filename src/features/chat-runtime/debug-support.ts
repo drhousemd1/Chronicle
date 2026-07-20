@@ -4,12 +4,14 @@ export type EdgeDebugPayload = {
   modelRequest?: ChatDebugRequestRecord["modelRequest"];
   modelRequests?: ChatDebugRequestRecord["modelRequests"];
   primaryModelRequest?: ChatDebugRequestRecord["modelRequest"];
+  artifactIdentity?: ChatDebugRequestRecord["roleplayArtifactIdentity"];
 };
 
 export function splitEdgeDebugPayload(data: unknown): {
   responseBody: unknown;
   modelRequest?: ChatDebugRequestRecord["modelRequest"];
   modelRequests?: ChatDebugRequestRecord["modelRequests"];
+  artifactIdentity?: ChatDebugRequestRecord["roleplayArtifactIdentity"];
 } {
   if (!data || typeof data !== "object") {
     return { responseBody: data ?? null };
@@ -34,6 +36,7 @@ export function splitEdgeDebugPayload(data: unknown): {
     responseBody,
     modelRequest: payload.modelRequest,
     modelRequests: modelRequests.length ? modelRequests : undefined,
+    artifactIdentity: payload.artifactIdentity,
   };
 }
 

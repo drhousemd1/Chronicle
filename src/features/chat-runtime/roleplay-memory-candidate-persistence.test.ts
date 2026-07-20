@@ -14,6 +14,8 @@ function accepted(id: string, label: string): RoleplayMemoryCandidateReview {
     reason: 'accepted',
     durabilityCategory: 'durable_scene_or_world_fact',
     sourceClassification: 'raw_user_fact',
+    sourceMessageId: `source-${id}`,
+    sourceGenerationId: `generation-${id}`,
   };
 }
 
@@ -83,6 +85,67 @@ describe('roleplay memory candidate persistence', () => {
     expect(result.outcomes).toEqual([
       expect.objectContaining({ id: 'one', persistenceStatus: 'persisted_stale' }),
       expect.objectContaining({ id: 'two', persistenceStatus: 'skipped_stale' }),
+    ]);
+  });
+
+  it('checks and stores each candidate\'s own source when a player message is edited during persistence', async () => {
+    const currentGenerations = new Map([
+      ['player-1', 'player-generation-1'],
+      ['assistant-1', 'assistant-generation-1'],
+    ]);
+    const persistedSources: Array<[string | undefined, string | undefined]> = [];
+    const playerCandidate = {
+      ...accepted('player', 'The player established a durable boundary.'),
+      sourceMessageId: 'player-1',
+      sourceGenerationId: 'player-generation-1',
+    };
+    const assistantCandidate = {
+      ...accepted('assistant', 'The assistant established an observable change.'),
+      sourceMessageId: 'assistant-1',
+      sourceGenerationId: 'assistant-generation-1',
+    };
+
+    const result = await persistAcceptedRoleplayMemoryCandidates({
+      candidates: [playerCandidate, assistantCandidate],
+      isSourceCurrent: (candidate) => (
+        currentGenerations.get(candidate.sourceMessageId || '') === candidate.sourceGenerationId
+      ),
+      persistCandidate: async (candidate) => {
+        persistedSources.push([candidate.sourceMessageId, candidate.sourceGenerationId]);
+        if (candidate.id === 'player') currentGenerations.set('player-1', 'player-generation-2');
+        return { id: `row-${candidate.id}` };
+      },
+    });
+
+    expect(persistedSources).toEqual([
+      ['player-1', 'player-generation-1'],
+      ['assistant-1', 'assistant-generation-1'],
+    ]);
+    expect(result.outcomes).toEqual([
+      expect.objectContaining({ id: 'player', persistenceStatus: 'persisted_stale' }),
+      expect.objectContaining({ id: 'assistant', persistenceStatus: 'persisted' }),
+    ]);
+  });
+
+  it('fails closed before persistence when an accepted candidate lacks source lineage', async () => {
+    const persistCandidate = vi.fn(async () => ({ id: 'unexpected-row' }));
+    const result = await persistAcceptedRoleplayMemoryCandidates({
+      candidates: [{
+        ...accepted('missing-lineage', 'A malformed candidate.'),
+        sourceGenerationId: undefined,
+      }],
+      isSourceCurrent: () => true,
+      persistCandidate,
+    });
+
+    expect(persistCandidate).not.toHaveBeenCalled();
+    expect(result.failures).toEqual(['missing-lineage:missing_candidate_source_lineage']);
+    expect(result.outcomes).toEqual([
+      expect.objectContaining({
+        id: 'missing-lineage',
+        persistenceStatus: 'failed',
+        persistenceReason: 'missing_candidate_source_lineage',
+      }),
     ]);
   });
 

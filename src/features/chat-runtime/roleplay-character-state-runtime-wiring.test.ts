@@ -31,6 +31,9 @@ describe('reviewed character-state runtime wiring', () => {
     expect(extractionSource).not.toContain('const updates = rawCharacterUpdates');
     expect(extractionSource).toContain("reason: 'missing_candidate_review'");
     expect(extractionSource).toContain('unmatchedCharacterStateCandidates: reviewedCharacterState.unmatchedCandidates');
+    expect(source).toContain('!isRoleplayReviewedCharacterStatePersistenceCandidate(update)');
+    expect(source).toContain("persistenceReason: 'unreviewed_character_state_candidate_reached_apply'");
+    expect(source).toContain('No character-state write was attempted.');
   });
 
   it('records deterministic eligibility and missing-review evidence while scoping the worker payload', () => {
@@ -46,12 +49,14 @@ describe('reviewed character-state runtime wiring', () => {
 
   it('returns structured apply receipts for every terminal persistence path', () => {
     expect(source).toContain('Promise<RoleplayCharacterStateApplyReceipt[]>');
-    expect(source).toContain("'persisted',\n          'character_state_snapshot_persisted'");
+    expect(source).toContain("'character_state_snapshot_persisted'");
+    expect(source).toContain("'side_character_state_snapshot_persisted'");
     expect(source).toContain("'no_canonical_delta'");
     expect(source).toContain("'missing_source_metadata'");
     expect(source).toContain("'stale_generation'");
     expect(source).toContain("'character_not_found'");
     expect(source).toContain("'unsupported_field'");
+    expect(source).toContain("'runtime_state_sync_failed'");
     expect(source).toContain("'persistence_failed'");
     expect(source).toContain("persistenceReason: persistedTargets.length > 0\n          ? 'character_state_partially_persisted_with_gap'");
   });
@@ -72,5 +77,23 @@ describe('reviewed character-state runtime wiring', () => {
     expect(source).toContain('applyStageReviews: finalReceipts');
     expect(source).toContain('persistedUpdates: finalReceipts.filter((receipt) => receipt.persisted)');
     expect(source).toContain('rejectedAtApplyStage: finalReceipts.filter((receipt) => !receipt.persisted)');
+    expect(source).toContain("reviewStatus: 'accepted_reviewed_candidate'");
+    expect(source).toContain("persistenceReason: runtimeStateGaps.length > 0");
+    expect(source).toContain("runtimeStateApplied: false");
+  });
+
+  it('feeds visible player evidence through source authority without resetting decisions during request assembly', () => {
+    expect(extractionSource).toContain('authorityContext: {');
+    expect(extractionSource).toContain('visibleUserMessage: userMessage');
+    expect(extractionSource).toContain('sourceUserMessageId: meta?.sourceUserMessageId');
+    expect(extractionSource).toContain('appendUserStateAuthorityDecisions(reviewedCharacterState.authorityDecisions)');
+    expect(source).toContain('mergeRoleplayUserStateAuthorityDecisions({');
+    expect(source).toContain('const getCurrentUserStateAuthorityDecisions = useCallback(() => {');
+    expect(source.match(/const currentAuthorityDecisions = getCurrentUserStateAuthorityDecisions\(\);/g) ?? [])
+      .toHaveLength(3);
+    expect(source.match(/userStateAuthorityDecisions: currentAuthorityDecisions/g) ?? [])
+      .toHaveLength(3);
+    expect(source.match(/userStateAuthorityDecisionsRef\.current = \[\]/g) ?? []).toHaveLength(1);
+    expect(source).toContain('userStateAuthorityDecisions: reviewedCharacterState.authorityDecisions');
   });
 });

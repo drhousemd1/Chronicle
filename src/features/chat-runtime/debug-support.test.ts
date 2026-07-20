@@ -30,6 +30,16 @@ describe("chat runtime debug support helpers", () => {
   it("strips chronicle_debug_payload and exposes request metadata for debug export", () => {
     const primaryModelRequest = modelRequest({ attempt: "primary" });
     const retryModelRequest = modelRequest({ attempt: "retry" });
+    const artifactIdentity = {
+      schemaVersion: 1 as const,
+      artifactName: "extract-memory-events",
+      sourceRevision: null,
+      sourceState: "unknown" as const,
+      sourceDigest: "digest-1",
+      sourceFiles: [],
+      terminalMigration: "migration.sql",
+      contractVersions: { responseJob: "v1" },
+    };
     const response = {
       ok: true,
       updates: [],
@@ -37,6 +47,7 @@ describe("chat runtime debug support helpers", () => {
         modelRequest: retryModelRequest,
         modelRequests: [{ ...primaryModelRequest, label: "Existing primary label" }],
         primaryModelRequest,
+        artifactIdentity,
       },
     };
 
@@ -47,6 +58,7 @@ describe("chat runtime debug support helpers", () => {
         { ...primaryModelRequest, label: "Existing primary label" },
         { ...primaryModelRequest, label: "Primary request before fallback retry" },
       ],
+      artifactIdentity,
     });
   });
 

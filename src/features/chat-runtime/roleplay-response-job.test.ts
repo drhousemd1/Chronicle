@@ -10,6 +10,7 @@ import {
 describe('RoleplayResponseJob contract', () => {
   it('keeps normal send, retry, and continue as distinct first-class runtime jobs', () => {
     const normalSend = buildNormalSendResponseJob({
+      jobId: 'response-job-normal-1',
       conversationId: 'conversation-1',
       playerTurn: { messageId: 'user-1', text: 'I step closer.' },
       currentStateSummary: 'Ashley and James are in the kitchen.',
@@ -17,6 +18,7 @@ describe('RoleplayResponseJob contract', () => {
     });
 
     expect(normalSend).toMatchObject({
+      id: 'response-job-normal-1',
       mode: 'normal_send',
       purpose: 'respond_to_player_turn',
       playerTurn: { messageId: 'user-1', text: 'I step closer.' },

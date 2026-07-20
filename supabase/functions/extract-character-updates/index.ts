@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { shouldReturnAdminDebugTrace } from "../_shared/admin-debug.ts";
+import { buildRoleplayEdgeArtifactIdentity } from "../_shared/roleplay-artifact-identity.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { checkRateLimit, getRateLimitHeaders } from "../_shared/rate-limit.ts";
 import { recordServerAiUsage, type ServerAiUsageEventType } from "../_shared/server-usage.ts";
@@ -1012,7 +1013,10 @@ Return ONLY valid JSON. No explanations.`;
       { role: "system", content: systemPrompt },
       { role: "user", content: `Analyze the latest exchange and return only material supported character-card deltas.\n\n${combinedText}` },
     ];
-    let primaryDebugPayload: { modelRequest: XaiResponsesDebugModelRequest } | null = null;
+    let primaryDebugPayload: {
+      modelRequest: XaiResponsesDebugModelRequest;
+      artifactIdentity: ReturnType<typeof buildRoleplayEdgeArtifactIdentity>;
+    } | null = null;
     const additionalDebugModelRequests: XaiResponsesDebugModelRequest[] = [];
 
     const runFocusedPhysicalStateRetry = async (missingCharacterNames: string[]) => {
@@ -1133,7 +1137,12 @@ Return ONLY valid JSON. No explanations.`;
       store: SUPPORT_STORE,
       reasoningEffort: SUPPORT_REASONING_EFFORT,
     });
-    primaryDebugPayload = debugTraceAllowed ? { modelRequest: result.modelRequest } : null;
+    primaryDebugPayload = debugTraceAllowed
+      ? {
+          modelRequest: result.modelRequest,
+          artifactIdentity: buildRoleplayEdgeArtifactIdentity('extract-character-updates'),
+        }
+      : null;
 
     if (!result.ok) {
       if (result.status === 429) {
@@ -1166,12 +1175,13 @@ Return ONLY valid JSON. No explanations.`;
           reasoningEffort: SUPPORT_REASONING_EFFORT,
           notes: ["Primary character-state sync request received 403; this safe retry extracted non-explicit metadata before any missing physical-state coverage retry."],
         });
-        const safeDebugPayload = debugTraceAllowed
-          ? {
-              modelRequest: safeResult.modelRequest,
-              primaryModelRequest: primaryDebugPayload?.modelRequest,
-            }
-          : null;
+         const safeDebugPayload = debugTraceAllowed
+           ? {
+               modelRequest: safeResult.modelRequest,
+               primaryModelRequest: primaryDebugPayload?.modelRequest,
+               artifactIdentity: buildRoleplayEdgeArtifactIdentity('extract-character-updates'),
+             }
+           : null;
         if (safeResult.ok) {
           let safeData: unknown;
           try {

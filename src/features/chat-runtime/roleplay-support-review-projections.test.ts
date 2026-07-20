@@ -39,6 +39,26 @@ describe('support review projections', () => {
     })]);
   });
 
+  it('excludes accepted candidates whose individual persistence failed from re-entry', () => {
+    const rows = deriveRoleplaySupportReviewRows(createRoleplaySupportReviewEnvelope({
+      worker: 'memory_extraction',
+      accepted: [
+        { id: 'memory-1', label: 'Persisted memory', reason: 'accepted', persistenceStatus: 'persisted' },
+        { id: 'memory-2', label: 'Failed memory', reason: 'accepted', persistenceStatus: 'failed' },
+      ],
+      persistence: { status: 'persisted', targets: ['memory-row-1'], reason: 'partial_success' },
+      readiness: 'completed',
+      futurePromptImpact: {
+        eligible: true,
+        targets: ['memory'],
+        reason: 'accepted_output_persisted_for_future_prompt_use',
+      },
+    }));
+
+    expect(rows.registry.futurePromptEligible).toBe(true);
+    expect(rows.reentry[0]?.acceptedItemIds).toEqual(['memory-1']);
+  });
+
   it.each([
     ['pending persistence', 'pending', true],
     ['stale output', 'skipped_stale', true],
@@ -84,7 +104,8 @@ describe('support review projections', () => {
 
   it('rejects a contradictory deserialized stale envelope even when it claims eligibility', () => {
     const rows = deriveRoleplaySupportReviewRows({
-      version: 1,
+      contract: 'RoleplaySupportReviewEnvelope',
+      version: 2,
       worker: 'memory_extraction',
       accepted: [{ id: 'memory-1', label: 'Stale result', reason: 'accepted' }],
       rejected: [],
@@ -93,7 +114,6 @@ describe('support review projections', () => {
       readiness: 'skipped_stale',
       futurePromptImpact: { eligible: true, targets: ['memory'], reason: 'invalid_external_claim' },
       contextGaps: [],
-      legacyWrapped: true,
     });
 
     expect(rows.registry.futurePromptEligible).toBe(false);

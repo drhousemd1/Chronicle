@@ -23,6 +23,7 @@ function characterFact(
   return createCharacterPromptFact({
     characterId: overrides.characterId ?? 'character-1',
     characterName: overrides.characterName ?? 'Mara',
+    sourceSurface: overrides.sourceSurface ?? 'main_character_cards',
     sourceField: overrides.sourceField ?? 'background.motivation',
     sourceLabel: overrides.sourceLabel,
     sourceValue,

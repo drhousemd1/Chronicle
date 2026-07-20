@@ -56,6 +56,17 @@ describe('roleplay support-call Responses migration contracts', () => {
     }
   });
 
+  it('captures each core worker artifact identity inside its authorized debug payload', () => {
+    for (const path of roleplayStateSupportCalls) {
+      const source = read(path);
+
+      expect(source, path).toContain('buildRoleplayEdgeArtifactIdentity');
+      expect(source, path).toContain('artifactIdentity: buildRoleplayEdgeArtifactIdentity(');
+      expect(source, path).toContain('debugTraceAllowed');
+      expect(source, path).toContain('chronicle_debug_payload:');
+    }
+  });
+
   it('sets explicit max output caps for compact support-call Responses bodies', () => {
     expect(read('supabase/functions/extract-memory-events/index.ts')).toContain('maxOutputTokens: 1024');
     expect(read('supabase/functions/evaluate-goal-progress/index.ts')).toContain('maxOutputTokens: 1024');

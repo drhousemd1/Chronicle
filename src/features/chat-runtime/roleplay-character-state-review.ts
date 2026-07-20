@@ -1,3 +1,11 @@
+import {
+  classifyRoleplayUserStateClaim,
+  type RoleplayUserStateAuthority,
+  type RoleplayUserStateAuthorityDecision,
+  type RoleplayUserStateEvidenceBasis,
+  type RoleplayUserStateModelFacingAction,
+} from './roleplay-user-state-authority';
+
 export const ROLEPLAY_REVIEWED_CHARACTER_STATE_FIELDS = [
   'location',
   'scenePosition',
@@ -13,6 +21,7 @@ export type RoleplayCharacterStateApplyOutcome =
   | 'stale_generation'
   | 'character_not_found'
   | 'unsupported_field'
+  | 'runtime_state_sync_failed'
   | 'persistence_failed';
 
 export type RoleplayCharacterStateEligibilityReason =
@@ -24,7 +33,20 @@ export type RoleplayCharacterStateEligibilityReason =
 export type RoleplayCharacterStateEligibilityInput = {
   characterId?: string;
   characterName: string;
+  controlledBy?: 'User' | 'AI';
   reasons?: RoleplayCharacterStateEligibilityReason[];
+};
+
+export type RoleplayCharacterStateAuthorityMetadata = {
+  claimType?: 'voluntary_action';
+  sourceRole?: 'user' | 'assistant' | 'unknown';
+  evidenceBasis?: RoleplayUserStateEvidenceBasis;
+  authority?: RoleplayUserStateAuthority;
+  modelFacingAction?: RoleplayUserStateModelFacingAction;
+  sourceMessageId?: string;
+  sourceGenerationId?: string;
+  userCharacterId?: string;
+  authorityReason?: string;
 };
 
 export type RoleplayCharacterStateCandidateReviewInput = {
@@ -49,7 +71,7 @@ export type RoleplayPhysicalStateReviewInput = {
   confidence?: number;
 };
 
-export type RoleplayReviewedCharacterStateUpdate = {
+export type RoleplayReviewedCharacterStateUpdate = RoleplayCharacterStateAuthorityMetadata & {
   index: number;
   characterName: string;
   originalCharacter?: string;
@@ -62,7 +84,7 @@ export type RoleplayReviewedCharacterStateUpdate = {
   reason: string;
 };
 
-export type RoleplayRejectedCharacterStateUpdate = {
+export type RoleplayRejectedCharacterStateUpdate = RoleplayCharacterStateAuthorityMetadata & {
   index: number;
   characterName: string;
   originalCharacter?: string;
@@ -93,14 +115,60 @@ export type RoleplayCharacterStateApplyReceipt = {
   value: string;
   edgeAccepted: boolean;
   frontendAccepted: boolean;
+  reviewStatus: 'accepted_reviewed_candidate';
   persisted: boolean;
+  runtimeStateApplied?: boolean;
   outcome: RoleplayCharacterStateApplyOutcome;
   reason: string;
   sourceMessageId?: string;
   sourceGenerationId?: string;
   sourceUserMessageId?: string;
+  claimType?: 'voluntary_action';
+  sourceRole?: 'user' | 'assistant' | 'unknown';
+  evidenceBasis?: RoleplayUserStateEvidenceBasis;
+  authority?: RoleplayUserStateAuthority;
+  modelFacingAction?: RoleplayUserStateModelFacingAction;
+  authoritySourceMessageId?: string;
+  authoritySourceGenerationId?: string;
+  userCharacterId?: string;
   persistenceTargetId?: string;
 };
+
+export type RoleplayCharacterStateRuntimeApplyResult =
+  | { applied: true }
+  | { applied: false; error: string };
+
+export function areRoleplayCharacterStateSourcesCurrent(input: {
+  sourceAssistantMessageId?: string;
+  sourceAssistantGenerationId?: string;
+  sourceUserMessageId?: string;
+  sourceUserGenerationId?: string;
+  isSourceCurrent: (messageId?: string, generationId?: string) => boolean;
+}): boolean {
+  if (!input.isSourceCurrent(
+    input.sourceAssistantMessageId,
+    input.sourceAssistantGenerationId,
+  )) return false;
+
+  if (!input.sourceUserMessageId && !input.sourceUserGenerationId) return true;
+  if (!input.sourceUserMessageId || !input.sourceUserGenerationId) return false;
+  return input.isSourceCurrent(input.sourceUserMessageId, input.sourceUserGenerationId);
+}
+
+export function applyPersistedRoleplayCharacterStateSnapshotToRuntime<TSnapshot>(input: {
+  snapshot: TSnapshot;
+  apply: (snapshot: TSnapshot) => void;
+}): RoleplayCharacterStateRuntimeApplyResult {
+  try {
+    input.apply(input.snapshot);
+    return { applied: true };
+  } catch (error) {
+    return {
+      applied: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
 
 export function buildRoleplayCharacterStateApplyReceipt(input: {
   candidate: RoleplayReviewedCharacterStatePersistenceCandidate;
@@ -112,6 +180,7 @@ export function buildRoleplayCharacterStateApplyReceipt(input: {
   characterId?: string;
   persistenceTargetId?: string;
   persisted?: boolean;
+  runtimeStateApplied?: boolean;
 }): RoleplayCharacterStateApplyReceipt {
   const persisted = input.persisted ?? input.outcome === 'persisted';
   return {
@@ -121,12 +190,22 @@ export function buildRoleplayCharacterStateApplyReceipt(input: {
     value: input.candidate.value,
     edgeAccepted: true,
     frontendAccepted: true,
+    reviewStatus: input.candidate.reviewStatus,
     persisted,
+    runtimeStateApplied: input.runtimeStateApplied,
     outcome: input.outcome,
     reason: input.reason,
     sourceMessageId: input.sourceMessageId,
     sourceGenerationId: input.sourceGenerationId,
     sourceUserMessageId: input.sourceUserMessageId,
+    claimType: input.candidate.claimType,
+    sourceRole: input.candidate.sourceRole,
+    evidenceBasis: input.candidate.evidenceBasis,
+    authority: input.candidate.authority,
+    modelFacingAction: input.candidate.modelFacingAction,
+    authoritySourceMessageId: input.candidate.sourceMessageId,
+    authoritySourceGenerationId: input.candidate.sourceGenerationId,
+    userCharacterId: input.candidate.userCharacterId,
     persistenceTargetId: persisted ? input.persistenceTargetId : undefined,
   };
 }
@@ -134,14 +213,45 @@ export function buildRoleplayCharacterStateApplyReceipt(input: {
 export type RoleplayReviewedCharacterStateContract = {
   rows: RoleplayReviewedCharacterStateRow[];
   unmatchedCandidates: RoleplayRejectedCharacterStateUpdate[];
+  authorityDecisions: RoleplayUserStateAuthorityDecision[];
 };
 
-export type RoleplayReviewedCharacterStatePersistenceCandidate = {
+export type RoleplayReviewedCharacterStatePersistenceCandidate = RoleplayCharacterStateAuthorityMetadata & {
+  reviewStatus: 'accepted_reviewed_candidate';
   character: string;
   field: RoleplayReviewedCharacterStateField;
   value: string;
   evidence: string;
   confidence: number;
+};
+
+export function isRoleplayReviewedCharacterStatePersistenceCandidate(
+  value: unknown,
+): value is RoleplayReviewedCharacterStatePersistenceCandidate {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as Record<string, unknown>;
+  return candidate.reviewStatus === 'accepted_reviewed_candidate'
+    && typeof candidate.character === 'string'
+    && candidate.character.trim().length > 0
+    && isRoleplayReviewedCharacterStateField(candidate.field)
+    && typeof candidate.value === 'string'
+    && candidate.value.trim().length > 0
+    && typeof candidate.evidence === 'string'
+    && candidate.evidence.trim().length > 0
+    && typeof candidate.confidence === 'number'
+    && Number.isFinite(candidate.confidence)
+    && candidate.confidence >= 0
+    && candidate.confidence <= 1;
+}
+
+export type RoleplayCharacterStateAuthorityContext = {
+  visibleUserMessage: string;
+  assistantMessage: string;
+  sourceUserMessageId?: string;
+  sourceUserGenerationId?: string;
+  sourceAssistantMessageId?: string;
+  sourceAssistantGenerationId?: string;
+  sourceAssistantGenerationAccepted?: boolean;
 };
 
 function normalizeText(value: unknown): string {
@@ -178,12 +288,14 @@ export function buildRoleplayCharacterStateEligibilityRows(input: {
   mainCharacters: Array<{
     id?: string;
     name: string;
+    controlledBy?: 'User' | 'AI';
     nicknames?: string;
     previousNames?: string[];
   }>;
   sideCharacters: Array<{
     id?: string;
     name: string;
+    controlledBy?: 'User' | 'AI';
     nicknames?: string;
   }>;
 }): RoleplayCharacterStateEligibilityInput[] {
@@ -209,6 +321,7 @@ export function buildRoleplayCharacterStateEligibilityRows(input: {
     rows.push({
       characterId: character.id,
       characterName: character.name,
+      controlledBy: character.controlledBy,
       reasons: [...reasons],
     });
   }
@@ -226,6 +339,7 @@ function normalizeRejectedUpdate(
   candidate: RoleplayCharacterStateCandidateReviewInput,
   index: number,
   reason: string,
+  authorityMetadata: RoleplayCharacterStateAuthorityMetadata = {},
 ): RoleplayRejectedCharacterStateUpdate {
   return {
     index: typeof candidate.index === 'number' ? candidate.index : index,
@@ -238,6 +352,93 @@ function normalizeRejectedUpdate(
     edgeAccepted: candidate.accepted === true,
     frontendAccepted: false,
     reason,
+    ...authorityMetadata,
+  };
+}
+
+function normalizedEvidenceText(value: string): string {
+  return value
+    .replace(/[“”]/gu, '"')
+    .replace(/[‘’]/gu, "'")
+    .replace(/\s+/gu, ' ')
+    .trim()
+    .replace(/^["']+|["']+$/gu, '')
+    .toLocaleLowerCase();
+}
+
+function sourceContainsEvidence(source: string, evidence: string): boolean {
+  const normalizedSource = normalizedEvidenceText(source);
+  const normalizedEvidence = normalizedEvidenceText(evidence);
+  return normalizedEvidence.length >= 3 && normalizedSource.includes(normalizedEvidence);
+}
+
+function characterStateClaim(
+  characterName: string,
+  field: RoleplayReviewedCharacterStateField,
+  value: string,
+): string {
+  return field === 'location'
+    ? `${characterName} is at ${value}.`
+    : `${characterName}'s scene position is ${value}.`;
+}
+
+function buildUserControlledStateAuthorityDecision(input: {
+  candidate: RoleplayCharacterStateCandidateReviewInput;
+  eligible: RoleplayCharacterStateEligibilityInput;
+  field: RoleplayReviewedCharacterStateField;
+  context: RoleplayCharacterStateAuthorityContext;
+}): RoleplayUserStateAuthorityDecision {
+  const evidence = normalizeText(input.candidate.evidence);
+  const userEvidence = sourceContainsEvidence(input.context.visibleUserMessage, evidence);
+  const assistantEvidence = !userEvidence
+    && sourceContainsEvidence(input.context.assistantMessage, evidence);
+  const sourceRole = userEvidence ? 'user' : assistantEvidence ? 'assistant' : 'unknown';
+  const evidenceBasis: RoleplayUserStateEvidenceBasis = userEvidence
+    ? 'explicit_user_authorship'
+    : assistantEvidence
+      ? 'accepted_visible_observation'
+      : 'unsupported';
+
+  return classifyRoleplayUserStateClaim({
+    claim: characterStateClaim(
+      input.eligible.characterName,
+      input.field,
+      normalizeText(input.candidate.value),
+    ),
+    userCharacterId: input.eligible.characterId,
+    claimType: 'voluntary_action',
+    sourceMessageId: userEvidence
+      ? input.context.sourceUserMessageId
+      : assistantEvidence
+        ? input.context.sourceAssistantMessageId
+        : undefined,
+    sourceGenerationId: userEvidence
+      ? input.context.sourceUserGenerationId
+      : assistantEvidence
+        ? input.context.sourceAssistantGenerationId
+        : undefined,
+    sourceRole,
+    sourceGenerationAccepted: assistantEvidence
+      ? input.context.sourceAssistantGenerationAccepted
+      : undefined,
+    evidenceBasis,
+    intendedUse: 'persistence',
+  });
+}
+
+function authorityMetadataFromDecision(
+  decision: RoleplayUserStateAuthorityDecision,
+): RoleplayCharacterStateAuthorityMetadata {
+  return {
+    claimType: 'voluntary_action',
+    sourceRole: decision.sourceRole,
+    evidenceBasis: decision.evidenceBasis,
+    authority: decision.authority,
+    modelFacingAction: decision.modelFacingAction,
+    sourceMessageId: decision.sourceMessageId,
+    sourceGenerationId: decision.sourceGenerationId,
+    userCharacterId: decision.userCharacterId,
+    authorityReason: decision.reason,
   };
 }
 
@@ -246,6 +447,7 @@ export function buildRoleplayReviewedCharacterStateContract(input: {
   candidateReviews: RoleplayCharacterStateCandidateReviewInput[];
   physicalStateReviews: RoleplayPhysicalStateReviewInput[];
   missingPhysicalStateReviews?: string[];
+  authorityContext?: RoleplayCharacterStateAuthorityContext;
 }): RoleplayReviewedCharacterStateContract {
   const missingReviewKeys = new Set(
     (input.missingPhysicalStateReviews ?? []).map(normalizeKey).filter(Boolean),
@@ -265,6 +467,7 @@ export function buildRoleplayReviewedCharacterStateContract(input: {
     index: number;
   }>>();
   const unmatchedCandidates: RoleplayRejectedCharacterStateUpdate[] = [];
+  const authorityDecisions: RoleplayUserStateAuthorityDecision[] = [];
 
   input.candidateReviews.forEach((candidate, index) => {
     const key = normalizeKey(candidate.character);
@@ -315,6 +518,36 @@ export function buildRoleplayReviewedCharacterStateContract(input: {
         continue;
       }
 
+      let authorityMetadata: RoleplayCharacterStateAuthorityMetadata = {};
+      if (eligible.controlledBy === 'User') {
+        const authorityDecision = input.authorityContext
+          ? buildUserControlledStateAuthorityDecision({
+              candidate,
+              eligible,
+              field,
+              context: input.authorityContext,
+            })
+          : classifyRoleplayUserStateClaim({
+              claim: characterStateClaim(eligible.characterName, field, normalizeText(candidate.value)),
+              userCharacterId: eligible.characterId,
+              claimType: 'voluntary_action',
+              sourceRole: 'unknown',
+              evidenceBasis: 'unsupported',
+              intendedUse: 'persistence',
+            });
+        authorityDecisions.push(authorityDecision);
+        authorityMetadata = authorityMetadataFromDecision(authorityDecision);
+        if (authorityDecision.modelFacingAction !== 'allow_as_fact') {
+          rejectedUpdates.push(normalizeRejectedUpdate(
+            candidate,
+            index,
+            authorityDecision.reason,
+            authorityMetadata,
+          ));
+          continue;
+        }
+      }
+
       acceptedUpdates.push({
         index: typeof candidate.index === 'number' ? candidate.index : index,
         characterName: eligible.characterName,
@@ -326,6 +559,7 @@ export function buildRoleplayReviewedCharacterStateContract(input: {
         edgeAccepted: true,
         frontendAccepted: true,
         reason: normalizeText(candidate.reason) || 'accepted',
+        ...authorityMetadata,
       });
     }
 
@@ -341,17 +575,26 @@ export function buildRoleplayReviewedCharacterStateContract(input: {
     };
   });
 
-  return { rows, unmatchedCandidates };
+  return { rows, unmatchedCandidates, authorityDecisions };
 }
 
 export function getRoleplayReviewedCharacterStatePersistenceCandidates(
   contract: RoleplayReviewedCharacterStateContract,
 ): RoleplayReviewedCharacterStatePersistenceCandidate[] {
   return contract.rows.flatMap((row) => row.acceptedUpdates.map((update) => ({
+    reviewStatus: 'accepted_reviewed_candidate' as const,
     character: row.characterName,
     field: update.field,
     value: update.value,
     evidence: update.evidence,
     confidence: update.confidence,
+    ...(update.claimType ? { claimType: update.claimType } : {}),
+    ...(update.sourceRole ? { sourceRole: update.sourceRole } : {}),
+    ...(update.evidenceBasis ? { evidenceBasis: update.evidenceBasis } : {}),
+    ...(update.authority ? { authority: update.authority } : {}),
+    ...(update.modelFacingAction ? { modelFacingAction: update.modelFacingAction } : {}),
+    ...(update.sourceMessageId ? { sourceMessageId: update.sourceMessageId } : {}),
+    ...(update.sourceGenerationId ? { sourceGenerationId: update.sourceGenerationId } : {}),
+    ...(update.userCharacterId ? { userCharacterId: update.userCharacterId } : {}),
   })));
 }

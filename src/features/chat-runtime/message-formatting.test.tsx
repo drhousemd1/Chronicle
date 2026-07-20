@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   parseMessageTokens,
+  parseMessageTokensWithWarnings,
   sanitizeAssistantMessageText,
   tokensToStyledHtml,
 } from './message-formatting-utils';
@@ -53,5 +54,27 @@ describe('chat message formatting helpers', () => {
     expect(html).toContain('"Hi"');
     expect(html).toContain('(secret)');
     expect(html).toContain('rgba(199,210,254,0.9)');
+  });
+
+  it('parses nested parentheses as one private thought token', () => {
+    const parsed = parseMessageTokensWithWarnings(
+      'I wait. (I remember the warning (and why it matters).) Then I answer.',
+    );
+
+    expect(parsed.tokens).toEqual([
+      { type: 'plain', content: 'I wait. ' },
+      { type: 'thought', content: 'I remember the warning (and why it matters).' },
+      { type: 'plain', content: ' Then I answer.' },
+    ]);
+    expect(parsed.warnings).toEqual([]);
+  });
+
+  it('keeps unmatched parentheses visible and reports their positions', () => {
+    const parsed = parseMessageTokensWithWarnings('I wait (without closing');
+
+    expect(parsed.tokens).toEqual([{ type: 'plain', content: 'I wait (without closing' }]);
+    expect(parsed.warnings).toEqual([
+      { code: 'unmatched_opening_parenthesis', index: 7, delimiter: '(' },
+    ]);
   });
 });

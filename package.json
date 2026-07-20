@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "prebuild": "node scripts/generate-roleplay-artifact-identity.mjs",
     "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
@@ -21,7 +22,9 @@
     "validation:roleplay:batch1": "vite-node scripts/write-roleplay-batch1-validation-ledger.ts",
     "validation:gate": "vite-node scripts/run-validation-gate.ts",
     "validation:reconcile": "vite-node scripts/reconcile-validation-evidence.ts",
-    "validation:manual-review": "vite-node scripts/record-validation-manual-review.ts"
+    "validation:manual-review": "vite-node scripts/record-validation-manual-review.ts",
+    "artifacts:roleplay:refresh": "node scripts/generate-roleplay-artifact-identity.mjs",
+    "artifacts:roleplay:check": "node scripts/generate-roleplay-artifact-identity.mjs --check"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -60,6 +63,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
+    "compromise": "^14.16.0",
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.6.0",
     "highlight.js": "^11.11.1",

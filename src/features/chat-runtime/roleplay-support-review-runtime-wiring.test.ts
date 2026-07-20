@@ -33,17 +33,22 @@ describe('RoleplaySupportReviewEnvelope runtime wiring', () => {
 
   it('reviews memory source authority and duplicates before recording accepted envelope outcomes', () => {
     expectOrdered(memorySource, [
+      'const parsedMemoryResponse = parseMemoryExtractionResponseV1(memoryDebug.responseBody);',
       'const memoryReview = reviewRoleplayMemoryExtractionCandidates({',
-      'candidates: data?.candidates,',
+      'candidates: parsedMemoryResponse.ok ? parsedMemoryResponse.response.candidates : [],',
       'candidateReviews: candidateOutcomes,',
-      'roleplaySupportReviewEnvelope: wrapLegacyRoleplaySupportResult({',
+      'roleplaySupportReviewEnvelope: createRoleplaySupportReviewEnvelopeFromWorkerResult({',
       'const persistenceResult = await persistAcceptedRoleplayMemoryCandidates({',
       'persistCandidate: (candidate) => handleCreateMemory(',
       'const allPersistenceFailed = persistenceResult.persistedTargets.length === 0',
     ]);
     expect(source).toContain('queueAssistantDerivedWorkAfterSourcePersist([userMsg, aiMsg], userInput, cleanedText, aiMsg, userMsg);');
-    expect(source).toContain('candidates: data?.candidates,');
+    expect(source).toContain('responseContractStatus: parsedMemoryResponse.ok ? \'accepted\' : \'rejected\',');
     expect(source).toContain('sourceUserMessageId: sourceUserMessage?.id,');
+    expect(source).toContain('const refreshedReviewEnvelope = responseBodyPatch');
+    expect(source).toContain('accepted: refreshedReviewEnvelope.accepted');
+    expect(source).toContain('rejected: refreshedReviewEnvelope.rejected');
+    expect(source).toContain('omitted: refreshedReviewEnvelope.omitted');
   });
 
   it('keeps goal alignment diagnostic-only instead of adding a persistence finalizer', () => {
@@ -53,6 +58,11 @@ describe('RoleplaySupportReviewEnvelope runtime wiring', () => {
 
   it('rechecks source-generation freshness after awaited persistence writes', () => {
     expect(memoryPersistenceSource).toContain("'source_generation_superseded_during_candidate_persistence'");
+    expect(memoryPersistenceSource).toContain("'missing_candidate_source_lineage'");
+    expect(memorySource).toContain('isSourceCurrent: (candidate) => isMessageGenerationStillCurrent(');
+    expect(memorySource).toContain('candidate.sourceMessageId,\n          candidate.sourceGenerationId,');
+    expect(memorySource).toContain('candidate.sourceMessageId,\n            candidate.sourceGenerationId,');
+    expect(memorySource).not.toContain('if (!memorySourceCurrent)');
     expect(source).toContain("'source_generation_superseded_during_character_persistence',");
     expect(source).toContain("'source_generation_superseded_before_character_finalization',");
     expectOrdered(source, [

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type {
   Character,
   CharacterStateMessageSnapshot,
+  FieldChangeMetadataMap,
   GoalAlignmentState,
   Memory,
   Message,
@@ -135,6 +136,35 @@ const baseSideCharacter = (patch: Partial<SideCharacter> = {}): SideCharacter =>
   ...patch,
 });
 
+const userAuthorityMetadata = (input: {
+  fieldPath: string;
+  userMessageId: string;
+  userGenerationId: string;
+  assistantMessageId?: string;
+  assistantGenerationId?: string;
+}): FieldChangeMetadataMap => ({
+  [input.fieldPath]: {
+    fieldPath: input.fieldPath,
+    storyDay: 1,
+    timeOfDay: 'day',
+    sourceMessageId: input.assistantMessageId ?? 'assistant-message-1',
+    sourceGenerationId: input.assistantGenerationId ?? 'assistant-generation-1',
+    updatedAt: 1,
+    userStateAuthorityDecision: {
+      claim: 'Avery moves to the kitchen.',
+      userCharacterId: 'char-1',
+      claimType: 'voluntary_action',
+      sourceMessageId: input.userMessageId,
+      sourceGenerationId: input.userGenerationId,
+      sourceRole: 'user',
+      evidenceBasis: 'explicit_user_authorship',
+      authority: 'raw_user_fact',
+      modelFacingAction: 'allow_as_fact',
+      reason: 'explicit_user_authorship',
+    },
+  },
+});
+
 describe('effective roleplay state helpers', () => {
   it('merges the full identity index with newly loaded messages in chronological order', () => {
     const merged = mergeConversationMessageIdentityIndex(
@@ -158,9 +188,10 @@ describe('effective roleplay state helpers', () => {
       memory({ id: 'manual', source: 'user', sourceMessageId: undefined, sourceGenerationId: undefined }),
       memory({ id: 'current', sourceMessageId: 'm1', sourceGenerationId: 'g2' }),
       memory({ id: 'legacy-no-generation', sourceMessageId: 'm1', sourceGenerationId: undefined }),
+      memory({ id: 'generation-without-message', sourceMessageId: undefined, sourceGenerationId: 'g2' }),
       memory({ id: 'stale', sourceMessageId: 'm1', sourceGenerationId: 'g1' }),
       memory({ id: 'deleted', sourceMessageId: 'm2', sourceGenerationId: 'g1' }),
-    ], generationMap).map((entry) => entry.id)).toEqual(['manual', 'current', 'legacy-no-generation']);
+    ], generationMap).map((entry) => entry.id)).toEqual(['manual', 'current']);
   });
 
   it('keeps goal completions only from visible message generations', () => {
@@ -271,6 +302,113 @@ describe('effective roleplay state helpers', () => {
 
     expect(buildActiveCharacterSnapshotMap(snapshots, generationMap, mergedIdentityIndex)
       .get('char-1')?.statePayload.location).toBe('Older but still valid location');
+  });
+
+  it('prunes only fields whose persisted user authority source is stale or deleted', () => {
+    const identities = [
+      message('user-message-1', 'user-generation-current'),
+      message('assistant-message-1', 'assistant-generation-1'),
+    ];
+    const generationMap = buildMessageGenerationMap(identities);
+    const snapshot: CharacterStateMessageSnapshot = {
+      id: 'snapshot-with-stale-user-source',
+      conversationId: 'conversation-1',
+      characterId: 'char-1',
+      sourceMessageId: 'assistant-message-1',
+      sourceGenerationId: 'assistant-generation-1',
+      statePayload: {
+        location: 'Stale location',
+        roleDescription: 'Still-valid independent field',
+        _fieldChangeMetadata: userAuthorityMetadata({
+          fieldPath: 'location',
+          userMessageId: 'user-message-1',
+          userGenerationId: 'user-generation-old',
+        }),
+      },
+      createdAt: 2,
+    };
+
+    const staleResult = buildActiveCharacterSnapshotMap([snapshot], generationMap, identities)
+      .get('char-1')?.statePayload;
+    expect(staleResult?.location).toBeUndefined();
+    expect(staleResult?.roleDescription).toBe('Still-valid independent field');
+    expect(staleResult?._fieldChangeMetadata?.location).toBeUndefined();
+
+    const deletedGenerationMap = buildMessageGenerationMap([
+      message('assistant-message-1', 'assistant-generation-1'),
+    ]);
+    const deletedResult = buildActiveCharacterSnapshotMap(
+      [snapshot],
+      deletedGenerationMap,
+      [message('assistant-message-1', 'assistant-generation-1')],
+    ).get('char-1')?.statePayload;
+    expect(deletedResult?.location).toBeUndefined();
+    expect(deletedResult?.roleDescription).toBe('Still-valid independent field');
+  });
+
+  it('keeps a user-authorized snapshot field when the full identity index proves its older source is current', () => {
+    const fullIdentityIndex = Array.from({ length: 35 }, (_, index) => (
+      message(`message-${index + 1}`, `generation-${index + 1}`)
+    ));
+    const assistantIdentity = message('assistant-message-1', 'assistant-generation-1');
+    const mergedIdentityIndex = mergeConversationMessageIdentityIndex(
+      [...fullIdentityIndex, assistantIdentity],
+      [...fullIdentityIndex.slice(-30), assistantIdentity],
+    );
+    const generationMap = buildMessageGenerationMap(mergedIdentityIndex);
+    const snapshot: CharacterStateMessageSnapshot = {
+      id: 'snapshot-with-older-current-user-source',
+      conversationId: 'conversation-1',
+      characterId: 'char-1',
+      sourceMessageId: 'assistant-message-1',
+      sourceGenerationId: 'assistant-generation-1',
+      statePayload: {
+        location: 'Supported location',
+        _fieldChangeMetadata: userAuthorityMetadata({
+          fieldPath: 'location',
+          userMessageId: 'message-2',
+          userGenerationId: 'generation-2',
+        }),
+      },
+      createdAt: 36,
+    };
+
+    expect(buildActiveCharacterSnapshotMap([snapshot], generationMap, mergedIdentityIndex)
+      .get('char-1')?.statePayload.location).toBe('Supported location');
+  });
+
+  it('fails closed on impossible persisted authority metadata for side-character fields', () => {
+    const identities = [
+      message('user-message-1', 'user-generation-1'),
+      message('assistant-message-1', 'assistant-generation-1'),
+    ];
+    const generationMap = buildMessageGenerationMap(identities);
+    const malformedMetadata = userAuthorityMetadata({
+      fieldPath: 'location',
+      userMessageId: 'user-message-1',
+      userGenerationId: 'user-generation-1',
+    });
+    if (malformedMetadata.location.userStateAuthorityDecision) {
+      malformedMetadata.location.userStateAuthorityDecision.sourceRole = 'assistant';
+    }
+    const snapshot: SideCharacterMessageSnapshot = {
+      id: 'side-snapshot-with-impossible-authority',
+      conversationId: 'conversation-1',
+      sideCharacterId: 'side-1',
+      sourceMessageId: 'assistant-message-1',
+      sourceGenerationId: 'assistant-generation-1',
+      statePayload: {
+        location: 'Unsupported location',
+        roleDescription: 'Still-valid side field',
+        _fieldChangeMetadata: malformedMetadata,
+      },
+      createdAt: 2,
+    };
+
+    const result = buildActiveSideCharacterSnapshotMap([snapshot], generationMap, identities)
+      .get('side-1')?.statePayload;
+    expect(result?.location).toBeUndefined();
+    expect(result?.roleDescription).toBe('Still-valid side field');
   });
 
   it('upserts character and side-character message snapshots without mutating the previous array', () => {
@@ -431,7 +569,6 @@ describe('effective roleplay state helpers', () => {
     expect(memoryResult.activeMemories.map((entry) => entry.id)).toEqual([
       'manual-memory',
       'current-memory',
-      'legacy-memory',
     ]);
     expect(memoryResult.pruningReports).toEqual(expect.arrayContaining([
       expect.objectContaining({
@@ -441,6 +578,14 @@ describe('effective roleplay state helpers', () => {
         reason: 'current_generation',
         sourceMessageId: 'assistant-1',
         sourceGenerationId: 'assistant-g2',
+        currentGenerationId: 'assistant-g2',
+      }),
+      expect.objectContaining({
+        itemType: 'memory',
+        itemId: 'legacy-memory',
+        included: false,
+        reason: 'missing_source',
+        sourceMessageId: 'assistant-1',
         currentGenerationId: 'assistant-g2',
       }),
       expect.objectContaining({

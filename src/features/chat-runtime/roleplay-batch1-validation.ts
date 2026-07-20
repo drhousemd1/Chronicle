@@ -8,6 +8,7 @@ import {
 } from './roleplay-response-job';
 import { resolveRoleplayContinueTailAction } from './continue-tail-action';
 import { compileRoleplayRecentHistory } from './roleplay-recent-history';
+import { buildRoleplayAssistantOutcomeRecords } from './roleplay-assistant-outcome';
 import {
   runRoleplayRegressionFixtures,
   type RoleplayRegressionFixtureRun,
@@ -120,8 +121,6 @@ async function structuredFinalUserRenderingArtifact() {
   const built = buildRoleplayApiMessages({
     conversationMessages: [],
     systemInstruction: 'SYSTEM',
-    userMessage: fallbackUserText,
-    currentTurnStateDigest: `[CURRENT TURN STATE]\n- ${fallbackStateText}`,
     responseJob,
   });
   const debugExportSummary = renderResponseJobSummary({ requestBody: { responseJob } });
@@ -165,18 +164,22 @@ function oldContractRegressionArtifact() {
   const withResponseJob = buildRoleplayApiMessages({
     conversationMessages: [],
     systemInstruction: 'SYSTEM',
-    userMessage: legacyFallbackText,
-    currentTurnStateDigest: `[CURRENT TURN STATE]\n- ${legacyFallbackState}`,
-    isRegeneration: true,
     responseJob,
   });
-  const withoutResponseJob = buildRoleplayApiMessages({
-    conversationMessages: [],
-    systemInstruction: 'SYSTEM',
-    userMessage: legacyFallbackText,
-    currentTurnStateDigest: `[CURRENT TURN STATE]\n- ${legacyFallbackState}`,
-    isRegeneration: true,
-  });
+  let missingResponseJobRejected = false;
+  let missingResponseJobError = '';
+  try {
+    buildRoleplayApiMessages({
+      conversationMessages: [],
+      systemInstruction: 'SYSTEM',
+      userMessage: legacyFallbackText,
+      currentTurnStateDigest: `[CURRENT TURN STATE]\n- ${legacyFallbackState}`,
+      isRegeneration: true,
+    } as never);
+  } catch (error) {
+    missingResponseJobRejected = true;
+    missingResponseJobError = error instanceof Error ? error.message : String(error);
+  }
 
   const legacyRegenerationDirectiveRenderedInResponseJobPath =
     withResponseJob.finalUserContent.includes(REGENERATION_DIRECTIVE_TEXT)
@@ -190,11 +193,8 @@ function oldContractRegressionArtifact() {
       withResponseJob.finalUserContent.includes(responseJobCurrentState)
       && !withResponseJob.finalUserContent.includes(legacyFallbackState),
     responseJobWinsOverLegacyRegenerationDirective: !legacyRegenerationDirectiveRenderedInResponseJobPath,
-    legacyPathStillExistsWithoutResponseJob:
-      withoutResponseJob.finalUserContent.includes('[APP TURN CONTROLS]')
-      && withoutResponseJob.finalUserContent.includes(REGENERATION_DIRECTIVE_TEXT)
-      && withoutResponseJob.finalUserContent.includes(legacyFallbackText)
-      && withoutResponseJob.finalUserContent.includes(legacyFallbackState),
+    missingResponseJobRejected,
+    missingResponseJobError,
     finalMessageUsesResponseJobContent: withResponseJob.messages.at(-1)?.content === withResponseJob.finalUserContent,
     responseJobLaneEvidencePresent:
       withResponseJob.finalUserLaneEvidence.some((lane) => lane.kind === 'player_turn')
@@ -266,9 +266,6 @@ function issue02ProviderLaneSnapshotArtifact() {
   const rendered = buildRoleplayApiMessages({
     conversationMessages: [],
     systemInstruction: 'SYSTEM',
-    userMessage: poisonedLegacyFallback,
-    currentTurnStateDigest: '[CURRENT TURN STATE]\n- poisoned legacy current state',
-    isRegeneration: true,
     responseJob: retry,
   });
 
@@ -516,9 +513,6 @@ function issue03PromptLeakageGuardArtifact() {
   const rendered = buildRoleplayApiMessages({
     conversationMessages: [],
     systemInstruction: 'SYSTEM',
-    userMessage: 'legacy fallback should not control response-job path',
-    currentTurnStateDigest: `[CURRENT TURN STATE]\n- ${ISSUE_03_STALE_MEMORY}\n- pruning report stale_generation`,
-    isRegeneration: true,
     responseJob,
   });
 
@@ -566,7 +560,6 @@ function issue04AssistantTailContinueArtifact() {
   const rendered = buildRoleplayApiMessages({
     conversationMessages: [],
     systemInstruction: 'SYSTEM',
-    userMessage: 'legacy continue prompt should not become player_turn lane',
     responseJob,
   });
 
@@ -645,7 +638,6 @@ function issue04DeletedAssistantRecoveryArtifact() {
       },
     ],
     systemInstruction: 'SYSTEM',
-    userMessage: 'legacy fallback should not create a duplicate user row',
     responseJob,
   });
   const userTailOccurrences = rendered.finalUserContent.split(ISSUE_04_USER_TAIL).length - 1;
@@ -717,8 +709,6 @@ function authorityConflictArtifact() {
   const built = buildRoleplayApiMessages({
     conversationMessages: [],
     systemInstruction: 'SYSTEM',
-    userMessage: 'legacy fallback text should not control the conflict fixture',
-    currentTurnStateDigest: `[CURRENT TURN STATE]\n- ${conflictingCurrentState}`,
     responseJob,
   });
   const playerLane = responseJob.finalUserLanes.find((lane) => lane.kind === 'player_turn');
@@ -761,7 +751,6 @@ function issue27NormalSendLaneArtifact() {
   const rendered = buildRoleplayApiMessages({
     conversationMessages: [],
     systemInstruction: 'SYSTEM',
-    userMessage: `${ISSUE_27_ESTABLISHED_FACT_NOTE} legacy fallback text`,
     responseJob,
   });
 
@@ -786,8 +775,6 @@ function issue27ApiCallRenderingArtifact() {
   const rendered = buildRoleplayApiMessages({
     conversationMessages: [],
     systemInstruction: 'SYSTEM',
-    userMessage: poisonedLegacyUserMessage,
-    currentTurnStateDigest: '[CURRENT TURN STATE]\n- poisoned legacy current-state fallback',
     responseJob,
   });
 
@@ -962,9 +949,7 @@ function issue26RecentHistoryRegressionArtifact() {
       createdAt: 4,
     },
   ];
-  const normal = compileRoleplayRecentHistory({
-    messages: normalMessages,
-    userStateAuthorityDecisions: [{
+  const userStateAuthorityDecisions = [{
       claim: 'The user character visibly steadies one hand.',
       claimType: 'bodily_reaction',
       sourceMessageId: 'issue-26-assistant-old',
@@ -973,7 +958,28 @@ function issue26RecentHistoryRegressionArtifact() {
       authority: 'accepted_assistant_observable_change',
       modelFacingAction: 'allow_as_observation',
       reason: 'accepted_assistant_generation_with_observable_change',
+    }] as const;
+  const assistantOutcomeRecords = buildRoleplayAssistantOutcomeRecords({
+    messages: normalMessages,
+    memories: [{
+      id: 'issue-26-observation-memory',
+      conversationId: 'conversation-1',
+      content: 'The user character visibly steadies one hand.',
+      day: 1,
+      timeOfDay: 'day',
+      source: 'message',
+      entryType: 'bullet',
+      sourceMessageId: 'issue-26-assistant-old',
+      sourceGenerationId: 'issue-26-generation-old',
+      createdAt: 2,
+      updatedAt: 2,
     }],
+    userStateAuthorityDecisions: [...userStateAuthorityDecisions],
+  });
+  const normal = compileRoleplayRecentHistory({
+    messages: normalMessages,
+    userStateAuthorityDecisions: [...userStateAuthorityDecisions],
+    assistantOutcomeRecords,
     limit: 5,
     isLocalNotice: (message) => message.localNotice != null,
   });
@@ -1294,13 +1300,14 @@ export async function runRoleplayBatch1Validation({
         issueTitle: 'Final User Wrapper Over-Authority',
         validationPhase: 'Validation Phase 3: Old Contract Regression Checks',
         commandOrFixture: COMMAND,
-        manualReview: 'Manual review should confirm the legacy no-response-job path is documented as compatibility plumbing only, not the preferred active control path.',
+        manualReview: 'No manual review is required for the removed fallback. This fixture proves the request builder rejects a missing typed response job.',
         createArtifact: () => ({ text: oldContractRegressionArtifact() }),
         positiveAssertions: [
           { label: 'response job wins over legacy userMessage', includes: '"responseJobWinsOverLegacyUserMessage": true' },
           { label: 'response job wins over legacy current state digest', includes: '"responseJobWinsOverLegacyCurrentState": true' },
           { label: 'response job wins over legacy regeneration directive', includes: '"responseJobWinsOverLegacyRegenerationDirective": true' },
-          { label: 'legacy path remains available only without response job', includes: '"legacyPathStillExistsWithoutResponseJob": true' },
+          { label: 'missing response job is rejected', includes: '"missingResponseJobRejected": true' },
+          { label: 'missing response job reports the typed-contract requirement', includes: 'RoleplayResponseJob is required to build roleplay API messages.' },
           { label: 'final message uses response-job content', includes: '"finalMessageUsesResponseJobContent": true' },
           { label: 'response-job lane evidence is present', includes: '"responseJobLaneEvidencePresent": true' },
           { label: 'retry rejection summary renders as compact control evidence', includes: '"retryRejectionSummaryRendered": true' },

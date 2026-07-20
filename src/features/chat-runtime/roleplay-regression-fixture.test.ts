@@ -1,7 +1,43 @@
 import { describe, expect, it } from 'vitest';
 
 import { createFixtureExecutionCollector } from '@/features/validation-evidence/test-recorder';
-import { runRoleplayRegressionFixtures } from './roleplay-regression-fixture';
+import { projectPlayerTurnVisibility } from './player-turn-visibility';
+import { buildRoleplayCharacterStateApplyReceipt } from './roleplay-character-state-review';
+import {
+  buildRoleplayHarnessContractArtifact,
+  evaluateRoleplayHarnessContractArtifact,
+  type RoleplayHarnessContractChecks,
+  type RoleplayHarnessContractTargets,
+} from './roleplay-harness-contract-artifact';
+import { compileRoleplayRecentHistory } from './roleplay-recent-history';
+import { buildRoleplayActiveScenePacketCandidate } from './roleplay-source-shaping';
+import {
+  runRoleplayRegressionFixtures,
+  type RoleplayRegressionFixture,
+} from './roleplay-regression-fixture';
+
+const ISSUE_24_GATE = {
+  id: 'issue-24-fixture-harness-command',
+  issueNumber: 24,
+  issueTitle: 'Roleplay Regression Fixture Harness',
+  validationPhase: 'Validation Phase 1: New Fixture Harness Command',
+  commandOrFixture: 'roleplay-regression-fixture:harness-self-test',
+  manualReview: 'No manual review required for provider-free harness self-test.',
+} as const;
+
+function issue24Fixture(
+  input: Pick<RoleplayRegressionFixture, 'createArtifact'>
+    & Partial<Pick<RoleplayRegressionFixture, 'positiveAssertions' | 'negativeAssertions' | 'artifactAssertions' | 'timeoutMs'>>,
+): RoleplayRegressionFixture {
+  return {
+    ...ISSUE_24_GATE,
+    createArtifact: input.createArtifact,
+    positiveAssertions: input.positiveAssertions ?? [],
+    negativeAssertions: input.negativeAssertions ?? [],
+    artifactAssertions: input.artifactAssertions,
+    timeoutMs: input.timeoutMs,
+  };
+}
 
 describe('runRoleplayRegressionFixtures', () => {
   it('runs provider-free fixtures and sends immutable execution reports to the shared writer', async () => {
@@ -54,6 +90,11 @@ describe('runRoleplayRegressionFixtures', () => {
       id: 'issue-24-fixture-harness-command',
       result: 'pass',
       failedAssertions: [],
+      assertionInventory: [
+        'includes:captures-runtime-mode',
+        'includes:captures-source-receipt',
+        'excludes:does-not-leak-rejected-assistant-text',
+      ],
     });
     expect(run.results[1]).toMatchObject({
       id: 'issue-01-contract-unit-tests',
@@ -113,5 +154,179 @@ describe('runRoleplayRegressionFixtures', () => {
         rawReport: expect.objectContaining({ result: 'error', failureCause: 'fixture exploded' }),
       }),
     ]);
+  });
+
+  it.each([
+    {
+      name: 'timeout',
+      fixture: issue24Fixture({
+        timeoutMs: 5,
+        createArtifact: () => new Promise(() => undefined),
+        positiveAssertions: [{ label: 'never reached', includes: 'ready' }],
+      }),
+      error: 'Fixture timed out after 5 milliseconds.',
+    },
+    {
+      name: 'malformed artifact',
+      fixture: issue24Fixture({
+        createArtifact: () => null as unknown as { text: string },
+        positiveAssertions: [{ label: 'never reached', includes: 'ready' }],
+      }),
+      error: 'Fixture returned a malformed artifact',
+    },
+    {
+      name: 'missing assertions',
+      fixture: issue24Fixture({ createArtifact: () => ({ text: 'valid artifact' }) }),
+      error: 'Fixture has no assertions',
+    },
+    {
+      name: 'duplicate assertion identities',
+      fixture: issue24Fixture({
+        createArtifact: () => ({ text: 'valid artifact' }),
+        artifactAssertions: [
+          { id: 'duplicate', label: 'first', evaluate: () => true },
+          { id: 'duplicate', label: 'second', evaluate: () => true },
+        ],
+      }),
+      error: 'Fixture contains duplicate assertion identities',
+    },
+  ])('records $name as an execution error', async ({ fixture, error }) => {
+    const recorder = createFixtureExecutionCollector();
+
+    await expect(runRoleplayRegressionFixtures({
+      recordExecution: recorder.recordExecution,
+      fixtures: [fixture],
+    })).rejects.toThrow(error);
+
+    expect(recorder.rows).toEqual([
+      expect.objectContaining({
+        id: ISSUE_24_GATE.id,
+        result: 'Error',
+        failureCause: expect.stringContaining(error),
+      }),
+    ]);
+  });
+
+  it('appends reruns instead of replacing earlier execution reports', async () => {
+    const recorder = createFixtureExecutionCollector();
+    const fixture = issue24Fixture({
+      createArtifact: () => ({ text: 'calculated=true' }),
+      positiveAssertions: [{ label: 'calculated result is present', includes: 'calculated=true' }],
+    });
+
+    const first = await runRoleplayRegressionFixtures({
+      recordExecution: recorder.recordExecution,
+      fixtures: [fixture],
+    });
+    const second = await runRoleplayRegressionFixtures({
+      recordExecution: recorder.recordExecution,
+      fixtures: [fixture],
+    });
+
+    expect(recorder.rows).toHaveLength(2);
+    expect(first.results[0].executionId).not.toBe(second.results[0].executionId);
+  });
+
+  it('attributes deliberately broken source, privacy, Retry history, and persistence checks', async () => {
+    const recorder = createFixtureExecutionCollector();
+    const mutationFixture = (
+      assertionId: string,
+      label: string,
+      targets: Partial<RoleplayHarnessContractTargets>,
+      check: keyof RoleplayHarnessContractChecks,
+    ) => issue24Fixture({
+      createArtifact: () => {
+        const contractArtifact = buildRoleplayHarnessContractArtifact(targets);
+        return {
+          text: JSON.stringify(contractArtifact),
+          metadata: evaluateRoleplayHarnessContractArtifact(contractArtifact),
+        };
+      },
+      artifactAssertions: [{
+        id: assertionId,
+        label,
+        evaluate: (artifact) => (
+          (artifact.metadata as RoleplayHarnessContractChecks)[check]
+        ),
+      }],
+    });
+    const run = await runRoleplayRegressionFixtures({
+      recordExecution: recorder.recordExecution,
+      fixtures: [
+        mutationFixture(
+          'source-selector:highest-authority-selected',
+          'source selector keeps the highest-authority duplicate',
+          {
+            selectSources: (input) => {
+              const result = buildRoleplayActiveScenePacketCandidate(input);
+              const staleReceipt = input.receipts.find((receipt) => receipt.authority === 'medium');
+              return {
+                ...result,
+                includedReceiptIds: staleReceipt ? [staleReceipt.id] : [],
+              };
+            },
+          },
+          'highestAuthoritySourceSelected',
+        ),
+        mutationFixture(
+          'privacy:private-text-withheld',
+          'private player text is absent from visible provider text',
+          {
+            projectPlayerTurn: (text, sourceMessageId) => ({
+              ...projectPlayerTurnVisibility(text, sourceMessageId),
+              visibleText: text,
+              changed: false,
+            }),
+          },
+          'privatePlayerTextWithheld',
+        ),
+        mutationFixture(
+          'retry-history:rejected-generation-excluded',
+          'rejected Retry text is absent from accepted provider history',
+          {
+            compileRecentHistory: (input) => {
+              const result = compileRoleplayRecentHistory(input);
+              const rejected = input.messages.find((message) => message.role === 'assistant');
+              return {
+                ...result,
+                packet: {
+                  ...result.packet,
+                  providerMessages: [
+                    ...result.packet.providerMessages,
+                    ...(rejected ? [{ role: 'assistant' as const, content: rejected.text }] : []),
+                  ],
+                },
+              };
+            },
+          },
+          'rejectedRetryGenerationExcluded',
+        ),
+        mutationFixture(
+          'persistence:accepted-generation-preserved',
+          'persistence receipt retains the accepted source generation',
+          {
+            buildPersistenceReceipt: (input) => ({
+              ...buildRoleplayCharacterStateApplyReceipt(input),
+              sourceGenerationId: 'generation-stale',
+            }),
+          },
+          'acceptedPersistenceGenerationPreserved',
+        ),
+      ],
+    });
+
+    expect(run.summary).toEqual({ total: 4, passed: 0, failed: 4 });
+    expect(run.results.map((result) => result.failedAssertions[0])).toEqual([
+      'source selector keeps the highest-authority duplicate',
+      'private player text is absent from visible provider text',
+      'rejected Retry text is absent from accepted provider history',
+      'persistence receipt retains the accepted source generation',
+    ]);
+    expect(run.results.flatMap((result) => result.assertionResults)).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'source-selector:highest-authority-selected', passed: false }),
+      expect.objectContaining({ id: 'privacy:private-text-withheld', passed: false }),
+      expect.objectContaining({ id: 'retry-history:rejected-generation-excluded', passed: false }),
+      expect.objectContaining({ id: 'persistence:accepted-generation-preserved', passed: false }),
+    ]));
   });
 });

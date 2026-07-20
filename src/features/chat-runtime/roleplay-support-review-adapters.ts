@@ -5,9 +5,10 @@ import {
   type RoleplaySupportReviewEnvelope,
   type RoleplaySupportReviewItem,
   type RoleplaySupportWorker,
+  type RoleplaySupportWorkerArtifact,
 } from './roleplay-support-review-envelope';
 
-type LegacySupportResultInput = {
+type SupportWorkerResultInput = {
   worker: RoleplaySupportWorker;
   sourceMessageId?: string;
   sourceGenerationId?: string;
@@ -19,55 +20,6 @@ type LegacySupportResultInput = {
   persistenceReason?: string;
   omitted?: RoleplaySupportReviewItem[];
 };
-
-export type LegacyMemoryExtractionReview = {
-  acceptedEvents: string[];
-  candidateReviews: Array<{
-    id: string;
-    label: string;
-    accepted: true;
-    reason: 'accepted_after_local_duplicate_review';
-  }>;
-  omittedCandidates: Array<{
-    id: string;
-    label: string;
-    reason: 'near_duplicate_existing_memory';
-  }>;
-};
-
-export function reviewLegacyMemoryExtractionEvents(input: {
-  events: unknown;
-  isNearDuplicate: (acceptedEvents: string[], candidate: string) => boolean;
-}): LegacyMemoryExtractionReview {
-  const acceptedEvents: string[] = [];
-  const candidateReviews: LegacyMemoryExtractionReview['candidateReviews'] = [];
-  const omittedCandidates: LegacyMemoryExtractionReview['omittedCandidates'] = [];
-  const events = asArray(input.events)
-    .filter((event): event is string => typeof event === 'string')
-    .map((event) => event.trim())
-    .filter(Boolean);
-
-  events.forEach((event, index) => {
-    const id = `memory-candidate-${index + 1}`;
-    if (input.isNearDuplicate(acceptedEvents, event)) {
-      omittedCandidates.push({
-        id,
-        label: event,
-        reason: 'near_duplicate_existing_memory',
-      });
-      return;
-    }
-    acceptedEvents.push(event);
-    candidateReviews.push({
-      id,
-      label: event,
-      accepted: true,
-      reason: 'accepted_after_local_duplicate_review',
-    });
-  });
-
-  return { acceptedEvents, candidateReviews, omittedCandidates };
-}
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -83,6 +35,16 @@ function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function readWorkerArtifact(responseBody: unknown): RoleplaySupportWorkerArtifact | undefined {
+  const value = asRecord(asRecord(responseBody)?.workerArtifact);
+  const worker = asText(value?.worker);
+  const contract = asText(value?.contract);
+  const artifactVersion = asText(value?.artifactVersion);
+  const version = value?.version;
+  if (!worker || !contract || !artifactVersion || typeof version !== 'number') return undefined;
+  return { worker, contract, version, artifactVersion };
+}
+
 function itemFromRow(row: unknown, index: number, fallbackLabel: string): RoleplaySupportReviewItem {
   const value = asRecord(row);
   if (!value) {
@@ -90,7 +52,7 @@ function itemFromRow(row: unknown, index: number, fallbackLabel: string): Rolepl
     return {
       id: `${fallbackLabel}-${index + 1}`,
       label: text || `${fallbackLabel} ${index + 1}`,
-      reason: 'legacy_response_item',
+      reason: 'unclassified_worker_response_item',
     };
   }
 
@@ -108,12 +70,13 @@ function itemFromRow(row: unknown, index: number, fallbackLabel: string): Rolepl
   const reason = asText(value.reason)
     || asText(value.rejectionReason)
     || asText(value.missingReviewReason)
-    || (value.accepted === true ? 'accepted' : 'legacy_response_item');
+    || (value.accepted === true ? 'accepted' : 'unclassified_worker_response_item');
   const evidence = asText(value.evidence) || undefined;
   const category = asText(value.category) || asText(value.durabilityCategory) || undefined;
   const sourceClassification = asText(value.sourceClassification) || undefined;
   const claimType = asText(value.claimType) || undefined;
   const sourceRole = asText(value.sourceRole) || undefined;
+  const evidenceBasis = asText(value.evidenceBasis) || undefined;
   const authority = asText(value.authority) || undefined;
   const modelFacingAction = asText(value.modelFacingAction) || undefined;
   const sourceMessageId = asText(value.sourceMessageId) || undefined;
@@ -131,6 +94,7 @@ function itemFromRow(row: unknown, index: number, fallbackLabel: string): Rolepl
     sourceClassification,
     claimType,
     sourceRole,
+    evidenceBasis,
     authority,
     modelFacingAction,
     sourceMessageId,
@@ -144,18 +108,21 @@ function itemFromRow(row: unknown, index: number, fallbackLabel: string): Rolepl
 function splitReviewedRows(rows: unknown[], fallbackLabel: string): {
   accepted: RoleplaySupportReviewItem[];
   rejected: RoleplaySupportReviewItem[];
+  omitted: RoleplaySupportReviewItem[];
 } {
   const accepted: RoleplaySupportReviewItem[] = [];
   const rejected: RoleplaySupportReviewItem[] = [];
+  const omitted: RoleplaySupportReviewItem[] = [];
 
   rows.forEach((row, index) => {
     const item = itemFromRow(row, index, fallbackLabel);
     const value = asRecord(row);
-    if (value?.accepted === false || value?.frontendAccepted === false) rejected.push(item);
-    else accepted.push(item);
+    if (value?.accepted === true || value?.frontendAccepted === true) accepted.push(item);
+    else if (value?.accepted === false || value?.frontendAccepted === false) rejected.push(item);
+    else omitted.push(item);
   });
 
-  return { accepted, rejected };
+  return { accepted, rejected, omitted };
 }
 
 function workerRows(worker: RoleplaySupportWorker, responseBody: unknown): {
@@ -169,7 +136,9 @@ function workerRows(worker: RoleplaySupportWorker, responseBody: unknown): {
 
   if (worker === 'character_state') {
     const reviewedApplyCandidates = asArray(response.acceptedUpdates)
-      .concat(asArray(response.rejectedUpdates));
+      .map((row) => ({ ...(asRecord(row) || {}), frontendAccepted: true }))
+      .concat(asArray(response.rejectedUpdates)
+        .map((row) => ({ ...(asRecord(row) || {}), frontendAccepted: false })));
     rows = reviewedApplyCandidates.length
       ? reviewedApplyCandidates
       : asArray(response.characterUpdateReviews).length
@@ -179,9 +148,7 @@ function workerRows(worker: RoleplaySupportWorker, responseBody: unknown): {
           : asArray(response.updates);
     fallbackLabel = 'character state candidate';
   } else if (worker === 'memory_extraction') {
-    rows = asArray(response.candidateReviews).length
-      ? asArray(response.candidateReviews)
-      : asArray(response.extractedEvents);
+    rows = asArray(response.candidateReviews);
     fallbackLabel = 'memory candidate';
   } else if (worker === 'goal_progress') {
     rows = asArray(response.stepCompletionReviews).length
@@ -191,7 +158,9 @@ function workerRows(worker: RoleplaySupportWorker, responseBody: unknown): {
         : asArray(response.stepUpdates);
     fallbackLabel = 'goal progress candidate';
   } else if (worker === 'goal_alignment') {
-    rows = asArray(response.evaluations);
+    rows = asArray(response.alignmentReviews).length
+      ? asArray(response.alignmentReviews)
+      : asArray(response.evaluations);
     fallbackLabel = 'goal alignment evaluation';
   } else if (worker === 'day_memory_compression') {
     const synopsis = asText(response.synopsis);
@@ -231,13 +200,17 @@ function workerRows(worker: RoleplaySupportWorker, responseBody: unknown): {
     .concat(worker === 'character_state' ? asArray(response.missingCharacterStateReviews) : []);
 
   return {
-    ...reviewed,
-    omitted: omittedRows.map((row, index) => itemFromRow(row, index, 'omitted outcome')),
+    accepted: reviewed.accepted,
+    rejected: reviewed.rejected,
+    omitted: [
+      ...reviewed.omitted,
+      ...omittedRows.map((row, index) => itemFromRow(row, index, 'omitted outcome')),
+    ],
   };
 }
 
-export function wrapLegacyRoleplaySupportResult(
-  input: LegacySupportResultInput,
+export function createRoleplaySupportReviewEnvelopeFromWorkerResult(
+  input: SupportWorkerResultInput,
 ): RoleplaySupportReviewEnvelope {
   const outcomes = workerRows(input.worker, input.responseBody);
   const omitted = [...outcomes.omitted, ...(input.omitted ?? [])];
@@ -271,6 +244,7 @@ export function wrapLegacyRoleplaySupportResult(
 
   return createRoleplaySupportReviewEnvelope({
     worker: input.worker,
+    workerArtifact: readWorkerArtifact(input.responseBody),
     sourceMessageId: input.sourceMessageId,
     sourceGenerationId: input.sourceGenerationId,
     accepted: outcomes.accepted,
@@ -309,6 +283,5 @@ export function wrapLegacyRoleplaySupportResult(
                 : 'no_eligible_persisted_output',
     },
     contextGaps,
-    legacyWrapped: true,
   });
 }

@@ -12,6 +12,7 @@ import {
   API_USAGE_VALIDATION_ROW_BY_ID,
   API_USAGE_VALIDATION_ROW_IDS,
 } from "./api-usage-validation-registry";
+import { manualArchitectureFileByPath } from "./app-architecture-manual";
 
 type LiveRef = ApiInspectorFileRef & {
   owner: string;
@@ -159,12 +160,13 @@ describe("api inspector source-truth references", () => {
   it("keeps the API Call 1 collector ownership split explicit in source-truth surfaces", () => {
     const liveMapText = JSON.stringify(apiInspectorLiveSections);
     const codeTruthText = JSON.stringify(apiInspectorCodeTruthRegistry);
-    const architectureSource = readFileSync(
-      toRepoPath("/src/pages/style-guide/app-architecture.tsx"),
-      "utf8",
+    const collectorProfile = manualArchitectureFileByPath.get(
+      "/src/features/chat-runtime/collect-roleplay-response.ts",
     );
+    const architectureProfileText = JSON.stringify(collectorProfile);
 
-    for (const sourceText of [liveMapText, codeTruthText, architectureSource]) {
+    expect(collectorProfile).toBeDefined();
+    for (const sourceText of [liveMapText, codeTruthText, architectureProfileText]) {
       expect(sourceText).toContain("collect-roleplay-response.ts");
     }
 
@@ -172,7 +174,7 @@ describe("api inspector source-truth references", () => {
     expect(liveMapText).toContain("returned to the caller, which commits them only after the relevant live-state guard passes");
     expect(codeTruthText).toContain("collects one live response through the shared collector");
     expect(codeTruthText).toContain("browser parser and shared response collector expect Chat Completions-style SSE events");
-    expect(architectureSource).toContain("return one completed assistant response to the caller");
-    expect(architectureSource).toContain("the caller remains responsible for stale-state guards and final message commit");
+    expect(architectureProfileText).toContain("Browser-side collector for one streamed roleplay response");
+    expect(architectureProfileText).toContain("partial rendering cannot bypass the final sanitizer");
   });
 });

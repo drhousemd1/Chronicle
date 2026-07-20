@@ -345,7 +345,14 @@ const ADDITIONAL_COMMAND_GATE_DEFINITIONS = [
     testFiles: [
       'src/features/chat-runtime/roleplay-scene-roster.test.ts',
       'src/features/chat-runtime/roleplay-knowledge-visibility.test.ts',
+      'src/features/chat-runtime/player-turn-visibility.test.ts',
+      'src/features/chat-runtime/roleplay-player-visibility-runtime-wiring.test.ts',
+      'src/features/chat-runtime/roleplay-candidate-behavior.test.ts',
+      'src/features/chat-runtime/roleplay-recent-history.test.ts',
+      'src/features/chat-runtime/use-post-turn-support-queue.test.ts',
+      'src/features/chat-runtime/roleplay-source-receipts.test.ts',
       'src/features/chat-debug/review-export.test.ts',
+      'src/services/api-usage-validation.test.ts',
       'src/services/llm-canonical-coverage.test.ts',
     ],
     phases: [
@@ -897,4 +904,39 @@ export function getRoleplayValidationGate(gateId: string) {
 
 export function listActiveRoleplayValidationGates() {
   return ROLEPLAY_VALIDATION_GATES.filter((gate) => gate.lifecycle === 'active');
+}
+
+export type RoleplayValidationRunnerReuseGroup = Readonly<{
+  runnerIdentity: string;
+  gateIds: readonly string[];
+  issueNumbers: readonly number[];
+}>;
+
+function validationRunnerIdentity(gate: ValidationGateDefinition): string {
+  if (gate.runner.kind === 'fixture') return `fixture:${gate.runner.batch}`;
+  if (gate.runner.kind === 'manual') return 'manual';
+  return JSON.stringify({
+    executable: gate.runner.executable,
+    args: gate.runner.args,
+    workingDirectory: gate.runner.workingDirectory,
+  });
+}
+
+export function auditRoleplayValidationRunnerReuse(): RoleplayValidationRunnerReuseGroup[] {
+  const groups = new Map<string, ValidationGateDefinition[]>();
+  for (const gate of listActiveRoleplayValidationGates()) {
+    const identity = validationRunnerIdentity(gate);
+    const existing = groups.get(identity) ?? [];
+    existing.push(gate);
+    groups.set(identity, existing);
+  }
+
+  return [...groups.entries()]
+    .filter(([, gates]) => gates.length > 1)
+    .map(([runnerIdentity, gates]) => ({
+      runnerIdentity,
+      gateIds: gates.map((gate) => gate.gateId).sort(),
+      issueNumbers: [...new Set(gates.map((gate) => gate.issueNumber))].sort((a, b) => a - b),
+    }))
+    .sort((left, right) => left.runnerIdentity.localeCompare(right.runnerIdentity));
 }

@@ -2,10 +2,12 @@ import type { Memory, Scene, ScenarioData, TimeOfDay } from '@/types';
 import type { ChatDebugRequestRecord, ChatDebugTrace } from '@/features/chat-debug/types';
 import type { RoleplayResponseJob } from '@/features/chat-runtime/roleplay-response-job';
 import type { RoleplayUserStateAuthorityDecision } from '@/features/chat-runtime/roleplay-user-state-authority';
+import type { RoleplayAssistantOutcomeRecord } from '@/features/chat-runtime/roleplay-assistant-outcome';
 import {
   generateRoleplayResponseStream,
   type GenerateRoleplayResponseStreamOptions,
 } from '@/services/llm';
+import type { RoleplaySourceRefreshReason } from '@/features/chat-runtime/roleplay-source-shaping';
 import {
   normalizePlaceholderNames,
   type PlaceholderNameMap,
@@ -30,8 +32,9 @@ export interface CollectRoleplayResponseOptions {
   appData: ScenarioData;
   conversationId: string;
   userMessage: string;
-  responseJob?: RoleplayResponseJob;
+  responseJob: RoleplayResponseJob;
   userStateAuthorityDecisions?: RoleplayUserStateAuthorityDecision[];
+  assistantOutcomeRecords?: RoleplayAssistantOutcomeRecord[];
   modelId: string;
   currentDay?: number;
   currentTimeOfDay?: TimeOfDay;
@@ -41,6 +44,7 @@ export interface CollectRoleplayResponseOptions {
   sessionMessageCount?: number;
   activeScene?: Scene | null;
   debugTrace?: boolean;
+  sourceRefreshReason?: RoleplaySourceRefreshReason;
   placeholderMap: PlaceholderNameMap;
   knownCharacterNames: Set<string>;
   sanitizeAssistantOutput: (text: string) => string;
@@ -92,6 +96,7 @@ export async function collectRoleplayResponse({
   userMessage,
   responseJob,
   userStateAuthorityDecisions,
+  assistantOutcomeRecords,
   modelId,
   currentDay,
   currentTimeOfDay,
@@ -101,6 +106,7 @@ export async function collectRoleplayResponse({
   sessionMessageCount,
   activeScene,
   debugTrace = false,
+  sourceRefreshReason,
   placeholderMap,
   knownCharacterNames,
   sanitizeAssistantOutput,
@@ -129,7 +135,9 @@ export async function collectRoleplayResponse({
     {
       debugTrace,
       responseJob,
+      sourceRefreshReason,
       userStateAuthorityDecisions,
+      assistantOutcomeRecords,
       onDebugTrace: (trace) => {
         responseDebugTrace = trace;
       },

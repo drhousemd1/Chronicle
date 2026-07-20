@@ -7,11 +7,13 @@ import type {
 import type {
   SupportCallLifecycle,
 } from './roleplay-support-readiness';
+import { projectPlayerTurnVisibility } from './player-turn-visibility';
 
 export interface PostTurnExtractionMeta {
   sourceMessageId?: string;
   sourceMessageGenerationId?: string;
   sourceUserMessageId?: string;
+  sourceUserMessageGenerationId?: string;
   reason: 'post_turn_state_sync';
 }
 
@@ -54,6 +56,7 @@ export interface UsePostTurnSupportQueueOptions<TCharacterUpdate, TApplyResult =
     updates: TCharacterUpdate[],
     meta: PostTurnExtractionMeta,
   ) => Promise<TApplyResult> | TApplyResult;
+  isSourceCurrent?: (sourceMessage: Message) => boolean;
   onSupportLifecycle?: (event: PostTurnSupportLifecycleEvent) => void;
   debugLog?: (...args: unknown[]) => void;
   logger?: Pick<Console, 'error'>;
@@ -66,10 +69,11 @@ type PersistResult =
 type LatestPostTurnOptions<TCharacterUpdate, TApplyResult> = Required<
   Omit<
     UsePostTurnSupportQueueOptions<TCharacterUpdate, TApplyResult>,
-    'debugLog' | 'onSupportLifecycle'
+    'debugLog' | 'isSourceCurrent' | 'onSupportLifecycle'
   >
 > & {
   debugLog?: (...args: unknown[]) => void;
+  isSourceCurrent?: (sourceMessage: Message) => boolean;
   onSupportLifecycle?: (event: PostTurnSupportLifecycleEvent) => void;
 };
 
@@ -81,6 +85,7 @@ export function usePostTurnSupportQueue<TCharacterUpdate, TApplyResult = void>({
   evaluateGoalAlignment,
   extractCharacterUpdatesFromDialogue,
   applyExtractedUpdates,
+  isSourceCurrent,
   onSupportLifecycle,
   debugLog,
   logger = console,
@@ -93,6 +98,7 @@ export function usePostTurnSupportQueue<TCharacterUpdate, TApplyResult = void>({
     evaluateGoalAlignment,
     extractCharacterUpdatesFromDialogue,
     applyExtractedUpdates,
+    isSourceCurrent,
     onSupportLifecycle,
     debugLog,
     logger,
@@ -105,6 +111,7 @@ export function usePostTurnSupportQueue<TCharacterUpdate, TApplyResult = void>({
     evaluateGoalAlignment,
     extractCharacterUpdatesFromDialogue,
     applyExtractedUpdates,
+    isSourceCurrent,
     onSupportLifecycle,
     debugLog,
     logger,
@@ -133,6 +140,17 @@ export function usePostTurnSupportQueue<TCharacterUpdate, TApplyResult = void>({
     sourceUserMessage: Message | undefined,
     work: () => void | Promise<void>,
   ) => {
+    const sourceOptions = getOptionsForConversation(sourceConversationId);
+    if (sourceOptions?.isSourceCurrent && !sourceOptions.isSourceCurrent(sourceMessage)) {
+      emitSupportLifecycle(sourceConversationId, {
+        worker,
+        lifecycle: 'stale',
+        sourceMessage,
+        sourceUserMessage,
+        reason: 'source_generation_superseded_before_worker_start',
+      });
+      return;
+    }
     emitSupportLifecycle(sourceConversationId, {
       worker,
       lifecycle: 'running',
@@ -142,6 +160,17 @@ export function usePostTurnSupportQueue<TCharacterUpdate, TApplyResult = void>({
     });
     try {
       await work();
+      const completedOptions = getOptionsForConversation(sourceConversationId);
+      if (completedOptions?.isSourceCurrent && !completedOptions.isSourceCurrent(sourceMessage)) {
+        emitSupportLifecycle(sourceConversationId, {
+          worker,
+          lifecycle: 'stale',
+          sourceMessage,
+          sourceUserMessage,
+          reason: 'source_generation_superseded_during_worker_run',
+        });
+        return;
+      }
       emitSupportLifecycle(sourceConversationId, {
         worker,
         lifecycle: 'completed',
@@ -160,7 +189,7 @@ export function usePostTurnSupportQueue<TCharacterUpdate, TApplyResult = void>({
       });
       throw error;
     }
-  }, [emitSupportLifecycle]);
+  }, [emitSupportLifecycle, getOptionsForConversation]);
 
   const runCharacterStateSync = useCallback(async (
     sourceConversationId: string,
@@ -173,6 +202,9 @@ export function usePostTurnSupportQueue<TCharacterUpdate, TApplyResult = void>({
       sourceMessageId: sourceMessage.id,
       sourceMessageGenerationId: sourceMessage.generationId,
       ...(sourceUserMessage?.id ? { sourceUserMessageId: sourceUserMessage.id } : {}),
+      ...(sourceUserMessage?.generationId
+        ? { sourceUserMessageGenerationId: sourceUserMessage.generationId }
+        : {}),
       reason: 'post_turn_state_sync',
     };
 
@@ -209,6 +241,13 @@ export function usePostTurnSupportQueue<TCharacterUpdate, TApplyResult = void>({
       );
       return;
     }
+    const visibleUserText = projectPlayerTurnVisibility(
+      userText,
+      sourceUserMessage?.id,
+    ).visibleText;
+    const workerSourceUserMessage = sourceUserMessage
+      ? { ...sourceUserMessage, text: visibleUserText }
+      : undefined;
     const queuedWorkers: RoleplaySupportWorker[] = [
       'memory_extraction',
       'goal_progress',
@@ -228,9 +267,9 @@ export function usePostTurnSupportQueue<TCharacterUpdate, TApplyResult = void>({
       'memory_extraction',
       sourceMessage,
       sourceUserMessage,
-      () => sourceUserMessage
-        ? latest.queueMemoryExtraction(userText, aiText, sourceMessage, sourceUserMessage)
-        : latest.queueMemoryExtraction(userText, aiText, sourceMessage),
+      () => workerSourceUserMessage
+        ? latest.queueMemoryExtraction(visibleUserText, aiText, sourceMessage, workerSourceUserMessage)
+        : latest.queueMemoryExtraction(visibleUserText, aiText, sourceMessage),
     ).catch(err => {
       latestOptionsRef.current.logger.error('[queueAssistantDerivedWork] Memory extraction failed:', err);
     });
@@ -241,7 +280,7 @@ export function usePostTurnSupportQueue<TCharacterUpdate, TApplyResult = void>({
       sourceMessage,
       sourceUserMessage,
       () => latest.evaluateGoalProgress(
-        userText,
+        visibleUserText,
         aiText,
         sourceMessage.id,
         sourceMessage.generationId,
@@ -267,7 +306,7 @@ export function usePostTurnSupportQueue<TCharacterUpdate, TApplyResult = void>({
           sourceMessage,
           sourceUserMessage,
           () => conversationOptions.evaluateGoalAlignment(
-            userText,
+            visibleUserText,
             aiText,
             sourceMessage.id,
             sourceMessage.generationId,
@@ -288,7 +327,7 @@ export function usePostTurnSupportQueue<TCharacterUpdate, TApplyResult = void>({
         sourceUserMessage,
         () => runCharacterStateSync(
           sourceConversationId,
-          userText,
+          visibleUserText,
           aiText,
           sourceMessage,
           sourceUserMessage,
@@ -332,14 +371,13 @@ export function usePostTurnSupportQueue<TCharacterUpdate, TApplyResult = void>({
       return;
     }
 
-    const persistResultPromise: Promise<PersistResult> = sourceOptions.saveNewMessages(sourceConversationId, messagesToPersist)
-      .then(() => ({ ok: true as const }))
-      .catch((error) => ({ ok: false as const, error }));
-
     sourcePersistQueueRef.current = sourcePersistQueueRef.current
       .catch(() => undefined)
       .then(async () => {
-        const persistResult = await persistResultPromise;
+        const persistResult: PersistResult = await sourceOptions
+          .saveNewMessages(sourceConversationId, messagesToPersist)
+          .then(() => ({ ok: true as const }))
+          .catch((error) => ({ ok: false as const, error }));
         if (!persistResult.ok) {
           latestOptionsRef.current.logger.error(
             '[queueAssistantDerivedWork] Skipped derived work because source messages failed to persist:',

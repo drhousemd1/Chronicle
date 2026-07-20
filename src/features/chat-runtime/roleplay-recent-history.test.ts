@@ -6,6 +6,7 @@ import {
   buildRetryRegenerateResponseJob,
 } from './roleplay-response-job';
 import { compileRoleplayRecentHistory } from './roleplay-recent-history';
+import type { RoleplayAssistantOutcomeRecord } from './roleplay-assistant-outcome';
 import type { RoleplayUserStateAuthorityDecision } from './roleplay-user-state-authority';
 
 const isLocalNotice = (message: Message) => message.localNotice != null;
@@ -43,28 +44,96 @@ describe('compileRoleplayRecentHistory', () => {
     }));
   });
 
-  it('preserves same-id user history when its text differs from the active player-turn lane', () => {
+  it('keeps the source player message out of history when the active lane is a visibility projection', () => {
     const responseJob = buildNormalSendResponseJob({
       conversationId: 'conversation-1',
-      playerTurn: { messageId: 'user-current', text: 'I step closer.' },
+      playerTurn: { messageId: 'user-current', text: 'I step closer. "Stay there."' },
       currentStateSummary: 'The kitchen remains active.',
       responseDetail: 'standard',
     });
     const result = compileRoleplayRecentHistory({
-      messages: [message({ id: 'user-current', role: 'user', text: 'I stop at the doorway.' })],
+      messages: [message({
+        id: 'user-current',
+        role: 'user',
+        text: 'I step closer. (I hope she cannot hear my heartbeat.) "Stay there."',
+      })],
       responseJob,
       limit: 5,
       isLocalNotice,
     });
 
-    expect(result.packet.providerMessages).toEqual([
-      { role: 'user', content: 'I stop at the doorway.' },
-    ]);
+    expect(result.packet.providerMessages).toEqual([]);
     expect(result.packet.receipts).toContainEqual(expect.objectContaining({
       messageId: 'user-current',
-      responseJobSource: 'recent_history',
-      includedInProviderHistory: true,
-      reason: 'player_turn_id_matched_but_content_differed_preserved_in_history',
+      responseJobSource: 'player_turn',
+      includedInProviderHistory: false,
+      reason: 'exact_user_turn_represented_in_higher_authority_player_lane',
+    }));
+  });
+
+  it('removes balanced private spans from older user history', () => {
+    const result = compileRoleplayRecentHistory({
+      messages: [message({
+        id: 'user-older',
+        role: 'user',
+        text: 'I set the glass down. (I do not trust her yet.) "Your turn."',
+      })],
+      limit: 5,
+      isLocalNotice,
+    });
+
+    expect(result.packet.providerMessages).toEqual([
+      { role: 'user', content: 'I set the glass down. "Your turn."' },
+    ]);
+    expect(result.packet.receipts).toContainEqual(expect.objectContaining({
+      messageId: 'user-older',
+      treatment: 'visible_user_projection',
+      reason: 'private_parenthetical_spans_removed_from_user_history',
+      transformedContent: 'I set the glass down. "Your turn."',
+      privateSpans: [expect.objectContaining({ content: 'I do not trust her yet.' })],
+    }));
+  });
+
+  it('omits thought-only older user history from provider messages', () => {
+    const result = compileRoleplayRecentHistory({
+      messages: [message({
+        id: 'user-private',
+        role: 'user',
+        text: '(I wonder whether she noticed.)',
+      })],
+      limit: 5,
+      isLocalNotice,
+    });
+
+    expect(result.packet.providerMessages).toEqual([]);
+    expect(result.packet.receipts).toContainEqual(expect.objectContaining({
+      messageId: 'user-private',
+      treatment: 'visible_user_projection',
+      includedInProviderHistory: false,
+      reason: 'private_user_history_has_no_model_visible_text',
+      privateSpans: [expect.objectContaining({ content: 'I wonder whether she noticed.' })],
+    }));
+  });
+
+  it('keeps unmatched parentheses visible instead of silently hiding player text', () => {
+    const result = compileRoleplayRecentHistory({
+      messages: [message({
+        id: 'user-unmatched',
+        role: 'user',
+        text: 'I step closer (and keep speaking.',
+      })],
+      limit: 5,
+      isLocalNotice,
+    });
+
+    expect(result.packet.providerMessages).toEqual([
+      { role: 'user', content: 'I step closer (and keep speaking.' },
+    ]);
+    expect(result.packet.receipts).toContainEqual(expect.objectContaining({
+      messageId: 'user-unmatched',
+      treatment: 'exact_user',
+      reason: 'exact_user_continuity',
+      visibilityWarnings: [expect.objectContaining({ code: 'unmatched_opening_parenthesis' })],
     }));
   });
 
@@ -92,7 +161,6 @@ describe('compileRoleplayRecentHistory', () => {
 
     expect(result.packet.providerMessages.map((entry) => entry.content)).toEqual([
       'I ask her to decide.',
-      'Mara: *She rests against the balcony rail.*',
       'I wait for the decision.',
       'Mara: *She finally chooses a direction.* "What do you do next?"',
     ]);
@@ -101,8 +169,8 @@ describe('compileRoleplayRecentHistory', () => {
       expect.objectContaining({
         messageId: 'assistant-old',
         treatment: 'suppressed_style_anchor',
-        reason: 'repeated_assistant_phrase_removed',
-        includedInProviderHistory: true,
+        reason: 'older_assistant_without_outcome_record_omitted',
+        includedInProviderHistory: false,
         repeatedAnchors: expect.arrayContaining(['what do you do next?']),
       }),
       expect.objectContaining({
@@ -113,7 +181,7 @@ describe('compileRoleplayRecentHistory', () => {
     ]));
   });
 
-  it('transforms older assistant history only from exact generation-matched authority decisions', () => {
+  it('transforms older assistant history only from a generation-matched persisted outcome record', () => {
     const decisions: RoleplayUserStateAuthorityDecision[] = [
       {
         claim: 'The user character has a visible tremor in one hand.',
@@ -156,6 +224,37 @@ describe('compileRoleplayRecentHistory', () => {
         reason: 'stale_fixture',
       },
     ];
+    const assistantOutcomeRecords: RoleplayAssistantOutcomeRecord[] = [{
+      contract: 'RoleplayAssistantOutcomeRecord',
+      version: 1,
+      messageId: 'assistant-old',
+      generationId: 'generation-old',
+      facts: [{
+        id: 'memory-1',
+        category: 'memory',
+        label: 'Persisted bullet',
+        content: 'Mara agreed to remain nearby.',
+        artifactId: 'memory-1',
+        sourceMessageId: 'assistant-old',
+        sourceGenerationId: 'generation-old',
+      }],
+      categoryStatus: [
+        { category: 'character_state', availability: 'pending_or_unknown', reason: 'none_loaded', factCount: 0 },
+        { category: 'side_character_state', availability: 'pending_or_unknown', reason: 'none_loaded', factCount: 0 },
+        { category: 'memory', availability: 'available', reason: 'persisted', factCount: 1 },
+        { category: 'goal_step', availability: 'pending_or_unknown', reason: 'none_loaded', factCount: 0 },
+      ],
+      authoritySummary: {
+        acceptedObservationCount: 1,
+        excludedInterpretationCount: 1,
+        excludedUnsupportedCount: 1,
+        authorityClasses: [
+          'accepted_assistant_observable_change',
+          'assistant_interpretation',
+          'unsupported_overreach',
+        ],
+      },
+    }];
     const result = compileRoleplayRecentHistory({
       messages: [
         message({
@@ -173,6 +272,7 @@ describe('compileRoleplayRecentHistory', () => {
         }),
       ],
       userStateAuthorityDecisions: decisions,
+      assistantOutcomeRecords,
       limit: 5,
       isLocalNotice,
     });
@@ -181,9 +281,9 @@ describe('compileRoleplayRecentHistory', () => {
     expect(olderProviderMessage).toEqual({
       role: 'assistant',
       content: [
-        'Older assistant outcome summary:',
-        '- Observed change: The user character has a visible tremor in one hand.',
-        '- Character interpretation, not established fact: Mara suspects the user character is nervous.',
+        '[OLDER ASSISTANT OUTCOME]',
+        'Use these persisted consequences for continuity. They replace the older assistant prose and are not a style example.',
+        '- Mara agreed to remain nearby.',
       ].join('\n'),
     });
     expect(olderProviderMessage.content).not.toContain('Distinctive old choreography');
@@ -194,14 +294,16 @@ describe('compileRoleplayRecentHistory', () => {
       messageId: 'assistant-old',
       generationId: 'generation-old',
       treatment: 'outcome_summary',
-      reason: 'structured_source_authority_outcome_summary',
+      reason: 'generation_matched_persisted_assistant_outcome',
       includedInProviderHistory: true,
       transformedContent: olderProviderMessage.content,
-      sourceAuthorityDecisionCount: 2,
+      sourceAuthorityDecisionCount: 3,
       sourceAuthorityClasses: [
         'accepted_assistant_observable_change',
         'assistant_interpretation',
+        'unsupported_overreach',
       ],
+      outcomeFactCount: 1,
     }));
   });
 
@@ -237,12 +339,15 @@ describe('compileRoleplayRecentHistory', () => {
 
     expect(result.packet.providerMessages[0]).toEqual({
       role: 'assistant',
-      content: 'Mara crosses the room without repeating herself.',
+      content: 'Mara opens the window.',
     });
     expect(result.packet.receipts).toContainEqual(expect.objectContaining({
       messageId: 'assistant-old',
-      treatment: 'exact_assistant_history',
-      reason: 'accepted_assistant_history',
+      includedInProviderHistory: false,
+      treatment: 'suppressed_style_anchor',
+      reason: 'older_assistant_without_outcome_record_omitted',
+      sourceAuthorityDecisionCount: 1,
+      sourceAuthorityClasses: ['unsupported_overreach'],
     }));
     expect(result.packet.receipts.some((receipt) => receipt.treatment === 'outcome_summary')).toBe(false);
   });
@@ -342,7 +447,7 @@ describe('compileRoleplayRecentHistory', () => {
     });
     const result = compileRoleplayRecentHistory({
       messages: [
-        message({ id: 'user-1', role: 'user', text: 'I wait.' }),
+        message({ id: 'user-1', role: 'user', text: 'I wait. (I hope she decides.)' }),
         message({
           id: 'assistant-tail',
           generationId: 'generation-tail',
@@ -356,6 +461,12 @@ describe('compileRoleplayRecentHistory', () => {
     });
 
     expect(result.packet.providerMessages.map((entry) => entry.content)).toEqual(['I wait.']);
+    expect(result.packet.receipts).toContainEqual(expect.objectContaining({
+      messageId: 'user-1',
+      responseJobSource: 'continue_context',
+      treatment: 'visible_user_projection',
+      privateSpans: [expect.objectContaining({ content: 'I hope she decides.' })],
+    }));
     expect(result.packet.receipts).toContainEqual(expect.objectContaining({
       messageId: 'assistant-tail',
       responseJobSource: 'continue_anchor',

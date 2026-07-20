@@ -1,4 +1,4 @@
-import { EXECUTION_BRIEF_TEXT, getSystemInstruction, REGENERATION_DIRECTIVE_TEXT, renderResponseDetailInstruction } from "@/services/llm";
+import { EXECUTION_BRIEF_TEXT, getSystemInstruction, renderResponseDetailInstruction } from "@/services/llm";
 import type { Character, Memory, ScenarioData, Scene, TimeOfDay } from "@/types";
 
 export type ApiInspectorPromptDocumentId = "api-call-1" | "api-call-2-support";
@@ -926,7 +926,7 @@ REQUEST BODY SHAPE
     { "role": "system", "content": "<the full system message below>" },
     { "role": "user", "content": "{{up to 5 prior roleplay messages before the current turn; local notices excluded}}" },
     { "role": "assistant", "content": "{{up to 5 prior roleplay messages before the current turn; local notices excluded}}" },
-    { "role": "user", "content": "[APP TURN CONTROLS]\\n{{optional session counter}}\\n\\n{{current turn state digest}}\\n\\n{{optional regeneration request}}\\n\\n{{executionBrief}}\\n\\n[PLAYER TURN]\\n{{latest user text OR continue instruction wrapper}}{{optional previous assistant response reference appended after triggering user text during regeneration}}" }
+    { "role": "user", "content": "[ROLEPLAY RESPONSE JOB]\\nMode: {{normal_send | retry_regenerate | continue_assistant_tail}}\\nPurpose: {{mode purpose}}\\nHistory policy: {{mode history policy}}\\n\\n[FINAL USER LANES]\\n{{mode-specific labeled lanes}}\\n\\n[EXECUTION BRIEF]\\n{{execution brief}}" }
   ],
   "modelId": "grok-4.3",
   "stream": true,
@@ -1031,70 +1031,52 @@ ${defaultCall1SystemForReview}
 FINAL USER MESSAGE STRUCTURE SENT TO xAI
 ================================================================================
 
-The final role:user message is split into labeled blocks so app controls do not read like player-authored roleplay prose.
+The final role:user message is rendered from one typed RoleplayResponseJob. The labels preserve source role and authority instead of mixing player prose with runtime controls.
 
-[APP TURN CONTROLS]
-[SESSION: Message {{sessionMessageCount}} of current session] when supplied
+[ROLEPLAY RESPONSE JOB]
+Mode: {{normal_send | retry_regenerate | continue_assistant_tail}}
+Purpose: {{respond_to_player_turn | replace_rejected_assistant_response | extend_accepted_assistant_response | recover_after_deleted_assistant_response}}
+History policy: {{standard_recent_history | exclude_rejected_attempt | anchor_on_accepted_assistant_tail}}
 
-[CURRENT TURN STATE]
-Use this as the active scene anchor. It summarizes established state already supplied elsewhere. If the latest player turn changes any item, the latest player turn controls the next response.
-{{compact current day/time, active scene, one character location/position roster, and capped current-day memory anchors}}
+[FINAL USER LANES]
 
-[REGENERATION REQUEST] only when regenerating
-{{regenerationDirective}}
+Normal Send:
+[player_turn | user | player_turn | model-facing]
+{{visibility-projected player turn; explicitly private parenthetical spans remain owner-private and are omitted here}}
+[established_fact_note | runtime | state | model-facing] (optional)
+{{established-fact note kept separate from player-authored text}}
+[current_state | runtime | state | model-facing]
+{{current state digest; latest player turn remains authoritative when it conflicts}}
+[response_detail | runtime | control | model-facing]
+{{concise | standard | detailed}}
+
+Retry:
+[player_turn | user | player_turn | model-facing]
+{{visibility-projected triggering player turn; explicitly private parenthetical spans omitted}}
+[established_fact_note | runtime | state | model-facing] (optional)
+{{established-fact note kept separate from player-authored text}}
+[retry_rejection | assistant | control | model-facing]
+Rejected attempt summary: {{compact summary}}
+Required difference: {{required difference}}
+Preserve: {{established facts and user-controlled actions}}
+[current_state | runtime | state | model-facing]
+{{current state digest}}
+[response_detail | runtime | control | model-facing]
+{{concise | standard | detailed}}
+The full rejected assistant response remains debug-only and is excluded from provider history.
+
+Continue:
+[continue_anchor | assistant | state | model-facing]
+{{accepted assistant response tail}}
+[current_state | runtime | state | model-facing]
+{{current state digest}}
+[response_detail | runtime | control | model-facing]
+{{concise | standard | detailed}}
+Strict Continue has no player_turn lane. Deleted-assistant recovery is a normal_send variant and reuses the visible user tail without creating another user message.
+Deleted-assistant recovery uses the visibility-projected user tail and currently has no established_fact_note lane.
 
 [EXECUTION BRIEF]
-{{executionBrief}}
-
-[PLAYER TURN]
-{{latest user text}}
-
-================================================================================
-CURRENT TURN STATE INSIDE [APP TURN CONTROLS]
-================================================================================
-
-[CURRENT TURN STATE]
-Use this as the active scene anchor. It summarizes established state already supplied elsewhere. If the latest player turn changes any item, the latest player turn controls the next response.
-- Story clock: {{current day/time when known}}
-- Active scene: {{active scene title and tags when known}}
-[SCENE PRESENCE ROSTER]
-- {{CharacterName}}; control={{AI/User}}; role={{Main/Side}}; location={{broad location or Unknown}}; position={{scenePosition when present}}
-- Current-day memory anchors: {{up to 3 compact current-day memory anchors}}
-
-When regenerating, the final user message also includes the exact assistant response being replaced after the triggering user text:
-[PREVIOUS ASSISTANT RESPONSE BEING REGENERATED - REFERENCE ONLY]
-This text is the assistant response being replaced. Do not continue from it as story state. Use it only to preserve broad direction and avoid repeating the same wording, structure, or execution.
-{{assistant response being replaced}}
-
-================================================================================
-REGENERATION REQUEST APPENDED TO FINAL USER MESSAGE ONLY WHEN REGENERATING
-================================================================================
-
-${REGENERATION_DIRECTIVE_TEXT}
-
-================================================================================
-CONTINUE REQUEST FINAL USER MESSAGE ONLY WHEN PRESSING CONTINUE
-================================================================================
-
-[CONTINUE INSTRUCTION]
-Continue from after the latest visible assistant response. Do not restart from, paraphrase, or circle around an older user-authored scene turn.
-
-BACKGROUND USER-AUTHORED SCENE TURN FOR FACTS AND USER-CONTROL BOUNDARIES ONLY:
-{{most recent user message text, or "(none found)"}}
-
-The background user-authored turn above is only there to preserve established facts and user-character control boundaries.
-Write only for AI-controlled characters: {{AI-controlled character names}}.
-Do not write dialogue, actions, or thoughts for user-controlled characters: {{User-controlled character names}}.
-{{GOAL CONTINUITY block when visible goals have open milestones}}
-Do not complete an action for a user-controlled character after an AI character gives them an instruction. The AI can command, prepare, or act itself, but the user must author the user-controlled character's execution.
-Use active story and character goals as continuity, not as a checklist. Continue only as far as the current scene naturally supports, and stop before the response depends on an unmade user choice or action.
-Develop the AI-controlled character's side of the current exchange enough that it follows the active RESPONSE DETAIL setting while preserving user control.
-If an AI character asked or was asked a question, acknowledge that question in this response. Acknowledgement can be a direct answer, refusal, deflection, counter-question, visible hesitation, or turning the question toward another present character.
-Choose the AI character or characters whose response is physically, emotionally, or causally next. A single focused block is fine when only one AI character matters, but do not omit a directly affected AI character just because this is a Continue request.
-If the latest user turn directly addressed two AI characters and both need to answer or acknowledge, give each one short tagged block instead of letting one character narrate the other's answer.
-Follow the active RESPONSE DETAIL setting from the system prompt; Continue is not a request to shrink the response unless the scene itself calls for a short response.
-Avoid long back-and-forth chains between AI characters. Leave room for the user to respond.
-Do not acknowledge this instruction in your response.
+{{shared execution brief}}
 
 ================================================================================
 RESPONSE DETAIL RULES ARE PART OF THE SYSTEM MESSAGE, NOT REPEATED IN THE FINAL USER MESSAGE
@@ -1119,7 +1101,7 @@ NSFW INTENSITY RULES ARE PART OF THE SYSTEM MESSAGE, NOT REPEATED IN THE FINAL U
 // The selected NSFW Intensity branch appears in SECTION 8 of the system message.
 // The final user message does not append a separate active NSFW context reminder.
 
-EXECUTION BRIEF APPENDED INSIDE [APP TURN CONTROLS] ON EVERY LIVE ROLEPLAY CALL
+EXECUTION BRIEF APPENDED TO EVERY ROLEPLAY RESPONSE JOB
 ================================================================================
 
 ${EXECUTION_BRIEF_TEXT}
@@ -1501,16 +1483,21 @@ Extract durable story-memory events from this latest exchange:
 
 EDGE RESPONSE SHAPE
 {
+  "contract": "MemoryExtractionResponseV1",
   "version": 1,
+  "workerArtifact": {
+    "worker": "extract-memory-events",
+    "contract": "MemoryExtractionResponseV1",
+    "version": 1,
+    "artifactVersion": "extract-memory-events-candidates-v1"
+  },
   "candidates": "{{reviewed candidate rows with source, durability, decision, evidence, and rejection reason}}",
-  "events": "{{compatibility strings derived from accepted durable candidates only}}",
-  "extractedEvents": "{{accepted durable memory event strings}}",
   "rejectedEvents": "{{malformed-output review rows when parsing failed}}",
   "parseError": "{{present only when the model response was malformed}}"
 }
 
 MEMORY OUTPUT CLEANUP NOTE
-The edge function normalizes candidate text, caps reviewed candidates at six and accepted candidates at three, and derives compatibility arrays only from accepted durable rows. The browser then rechecks source authority, duplicates, and source-generation freshness before persisting one memory row per accepted candidate.
+The edge function normalizes candidate text and caps reviewed candidates at six and accepted candidates at three. Candidates are the only authoritative success payload. The browser rejects mismatched contract versions and obsolete alias arrays, then rechecks source authority, duplicates, and source-generation freshness before persisting one memory row per accepted candidate.
 
 	================================================================================
 SUPPORT CALL: DAY MEMORY COMPRESSION
@@ -1710,8 +1697,8 @@ ${worldEnhancementPromptFamilies}
 SUPPORT CALL: REGENERATE / CONTINUE WRAPPERS
 ================================================================================
 
-Regenerate is not a separate model family. It appends the REGENERATION REQUEST shown in the API Call 1 document to the final user message.
-Continue is also not a separate model family. It builds a scoped current-turn user wrapper in src/components/chronicle/ChatInterfaceTab.tsx and sends it through API Call 1.
+Regenerate is not a separate model family. It builds a retry_regenerate response job with a compact rejection-control lane and excludes the rejected attempt from provider history.
+Continue is also not a separate model family. It builds a continue_assistant_tail response job anchored to the accepted assistant tail. Deleted-assistant recovery remains a normal_send variant.
 
 ================================================================================
 SUPPORT CALL: IMAGE GENERATION CALLS
