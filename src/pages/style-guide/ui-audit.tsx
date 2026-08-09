@@ -1,8 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  CHANGE_LOG_SEVERITY,
-  CHANGE_LOG_STATUS,
   QUALITY_CONFIDENCE,
   QUALITY_DOMAINS,
   QUALITY_FINDING_STATUS,
@@ -11,9 +9,6 @@ import {
   QualityAgent,
   QualityFinding,
   QualityHubRegistry,
-  ChangeLogEntry,
-  ChangeLogSeverity,
-  ChangeLogStatus,
   isQualityHubRegistry,
   makeAgentId,
 } from "@/lib/ui-audit-schema";
@@ -22,12 +17,21 @@ import {
   countBySeverity,
   countByStatus,
   groupFindingsBy,
-  mergeRegistries,
   newId,
   sortFindings,
   summarizeRun,
   toCompactIso,
 } from "@/lib/ui-audit-utils";
+import {
+  canonicalJsonEqual,
+  cloneLegacyChangeLog,
+  guardQualityHubRegistryUpdate,
+  legacyChangeLogEqual,
+  mergeRegistryUpgradePreservingLegacyChangeLog,
+  prepareQualityHubWorkspaceImport,
+  type QualityHubRegistryInput,
+  withLegacyChangeLog,
+} from "@/lib/quality-hub-read-only";
 import {
   qualityHubDefaultAgent,
   qualityHubInitialRegistry,
@@ -35,9 +39,18 @@ import {
 import { cn } from "@/lib/utils";
 import { ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/use-auth";
+import {
+  QualityHubChangelogMigrationCapture,
+} from "@/features/quality-hub/quality-hub-changelog-migration-capture";
+import {
+  capturePreloadLocalStorage,
+} from "@/features/quality-hub/quality-hub-changelog-migration-capture-support";
+import ChangelogRecordList from "@/components/admin/knowledge-base/ChangelogRecordList";
 
 const STORAGE_KEY = "chronicle-quality-hub-v1";
+const PENDING_OWNER_SAVE_KEY_PREFIX = "chronicle-quality-hub-pending-v1";
 
 const DOMAIN_LABELS: Record<string, string> = {
   "ui-ux": "UI/UX Design",
@@ -79,8 +92,28 @@ const HUB_VIEWS: Array<{ id: HubViewId; label: string; description: string }> = 
   { id: "overview", label: "Overview", description: "Scan and coverage progress" },
   { id: "findings", label: "Issue Registry", description: "Detailed issue ledger" },
   { id: "runs", label: "Scan Runs", description: "Run history and agent setup" },
-  { id: "changelog", label: "Change Log", description: "Development change history and fix log" },
+  { id: "changelog", label: "Changelog", description: "Read-only repository change history" },
 ];
+
+type QualityHubChangelogCapability = "community-gallery" | undefined;
+
+export type QualityHubQueryState = Readonly<{
+  activeView: HubViewId;
+  changelogCapability: QualityHubChangelogCapability;
+}>;
+
+function readQualityHubQuery(search: string): QualityHubQueryState {
+  const params = new URLSearchParams(search);
+  const requestedView = params.get("view");
+  const activeView = HUB_VIEWS.some((view) => view.id === requestedView)
+    ? (requestedView as HubViewId)
+    : "overview";
+  const changelogCapability =
+    activeView === "changelog" && params.get("capability") === "community-gallery"
+      ? "community-gallery"
+      : undefined;
+  return Object.freeze({ activeView, changelogCapability });
+}
 
 const RESOLVED_FINDING_STATUSES = new Set<QualityFinding["status"]>(["fixed", "verified"]);
 const OPEN_FINDING_STATUSES = new Set<QualityFinding["status"]>(["open", "in-progress"]);
@@ -400,16 +433,29 @@ function requiresLovableSupabaseChange(finding: QualityFinding): boolean {
 }
 
 function cloneInitialRegistry(): QualityHubRegistry {
-  return JSON.parse(JSON.stringify(qualityHubInitialRegistry)) as QualityHubRegistry;
+  const initial = structuredClone(qualityHubInitialRegistry);
+  return {
+    ...initial,
+    changeLog: [],
+  };
 }
 
 function normalizeRoleplayPipelineLabels(registry: QualityHubRegistry): QualityHubRegistry {
   return {
     ...registry,
     scanModules: registry.scanModules.map((module) => {
-      if (module.id !== "module-api-inspector-integrity") return module;
-      return {
+      const normalizedModule = {
         ...module,
+        checklist: {
+          ...module.checklist,
+          loggingTargets: module.checklist.loggingTargets.map((target) => (
+            target === "change-log" ? "knowledge-base-current-work" : target
+          )),
+        },
+      };
+      if (module.id !== "module-api-inspector-integrity") return normalizedModule;
+      return {
+        ...normalizedModule,
         name: "Roleplay Pipeline Map Consistency",
         description: "Cross-verify Roleplay Pipeline map content with real prompt assembly and runtime payload flow.",
         notes: module.notes?.replace("API Inspector validation tests", "Roleplay Pipeline validation tests"),
@@ -428,17 +474,26 @@ function normalizeRoleplayPipelineLabels(registry: QualityHubRegistry): QualityH
   };
 }
 
-/** Upgrade persisted registry to code-defined seed when seed version changes. */
-function upgradeRegistry(persisted: QualityHubRegistry): QualityHubRegistry {
+/** Upgrade operational data without merging repository seed history into the frozen legacy Changelog. */
+function upgradeRegistry(persisted: QualityHubRegistryInput): QualityHubRegistry {
   const seed = qualityHubInitialRegistry;
   const currentVersion = seed.meta.registryVersion ?? 0;
   const persistedVersion = persisted.meta?.registryVersion ?? 0;
+  const protectedChangeLog = cloneLegacyChangeLog(persisted.changeLog);
+  const safePersisted: QualityHubRegistry = {
+    ...persisted,
+    changeLog: protectedChangeLog,
+  };
 
-  if (persistedVersion >= currentVersion) return normalizeRoleplayPipelineLabels(persisted);
+  if (persistedVersion >= currentVersion) {
+    return withLegacyChangeLog(
+      normalizeRoleplayPipelineLabels(safePersisted),
+      protectedChangeLog,
+    );
+  }
 
-  // Preserve user-managed findings/runs/changelog while upgrading code-owned structure.
-  const merged = mergeRegistries(seed, persisted);
-  return normalizeRoleplayPipelineLabels({
+  const merged = mergeRegistryUpgradePreservingLegacyChangeLog(seed, safePersisted);
+  return withLegacyChangeLog(normalizeRoleplayPipelineLabels({
     ...merged,
     meta: {
       ...merged.meta,
@@ -449,7 +504,7 @@ function upgradeRegistry(persisted: QualityHubRegistry): QualityHubRegistry {
       lastUpdatedAt: new Date().toISOString(),
       lastRunId: persisted.meta?.lastRunId || merged.meta.lastRunId || seed.meta.lastRunId,
     },
-  });
+  }), protectedChangeLog);
 }
 function formatDate(value: string): string {
   const date = new Date(value);
@@ -461,17 +516,6 @@ function formatShortDate(value: string): string {
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
-function formatShortDateTime(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
 function downloadJson(filename: string, payload: unknown) {
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -481,6 +525,16 @@ function downloadJson(filename: string, payload: unknown) {
   document.body.appendChild(link);
   link.click();
   link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function downloadText(filename: string, contents: string) {
+  const blob = new Blob([contents], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
   URL.revokeObjectURL(url);
 }
 function getAgentList(registry: QualityHubRegistry): QualityAgent[] {
@@ -496,7 +550,6 @@ function nextRegistryWithTimestamp(registry: QualityHubRegistry): QualityHubRegi
 function buildQualityHubTransferPackage(snapshot: QualityHubRegistry) {
   return { packageType: "chronicle-quality-hub-transfer", packageVersion: 1, exportedAt: new Date().toISOString(), registry: snapshot };
 }
-
 function Section({ title, children, badge }: { title: string; children: React.ReactNode; badge?: React.ReactNode }) {
   return (
     <section className={panelOuterClass}>
@@ -532,117 +585,6 @@ function ChevronToggleButton({
   );
 }
 
-const changeLogSeverityBadge: Record<string, string> = {
-  patch: "bg-[#2f3137] text-[#eaedf1] border border-[#3b82f6]",
-  fix: "bg-[#2f3137] text-[#eaedf1] border border-[#f59e0b]",
-  refactor: "bg-[#2f3137] text-[#a5f3fc] border border-[#22B8C9]",
-  feature: "bg-[#2f3137] text-[#eaedf1] border border-[#8b5cf6]",
-  breaking: "bg-[#2f3137] text-[#eaedf1] border border-[#dc2626]",
-};
-const changeLogStatusBadge: Record<string, string> = {
-  planned: "bg-[#4a5f7f] text-[#eaedf1]",
-  "in-progress": "bg-[#2f3137] text-[#a5f3fc] border border-[#3b82f6]",
-  completed: "bg-[#166534] text-white",
-};
-
-function ChangeLogEntryCard({
-  entry,
-  onUpdateStatus,
-  onAddComment,
-}: {
-  entry: ChangeLogEntry;
-  onUpdateStatus?: (id: string, status: ChangeLogStatus) => void;
-  onAddComment?: (id: string) => void;
-}) {
-  return (
-    <details className={cn(recessedBlockClass, "group open:ring-1 open:ring-[#4a5f7f]/60")}>
-      <summary className="cursor-pointer list-none px-4 py-3 relative">
-        <div className="absolute top-3 right-10 text-[10px] font-semibold text-[#71717a] tracking-wide">
-          {formatShortDateTime(entry.updatedAt)}
-        </div>
-        <div className="flex flex-wrap items-start gap-2 pr-8">
-          <span className={cn("rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em]", changeLogSeverityBadge[entry.severity] || changeLogSeverityBadge.fix)}>{entry.severity}</span>
-          <span className={cn("rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em]", changeLogStatusBadge[entry.status] || changeLogStatusBadge.completed)}>{entry.status}</span>
-          <span className="rounded-full bg-[#4a5f7f] px-2 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">{entry.agent}</span>
-        </div>
-        <div className="mt-2 text-sm font-bold text-white">{entry.title}</div>
-        {entry.summary && <div className="mt-1 text-xs text-[#a1a1aa]">{entry.summary}</div>}
-        <ChevronDown size={16} className="absolute bottom-3 right-4 text-[#71717a] transition-transform group-open:rotate-180" />
-      </summary>
-      <div className="border-t border-[rgba(255,255,255,0.05)] px-4 py-4 space-y-5">
-        {entry.problem && (
-          <div>
-            <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Problem</div>
-            <div className="text-xs text-[#a1a1aa] whitespace-pre-wrap">{entry.problem}</div>
-          </div>
-        )}
-        {entry.plan && (
-          <div>
-            <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Plan</div>
-            <div className="text-xs text-[#a1a1aa] whitespace-pre-wrap">{entry.plan}</div>
-          </div>
-        )}
-        {entry.changes && (
-          <div>
-            <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Changes Made</div>
-            <div className="text-xs text-[#a1a1aa] whitespace-pre-wrap">{entry.changes}</div>
-          </div>
-        )}
-        {entry.filesAffected.length > 0 && (
-          <div>
-            <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Files Affected</div>
-            <div className="space-y-0.5">
-              {entry.filesAffected.map((filePath) => (
-                <div key={filePath} className="font-mono text-[11px] text-[#a1a1aa]">
-                  {filePath}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        {entry.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {entry.tags.map((tag) => (
-              <span key={tag} className="rounded-full bg-[#4a5f7f]/30 px-2 py-0.5 text-[10px] font-bold text-[#eaedf1]">
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
-        <div>
-          <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Metadata</div>
-          <div className="grid gap-x-6 gap-y-1 sm:grid-cols-2 text-xs text-[#a1a1aa]">
-            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Created</span> {formatDate(entry.createdAt)}</div>
-            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Updated</span> {formatDate(entry.updatedAt)}</div>
-            <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Agent</span> {entry.agent}</div>
-            {entry.relatedFindingIds.length > 0 && <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Related Issues</span> {entry.relatedFindingIds.join(", ")}</div>}
-            {(entry.relatedRunIds ?? []).length > 0 && <div><span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#eaedf1]">Related Runs</span> {(entry.relatedRunIds ?? []).join(", ")}</div>}
-          </div>
-        </div>
-        {onUpdateStatus && onAddComment && (
-          <div className="grid gap-2 md:grid-cols-2">
-            <select value={entry.status} onChange={(event) => onUpdateStatus(entry.id, event.target.value as ChangeLogStatus)} className={selectClass}>
-              {CHANGE_LOG_STATUS.map((statusOption) => <option key={statusOption} value={statusOption}>{statusOption}</option>)}
-            </select>
-            <button type="button" onClick={() => onAddComment(entry.id)} className={neutralButtonClass}>Add Comment</button>
-          </div>
-        )}
-        {entry.comments.length > 0 && (
-          <div className="mt-3 space-y-2 rounded-lg border border-[rgba(255,255,255,0.05)] bg-[#1c1c1f] p-3">
-            {entry.comments.map((comment) => (
-              <div key={comment.id} className={cn(recessedStripClass, "px-2 py-2 text-xs text-[#a1a1aa]")}>
-                <div className="font-bold text-[#eaedf1]">{comment.author}</div>
-                <div className="text-[10px] text-[#71717a]">{formatDate(comment.timestamp)}</div>
-                <div className="mt-1">{comment.text}</div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </details>
-  );
-}
-
 function QualityHubHowToModal({
   open,
   onClose,
@@ -671,8 +613,8 @@ function QualityHubHowToModal({
               <ol className="list-decimal pl-5 space-y-1">
                 <li>Run or log a scan in <strong className="text-white">Scan Runs</strong>.</li>
                 <li>Create/update issue records in <strong className="text-white">Issue Registry</strong>.</li>
-                <li>Document implementation in <strong className="text-white">Change Log</strong>.</li>
-                <li>Cross-link IDs across all three areas for traceability.</li>
+                <li>Track active implementation in the applicable capability&apos;s <strong className="text-white">Current Work</strong> tab in Chronicle Knowledge Base.</li>
+                <li>After evidence and human acceptance, the guarded closeout workflow creates the repository Changelog record.</li>
               </ol>
             </div>
             <div className={cn(recessedBlockClass, "p-4")}>
@@ -680,8 +622,8 @@ function QualityHubHowToModal({
               <ul className="list-disc pl-5 space-y-1">
                 <li><strong className="text-white">Issue Registry</strong>: diagnosis, severity, evidence, and lifecycle status.</li>
                 <li><strong className="text-white">Scan Runs</strong>: who scanned, when, scope used, and output summary.</li>
-                <li><strong className="text-white">Change Log</strong>: what was changed in code/config/content and why.</li>
-                <li>Never mark an issue solved without a linked change entry and verification note.</li>
+                <li><strong className="text-white">Current Work</strong>: the active objective, ordered steps, decisions, evidence, and exact stopping point.</li>
+                <li><strong className="text-white">Changelog</strong>: read-only accepted history created by guarded closeout, never by a manual Quality Hub edit or import.</li>
               </ul>
             </div>
             <div className={cn(recessedBlockClass, "p-4")}>
@@ -699,7 +641,7 @@ function QualityHubHowToModal({
                 <li>Follow each module checklist in Overview exactly; do not free-form scope.</li>
                 <li>For every finding, include route/component/file evidence before proposing fixes.</li>
                 <li>If uncertain, log as likely and document uncertainty in evidence.</li>
-                <li>When implementing, add a Change Log entry with files touched and expected outcome.</li>
+                <li>When implementing, update the capability&apos;s Current Work record. Do not add, edit, comment on, or import Quality Hub Changelog history.</li>
               </ul>
             </div>
           </div>
@@ -709,142 +651,271 @@ function QualityHubHowToModal({
   );
 }
 
-function ChangeLogView({
-  registry,
-  updateRegistry,
-  onAddComment,
-  onUpdateStatus,
+function CanonicalChangeLogView({
+  capability,
 }: {
-  registry: QualityHubRegistry;
-  updateRegistry: (fn: (p: QualityHubRegistry) => QualityHubRegistry) => void;
-  onAddComment: (id: string) => void;
-  onUpdateStatus: (id: string, status: ChangeLogStatus) => void;
+  capability: QualityHubChangelogCapability;
 }) {
-  const [clSearch, setClSearch] = useState("");
-  const [clSeverity, setClSeverity] = useState<"all" | ChangeLogSeverity>("all");
-  const [clStatus, setClStatus] = useState<"all" | ChangeLogStatus>("all");
-  const [clAgent, setClAgent] = useState<string>("all");
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [draft, setDraft] = useState<Partial<ChangeLogEntry>>({ severity: "fix", status: "completed", agent: "Lovable" });
-
-  const entries = useMemo(() => {
-    const list = registry.changeLog || [];
-    const term = clSearch.trim().toLowerCase();
-    return list.filter((e) => {
-      if (clSeverity !== "all" && e.severity !== clSeverity) return false;
-      if (clStatus !== "all" && e.status !== clStatus) return false;
-      if (clAgent !== "all" && e.agent !== clAgent) return false;
-      if (!term) return true;
-      return [e.title, e.summary, e.problem, e.plan, e.changes, e.agent, ...e.filesAffected, ...e.tags].filter(Boolean).join(" ").toLowerCase().includes(term);
-    });
-  }, [registry.changeLog, clSearch, clSeverity, clStatus, clAgent]);
-
-  const agents = useMemo(() => {
-    const set = new Set<string>();
-    (registry.changeLog || []).forEach((e) => set.add(e.agent));
-    return Array.from(set).sort();
-  }, [registry.changeLog]);
-
-  const handleAdd = () => {
-    if (!draft.title?.trim()) return;
-    const now = new Date().toISOString();
-    const entry: ChangeLogEntry = {
-      id: `cl-${Math.random().toString(36).slice(2, 10)}`,
-      title: draft.title?.trim() || "",
-      summary: draft.summary?.trim() || "",
-      severity: draft.severity as ChangeLogSeverity || "fix",
-      status: draft.status as ChangeLogStatus || "completed",
-      problem: draft.problem?.trim() || "",
-      plan: draft.plan?.trim() || "",
-      changes: draft.changes?.trim() || "",
-      filesAffected: (draft.filesAffected || []).filter(Boolean),
-      agent: draft.agent?.trim() || "Lovable",
-      relatedFindingIds: [],
-      tags: (draft.tags || []).filter(Boolean),
-      comments: [],
-      createdAt: now,
-      updatedAt: now,
-    };
-    updateRegistry((p) => ({ ...p, changeLog: [entry, ...(p.changeLog || [])] }));
-    setDraft({ severity: "fix", status: "completed", agent: "Lovable" });
-    setShowAddForm(false);
-  };
+  const isGallery = capability === "community-gallery";
 
   return (
     <div className="space-y-6">
-      <Section title="Change Log" badge={
-        <button type="button" onClick={() => setShowAddForm(!showAddForm)} className={subtleButtonClass}>{showAddForm ? "Cancel" : "+ Add Entry"}</button>
-      }>
+      <Section
+        title="Changelog"
+        badge={(
+          <span className="text-[10px] font-black uppercase tracking-[0.14em] text-[#d4d4d8]">
+            Repository history · Read-only
+          </span>
+        )}
+      >
         <div className="space-y-4">
-          {/* Add form */}
-          {showAddForm && (
-            <div className={cn(recessedBlockClass, "p-4 space-y-3")}>
-              <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">New Change Log Entry</div>
-              <input value={draft.title || ""} onChange={(e) => setDraft((p) => ({ ...p, title: e.target.value }))} placeholder="Title (e.g. Fix chat layout breakpoint)" className={inputClass} />
-              <input value={draft.summary || ""} onChange={(e) => setDraft((p) => ({ ...p, summary: e.target.value }))} placeholder="Summary (e.g. Chat Interface · Layout fix)" className={inputClass} />
-              <div className="grid gap-2 md:grid-cols-3">
-                <select value={draft.severity || "fix"} onChange={(e) => setDraft((p) => ({ ...p, severity: e.target.value as ChangeLogSeverity }))} className={selectClass}>
-                  {CHANGE_LOG_SEVERITY.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-                <select value={draft.status || "completed"} onChange={(e) => setDraft((p) => ({ ...p, status: e.target.value as ChangeLogStatus }))} className={selectClass}>
-                  {CHANGE_LOG_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-                <input value={draft.agent || ""} onChange={(e) => setDraft((p) => ({ ...p, agent: e.target.value }))} placeholder="Agent (Lovable, Codex, Manual...)" className={inputClass} />
-              </div>
-              <textarea value={draft.problem || ""} onChange={(e) => setDraft((p) => ({ ...p, problem: e.target.value }))} placeholder="Problem — what was wrong?" className={cn(inputClass, "min-h-[60px]")} />
-              <textarea value={draft.plan || ""} onChange={(e) => setDraft((p) => ({ ...p, plan: e.target.value }))} placeholder="Plan — proposed fix" className={cn(inputClass, "min-h-[60px]")} />
-              <textarea value={draft.changes || ""} onChange={(e) => setDraft((p) => ({ ...p, changes: e.target.value }))} placeholder="Changes — what was actually done" className={cn(inputClass, "min-h-[60px]")} />
-              <input value={(draft.filesAffected || []).join(", ")} onChange={(e) => setDraft((p) => ({ ...p, filesAffected: e.target.value.split(",").map((s) => s.trim()) }))} placeholder="Files affected (comma-separated)" className={inputClass} />
-              <input value={(draft.tags || []).join(", ")} onChange={(e) => setDraft((p) => ({ ...p, tags: e.target.value.split(",").map((s) => s.trim()) }))} placeholder="Tags (comma-separated)" className={inputClass} />
-              <button type="button" onClick={handleAdd} className={subtleButtonClass}>Save Entry</button>
-            </div>
-          )}
-          {/* Filters */}
-          <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
-            <input value={clSearch} onChange={(e) => setClSearch(e.target.value)} placeholder="Search change log..." className={cn("xl:col-span-1", inputClass)} />
-            <select value={clSeverity} onChange={(e) => setClSeverity(e.target.value as typeof clSeverity)} className={selectClass}>
-              <option value="all">All types</option>{CHANGE_LOG_SEVERITY.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-            <select value={clStatus} onChange={(e) => setClStatus(e.target.value as typeof clStatus)} className={selectClass}>
-              <option value="all">All statuses</option>{CHANGE_LOG_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-            <select value={clAgent} onChange={(e) => setClAgent(e.target.value)} className={selectClass}>
-              <option value="all">All agents</option>{agents.map((a) => <option key={a} value={a}>{a}</option>)}
-            </select>
-          </div>
-          <div className={cn(recessedStripClass, "p-2 text-xs text-[#eaedf1]")}><span className="font-bold text-white">{entries.length}</span> entries</div>
+          <p className="text-sm leading-6 text-[#d4d4d8]">
+            This view reads Chronicle&apos;s canonical repository Changelog. Historical
+            Quality Hub records remain historical and are not relabeled as modern
+            accepted changes. Active implementation belongs in the applicable
+            capability&apos;s Current Work record; guarded closeout creates accepted
+            Changelog records after evidence and human acceptance.
+          </p>
+          <p className="text-sm leading-6 text-[#d4d4d8]">
+            The primary records below explain what was broken, why the work was
+            needed, what changed, and what result or verification limit was
+            recorded. Each record links to its complete technical history.
+          </p>
+          <nav aria-label="Changelog scope" className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
+            {isGallery ? (
+              <>
+                <span className="font-bold text-white">Community Gallery</span>
+                <Link
+                  className="font-semibold text-[#93c5fd] underline underline-offset-4 hover:text-[#bfdbfe]"
+                  to="/style-guide/ui-audit?view=changelog"
+                >
+                  Show all Chronicle records
+                </Link>
+              </>
+            ) : (
+              <>
+                <span className="font-bold text-white">All Chronicle records</span>
+                <Link
+                  className="font-semibold text-[#93c5fd] underline underline-offset-4 hover:text-[#bfdbfe]"
+                  to="/style-guide/ui-audit?view=changelog&capability=community-gallery"
+                >
+                  Show Community Gallery only
+                </Link>
+              </>
+            )}
+          </nav>
+          <ChangelogRecordList
+            capability={capability}
+            detailScope={isGallery ? "community-gallery" : "global"}
+            detailOrigin="quality-hub"
+            scopeLabel={
+              isGallery
+                ? "Records positively verified to affect Community Gallery."
+                : "All records currently in the canonical Chronicle Changelog."
+            }
+            emptyMessage={
+              isGallery
+                ? "No canonical Changelog records are currently verified as affecting Community Gallery."
+                : "No canonical Chronicle Changelog records are currently recorded."
+            }
+          />
         </div>
       </Section>
-
-      {entries.length === 0 ? (
-        <div className="rounded-xl border-2 border-dashed border-[#71717a] bg-[linear-gradient(to_bottom_right,#27272a,#18181b)] px-4 py-10 text-center text-sm text-[#a1a1aa]">No change log entries yet. Click "+ Add Entry" to start logging changes.</div>
-      ) : (
-        <Section title="Entries">
-          <div className="space-y-2">
-            {entries.map((entry) => (
-              <ChangeLogEntryCard
-                key={entry.id}
-                entry={entry}
-                onUpdateStatus={onUpdateStatus}
-                onAddComment={onAddComment}
-              />
-            ))}
-          </div>
-        </Section>
-      )}
     </div>
   );
 }
 
-export default function UiAuditPage() {
+type OwnerHydrationState = "waiting" | "loading" | "ready" | "read-error";
+type OwnerRegistryRevision =
+  | { userId: string; exists: false; updatedAt: null }
+  | { userId: string; exists: true; updatedAt: string | null };
+
+type PendingOwnerSave = Readonly<{
+  version: 2;
+  ownerUserId: string;
+  localRevision: number;
+  baseExists: boolean | null;
+  baseUpdatedAt: string | null;
+  baseRegistry: QualityHubRegistryInput | null;
+  registry: QualityHubRegistry;
+}>;
+
+type PendingOwnerSaveReadResult =
+  | { status: "absent" }
+  | { status: "invalid" }
+  | { status: "ready"; value: PendingOwnerSave };
+
+function pendingOwnerSaveKey(ownerUserId: string): string {
+  return `${PENDING_OWNER_SAVE_KEY_PREFIX}:${encodeURIComponent(ownerUserId)}`;
+}
+
+function readPendingOwnerSave(ownerUserId: string): PendingOwnerSaveReadResult {
+  if (typeof window === "undefined") return { status: "absent" };
+  try {
+    const raw = window.localStorage.getItem(pendingOwnerSaveKey(ownerUserId));
+    if (!raw) return { status: "absent" };
+    const parsed: unknown = JSON.parse(raw);
+    if (
+      typeof parsed !== "object"
+      || parsed === null
+      || (parsed as { version?: unknown }).version !== 2
+      || (parsed as { ownerUserId?: unknown }).ownerUserId !== ownerUserId
+      || !Number.isSafeInteger((parsed as { localRevision?: unknown }).localRevision)
+      || (parsed as { localRevision: number }).localRevision < 1
+      || !(
+        typeof (parsed as { baseExists?: unknown }).baseExists === "boolean"
+        || (parsed as { baseExists?: unknown }).baseExists === null
+      )
+      || !(
+        typeof (parsed as { baseUpdatedAt?: unknown }).baseUpdatedAt === "string"
+        || (parsed as { baseUpdatedAt?: unknown }).baseUpdatedAt === null
+      )
+      || !(
+        (parsed as { baseRegistry?: unknown }).baseRegistry === null
+        || isQualityHubRegistry((parsed as { baseRegistry?: unknown }).baseRegistry)
+      )
+      || !isQualityHubRegistry((parsed as { registry?: unknown }).registry)
+    ) {
+      return { status: "invalid" };
+    }
+    return { status: "ready", value: parsed as PendingOwnerSave };
+  } catch {
+    return { status: "invalid" };
+  }
+}
+
+function writePendingOwnerSave(
+  ownerUserId: string,
+  localRevision: number,
+  baseRevision: OwnerRegistryRevision | null,
+  baseRegistry: QualityHubRegistryInput | null,
+  registry: QualityHubRegistry,
+) {
+  const envelope: PendingOwnerSave = {
+    version: 2,
+    ownerUserId,
+    localRevision,
+    baseExists: baseRevision?.exists ?? null,
+    baseUpdatedAt: baseRevision?.updatedAt ?? null,
+    baseRegistry: baseRegistry === null ? null : structuredClone(baseRegistry),
+    registry: structuredClone(registry),
+  };
+  window.localStorage.setItem(
+    pendingOwnerSaveKey(ownerUserId),
+    JSON.stringify(envelope),
+  );
+}
+
+function clearPendingOwnerSave(
+  ownerUserId: string,
+  localRevision: number,
+  registry: QualityHubRegistry,
+) {
+  const pending = readPendingOwnerSave(ownerUserId);
+  if (
+    pending.status === "ready"
+    && pending.value.localRevision === localRevision
+    && canonicalJsonEqual(pending.value.registry, registry)
+  ) {
+    try {
+      window.localStorage.removeItem(pendingOwnerSaveKey(ownerUserId));
+    } catch {
+      // A confirmed database copy remains authoritative. If browser storage
+      // cannot be cleared, the next hydration will recognize the exact match.
+    }
+  }
+}
+
+function refreshPendingOwnerSaveBase(
+  ownerUserId: string,
+  localRevision: number,
+  registry: QualityHubRegistry,
+  baseRevision: OwnerRegistryRevision,
+  baseRegistry: QualityHubRegistryInput | null,
+) {
+  const pending = readPendingOwnerSave(ownerUserId);
+  if (
+    pending.status === "ready"
+    && pending.value.localRevision === localRevision
+    && canonicalJsonEqual(pending.value.registry, registry)
+  ) {
+    writePendingOwnerSave(
+      ownerUserId,
+      localRevision,
+      baseRevision,
+      baseRegistry,
+      registry,
+    );
+  }
+}
+
+function settlePendingOwnerSave(
+  ownerUserId: string,
+  localRevision: number,
+  registry: QualityHubRegistry,
+  confirmedRevision: OwnerRegistryRevision,
+) {
+  const pending = readPendingOwnerSave(ownerUserId);
+  if (pending.status !== "ready") return;
+  if (
+    pending.value.localRevision === localRevision
+    && canonicalJsonEqual(pending.value.registry, registry)
+  ) {
+    clearPendingOwnerSave(ownerUserId, localRevision, registry);
+    return;
+  }
+  if (
+    pending.value.localRevision > localRevision
+    && legacyChangeLogEqual(registry.changeLog, pending.value.registry.changeLog)
+  ) {
+    try {
+      writePendingOwnerSave(
+        ownerUserId,
+        pending.value.localRevision,
+        confirmedRevision,
+        registry,
+        pending.value.registry,
+      );
+    } catch {
+      // The confirmed database write remains valid. The older pending envelope
+      // is deliberately retained so a later hydration shows a conflict instead
+      // of discarding the newer local change.
+    }
+  }
+}
+
+export default function UiAuditPage({
+  migrationCaptureMode = false,
+}: {
+  migrationCaptureMode?: boolean;
+}) {
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const location = useLocation();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const initialLoadDone = useRef(false);
+  const inFlightSaveRef = useRef<Promise<void> | null>(null);
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const ownerHydrationRequestRef = useRef(0);
+  const hydratedOwnerUserIdRef = useRef<string | null | undefined>(undefined);
+  const ownerRegistryRevisionRef = useRef<OwnerRegistryRevision | null>(null);
+  const ownerRegistrySnapshotRef = useRef<QualityHubRegistryInput | null>(null);
+  const ownerRecoveryBlockedOwnerRef = useRef<string | null>(null);
+  const ownerRecoveryReloadOwnerRef = useRef<string | null>(null);
+  const [preloadLocalStorageCapture] = useState(() => {
+    if (typeof window === "undefined") return capturePreloadLocalStorage(null);
+    try {
+      return capturePreloadLocalStorage(window.localStorage);
+    } catch {
+      return capturePreloadLocalStorage(null);
+    }
+  });
 
   const [registry, setRegistry] = useState<QualityHubRegistry>(() => {
+    if (migrationCaptureMode) return cloneInitialRegistry();
     if (typeof window === "undefined") return cloneInitialRegistry();
+    // Browser storage is shared across signed-in owners. Never render that
+    // unscoped snapshot while authentication or owner hydration is pending.
+    if (authLoading || (isAuthenticated && user?.id)) return cloneInitialRegistry();
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (!raw) return cloneInitialRegistry();
@@ -853,7 +924,21 @@ export default function UiAuditPage() {
       return upgradeRegistry(parsed);
     } catch { return cloneInitialRegistry(); }
   });
-  const [activeView, setActiveView] = useState<HubViewId>("overview");
+  const registryRef = useRef(registry);
+  const protectedLegacyChangeLogRef = useRef(
+    cloneLegacyChangeLog(registry.changeLog),
+  );
+  const pendingPersistenceRef = useRef<{
+    revision: number;
+    registry: QualityHubRegistry;
+    ownerUserId: string | null;
+  } | null>(null);
+  const persistenceSequenceRef = useRef(0);
+  const consumedPersistenceRevisionRef = useRef(0);
+  const { activeView, changelogCapability } = useMemo(
+    () => readQualityHubQuery(location.search),
+    [location.search],
+  );
   const [search, setSearch] = useState("");
   const [groupBy, setGroupBy] = useState<GroupBy>("domain");
   const [severityFilter, setSeverityFilter] = useState<"all" | QualityFinding["severity"]>("all");
@@ -864,57 +949,549 @@ export default function UiAuditPage() {
   const [agentDraft, setAgentDraft] = useState<QualityAgent>(qualityHubDefaultAgent);
   const [showHowToUse, setShowHowToUse] = useState(false);
   const [expandedResolvedGroups, setExpandedResolvedGroups] = useState<Record<string, boolean>>({});
+  const [ownerHydrationState, setOwnerHydrationState] = useState<OwnerHydrationState>(
+    migrationCaptureMode ? "ready" : "waiting",
+  );
+  const [ownerRecoveryBlocked, setOwnerRecoveryBlocked] = useState(false);
+  const [ownerHydrationEpoch, setOwnerHydrationEpoch] = useState(0);
+  const [persistenceRevision, setPersistenceRevision] = useState(0);
 
-  // Load from database on mount (if authenticated)
+  const cancelPendingPersistence = useCallback(() => {
+    pendingPersistenceRef.current = null;
+    consumedPersistenceRevisionRef.current = persistenceSequenceRef.current;
+  }, []);
+
   useEffect(() => {
-    if (!isAuthenticated || !user?.id || initialLoadDone.current) return;
-    initialLoadDone.current = true;
+    if (migrationCaptureMode) return;
 
-    (async () => {
-      const { data, error } = await (supabase as any)
-        .from("quality_hub_registries")
-        .select("registry")
-        .eq("user_id", user.id)
-        .maybeSingle();
+    const requestId = ownerHydrationRequestRef.current + 1;
+    ownerHydrationRequestRef.current = requestId;
+    cancelPendingPersistence();
+    ownerRecoveryBlockedOwnerRef.current = null;
+    setOwnerRecoveryBlocked(false);
 
-      if (error || !data) return; // use localStorage/initial fallback
-
-      const dbRegistry = data.registry as unknown;
-      if (!isQualityHubRegistry(dbRegistry)) return;
-
-      setRegistry(upgradeRegistry(dbRegistry as QualityHubRegistry));
-    })();
-  }, [isAuthenticated, user?.id]);
-
-  // Save to localStorage immediately + debounced save to DB
-  const saveToDb = useCallback(async (reg: QualityHubRegistry) => {
-    if (!isAuthenticated || !user?.id) return;
-    try {
-      await (supabase as any)
-        .from("quality_hub_registries")
-        .upsert({
-          user_id: user.id,
-          registry: reg as unknown as Record<string, unknown>,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: "user_id" });
-    } catch {
-      // silent fail — localStorage is the fallback
+    if (authLoading) {
+      setOwnerHydrationState("waiting");
+      return;
     }
-  }, [isAuthenticated, user?.id]);
+    const nextOwnerUserId = isAuthenticated && user?.id ? user.id : null;
+    const ownerIdentityChanged = hydratedOwnerUserIdRef.current !== undefined
+      && hydratedOwnerUserIdRef.current !== nextOwnerUserId;
+    hydratedOwnerUserIdRef.current = nextOwnerUserId;
+    if (ownerIdentityChanged) {
+      const safeRegistry = cloneInitialRegistry();
+      protectedLegacyChangeLogRef.current = [];
+      ownerRegistryRevisionRef.current = null;
+      ownerRegistrySnapshotRef.current = null;
+      registryRef.current = safeRegistry;
+      setRegistry(safeRegistry);
+    }
+    if (!isAuthenticated || !user?.id) {
+      ownerRegistryRevisionRef.current = null;
+      ownerRegistrySnapshotRef.current = null;
+      setOwnerHydrationState("ready");
+      return;
+    }
+
+    setOwnerHydrationState("loading");
+    ownerRegistryRevisionRef.current = null;
+    ownerRegistrySnapshotRef.current = null;
+    void supabase
+      .from("quality_hub_registries")
+      .select("registry, updated_at")
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (ownerHydrationRequestRef.current !== requestId) return;
+        if (error) {
+          ownerRecoveryReloadOwnerRef.current = null;
+          ownerRegistryRevisionRef.current = null;
+          ownerRegistrySnapshotRef.current = null;
+          setOwnerHydrationState("read-error");
+          setImportFeedback(
+            "Quality Hub could not read the owner database. Changes are disabled until the owner workspace can be verified.",
+          );
+          return;
+        }
+        const pendingOwnerSave = readPendingOwnerSave(user.id);
+        setOwnerRecoveryBlocked(false);
+        let recoveredRegistry: QualityHubRegistry | null = null;
+        if (data) {
+          const dbRegistry: unknown = data.registry;
+          if (!isQualityHubRegistry(dbRegistry)) {
+            ownerRecoveryReloadOwnerRef.current = null;
+            ownerRegistryRevisionRef.current = null;
+            ownerRegistrySnapshotRef.current = null;
+            setOwnerHydrationState("read-error");
+            setImportFeedback(
+              "The owner database contains an invalid Quality Hub registry. Changes are disabled until the owner workspace can be verified.",
+            );
+            return;
+          }
+          let hydratedRegistry = upgradeRegistry(dbRegistry);
+          const protectedLegacyChangeLog = cloneLegacyChangeLog(
+            dbRegistry.changeLog,
+          );
+          const hydratedRevision: OwnerRegistryRevision = {
+            userId: user.id,
+            exists: true,
+            updatedAt: typeof data.updated_at === "string" ? data.updated_at : null,
+          };
+          protectedLegacyChangeLogRef.current = protectedLegacyChangeLog;
+          ownerRegistryRevisionRef.current = hydratedRevision;
+          ownerRegistrySnapshotRef.current = structuredClone(dbRegistry);
+
+          if (pendingOwnerSave.status === "invalid") {
+            ownerRecoveryBlockedOwnerRef.current = user.id;
+            setOwnerRecoveryBlocked(true);
+            setImportFeedback(
+              "Quality Hub found an unreadable unsaved local change for this owner. It was not applied or deleted; use the recovery controls below before making another change.",
+            );
+          } else if (pendingOwnerSave.status === "ready") {
+            if (canonicalJsonEqual(pendingOwnerSave.value.registry, dbRegistry)) {
+              clearPendingOwnerSave(
+                user.id,
+                pendingOwnerSave.value.localRevision,
+                pendingOwnerSave.value.registry,
+              );
+            } else if (
+              pendingOwnerSave.value.baseExists === true
+              && pendingOwnerSave.value.baseUpdatedAt === hydratedRevision.updatedAt
+              && pendingOwnerSave.value.baseRegistry !== null
+              && canonicalJsonEqual(
+                pendingOwnerSave.value.baseRegistry,
+                dbRegistry,
+              )
+              && legacyChangeLogEqual(
+                protectedLegacyChangeLog,
+                pendingOwnerSave.value.registry.changeLog,
+              )
+            ) {
+              hydratedRegistry = upgradeRegistry(pendingOwnerSave.value.registry);
+              recoveredRegistry = hydratedRegistry;
+              setImportFeedback(
+                "Quality Hub recovered an unsaved local change against the same owner revision and is retrying its guarded database save.",
+              );
+            } else {
+              ownerRecoveryBlockedOwnerRef.current = user.id;
+              setOwnerRecoveryBlocked(true);
+              setImportFeedback(
+                "Quality Hub preserved an unsaved local change but did not apply it because the owner database changed. Use the recovery controls below before making another change.",
+              );
+            }
+          }
+          registryRef.current = hydratedRegistry;
+          setRegistry(hydratedRegistry);
+        } else {
+          // Browser storage is not owner-scoped. Once an authenticated read proves
+          // this owner has no row, start from a clean workspace instead of adopting
+          // data that may have been left by a different signed-in owner.
+          let safeRegistry = cloneInitialRegistry();
+          protectedLegacyChangeLogRef.current = [];
+          const hydratedRevision: OwnerRegistryRevision = {
+            userId: user.id,
+            exists: false,
+            updatedAt: null,
+          };
+          ownerRegistryRevisionRef.current = hydratedRevision;
+          ownerRegistrySnapshotRef.current = null;
+
+          if (pendingOwnerSave.status === "invalid") {
+            ownerRecoveryBlockedOwnerRef.current = user.id;
+            setOwnerRecoveryBlocked(true);
+            setImportFeedback(
+              "Quality Hub found an unreadable unsaved local change for this owner. It was not applied or deleted; use the recovery controls below before making another change.",
+            );
+          } else if (pendingOwnerSave.status === "ready") {
+            if (canonicalJsonEqual(pendingOwnerSave.value.registry, safeRegistry)) {
+              clearPendingOwnerSave(
+                user.id,
+                pendingOwnerSave.value.localRevision,
+                pendingOwnerSave.value.registry,
+              );
+            } else if (
+              pendingOwnerSave.value.baseExists === false
+              && pendingOwnerSave.value.baseRegistry === null
+              && legacyChangeLogEqual([], pendingOwnerSave.value.registry.changeLog)
+            ) {
+              safeRegistry = upgradeRegistry(pendingOwnerSave.value.registry);
+              recoveredRegistry = safeRegistry;
+              setImportFeedback(
+                "Quality Hub recovered an unsaved local change for this new owner and is retrying its guarded database save.",
+              );
+            } else {
+              ownerRecoveryBlockedOwnerRef.current = user.id;
+              setOwnerRecoveryBlocked(true);
+              setImportFeedback(
+                "Quality Hub preserved an unsaved local change but could not verify it against this missing owner row. Use the recovery controls below before making another change.",
+              );
+            }
+          }
+          registryRef.current = safeRegistry;
+          setRegistry(safeRegistry);
+        }
+        setOwnerHydrationState("ready");
+        if (
+          ownerRecoveryReloadOwnerRef.current === user.id
+          && ownerRecoveryBlockedOwnerRef.current !== user.id
+        ) {
+          ownerRecoveryReloadOwnerRef.current = null;
+          setImportFeedback(
+            "Discarded the unsaved recovery copy. Quality Hub reloaded the current owner database version and enabled changes.",
+          );
+        }
+        if (recoveredRegistry) {
+          const revision = persistenceSequenceRef.current + 1;
+          persistenceSequenceRef.current = revision;
+          pendingPersistenceRef.current = {
+            revision,
+            registry: recoveredRegistry,
+            ownerUserId: user.id,
+          };
+          setPersistenceRevision(revision);
+        }
+      });
+
+    return () => {
+      if (ownerHydrationRequestRef.current === requestId) {
+        ownerHydrationRequestRef.current += 1;
+      }
+    };
+  }, [authLoading, cancelPendingPersistence, isAuthenticated, migrationCaptureMode, ownerHydrationEpoch, user?.id]);
+
+  // Save to localStorage immediately, then serialize owner-database writes behind
+  // the exact owner row that this page actually hydrated.
+  const saveToDb = useCallback((
+    reg: QualityHubRegistry,
+    localRevision: number,
+  ): Promise<void> => {
+    if (migrationCaptureMode) {
+      return Promise.reject(new Error(
+        "Quality Hub registry writes are locked for Changelog migration capture.",
+      ));
+    }
+    if (ownerHydrationState !== "ready" || !isAuthenticated || !user?.id) {
+      return Promise.resolve();
+    }
+
+    const ownerUserId = user.id;
+    const queuedSave = saveQueueRef.current
+      .catch(() => undefined)
+      .then(async () => {
+        if (ownerRecoveryBlockedOwnerRef.current === ownerUserId) {
+          throw new Error(
+            "Quality Hub database save was stopped because an unsaved recovery copy needs review.",
+          );
+        }
+        const expectedRevision = ownerRegistryRevisionRef.current;
+        const expectedSnapshot = ownerRegistrySnapshotRef.current;
+        if (
+          !expectedRevision
+          || expectedRevision.userId !== ownerUserId
+          || hydratedOwnerUserIdRef.current !== ownerUserId
+        ) {
+          throw new Error(
+            "Quality Hub database save was stopped because the active owner changed. Reload before trying again.",
+          );
+        }
+        if (!legacyChangeLogEqual(
+          protectedLegacyChangeLogRef.current,
+          reg.changeLog,
+        )) {
+          throw new Error(
+            "Quality Hub database save was blocked because it would change the read-only legacy Changelog.",
+          );
+        }
+        refreshPendingOwnerSaveBase(
+          ownerUserId,
+          localRevision,
+          reg,
+          expectedRevision,
+          expectedSnapshot,
+        );
+
+        const { data: currentRow, error: currentRowError } = await supabase
+          .from("quality_hub_registries")
+          .select("registry, updated_at")
+          .eq("user_id", ownerUserId)
+          .maybeSingle();
+        if (currentRowError) {
+          throw new Error(
+            "Quality Hub could not recheck the owner database, so the save was stopped.",
+          );
+        }
+        if (ownerRegistryRevisionRef.current !== expectedRevision) {
+          throw new Error(
+            "Quality Hub database save was stopped because a newer local save finished first.",
+          );
+        }
+
+        if (expectedRevision.exists) {
+          const currentRegistry: unknown = currentRow?.registry;
+          const currentUpdatedAt = typeof currentRow?.updated_at === "string"
+            ? currentRow.updated_at
+            : null;
+          if (
+            !currentRow
+            || !isQualityHubRegistry(currentRegistry)
+            || currentUpdatedAt !== expectedRevision.updatedAt
+            || !expectedSnapshot
+            || !canonicalJsonEqual(currentRegistry, expectedSnapshot)
+            || !legacyChangeLogEqual(
+              protectedLegacyChangeLogRef.current,
+              currentRegistry.changeLog,
+            )
+          ) {
+            throw new Error(
+              "Quality Hub detected newer owner data and refused to overwrite it. Reload before saving again.",
+            );
+          }
+        } else if (currentRow != null) {
+          throw new Error(
+            "Quality Hub detected a newly created owner record and refused to overwrite it. Reload before saving again.",
+          );
+        }
+
+        const updatedAt = new Date().toISOString();
+        let confirmedRow: { registry: Json; updated_at: string | null };
+        if (expectedRevision.exists) {
+          const baseUpdate = supabase
+            .from("quality_hub_registries")
+            .update({
+              registry: reg as unknown as Json,
+              updated_at: updatedAt,
+            })
+            .eq("user_id", ownerUserId);
+          const revisionUpdate = expectedRevision.updatedAt === null
+            ? baseUpdate.is("updated_at", null)
+            : baseUpdate.eq("updated_at", expectedRevision.updatedAt);
+          const { data, error } = await revisionUpdate
+            .select("registry, updated_at")
+            .maybeSingle();
+          if (error || !data) {
+            throw new Error(
+              "Quality Hub detected a concurrent owner update and refused to overwrite it. Reload before saving again.",
+            );
+          }
+          confirmedRow = data;
+        } else {
+          const { data, error } = await supabase
+            .from("quality_hub_registries")
+            .insert({
+              user_id: ownerUserId,
+              registry: reg as unknown as Json,
+              updated_at: updatedAt,
+            })
+            .select("registry, updated_at")
+            .single();
+          if (error || !data) {
+            throw new Error(
+              "Quality Hub could not create the owner record without overwriting newer data. Reload before trying again.",
+            );
+          }
+          confirmedRow = data;
+        }
+
+        if (
+          !isQualityHubRegistry(confirmedRow.registry)
+          || !canonicalJsonEqual(confirmedRow.registry, reg)
+          || typeof confirmedRow.updated_at !== "string"
+          || !legacyChangeLogEqual(
+            protectedLegacyChangeLogRef.current,
+            confirmedRow.registry.changeLog,
+          )
+        ) {
+          throw new Error(
+            "Quality Hub could not verify the saved owner data, so this page will not treat the save as current. Reload before making another change.",
+          );
+        }
+        const confirmedRevision: OwnerRegistryRevision = {
+          userId: ownerUserId,
+          exists: true,
+          updatedAt: confirmedRow.updated_at,
+        };
+        settlePendingOwnerSave(
+          ownerUserId,
+          localRevision,
+          reg,
+          confirmedRevision,
+        );
+        if (
+          hydratedOwnerUserIdRef.current !== ownerUserId
+          || ownerRegistryRevisionRef.current !== expectedRevision
+        ) {
+          return;
+        }
+        ownerRegistryRevisionRef.current = confirmedRevision;
+        ownerRegistrySnapshotRef.current = structuredClone(reg);
+      });
+
+    saveQueueRef.current = queuedSave;
+    inFlightSaveRef.current = queuedSave;
+    queuedSave.then(
+      () => {
+        if (inFlightSaveRef.current === queuedSave) inFlightSaveRef.current = null;
+      },
+      () => {
+        if (inFlightSaveRef.current === queuedSave) inFlightSaveRef.current = null;
+      },
+    );
+    return queuedSave;
+  }, [isAuthenticated, migrationCaptureMode, ownerHydrationState, user?.id]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(registry));
+    if (migrationCaptureMode) return;
+    if (persistenceRevision === 0) return;
+    if (ownerHydrationState === "waiting" || ownerHydrationState === "loading") return;
+    const pending = pendingPersistenceRef.current;
+    if (!pending || pending.revision !== persistenceRevision) return;
+    if (consumedPersistenceRevisionRef.current >= pending.revision) return;
+    const currentOwnerUserId = isAuthenticated && user?.id ? user.id : null;
+    if (pending.ownerUserId !== currentOwnerUserId) {
+      consumedPersistenceRevisionRef.current = pending.revision;
+      pendingPersistenceRef.current = null;
+      return;
+    }
+    consumedPersistenceRevisionRef.current = pending.revision;
+    pendingPersistenceRef.current = null;
+    if (pending.ownerUserId === null) return;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(pending.registry));
+    } catch {
+      setImportFeedback(
+        "Quality Hub could not update its general browser copy. The owner-specific recovery copy remains available while the database save is verified.",
+      );
+    }
 
-    // Debounced DB save
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => saveToDb(registry), 1500);
+    // Quality Hub actions are low-frequency manual operations. Start the guarded
+    // owner save immediately so navigation cannot silently cancel a pending edit.
+    void saveToDb(pending.registry, pending.revision).catch((error: unknown) => {
+      if (hydratedOwnerUserIdRef.current === pending.ownerUserId) {
+        ownerRecoveryBlockedOwnerRef.current = pending.ownerUserId;
+        setOwnerRecoveryBlocked(true);
+        setImportFeedback(
+          error instanceof Error
+            ? error.message
+            : "Quality Hub database save was stopped.",
+        );
+      }
+    });
+  }, [isAuthenticated, migrationCaptureMode, ownerHydrationState, persistenceRevision, saveToDb, user?.id]);
 
-    return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
-  }, [registry, saveToDb]);
+  const persistUserRegistry = useCallback((nextRegistry: QualityHubRegistry): boolean => {
+    const guarded = guardQualityHubRegistryUpdate(
+      protectedLegacyChangeLogRef.current,
+      nextRegistry,
+    );
+    if (!guarded.accepted) {
+      setImportFeedback(guarded.reason);
+      return false;
+    }
+    const revision = persistenceSequenceRef.current + 1;
+    const ownerUserId = isAuthenticated && user?.id ? user.id : null;
+    if (
+      ownerRecoveryBlocked
+      || (ownerUserId !== null && ownerRecoveryBlockedOwnerRef.current === ownerUserId)
+    ) {
+      setImportFeedback(
+        "Quality Hub did not accept the change because an older unsaved recovery copy still needs review. Download or discard that copy before making another change.",
+      );
+      return false;
+    }
+    if (
+      ownerHydrationState !== "ready"
+      || hydratedOwnerUserIdRef.current !== ownerUserId
+      || (
+        ownerUserId !== null
+        && ownerRegistryRevisionRef.current?.userId !== ownerUserId
+      )
+    ) {
+      setImportFeedback(
+        "Quality Hub did not accept the change because the active owner workspace is not ready. Reload and try again after the owner database finishes loading.",
+      );
+      return false;
+    }
+    if (ownerUserId) {
+      try {
+        writePendingOwnerSave(
+          ownerUserId,
+          revision,
+          ownerRegistryRevisionRef.current,
+          ownerRegistrySnapshotRef.current,
+          guarded.registry,
+        );
+      } catch {
+        setImportFeedback(
+          "Quality Hub could not create its owner-specific recovery copy, so the change was not accepted. Free browser storage and try again.",
+        );
+        return false;
+      }
+    } else {
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(guarded.registry));
+      } catch {
+        setImportFeedback(
+          "Quality Hub could not save the signed-out local workspace, so the change was not accepted. Free browser storage and try again.",
+        );
+        return false;
+      }
+    }
+    registryRef.current = guarded.registry;
+    setRegistry(guarded.registry);
+    persistenceSequenceRef.current = revision;
+    pendingPersistenceRef.current = {
+      revision,
+      registry: guarded.registry,
+      ownerUserId,
+    };
+    setPersistenceRevision(revision);
+    return true;
+  }, [isAuthenticated, ownerHydrationState, ownerRecoveryBlocked, user?.id]);
 
-  const updateRegistry = useCallback((updater: (p: QualityHubRegistry) => QualityHubRegistry) => {
-    setRegistry((p) => nextRegistryWithTimestamp(normalizeRoleplayPipelineLabels(updater(p))));
+  const updateRegistry = useCallback((
+    updater: (p: QualityHubRegistry) => QualityHubRegistry,
+  ): boolean => {
+    const activeOwnerUserId = isAuthenticated && user?.id ? user.id : null;
+    if (migrationCaptureMode) {
+      setImportFeedback("Quality Hub writes are locked until the Changelog migration capture is complete.");
+      return false;
+    }
+    if (
+      ownerRecoveryBlocked
+      || (
+        activeOwnerUserId !== null
+        && ownerRecoveryBlockedOwnerRef.current === activeOwnerUserId
+      )
+    ) {
+      setImportFeedback(
+        "Quality Hub did not accept the change because an older unsaved recovery copy still needs review. Download or discard that copy before making another change.",
+      );
+      return false;
+    }
+    if (
+      ownerHydrationState !== "ready"
+      || hydratedOwnerUserIdRef.current !== activeOwnerUserId
+    ) {
+      setImportFeedback(
+        ownerHydrationState === "read-error"
+          ? "Quality Hub cannot accept changes because the owner database could not be verified. Reload and try again after the database read succeeds."
+          : "Quality Hub is still loading the active owner workspace. Try again when loading finishes.",
+      );
+      return false;
+    }
+    const updaterInput = withLegacyChangeLog(
+      registryRef.current,
+      protectedLegacyChangeLogRef.current,
+    );
+    const nextRegistry = nextRegistryWithTimestamp(
+      normalizeRoleplayPipelineLabels(updater(updaterInput)),
+    );
+    return persistUserRegistry(nextRegistry);
+  }, [isAuthenticated, migrationCaptureMode, ownerHydrationState, ownerRecoveryBlocked, persistUserRegistry, user?.id]);
+
+  const waitForPendingRegistrySave = useCallback(async () => {
+    if (inFlightSaveRef.current) await inFlightSaveRef.current;
   }, []);
 
   const allAgents = useMemo(() => getAgentList(registry), [registry]);
@@ -955,12 +1532,6 @@ export default function UiAuditPage() {
     (finding) => finding.severity === "critical" && OPEN_FINDING_STATUSES.has(finding.status),
   ).length;
   const dominantDomain = Object.entries(domainCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || "n/a";
-  const recentChanges = useMemo(
-    () => [...(registry.changeLog || [])]
-      .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
-      .slice(0, 5),
-    [registry.changeLog],
-  );
   const scanCatalogSections = useMemo<ScanCatalogSectionSummary[]>(() => {
     const modulesById = new Map(registry.scanModules.map((module) => [module.id, module]));
     const runsById = new Map(registry.runs.map((run) => [run.id, run]));
@@ -1019,7 +1590,11 @@ export default function UiAuditPage() {
             ),
           );
           const logTargets = Array.from(
-            new Set(linkedModules.flatMap((module) => module.checklist.loggingTargets).map((target) => target.replace(/-/g, " "))),
+            new Set(linkedModules.flatMap((module) => module.checklist.loggingTargets).map((target) => (
+              target === "change-log" || target === "knowledge-base-current-work"
+                ? "Current Work; Changelog after accepted closeout"
+                : target.replace(/-/g, " ")
+            ))),
           );
           const moduleNames = linkedModules.map((module) => module.name);
 
@@ -1053,23 +1628,149 @@ export default function UiAuditPage() {
     });
   }, [registry.findings, registry.runs, registry.scanModules]);
 
-  const handleExport = () => { const snapshot = nextRegistryWithTimestamp(registry); setRegistry(snapshot); downloadJson(`chronicle-quality-hub-${toCompactIso()}.json`, buildQualityHubTransferPackage(snapshot)); setImportFeedback("Exported Quality Hub JSON package."); };
-  const handleImportClick = () => { fileInputRef.current?.click(); };
+  const handleExport = () => {
+    if (migrationCaptureMode) {
+      setImportFeedback("Use the authenticated migration export on this internal capture route.");
+      return;
+    }
+    const snapshot = nextRegistryWithTimestamp(withLegacyChangeLog(
+      registryRef.current,
+      protectedLegacyChangeLogRef.current,
+    ));
+    downloadJson(
+      `chronicle-quality-hub-${toCompactIso()}.json`,
+      buildQualityHubTransferPackage(snapshot),
+    );
+    setImportFeedback(
+      "Exported Quality Hub workspace data without saving. Its embedded legacy Changelog remains read-only.",
+    );
+  };
+  const handleDownloadOwnerRecovery = () => {
+    const ownerUserId = isAuthenticated && user?.id ? user.id : null;
+    if (
+      !ownerUserId
+      || ownerHydrationState !== "ready"
+      || hydratedOwnerUserIdRef.current !== ownerUserId
+    ) {
+      setImportFeedback("The active owner does not match the locked recovery copy. Wait for owner loading to finish before using recovery controls.");
+      return;
+    }
+    try {
+      const raw = window.localStorage.getItem(pendingOwnerSaveKey(ownerUserId));
+      if (raw === null) {
+        setImportFeedback("The owner recovery copy is no longer present. Reload before making another change.");
+        return;
+      }
+      downloadText(
+        `chronicle-quality-hub-owner-recovery-${toCompactIso()}.json`,
+        raw,
+      );
+      setImportFeedback(
+        "Downloaded the exact unsaved owner recovery copy. Quality Hub remains locked until that copy is explicitly discarded or safely reconciled.",
+      );
+    } catch {
+      setImportFeedback(
+        "Quality Hub could not read or download the owner recovery copy. It remains locked and was not deleted.",
+      );
+    }
+  };
+  const handleDiscardOwnerRecovery = () => {
+    const ownerUserId = isAuthenticated && user?.id ? user.id : null;
+    if (
+      !ownerUserId
+      || ownerHydrationState !== "ready"
+      || hydratedOwnerUserIdRef.current !== ownerUserId
+    ) {
+      setImportFeedback("The active owner does not match the locked recovery copy. Wait for owner loading to finish before using recovery controls.");
+      return;
+    }
+    const confirmed = window.confirm(
+      "Discard the preserved unsaved Quality Hub recovery copy and continue with the owner database version? Download the recovery copy first if you may need it.",
+    );
+    if (!confirmed) return;
+    try {
+      window.localStorage.removeItem(pendingOwnerSaveKey(ownerUserId));
+      ownerRecoveryReloadOwnerRef.current = ownerUserId;
+      setOwnerHydrationState("loading");
+      setImportFeedback(
+        "Discarded the unsaved recovery copy. Quality Hub is reloading the owner database before changes are enabled.",
+      );
+      setOwnerHydrationEpoch((current) => current + 1);
+    } catch {
+      setImportFeedback(
+        "Quality Hub could not discard the owner recovery copy. It remains locked and the recovery data was not intentionally deleted.",
+      );
+    }
+  };
+  const handleImportClick = () => {
+    if (migrationCaptureMode) {
+      setImportFeedback("Generic Quality Hub imports are disabled during migration capture.");
+      return;
+    }
+    fileInputRef.current?.click();
+  };
   const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]; if (!file) return;
+    const importOwnerRequestId = ownerHydrationRequestRef.current;
+    const importOwnerUserId = hydratedOwnerUserIdRef.current;
+    const importOwnerRevision = ownerRegistryRevisionRef.current;
+    if (migrationCaptureMode) {
+      setImportFeedback("Generic Quality Hub imports are disabled during migration capture.");
+      event.target.value = "";
+      return;
+    }
+    if (ownerHydrationState !== "ready") {
+      setImportFeedback(
+        "Import cancelled because the owner workspace is still loading. Choose the file again after loading finishes.",
+      );
+      event.target.value = "";
+      return;
+    }
     try {
       const text = await file.text(); const parsed = JSON.parse(text);
+      if (
+        ownerHydrationRequestRef.current !== importOwnerRequestId
+        || hydratedOwnerUserIdRef.current !== importOwnerUserId
+        || ownerRegistryRevisionRef.current !== importOwnerRevision
+      ) {
+        setImportFeedback(
+          "Import cancelled because the active owner changed while the file was being read. Choose the file again after loading finishes.",
+        );
+        return;
+      }
       const candidate = isQualityHubRegistry(parsed) ? parsed : isQualityHubRegistry(parsed?.registry) ? parsed.registry : null;
       if (!candidate) { setImportFeedback("Import failed: not a valid Quality Hub registry."); return; }
-      updateRegistry((p) => mergeRegistries(p, candidate));
-      setImportFeedback(`Imported and merged findings from ${file.name}.`);
+      const prepared = prepareQualityHubWorkspaceImport(
+        registryRef.current,
+        protectedLegacyChangeLogRef.current,
+        candidate,
+      );
+      if (!prepared.accepted) {
+        setImportFeedback(prepared.reason);
+        return;
+      }
+      const nextRegistry = nextRegistryWithTimestamp(
+        normalizeRoleplayPipelineLabels(prepared.registry),
+      );
+      if (!persistUserRegistry(nextRegistry)) return;
+      setImportFeedback(
+        isAuthenticated
+          ? `Imported Quality Hub workspace data from ${file.name}. Its guarded owner-database save is being verified, and the read-only legacy Changelog was unchanged.`
+          : `Imported Quality Hub workspace data from ${file.name} into the local workspace. The read-only legacy Changelog was unchanged.`,
+      );
     } catch { setImportFeedback("Import failed: could not parse JSON."); } finally { event.target.value = ""; }
   };
   const handleAgentDraft = (patch: Partial<QualityAgent>) => { setAgentDraft((p) => { const next = { ...p, ...patch }; return { ...next, id: makeAgentId(next.agentName, next.modelName) }; }); };
   const logRunSnapshot = () => {
     const now = new Date().toISOString(); const runId = newId("run");
-    updateRegistry((p) => ({ ...p, runs: [{ id: runId, name: `Manual Snapshot ${new Date(now).toLocaleString()}`, profile: "standard" as const, status: "completed" as const, startedAt: now, finishedAt: now, agent: agentDraft, scope: ["src"], summary: summarizeRun(p.findings, 0), notes: "Manual snapshot captured from dashboard." }, ...p.runs], meta: { ...p.meta, lastRunId: runId, lastUpdatedAt: now } }));
-    setImportFeedback("Run snapshot logged.");
+    const accepted = updateRegistry((p) => ({ ...p, runs: [{ id: runId, name: `Manual Snapshot ${new Date(now).toLocaleString()}`, profile: "standard" as const, status: "completed" as const, startedAt: now, finishedAt: now, agent: agentDraft, scope: ["src"], summary: summarizeRun(p.findings, 0), notes: "Manual snapshot captured from dashboard." }, ...p.runs], meta: { ...p.meta, lastRunId: runId, lastUpdatedAt: now } }));
+    if (accepted) {
+      setImportFeedback(
+        isAuthenticated
+          ? "Run snapshot added to this workspace. Its guarded owner-database save is being verified."
+          : "Run snapshot saved to the local workspace.",
+      );
+    }
   };
   const updateFindingStatus = (id: string, status: QualityFinding["status"]) => {
     const now = new Date().toISOString();
@@ -1084,62 +1785,62 @@ export default function UiAuditPage() {
     const now = new Date().toISOString();
     updateRegistry((p) => ({ ...p, findings: p.findings.map((f) => f.id === id ? { ...f, comments: [...f.comments, { id: newId("comment"), author: `${agentDraft.agentName} (${agentDraft.modelName})`, timestamp: now, text: comment.trim() }], updatedAt: now } : f) }));
   };
-  const addCommentToChangeLog = useCallback((id: string) => {
-    const text = window.prompt("Add note/comment:");
-    if (!text?.trim()) return;
-    const now = new Date().toISOString();
-    updateRegistry((p) => ({
-      ...p,
-      changeLog: (p.changeLog || []).map((entry) => (
-        entry.id !== id
-          ? entry
-          : {
-              ...entry,
-              updatedAt: now,
-              comments: [
-                ...entry.comments,
-                {
-                  id: `clc-${Math.random().toString(36).slice(2, 8)}`,
-                  author: "Manual",
-                  timestamp: now,
-                  text: text.trim(),
-                },
-              ],
-            }
-      )),
-    }));
-  }, [updateRegistry]);
-  const updateChangeLogStatus = useCallback((id: string, status: ChangeLogStatus) => {
-    const now = new Date().toISOString();
-    updateRegistry((p) => ({
-      ...p,
-      changeLog: (p.changeLog || []).map((entry) => (
-        entry.id !== id ? entry : { ...entry, status, updatedAt: now }
-      )),
-    }));
-  }, [updateRegistry]);
+  const setActiveView = useCallback((nextView: HubViewId) => {
+    const params = new URLSearchParams(location.search);
+    if (nextView === "overview") {
+      params.delete("view");
+    } else {
+      params.set("view", nextView);
+    }
+    if (nextView !== "changelog" || activeView !== "changelog") {
+      params.delete("capability");
+    }
+    const search = params.toString();
+    navigate(
+      {
+        pathname: location.pathname,
+        search: search ? `?${search}` : "",
+      },
+      { replace: false },
+    );
+  }, [activeView, location.pathname, location.search, navigate]);
 
   const activeViewMeta = HUB_VIEWS.find((v) => v.id === activeView) || HUB_VIEWS[0];
+  const activeOwnerUserId = isAuthenticated && user?.id ? user.id : null;
+  const writeControlsDisabled = migrationCaptureMode
+    || ownerHydrationState !== "ready"
+    || hydratedOwnerUserIdRef.current !== activeOwnerUserId
+    || ownerRecoveryBlocked;
 
   return (
     <div className="min-h-screen bg-[#111113] text-[#eaedf1]">
-      <input ref={fileInputRef} type="file" accept="application/json" className="hidden" onChange={handleImportFile} />
-      <header className="flex-shrink-0 h-16 border-b border-slate-200 bg-white flex items-center justify-between px-4 lg:px-8 shadow-sm">
+      <input ref={fileInputRef} type="file" accept="application/json" className="hidden" disabled={writeControlsDisabled} onChange={handleImportFile} />
+      <header className="flex-shrink-0 min-h-16 border-b border-slate-200 bg-white flex flex-wrap items-center justify-between gap-2 px-4 py-2 lg:h-16 lg:flex-nowrap lg:px-8 lg:py-0 shadow-sm">
         <div className="flex items-center gap-3">
           <button type="button" onClick={() => navigate('/?tab=admin')} className="p-2 text-[hsl(var(--ui-surface-2))] hover:bg-slate-100 rounded-full transition-colors" aria-label="Go back" title="Go back">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           </button>
           <h1 className="text-lg font-black text-[hsl(var(--ui-surface-2))] uppercase tracking-tight">Quality Hub</h1>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex max-w-full flex-wrap items-center justify-end gap-2 lg:flex-nowrap lg:gap-3">
           <button type="button" onClick={() => setShowHowToUse(true)} className="inline-flex items-center gap-2 justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider">How to Use</button>
-          <button type="button" onClick={handleImportClick} className="inline-flex items-center gap-2 justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider">Import</button>
-          <button type="button" onClick={handleExport} className="inline-flex items-center gap-2 justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider">Export</button>
-          <button type="button" onClick={logRunSnapshot} className="inline-flex items-center gap-2 justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider">Log Snapshot</button>
+          <button type="button" disabled={writeControlsDisabled} onClick={handleImportClick} className="inline-flex items-center gap-2 justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-40" title="Import Quality Hub workspace data without changing Changelog history.">Import Workspace</button>
+          <button type="button" disabled={writeControlsDisabled} onClick={handleExport} className="inline-flex items-center gap-2 justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-40" title={migrationCaptureMode ? "Use the authenticated migration export below." : "Export Quality Hub workspace data without saving or changing Changelog history."}>Export Workspace</button>
+          <button type="button" disabled={writeControlsDisabled} onClick={logRunSnapshot} className="inline-flex items-center gap-2 justify-center h-10 px-5 rounded-xl border border-[hsl(var(--ui-border))] bg-[hsl(var(--ui-surface-2))] text-[hsl(var(--ui-text))] shadow-[0_10px_30px_rgba(0,0,0,0.35)] hover:brightness-125 active:brightness-150 transition-all active:scale-95 text-[10px] font-bold leading-none uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-40">Log Snapshot</button>
         </div>
       </header>
 
       <div className="mx-auto w-full max-w-[1480px] space-y-6 px-4 py-6 md:px-8 md:py-8">
+        {migrationCaptureMode ? (
+          <QualityHubChangelogMigrationCapture
+            authLoading={authLoading}
+            isAuthenticated={isAuthenticated}
+            authenticatedUserId={user?.id ?? null}
+            preloadLocalStorage={preloadLocalStorageCapture}
+            beforeOwnerRead={waitForPendingRegistrySave}
+          />
+        ) : null}
+
         {/* Metrics */}
         <section className={panelOuterClass}><div className={panelBodyClass}>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -1154,6 +1855,35 @@ export default function UiAuditPage() {
             <MetricCard label="Modules Completed" value={`${moduleCompleted}/${registry.scanModules.length}`} />
           </div>
           {!!importFeedback && <div className={cn(recessedStripClass, "mt-4 p-3 text-xs text-[#eaedf1]")}>{importFeedback}</div>}
+          {ownerRecoveryBlocked ? (
+            <div
+              role="alert"
+              className="mt-4 rounded-xl border border-[#dc2626] bg-[#2b1719] p-4 text-sm text-[#f4d7d9]"
+            >
+              <div className="font-black text-white">Unsaved owner recovery needs review</div>
+              <p className="mt-1 max-w-4xl text-xs leading-5">
+                Quality Hub has locked all writes so a newer action cannot overwrite the preserved recovery copy. Download that exact copy before choosing to discard it; Chronicle will then reload the current owner database version before enabling changes.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={ownerHydrationState !== "ready" || hydratedOwnerUserIdRef.current !== activeOwnerUserId}
+                  onClick={handleDownloadOwnerRecovery}
+                  className={cn(neutralButtonClass, "disabled:cursor-not-allowed disabled:opacity-40")}
+                >
+                  Download Unsaved Recovery
+                </button>
+                <button
+                  type="button"
+                  disabled={ownerHydrationState !== "ready" || hydratedOwnerUserIdRef.current !== activeOwnerUserId}
+                  onClick={handleDiscardOwnerRecovery}
+                  className="rounded-xl border border-[#dc2626] bg-[#3a1b1f] px-4 py-2 text-xs font-bold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Discard Recovery and Use Database Version
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div></section>
 
         {/* Nav */}
@@ -1162,7 +1892,7 @@ export default function UiAuditPage() {
           <div className={panelBodyClass}><div className={panelInnerClass}>
             <div className="grid gap-2 md:grid-cols-4">
               {HUB_VIEWS.map((v) => (
-                <button key={v.id} type="button" onClick={() => setActiveView(v.id)} className={cn("rounded-xl border-none px-3 py-3 text-left transition shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]", activeView === v.id ? "bg-[linear-gradient(180deg,#5a7292_0%,#4a5f7f_100%)] text-white" : "bg-[#3c3e47] hover:brightness-110")}>
+                <button key={v.id} type="button" aria-current={activeView === v.id ? "page" : undefined} onClick={() => setActiveView(v.id)} className={cn("rounded-xl border-none px-3 py-3 text-left transition shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)]", activeView === v.id ? "bg-[linear-gradient(180deg,#5a7292_0%,#4a5f7f_100%)] text-white" : "bg-[#3c3e47] hover:brightness-110")}>
                   <div className="text-xs font-black uppercase tracking-[0.14em] text-[#eaedf1]">{v.label}</div>
                   <div className="mt-1 text-[11px] text-[#a1a1aa]">{v.description}</div>
                 </button>
@@ -1257,7 +1987,9 @@ export default function UiAuditPage() {
                           <div className={cn(recessedStripClass, "p-3")}>
                             <div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Where to log results</div>
                             <div className="text-xs text-[#a1a1aa]">
-                              {row.logTargets.length > 0 ? row.logTargets.join(" • ") : "Issue registry • scan runs • change log"}
+                              {row.logTargets.length > 0
+                                ? row.logTargets.join(" • ")
+                                : "Issue Registry • Scan Runs • capability Current Work"}
                             </div>
                           </div>
                         </div>
@@ -1269,36 +2001,30 @@ export default function UiAuditPage() {
             ))}
 
             <Section
-              title="Recent Change Log (Mirror)"
+              title="Recent Repository Changes Preview"
               badge={
                 <button
                   type="button"
                   onClick={() => setActiveView("changelog")}
                   className={neutralButtonClass}
                 >
-                  Open Change Log
+                  Open Changelog
                 </button>
               }
             >
               <div className={cn(recessedStripClass, "mb-3 p-3 text-xs text-[#a1a1aa]")}>
-                Live mirror of the latest Change Log entries. Cards below use the same renderer and field ordering as the Change Log tab.
+                This is a five-record preview from Chronicle&apos;s repository-owned
+                Changelog. Open an individual complete record for its full history,
+                or open the Changelog view for the complete chronological list.
               </div>
-              {recentChanges.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-[#4a5f7f]/60 px-4 py-8 text-sm text-center text-[#a1a1aa]">
-                  No change log entries yet.
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {recentChanges.map((entry) => (
-                    <ChangeLogEntryCard
-                      key={entry.id}
-                      entry={entry}
-                      onUpdateStatus={updateChangeLogStatus}
-                      onAddComment={addCommentToChangeLog}
-                    />
-                  ))}
-                </div>
-              )}
+              <ChangelogRecordList
+                limit={5}
+                mode="preview"
+                detailScope="global"
+                detailOrigin="quality-hub-overview"
+                scopeLabel="Newest records currently in the canonical Chronicle Changelog."
+                emptyMessage="No canonical Chronicle Changelog records are currently recorded."
+              />
             </Section>
           </div>
         )}
@@ -1326,7 +2052,7 @@ export default function UiAuditPage() {
               </div>
             </Section>
             {orderedGroupEntries.length === 0 ? (
-              <div className="rounded-xl border-2 border-dashed border-[#71717a] bg-[linear-gradient(to_bottom_right,#27272a,#18181b)] px-4 py-10 text-center text-sm text-[#a1a1aa]">No findings yet. Import a JSON package to start.</div>
+              <div className="rounded-xl border-2 border-dashed border-[#71717a] bg-[linear-gradient(to_bottom_right,#27272a,#18181b)] px-4 py-10 text-center text-sm text-[#a1a1aa]">No findings yet. Import a workspace JSON package to start.</div>
             ) : (
               orderedGroupEntries.map(([group, items]) => {
                 const unresolvedCount = items.filter((f) => !RESOLVED_FINDING_STATUSES.has(f.status)).length;
@@ -1479,9 +2205,9 @@ export default function UiAuditPage() {
                         </div>
                         {/* ── Actions ── */}
                         <div className="grid gap-2 md:grid-cols-3">
-                          <select value={f.status} onChange={(e) => updateFindingStatus(f.id, e.target.value as QualityFinding["status"])} className={selectClass}>{QUALITY_FINDING_STATUS.map((s) => <option key={s} value={s}>{titleCase(s)}</option>)}</select>
-                          <select value={f.verificationStatus} onChange={(e) => updateVerification(f.id, e.target.value as QualityFinding["verificationStatus"])} className={selectClass}>{QUALITY_VERIFICATION_STATUS.map((s) => <option key={s} value={s}>{titleCase(s)}</option>)}</select>
-                          <button type="button" onClick={() => addCommentToFinding(f.id)} className={neutralButtonClass}>Add Comment</button>
+                          <select disabled={writeControlsDisabled} value={f.status} onChange={(e) => updateFindingStatus(f.id, e.target.value as QualityFinding["status"])} className={cn(selectClass, "disabled:cursor-not-allowed disabled:opacity-40")}>{QUALITY_FINDING_STATUS.map((s) => <option key={s} value={s}>{titleCase(s)}</option>)}</select>
+                          <select disabled={writeControlsDisabled} value={f.verificationStatus} onChange={(e) => updateVerification(f.id, e.target.value as QualityFinding["verificationStatus"])} className={cn(selectClass, "disabled:cursor-not-allowed disabled:opacity-40")}>{QUALITY_VERIFICATION_STATUS.map((s) => <option key={s} value={s}>{titleCase(s)}</option>)}</select>
+                          <button type="button" disabled={writeControlsDisabled} onClick={() => addCommentToFinding(f.id)} className={cn(neutralButtonClass, "disabled:cursor-not-allowed disabled:opacity-40")}>Add Comment</button>
                         </div>
                         {f.comments.length > 0 && <div className="mt-3 space-y-2 rounded-lg border border-[rgba(255,255,255,0.05)] bg-[#1c1c1f] p-3">{f.comments.map((c) => <div key={c.id} className={cn(recessedStripClass, "px-2 py-2 text-xs text-[#a1a1aa]")}><div className="font-bold text-[#eaedf1]">{c.author}</div><div className="text-[10px] text-[#71717a]">{formatDate(c.timestamp)}</div><div className="mt-1">{c.text}</div></div>)}</div>}
                       </div>
@@ -1503,7 +2229,7 @@ export default function UiAuditPage() {
                 <div><label className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa]">Platform</label><input value={agentDraft.platform} onChange={(e) => handleAgentDraft({ platform: e.target.value })} className={inputClass} /></div>
               </div>
               <div className={cn(recessedStripClass, "p-3 text-[11px] text-[#eaedf1]")}>Active tag: <span className="font-bold text-white">{agentDraft.agentName}</span> · {agentDraft.modelName} · {agentDraft.platform}</div>
-              <button type="button" onClick={logRunSnapshot} className={subtleButtonClass}>Log Run Snapshot</button>
+              <button type="button" disabled={writeControlsDisabled} onClick={logRunSnapshot} className={cn(subtleButtonClass, "disabled:cursor-not-allowed disabled:opacity-40")}>Log Run Snapshot</button>
             </div>
             <div className={cn(recessedBlockClass, "mt-4 p-3")}><div className="text-[10px] font-black uppercase tracking-[0.16em] text-[#a1a1aa]">Known Agents</div><div className="mt-2 space-y-1">{allAgents.map((a) => <div key={a.id} className="text-xs text-[#a1a1aa]">{a.agentName} <span className="text-[#71717a]">({a.modelName})</span></div>)}</div></div>
             </Section>
@@ -1514,14 +2240,9 @@ export default function UiAuditPage() {
           </div>
         )}
 
-        {/* Change Log */}
+        {/* Changelog */}
         {activeView === "changelog" && (
-          <ChangeLogView
-            registry={registry}
-            updateRegistry={updateRegistry}
-            onAddComment={addCommentToChangeLog}
-            onUpdateStatus={updateChangeLogStatus}
-          />
+          <CanonicalChangeLogView capability={changelogCapability} />
         )}
       </div>
       <QualityHubHowToModal open={showHowToUse} onClose={() => setShowHowToUse(false)} />

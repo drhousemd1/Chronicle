@@ -158,7 +158,7 @@ describe('runRoleplayBatch0Validation', () => {
     const targetedCommandRow = ledger.rows.find((row) => row.id === 'issue-24-targeted-command-documentation');
     const targetedCommandArtifactPreview = (targetedCommandRow?.rawReport as { artifactPreview?: string } | undefined)?.artifactPreview;
     expect(targetedCommandArtifactPreview).toContain('"targetedCommand": "npm run validation:roleplay:batch0"');
-    expect(targetedCommandArtifactPreview).toContain('"packageScript": "vite-node scripts/write-roleplay-batch0-validation-ledger.ts"');
+    expect(targetedCommandArtifactPreview).toContain('"packageScript": "vite-node scripts/run-with-knowledge-certification-lease.ts validation-roleplay-batch0 -- vite-node scripts/write-roleplay-batch0-validation-ledger.ts"');
     expect(targetedCommandArtifactPreview).toContain('"deterministicFixturesBeforeManualPlaythrough": true');
     expect(targetedCommandArtifactPreview).toContain('"manualAdminExportAfterFixtures": true');
     expect(targetedCommandArtifactPreview).toContain('"providerTransportOutOfScope": true');
@@ -171,7 +171,7 @@ describe('runRoleplayBatch0Validation', () => {
     const packageJson = JSON.parse(await readFile('package.json', 'utf8'));
 
     expect(packageJson.scripts['validation:roleplay:batch0'])
-      .toBe('vite-node scripts/write-roleplay-batch0-validation-ledger.ts');
+      .toBe('vite-node scripts/run-with-knowledge-certification-lease.ts validation-roleplay-batch0 -- vite-node scripts/write-roleplay-batch0-validation-ledger.ts');
 
     const scriptSource = await readFile('scripts/write-roleplay-batch0-validation-ledger.ts', 'utf8');
     expect(scriptSource).toContain('runRoleplayBatch0Validation');

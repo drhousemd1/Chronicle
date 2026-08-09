@@ -255,10 +255,10 @@ export const chronicleMediaGalleryArchitectureFiles = defineManualArchitectureFi
   {
     path: "/src/components/chronicle/GalleryHub.tsx",
     header: componentHeader,
-    metric: "646 lines",
+    metric: "773 lines",
     metricDescription: "Public Gallery query, interaction, and story-launch workspace.",
     description:
-      "Builds the public Gallery from sanitized paginated scenario results, followed-creator IDs, category filters, debounced text and hashtag search, sort choice, and the signed-in user's like/save sets. It coordinates infinite scrolling, detail views, views, likes, saves, play counts, NSFW approval, owner unpublishing, and React Query cache reconciliation while delegating actual data operations to gallery-data.",
+      "Builds the public Gallery from sanitized paginated scenario results, followed-creator IDs, category filters, debounced text and hashtag search, sort choice, and the signed-in user's like/save sets. It separates initial and later-page request failures from legitimate empty and end states, preserves loaded cards and discovery criteria through deliberate Retry, and coordinates infinite scrolling, detail views, views, likes, saves, play counts, NSFW approval, owner unpublishing, and React Query cache reconciliation while delegating actual data operations to gallery-data.",
     rows: [
       {
         id: "gallery-query",
@@ -288,7 +288,17 @@ export const chronicleMediaGalleryArchitectureFiles = defineManualArchitectureFi
         ],
       },
     ],
-    reviewedSource: "Manual review of query construction, followed creators, pagination, search parsing, NSFW handling, interactions, cache updates, modal ownership, and security comment.",
+    reviewedSource: "Manual review of query construction, followed creators, pagination, request-failure and paused-request recovery, retry isolation, search parsing, NSFW handling, interactions, cache updates, modal ownership, and security comment through August 8, 2026.",
+  },
+  {
+    path: "/src/components/chronicle/GalleryHub.test.tsx",
+    header: testHeader,
+    metric: "501 lines",
+    metricDescription: "Community Gallery request-failure and recovery regression tests.",
+    description:
+      "Verifies that an initial Gallery request failure remains visibly distinct from a legitimate empty result, that discovery controls stay available, and that Retry repeats the complete request. It also proves that a later-page failure preserves loaded cards, feed, search, hashtag, and category criteria; suppresses false end-of-catalog behavior and repeated observer requests; handles offline-paused requests; retries the identical page; and prevents an older retry from clearing a newer query's failure state.",
+    rows: [],
+    reviewedSource: "Manual review of the controlled React Query, IntersectionObserver, initial-failure, later-page-failure, offline-pause, stale-retry, identical-request, and legitimate-empty fixtures on August 8, 2026.",
   },
   {
     path: "/src/components/chronicle/GalleryStoryCard.tsx",

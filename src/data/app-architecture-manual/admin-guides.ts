@@ -14,7 +14,198 @@ const codeHeader = {
   navAccent: "code-logic" as const,
 };
 
+const testHeader = {
+  label: "TEST" as const,
+  className: "test" as const,
+  filterValue: "test" as const,
+  navAccent: "test" as const,
+};
+
 export const adminGuideArchitectureFiles = defineManualArchitectureFiles([
+  {
+    path: "/src/components/admin/knowledge-base/KnowledgeSwitcher.tsx",
+    header: componentHeader,
+    metric: "167 lines",
+    metricDescription: "Reusable accessible tab, metadata, issue-count, and content-panel boundary for the Chronicle Knowledge Base.",
+    description:
+      "Renders one capability heading, description, compact tab rail, review metadata, and internally scrolling content panel. It owns roving tab focus, wrapping Arrow navigation, Home and End selection, scroll reset, placeholder review dates, and issue styling whose count is derived from the tab's issue records.",
+    rows: [
+      {
+        id: "knowledge-switcher-keyboard",
+        title: "Semantic tab interaction",
+        summary:
+          "Connects tablist, tab, and tabpanel roles through stable IDs, keeps only the selected tab in the natural tab order, and moves selection and focus with Left, Right, Home, and End keys.",
+        badgeLabel: "ACCESSIBLE TABS",
+        badgeClass: "component",
+        details: [],
+      },
+      {
+        id: "knowledge-switcher-issues",
+        title: "Derived issue state",
+        summary:
+          "Keeps an empty Issues tab white and badge-free; when issue records exist, derives the red state, count badge, and accessible open-issue label directly from the array length.",
+        badgeLabel: "DERIVED STATE",
+        badgeClass: "code-logic",
+        details: [],
+      },
+    ],
+    reviewedSource: "Manual review of active-tab state, refs, effects, selection, keyboard handling, issue derivation, metadata fallbacks, ARIA relationships, and render callback.",
+  },
+  {
+    path: "/src/components/admin/knowledge-base/KnowledgeSwitcher.test.tsx",
+    header: testHeader,
+    metric: "111 lines",
+    metricDescription: "Keyboard, scroll-reset, metadata, and issue-state tests for KnowledgeSwitcher.",
+    description:
+      "Exercises wrapping Left and Right navigation, Home and End behavior, roving tabindex and focus, panel scroll reset, selected-tab metadata, populated issue count and accessible name, and the badge-free empty Issues state.",
+    rows: [],
+    reviewedSource: "Manual review of all three rendered interaction fixtures and assertions.",
+  },
+  {
+    path: "/src/components/admin/knowledge-base/ChangelogRecordList.tsx",
+    header: componentHeader,
+    metric: "207 lines",
+    metricDescription: "Shared read-only renderer for Chronicle's canonical repository Changelog.",
+    description:
+      "Loads the validated shared canonical repository Changelog, optionally selects one capability, and renders complete bordered narratives for the Community Gallery and full Quality Hub histories. Quality Hub's overview uses the same renderer for a five-record preview, and every narrative links to a dedicated read-only full-record route without creating another editable copy. Loading, validation failure, legitimate empty history, and populated history remain visibly distinct so missing or malformed source files cannot be presented as an empty Changelog.",
+    rows: [
+      {
+        id: "canonical-changelog-projection",
+        title: "One source, multiple read-only views",
+        summary:
+          "Uses the same effective records for the global Quality Hub history, the Community Gallery projection, and the five-record Quality Hub overview preview without maintaining copied Changelog data in any page component.",
+        badgeLabel: "SOURCE OWNER",
+        badgeClass: "documentation",
+        details: [
+          {
+            label: "Loads",
+            values: ["/src/data/chronicle-knowledge-base/changelog-record-sources.ts"],
+            kind: "files",
+          },
+        ],
+      },
+      {
+        id: "canonical-changelog-load-states",
+        title: "Truthful load states",
+        summary:
+          "Shows a loading message while records are read, an alert when discovery or validation fails, the supplied empty message only after a valid zero-record result, and record rows only after successful validation.",
+        badgeLabel: "FAILURE STATE",
+        badgeClass: "code-logic",
+        details: [],
+      },
+    ],
+    reviewedSource: "Manual review of loader lifecycle, stale-result guard, capability selection, five-record preview limit, count wording, provenance labels, state branches, complete bordered narratives, and dedicated record links on August 8, 2026.",
+  },
+  {
+    path: "/src/components/admin/knowledge-base/ChangelogRecordNarrative.tsx",
+    header: componentHeader,
+    metric: "590 lines",
+    metricDescription: "Shared narrative presenter for accepted, historical, and corrected Changelog records.",
+    description:
+      "Turns one validated effective Changelog entry into either a complete primary narrative, a clearly labeled Quality Hub preview, or the full read-only record. It keeps the problem, reason, changes, result, evidence limits, Issue disposition, work-record relationship, provenance, and append-only correction history visible without clipping or inventing conclusions that are absent from imported Quality Hub history.",
+    rows: [
+      {
+        id: "changelog-narrative-variants",
+        title: "Source-faithful narrative variants",
+        summary:
+          "Renders modern accepted fields directly from the accepted-closeout contract, derives historical sections only from the preserved Quality Hub payload, and applies authorized corrections while retaining the immutable original and ordered correction history.",
+        badgeLabel: "NARRATIVE MODEL",
+        badgeClass: "documentation",
+        details: [],
+      },
+      {
+        id: "changelog-narrative-depth",
+        title: "Orientation and full-record depth",
+        summary:
+          "Uses the same canonical entry for the complete capability and Quality Hub narratives, the bounded five-record preview, and the dedicated full-record presentation instead of maintaining copied histories.",
+        badgeLabel: "SHARED VIEW",
+        badgeClass: "component",
+        details: [],
+      },
+    ],
+    reviewedSource: "Manual review of accepted, legacy, preview, detail, provenance, Issue-disposition, archive, immutable-original, and correction-history branches on August 8, 2026.",
+  },
+  {
+    path: "/src/components/admin/knowledge-base/ChangelogRecordNarrative.test.tsx",
+    header: testHeader,
+    metric: "550 lines",
+    metricDescription: "Narrative, evidence-boundary, and correction-history component fixtures.",
+    description:
+      "Exercises complete accepted and historical narratives, accepted evidence and Issue disposition, reciprocal archive navigation, source-state detail, corrected effective text, immutable originals, and ordered append-only corrections. These fixtures validate rendered meaning without creating production accepted or correction records.",
+    rows: [],
+    reviewedSource: "Manual review of all accepted, legacy, and corrected narrative assertions on August 8, 2026.",
+  },
+  {
+    path: "/src/components/admin/knowledge-base/changelog-record-route.ts",
+    header: codeHeader,
+    metric: "41 lines",
+    metricDescription: "Typed URL builder for the one protected full Changelog record route.",
+    description:
+      "Defines the supported global or Community Gallery scope and compatible Knowledge Base, Quality Hub, overview-preview, or archive origins, normalizes incompatible URL combinations to a safe return surface, and creates one encoded record URL. Keeping this helper outside the React component preserves fast-refresh boundaries and prevents each reader from inventing a different deep-link shape.",
+    rows: [],
+    reviewedSource: "Manual review of record-ID encoding and the complete scope and origin unions on August 8, 2026.",
+  },
+  {
+    path: "/src/components/admin/knowledge-base/ChangelogRecordList.test.tsx",
+    header: testHeader,
+    metric: "426 lines",
+    metricDescription: "Component tests for canonical Changelog rows, limits, and load-state truthfulness.",
+    description:
+      "Exercises accepted, historical, and correction provenance labels; stable record identities; preview limits; legitimate empty history; validation errors; rejected loaders; and stale asynchronous results after the requested capability changes. These tests verify the shared renderer in isolation rather than proving either complete page route.",
+    rows: [],
+    reviewedSource: "Manual review of all ready, limited, empty, error, rejected-promise, and stale-loader fixtures and assertions on August 5, 2026.",
+  },
+  {
+    path: "/src/components/admin/knowledge-base/OperationalRecordContent.tsx",
+    header: componentHeader,
+    metric: "412 lines",
+    metricDescription: "Read-only dispatcher for Gallery Issues, Current Work, and canonical Changelog history.",
+    description:
+      "Renders the selected capability's parsed Issue and active Current Work records from their canonical Markdown directories, then delegates Changelog display to the shared repository-backed Changelog renderer. Each record class receives its own reviewed date and explicit empty or failure meaning instead of invented work, dates, completion, or proof.",
+    rows: [
+      {
+        id: "operational-record-content-source-boundary",
+        title: "Canonical record rendering",
+        summary:
+          "Selects only the record kind requested by the manifest tab and delegates Markdown display without maintaining a second editable copy of the record.",
+        badgeLabel: "SOURCE OWNER",
+        badgeClass: "documentation",
+        details: [],
+      },
+      {
+        id: "operational-record-content-empty-state",
+        title: "Truthful absence messaging",
+        summary:
+          "Distinguishes an empty record directory from proof that no defects, work, or prior changes exist and preserves the Current Work authority statement even when no project is active.",
+        badgeLabel: "EMPTY STATE",
+        badgeClass: "code-logic",
+        details: [],
+      },
+    ],
+    reviewedSource: "Manual review of record-kind selection, Markdown rendering, authority wording, and all three empty-state branches.",
+  },
+  {
+    path: "/src/components/admin/knowledge-base/CommunityGalleryArchitecture.tsx",
+    header: componentHeader,
+    metric: "20 lines",
+    metricDescription: "Presentation-only boundary for the source-backed Community Gallery architecture manual.",
+    description:
+      "Wraps the App Architecture Markdown rendered from docs/architecture-knowledge/community-gallery.md and identifies that file as the source owner. It intentionally contains no route, component, persistence, or workflow facts, preventing the React component from becoming a second independently maintained architecture account.",
+    rows: [
+      {
+        id: "gallery-architecture-source-boundary",
+        title: "Canonical source boundary",
+        summary:
+          "Provides a stable presentation hook while leaving every editable architecture statement in the capability document read directly by people, agents, tests, and the renderer.",
+        badgeLabel: "SOURCE OWNER",
+        badgeClass: "documentation",
+        details: [
+          { label: "Canonical Document", values: ["/docs/architecture-knowledge/community-gallery.md"], kind: "files" },
+        ],
+      },
+    ],
+    reviewedSource: "Manual review confirming that the component contains presentation only and no duplicated Gallery architecture facts.",
+  },
   {
     path: "/src/components/admin/guide/AppGuideTool.tsx",
     header: componentHeader,

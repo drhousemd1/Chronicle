@@ -405,7 +405,7 @@ describe('runRoleplayBatch1Validation', () => {
     const packageJson = JSON.parse(await readFile('package.json', 'utf8'));
 
     expect(packageJson.scripts['validation:roleplay:batch1'])
-      .toBe('vite-node scripts/write-roleplay-batch1-validation-ledger.ts');
+      .toBe('vite-node scripts/run-with-knowledge-certification-lease.ts validation-roleplay-batch1 -- vite-node scripts/write-roleplay-batch1-validation-ledger.ts');
 
     const scriptSource = await readFile('scripts/write-roleplay-batch1-validation-ledger.ts', 'utf8');
     expect(scriptSource).toContain('runRoleplayBatch1Validation');

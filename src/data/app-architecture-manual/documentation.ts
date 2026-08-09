@@ -1,4 +1,6 @@
 import { defineManualArchitectureFiles } from "./types";
+import { architectureExtraPaths } from "../architecture-extra-paths";
+import { architectureFileMetrics } from "../architecture-file-metrics";
 
 const documentationHeader = {
   label: "DOCUMENTATION" as const,
@@ -7,7 +9,168 @@ const documentationHeader = {
   navAccent: "documentation" as const,
 };
 
+const changelogArchitectureFiles = defineManualArchitectureFiles(
+  architectureExtraPaths
+    .filter(
+      (sourcePath) =>
+        sourcePath.startsWith(
+          "/docs/architecture-knowledge/changelog/entries/",
+        ) && sourcePath.endsWith(".md"),
+    )
+    .map((sourcePath) => {
+      const recordId = sourcePath.slice(
+        "/docs/architecture-knowledge/changelog/entries/".length,
+        -".md".length,
+      );
+      const isLegacyRecord = recordId.startsWith("LEGACY-QH-");
+      const isCorrectionRecord = recordId.includes("-COR-");
+      const lineCount = architectureFileMetrics[sourcePath]?.lineCount;
+      if (typeof lineCount !== "number") {
+        throw new Error(
+          `Architecture metrics are missing for Changelog record ${recordId}.`,
+        );
+      }
+
+      const metricDescription = isLegacyRecord
+        ? `Repository-backed historical Changelog record ${recordId}.`
+        : isCorrectionRecord
+          ? `Repository-backed append-only Changelog correction ${recordId}.`
+          : `Repository-backed accepted Chronicle Changelog record ${recordId}.`;
+      const description = isLegacyRecord
+        ? `Preserves ${recordId} as one canonical historical Quality Hub entry, including its original status, source lineage, exact payload hashes, reviewed Community Gallery applicability, and explicit statement that the legacy result was not reverified as modern acceptance.`
+        : isCorrectionRecord
+          ? `Preserves ${recordId} as an append-only clarification of an existing Changelog record. The correction identifies its target and clarified fields without replacing the immutable original history.`
+          : `Records ${recordId} as one canonical accepted Chronicle closeout, including what was broken, why the change mattered, what changed, the accepted outcome, evidence limits, Issue disposition, source fingerprint, and reciprocal archived Current Work relationship.`;
+      const reviewedSource = isLegacyRecord
+        ? "Generated architecture inventory plus the Phase 5 receipt validation of exact identity, legacy provenance, and reviewed capability classification on August 4, 2026."
+        : isCorrectionRecord
+          ? "Generated architecture inventory plus operational validation of the correction target, append-only history, and effective rendered narrative."
+          : "Generated architecture inventory plus protected closeout validation of the accepted narrative, Issue disposition, evidence limits, and reciprocal archive relationship on August 8, 2026.";
+
+      return {
+        path: sourcePath as `/${string}`,
+        header: documentationHeader,
+        metric: `${lineCount.toLocaleString("en-US")} lines`,
+        metricDescription,
+        description,
+        rows: [],
+        reviewedSource,
+      };
+    }),
+);
+
 export const documentationArchitectureFiles = defineManualArchitectureFiles([
+  {
+    path: "/docs/architecture-knowledge/chronicle-overview.md",
+    header: documentationHeader,
+    metric: "426 lines",
+    metricDescription: "Chronicle overview, Community Gallery application-map chapter, and Admin Panel image outline.",
+    description:
+      "Owns Chronicle's detailed product overview, including product purpose, authored-story lifecycle, public discovery, roleplay persistence, ownership, privacy, state boundaries, failure expectations, and capability handoffs. It also supplies the populated Community Gallery application-map tab and the current Admin Panel image-and-heading outline; the other application-map tabs intentionally remain blank.",
+    rows: [],
+    reviewedSource: "Repository-source review of headings, asset tokens, tab boundaries, long-form content, and current Knowledge Base routing.",
+  },
+  {
+    path: "/docs/architecture-knowledge/community-gallery.md",
+    header: documentationHeader,
+    metric: "921 lines",
+    metricDescription: "Source-readable Community Gallery overview, UI contract, curated App Architecture, and operational-tab boundaries.",
+    description:
+      "Owns the stable Community Gallery purpose, ownership and access rules, discovery controls, cards, Story Detail, reviews, NSFW presentation, authentication boundaries, handoffs, every documented interface function, and the curated current-source runtime account. The React architecture component is presentation-only, Issues are rendered from issue records, and Supabase Tables reuse the shared authority document.",
+    rows: [],
+    reviewedSource: "August 8, 2026 repository review of routes, components, state, persistence, handoffs, repaired failure recovery, tests, and evidence boundaries.",
+  },
+  {
+    path: "/docs/architecture-knowledge/manifest.json",
+    header: documentationHeader,
+    metric: "221 lines",
+    metricDescription: "Repository-owned manifest for Chronicle Knowledge Base section, tab, metadata, and content routing.",
+    description:
+      "Records the twelve Chronicle Overview tabs, fourteen capability sections, Gallery's seven tabs, the shared three-tab placeholder contract for unfinished capabilities, review dates, operational content kinds, source-document identities, and the shared Supabase and rough-draft documents.",
+    rows: [],
+    reviewedSource: "Manual review of exact repository-owned order, labels, content kinds, populated-versus-blank state, metadata, shared documents, and operational-record routing.",
+  },
+  {
+    path: "/docs/architecture-knowledge/issues/community-gallery/CG-ISSUE-001.md",
+    header: documentationHeader,
+    metric: "53 lines",
+    metricDescription: "Canonical resolved Community Gallery request-failure Issue.",
+    description:
+      "Preserves the request-failure discrepancy, required behavior, repaired behavior, source evidence, evidence limits, verification dates, and resolution through accepted change CG-CHANGE-001 and archived project CG-WORK-002.",
+    rows: [],
+    reviewedSource: "Source review of the Gallery request service, delivered recovery branches, focused regressions, accepted evidence limits, and protected reciprocal closeout on August 8, 2026.",
+  },
+  {
+    path: "/docs/current-work/active/community-gallery/CG-WORK-001.md",
+    header: documentationHeader,
+    metric: "1,252 lines",
+    metricDescription: "Canonical active project for the Community Gallery Knowledge Base pilot.",
+    description:
+      "Owns the still-active Community Gallery documentation pilot's Resume Here state, outcome contract, verified facts, scope, decisions, traceability chain, bounded work steps, narrow proof claims, and append-only history. It is the sole active Primary project after the separate Gallery runtime Issue completed its accepted closeout, while the documentation pilot's own final visual-review phase remains unstarted.",
+    rows: [],
+    reviewedSource: "Operational-contract validation, rendered Current Work review, the completed Changelog narrative recovery, protected project creation, and the synchronized separation between the secondary documentation pilot and primary runtime repair through August 8, 2026.",
+  },
+  {
+    path: "/docs/current-work/archive/community-gallery/CG-WORK-002.md",
+    header: documentationHeader,
+    metric: "342 lines",
+    metricDescription: "Canonical archived project for Community Gallery request-failure recovery.",
+    description:
+      "Preserves the complete bounded repair for the Gallery discrepancy in which a failed discovery request could appear to be a legitimate empty result or the end of the catalog. It records the investigation, implementation, evidence-based completion, accepted evidence limits, resolved Issue, reciprocal Changelog relationship, and guarded terminal closeout without claiming deployment or unrelated Gallery behavior.",
+    rows: [],
+    reviewedSource: "Operational-contract validation, pre-repair regression evidence, bounded source repair, complete repository checks, independent review, and local delivery-surface inspection through August 8, 2026.",
+  },
+  {
+    path: "/docs/current-work/archive/community-gallery/.gitkeep",
+    header: documentationHeader,
+    metric: "1 lines",
+    metricDescription: "Directory anchor for archived Community Gallery work records.",
+    description:
+      "Keeps the canonical Community Gallery work archive present beside terminal records. Archived CG-WORK-002 demonstrates the reciprocal accepted-change and resolved-Issue closeout; Deferred work remains visible in Current Work rather than being archived.",
+    rows: [],
+    reviewedSource: "Manual review of the populated archive directory, CG-WORK-002 reciprocal closeout, and terminal-record placement rule on August 8, 2026.",
+  },
+  {
+    path: "/docs/architecture-knowledge/changelog/entries/.gitkeep",
+    header: documentationHeader,
+    metric: "1 lines",
+    metricDescription: "Retained directory anchor for Chronicle's shared Changelog records.",
+    description:
+      "Keeps the one canonical repository Changelog directory present across empty and populated states. Modern accepted closeouts, preserved historical Quality Hub records, and append-only corrections all belong here as separate Markdown records; capability pages select from this same source instead of maintaining copied histories.",
+    rows: [],
+    reviewedSource: "Manual review of the shared Changelog source boundary and its accepted, legacy, and correction record contract through the Phase 5 import on August 4, 2026.",
+  },
+  {
+    path: "/docs/architecture-knowledge/changelog/migration-receipt.md",
+    header: documentationHeader,
+    metric: "5,062 lines",
+    metricDescription: "Canonical receipt for the complete legacy Quality Hub Changelog migration.",
+    description:
+      "Accounts for all 203 migrated Quality Hub identities, their captured-source hashes and differences, the approved owner-union selection rationale, privacy-safe repository transcription, Community Gallery applicability, and the exact generated Markdown hash for every installed record. It preserves the unrecoverable earlier 170-entry membership as an explicit provenance limit rather than presenting it as known history.",
+    rows: [],
+    reviewedSource: "Exact receipt-to-record validation, source-package hash verification, privacy scan, and canonical reconciliation on August 4, 2026.",
+  },
+  ...changelogArchitectureFiles,
+  {
+    path: "/docs/architecture-knowledge/supabase-tables.md",
+    header: documentationHeader,
+    metric: "15 lines",
+    metricDescription: "Shared Supabase authority, verification, and Lovable-handoff instruction.",
+    description:
+      "Directs every capability to the protected Supabase Schema Reference, identifies the checked-in source module, forbids agents from inventing backend structure, explains that Lovable controls the live project, and requires any Lovable schema change to update the Codex-accessible reference.",
+    rows: [],
+    reviewedSource: "Manual review of the application link, source path, verification scope, no-guessing rule, Lovable execution boundary, and synchronization requirement.",
+  },
+  {
+    path: "/docs/architecture-knowledge/chronicle-application-manual-writer-rough-draft.md",
+    header: documentationHeader,
+    metric: "126 lines",
+    metricDescription: "Visible historical rough draft for the future Chronicle application-manual writing skill.",
+    description:
+      "Preserves the historical monospaced rough draft beneath the capability sections. It describes intended research depth, source-truth rules, writing standards, and tab concepts for later reconciliation, but it is displayed as a draft and does not override the active repository manifest.",
+    rows: [],
+    reviewedSource: "Manual review of draft labeling, full visible text, and its non-authoritative relationship to the repository manifest.",
+  },
   {
     path: "/.lovable/notes/byok-routing-investigation.md",
     header: documentationHeader,
@@ -30,22 +193,22 @@ export const documentationArchitectureFiles = defineManualArchitectureFiles([
   {
     path: "/.lovable/plan.md",
     header: documentationHeader,
-    metric: "322 lines",
-    metricDescription: "Lovable destructive-schema plan retained for historical traceability.",
-    description: "Contains the approved planning packet for terminal removal of the former structured-mood database field, including live-object scans, an explicit execution gate, destructive SQL, verification queries, and out-of-scope boundaries. It documents a completed migration decision and must not be mistaken for current application state.",
+    metric: "39 lines",
+    metricDescription: "Lovable deployment plan for the synchronized roleplay Edge Function bundle.",
+    description: "Records a narrowly scoped deployment plan for six roleplay Edge Functions at a verified source revision, explains how two shared artifact-identity modules enter those bundles transitively, lists log-based startup verification, and explicitly excludes schema, policy, secret, storage, and unrelated function changes.",
     rows: [{
-      id: "structured-mood-terminal-removal-plan",
-      title: "Terminal schema-removal plan",
-      summary: "Documents how Lovable was instructed to remove the retired field from functions, columns, generated schema artifacts, and reference surfaces while preserving unrelated security behavior.",
+      id: "roleplay-edge-deployment-plan",
+      title: "Six-function roleplay deployment",
+      summary: "Limits the deployment to chat and five roleplay support functions whose source matches the requested overhaul revision, with boot-log verification and a stop-on-error boundary.",
       badgeLabel: "DOCUMENTATION",
       badgeClass: "documentation",
       security: true,
       details: [
-        { label: "Covers", values: ["live dependency scan", "approval gate", "destructive migration SQL", "post-migration verification queries", "strict non-goals"], kind: "plain" },
-        { label: "Historical Only", values: ["the terminal migration now defines current schema truth; this plan is not executable state"], kind: "plain" },
+        { label: "Deploys", values: ["chat", "compress-day-memories", "evaluate-goal-alignment", "evaluate-goal-progress", "extract-character-updates", "extract-memory-events"], kind: "plain" },
+        { label: "Does Not Change", values: ["database schema", "RLS", "storage", "authentication", "secrets", "unrelated Edge Functions"], kind: "plain" },
       ],
     }],
-    reviewedSource: "Manual review of the complete plan structure and terminal verification section.",
+    reviewedSource: "Manual review of synchronized revision evidence, exact function list, shared import path, verification steps, and non-goals.",
   },
   {
     path: "/docs/guides/GUIDE_STYLE_RULES.md",
@@ -88,9 +251,9 @@ export const documentationArchitectureFiles = defineManualArchitectureFiles([
   {
     path: "/docs/guides/admin-panel-page-structure-guide.md",
     header: documentationHeader,
-    metric: "234 lines",
+    metric: "314 lines",
     metricDescription: "Admin-panel architecture guide.",
-    description: "Maps the admin landing page, tool metadata, edit modal, image generation, model settings, App Guide, App Architecture, Roleplay Pipeline, Quality Hub, component tree, state, styling, and admin-only access boundary.",
+    description: "Maps the ten-tile Admin hub, embedded-versus-standalone routing, tile metadata persistence, edit modal, Chronicle Knowledge Base, App Architecture, Supabase Schema Reference, Roleplay Pipeline, Quality Hub, Validation Evidence Ledger, component tree, state, styling, and layered Admin access boundary.",
     rows: [{
       id: "admin-panel-guide",
       title: "Admin tool surface map",
@@ -99,11 +262,11 @@ export const documentationArchitectureFiles = defineManualArchitectureFiles([
       badgeClass: "documentation",
       security: true,
       details: [
-        { label: "Primary Source Files", values: ["/src/pages/Admin.tsx", "/src/components/admin/AdminToolEditModal.tsx", "/src/components/admin/ImageGenerationTool.tsx"], kind: "files" },
-        { label: "Covers", values: ["tool metadata", "sub-tool routing", "admin state", "security and access control", "known admin-tool dependencies"], kind: "plain" },
+        { label: "Primary Source Files", values: ["/src/pages/Admin.tsx", "/src/App.tsx", "/src/components/admin/AdminToolEditModal.tsx", "/src/pages/style-guide/chronicle-knowledge-base.tsx"], kind: "files" },
+        { label: "Covers", values: ["ten stable tool IDs", "embedded and protected route selection", "metadata persistence", "Admin state", "Knowledge Base integration", "security and access control", "cross-tool references"], kind: "plain" },
       ],
     }],
-    reviewedSource: "Manual review of every section and the standalone-tool inventory.",
+    reviewedSource: "Manual review of all thirteen required guide sections, ten current default tiles, every route branch, persistence flow, component tree, security boundary, and cross-page dependency.",
   },
   {
     path: "/docs/guides/app-overview-global-systems.md",
@@ -421,7 +584,7 @@ export const documentationArchitectureFiles = defineManualArchitectureFiles([
     header: documentationHeader,
     metric: "7 lines",
     metricDescription: "Archived transfer-pack placeholder.",
-    description: "Marks the former generated Chronicle transfer pack as intentionally removed from source control and directs maintainers to dashboard exports and the Quality Hub Change Log for current handoff data.",
+    description: "Marks the former generated Chronicle transfer pack as intentionally removed from source control and directs maintainers to the applicable Chronicle Knowledge Base Current Work record for active handoff data. It identifies the repository Changelog as read-only accepted history rather than an active workspace.",
     rows: [{
       id: "archived-transfer-pack-one",
       title: "Archived transfer artifact",
@@ -429,7 +592,7 @@ export const documentationArchitectureFiles = defineManualArchitectureFiles([
       badgeLabel: "DOCUMENTATION",
       badgeClass: "documentation",
       details: [
-        { label: "Directs To", values: ["App Dashboard export flows", "Quality Hub Change Log"], kind: "plain" },
+        { label: "Directs To", values: ["applicable Chronicle Knowledge Base Current Work record", "repository Changelog for read-only accepted history"], kind: "plain" },
         { label: "Requires", values: ["new full snapshots belong in release artifacts rather than committed source"], kind: "plain" },
       ],
     }],
@@ -440,7 +603,7 @@ export const documentationArchitectureFiles = defineManualArchitectureFiles([
     header: documentationHeader,
     metric: "7 lines",
     metricDescription: "Second archived transfer-pack placeholder.",
-    description: "Marks the second former generated Chronicle transfer pack as intentionally removed from source control and directs maintainers to dashboard exports and the Quality Hub Change Log for current handoff data.",
+    description: "Marks the second former generated Chronicle transfer pack as intentionally removed from source control and directs maintainers to the applicable Chronicle Knowledge Base Current Work record for active handoff data. It identifies the repository Changelog as read-only accepted history rather than an active workspace.",
     rows: [{
       id: "archived-transfer-pack-two",
       title: "Archived transfer artifact",
@@ -448,7 +611,7 @@ export const documentationArchitectureFiles = defineManualArchitectureFiles([
       badgeLabel: "DOCUMENTATION",
       badgeClass: "documentation",
       details: [
-        { label: "Directs To", values: ["App Dashboard export flows", "Quality Hub Change Log"], kind: "plain" },
+        { label: "Directs To", values: ["applicable Chronicle Knowledge Base Current Work record", "repository Changelog for read-only accepted history"], kind: "plain" },
         { label: "Requires", values: ["new full snapshots belong in release artifacts rather than committed source"], kind: "plain" },
       ],
     }],

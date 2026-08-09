@@ -16,6 +16,26 @@ const documentationHeader = {
 
 export const staticAssetArchitectureFiles = defineManualArchitectureFiles([
   {
+    path: "/src/assets/architecture-knowledge-hub/community-gallery-overview.png",
+    header: assetHeader,
+    metric: "1,305,249 bytes · 2,824×1,762",
+    metricDescription: "Checked-in Community Gallery screenshot used by Chronicle Knowledge Base.",
+    description:
+      "Provides the checked-in Community Gallery interface image used by the repository-owned Knowledge Base. The page imports it through Vite and renders it immediately beneath the Community Gallery overview chapter heading; the image is reference documentation and does not control Gallery behavior.",
+    rows: [],
+    reviewedSource: "Manual inspection of dimensions, byte size, SHA-256 identity, imported consumer, and alternative text.",
+  },
+  {
+    path: "/src/assets/architecture-knowledge-hub/admin-panel-overview.png",
+    header: assetHeader,
+    metric: "1,286,524 bytes · 2,798×1,748",
+    metricDescription: "Checked-in Admin Panel screenshot used by Chronicle Knowledge Base.",
+    description:
+      "Provides the checked-in Admin Panel interface image used by the repository-owned Knowledge Base. The page imports it through Vite and renders it in Chronicle Overview's Admin Panel tab; the image is reference documentation and does not define the live Admin tile registry.",
+    rows: [],
+    reviewedSource: "Manual inspection of dimensions, byte size, SHA-256 identity, imported consumer, and alternative text.",
+  },
+  {
     path: "/public/favicon.ico",
     header: assetHeader,
     metric: "109 lines",

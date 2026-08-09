@@ -268,10 +268,10 @@ export const adminGalleryFinanceServiceArchitectureFiles = defineManualArchitect
   {
     path: "/src/services/gallery-data.ts",
     header: serviceHeader,
-    metric: "659 lines",
+    metric: "660 lines",
     metricDescription: "Community publishing, discovery, engagement, reviews, and remix data boundary.",
     description:
-      "Owns Chronicle's community-gallery data operations. It publishes and unpublishes scenarios, manages likes and saved-story collections, records plays and views through server functions, fetches filtered gallery pages and a user's published work, tracks remixes, submits and deletes detailed reviews, exposes public review and creator-rating projections, and loads the character previews used by scenario detail cards.",
+      "Owns Chronicle's community-gallery data operations. It publishes and unpublishes scenarios, manages likes and saved-story collections, records plays and views through server functions, fetches filtered gallery pages while propagating request failures instead of disguising them as empty results, loads a user's published work, tracks remixes, submits and deletes detailed reviews, exposes public review and creator-rating projections, and loads the character previews used by scenario detail cards.",
     rows: [
       {
         id: "gallery-publishing",
@@ -319,7 +319,17 @@ export const adminGalleryFinanceServiceArchitectureFiles = defineManualArchitect
         ],
       },
     ],
-    reviewedSource: "Manual review of every exported gallery operation, table/RPC/edge boundary, interaction identity, filtering, review persistence, creator rating, and character preview mapping.",
+    reviewedSource: "Manual review of every exported gallery operation, request-failure propagation, table/RPC/edge boundary, interaction identity, filtering, review persistence, creator rating, and character preview mapping through August 8, 2026.",
+  },
+  {
+    path: "/src/services/gallery-data.test.ts",
+    header: testHeader,
+    metric: "55 lines",
+    metricDescription: "Gallery discovery service failure-boundary regression tests.",
+    description:
+      "Proves that fetchGalleryScenarios rejects an RPC failure instead of translating it into an empty Gallery page, while preserving the legitimate successful-empty response. It also verifies the exact recent-sort, page-size, and offset request used by the service fixture.",
+    rows: [],
+    reviewedSource: "Manual review of the RPC-error and successful-empty service tests on August 8, 2026.",
   },
   {
     path: "/src/services/review-ratings.ts",

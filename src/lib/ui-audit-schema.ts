@@ -191,7 +191,12 @@ export interface QualityModuleChecklist {
   scope: string[];
   checks: string[];
   evidenceRequired: string[];
-  loggingTargets: Array<"issue-registry" | "scan-runs" | "change-log">;
+  loggingTargets: Array<
+    "issue-registry"
+    | "scan-runs"
+    | "change-log"
+    | "knowledge-base-current-work"
+  >;
   doneCriteria: string[];
 }
 

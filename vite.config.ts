@@ -1,8 +1,67 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
+import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { lstatSync, readFileSync, readlinkSync } from "node:fs";
 import { componentTagger } from "lovable-tagger";
 import { validationEvidenceDevPlugin } from "./src/features/validation-evidence/dev-middleware";
+
+function readGitText(args: string[]): string | null {
+  try {
+    return execFileSync("git", args, {
+      cwd: __dirname,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return null;
+  }
+}
+
+function computeSourceFingerprint(): string {
+  try {
+    const rawPaths = execFileSync(
+      "git",
+      ["ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+      { cwd: __dirname, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+    );
+    const paths = rawPaths.split("\0").filter(Boolean).sort();
+    const hash = createHash("sha256");
+    for (const relativePath of paths) {
+      const absolutePath = path.resolve(__dirname, relativePath);
+      const stat = lstatSync(absolutePath, { throwIfNoEntry: false });
+      hash.update(relativePath);
+      hash.update("\0");
+      if (!stat) {
+        hash.update("deleted\0");
+      } else if (stat.isSymbolicLink()) {
+        hash.update("symlink\0");
+        hash.update(readlinkSync(absolutePath));
+        hash.update("\0");
+      } else if (stat.isFile()) {
+        hash.update("file\0");
+        hash.update(readFileSync(absolutePath));
+        hash.update("\0");
+      } else {
+        hash.update("other\0");
+      }
+    }
+    return hash.digest("hex");
+  } catch {
+    return "unavailable";
+  }
+}
+
+const packageJson = JSON.parse(
+  readFileSync(path.resolve(__dirname, "package.json"), "utf8"),
+) as { version?: unknown };
+const applicationVersion =
+  typeof packageJson.version === "string" && packageJson.version.length > 0
+    ? packageJson.version
+    : "unavailable";
+const sourceRevision = readGitText(["rev-parse", "HEAD"]) ?? "unavailable";
+const sourceFingerprint = computeSourceFingerprint();
 
 function packageChunk(id: string) {
   if (!id.includes("node_modules")) return undefined;
@@ -61,6 +120,11 @@ export default defineConfig(({ mode }) => ({
     },
   },
   plugins: [react(), validationEvidenceDevPlugin(), mode === "development" && componentTagger()].filter(Boolean),
+  define: {
+    "import.meta.env.VITE_CHRONICLE_APPLICATION_VERSION": JSON.stringify(applicationVersion),
+    "import.meta.env.VITE_CHRONICLE_SOURCE_REVISION": JSON.stringify(sourceRevision),
+    "import.meta.env.VITE_CHRONICLE_SOURCE_FINGERPRINT": JSON.stringify(sourceFingerprint),
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

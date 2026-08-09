@@ -122,7 +122,11 @@ export const GalleryHub = React.forwardRef<HTMLDivElement, GalleryHubProps>(({
     hasNextPage,
     isFetchingNextPage,
     isLoading,
+    isPaused,
     isError,
+    isFetchNextPageError,
+    isFetching,
+    refetch,
   } = useInfiniteQuery({
     queryKey: ['gallery-scenarios', queryParams],
     queryFn: async ({ pageParam = 0 }) => {
@@ -154,6 +158,54 @@ export const GalleryHub = React.forwardRef<HTMLDivElement, GalleryHubProps>(({
     return scenarios;
   }, [scenarios]);
 
+  const [paginationFailurePendingRetry, setPaginationFailurePendingRetry] =
+    useState(false);
+  const [recoveryAnnouncement, setRecoveryAnnouncement] = useState('');
+  const currentQueryParamsRef = useRef(queryParams);
+  currentQueryParamsRef.current = queryParams;
+
+  useEffect(() => {
+    if (isFetchNextPageError) {
+      setPaginationFailurePendingRetry(true);
+    }
+  }, [isFetchNextPageError]);
+
+  useEffect(() => {
+    setPaginationFailurePendingRetry(false);
+    setRecoveryAnnouncement('');
+  }, [queryParams]);
+
+  const retryInitialLoad = useCallback(async () => {
+    const retryQueryParams = queryParams;
+    const result = await refetch();
+    if (
+      result.isError ||
+      currentQueryParamsRef.current !== retryQueryParams
+    ) return;
+
+    const storyCount = result.data?.pages.flat().length ?? 0;
+    setRecoveryAnnouncement(
+      storyCount > 0
+        ? 'Community Gallery loaded.'
+        : 'Community Gallery loaded. No stories matched the current selection.',
+    );
+  }, [queryParams, refetch]);
+
+  const retryFailedNextPage = useCallback(async () => {
+    const retryQueryParams = queryParams;
+    const result = await fetchNextPage({ cancelRefetch: false });
+    if (
+      result.isFetchNextPageError ||
+      currentQueryParamsRef.current !== retryQueryParams
+    ) return;
+
+    const storyCount = result.data?.pages.flat().length ?? visibleScenarios.length;
+    setPaginationFailurePendingRetry(false);
+    setRecoveryAnnouncement(
+      `Additional stories loaded. ${storyCount} stories are now shown.`,
+    );
+  }, [fetchNextPage, queryParams, visibleScenarios.length]);
+
   // Fetch user interactions (likes/saves) for visible scenarios
   const scenarioIds = useMemo(() => visibleScenarios.map(s => s.id), [visibleScenarios]);
   
@@ -173,12 +225,26 @@ export const GalleryHub = React.forwardRef<HTMLDivElement, GalleryHubProps>(({
   // Infinite scroll: IntersectionObserver on sentinel
   useEffect(() => {
     const sentinel = sentinelRef.current;
-    if (!sentinel) return;
+    if (
+      !sentinel ||
+      paginationFailurePendingRetry ||
+      isFetchNextPageError ||
+      isFetching ||
+      isPaused
+    ) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
-          fetchNextPage();
+        if (
+          entries[0].isIntersecting &&
+          hasNextPage &&
+          !isFetchingNextPage &&
+          !isFetchNextPageError &&
+          !paginationFailurePendingRetry &&
+          !isFetching &&
+          !isPaused
+        ) {
+          void fetchNextPage();
         }
       },
       { rootMargin: '200px' }
@@ -186,7 +252,15 @@ export const GalleryHub = React.forwardRef<HTMLDivElement, GalleryHubProps>(({
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+    paginationFailurePendingRetry,
+    isFetching,
+    isPaused,
+    fetchNextPage,
+  ]);
 
   // Realtime subscription on public.published_scenarios was removed as part of
   // the Batch D / security closeout: any authenticated user could subscribe to
@@ -365,6 +439,13 @@ export const GalleryHub = React.forwardRef<HTMLDivElement, GalleryHubProps>(({
 
   return (
     <div ref={ref} className="w-full h-full flex flex-col bg-[#121214]">
+      <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        {isPaused
+          ? visibleScenarios.length > 0
+            ? 'Waiting for a connection to load more stories.'
+            : 'Waiting for a connection to load the Community Gallery.'
+          : recoveryAnnouncement}
+      </p>
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {sidebarOpen && (
           <aside
@@ -545,7 +626,7 @@ export const GalleryHub = React.forwardRef<HTMLDivElement, GalleryHubProps>(({
 
           {/* Gallery Grid */}
           <div className="px-6 pb-10">
-            {isLoading ? (
+            {isLoading || (isPaused && visibleScenarios.length === 0) ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 lg:gap-8">
                 {[0, 1, 2, 3].map((i) => (
                   <div
@@ -553,6 +634,30 @@ export const GalleryHub = React.forwardRef<HTMLDivElement, GalleryHubProps>(({
                     className="h-[430px] rounded-[28px] border border-[rgba(86,118,164,0.85)] bg-[linear-gradient(180deg,rgba(255,255,255,0.04)_0%,rgba(24,25,33,0.95)_100%)]"
                   />
                 ))}
+              </div>
+            ) : isError && visibleScenarios.length === 0 ? (
+              <div
+                role="alert"
+                className="flex min-h-64 flex-col items-center justify-center rounded-[28px] border border-white/10 bg-[#1c1c1f] px-6 py-8 text-center"
+              >
+                <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-ghost-white">
+                  <Globe className="h-10 w-10 text-white/30" />
+                </div>
+                <h3 className="mb-2 text-xl font-bold text-white">
+                  Couldn’t load the Community Gallery
+                </h3>
+                <p className="max-w-md text-[rgba(248,250,252,0.7)]">
+                  Chronicle couldn’t retrieve the story catalog. Your current
+                  feed, search, and filters are unchanged.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void retryInitialLoad()}
+                  disabled={isFetching}
+                  className="mt-5 rounded-full bg-[#4a5f7f] px-5 py-2 text-sm font-bold text-white transition-colors hover:bg-[#5a7292] disabled:cursor-wait disabled:opacity-60"
+                >
+                  {isFetching ? 'Retrying…' : 'Retry'}
+                </button>
               </div>
             ) : visibleScenarios.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-64 text-center">
@@ -590,12 +695,33 @@ export const GalleryHub = React.forwardRef<HTMLDivElement, GalleryHubProps>(({
 
                 {/* Infinite scroll sentinel */}
                 <div ref={sentinelRef} className="flex items-center justify-center py-8">
-                  {isFetchingNextPage && (
+                  {paginationFailurePendingRetry || isFetchNextPageError ? (
+                    <div
+                      role="alert"
+                      className="flex flex-col items-center gap-3 text-center sm:flex-row sm:text-left"
+                    >
+                      <p className="text-sm text-white/70">
+                        Couldn’t load more stories. The stories already shown
+                        are still available.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => void retryFailedNextPage()}
+                        disabled={isFetching}
+                        className="rounded-full bg-[#4a5f7f] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[#5a7292] disabled:cursor-wait disabled:opacity-60"
+                      >
+                        {isFetching ? 'Please wait…' : 'Retry'}
+                      </button>
+                    </div>
+                  ) : isPaused ? (
+                    <p className="text-white/50 text-sm">
+                      Waiting for a connection to load more stories…
+                    </p>
+                  ) : isFetchingNextPage ? (
                     <p className="text-white/50 text-sm">Loading more stories…</p>
-                  )}
-                  {!hasNextPage && visibleScenarios.length > 0 && (
+                  ) : !hasNextPage && visibleScenarios.length > 0 ? (
                     <p className="text-white/30 text-sm">You've reached the end</p>
-                  )}
+                  ) : null}
                 </div>
               </>
             )}

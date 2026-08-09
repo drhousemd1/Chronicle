@@ -1,0 +1,221 @@
+{
+  "version": 1,
+  "reviewedCommit": "d9a3fa6adfd84ab896289e03d82283f676a1695e",
+  "applicationMap": {
+    "id": "chronicle-overview",
+    "label": "Chronicle Overview",
+    "description": "What Chronicle is, how every capability fits together, and where responsibility transfers next.",
+    "document": "chronicle-overview.md",
+    "tabs": [
+      {
+        "id": "overview",
+        "label": "Overview",
+        "contentKind": "markdown-section",
+        "heading": "Overview",
+        "reviewed": "07/25/2026",
+        "updated": "07/25/2026"
+      },
+      {
+        "id": "community-gallery",
+        "label": "Community Gallery",
+        "contentKind": "markdown-section",
+        "heading": "Community Gallery"
+      },
+      {
+        "id": "my-stories",
+        "label": "My Stories",
+        "contentKind": "blank"
+      },
+      {
+        "id": "character-library",
+        "label": "Character Library",
+        "contentKind": "blank"
+      },
+      {
+        "id": "my-images",
+        "label": "My Images",
+        "contentKind": "blank"
+      },
+      {
+        "id": "story-builder",
+        "label": "Story Builder",
+        "contentKind": "blank"
+      },
+      {
+        "id": "character-builder",
+        "label": "Character Builder",
+        "contentKind": "blank"
+      },
+      {
+        "id": "chat-interface",
+        "label": "Chat Interface",
+        "contentKind": "blank"
+      },
+      {
+        "id": "chat-history",
+        "label": "Chat History",
+        "contentKind": "blank"
+      },
+      {
+        "id": "public-profile",
+        "label": "Public Profile",
+        "contentKind": "blank"
+      },
+      {
+        "id": "account",
+        "label": "Account Settings",
+        "contentKind": "blank"
+      },
+      {
+        "id": "admin",
+        "label": "Admin Panel",
+        "contentKind": "markdown-section",
+        "heading": "Admin Panel"
+      }
+    ]
+  },
+  "capabilities": [
+    {
+      "id": "community-gallery",
+      "label": "Community Gallery",
+      "description": "How people discover, evaluate, save, play, review, remix, and publish shared stories.",
+      "document": "community-gallery.md",
+      "tabs": [
+        {
+          "id": "overview",
+          "label": "Overview",
+          "contentKind": "markdown-section",
+          "heading": "Overview",
+          "reviewed": "08/08/2026",
+          "updated": "07/31/2026"
+        },
+        {
+          "id": "ui-elements-functions",
+          "label": "UI Elements and Functions",
+          "contentKind": "markdown-section",
+          "heading": "UI Elements and Functions",
+          "reviewed": "08/08/2026",
+          "updated": "07/31/2026"
+        },
+        {
+          "id": "app-architecture",
+          "label": "App Architecture",
+          "contentKind": "markdown-section",
+          "heading": "App Architecture",
+          "reviewed": "08/08/2026",
+          "updated": "08/08/2026"
+        },
+        {
+          "id": "issues",
+          "label": "Issues",
+          "contentKind": "issue-records"
+        },
+        {
+          "id": "current-work",
+          "label": "Current Work",
+          "contentKind": "current-work-records"
+        },
+        {
+          "id": "supabase-tables",
+          "label": "Supabase Tables",
+          "contentKind": "shared-supabase",
+          "reviewed": "07/31/2026",
+          "updated": "07/31/2026"
+        },
+        {
+          "id": "changelog",
+          "label": "Changelog",
+          "contentKind": "changelog-records"
+        }
+      ]
+    },
+    {
+      "id": "my-stories",
+      "label": "My Stories",
+      "description": "How drafts, saved community stories, published work, imports, exports, and play entry are managed."
+    },
+    {
+      "id": "character-library",
+      "label": "Character Library",
+      "description": "How reusable global characters are created, edited, selected, copied into stories, and kept separate from story-owned characters."
+    },
+    {
+      "id": "my-images",
+      "label": "My Images",
+      "description": "How private images are uploaded, organized, viewed, copied into consuming features, and deleted."
+    },
+    {
+      "id": "story-builder",
+      "label": "Story Builder",
+      "description": "How a story's world, direction, cast, opening state, media, and publication readiness are assembled."
+    },
+    {
+      "id": "character-builder",
+      "label": "Character Builder",
+      "description": "How story and library characters are authored, enhanced, validated, and persisted."
+    },
+    {
+      "id": "chat-interface",
+      "label": "Chat Interface",
+      "description": "The complete live roleplay lifecycle from player action through response construction, commit, support work, and evidence."
+    },
+    {
+      "id": "chat-history",
+      "label": "Chat History",
+      "description": "How conversations are listed, resumed, paginated, identified, and deleted."
+    },
+    {
+      "id": "public-profile",
+      "label": "Public Profile",
+      "description": "How creators edit their identity and how other users view, follow, and enter published work."
+    },
+    {
+      "id": "account",
+      "label": "Account Settings",
+      "description": "How authentication, account settings, subscription visibility, sessions, and account actions work."
+    },
+    {
+      "id": "admin",
+      "label": "Admin Panel",
+      "description": "How privileged operators enter the Admin hub and use specialist tools without confusing documentation, diagnostics, validation, and operations."
+    },
+    {
+      "id": "shared-systems",
+      "label": "Shared Systems",
+      "description": "The shell, navigation, authentication, persistence, private media, caching, and shared state used across Chronicle."
+    },
+    {
+      "id": "ai-api-services",
+      "label": "AI & API Services",
+      "description": "Shared provider transport, AI operations, support calls, usage accounting, and service-level failure boundaries."
+    },
+    {
+      "id": "app-architecture-reference",
+      "label": "App Architecture Reference",
+      "description": "The exhaustive generated repository lookup that supports, but does not replace, the capability manuals."
+    }
+  ],
+  "defaultCapabilityTabs": [
+    {
+      "id": "overview",
+      "label": "Overview",
+      "contentKind": "blank"
+    },
+    {
+      "id": "architecture",
+      "label": "Architecture",
+      "contentKind": "blank"
+    },
+    {
+      "id": "supabase-tables",
+      "label": "Supabase Tables",
+      "contentKind": "shared-supabase",
+      "reviewed": "07/31/2026",
+      "updated": "07/31/2026"
+    }
+  ],
+  "sharedDocuments": {
+    "supabase": "supabase-tables.md",
+    "roughDraft": "chronicle-application-manual-writer-rough-draft.md"
+  }
+}

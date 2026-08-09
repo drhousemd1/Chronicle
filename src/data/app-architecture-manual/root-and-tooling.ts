@@ -85,7 +85,7 @@ export const rootAndToolingArchitectureFiles = defineManualArchitectureFiles([
   {
     path: "/bun.lock",
     header: toolingHeader,
-    metric: "1,558 lines",
+    metric: "1,567 lines",
     metricDescription: "Text Bun dependency lockfile.",
     description: "Pins Bun's resolved dependency graph for the package manifest. It is a package-manager artifact rather than application logic and must remain synchronized with package.json whenever Bun is used to install or update dependencies.",
     rows: [
@@ -229,7 +229,7 @@ export const rootAndToolingArchitectureFiles = defineManualArchitectureFiles([
   {
     path: "/package.json",
     header: toolingHeader,
-    metric: "120 lines",
+    metric: "128 lines",
     metricDescription: "Application manifest and command surface.",
     description: "Defines Chronicle's Vite/React package identity, runtime and development dependencies, local development commands, test commands, shipping checks, architecture maintenance, Quality Hub scanning, and validation-evidence workflows.",
     rows: [
@@ -423,7 +423,7 @@ export const rootAndToolingArchitectureFiles = defineManualArchitectureFiles([
   {
     path: "/vite.config.ts",
     header: toolingHeader,
-    metric: "77 lines",
+    metric: "141 lines",
     metricDescription: "Development server and production bundler configuration.",
     description: "Configures the Vite development server, React SWC compilation, development-only component tagging, local Validation Evidence Ledger middleware, the @ source alias, and explicit production chunk boundaries for large dependency families.",
     rows: [

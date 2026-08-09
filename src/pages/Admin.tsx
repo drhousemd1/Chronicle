@@ -48,6 +48,11 @@ const DEFAULT_TOOLS: ToolMeta[] = [
     description: 'Repository map for files, folders, components, and ownership flows',
   },
   {
+    id: 'chronicle_knowledge_base',
+    title: 'Chronicle Knowledge Base',
+    description: 'Product behavior, UI functions, architecture, current work, and source references',
+  },
+  {
     id: 'supabase_schema_reference',
     title: 'Supabase Schema Reference',
     description: 'Source-backed table, RLS, and storage reference for Lovable/Supabase changes',
@@ -147,6 +152,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
   };
 
   const handleOpenTool = (toolId: string) => {
+    if (toolId === 'chronicle_knowledge_base') {
+      navigate('/style-guide/chronicle-knowledge-base');
+      return;
+    }
+
     if (toolId === 'app_architecture') {
       navigate('/style-guide/app-architecture');
       return;
@@ -239,7 +249,15 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
               )}
 
               <div className="absolute inset-x-0 bottom-0 p-5">
-                <h3 className="text-white font-bold text-base truncate">{tool.title}</h3>
+                <h3
+                  className={
+                    tool.id === 'chronicle_knowledge_base'
+                      ? 'text-white font-bold text-sm leading-tight'
+                      : 'text-white font-bold text-base truncate'
+                  }
+                >
+                  {tool.title}
+                </h3>
                 <p className="text-slate-300 text-xs mt-1 italic line-clamp-2">
                   {tool.description}
                 </p>

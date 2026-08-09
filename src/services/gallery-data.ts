@@ -425,7 +425,7 @@ export async function fetchGalleryScenarios(params: FetchGalleryParams): Promise
 
   if (error) {
     console.error('Failed to fetch gallery scenarios:', error);
-    return [];
+    throw error;
   }
 
   // The RPC returns a JSON array directly

@@ -172,6 +172,97 @@ export const adminDocumentationLibraryArchitectureFiles = defineManualArchitectu
     reviewedSource: "Manual review of node types, generic inference boundaries, tree construction, statistics, package guards, descendant traversal, and prompt summary helper.",
   },
   {
+    path: "/src/lib/quality-hub-changelog-migration.test.ts",
+    header: testHeader,
+    metric: "467 lines",
+    metricDescription: "Contract, stability, privacy, and checksum tests for Changelog migration exports.",
+    description:
+      "Exercises deterministic JSON ordering and SHA-256 output, strict Changelog projection, bounded input graphs, exact enum and field validation, source-specific hashes, legacy registries without a Changelog, and fail-closed browser-crypto requirements. It also proves that owner or local-storage changes cancel export, private registry fields are omitted, embedded owner identifiers and email addresses are blocked, fingerprints use fresh salts, and checksums cover the exact serialized bytes.",
+    rows: [],
+    reviewedSource: "Manual review of every canonicalization, projection, limit, crypto, source-analysis, stability, privacy, fingerprint, filename, and exact-byte checksum test case.",
+  },
+  {
+    path: "/src/lib/quality-hub-changelog-migration.ts",
+    header: codeHeader,
+    metric: "786 lines",
+    metricDescription: "Fail-closed contract and serializer for authenticated Quality Hub Changelog migration evidence.",
+    description:
+      "Projects only the approved Changelog and comment fields from owner-database, pre-load local-storage, and repository-seed registries while hashing each complete source separately. It validates bounded plain JSON, stable owner and local-storage rereads, application build identity, secure Web Crypto, and sensitive-value exclusion before creating a canonical version-one package, salted owner fingerprint, exact UTF-8 bytes, SHA-256 receipt, and paired safe filenames for the capture component and private staging command.",
+    rows: [
+      {
+        id: "quality-hub-migration-source-proof",
+        title: "Three-source capture with stability proof",
+        summary:
+          "Keeps owner database, pre-load local storage, and repository seed distinguishable, compares initial and final live-source hashes, and cancels export when identity, timestamps, registry bytes, or local presence change during capture.",
+        badgeLabel: "SOURCE PROOF",
+        badgeClass: "data-block",
+        details: [
+          {
+            label: "Caller",
+            values: ["/src/features/quality-hub/quality-hub-changelog-migration-capture.tsx"],
+            kind: "files",
+          },
+          {
+            label: "Consumer",
+            values: ["/scripts/stage-quality-hub-changelog-migration.mjs"],
+            kind: "files",
+          },
+        ],
+        security: true,
+      },
+      {
+        id: "quality-hub-migration-export-boundary",
+        title: "Minimal migration package and privacy gate",
+        summary:
+          "Exports projected historical entries plus counts, hashes, build identity, database timestamps, and a non-reusable owner fingerprint; full registries, sessions, tokens, raw owner IDs, and email-bearing history do not cross the package boundary.",
+        badgeLabel: "EXPORT BOUNDARY",
+        badgeClass: "code-logic",
+        details: [],
+        security: true,
+      },
+    ],
+    reviewedSource: "Manual review of package contracts, exact field projection, canonical serialization, graph and byte limits, source hashes, stability comparisons, build validation, sensitive-value scan, cryptographic fingerprinting, checksum generation, and returned download metadata.",
+  },
+  {
+    path: "/src/lib/quality-hub-read-only.test.ts",
+    header: testHeader,
+    metric: "188 lines",
+    metricDescription: "Unit tests for the permanent Quality Hub legacy-Changelog preservation boundary.",
+    description:
+      "Proves that object-key order does not create false differences while Changelog array order remains meaningful; older registries upgrade without gaining seeded history; direct add, edit, comment, removal, and reorder attempts are rejected; unrelated workspace changes retain a protected clone; and imports may omit or exactly match the frozen legacy history but cannot change it.",
+    rows: [],
+    reviewedSource: "Manual review of every canonical-comparison, upgrade-preservation, direct-update rejection, unrelated-update acceptance, and import acceptance/rejection case on August 6, 2026.",
+  },
+  {
+    path: "/src/lib/quality-hub-read-only.ts",
+    header: codeHeader,
+    metric: "126 lines",
+    metricDescription: "Shared enforcement boundary that keeps the embedded Quality Hub legacy Changelog read-only.",
+    description:
+      "Canonicalizes JSON for structural comparison, deep-clones the protected legacy Changelog, upgrades non-Changelog workspace data without merging repository seed history, rejects any proposed registry write that changes the protected value, and prepares imports that preserve an omitted or identical legacy history while rejecting changed history before any workspace data is applied.",
+    rows: [
+      {
+        id: "quality-hub-read-only-update-guard",
+        title: "One preservation rule for every workspace write",
+        summary:
+          "Compares each proposed registry snapshot with the exact legacy history loaded for the active owner and returns a protected clone only when that history is unchanged.",
+        badgeLabel: "WRITE GUARD",
+        badgeClass: "code-logic",
+        details: [],
+      },
+      {
+        id: "quality-hub-read-only-import-guard",
+        title: "Fail-closed workspace imports",
+        summary:
+          "Allows supported non-Changelog data to merge when an import omits or exactly preserves the legacy Changelog and rejects the complete import when that field differs.",
+        badgeLabel: "IMPORT GUARD",
+        badgeClass: "integration",
+        details: [],
+      },
+    ],
+    reviewedSource: "Manual review of canonical comparison, cloning, upgrade isolation, shared update enforcement, and import preparation on August 6, 2026.",
+  },
+  {
     path: "/src/lib/ui-audit-schema.ts",
     header: codeHeader,
     metric: "278 lines",
@@ -187,7 +278,7 @@ export const adminDocumentationLibraryArchitectureFiles = defineManualArchitectu
     metric: "269 lines",
     metricDescription: "Quality Hub sorting, grouping, summaries, and registry merge behavior.",
     description:
-      "Implements the non-UI operations behind Quality Hub: stable severity sorting, grouping and counting by review dimensions, run-summary calculation, reviewed-module progress, and merge rules that preserve existing findings, comments, verification history, and change-log records when a new scan registry is imported. It also generates compact timestamps and local IDs for new maintenance records.",
+      "Implements the non-UI operations behind Quality Hub: stable severity sorting, grouping and counting by review dimensions, run-summary calculation, reviewed-module progress, and general registry merge rules. The permanent Quality Hub import path wraps these general merge rules with the separate read-only boundary so its embedded legacy Changelog cannot be added, removed, edited, commented on, or reordered. This utility also generates compact timestamps and local IDs for new maintenance records.",
     rows: [],
     reviewedSource: "Manual review of finding order, all counter/group helpers, run summary, registry merge preservation rules, timestamps, and ID creation.",
   },

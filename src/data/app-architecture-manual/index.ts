@@ -37,8 +37,9 @@ import { supabaseAprilMigrationArchitectureFiles } from "./supabase-migrations-2
 import { supabaseMayMigrationArchitectureFiles } from "./supabase-migrations-2026-05";
 import { supabaseJuneMigrationArchitectureFiles } from "./supabase-migrations-2026-06";
 import { supabaseJulyMigrationArchitectureFiles } from "./supabase-migrations-2026-07";
+import { architectureFileMetrics } from "../architecture-file-metrics";
 
-export const manualArchitectureFiles: readonly ManualArchitectureFile[] = [
+const reviewedManualArchitectureFiles: readonly ManualArchitectureFile[] = [
   ...rootAndToolingArchitectureFiles,
   ...documentationArchitectureFiles,
   ...uiPrimitiveArchitectureFiles,
@@ -78,6 +79,17 @@ export const manualArchitectureFiles: readonly ManualArchitectureFile[] = [
   ...supabaseJuneMigrationArchitectureFiles,
   ...supabaseJulyMigrationArchitectureFiles,
 ];
+
+export const manualArchitectureFiles: readonly ManualArchitectureFile[] =
+  reviewedManualArchitectureFiles.map((file) => {
+    const generatedMetric = architectureFileMetrics[file.path];
+    return generatedMetric
+      ? {
+          ...file,
+          metric: `${generatedMetric.lineCount.toLocaleString("en-US")} lines`,
+        }
+      : file;
+  });
 
 export const manualArchitectureFileByPath = new Map<string, ManualArchitectureFile>(
   manualArchitectureFiles.map((file) => [file.path, file] as const),

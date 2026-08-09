@@ -297,7 +297,7 @@ export const dataRegistryArchitectureFiles = defineManualArchitectureFiles([
   {
     path: "/src/data/architecture-extra-paths.ts",
     header: dataHeader,
-    metric: "174 lines",
+    metric: "198 lines",
     metricDescription: "Generated inventory of tracked non-src files shown by App Architecture.",
     description:
       "Lists the documentation, public assets, scripts, end-to-end test, Supabase configuration, edge functions, shared backend helpers, and historical migrations included in the existing architecture inventory. The refresh script writes this path list; it contains no descriptions and must never be used to auto-author file responsibilities.",
@@ -307,7 +307,7 @@ export const dataRegistryArchitectureFiles = defineManualArchitectureFiles([
   {
     path: "/src/data/architecture-file-analysis.ts",
     header: dataHeader,
-    metric: "647 lines",
+    metric: "701 lines",
     metricDescription: "Generated static relationship measurements for tracked architecture files.",
     description:
       "Stores per-file arrays for imports, reverse consumers, table reads and writes, RPC calls, edge-function calls, storage buckets and operations, and browser-storage reads and writes. App Architecture can add these measured relationships beside manual prose, but the dataset does not understand semantic ownership and cannot replace a human file profile.",
@@ -336,7 +336,7 @@ export const dataRegistryArchitectureFiles = defineManualArchitectureFiles([
   {
     path: "/src/data/architecture-file-metrics.ts",
     header: dataHeader,
-    metric: "647 lines",
+    metric: "701 lines",
     metricDescription: "Generated line counts for text files in the architecture inventory.",
     description:
       "Maps each tracked text path to the line count measured by the architecture refresh script. The page uses these values as a size signal, not as a behavioral description. Binary files require an asset-appropriate byte or dimension metric and must not be presented as zero-line source code.",
@@ -346,12 +346,312 @@ export const dataRegistryArchitectureFiles = defineManualArchitectureFiles([
   {
     path: "/src/data/architecture-source-paths.ts",
     header: dataHeader,
-    metric: "477 lines",
+    metric: "506 lines",
     metricDescription: "Generated inventory of source files shown by App Architecture.",
     description:
       "Lists tracked files under src for the existing architecture inventory, from application routes and components through runtime features, services, types, integrations, libraries, data registries, and tests. The refresh script owns this list; it establishes coverage identity only and contains no trustworthy purpose, category, status, or responsibility text.",
     rows: [],
     reviewedSource: "Manual review of the generated-file warning, source-path coverage, omissions boundary, and current page consumer.",
+  },
+  {
+    path: "/src/data/chronicle-knowledge-base/capability-ids.ts",
+    header: dataHeader,
+    metric: "25 lines",
+    metricDescription: "Shared vocabulary for Chronicle Knowledge Base capability identities.",
+    description:
+      "Defines the approved stable IDs used by capability manifests, Changelog applicability, and record validation. The type guard prevents a Changelog projection from accepting an invented capability name that no Knowledge Base section owns.",
+    rows: [],
+    reviewedSource: "Manual review of the approved capability list, exported type, and runtime identity guard on August 1, 2026.",
+  },
+  {
+    path: "/src/data/chronicle-knowledge-base/changelog-archive-route.ts",
+    header: dataHeader,
+    metric: "40 lines",
+    metricDescription: "Reciprocal archive-link verifier for accepted Changelog records.",
+    description:
+      "Returns an archived Current Work route only when the accepted Changelog entry is the same entry present in the fully validated operational registry and its project ID, source path, route, archived status, and closeout backlink all agree. A Changelog record cannot create a trusted archive link from its own metadata alone, so missing or inconsistent relationships fail closed instead of sending readers to an unverified work record.",
+    rows: [],
+    reviewedSource: "Manual review of accepted-variant gating, canonical-registry identity matching, project status and source checks, reciprocal closeout relationship, and null failure result on August 8, 2026.",
+  },
+  {
+    path: "/src/data/chronicle-knowledge-base/changelog-record-contract.ts",
+    header: dataHeader,
+    metric: "2,002 lines",
+    metricDescription: "Global Markdown contract and capability projection for Chronicle Changelog history.",
+    description:
+      "Validates one repository-owned Changelog source containing modern accepted closeouts, preserved historical Quality Hub records, and append-only corrections. It requires complete modern narrative and evidence fields, binds readable Markdown sections to their structured values, derives historical title, date, and summary only from the preserved Quality Hub payload, rejects placeholder or hidden-section substitutes, enforces deterministic corrections and immutable baseline history, and produces newest-first global or capability-specific projections without importing legacy records itself.",
+    rows: [
+      {
+        id: "changelog-record-contract-variants",
+        title: "Three distinct history meanings",
+        summary:
+          "Keeps a modern user-accepted result, an older Quality Hub status, and a later factual correction from being presented as equivalent proof.",
+        badgeLabel: "CONTRACT",
+        badgeClass: "code-logic",
+        details: [],
+      },
+      {
+        id: "changelog-record-contract-projection",
+        title: "One history, capability-specific views",
+        summary:
+          "Builds effective entries from the same global records and selects only positively reviewed capability mappings, so Community Gallery cannot maintain a copied Changelog that drifts from global history.",
+        badgeLabel: "SOURCE OWNER",
+        badgeClass: "documentation",
+        details: [],
+      },
+    ],
+    reviewedSource: "Manual review of all schemas, accepted narrative requirements, Markdown-lexer section visibility, legacy payload and projection preservation, correction application and readable agreement, baseline protection, sorting, and selector behavior on August 8, 2026.",
+  },
+  {
+    path: "/src/data/chronicle-knowledge-base/changelog-record-contract.test.ts",
+    header: testHeader,
+    metric: "1,572 lines",
+    metricDescription: "Positive and adversarial tests for the shared Chronicle Changelog contract.",
+    description:
+      "Exercises all three record variants, preserved legacy status and hashes, global versus capability-specific selection, one-time effective rendering, deterministic ordering, exact paths and IDs, ownership and archive fields, source revision fingerprints, correction sequencing and mapping, invalid cross-variant claims, and append-only baseline enforcement.",
+    rows: [],
+    reviewedSource: "Manual review of the valid fixtures, rejected mutations, source-boundary checks, effective correction assertions, and immutable-history cases on August 1, 2026.",
+  },
+  {
+    path: "/src/data/chronicle-knowledge-base/changelog-record-sources.ts",
+    header: dataHeader,
+    metric: "110 lines",
+    metricDescription: "Browser-facing loader for Chronicle's repository-owned Changelog records.",
+    description:
+      "Discovers the Markdown records through Vite, normalizes each repository path, validates the complete source set through the shared Changelog contract, and caches one ready-or-error result for every rendered consumer. The canonical loader treats zero discovered files as a source-loading failure, while capability filtering is available only after a valid registry is ready.",
+    rows: [
+      {
+        id: "canonical-changelog-source-discovery",
+        title: "Repository discovery and validation",
+        summary:
+          "Turns the build-time Markdown modules into the exact source map expected by the contract and reports malformed content, non-text modules, paths outside docs, or an absent canonical source set as explicit failures.",
+        badgeLabel: "SOURCE LOADER",
+        badgeClass: "code-logic",
+        details: [
+          {
+            label: "Reads",
+            values: ["/docs/architecture-knowledge/changelog/entries/*.md"],
+            kind: "files",
+          },
+          {
+            label: "Validates Through",
+            values: ["/src/data/chronicle-knowledge-base/changelog-record-contract.ts"],
+            kind: "files",
+          },
+        ],
+      },
+      {
+        id: "canonical-changelog-source-selection",
+        title: "Shared global and capability projections",
+        summary:
+          "Returns all effective records or the same registry filtered by an approved capability identity, preventing the Knowledge Base and Quality Hub from loading different histories.",
+        badgeLabel: "PROJECTION",
+        badgeClass: "data-block",
+        details: [],
+      },
+    ],
+    reviewedSource: "Manual review of build-time discovery, path normalization, source collection, complete-registry validation, absent-source rejection, cached loading, result types, and capability selector on August 5, 2026.",
+  },
+  {
+    path: "/src/data/chronicle-knowledge-base/changelog-record-sources.test.ts",
+    header: testHeader,
+    metric: "101 lines",
+    metricDescription: "Source-backed tests for the canonical global and Community Gallery Changelog projections.",
+    description:
+      "Proves one cached 203-record global history, the exact reviewed 22-record Community Gallery subset, unique identities, Gallery applicability, exclusion of the pending candidate, and deterministic newest-first ordering. It also distinguishes a valid empty contract input from malformed Markdown and proves that an absent production module set is an explicit source-loading failure.",
+    rows: [],
+    reviewedSource: "Manual review of exact ID fixtures, cache identity, global and Gallery counts, applicability, pending exclusion, ordering, malformed-source rejection, and missing-production-source rejection on August 5, 2026.",
+  },
+  {
+    path: "/src/data/chronicle-knowledge-base/reconcile-quality-hub-changelog-migration.test.ts",
+    header: testHeader,
+    metric: "276 lines",
+    metricDescription: "Focused contract tests for legacy-source reconciliation, privacy-safe records, receipts, and projections.",
+    description:
+      "Uses synthetic owner, local-storage, and repository-seed captures to verify exact, normalized, and substantive source differences; pending Gallery exclusion; home-directory privacy replacement; global and Gallery-specific selection; receipt counts and disclosure; exact envelope rejection; owner/local drift blocking; and current-seed mismatch blocking without reading the real private migration export.",
+    rows: [],
+    reviewedSource: "Manual review of every synthetic source variant, policy fixture, expected count, privacy assertion, registry projection, receipt assertion, and strict-package rejection on August 4, 2026.",
+  },
+  {
+    path: "/src/data/chronicle-knowledge-base/manifest.ts",
+    header: dataHeader,
+    metric: "147 lines",
+    metricDescription: "Typed manifest, Markdown registry, section parser, and issue-count boundary for Chronicle Knowledge Base.",
+    description:
+      "Imports the repository-owned manifest and four source-readable Markdown documents at build time, expands the shared three-tab placeholder contract across unfinished capabilities, splits populated documents by their exact top-level headings, returns the active Markdown for each tab, and derives the Issues count directly from issue records.",
+    rows: [
+      {
+        id: "chronicle-knowledge-base-loader",
+        title: "Manifest and source-readable document loading",
+        summary:
+          "Provides one typed lookup for the exact section order, approved visible labels, tab kinds, review metadata, long-form Markdown, shared Supabase directions, and visible manual-writer rough draft.",
+        badgeLabel: "KNOWLEDGE DATA",
+        badgeClass: "data-block",
+        details: [
+          { label: "Manifest", values: ["/docs/architecture-knowledge/manifest.json"], kind: "files" },
+          { label: "Documents", values: ["/docs/architecture-knowledge/chronicle-overview.md", "/docs/architecture-knowledge/community-gallery.md", "/docs/architecture-knowledge/supabase-tables.md", "/docs/architecture-knowledge/chronicle-application-manual-writer-rough-draft.md"], kind: "files" },
+        ],
+      },
+      {
+        id: "chronicle-knowledge-base-parser",
+        title: "Top-level tab extraction and derived issue state",
+        summary:
+          "Maps exact H1 markers to tab content without rewriting the prose and calculates issue counts from the tab's issue-record array rather than accepting a separate mutable counter.",
+        badgeLabel: "PARSER",
+        badgeClass: "code-logic",
+        details: [],
+      },
+    ],
+    reviewedSource: "Manual review of imported sources, manifest contracts, shared-tab expansion, cloning, heading parser, document guards, content dispatch helpers, and issue-count derivation.",
+  },
+  {
+    path: "/src/data/chronicle-knowledge-base/manifest.test.ts",
+    header: testHeader,
+    metric: "291 lines",
+    metricDescription: "Knowledge Base contract, source-depth, App Architecture, Supabase-reference, and Preview-exclusion tests.",
+    description:
+      "Verifies the fifteen-section order, exact capability identities and descriptions, twelve application-map tabs, Gallery's seven tabs, every other capability's three-tab placeholder contract, repository-owned manifest boundary, substantive Overview, UI, and App Architecture sources, review metadata, source image tokens, derived operational state, centralized Supabase directions, visible rough draft, and continued exclusion of the removed Preview audit.",
+    rows: [],
+    reviewedSource: "Manual review of all four manifest and content-integrity test cases.",
+  },
+  {
+    path: "/src/data/chronicle-knowledge-base/operational-record-contract.ts",
+    header: dataHeader,
+    metric: "2,767 lines",
+    metricDescription: "Typed parser, lifecycle rules, and cross-record validator for Knowledge Base operational records.",
+    description:
+      "Defines the Markdown contracts for Issues and active or archived Current Work, combines them with the shared global Changelog contract, derives the capability registry, and rejects invalid states, broken links, duplicate identities, incomplete closeout, ambiguous ownership, unresolved product-acceptance proof, a Changelog source revision not named by the passed acceptance proof, and rewritten append-only history.",
+    rows: [
+      {
+        id: "operational-record-contract-lifecycle",
+        title: "Record lifecycle enforcement",
+        summary:
+          "Separates verified discrepancies, approved active objectives, terminal archives, and concise accepted outcomes so one document cannot quietly serve as several conflicting sources of truth.",
+        badgeLabel: "CONTRACT",
+        badgeClass: "code-logic",
+        details: [],
+      },
+      {
+        id: "operational-record-contract-cross-links",
+        title: "Cross-record consistency checks",
+        summary:
+          "Verifies Issue, proof, history, archive, and Changelog references together and derives freshness flags without letting a hand-maintained warning become a second source of state.",
+        badgeLabel: "VALIDATION",
+        badgeClass: "test",
+        details: [],
+      },
+    ],
+    reviewedSource: "Manual review of schemas, Markdown parsing, state vocabularies, directory placement, identifier agreement, traceability, lifecycle transitions, history guards, and registry derivation.",
+  },
+  {
+    path: "/src/data/chronicle-knowledge-base/operational-record-contract.test.ts",
+    header: testHeader,
+    metric: "2,334 lines",
+    metricDescription: "Positive and negative lifecycle tests for Chronicle operational-record contracts.",
+    description:
+      "Exercises valid empty and populated registries plus rejected headings, fields, states, paths, identities, ownership, traceability, proof links, history edits, closeout relationships, archive placement, stale-work derivation, and terminal-state control logs.",
+    rows: [],
+    reviewedSource: "Manual review of every valid fixture, invalid mutation, expected diagnostic, and lifecycle regression case.",
+  },
+  {
+    path: "/src/data/chronicle-knowledge-base/operational-record-sources.ts",
+    header: dataHeader,
+    metric: "73 lines",
+    metricDescription: "Build-time source loader for Gallery operational records and the global Chronicle Changelog.",
+    description:
+      "Uses deterministic build-time Markdown imports to collect Community Gallery Issue, active-work, and archive files plus the one global Changelog directory. It builds a single checked registry and exposes global or capability-specific Changelog selection without generating, copying, or rewriting any record.",
+    rows: [],
+    reviewedSource: "Manual review of each glob boundary, path normalization, source conversion, sort order, and registry construction call.",
+  },
+  {
+    path: "/src/data/chronicle-knowledge-base/operational-record-sources.test.ts",
+    header: testHeader,
+    metric: "36 lines",
+    metricDescription: "Canonical source-accounting regression for the browser operational registry.",
+    description:
+      "Verifies that every discovered repository Changelog Markdown file is present in the combined Community Gallery operational source map and parsed exactly once. It separately checks raw records, roots, corrections, and effective displayed entries so a future accepted change or correction does not break the test through a stale hardcoded count, while confirming no production archive exists before pilot closeout.",
+    rows: [],
+    reviewedSource: "Manual review of canonical path inclusion, raw-record accounting, root-plus-correction accounting, effective-entry accounting, and the pre-closeout archive boundary on August 6, 2026.",
+  },
+  {
+    path: "/src/data/chronicle-knowledge-base/knowledge-certification-runner.test.ts",
+    header: testHeader,
+    metric: "417 lines",
+    metricDescription: "Process-level tests for full-duration read-only certification leases.",
+    description:
+      "Starts real protected child processes to prove a writer remains blocked for the command's full lifetime, failed commands release their leases, concurrent readers can coexist, and simultaneous registration does not create a false recovery failure. It also kills the wrapper and confirms the detached protected process keeps its lease until it exits, then verifies an unfinished canonical transaction prevents the child from starting at all.",
+    rows: [],
+    reviewedSource: "Manual review of real child processes, writer exclusion, multiple-reader coordination, failed-command cleanup, wrapper-death retention and reclamation, unfinished-transaction refusal, timeouts, and temporary repository cleanup.",
+  },
+  {
+    path: "/src/data/chronicle-knowledge-base/knowledge-record-candidate.test.ts",
+    header: testHeader,
+    metric: "198 lines",
+    metricDescription: "Focused stored-operation state tests for Knowledge record candidates.",
+    description:
+      "Exercises the accepted create, update, and remove before/after byte-and-mode combinations, then rejects staged operations with unexpected bytes, changed modes, missing payloads, unchanged updates, or invalid remove results. The shared semantic validator is mocked in this file, so these tests isolate stored filesystem-state reconstruction rather than proving the complete operational-record lifecycle.",
+    rows: [],
+    reviewedSource: "Manual review of the synthetic inventory, valid operation set, each malformed state mutation, semantic-validator mock, and expected diagnostics.",
+  },
+  {
+    path: "/src/data/chronicle-knowledge-base/knowledge-record-canonical-files.test.ts",
+    header: testHeader,
+    metric: "1,991 lines",
+    metricDescription: "Filesystem tests for exact canonical mutation and restoration primitives.",
+    description:
+      "Uses isolated directories to prove exact create, update, and remove application and reverse restoration across differing bytes and file modes, then interrupts every raw filesystem primitive and durable boundary in a separately defined nine-case action-and-phase sequence. It tests same-looking inode replacements, symlinks, partial files, disappearing or replaced artifacts, complete cleanup preflight, journal-backed ownership, and every recovery prefix. It exercises single-record filesystem behavior; the engine suite owns the multi-record lifecycle.",
+    rows: [],
+    reviewedSource: "Manual review of temporary repositories, frozen boundary expectations, exact interruption prefixes, ownership-proof harness, hard-link topology, same-bytes replacement regressions, unknown-state conflicts, full cleanup preflight, reverse restoration, and artifact cleanup.",
+  },
+  {
+    path: "/src/data/chronicle-knowledge-base/knowledge-record-engine.test.ts",
+    header: testHeader,
+    metric: "1,695 lines",
+    metricDescription: "Integration and process-interruption tests for the Knowledge record engine and CLI.",
+    description:
+      "Runs all four prepare kinds in disposable Git repositories without changing canonical records, then exercises idempotent apply, stale byte, mode, membership, and expected-absent rejection, writer contention, closeout order, and sanitized CLI output. It kills real command processes after each engine mutation and raw filesystem primitive, resumes interrupted restoration, reconstructs durable ownership after restart, rejects mismatched or injected proof authority, and confirms production cannot enable test crash hooks. These fixtures protect the record mechanism; they do not import real Quality Hub history or certify Chronicle runtime behavior.",
+    rows: [],
+    reviewedSource: "Manual review of all prepare cases, disposable inventory comparisons, every caught and abrupt mutation and primitive position, resumed recovery, journal-proof restart and tamper cases, non-overridable authority, repository guard, stale-source cases, writer contention, closeout observations, production failpoint rejection, CLI privacy, and cleanup.",
+  },
+  {
+    path: "/src/data/chronicle-knowledge-base/knowledge-record-transaction-test-fixtures.ts",
+    header: testHeader,
+    metric: "1,045 lines",
+    metricDescription: "Reusable valid operational-record and request-package fixtures for transaction tests.",
+    description:
+      "Builds a disposable Git repository with one synthetic Issue and active Current Work record, plus valid project-update, legacy-import, correction, and closeout packages whose proposed source sets pass the real operational-record validator. The fixtures deliberately use invented test identities and temporary paths; they contain no authenticated migration export, production Changelog payload, or accepted Community Gallery closeout.",
+    rows: [],
+    reviewedSource: "Manual review of synthetic Issue, Current Work, legacy, correction, accepted-closeout, request-package, source-validation, temporary Git-repository, and cleanup helpers.",
+  },
+  {
+    path: "/src/data/chronicle-knowledge-base/knowledge-records-foundations.test.ts",
+    header: testHeader,
+    metric: "574 lines",
+    metricDescription: "Foundation tests for safe paths, exact inventories, and request normalization.",
+    description:
+      "Verifies strict transaction and correction identities, rejects traversal and symbolic links, preserves and compares exact source bytes, hashes, modes, and membership, and normalizes only the four supported request shapes with exact content membership. It also confirms that closeout normalization produces archive creation, Changelog creation, and active removal last. It stops before transaction storage or canonical apply.",
+    rows: [],
+    reviewedSource: "Manual review of path-safety cases, exact inventory fixtures, drift detection, all four request packages, closeout order assertion, malformed package cases, symlink cases, and temporary cleanup.",
+  },
+  {
+    path: "/src/data/chronicle-knowledge-base/knowledge-transaction-guard.test.ts",
+    header: testHeader,
+    metric: "695 lines",
+    metricDescription: "Process-level tests for the unfinished-transaction repository guard.",
+    description:
+      "Runs the guard and direct validator entry points in temporary Git repositories and proves clean state passes while a writer lock, unfinished marker, malformed control state, or interrupted transition blocks certification. It verifies every supported package check uses the full-duration lease wrapper and that direct Knowledge validators and architecture refresh require the matching live command, parent process, protected process group, and lease environment rather than trusting a copied token. It tests read-only gating, not apply or recovery behavior.",
+    rows: [],
+    reviewedSource: "Manual review of protected package commands, direct validator and refresh context checks, temporary Git setup, clean-state assertion, writer-lock and lease fixtures, unfinished marker permissions, malformed identity and transition failures, command exit codes, and cleanup.",
+  },
+  {
+    path: "/src/data/chronicle-knowledge-base/knowledge-transaction-store.test.ts",
+    header: testHeader,
+    metric: "2,226 lines",
+    metricDescription: "Adversarial tests for the private transaction store and global lock.",
+    description:
+      "Verifies owner-only storage of exact buffers, metadata privacy, path and identity rejection, live-writer exclusion, multiple-reader coordination, protected-child lease retention, narrowly proven dead-owner recovery, and cross-host refusal. It replaces pending files, destinations, staging directories, and control artifacts at deterministic boundaries to prove identity rechecks preserve outside replacements; it also proves transient concurrent lease replacement can settle while a persistent malformed lease inventory remains blocked, then validates the strict ownership-proof journal schema, payload tamper detection, torn-tail-only repair, terminal receipt history, resource limits, and real worktree Git metadata. The store tests do not mutate canonical operational records.",
+    rows: [],
+    reviewedSource: "Manual review of private permissions and privacy search, lock and lease ownership fixtures, concurrent readers, transient and persistent malformed-inventory cases, pending and directory replacement cases, killed-process cleanup boundaries, ownership-proof schema and tamper cases, journal recovery, terminal receipt sequence, exhaustion limits, worktree Git-directory case, and cleanup on August 5, 2026.",
   },
   {
     path: "/src/data/database-schema-inventory.ts",
@@ -466,7 +766,7 @@ export const dataRegistryArchitectureFiles = defineManualArchitectureFiles([
     metric: "11,366 lines",
     metricDescription: "Seeded Quality Hub findings, scans, reviews, and change-log history.",
     description:
-      "Exports Chronicle's checked-in Quality Hub registry: scan metadata, module definitions, review units, findings, comments, run history, verification state, and a long implementation change log. The Quality Hub page uses this as its initial review dataset before local registry updates are applied. It records audit and maintenance history; entries are not a guarantee that the current repository still has the same state unless their evidence has been revalidated.",
+      "Exports Chronicle's checked-in Quality Hub registry: scan metadata, module definitions, review units, findings, comments, run history, verification state, and the historical implementation change log used during the completed migration. The Quality Hub page still uses the non-Changelog collections as its initial operational dataset, but its visible Changelog reads only the canonical repository Markdown registry and a new owner workspace begins with an empty embedded legacy history. The old entries remain migration and compatibility evidence; they are not a guarantee that the current repository still has the same state unless their evidence has been revalidated.",
     rows: [
       {
         id: "quality-hub-registry",
@@ -479,9 +779,9 @@ export const dataRegistryArchitectureFiles = defineManualArchitectureFiles([
       },
       {
         id: "quality-hub-history",
-        title: "Maintenance history",
+        title: "Frozen legacy maintenance history",
         summary:
-          "The embedded change log explains prior implementation passes across UI, runtime, security, finance, documentation, and data contracts. It is historical evidence and can contain descriptions of paths that were later changed again.",
+          "The embedded change log explains prior implementation passes across UI, runtime, security, finance, documentation, and data contracts. The permanent Quality Hub path neither renders nor edits this copy; canonical repository records own the visible history. The legacy copy remains historical evidence and can describe paths that were later changed again.",
         badgeLabel: "CHANGE HISTORY",
         badgeClass: "documentation",
         details: [],
@@ -511,7 +811,7 @@ export const dataRegistryArchitectureFiles = defineManualArchitectureFiles([
   {
     path: "/src/data/app-architecture-manual/admin-guides.ts",
     header: documentationHeader,
-    metric: "221 lines",
+    metric: "318 lines",
     metricDescription: "Manual App Architecture profiles for admin guide and Style Guide modules.",
     description: "Stores the manually reviewed App Architecture records for the App Guide, guide freshness and navigation helpers, guide editor/error boundary, and Style Guide tooling. The records explain these admin surfaces without becoming part of their application behavior.",
     rows: [],
@@ -646,7 +946,7 @@ export const dataRegistryArchitectureFiles = defineManualArchitectureFiles([
   {
     path: "/src/data/app-architecture-manual/data-registries.ts",
     header: documentationHeader,
-    metric: "914 lines",
+    metric: "1,134 lines",
     metricDescription: "Manual profiles for checked-in data registries, including the manual App Architecture registry itself.",
     description: "Stores the manually reviewed App Architecture records for source-backed data modules such as the API Inspector maps, schema inventories, Quality Hub datasets, UI templates, and all files that make up this manual architecture registry. It is documentation data consumed by App Architecture, not a runtime database.",
     rows: [
@@ -672,7 +972,7 @@ export const dataRegistryArchitectureFiles = defineManualArchitectureFiles([
   {
     path: "/src/data/app-architecture-manual/documentation.ts",
     header: documentationHeader,
-    metric: "457 lines",
+    metric: "547 lines",
     metricDescription: "Manual profiles for repository Markdown and operating documents.",
     description: "Stores the manually reviewed App Architecture records for Chronicle's checked-in Markdown documentation, handoffs, architecture notes, privacy guidance, prompt research, and maintainer instructions. It distinguishes current operating guidance from historical research or handoff evidence.",
     rows: [],
@@ -707,7 +1007,7 @@ export const dataRegistryArchitectureFiles = defineManualArchitectureFiles([
   {
     path: "/src/data/app-architecture-manual/libraries-admin-documentation.ts",
     header: documentationHeader,
-    metric: "194 lines",
+    metric: "246 lines",
     metricDescription: "Manual profiles for admin documentation helpers and architecture export libraries.",
     description: "Stores the manually reviewed App Architecture records for architecture export, API Inspector map utilities, guide search/navigation helpers, Quality Hub storage, and other admin-documentation libraries. It documents supporting logic rather than the page content itself.",
     rows: [],
@@ -734,7 +1034,7 @@ export const dataRegistryArchitectureFiles = defineManualArchitectureFiles([
   {
     path: "/src/data/app-architecture-manual/pages.ts",
     header: documentationHeader,
-    metric: "326 lines",
+    metric: "467 lines",
     metricDescription: "Manual profiles for Chronicle route pages and admin style-guide pages.",
     description: "Stores the manually reviewed App Architecture records for route-level pages, admin tools, App Architecture, Roleplay Pipeline, Supabase Schema Reference, Quality Hub, and related style-guide screens. It distinguishes page shells from the data and services they display.",
     rows: [],
@@ -743,7 +1043,7 @@ export const dataRegistryArchitectureFiles = defineManualArchitectureFiles([
   {
     path: "/src/data/app-architecture-manual/repository-entrypoints-and-scripts.ts",
     header: documentationHeader,
-    metric: "370 lines",
+    metric: "748 lines",
     metricDescription: "Manual profiles for entry points, configuration, maintenance scripts, and end-to-end tests.",
     description: "Stores the manually reviewed App Architecture records for root configuration, browser/test setup, application entry points, architecture and quality scripts, prompt verification, and end-to-end coverage. It explains operational commands without running them.",
     rows: [],
@@ -788,7 +1088,7 @@ export const dataRegistryArchitectureFiles = defineManualArchitectureFiles([
   {
     path: "/src/data/app-architecture-manual/static-assets.ts",
     header: documentationHeader,
-    metric: "567 lines",
+    metric: "587 lines",
     metricDescription: "Manual profiles for public and imported image, SVG, font, and text assets.",
     description: "Stores the manually reviewed App Architecture records for Chronicle's static assets, including exact dimensions or byte sizes, current consumers, and whether an asset is active or retained but unused. It prevents binary files from being misreported as zero-line code modules.",
     rows: [],

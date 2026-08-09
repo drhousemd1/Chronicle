@@ -92,7 +92,7 @@ const GENERAL_PURPOSE_PROTOCOL = `\\~ (end) Prompt for all messages to LLM's (do
 \\- Files, locations, directories where issues were located in the codebase  
 \\- Referenced sources in the app dashboard  
 \\- The proposed plan must include plans to update any sources in the app dashboard to keep them concurrent with changes made in the codebase, wherever this is needed.  
-\\- All changes to the codebase, UI styling, or any part of the application must be logged in the Quality Hub changelog. This is mandatory and non-negotiable.  
+\\- Track active implementation in the applicable capability's Current Work record in Chronicle Knowledge Base. After evidence and human acceptance, the guarded closeout workflow creates the repository Changelog record. Do not manually add or import Quality Hub Changelog entries.
 3\\. All plans must have a clear checklist of steps.  
 4\\. If implementing changes through multiple phases, you must always include an updated checklist to the user after every iteration, logging what's been completed and what's left to do.  
 5\\. All plans must include a combination of technical analysis and plain English, explaining:  
@@ -151,9 +151,9 @@ const GENERAL_PURPOSE_PROTOCOL = `\\~ (end) Prompt for all messages to LLM's (do
 \\- "Profile" (I feel like this is useless. They all just say "deep". It doesn't provide any meaning. Remove?)  
 \\- Summary: How many tasks were completed? How many remain open/unaddressed from the scan.  
 \\- Date scan/tasks were completed.  
-3\\. Quality Hub: (Change Log)  
-\\- Change Log: actual implemented changes (what changed, where, why, expected impact).  
-\\- EVERY change to the code base, UI styling etc must be logged here.
+3\\. Chronicle Knowledge Base: (Current Work and Changelog)
+\\- Current Work records the active objective, ordered work, decisions, evidence, stopping point, and next action.
+\\- Changelog is read-only accepted history created by guarded closeout. It is not manually edited in Quality Hub.
 
 \\~ need specific Prompt/instructions for just how to do scans`;
 
@@ -182,14 +182,15 @@ const SCAN_ONLY_PROTOCOL = `~ Scan-only execution prompt (use this only for scan
 - recommendation
 
 4) If you implement fixes during the same scan task:
-- log implemented work in Quality Hub -> Change Log
-- include what changed, where, why, and expected impact
-- include agent/model + timestamp
+- update the applicable capability's Current Work record
+- include what changed, where, why, expected impact, evidence, and the exact next action
+- do not manually add or import a Changelog entry
 
 5) Keep logs synchronized:
 - Scan Runs = what was scanned
 - Issue Registry = what is wrong
-- Change Log = what was changed
+- Current Work = active implementation and evidence
+- Changelog = read-only accepted history created by guarded closeout
 
 6) Supabase snapshot rule:
 - If you inspect or fix any issue tagged Lovable Supabase Change Required, and you change live Supabase tables, columns, constraints, indexes, RLS policies, database functions/RPCs, triggers, storage buckets, storage policies, or grants, refresh the approved repo-owned schema snapshot before marking the finding current or solved.
@@ -199,7 +200,7 @@ const SCAN_ONLY_PROTOCOL = `~ Scan-only execution prompt (use this only for scan
 - Mark unverifiable live details as unknown or needs_verification. Do not invent schema details and do not create alternate schema dump files unless explicitly requested.
 
 7) Completion rule for scans:
-- a scan is not complete until Scan Runs + Issue Registry (+ Change Log if fixes made) are all updated.`;
+- a scan is not complete until Scan Runs + Issue Registry (+ applicable Current Work if fixes were made) are updated. Accepted Changelog history is created only during guarded closeout.`;
 
 
 

@@ -4,7 +4,17 @@ import path from "node:path";
 import { execSync } from "node:child_process";
 import ts from "typescript";
 
+import {
+  assertActiveKnowledgeCertificationContext,
+  assertNoUnfinishedKnowledgeTransaction,
+} from "./knowledge-record-transaction-guard.mjs";
+
 const projectRoot = process.cwd();
+assertActiveKnowledgeCertificationContext({
+  repoRoot: projectRoot,
+  expectedCommand: "architecture-refresh",
+});
+assertNoUnfinishedKnowledgeTransaction({ repoRoot: projectRoot });
 const srcRoot = path.join(projectRoot, "src");
 const docsRoot = path.join(projectRoot, "docs");
 const supabaseRoot = path.join(projectRoot, "supabase");
@@ -59,7 +69,7 @@ function walk(dir, options = {}) {
 
 function getTrackedPathSet() {
   try {
-    const output = execSync("git ls-files -z", {
+    const output = execSync("git ls-files --cached --others --exclude-standard -z", {
       cwd: projectRoot,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],

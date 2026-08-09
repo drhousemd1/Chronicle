@@ -23,7 +23,7 @@ Every Quality Hub module must include:
 - Scope (files/folders)
 - Checks (what to inspect)
 - Evidence required (paths/repro/output)
-- Logging targets (Issue Registry / Scan Runs / Change Log)
+- Logging targets (Issue Registry / Scan Runs / capability Current Work)
 - Done criteria
 
 ## Required Logging Flow
@@ -35,9 +35,9 @@ Every Quality Hub module must include:
 2. **Scan Runs**
 - Log each run with profile, scope, summary counts, and notes.
 
-3. **Change Log**
-- Log implemented code/doc/config changes.
-- Include problem, plan, changes, files affected, tags, and related issue IDs.
+3. **Capability Current Work**
+- Record active implementation, decisions, evidence, stopping point, and next action in the applicable Chronicle Knowledge Base capability.
+- Do not manually add or import Quality Hub Changelog entries. The repository Changelog is read-only accepted history created by guarded closeout.
 
 ## Supabase Snapshot Rule
 
@@ -53,7 +53,7 @@ When a scan or fix changes live Supabase tables, columns, constraints, indexes, 
 A scan pass is complete only when:
 - Quality gate command succeeds, and
 - Open findings are either fixed + verified or explicitly reclassified with evidence, and
-- Registry + run + changelog are synchronized.
+- Issue Registry + Scan Runs + applicable Current Work are synchronized. Accepted Changelog history is created separately during guarded closeout.
 
 ## Agent Guidance
 
