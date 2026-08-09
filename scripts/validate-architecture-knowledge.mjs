@@ -172,7 +172,7 @@ const expectedAssets = new Map([
   ],
   [
     "src/assets/architecture-knowledge-hub/admin-panel-overview.png",
-    "45cca82983f97564704e5eb59057d6792178c08644c02711090dc6f9380bac7a",
+    "e4673e6a12705376bd6e2f8782b1e3fcd437a329def922fad0042804fa8b5d14",
   ],
 ]);
 
@@ -493,10 +493,6 @@ const pageSource = fs.readFileSync(
   ),
   "utf8",
 );
-const appArchitectureSource = fs.readFileSync(
-  path.join(repoRoot, "src", "pages", "style-guide", "app-architecture.tsx"),
-  "utf8",
-);
 const manifestLoaderSource = fs.readFileSync(
   path.join(
     repoRoot,
@@ -517,10 +513,16 @@ const registeredRoutes = new Set(
 
 for (const route of [
   "/style-guide/chronicle-knowledge-base",
-  "/style-guide/app-architecture",
   "/style-guide/supabase-schema-reference",
 ]) {
   if (!registeredRoutes.has(route)) addError(`Missing registered route ${route}`);
+}
+
+for (const route of [
+  "/style-guide/app-architecture",
+  "/style-guide/api-inspector",
+]) {
+  if (registeredRoutes.has(route)) addError(`Retired route is still registered: ${route}`);
 }
 
 if (
@@ -538,11 +540,11 @@ if (
   addError("Admin tile or Chronicle Knowledge Base navigation is missing.");
 }
 
-if (
-  !adminSource.includes("id: 'app_architecture'") ||
-  !appArchitectureSource.includes("manualArchitectureFiles")
-) {
-  addError("The separate App Architecture tool was replaced or removed.");
+for (const toolId of ["app_architecture", "roleplay_pipeline"]) {
+  const toolIdPattern = new RegExp(`id:\\s*["']${toolId}["']`);
+  if (toolIdPattern.test(adminSource)) {
+    addError(`Retired Admin tool ID is still present: ${toolId}`);
+  }
 }
 
 if (

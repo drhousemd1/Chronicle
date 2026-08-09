@@ -40,7 +40,7 @@ function collectRawSources(
 }
 
 export const GALLERY_OPERATIONAL_RECORDS_CHECKED_ON =
-  "2026-08-08";
+  "2026-08-09";
 
 export const galleryOperationalRecordSources: OperationalRecordSourceMap =
   Object.freeze({

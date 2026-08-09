@@ -176,8 +176,6 @@ const MODULE_DOMAIN_HINTS: Record<string, QualityFinding["domain"][]> = {
   "module-validation-gates": ["build", "tests", "security"],
   "module-startup-auth-boot": ["functionality", "performance", "security"],
   "module-app-guide-integrity": ["documentation"],
-  "module-app-architecture-integrity": ["documentation"],
-  "module-api-inspector-integrity": ["data-integrity", "documentation", "functionality"],
 };
 
 const SCAN_CATALOG_ROWS: Record<string, ScanCatalogRow> = {
@@ -187,20 +185,6 @@ const SCAN_CATALOG_ROWS: Record<string, ScanCatalogRow> = {
     description: "Checks that each long-form App Guide document still matches live routes, file ownership, and behavior descriptions.",
     moduleIds: ["module-app-guide-integrity", "module-docs"],
     domainHints: ["documentation"],
-  },
-  "app-architecture-doc": {
-    id: "app-architecture-doc",
-    label: "App Architecture Documentation Consistency",
-    description: "Verifies folder/file/component ownership in the App Architecture map still matches the live repo structure.",
-    moduleIds: ["module-app-architecture-integrity", "module-docs"],
-    domainHints: ["documentation"],
-  },
-  "api-inspector-doc": {
-    id: "api-inspector-doc",
-    label: "Roleplay Pipeline Map Consistency",
-    description: "Cross-checks Roleplay Pipeline flow mapping against real prompt assembly, payload fields, and runtime behavior.",
-    moduleIds: ["module-api-inspector-integrity", "module-data-integrity", "module-docs"],
-    domainHints: ["data-integrity", "documentation", "functionality"],
   },
   "quick-stability": {
     id: "quick-stability",
@@ -309,7 +293,6 @@ const SCAN_CATALOG_ROWS: Record<string, ScanCatalogRow> = {
 
 const PAGE_SCAN_ROW_IDS = [
   "app-guide-doc",
-  "app-architecture-doc",
   "quick-stability",
   "pre-push-full",
   "security-deep",
@@ -327,8 +310,6 @@ const SCAN_CATALOG_SECTIONS: ScanCatalogSection[] = [
     description: "Cross-app scans for shared architecture, startup behavior, build/test gates, and security baseline.",
     rowIds: [
       "app-guide-doc",
-      "app-architecture-doc",
-      "api-inspector-doc",
       "quick-stability",
       "pre-push-full",
       "security-deep",
@@ -376,25 +357,11 @@ const SCAN_CATALOG_SECTIONS: ScanCatalogSection[] = [
     rowIds: [...PAGE_SCAN_ROW_IDS, "performance", "data-integrity", "build-health"],
   },
   {
-    id: "api-inspector-tool",
-    title: "Admin Tool: Roleplay Pipeline",
-    description: "Tool-specific scans for prompt/payload architecture map correctness and runtime parity.",
-    matchPages: ["Roleplay Pipeline"],
-    rowIds: ["api-inspector-doc", "quick-stability", "security-deep", "functionality", "data-integrity", "build-health"],
-  },
-  {
     id: "app-guide-tool",
     title: "Admin Tool: App Guide",
     description: "Tool-specific scans for long-form system docs freshness and route/component/source-truth alignment.",
     matchPages: ["Admin", "Quality Hub"],
     rowIds: ["app-guide-doc", "quick-stability", "pre-push-full", "build-health"],
-  },
-  {
-    id: "app-architecture-tool",
-    title: "Admin Tool: App Architecture",
-    description: "Tool-specific scans ensuring visual architecture map matches current repo ownership and component boundaries.",
-    matchPages: ["Admin", "Quality Hub"],
-    rowIds: ["app-architecture-doc", "quick-stability", "pre-push-full", "build-health"],
   },
   {
     id: "finance-dashboard-tool",
@@ -440,11 +407,18 @@ function cloneInitialRegistry(): QualityHubRegistry {
   };
 }
 
-function normalizeRoleplayPipelineLabels(registry: QualityHubRegistry): QualityHubRegistry {
+const RETIRED_SCAN_MODULE_IDS: ReadonlySet<string> = new Set([
+  "module-app-architecture-integrity",
+  "module-api-inspector-integrity",
+]);
+const RETIRED_REVIEW_UNIT_IDS: ReadonlySet<string> = new Set(["unit-api-inspector"]);
+
+function normalizeActiveQualityHubRegistry(registry: QualityHubRegistry): QualityHubRegistry {
   return {
     ...registry,
-    scanModules: registry.scanModules.map((module) => {
-      const normalizedModule = {
+    scanModules: registry.scanModules
+      .filter((module) => !RETIRED_SCAN_MODULE_IDS.has(module.id))
+      .map((module) => ({
         ...module,
         checklist: {
           ...module.checklist,
@@ -452,25 +426,8 @@ function normalizeRoleplayPipelineLabels(registry: QualityHubRegistry): QualityH
             target === "change-log" ? "knowledge-base-current-work" : target
           )),
         },
-      };
-      if (module.id !== "module-api-inspector-integrity") return normalizedModule;
-      return {
-        ...normalizedModule,
-        name: "Roleplay Pipeline Map Consistency",
-        description: "Cross-verify Roleplay Pipeline map content with real prompt assembly and runtime payload flow.",
-        notes: module.notes?.replace("API Inspector validation tests", "Roleplay Pipeline validation tests"),
-      };
-    }),
-    reviewUnits: registry.reviewUnits.map((unit) => {
-      if (unit.id !== "unit-api-inspector") return unit;
-      return {
-        ...unit,
-        name: "Roleplay Pipeline",
-        notes: unit.notes?.includes("standalone route remains `/style-guide/api-inspector`")
-          ? unit.notes
-          : "Reviewed in targeted AI mapping pass; the standalone route remains `/style-guide/api-inspector` while the Admin tile is now labeled Roleplay Pipeline.",
-      };
-    }),
+      })),
+    reviewUnits: registry.reviewUnits.filter((unit) => !RETIRED_REVIEW_UNIT_IDS.has(unit.id)),
   };
 }
 
@@ -487,13 +444,13 @@ function upgradeRegistry(persisted: QualityHubRegistryInput): QualityHubRegistry
 
   if (persistedVersion >= currentVersion) {
     return withLegacyChangeLog(
-      normalizeRoleplayPipelineLabels(safePersisted),
+      normalizeActiveQualityHubRegistry(safePersisted),
       protectedChangeLog,
     );
   }
 
   const merged = mergeRegistryUpgradePreservingLegacyChangeLog(seed, safePersisted);
-  return withLegacyChangeLog(normalizeRoleplayPipelineLabels({
+  return withLegacyChangeLog(normalizeActiveQualityHubRegistry({
     ...merged,
     meta: {
       ...merged.meta,
@@ -1485,7 +1442,7 @@ export default function UiAuditPage({
       protectedLegacyChangeLogRef.current,
     );
     const nextRegistry = nextRegistryWithTimestamp(
-      normalizeRoleplayPipelineLabels(updater(updaterInput)),
+      normalizeActiveQualityHubRegistry(updater(updaterInput)),
     );
     return persistUserRegistry(nextRegistry);
   }, [isAuthenticated, migrationCaptureMode, ownerHydrationState, ownerRecoveryBlocked, persistUserRegistry, user?.id]);
@@ -1750,7 +1707,7 @@ export default function UiAuditPage({
         return;
       }
       const nextRegistry = nextRegistryWithTimestamp(
-        normalizeRoleplayPipelineLabels(prepared.registry),
+        normalizeActiveQualityHubRegistry(prepared.registry),
       );
       if (!persistUserRegistry(nextRegistry)) return;
       setImportFeedback(

@@ -6096,7 +6096,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
       status: "completed",
       priority: "medium",
       lastRunId: runIds.contentFilterFindingReclassification20260613,
-      notes: "June 13 telemetry hardening treats browser usage events as diagnostic only and excludes them from authoritative admin counters. The provider content-filter retry entry was removed from Issue Registry after revalidation because it is documented Roleplay Pipeline behavior, not a proven vulnerability or crash-class bug.",
+      notes: "June 13 telemetry hardening treats browser usage events as diagnostic only and excludes them from authoritative admin counters. The provider content-filter retry entry was removed from Issue Registry after revalidation because the active roleplay runtime treats it as expected retry handling, not a proven vulnerability or crash-class bug.",
       checklist: {
         scope: [
           "supabase/functions/**/*",
@@ -6373,67 +6373,6 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
         ],
       },
     },
-    {
-      id: "module-app-architecture-integrity",
-      name: "App Architecture Map Consistency",
-      description: "Verify folder/file/component architecture map matches current repository shape and ownership.",
-      status: "completed",
-      lastRunId: runIds.toolIntegrity,
-      notes: "Completed: regenerated architecture path datasets and verified all mapped paths resolve to live repo files.",
-      checklist: {
-        scope: [
-          "src/pages/style-guide/app-architecture.tsx",
-          "src/lib/app-architecture-utils.ts",
-          "src/data/architecture-*.ts",
-          "src/**/*",
-        ],
-        checks: [
-          "Ensure architecture map nodes still exist and have accurate labels.",
-          "Validate component-vs-feature classification for key folders.",
-          "Flag inferred descriptions that no longer match implementation.",
-          "Identify missing high-value nodes for active product-critical flows.",
-        ],
-        evidenceRequired: [
-          "Node identifier with matching file/folder proof.",
-          "Mismatch reason and correction recommendation.",
-        ],
-        loggingTargets: ["issue-registry", "scan-runs", "knowledge-base-current-work"],
-        doneCriteria: [
-          "Architecture tree accurately reflects current repo structure and main runtime flows.",
-        ],
-      },
-    },
-    {
-      id: "module-api-inspector-integrity",
-      name: "Roleplay Pipeline Map Consistency",
-      description: "Cross-verify Roleplay Pipeline map content with real prompt assembly and runtime payload flow.",
-      status: "completed",
-      lastRunId: runIds.toolIntegrity,
-      notes: "Completed: Roleplay Pipeline validation tests passed and Phase-1 audit coverage currently reports 0 missing/partial fields.",
-      checklist: {
-        scope: [
-          "src/pages/style-guide/api-inspector.tsx",
-          "src/data/api-inspector-*.ts",
-          "src/lib/api-inspector-*.ts",
-          "src/services/llm.ts",
-          "src/components/chronicle/ChatInterfaceTab.tsx",
-        ],
-        checks: [
-          "Confirm each mapped phase represents live runtime behavior.",
-          "Verify prompt/data block labels map to real payload fields.",
-          "Check hidden file-ref and code-source blocks for stale paths/content.",
-          "Flag any map section that omits active runtime inputs (including custom fields/rows).",
-        ],
-        evidenceRequired: [
-          "Map item ID and exact source path/line confirmation.",
-          "Contract mismatch table for expected vs actual payload keys.",
-        ],
-        loggingTargets: ["issue-registry", "scan-runs", "knowledge-base-current-work"],
-        doneCriteria: [
-          "Inspector sections are code-truth accurate for API Call 1, API Call 2, and AI Enhance paths.",
-        ],
-      },
-    },
   ],
   runs,
   findings: findingsResolved,
@@ -6545,15 +6484,6 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
       notes: "Reviewed and refreshed baseline scan state for all modules; the standalone route remains `/style-guide/ui-audit` while the Admin tile is now a top-level Quality Hub entry.",
       status: "reviewed",
       lastRunId: runIds.rescan,
-    },
-    {
-      id: "unit-api-inspector",
-      name: "Roleplay Pipeline",
-      route: "/style-guide/api-inspector",
-      files: ["src/pages/style-guide/api-inspector.tsx"],
-      notes: "Reviewed in targeted AI mapping pass; the standalone route remains `/style-guide/api-inspector` while the Admin tile is now labeled Roleplay Pipeline.",
-      status: "reviewed",
-      lastRunId: runIds.aiMapping,
     },
   ],
   changeLog: [

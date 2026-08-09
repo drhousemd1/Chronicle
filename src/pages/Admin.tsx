@@ -43,11 +43,6 @@ const DEFAULT_TOOLS: ToolMeta[] = [
     description: 'Central hub for Style Guide and App Guide',
   },
   {
-    id: 'app_architecture',
-    title: 'App Architecture',
-    description: 'Repository map for files, folders, components, and ownership flows',
-  },
-  {
     id: 'chronicle_knowledge_base',
     title: 'Chronicle Knowledge Base',
     description: 'Product behavior, UI functions, architecture, current work, and source references',
@@ -56,11 +51,6 @@ const DEFAULT_TOOLS: ToolMeta[] = [
     id: 'supabase_schema_reference',
     title: 'Supabase Schema Reference',
     description: 'Source-backed table, RLS, and storage reference for Lovable/Supabase changes',
-  },
-  {
-    id: 'roleplay_pipeline',
-    title: 'Roleplay Pipeline',
-    description: 'Map of roleplay API calls, prompt assembly, and post-turn state flow',
   },
   {
     id: 'quality_hub',
@@ -157,18 +147,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
       return;
     }
 
-    if (toolId === 'app_architecture') {
-      navigate('/style-guide/app-architecture');
-      return;
-    }
-
     if (toolId === 'supabase_schema_reference') {
       navigate('/style-guide/supabase-schema-reference');
-      return;
-    }
-
-    if (toolId === 'roleplay_pipeline') {
-      navigate('/style-guide/api-inspector');
       return;
     }
 

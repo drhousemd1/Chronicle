@@ -413,11 +413,9 @@ This separation is the central promise of the page. Community Gallery helps a pe
 
 ### App Dashboard
 
-### App Architecture
+### Chronicle Knowledge Base
 
-### Supabase Schema
-
-### Roleplay Pipeline
+### Supabase Schema Reference
 
 ### Quality Hub
 

@@ -14,8 +14,6 @@ import { Toaster } from "sonner";
 const queryClient = new QueryClient();
 
 const UiAuditPage = lazy(() => import("./pages/style-guide/ui-audit"));
-const ApiInspectorPage = lazy(() => import("./pages/style-guide/api-inspector"));
-const AppArchitecturePage = lazy(() => import("./pages/style-guide/app-architecture"));
 const ChronicleKnowledgeBasePage = lazy(() => import("./pages/style-guide/chronicle-knowledge-base"));
 const ChangelogRecordPage = lazy(() => import("./pages/style-guide/changelog-record"));
 const ValidationEvidenceLedgerPage = lazy(() => import("./pages/style-guide/validation-evidence-ledger"));
@@ -77,8 +75,6 @@ const App = () => (
               <Route path="/creator/:userId" element={<CreatorProfile />} />
               <Route path="/style-guide/ui-audit" element={<AdminOnlyRoute><UiAuditPage key="quality-hub-normal" /></AdminOnlyRoute>} />
               <Route path="/style-guide/ui-audit/changelog-migration-capture" element={<AdminOnlyRoute><UiAuditPage key="quality-hub-changelog-migration-capture" migrationCaptureMode /></AdminOnlyRoute>} />
-              <Route path="/style-guide/api-inspector" element={<AdminOnlyRoute><ApiInspectorPage /></AdminOnlyRoute>} />
-              <Route path="/style-guide/app-architecture" element={<AdminOnlyRoute><AppArchitecturePage /></AdminOnlyRoute>} />
               <Route path="/style-guide/chronicle-knowledge-base/archive/:projectId" element={<AdminOnlyRoute><ChronicleKnowledgeBasePage /></AdminOnlyRoute>} />
               <Route path="/style-guide/chronicle-knowledge-base" element={<AdminOnlyRoute><ChronicleKnowledgeBasePage /></AdminOnlyRoute>} />
               <Route path="/style-guide/changelog/:recordId" element={<AdminOnlyRoute><ChangelogRecordPage /></AdminOnlyRoute>} />

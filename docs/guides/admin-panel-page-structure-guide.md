@@ -25,9 +25,9 @@
 | Field | Detail |
 |---|---|
 | **Tab Key** | `admin` |
-| **Primary Source File** | `src/pages/Admin.tsx` (297 lines) |
+| **Primary Source File** | `src/pages/Admin.tsx` (277 lines) |
 | **Route Shell** | The hub renders inside Chronicle's root workspace at `/?tab=admin`; standalone operator tools use protected `/style-guide/*` routes registered in `src/App.tsx`. |
-| **Purpose** | Admin hub providing ten top-level tiles: Image Generation, AI Status, App Dashboard, App Architecture, Chronicle Knowledge Base, Supabase Schema Reference, Roleplay Pipeline, Quality Hub, Validation Evidence Ledger, and Finance Dashboard. |
+| **Purpose** | Admin hub providing eight top-level tiles: Image Generation, AI Status, App Dashboard, Chronicle Knowledge Base, Supabase Schema Reference, Quality Hub, Validation Evidence Ledger, and Finance Dashboard. |
 | **Access** | Requires asynchronous `checkIsAdmin(userId)`, which calls the `has_role()` RPC against the `user_roles` table for the `admin` role. Every standalone operator route is also wrapped in `AdminOnlyRoute`. |
 | **Sidebar Label** | Settings, represented by the Lucide gear icon in Chronicle's application sidebar. |
 | **Entry Points** | Select Settings in the Chronicle sidebar, or return from a standalone operator page through its back chevron to `/?tab=admin`. |
@@ -71,10 +71,8 @@ The hub grid uses `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4
 | Action | Handler | Effect | Destination or State |
 |---|---|---|---|
 | Select an embedded-tool tile | `handleOpenTool(tool.id)` → `onSetActiveTool(tool.id)` | Replaces the Admin hub with the selected embedded tool | `image_generation`, `model_settings`, `style_guide`, or `finance_dashboard` |
-| Select App Architecture | `handleOpenTool('app_architecture')` | Navigates to the standalone repository map | `/style-guide/app-architecture` |
 | Select Chronicle Knowledge Base | `handleOpenTool('chronicle_knowledge_base')` | Navigates to the source-backed Chronicle product and architecture manual | `/style-guide/chronicle-knowledge-base` |
 | Select Supabase Schema Reference | `handleOpenTool('supabase_schema_reference')` | Navigates to the Lovable-backed schema reference | `/style-guide/supabase-schema-reference` |
-| Select Roleplay Pipeline | `handleOpenTool('roleplay_pipeline')` | Navigates to API Inspector's roleplay pipeline presentation | `/style-guide/api-inspector` |
 | Select Quality Hub | `handleOpenTool('quality_hub')` | Navigates to the Quality Hub | `/style-guide/ui-audit` |
 | Select Validation Evidence Ledger | `handleOpenTool('validation_evidence_ledger')` | Navigates to the validation ledger page | `/style-guide/validation-evidence-ledger` |
 | Select Edit | `setEditingTool(tool)` | Opens the tile metadata modal without opening the tool | `editingTool` becomes the selected `ToolMeta` |
@@ -117,17 +115,15 @@ After a successful save, `tools` contains the merged presentation metadata and t
 
 ### 6a. Tool metadata registry
 
-Ten default tiles are defined in `DEFAULT_TOOLS` inside `src/pages/Admin.tsx`.
+Eight default tiles are defined in `DEFAULT_TOOLS` inside `src/pages/Admin.tsx`.
 
 | Tool ID | Title | Render Target |
 |---|---|---|
 | `image_generation` | Image Generation | `src/components/admin/ImageGenerationTool.tsx` |
 | `model_settings` | AI Status | `src/components/chronicle/ModelSettingsTab.tsx` |
 | `style_guide` | App Dashboard | `src/components/admin/styleguide/StyleGuideTool.tsx` |
-| `app_architecture` | App Architecture | `/style-guide/app-architecture` → `src/pages/style-guide/app-architecture.tsx` |
 | `chronicle_knowledge_base` | Chronicle Knowledge Base | `/style-guide/chronicle-knowledge-base` → `src/pages/style-guide/chronicle-knowledge-base.tsx` |
 | `supabase_schema_reference` | Supabase Schema Reference | `/style-guide/supabase-schema-reference` → `src/pages/style-guide/supabase-schema-reference.tsx` |
-| `roleplay_pipeline` | Roleplay Pipeline | `/style-guide/api-inspector` → `src/pages/style-guide/api-inspector.tsx` |
 | `quality_hub` | Quality Hub | `/style-guide/ui-audit` → `src/pages/style-guide/ui-audit.tsx` |
 | `validation_evidence_ledger` | Validation Evidence Ledger | `/style-guide/validation-evidence-ledger` → `src/pages/style-guide/validation-evidence-ledger.tsx` |
 | `finance_dashboard` | Finance Dashboard | `src/components/admin/finance/FinanceDashboardTool.tsx` |
@@ -160,19 +156,17 @@ Image Generation is lazy-loaded from `src/components/admin/ImageGenerationTool.t
 
 `src/components/admin/styleguide/StyleGuideTool.tsx` renders the App Dashboard. `src/components/admin/guide/AppGuideTool.tsx` is reached through that dashboard rather than through a separate top-level Admin tile. App Guide reads and edits `guide_documents` and can invoke the `sync-guide-to-github` Edge Function.
 
-### 6e. App Architecture
-
-`src/pages/style-guide/app-architecture.tsx` remains the separate exhaustive repository-map tool at `/style-guide/app-architecture`. It uses the manual App Architecture registry plus generated relationship and metric data. Chronicle Knowledge Base does not replace this route or tile.
-
-### 6f. Chronicle Knowledge Base and Supabase Schema Reference
+### 6e. Chronicle Knowledge Base
 
 `src/pages/style-guide/chronicle-knowledge-base.tsx` renders the repository-owned source-readable manual from `docs/architecture-knowledge/manifest.json` and the Markdown sources in `docs/architecture-knowledge/`. It contains capability-local tabs, checked-in reference images, and a direct reference to `/style-guide/supabase-schema-reference`.
 
+### 6f. Supabase Schema Reference
+
 `src/pages/style-guide/supabase-schema-reference.tsx` renders the Codex-accessible representation of Chronicle's Lovable-controlled Supabase project. The Knowledge Base links to it instead of duplicating its table, column, relationship, policy, function, trigger, or storage definitions.
 
-### 6g. Roleplay Pipeline, Quality Hub, and Validation Evidence Ledger
+### 6g. Quality Hub and Validation Evidence Ledger
 
-`src/pages/style-guide/api-inspector.tsx`, `src/pages/style-guide/ui-audit.tsx`, and `src/pages/style-guide/validation-evidence-ledger.tsx` own their specialist presentations. The Admin hub only routes to them. API Inspector and the ledger present diagnostics or evidence; their presence does not prove that a runtime behavior is enforced.
+`src/pages/style-guide/ui-audit.tsx` and `src/pages/style-guide/validation-evidence-ledger.tsx` own their specialist presentations. The Admin hub only routes to them. Their diagnostics and evidence do not by themselves prove that a runtime behavior is enforced.
 
 ### 6h. React Query, IndexedDB, and browser storage
 
@@ -184,7 +178,7 @@ The Admin hub itself does not define a React Query key, IndexedDB store, or brow
 
 ```tsx
 <AdminPage>  # src/pages/Admin.tsx
-  <ToolCard /> ×10  # rendered inline by src/pages/Admin.tsx
+  <ToolCard /> ×8  # rendered inline by src/pages/Admin.tsx
   <AdminToolEditModal />  # src/components/admin/AdminToolEditModal.tsx
 
   <ImageGenerationTool />  # src/components/admin/ImageGenerationTool.tsx (conditional, lazy)
@@ -196,12 +190,10 @@ The Admin hub itself does not define a React Query key, IndexedDB store, or brow
   <FinanceDashboardTool />  # src/components/admin/finance/FinanceDashboardTool.tsx (conditional, lazy)
 
 <AdminOnlyRoute>  # src/App.tsx
-  <AppArchitecturePage />  # src/pages/style-guide/app-architecture.tsx
   <ChronicleKnowledgeBasePage>  # src/pages/style-guide/chronicle-knowledge-base.tsx
     <KnowledgeSwitcher /> ×15  # src/components/admin/knowledge-base/KnowledgeSwitcher.tsx
     <CommunityGalleryArchitecture />  # src/components/admin/knowledge-base/CommunityGalleryArchitecture.tsx
   <SupabaseSchemaReferencePage />  # src/pages/style-guide/supabase-schema-reference.tsx
-  <ApiInspectorPage />  # src/pages/style-guide/api-inspector.tsx
   <UiAuditPage />  # src/pages/style-guide/ui-audit.tsx
   <ValidationEvidenceLedgerPage />  # src/pages/style-guide/validation-evidence-ledger.tsx
 ```
@@ -269,7 +261,7 @@ The Admin hub itself does not define a React Query key, IndexedDB store, or brow
 | Boundary | Control | What It Enforces |
 |---|---|---|
 | Admin sidebar and workspace | Asynchronous `checkIsAdmin(userId)` in the Index shell | Whether the Admin workspace is offered and rendered for the current authenticated user. |
-| Standalone operator routes | `AdminOnlyRoute` in `src/App.tsx` | Rechecks authenticated identity and backend Admin role before rendering App Architecture, Chronicle Knowledge Base, Supabase Schema Reference, Roleplay Pipeline, Quality Hub, or Validation Evidence Ledger. |
+| Standalone operator routes | `AdminOnlyRoute` in `src/App.tsx` | Rechecks authenticated identity and backend Admin role before rendering Chronicle Knowledge Base, Supabase Schema Reference, Quality Hub, or Validation Evidence Ledger. |
 | Tile metadata | `app_settings` RLS using `has_role(auth.uid(), 'admin')` | Read/write authority for shared Admin tile overrides. |
 | Image Generation data | `art_styles` RLS | Admin-only writes and public reads according to the live policy. |
 | App Guide data | `guide_documents` RLS | Admin-only document CRUD. |
@@ -286,11 +278,9 @@ Cached or local Admin presentation state never grants access. Backend role verif
 | Art styles → Gallery/Chat | Configuration | Image Generation maintains art-style prompts consumed by image operations. |
 | Model settings → Chat | Configuration | AI Status exposes current model and backend configuration used by LLM operations. |
 | Guide documents → GitHub | Synchronization | App Guide can synchronize repository guide files through its Edge Function workflow. |
-| App Architecture ↔ Admin Panel | Navigation | Tile opens `/style-guide/app-architecture`; back control returns to `/?tab=admin`. |
 | Chronicle Knowledge Base ↔ Admin Panel | Navigation | Tile opens `/style-guide/chronicle-knowledge-base`; header chevron returns to `/?tab=admin`. |
 | Chronicle Knowledge Base → Supabase Schema Reference | Reference link | Every capability's Supabase Tables tab directs agents to `/style-guide/supabase-schema-reference` rather than reproducing backend definitions. |
 | Supabase Schema Reference ↔ Admin Panel | Navigation | Tile opens `/style-guide/supabase-schema-reference`; back control returns to `/?tab=admin`. |
-| Roleplay Pipeline ↔ Admin Panel | Navigation | Tile opens `/style-guide/api-inspector`; back control returns to `/?tab=admin`. |
 | Quality Hub ↔ Admin Panel | Navigation | Tile opens `/style-guide/ui-audit`; back control returns to `/?tab=admin`. |
 | Validation Evidence Ledger ↔ Admin Panel | Navigation | Tile opens `/style-guide/validation-evidence-ledger`; back control returns to `/?tab=admin`. |
 
@@ -300,10 +290,9 @@ Cached or local Admin presentation state never grants access. Backend role verif
 
 - RESOLVED: 2026-03-04 — `app_settings` RLS previously used a hardcoded Admin UUID; it now uses the `has_role(auth.uid(), 'admin')` database function.
 - RESOLVED: 2026-03-04 — Admin checks previously used synchronous `isAdminUser()` logic with a hardcoded UUID; they now call the asynchronous backend `checkIsAdmin(userId)` path.
-- RESOLVED: 2026-05-09 — App Architecture, Roleplay Pipeline, and Quality Hub moved from App Dashboard navigation into distinct top-level Admin tiles and protected standalone routes.
 - RESOLVED: 2026-05-10 — A zero-row `app_settings` update previously appeared successful; `handleSaveTool()` now selects updated IDs and inserts the setting when no row matched.
 - RESOLVED: 2026-05-10 — Tile thumbnail uploads previously used a storage path that did not match user-scoped policies; they now write beneath `{userId}/admin-tools/...`.
-- RESOLVED: 2026-07-26 — Chronicle Knowledge Base now has its own Admin tile and protected React route. It no longer replaces or competes with the separate App Architecture repository map.
+- RESOLVED: 2026-08-09 — Obsolete standalone documentation entries were removed from the Admin registry and protected route table; current product and architecture guidance now opens through Chronicle Knowledge Base.
 
 ---
 
@@ -311,4 +300,4 @@ Cached or local Admin presentation state never grants access. Backend role verif
 
 N/A — No additional Admin Panel enhancement has been approved as part of the Chronicle Knowledge Base migration.
 
-> Last updated: 2026-07-26 — Added Chronicle Knowledge Base as the tenth Admin tile, documented all current standalone routes, and reconciled the Admin hub's data, security, state, and navigation contracts.
+> Last updated: 2026-08-09 — Reconciled the Admin hub to its eight current tools and directed product and architecture guidance through Chronicle Knowledge Base.

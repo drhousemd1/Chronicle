@@ -100,9 +100,9 @@ const GENERAL_PURPOSE_PROTOCOL = `\\~ (end) Prompt for all messages to LLM's (do
 \\- Why it matters  
 \\- Why the proposed fix is important and/or suggested
 
-**\\[App Architecture\\]:**  
-\\- Use for filesystem/component mapping (what folder/file owns what behavior).   
-\\- Use this FIRST when locating code ownership.
+**\\[Chronicle Knowledge Base\\]:**
+\\- Use for product behavior, capability architecture, current work, and source-backed code ownership.
+\\- Use this FIRST when locating current ownership or deciding which repository source governs a change.
 
 **\\[App Style Guide\\]:**  
 \\- Reference components on App Style Guide to determine styling, layering, positioning of elements. If an element is not located in the app style guide, find it elsewhere in the app code and replicate it. Do not generate random variations of UI elements.
@@ -136,9 +136,6 @@ const GENERAL_PURPOSE_PROTOCOL = `\\~ (end) Prompt for all messages to LLM's (do
 \\- Cross-cutting components, primitives, and shared interaction contracts.  
 13\\. Edge Functions & AI Services:  
 \\- Page/system-specific implementation guide and maintenance reference. 
-
-**\\[Roleplay Pipeline\\]:**
-\\- Use for end-to-end AI/runtime flow verification: prompt assembly, context injections, API payload flow, and post-call handling.
 
 **\\[Quality Hub\\]:**  
 1\\. Quality Hub: (Overview)  
