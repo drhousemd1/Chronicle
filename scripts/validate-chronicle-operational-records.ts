@@ -19,13 +19,13 @@ const {
   inventoryToOperationalSourceMap,
   readCanonicalSourceInventory,
 } = await import("./knowledge-records/source-set");
+const { CANONICAL_RECORD_DIRECTORY_ENTRIES } = await import(
+  "./knowledge-records/path-safety"
+);
 
-const SOURCE_DIRECTORIES = [
-  "docs/architecture-knowledge/issues/community-gallery",
-  "docs/current-work/active/community-gallery",
-  "docs/current-work/archive/community-gallery",
-  "docs/architecture-knowledge/changelog/entries",
-] as const;
+const SOURCE_DIRECTORIES = CANONICAL_RECORD_DIRECTORY_ENTRIES.map(
+  ({ directory }) => directory,
+);
 
 async function readCurrentSources() {
   return inventoryToOperationalSourceMap(

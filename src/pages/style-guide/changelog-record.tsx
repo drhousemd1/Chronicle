@@ -11,13 +11,20 @@ import {
   type ChangelogRecordScope,
 } from "@/components/admin/knowledge-base/changelog-record-route";
 import { resolveVerifiedChangelogArchiveRoute } from "@/data/chronicle-knowledge-base/changelog-archive-route";
+import { isChronicleCapabilityId } from "@/data/chronicle-knowledge-base/capability-ids";
 import type { EffectiveChangelogEntry } from "@/data/chronicle-knowledge-base/changelog-record-contract";
 import {
   loadChronicleChangelogRegistry,
   type ChangelogRegistryLoader,
 } from "@/data/chronicle-knowledge-base/changelog-record-sources";
+import {
+  buildKnowledgeBaseTabHref,
+  buildQualityHubChangelogHref,
+  buildQualityHubOverviewHref,
+} from "@/data/chronicle-knowledge-base/knowledge-routes";
 import type { OperationalRecordRegistry } from "@/data/chronicle-knowledge-base/operational-record-contract";
-import { galleryOperationalRecordRegistry } from "@/data/chronicle-knowledge-base/operational-record-sources";
+import { getOperationalCapability } from "@/data/chronicle-knowledge-base/operational-capability-registry";
+import { chronicleOperationalRecordRegistry } from "@/data/chronicle-knowledge-base/operational-record-sources";
 
 type DetailState =
   | Readonly<{ status: "loading" }>
@@ -26,13 +33,10 @@ type DetailState =
   | Readonly<{ status: "excluded"; entry: EffectiveChangelogEntry }>
   | Readonly<{ status: "ready"; entry: EffectiveChangelogEntry }>;
 
-const VALID_SCOPES = new Set<ChangelogRecordScope>([
-  "global",
-  "community-gallery",
-]);
 function parseScope(value: string | null): ChangelogRecordScope | null {
-  return value && VALID_SCOPES.has(value as ChangelogRecordScope)
-    ? (value as ChangelogRecordScope)
+  if (value === "global") return value;
+  return value && isChronicleCapabilityId(value) && getOperationalCapability(value)
+    ? value
     : null;
 }
 
@@ -49,7 +53,10 @@ function returnDestination(
   origin: ChangelogRecordOrigin,
   verifiedArchiveRoute: string | null,
 ) {
-  const hash = entry ? `#changelog-${encodeURIComponent(entry.id)}` : "";
+  const capabilityLabel =
+    scope === "global"
+      ? "Chronicle"
+      : (getOperationalCapability(scope)?.displayName ?? scope);
   if (origin === "archive" && verifiedArchiveRoute) {
     return {
       to: verifiedArchiveRoute,
@@ -58,24 +65,31 @@ function returnDestination(
   }
   if (origin === "quality-hub-overview") {
     return {
-      to: `/style-guide/ui-audit${hash}`,
+      to: buildQualityHubOverviewHref(entry?.id),
       label: "Back to Quality Hub overview",
     } as const;
   }
   if (origin === "quality-hub") {
-    return scope === "community-gallery"
+    return scope !== "global"
       ? {
-          to: `/style-guide/ui-audit?view=changelog&capability=community-gallery${hash}`,
-          label: "Back to Community Gallery history in Quality Hub",
+          to: buildQualityHubChangelogHref(scope, entry?.id),
+          label: `Back to ${capabilityLabel} history in Quality Hub`,
         } as const
       : {
-          to: `/style-guide/ui-audit?view=changelog${hash}`,
+          to: buildQualityHubChangelogHref(undefined, entry?.id),
           label: "Back to Quality Hub Changelog",
         } as const;
   }
   return {
-    to: `/style-guide/chronicle-knowledge-base?section=community-gallery&tab=changelog${hash}`,
-    label: "Back to Community Gallery Changelog",
+    to: buildKnowledgeBaseTabHref(
+      scope === "global" ? "community-gallery" : scope,
+      "changelog",
+      entry?.id,
+    ),
+    label:
+      scope === "global"
+        ? "Back to Community Gallery Changelog"
+        : `Back to ${capabilityLabel} Changelog`,
   } as const;
 }
 
@@ -86,7 +100,7 @@ export type ChangelogRecordPageProps = Readonly<{
 
 export function ChangelogRecordPage({
   loader = loadChronicleChangelogRegistry,
-  operationalRegistry = galleryOperationalRecordRegistry,
+  operationalRegistry = chronicleOperationalRecordRegistry,
 }: ChangelogRecordPageProps = {}) {
   const { recordId } = useParams<{ recordId?: string }>();
   const location = useLocation();
@@ -126,10 +140,7 @@ export function ChangelogRecordPage({
           setState({ status: "missing" });
           return;
         }
-        if (
-          scope === "community-gallery" &&
-          !entry.affectedCapabilities.includes("community-gallery")
-        ) {
+        if (scope !== "global" && !entry.affectedCapabilities.includes(scope)) {
           setState({ status: "excluded", entry });
           return;
         }
@@ -158,6 +169,10 @@ export function ChangelogRecordPage({
 
   const knownEntry = state.status === "ready" ? state.entry : null;
   const safeScope = scope ?? "global";
+  const safeScopeLabel =
+    safeScope === "global"
+      ? "Chronicle"
+      : (getOperationalCapability(safeScope)?.displayName ?? safeScope);
   const safeOrigin = origin ?? normalizeChangelogRecordOrigin(safeScope, null);
   const verifiedArchiveRoute = knownEntry
     ? resolveVerifiedChangelogArchiveRoute(knownEntry, operationalRegistry)
@@ -205,7 +220,7 @@ export function ChangelogRecordPage({
           <h2 ref={headingRef} tabIndex={-1}>Complete Changelog record</h2>
           <p>
             This page reads the same canonical repository record used by the
-            Community Gallery and Quality Hub Changelog views. It adds the complete
+            capability Knowledge Base and Quality Hub Changelog views. It adds the complete
             preserved history without creating another editable copy.
           </p>
         </div>
@@ -243,8 +258,8 @@ export function ChangelogRecordPage({
             <h3>Record is outside the requested scope</h3>
             <p>
               {state.entry.id} exists in the canonical Chronicle Changelog, but it
-              is not positively verified as affecting Community Gallery. The
-              Gallery-scoped address will not silently widen to global history.
+              is not positively verified as affecting {safeScopeLabel}. The
+              capability-scoped address will not silently widen to global history.
             </p>
             <p><Link to={backDestination.to}>{stateReturnLabel}</Link></p>
           </section>

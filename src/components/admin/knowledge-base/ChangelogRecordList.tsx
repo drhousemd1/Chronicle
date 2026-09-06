@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 import type { EffectiveChangelogEntry } from "@/data/chronicle-knowledge-base/changelog-record-contract";
@@ -10,7 +10,7 @@ import {
   type ChangelogRegistryLoader,
 } from "@/data/chronicle-knowledge-base/changelog-record-sources";
 import type { OperationalRecordRegistry } from "@/data/chronicle-knowledge-base/operational-record-contract";
-import { galleryOperationalRecordRegistry } from "@/data/chronicle-knowledge-base/operational-record-sources";
+import { chronicleOperationalRecordRegistry } from "@/data/chronicle-knowledge-base/operational-record-sources";
 
 import {
   ChangelogRecordNarrative,
@@ -51,9 +51,10 @@ export default function ChangelogRecordList({
   detailScope = capability === "community-gallery" ? "community-gallery" : "global",
   detailOrigin = "knowledge-base",
   loader = loadChronicleChangelogRegistry,
-  operationalRegistry = galleryOperationalRecordRegistry,
+  operationalRegistry = chronicleOperationalRecordRegistry,
 }: ChangelogRecordListProps) {
   const location = useLocation();
+  const listRef = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<ChangelogListState>({ status: "loading" });
 
   useEffect(() => {
@@ -94,21 +95,33 @@ export default function ChangelogRecordList({
       return;
     }
 
-    let targetId: string;
+    let targetRecordId: string;
     try {
-      targetId = decodeURIComponent(location.hash.slice(1));
+      targetRecordId = decodeURIComponent(
+        location.hash.slice("#changelog-".length),
+      );
     } catch {
       return;
     }
 
-    const target = document.getElementById(targetId);
-    if (!target || target.dataset.changelogId !== targetId.slice("changelog-".length)) {
+    const query = new URLSearchParams(location.search);
+    const requestedScope = query.get("section") ?? query.get("capability");
+    if (requestedScope && requestedScope !== detailScope) {
+      return;
+    }
+
+    const target = [...(listRef.current?.querySelectorAll<HTMLElement>(
+      "[data-changelog-id]",
+    ) ?? [])].find(
+      (candidate) => candidate.dataset.changelogId === targetRecordId,
+    );
+    if (!target) {
       return;
     }
 
     target.scrollIntoView?.({ block: "nearest" });
     target.focus({ preventScroll: true });
-  }, [location.hash, state]);
+  }, [detailScope, location.hash, location.search, state]);
 
   const visibleEntries =
     state.status === "ready" && limit !== undefined
@@ -119,9 +132,11 @@ export default function ChangelogRecordList({
 
   return (
     <div
+      ref={listRef}
       className={`changelog-record-list changelog-record-list--${mode}`}
       data-changelog-status={state.status}
       data-changelog-mode={mode}
+      data-changelog-scope={detailScope}
     >
       <div className="changelog-record-list__summary">
         <div className="changelog-record-list__scope">{scopeLabel}</div>
@@ -177,7 +192,7 @@ export default function ChangelogRecordList({
           {visibleEntries.map((entry) => (
             <li
               className="changelog-record-list__record"
-              id={`changelog-${entry.id}`}
+              id={`changelog-${detailScope}-${entry.id}`}
               data-changelog-id={entry.id}
               data-source-record={entry.sourcePath}
               key={entry.id}

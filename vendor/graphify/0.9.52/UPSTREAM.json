@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "captured_at": "2026-08-30T08:20:00Z",
+  "package": {
+    "name": "graphifyy",
+    "version": "0.9.52",
+    "python": ">=3.10",
+    "pypi_url": "https://pypi.org/project/graphifyy/0.9.52/",
+    "wheel": {
+      "filename": "graphifyy-0.9.52-py3-none-any.whl",
+      "bytes": 1371298,
+      "sha256": "5588ea9af433a8cf74ada89dfc0b981abf596a1327a1375fdaf661905562bf44"
+    },
+    "source_archive": {
+      "filename": "graphifyy-0.9.52.tar.gz",
+      "bytes": 2070783,
+      "sha256": "3e3a5e1048bde70136a362043a774af908b0a1f4d2b66811fe1966c4ebee0cf5"
+    }
+  },
+  "upstream": {
+    "repository": "https://github.com/Graphify-Labs/graphify",
+    "commit": "680e3ed8edd3dc1fa1961050912941880b778207",
+    "tag": "refs/tags/v0.9.52",
+    "publication_workflow": ".github/workflows/publish.yml",
+    "publication_identity": "PyPI Trusted Publishing from the tagged Graphify-Labs/graphify repository"
+  },
+  "custody": {
+    "mode": "inert-reference-only",
+    "active_skill": false,
+    "source_document": "codex-skill-source/skill-codex.md",
+    "forbidden_activation": [
+      "SKILL.md",
+      "AGENTS.md injection",
+      "Graphify hooks",
+      "Graphify memory",
+      "Graphify MCP",
+      "Graphify watch",
+      "global Graphify installation"
+    ]
+  }
+}

@@ -1,6 +1,16 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { ScenarioData, Character, CharacterStateMessageSnapshot, CharacterStateSnapshotPayload, Conversation, Message, CharacterTraitSection, Scene, TimeOfDay, SideCharacter, SideCharacterMessageSnapshot, SideCharacterStateSnapshotPayload, CharacterSessionState, Memory, WorldCore, StoryGoal, GoalFlexibility, StoryGoalStepDerivation, FieldChangeMetadataMap, GoalAlignmentEvaluation, GoalAlignmentState } from '../../types';
 import { Button, TextArea } from './UI';
+import {
+  CHRONICLE_CHAT_CENTERED_MESSAGE_CLASS,
+  CHRONICLE_CHAT_DAY_TIME_CLASS,
+  CHRONICLE_CHAT_MESSAGE_BUBBLE_CLASS,
+  CHRONICLE_CHAT_QUICK_ACTION_CLASS,
+  CHRONICLE_CHAT_SPEAKER_AVATAR_CLASS,
+  CHRONICLE_CHAT_SPEAKER_COLUMN_CLASS,
+  CHRONICLE_CHAT_SPEAKER_NAME_CLASS,
+  CHRONICLE_CHAT_TRANSCRIPT_CLASS,
+} from './chronicle-dark-ui';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
@@ -7601,7 +7611,7 @@ const updatedChar: SideCharacter = {
             </div>
           )}
 
-          <div ref={scrollRef} onScroll={handleScroll} className="relative z-10 h-full overflow-y-auto px-6 md:px-14 lg:px-20 py-8 space-y-10 custom-scrollbar scrollbar-thin">
+          <div ref={scrollRef} onScroll={handleScroll} className={CHRONICLE_CHAT_TRANSCRIPT_CLASS}>
           {conversation?.messages.length === 0 && !streamingContent && (
              <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-6">
                <div className="w-20 h-20 rounded-full bg-ghost-white flex items-center justify-center text-4xl shadow-sm border border-ghost-white">✨</div>
@@ -7635,13 +7645,12 @@ const updatedChar: SideCharacter = {
               <div key={msg.id} className={`w-full animate-in fade-in slide-in-from-bottom-4 duration-500 group ${
                 offsetBubbles
                   ? `max-w-3xl ${isAi ? 'mr-auto' : 'ml-auto'}`
-                  : 'max-w-4xl mx-auto'
+                  : CHRONICLE_CHAT_CENTERED_MESSAGE_CLASS
               }`}>
-                <div className={`p-8 pt-14 pb-12 rounded-[2rem] shadow-2xl flex flex-col gap-4 transition-all relative ${
-                  bubblesTransparent
-                    ? 'bg-black/50'
-                    : ''
-                }`}
+                <div className={cn(
+                  CHRONICLE_CHAT_MESSAGE_BUBBLE_CLASS,
+                  bubblesTransparent && 'bg-black/50',
+                )}
                 style={!bubblesTransparent ? { backgroundColor: chatBubbleColor } : undefined}>
 
                   {/* Action buttons - top right corner */}
@@ -7839,8 +7848,8 @@ const updatedChar: SideCharacter = {
                     return (
                       <div key={segIndex} className={`relative ${segIndex > 0 && showAvatar ? 'mt-2.5 pt-2.5 border-t border-ghost-white' : ''}`}>
                         {showAvatar && (
-                          <div className="float-left mr-4 mb-2 flex flex-col items-center gap-1.5 w-16">
-                            <div className={`w-12 h-12 rounded-md border-2 border-ghost-white shadow-lg overflow-hidden flex items-center justify-center ${segmentAvatar ? '' : 'bg-slate-800'}`}>
+                          <div className={CHRONICLE_CHAT_SPEAKER_COLUMN_CLASS}>
+                            <div className={cn(CHRONICLE_CHAT_SPEAKER_AVATAR_CLASS, !segmentAvatar && 'bg-slate-800')}>
                               {isGenerating ? (
                                 <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
                               ) : segmentAvatar ? (
@@ -7851,7 +7860,7 @@ const updatedChar: SideCharacter = {
                                 </div>
                               )}
                             </div>
-                            <span className={`text-[9px] font-black uppercase tracking-widest text-center truncate w-full ${!isAi ? 'text-blue-300' : 'text-slate-500'}`}>
+                            <span className={cn(CHRONICLE_CHAT_SPEAKER_NAME_CLASS, !isAi ? 'text-blue-300' : 'text-slate-500')}>
                               {segmentName}
                             </span>
                           </div>
@@ -7886,7 +7895,7 @@ const updatedChar: SideCharacter = {
 
                   {/* Day/Time Badge - bottom left */}
                   {(msg.day || msg.timeOfDay) && (
-                    <div className="absolute bottom-3 left-4 flex items-center gap-2 text-sm text-slate-400">
+                    <div className={CHRONICLE_CHAT_DAY_TIME_CLASS}>
                       {msg.day && <span>Day: {msg.day}</span>}
                       {msg.timeOfDay && (
                         <span className="flex items-center gap-1">
@@ -7920,12 +7929,11 @@ const updatedChar: SideCharacter = {
             const segments = mergeByRenderedSpeaker(rawSegments, true, effectiveAppData, userChar, resolveCanonicalSpeakerName);
 
             return (
-              <div className={`w-full ${offsetBubbles ? 'max-w-3xl mr-auto' : 'max-w-4xl mx-auto'}`}>
-                <div className={`p-8 pt-14 pb-12 rounded-[2rem] shadow-2xl flex flex-col gap-4 ${
-                    bubblesTransparent
-                      ? 'bg-black/50'
-                      : ''
-                }`}
+              <div className={`w-full ${offsetBubbles ? 'max-w-3xl mr-auto' : CHRONICLE_CHAT_CENTERED_MESSAGE_CLASS}`}>
+                <div className={cn(
+                  CHRONICLE_CHAT_MESSAGE_BUBBLE_CLASS,
+                  bubblesTransparent && 'bg-black/50',
+                )}
                 style={!bubblesTransparent ? { backgroundColor: chatBubbleColor } : undefined}>
                   {segments.map((segment, segIndex) => {
                     // Look up character for this segment using session-aware lookup
@@ -7960,8 +7968,8 @@ const updatedChar: SideCharacter = {
                     return (
                       <div key={segIndex} className={`relative ${segIndex > 0 && showAvatar ? 'mt-2.5 pt-2.5 border-t border-ghost-white' : ''}`}>
                         {showAvatar && (
-                          <div className="float-left mr-4 mb-2 flex flex-col items-center gap-1.5 w-16">
-                            <div className={`w-12 h-12 rounded-md border-2 border-ghost-white shadow-lg overflow-hidden flex items-center justify-center ${segmentAvatar ? '' : 'bg-slate-800 animate-pulse'}`}>
+                          <div className={CHRONICLE_CHAT_SPEAKER_COLUMN_CLASS}>
+                            <div className={cn(CHRONICLE_CHAT_SPEAKER_AVATAR_CLASS, !segmentAvatar && 'bg-slate-800 animate-pulse')}>
                               {isGenerating ? (
                                 <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
                               ) : segmentAvatar ? (
@@ -7972,7 +7980,7 @@ const updatedChar: SideCharacter = {
                                 </div>
                               )}
                             </div>
-                            <span className="text-[9px] font-black uppercase tracking-widest text-center text-slate-500 truncate w-full">
+                            <span className={cn(CHRONICLE_CHAT_SPEAKER_NAME_CLASS, 'text-slate-500')}>
                               {segmentName}
                             </span>
                           </div>
@@ -7997,7 +8005,7 @@ const updatedChar: SideCharacter = {
             <div className="relative flex flex-wrap items-center gap-2.5">
               <button
                 onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/[0.10] bg-[#3c3e47] px-4 text-[11px] font-black uppercase tracking-[0.12em] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] transition-colors hover:bg-[#44464f] active:scale-95"
+                className={CHRONICLE_CHAT_QUICK_ACTION_CLASS}
               >
                 <Settings className="w-4 h-4" />
                 Chat Settings
@@ -8007,7 +8015,7 @@ const updatedChar: SideCharacter = {
               <button
                 onClick={handleGenerateSceneImage}
                 disabled={isGeneratingImage || !conversation?.messages?.length}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/[0.10] bg-[#3c3e47] px-4 text-[11px] font-black uppercase tracking-[0.12em] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] transition-colors hover:bg-[#44464f] active:scale-95 disabled:pointer-events-none disabled:opacity-50"
+                className={CHRONICLE_CHAT_QUICK_ACTION_CLASS}
               >
                 {isGeneratingImage ? (
                   <>
@@ -8024,7 +8032,7 @@ const updatedChar: SideCharacter = {
 
               <button
                 onClick={() => setIsColorModalOpen(true)}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-white/[0.10] bg-[#3c3e47] px-4 text-[11px] font-black uppercase tracking-[0.12em] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] transition-colors hover:bg-[#44464f] active:scale-95"
+                className={CHRONICLE_CHAT_QUICK_ACTION_CLASS}
               >
                 <Palette className="w-4 h-4" />
                 Change Color

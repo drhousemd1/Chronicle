@@ -5714,7 +5714,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
           "Repro steps and expected vs actual behavior.",
           "Impacted file/function names and affected route.",
         ],
-        loggingTargets: ["issue-registry", "scan-runs", "knowledge-base-current-work"],
+        loggingTargets: ["issue-registry", "scan-runs", "chronicle-records-if-triggered"],
         doneCriteria: [
           "Critical user paths tested from trigger to persistence.",
           "All regressions include reproducible steps.",
@@ -5744,7 +5744,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
           "Import graph or grep evidence showing no active references.",
           "Notes on why retention/removal is recommended.",
         ],
-        loggingTargets: ["issue-registry", "scan-runs", "knowledge-base-current-work"],
+        loggingTargets: ["issue-registry", "scan-runs", "chronicle-records-if-triggered"],
         doneCriteria: [
           "Every orphan candidate has explicit keep/remove disposition.",
         ],
@@ -5774,7 +5774,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
           "File pair/group showing duplication and preferred consolidation point.",
           "Risk note for each cleanup candidate.",
         ],
-        loggingTargets: ["issue-registry", "scan-runs", "knowledge-base-current-work"],
+        loggingTargets: ["issue-registry", "scan-runs", "chronicle-records-if-triggered"],
         doneCriteria: [
           "Cleanup opportunities are grouped by safe batch size.",
         ],
@@ -5836,7 +5836,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
           "Build/log evidence and impacted route timing symptoms.",
           "File/function hotspots with suggested mitigation.",
         ],
-        loggingTargets: ["issue-registry", "scan-runs", "knowledge-base-current-work"],
+        loggingTargets: ["issue-registry", "scan-runs", "chronicle-records-if-triggered"],
         doneCriteria: [
           "All major load or render regressions have measured evidence.",
         ],
@@ -5868,7 +5868,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
           "Exact file-level security posture with risk severity.",
           "Mitigation path and blast-radius summary.",
         ],
-        loggingTargets: ["issue-registry", "scan-runs", "knowledge-base-current-work"],
+        loggingTargets: ["issue-registry", "scan-runs", "chronicle-records-if-triggered"],
         doneCriteria: [
           "Critical exposure paths are enumerated and actionable.",
           "Any live Supabase schema, RLS, RPC, trigger, storage, policy, or grant change refreshes the approved repo-owned schema snapshot (`src/data/database-schema-inventory.ts` unless a newer dedicated schema map replaces it) before related findings are marked current or solved.",
@@ -5901,7 +5901,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
           "Exact function/route and missing authorization guard location.",
           "Caller capability impact (who can trigger what).",
         ],
-        loggingTargets: ["issue-registry", "scan-runs", "knowledge-base-current-work"],
+        loggingTargets: ["issue-registry", "scan-runs", "chronicle-records-if-triggered"],
         doneCriteria: [
           "All privileged paths have explicit role authorization coverage or a logged gap.",
         ],
@@ -5932,7 +5932,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
           "Policy/data-path citation proving current visibility scope.",
           "Recommended partitioning or policy hardening approach.",
         ],
-        loggingTargets: ["issue-registry", "scan-runs", "knowledge-base-current-work"],
+        loggingTargets: ["issue-registry", "scan-runs", "chronicle-records-if-triggered"],
         doneCriteria: [
           "Sensitive data paths are classified and non-compliant visibility is logged.",
         ],
@@ -5963,7 +5963,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
           "Source path proving current key/status visibility behavior.",
           "Role boundary recommendation for each exposed signal.",
         ],
-        loggingTargets: ["issue-registry", "scan-runs", "knowledge-base-current-work"],
+        loggingTargets: ["issue-registry", "scan-runs", "chronicle-records-if-triggered"],
         doneCriteria: [
           "All key-related endpoints are classified with explicit caller policy.",
         ],
@@ -5993,7 +5993,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
           "Bucket + policy name and exact policy predicate.",
           "User-impact risk statement for over-broad access.",
         ],
-        loggingTargets: ["issue-registry", "scan-runs", "knowledge-base-current-work"],
+        loggingTargets: ["issue-registry", "scan-runs", "chronicle-records-if-triggered"],
         doneCriteria: [
           "Every active storage bucket has explicit visibility/write-risk disposition.",
         ],
@@ -6023,7 +6023,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
           "Component path + exact sink location.",
           "Source of untrusted/partially trusted markup input.",
         ],
-        loggingTargets: ["issue-registry", "scan-runs", "knowledge-base-current-work"],
+        loggingTargets: ["issue-registry", "scan-runs", "chronicle-records-if-triggered"],
         doneCriteria: [
           "Every HTML sink is either proven safe or logged with mitigation.",
         ],
@@ -6053,7 +6053,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
           "Endpoint list with current limiter presence/absence.",
           "Operational impact statement (cost, latency, service quality).",
         ],
-        loggingTargets: ["issue-registry", "scan-runs", "knowledge-base-current-work"],
+        loggingTargets: ["issue-registry", "scan-runs", "chronicle-records-if-triggered"],
         doneCriteria: [
           "All high-cost endpoints have explicit abuse-control coverage or logged gaps.",
         ],
@@ -6083,7 +6083,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
           "Table/policy references and affected key paths.",
           "Recommended segmentation or policy rewrite pattern.",
         ],
-        loggingTargets: ["issue-registry", "scan-runs", "knowledge-base-current-work"],
+        loggingTargets: ["issue-registry", "scan-runs", "chronicle-records-if-triggered"],
         doneCriteria: [
           "All mixed-sensitivity policy surfaces are dispositioned (safe vs needs hardening).",
         ],
@@ -6113,7 +6113,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
           "Security event source path and current logging payload shape.",
           "Gap statement for missing incident telemetry coverage.",
         ],
-        loggingTargets: ["issue-registry", "scan-runs", "knowledge-base-current-work"],
+        loggingTargets: ["issue-registry", "scan-runs", "chronicle-records-if-triggered"],
         doneCriteria: [
           "Critical security failure paths have observable logs or tracked telemetry gaps.",
         ],
@@ -6145,7 +6145,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
           "Module-to-test gap map with priority rationale.",
           "Commands/logs used for coverage and e2e verification.",
         ],
-        loggingTargets: ["issue-registry", "scan-runs", "knowledge-base-current-work"],
+        loggingTargets: ["issue-registry", "scan-runs", "chronicle-records-if-triggered"],
         doneCriteria: [
           "Critical regression areas have explicit test-gap records.",
         ],
@@ -6178,7 +6178,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
           "Command output summary and warning/error counts.",
           "File-level warning categories and risk notes.",
         ],
-        loggingTargets: ["issue-registry", "scan-runs", "knowledge-base-current-work"],
+        loggingTargets: ["issue-registry", "scan-runs", "chronicle-records-if-triggered"],
         doneCriteria: [
           "Current build/lint/type state is reproducible with logged commands.",
         ],
@@ -6211,7 +6211,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
           "Source path chain from input capture to outbound payload field.",
           "Mismatch table showing expected key vs actual key usage.",
         ],
-        loggingTargets: ["issue-registry", "scan-runs", "knowledge-base-current-work"],
+        loggingTargets: ["issue-registry", "scan-runs", "chronicle-records-if-triggered"],
         doneCriteria: [
           "Every high-impact data path is mapped from source input to API payload.",
         ],
@@ -6241,7 +6241,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
           "Doc section + conflicting code reference.",
           "Suggested wording updates tied to actual behavior.",
         ],
-        loggingTargets: ["issue-registry", "scan-runs", "knowledge-base-current-work"],
+        loggingTargets: ["issue-registry", "scan-runs", "chronicle-records-if-triggered"],
         doneCriteria: [
           "Core operational docs align with current codebase semantics.",
         ],
@@ -6271,7 +6271,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
           "Visited route list and console/network outcome summary.",
           "If failure occurs: exact route, action, and error text.",
         ],
-        loggingTargets: ["issue-registry", "scan-runs", "knowledge-base-current-work"],
+        loggingTargets: ["issue-registry", "scan-runs", "chronicle-records-if-triggered"],
         doneCriteria: [
           "Core route smoke completed with no unlogged runtime/blocking errors.",
         ],
@@ -6305,7 +6305,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
           "Command outputs with pass/fail state and notable warnings.",
           "List of files touched to clear gate failures.",
         ],
-        loggingTargets: ["issue-registry", "scan-runs", "knowledge-base-current-work"],
+        loggingTargets: ["issue-registry", "scan-runs", "chronicle-records-if-triggered"],
         doneCriteria: [
           "All required gates pass or each exception is logged with owner + follow-up.",
         ],
@@ -6336,7 +6336,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
           "Startup behavior notes (render timing + any blocking symptoms).",
           "Auth/role guard proof path for sensitive bootstrap endpoints.",
         ],
-        loggingTargets: ["issue-registry", "scan-runs", "knowledge-base-current-work"],
+        loggingTargets: ["issue-registry", "scan-runs", "chronicle-records-if-triggered"],
         doneCriteria: [
           "Startup path is non-blocking, role-safe, and warning-clean for current release state.",
         ],
@@ -6367,7 +6367,7 @@ export const qualityHubInitialRegistry: QualityHubRegistry = {
           "Guide document identifier and conflicting source file path.",
           "Freshness status before and after review.",
         ],
-        loggingTargets: ["issue-registry", "scan-runs", "knowledge-base-current-work"],
+        loggingTargets: ["issue-registry", "scan-runs", "chronicle-records-if-triggered"],
         doneCriteria: [
           "All core App Guide docs have current source references and freshness stamps.",
         ],

@@ -48,6 +48,15 @@ import {
   capturePreloadLocalStorage,
 } from "@/features/quality-hub/quality-hub-changelog-migration-capture-support";
 import ChangelogRecordList from "@/components/admin/knowledge-base/ChangelogRecordList";
+import {
+  buildQualityHubChangelogHref,
+  buildWorkManualHref,
+} from "@/data/chronicle-knowledge-base/knowledge-routes";
+import {
+  isChronicleCapabilityId,
+  type ChronicleCapabilityId,
+} from "@/data/chronicle-knowledge-base/capability-ids";
+import { getOperationalCapability } from "@/data/chronicle-knowledge-base/operational-capability-registry";
 
 const STORAGE_KEY = "chronicle-quality-hub-v1";
 const PENDING_OWNER_SAVE_KEY_PREFIX = "chronicle-quality-hub-pending-v1";
@@ -95,7 +104,7 @@ const HUB_VIEWS: Array<{ id: HubViewId; label: string; description: string }> = 
   { id: "changelog", label: "Changelog", description: "Read-only repository change history" },
 ];
 
-type QualityHubChangelogCapability = "community-gallery" | undefined;
+type QualityHubChangelogCapability = ChronicleCapabilityId | undefined;
 
 export type QualityHubQueryState = Readonly<{
   activeView: HubViewId;
@@ -108,9 +117,13 @@ function readQualityHubQuery(search: string): QualityHubQueryState {
   const activeView = HUB_VIEWS.some((view) => view.id === requestedView)
     ? (requestedView as HubViewId)
     : "overview";
+  const requestedCapability = params.get("capability");
   const changelogCapability =
-    activeView === "changelog" && params.get("capability") === "community-gallery"
-      ? "community-gallery"
+    activeView === "changelog" &&
+    requestedCapability !== null &&
+    isChronicleCapabilityId(requestedCapability) &&
+    getOperationalCapability(requestedCapability)
+      ? requestedCapability
       : undefined;
   return Object.freeze({ activeView, changelogCapability });
 }
@@ -423,7 +436,9 @@ function normalizeActiveQualityHubRegistry(registry: QualityHubRegistry): Qualit
         checklist: {
           ...module.checklist,
           loggingTargets: module.checklist.loggingTargets.map((target) => (
-            target === "change-log" ? "knowledge-base-current-work" : target
+            target === "change-log" || target === "knowledge-base-current-work"
+              ? "chronicle-records-if-triggered"
+              : target
           )),
         },
       })),
@@ -566,39 +581,41 @@ function QualityHubHowToModal({
         <div className={cn(panelBodyClass, "overflow-y-auto max-h-[calc(85vh-70px)]")}>
           <div className="space-y-4 text-sm text-[#c7c9cf]">
             <div className={cn(recessedBlockClass, "p-4")}>
-              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Workflow</div>
-              <ol className="list-decimal pl-5 space-y-1">
-                <li>Run or log a scan in <strong className="text-white">Scan Runs</strong>.</li>
-                <li>Create/update issue records in <strong className="text-white">Issue Registry</strong>.</li>
-                <li>Track active implementation in the applicable capability&apos;s <strong className="text-white">Current Work</strong> tab in Chronicle Knowledge Base.</li>
-                <li>After evidence and human acceptance, the guarded closeout workflow creates the repository Changelog record.</li>
-              </ol>
+              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Workflow authority</div>
+              <p>
+                Quality Hub stores scan mechanics and scan results. It does not decide whether
+                Chronicle work needs a scan, Issue, Current Work project, Changelog entry, or
+                broad check package.
+              </p>
+              <Link className="mt-3 inline-block font-semibold text-[#8dc5ff] hover:underline" to={buildWorkManualHref("start-here")}>
+                Open Chronicle Work Manual — Start Here
+              </Link>
             </div>
             <div className={cn(recessedBlockClass, "p-4")}>
-              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Canonical Logging Rules</div>
+              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Quality Hub mechanics</div>
               <ul className="list-disc pl-5 space-y-1">
-                <li><strong className="text-white">Issue Registry</strong>: diagnosis, severity, evidence, and lifecycle status.</li>
-                <li><strong className="text-white">Scan Runs</strong>: who scanned, when, scope used, and output summary.</li>
-                <li><strong className="text-white">Current Work</strong>: the active objective, ordered steps, decisions, evidence, and exact stopping point.</li>
-                <li><strong className="text-white">Changelog</strong>: read-only accepted history created by guarded closeout, never by a manual Quality Hub edit or import.</li>
+                <li><strong className="text-white">Overview</strong> selects an already-authorized scan module.</li>
+                <li><strong className="text-white">Scan Runs</strong> records who scanned, when, the bounded scope, checks, omissions, and result summary.</li>
+                <li><strong className="text-white">Issue Registry</strong> stores findings that meet the Work Manual&apos;s Issue trigger.</li>
+                <li><strong className="text-white">Changelog</strong> is a read-only projection of canonical accepted history.</li>
               </ul>
             </div>
             <div className={cn(recessedBlockClass, "p-4")}>
-              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Supabase Snapshot Rule</div>
+              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Live-system evidence</div>
               <ul className="list-disc pl-5 space-y-1">
-                <li>After any live Supabase table, RLS, RPC, trigger, storage, policy, or grant change, refresh the approved repo-owned schema snapshot before marking Quality Hub entries current.</li>
-                <li>Use the approved snapshot source only; currently that is <strong className="text-white">src/data/database-schema-inventory.ts</strong> unless a newer dedicated Supabase Schema Map replaces it.</li>
-                <li>Include schema metadata, counts/grants/policies/functions/triggers/buckets when available, but never row contents, secrets, auth tokens, user emails, chat/story text, images, or private NSFW user content.</li>
-                <li>Mark unknown live details as unknown or needs_verification. Do not invent schema details or create alternate schema dump files unless explicitly requested.</li>
+                <li>The Work Manual decides when live Lovable or Supabase inspection is required.</li>
+                <li>The synchronized repository reference states the last documented backend structure; it does not prove inaccessible live state.</li>
+                <li>Never store private rows, secrets, tokens, user emails, story or chat contents, or private media in scan evidence.</li>
+                <li>Label inaccessible live facts as unverified rather than inventing them.</li>
               </ul>
             </div>
             <div className={cn(recessedBlockClass, "p-4")}>
-              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Agent Instructions</div>
+              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Evidence limits</div>
               <ul className="list-disc pl-5 space-y-1">
-                <li>Follow each module checklist in Overview exactly; do not free-form scope.</li>
-                <li>For every finding, include route/component/file evidence before proposing fixes.</li>
-                <li>If uncertain, log as likely and document uncertainty in evidence.</li>
-                <li>When implementing, update the capability&apos;s Current Work record. Do not add, edit, comment on, or import Quality Hub Changelog history.</li>
+                <li>A scan establishes only what its named checks and inspected sources support.</li>
+                <li>A suspected finding is not automatically a verified Issue.</li>
+                <li>A Quality Scan pass does not prove deployment, live Supabase state, or untested product behavior.</li>
+                <li>Record uncertainty and skipped scope explicitly.</li>
               </ul>
             </div>
           </div>
@@ -613,7 +630,9 @@ function CanonicalChangeLogView({
 }: {
   capability: QualityHubChangelogCapability;
 }) {
-  const isGallery = capability === "community-gallery";
+  const capabilityLabel = capability
+    ? (getOperationalCapability(capability)?.displayName ?? capability)
+    : null;
 
   return (
     <div className="space-y-6">
@@ -629,9 +648,9 @@ function CanonicalChangeLogView({
           <p className="text-sm leading-6 text-[#d4d4d8]">
             This view reads Chronicle&apos;s canonical repository Changelog. Historical
             Quality Hub records remain historical and are not relabeled as modern
-            accepted changes. Active implementation belongs in the applicable
-            capability&apos;s Current Work record; guarded closeout creates accepted
-            Changelog records after evidence and human acceptance.
+            accepted changes. It is a read-only history surface; the Chronicle Work
+            Manual separately governs when Current Work or an accepted Changelog
+            record is created.
           </p>
           <p className="text-sm leading-6 text-[#d4d4d8]">
             The primary records below explain what was broken, why the work was
@@ -639,12 +658,12 @@ function CanonicalChangeLogView({
             recorded. Each record links to its complete technical history.
           </p>
           <nav aria-label="Changelog scope" className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
-            {isGallery ? (
+            {capability ? (
               <>
-                <span className="font-bold text-white">Community Gallery</span>
+                <span className="font-bold text-white">{capabilityLabel}</span>
                 <Link
                   className="font-semibold text-[#93c5fd] underline underline-offset-4 hover:text-[#bfdbfe]"
-                  to="/style-guide/ui-audit?view=changelog"
+                  to={buildQualityHubChangelogHref()}
                 >
                   Show all Chronicle records
                 </Link>
@@ -654,7 +673,7 @@ function CanonicalChangeLogView({
                 <span className="font-bold text-white">All Chronicle records</span>
                 <Link
                   className="font-semibold text-[#93c5fd] underline underline-offset-4 hover:text-[#bfdbfe]"
-                  to="/style-guide/ui-audit?view=changelog&capability=community-gallery"
+                  to={buildQualityHubChangelogHref("community-gallery")}
                 >
                   Show Community Gallery only
                 </Link>
@@ -663,16 +682,16 @@ function CanonicalChangeLogView({
           </nav>
           <ChangelogRecordList
             capability={capability}
-            detailScope={isGallery ? "community-gallery" : "global"}
+            detailScope={capability ?? "global"}
             detailOrigin="quality-hub"
             scopeLabel={
-              isGallery
-                ? "Records positively verified to affect Community Gallery."
+              capability
+                ? `Records positively verified to affect ${capabilityLabel}.`
                 : "All records currently in the canonical Chronicle Changelog."
             }
             emptyMessage={
-              isGallery
-                ? "No canonical Changelog records are currently verified as affecting Community Gallery."
+              capability
+                ? `No canonical Changelog records are currently verified as affecting ${capabilityLabel}.`
                 : "No canonical Chronicle Changelog records are currently recorded."
             }
           />
@@ -1548,8 +1567,10 @@ export default function UiAuditPage({
           );
           const logTargets = Array.from(
             new Set(linkedModules.flatMap((module) => module.checklist.loggingTargets).map((target) => (
-              target === "change-log" || target === "knowledge-base-current-work"
-                ? "Current Work; Changelog after accepted closeout"
+              target === "change-log" ||
+              target === "knowledge-base-current-work" ||
+              target === "chronicle-records-if-triggered"
+                ? "Chronicle records only when the Work Manual trigger applies"
                 : target.replace(/-/g, " ")
             ))),
           );

@@ -192,11 +192,13 @@ function isTransientCertificationContention(message: string) {
     "writer-lock publication still belongs to a live process",
     "Interrupted writer-lock recovery still belongs to a live process",
     "Interrupted certification lease transition still belongs to a live process",
+    "writes are blocked by a live scoped writer",
     "Knowledge certification lease cannot be released while its protected process is alive",
   ].some((fragment) => message.includes(fragment));
 }
 
 async function acquireLeaseAfterConcurrentReaders(label: string) {
+  const contentionDeadline = Date.now() + 4_000;
   for (let attempt = 0; attempt < 200; attempt += 1) {
     try {
       return await acquireKnowledgeCertificationLease({
@@ -206,8 +208,13 @@ async function acquireLeaseAfterConcurrentReaders(label: string) {
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      if (!isTransientCertificationContention(message) || attempt === 199) {
+      if (!isTransientCertificationContention(message)) {
         throw error;
+      }
+      if (attempt === 199 || Date.now() >= contentionDeadline) {
+        throw new Error(
+          `Timed out waiting for active Knowledge record work before starting ${label}.`,
+        );
       }
       await new Promise((resolve) => setTimeout(resolve, 20));
     }

@@ -2,6 +2,7 @@ import React from "react";
 import { TabKey } from "@/types";
 import { cn } from "@/lib/utils";
 import { GalleryNsfwToggle } from "@/components/chronicle/GalleryNsfwToggle";
+import { ChronicleSurfaceButton as SurfaceButton } from "@/components/chronicle/ChronicleDarkUi";
 import { AppShellHeader } from "@/components/app-shell/AppShellHeader";
 import {
   DropdownMenu,
@@ -16,6 +17,7 @@ import {
   Image as ImageIcon,
   Moon,
   Pencil,
+  Plus,
   Settings,
   Sparkles,
   Sun,
@@ -69,12 +71,17 @@ interface AdminHeaderConfig {
   activeTool: string;
   guideTheme: "dark" | "light";
   styleGuideEditsCount: number;
+  rndRepositorySaveState: "idle" | "saving" | "saved" | "error";
+  rndRepositorySaveAvailable: boolean;
+  rndAddMockupAvailable: boolean;
   onBackToHub: () => void;
   onToggleGuideTheme: () => void;
   onGuideSave: () => void;
   onGuideSyncAll: () => void;
   onOpenStyleGuideEdits: () => void;
   onDownloadStyleGuide: () => void;
+  onRndAddMockup: () => void;
+  onRndRepositorySave: () => void;
 }
 
 interface AccountHeaderConfig {
@@ -141,9 +148,6 @@ interface AppShellTopBarProps {
   characterEditor?: CharacterEditorHeaderConfig;
 }
 
-const SURFACE_BUTTON_CLASS =
-  "inline-flex items-center justify-center h-10 rounded-xl border-0 bg-[#303035] text-[#eaedf1] shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.09),inset_0_-1px_0_rgba(0,0,0,0.20)] hover:bg-[#343439] active:bg-[#343439] transition-all active:scale-95 text-xs font-bold leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--accent-teal))]/40 disabled:opacity-50 disabled:pointer-events-none";
-
 function BackChevronIcon() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -154,7 +158,7 @@ function BackChevronIcon() {
 
 function BackButton({ onClick }: { onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+    <button type="button" onClick={onClick} aria-label="Back" className="p-2 hover:bg-slate-100 rounded-full transition-colors">
       <BackChevronIcon />
     </button>
   );
@@ -224,17 +228,6 @@ function SegmentedControl({
     </div>
   );
 }
-
-const SurfaceButton = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>(
-  ({ children, className, ...props }, ref) => {
-    return (
-      <button ref={ref} type="button" className={cn(SURFACE_BUTTON_CLASS, className)} {...props}>
-        {children}
-      </button>
-    );
-  },
-);
-SurfaceButton.displayName = "SurfaceButton";
 
 function StoryTransferNotice({ notice }: { notice: StoryTransferNoticeConfig }) {
   return (
@@ -423,7 +416,13 @@ export function AppShellTopBar({
     leftContent = (
       <div className="flex items-center gap-2">
         {admin.activeTool !== "hub" && <BackButton onClick={admin.onBackToHub} />}
-        <SectionTitle>{admin.activeTool === "finance_dashboard" ? "Finance Dashboard" : "Admin Panel"}</SectionTitle>
+        <SectionTitle>
+          {admin.activeTool === "finance_dashboard"
+            ? "Finance Dashboard"
+            : admin.activeTool === "research_development"
+              ? "Research & Development"
+              : "Admin Panel"}
+        </SectionTitle>
       </div>
     );
   }
@@ -583,6 +582,30 @@ export function AppShellTopBar({
         <SurfaceButton onClick={admin.onDownloadStyleGuide} className="px-6 gap-2">
           <Download size={14} />
           Download
+        </SurfaceButton>
+      </div>
+    );
+  }
+
+  if (tab === "admin" && admin?.activeTool === "research_development") {
+    rightContent = (
+      <div className="flex items-center gap-2">
+        <SurfaceButton
+          onClick={admin.onRndAddMockup}
+          disabled={!admin.rndAddMockupAvailable}
+          className="px-5 gap-2"
+        >
+          <Plus size={14} />
+          Add New Mock-up
+        </SurfaceButton>
+        <SurfaceButton
+          onClick={admin.onRndRepositorySave}
+          disabled={!admin.rndRepositorySaveAvailable || admin.rndRepositorySaveState === "saving"}
+          className="px-6"
+        >
+          {admin.rndRepositorySaveState === "saving"
+            ? "Saving..."
+            : "Save"}
         </SurfaceButton>
       </div>
     );

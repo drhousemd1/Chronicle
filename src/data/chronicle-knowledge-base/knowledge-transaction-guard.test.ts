@@ -21,6 +21,7 @@ import {
   knowledgeControlHostFingerprint,
   knowledgeControlMetadataWithHash,
 } from "../../../scripts/knowledge-record-control-contract.mjs";
+import { KNOWLEDGE_COMMAND_BOUNDARIES } from "../../../scripts/knowledge-command-boundaries";
 
 const REPOSITORY_ROOT = process.cwd();
 const GUARD_SCRIPT_PATH = path.resolve(
@@ -41,52 +42,9 @@ const OWNER_LOCK_ID = "b".repeat(32);
 const FIXED_TIME = "2026-08-01T12:34:56.789Z";
 const roots: string[] = [];
 
-const EXPECTED_PACKAGE_SCRIPTS = Object.freeze({
-  prebuild:
-    "vite-node scripts/run-with-knowledge-certification-lease.ts prebuild -- node scripts/generate-roleplay-artifact-identity.mjs",
-  build:
-    "vite-node scripts/run-with-knowledge-certification-lease.ts build -- vite build",
-  "prebuild:dev":
-    'vite-node scripts/run-with-knowledge-certification-lease.ts prebuild-dev -- node -e "process.exit(0)"',
-  "build:dev":
-    "vite-node scripts/run-with-knowledge-certification-lease.ts build-dev -- vite build --mode development",
-  typecheck:
-    "vite-node scripts/run-with-knowledge-certification-lease.ts typecheck -- tsc -b",
-  "ship-check":
-    "vite-node scripts/run-with-knowledge-certification-lease.ts ship-check -- npm run -s ship-check:steps",
-  "ship-check:steps":
-    "npm run -s typecheck && npm run -s lint && npm run -s build",
-  "architecture:refresh":
-    "vite-node scripts/run-with-knowledge-certification-lease.ts architecture-refresh -- node scripts/refresh-architecture-paths.mjs",
-  "knowledge:check":
-    "vite-node scripts/run-with-knowledge-certification-lease.ts knowledge-check -- node scripts/validate-architecture-knowledge.mjs",
-  "knowledge:operational:check":
-    "vite-node scripts/run-with-knowledge-certification-lease.ts knowledge-operational-check -- vite-node scripts/validate-chronicle-operational-records.ts",
-  "quality:scan":
-    "vite-node scripts/run-with-knowledge-certification-lease.ts quality-scan -- node scripts/run-quality-hub-scan.mjs",
-  lint: "vite-node scripts/run-with-knowledge-certification-lease.ts lint -- eslint .",
-  test: "vite-node scripts/run-with-knowledge-certification-lease.ts test -- vitest run",
-  "test:watch":
-    "vite-node scripts/run-with-knowledge-certification-lease.ts test-watch -- vitest",
-  "test:coverage":
-    "vite-node scripts/run-with-knowledge-certification-lease.ts test-coverage -- vitest run --coverage",
-  "test:e2e":
-    "vite-node scripts/run-with-knowledge-certification-lease.ts test-e2e -- playwright test",
-  "validation:roleplay:batch0":
-    "vite-node scripts/run-with-knowledge-certification-lease.ts validation-roleplay-batch0 -- vite-node scripts/write-roleplay-batch0-validation-ledger.ts",
-  "validation:roleplay:batch1":
-    "vite-node scripts/run-with-knowledge-certification-lease.ts validation-roleplay-batch1 -- vite-node scripts/write-roleplay-batch1-validation-ledger.ts",
-  "validation:gate":
-    "vite-node scripts/run-with-knowledge-certification-lease.ts validation-gate -- vite-node scripts/run-validation-gate.ts",
-  "validation:reconcile":
-    "vite-node scripts/run-with-knowledge-certification-lease.ts validation-reconcile -- vite-node scripts/reconcile-validation-evidence.ts",
-  "validation:manual-review":
-    "vite-node scripts/run-with-knowledge-certification-lease.ts validation-manual-review -- vite-node scripts/record-validation-manual-review.ts",
-  "artifacts:roleplay:refresh":
-    "vite-node scripts/run-with-knowledge-certification-lease.ts artifacts-roleplay-refresh -- node scripts/generate-roleplay-artifact-identity.mjs",
-  "artifacts:roleplay:check":
-    "vite-node scripts/run-with-knowledge-certification-lease.ts artifacts-roleplay-check -- node scripts/generate-roleplay-artifact-identity.mjs --check",
-});
+const EXPECTED_PACKAGE_SCRIPTS = Object.freeze(Object.fromEntries(
+  KNOWLEDGE_COMMAND_BOUNDARIES.map(({ script, command }) => [script, command]),
+));
 
 const DIRECT_GUARDED_ENTRY_POINTS = [
   {
@@ -105,6 +63,18 @@ const DIRECT_GUARDED_ENTRY_POINTS = [
     sourcePath: "scripts/refresh-architecture-paths.mjs",
     expectedCommand: "architecture-refresh",
     firstProtectedWork: "fs.readdirSync",
+    executable: process.execPath,
+  },
+  {
+    sourcePath: "scripts/validate-chronicle-work-manual.ts",
+    expectedCommand: "knowledge-work-manual-check",
+    firstProtectedWork: "fs.readFileSync(filePath",
+    executable: VITE_NODE,
+  },
+  {
+    sourcePath: "scripts/run-quality-hub-scan.mjs",
+    expectedCommand: "quality-scan",
+    firstProtectedWork: "for (const check of checks)",
     executable: process.execPath,
   },
 ] as const;
@@ -247,6 +217,29 @@ async function writeWriterLock(
   );
 }
 
+async function writeScopedWriter(root: string) {
+  const transactionRoot = await ensureTransactionRoot(root);
+  const scopedRoot = path.join(transactionRoot, "scoped-writers");
+  const lockDirectory = path.join(scopedRoot, `writer-${OWNER_LOCK_ID}`);
+  await mkdir(lockDirectory, { recursive: true, mode: 0o700 });
+  await Promise.all([chmod(scopedRoot, 0o700), chmod(lockDirectory, 0o700)]);
+  await writePrivateJson(
+    path.join(lockDirectory, "lock.json"),
+    knowledgeControlMetadataWithHash({
+      storeVersion: KNOWLEDGE_CONTROL_STORE_VERSION,
+      lockId: OWNER_LOCK_ID,
+      pid: process.pid,
+      hostname: os.hostname(),
+      startedAt: FIXED_TIME,
+      command: "apply issue-update",
+      transactionId: TRANSACTION_ID,
+      scopes: [
+        "record:docs/architecture-knowledge/issues/community-gallery/CG-ISSUE-001.md",
+      ],
+    }),
+  );
+}
+
 async function writeCertificationLease(
   root: string,
   options: Readonly<{
@@ -320,7 +313,7 @@ afterEach(async () => {
 });
 
 describe("knowledge transaction package-script guard", () => {
-  it("pins every protected package route to its exact runner command", async () => {
+  it("pins every classified package route to its exact command boundary", async () => {
     const packageJson = JSON.parse(
       await readFile(PACKAGE_JSON_PATH, "utf8"),
     ) as { scripts?: Record<string, string> };
@@ -332,6 +325,59 @@ describe("knowledge transaction package-script guard", () => {
         expectedCommand,
       );
     }
+  });
+
+  it("keeps the full builds and Knowledge-bearing checks protected without wrapping independent commands", () => {
+    const byScript = new Map(
+      KNOWLEDGE_COMMAND_BOUNDARIES.map((entry) => [entry.script, entry]),
+    );
+    for (const script of [
+      "build",
+      "build:dev",
+      "architecture:refresh",
+      "knowledge:check",
+      "knowledge:operational:check",
+      "knowledge:work-manual:check",
+      "quality:scan",
+      "test",
+      "test:watch",
+      "test:coverage",
+      "test:e2e",
+      "validation:gate",
+      "graph:history",
+      "graph:check",
+    ]) {
+      expect(byScript.get(script)?.protection, script).toBe("knowledge-certification");
+      expect(byScript.get(script)?.command, script).toContain(
+        "run-with-knowledge-certification-lease.ts",
+      );
+    }
+    for (const entry of KNOWLEDGE_COMMAND_BOUNDARIES.filter(
+      ({ protection }) => protection === "independent",
+    )) {
+      expect(entry.command, entry.script).not.toContain(
+        "run-with-knowledge-certification-lease.ts",
+      );
+    }
+    for (const entry of KNOWLEDGE_COMMAND_BOUNDARIES.filter(
+      ({ protection }) => protection === "nested",
+    )) {
+      expect(entry.command, entry.script).not.toContain(
+        "run-with-knowledge-certification-lease.ts",
+      );
+    }
+  });
+
+  it("keeps the Quality Hub scan on one outer Knowledge snapshot without nested certification leases", async () => {
+    const source = await readFile(
+      path.resolve(REPOSITORY_ROOT, "scripts/run-quality-hub-scan.mjs"),
+      "utf8",
+    );
+    expect(source).toContain('["node_modules/vitest/vitest.mjs", "run"]');
+    expect(source).toContain('["node_modules/vite/bin/vite.js", "build"]');
+    expect(source).not.toContain('args: ["run", "test"]');
+    expect(source).not.toContain('args: ["run", "build"]');
+    expect(source).not.toContain("run-with-knowledge-certification-lease.ts");
   });
 
   it("requires the exact active context before the ordinary guard and protected work", async () => {
@@ -490,7 +536,7 @@ describe("read-only Knowledge transaction control inspection", () => {
     const result = runGuard(root);
     expect(result.status).toBe(0);
     expect(result.stdout).toContain(
-      "no writer lock and no unfinished transactions",
+      "no global or scoped writer and no unfinished transactions",
     );
     expect(result.stderr).toBe("");
     await expect(
@@ -504,6 +550,14 @@ describe("read-only Knowledge transaction control inspection", () => {
     const result = runGuard(root);
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("transaction writer lock is active");
+  });
+
+  it("blocks on an exact live scoped writer with a useful reason", async () => {
+    const root = await createGitFixture();
+    await writeScopedWriter(root);
+    const result = runGuard(root);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("1 scoped record writer is active");
   });
 
   it("rejects self-hashed writer metadata with an unsupported field", async () => {

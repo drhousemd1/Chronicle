@@ -5,10 +5,19 @@ import { z } from "zod";
 import { canonicalJsonStringify } from "@/lib/quality-hub-changelog-migration";
 
 import {
+  assertAcceptedUpdateOwner,
+  isAcceptedUpdateId,
+} from "./accepted-update-capability-registry";
+
+import {
   APPROVED_CAPABILITY_IDS,
   isChronicleCapabilityId,
   type ChronicleCapabilityId,
 } from "./capability-ids";
+import {
+  buildArchivedCurrentWorkHref,
+  CHRONICLE_KNOWLEDGE_ROUTE_REGISTRY,
+} from "./knowledge-routes";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const SHA256 = /^[a-f0-9]{64}$/;
@@ -127,15 +136,22 @@ export function computeLegacyPayloadHash(payload: LegacyQualityHubPayload) {
 
 export const CHANGELOG_VARIANTS = [
   "accepted_closeout",
+  "accepted_update",
   "legacy_import",
   "correction",
 ] as const;
 
 export const CHANGELOG_PROVENANCE = [
   "accepted-closeout",
+  "accepted-update",
   "historical-quality-hub",
   "correction",
 ] as const;
+
+export const ACCEPTED_UPDATE_WORKFLOW_CONTEXT =
+  "no_issue_current_work_archive_or_proof_matrix" as const;
+export const ACCEPTED_UPDATE_CONTEXT_NARRATIVE =
+  "This bounded update did not require or create a Chronicle Issue, Current Work project, proof matrix, archived work record, or closeout transaction." as const;
 
 export const LEGACY_SOURCE_LINEAGE = [
   "owner-db",
@@ -190,6 +206,22 @@ export type AcceptedCloseoutChangelogRecord = ChangelogRecordBase &
     archiveRoute: string;
     resolvedIssueIds: readonly string[];
     remainingIssueIds: readonly string[];
+  }>;
+
+export type AcceptedUpdateChangelogRecord = ChangelogRecordBase &
+  Readonly<{
+    variant: "accepted_update";
+    provenance: "accepted-update";
+    whyChangeWasNeeded: string;
+    changes: string;
+    acceptedEvidenceSummary: string;
+    acceptedEvidenceLimits: string;
+    owningCapability: ChronicleCapabilityId;
+    acceptedOn: string;
+    acceptedBy: string;
+    reviewMethod: string;
+    sourceRevision: string;
+    workflowRecordContext: typeof ACCEPTED_UPDATE_WORKFLOW_CONTEXT;
   }>;
 
 export type LegacyQualityHubComment = Readonly<{
@@ -259,6 +291,7 @@ export type ChangelogClarifiedFields = Readonly<{
   affectedCapabilities?: readonly ChronicleCapabilityId[];
   acceptedOn?: string;
   acceptedBy?: string;
+  reviewMethod?: string;
   acceptanceRef?: string;
   sourceRevision?: string;
   archivedProjectId?: string;
@@ -294,11 +327,13 @@ export type CorrectionChangelogRecord = ChangelogRecordBase &
 
 export type ChangelogRecord =
   | AcceptedCloseoutChangelogRecord
+  | AcceptedUpdateChangelogRecord
   | LegacyImportChangelogRecord
   | CorrectionChangelogRecord;
 
 export type ChangelogRootRecord =
   | AcceptedCloseoutChangelogRecord
+  | AcceptedUpdateChangelogRecord
   | LegacyImportChangelogRecord;
 
 export type EffectiveChangelogEntry = Readonly<{
@@ -442,9 +477,31 @@ const acceptedCloseoutSchema = commonSchema
     source_revision: z.string().regex(SOURCE_REVISION),
     archived_project_id: z.string().regex(PROJECT_ID),
     archive_record: z.string().trim().min(1),
-    archive_route: z.string().startsWith("/style-guide/chronicle-knowledge-base/archive/"),
+    archive_route: z
+      .string()
+      .startsWith(`${CHRONICLE_KNOWLEDGE_ROUTE_REGISTRY.knowledgeBase}/archive/`),
     resolved_issue_ids: z.array(z.string().trim().min(1)),
     remaining_issue_ids: z.array(z.string().trim().min(1)),
+  })
+  .strict();
+
+const acceptedUpdateSchema = commonSchema
+  .extend({
+    variant: z.literal("accepted_update"),
+    provenance: z.literal("accepted-update"),
+    title: acceptedContentSchema,
+    why_change_was_needed: acceptedContentSchema,
+    changes: acceptedContentSchema,
+    outcome: acceptedContentSchema,
+    accepted_evidence_summary: acceptedContentSchema,
+    accepted_evidence_limits: acceptedContentSchema,
+    affected_capabilities: nonEmptyCapabilityListSchema,
+    owning_capability: capabilitySchema,
+    accepted_on: dateSchema,
+    accepted_by: meaningfulAuthoritySchema,
+    review_method: acceptedContentSchema,
+    source_revision: z.string().regex(SOURCE_REVISION),
+    workflow_record_context: z.literal(ACCEPTED_UPDATE_WORKFLOW_CONTEXT),
   })
   .strict();
 
@@ -530,13 +587,14 @@ const clarifiedFieldsSchema = z
     affected_capabilities: capabilityListSchema.optional(),
     accepted_on: dateSchema.optional(),
     accepted_by: meaningfulAuthoritySchema.optional(),
+    review_method: acceptedContentSchema.optional(),
     acceptance_ref: z.string().regex(PROOF_ID).optional(),
     source_revision: z.string().regex(SOURCE_REVISION).optional(),
     archived_project_id: z.string().regex(PROJECT_ID).optional(),
     archive_record: z.string().trim().min(1).optional(),
     archive_route: z
       .string()
-      .startsWith("/style-guide/chronicle-knowledge-base/archive/")
+      .startsWith(`${CHRONICLE_KNOWLEDGE_ROUTE_REGISTRY.knowledgeBase}/archive/`)
       .optional(),
     resolved_issue_ids: z.array(z.string().trim().min(1)).optional(),
     remaining_issue_ids: z.array(z.string().trim().min(1)).optional(),
@@ -583,6 +641,7 @@ const correctionSchema = commonSchema
 
 const changelogSchema = z.discriminatedUnion("variant", [
   acceptedCloseoutSchema,
+  acceptedUpdateSchema,
   legacyImportSchema,
   correctionSchema,
 ]);
@@ -759,6 +818,60 @@ function assertAcceptedNarrativeAgreement(
   }
 }
 
+function assertAcceptedUpdateNarrativeAgreement(
+  body: string,
+  metadata: {
+    affected_capabilities: readonly string[];
+    accepted_by: string;
+    accepted_on: string;
+    why_change_was_needed: string;
+    changes: string;
+    outcome: string;
+    accepted_evidence_summary: string;
+    accepted_evidence_limits: string;
+    review_method: string;
+    source_revision: string;
+  },
+  sourcePath: string,
+  errors: string[],
+) {
+  const sections = getMarkdownSections(body, 2);
+  const fields = [
+    ["Why the Change Was Needed", metadata.why_change_was_needed, "frontmatter why_change_was_needed"],
+    ["Changes", metadata.changes, "frontmatter changes"],
+    ["Outcome", metadata.outcome, "frontmatter outcome"],
+    ["Accepted Evidence Summary", metadata.accepted_evidence_summary, "frontmatter accepted_evidence_summary"],
+    ["Accepted Evidence Limits", metadata.accepted_evidence_limits, "frontmatter accepted_evidence_limits"],
+    ["Review Method", metadata.review_method, "frontmatter review_method"],
+    [
+      "Acceptance and Source State",
+      `${metadata.accepted_by} accepted source revision ${metadata.source_revision} on ${metadata.accepted_on}.`,
+      "frontmatter accepted_by, source_revision, and accepted_on",
+    ],
+    [
+      "Provenance",
+      "This is a bounded Accepted Update, not an accepted closeout.",
+      "the Accepted Update provenance contract",
+    ],
+    [
+      "Applicability",
+      `Affected capabilities: ${metadata.affected_capabilities.join(", ")}.`,
+      "frontmatter affected_capabilities",
+    ],
+  ] as const;
+  for (const [heading, expected, fieldPath] of fields) {
+    assertMarkdownSectionAgreement(
+      sections,
+      heading,
+      expected,
+      sourcePath,
+      errors,
+      2,
+      fieldPath,
+    );
+  }
+}
+
 function assertCorrectionNarrativeAgreement(
   body: string,
   clarifiedFields: {
@@ -770,6 +883,7 @@ function assertCorrectionNarrativeAgreement(
     outcome?: string;
     accepted_evidence_summary?: string;
     accepted_evidence_limits?: string;
+    review_method?: string;
     original_record?: LegacyQualityHubPayload;
   },
   correctionAuthority: string,
@@ -798,6 +912,7 @@ function assertCorrectionNarrativeAgreement(
       clarifiedFields.accepted_evidence_limits,
       "clarified_fields.accepted_evidence_limits",
     ],
+    ["Review Method", clarifiedFields.review_method, "clarified_fields.review_method"],
   ] as const;
   const effectiveSections = getMarkdownSections(body, 2).filter(
     (section) => section.heading === "Effective Clarification",
@@ -932,6 +1047,15 @@ function assertMarkdownStructure(
       "Issue Disposition",
       "Preserved Work Record",
     ],
+    accepted_update: [
+      "Why the Change Was Needed",
+      "Changes",
+      "Accepted Evidence Summary",
+      "Accepted Evidence Limits",
+      "Review Method",
+      "Acceptance and Source State",
+      "Operational Record Context",
+    ],
     legacy_import: [
       "Original Quality Hub Record",
       "Migration Lineage",
@@ -945,6 +1069,21 @@ function assertMarkdownStructure(
   for (const heading of [...commonHeadings, ...variantHeadings[variant]]) {
     if (!levelTwoHeadings.includes(heading)) {
       errors.push(`${sourcePath}: missing required heading "## ${heading}"`);
+    }
+  }
+  if (variant === "accepted_update") {
+    const allowed = new Set([...commonHeadings, ...variantHeadings.accepted_update]);
+    for (const heading of levelTwoHeadings) {
+      const count = levelTwoHeadings.filter((candidate) => candidate === heading).length;
+      if (!allowed.has(heading)) {
+        errors.push(
+          `${sourcePath}: Accepted Update contains unexpected level-two heading "## ${heading}"`,
+        );
+      } else if (count !== 1) {
+        errors.push(
+          `${sourcePath}: Accepted Update requires exactly one "## ${heading}" heading, found ${count}`,
+        );
+      }
     }
   }
 }
@@ -1117,7 +1256,7 @@ function parseChangelogRecord(
     }
     if (
       metadata.archive_route !==
-      `/style-guide/chronicle-knowledge-base/archive/${metadata.archived_project_id}`
+      buildArchivedCurrentWorkHref(metadata.archived_project_id)
     ) {
       errors.push(`${sourcePath}: archive_route does not match archived_project_id`);
     }
@@ -1148,6 +1287,59 @@ function parseChangelogRecord(
       archiveRoute: metadata.archive_route,
       resolvedIssueIds: metadata.resolved_issue_ids,
       remainingIssueIds: metadata.remaining_issue_ids,
+    });
+  }
+
+  if (metadata.variant === "accepted_update") {
+    assertAcceptedUpdateNarrativeAgreement(
+      frontmatter.body,
+      metadata,
+      sourcePath,
+      errors,
+    );
+    assertMarkdownSectionAgreement(
+      getMarkdownSections(frontmatter.body, 2),
+      "Operational Record Context",
+      ACCEPTED_UPDATE_CONTEXT_NARRATIVE,
+      sourcePath,
+      errors,
+      2,
+      "workflow_record_context",
+    );
+    if (!isAcceptedUpdateId(metadata.change_id)) {
+      errors.push(
+        `${sourcePath}: accepted update ID must use an explicitly registered PREFIX-UPDATE-NNN identity`,
+      );
+    } else {
+      try {
+        assertAcceptedUpdateOwner(
+          metadata.change_id,
+          metadata.owning_capability,
+        );
+      } catch (error) {
+        errors.push(`${sourcePath}: ${(error as Error).message}`);
+      }
+    }
+    if (!metadata.affected_capabilities.includes(metadata.owning_capability)) {
+      errors.push(`${sourcePath}: affected_capabilities must include owning_capability`);
+    }
+    if (metadata.accepted_on !== metadata.change_date) {
+      errors.push(`${sourcePath}: accepted_on must equal change_date`);
+    }
+    return deepFreeze({
+      ...common,
+      variant: "accepted_update",
+      provenance: "accepted-update",
+      whyChangeWasNeeded: metadata.why_change_was_needed,
+      changes: metadata.changes,
+      acceptedEvidenceSummary: metadata.accepted_evidence_summary,
+      acceptedEvidenceLimits: metadata.accepted_evidence_limits,
+      owningCapability: metadata.owning_capability,
+      acceptedOn: metadata.accepted_on,
+      acceptedBy: metadata.accepted_by,
+      reviewMethod: metadata.review_method,
+      sourceRevision: metadata.source_revision,
+      workflowRecordContext: metadata.workflow_record_context,
     });
   }
 
@@ -1304,6 +1496,7 @@ function parseChangelogRecord(
       affectedCapabilities: metadata.clarified_fields.affected_capabilities,
       acceptedOn: metadata.clarified_fields.accepted_on,
       acceptedBy: metadata.clarified_fields.accepted_by,
+      reviewMethod: metadata.clarified_fields.review_method,
       acceptanceRef: metadata.clarified_fields.acceptance_ref,
       sourceRevision: metadata.clarified_fields.source_revision,
       archivedProjectId: metadata.clarified_fields.archived_project_id,
@@ -1372,6 +1565,18 @@ const ACCEPTED_CLARIFIED_FIELDS = new Set<keyof ChangelogClarifiedFields>([
   "remainingIssueIds",
 ]);
 
+const ACCEPTED_UPDATE_CLARIFIED_FIELDS = new Set<keyof ChangelogClarifiedFields>([
+  ...COMMON_CLARIFIED_FIELDS,
+  "whyChangeWasNeeded",
+  "changes",
+  "acceptedEvidenceSummary",
+  "acceptedEvidenceLimits",
+  "acceptedOn",
+  "acceptedBy",
+  "reviewMethod",
+  "sourceRevision",
+]);
+
 const LEGACY_CLARIFIED_FIELDS = new Set<keyof ChangelogClarifiedFields>([
   ...COMMON_CLARIFIED_FIELDS,
   "originalRecord",
@@ -1425,6 +1630,30 @@ function applyCorrectionToRoot(
       resolvedIssueIds: clarified.resolvedIssueIds ?? root.resolvedIssueIds,
       remainingIssueIds:
         clarified.remainingIssueIds ?? root.remainingIssueIds,
+    });
+  }
+
+  if (root.variant === "accepted_update") {
+    return deepFreeze({
+      ...root,
+      variant: "accepted_update" as const,
+      provenance: "accepted-update" as const,
+      title: clarified.title ?? root.title,
+      changeDate: clarified.changeDate ?? root.changeDate,
+      whyChangeWasNeeded:
+        clarified.whyChangeWasNeeded ?? root.whyChangeWasNeeded,
+      changes: clarified.changes ?? root.changes,
+      outcome: clarified.outcome ?? root.outcome,
+      acceptedEvidenceSummary:
+        clarified.acceptedEvidenceSummary ?? root.acceptedEvidenceSummary,
+      acceptedEvidenceLimits:
+        clarified.acceptedEvidenceLimits ?? root.acceptedEvidenceLimits,
+      affectedCapabilities:
+        clarified.affectedCapabilities ?? root.affectedCapabilities,
+      acceptedOn: clarified.acceptedOn ?? root.acceptedOn,
+      acceptedBy: clarified.acceptedBy ?? root.acceptedBy,
+      reviewMethod: clarified.reviewMethod ?? root.reviewMethod,
+      sourceRevision: clarified.sourceRevision ?? root.sourceRevision,
     });
   }
 
@@ -1513,7 +1742,7 @@ function validateAcceptedEffectiveRecord(
   }
   if (
     record.archiveRoute !==
-    `/style-guide/chronicle-knowledge-base/archive/${record.archivedProjectId}`
+    buildArchivedCurrentWorkHref(record.archivedProjectId)
   ) {
     errors.push(
       `${correction.sourcePath}: corrected archive_route does not match archived_project_id`,
@@ -1525,6 +1754,49 @@ function validateAcceptedEffectiveRecord(
   if (overlap.length > 0) {
     errors.push(
       `${correction.sourcePath}: corrected Issue IDs cannot be both resolved and remaining: ${overlap.join(", ")}`,
+    );
+  }
+}
+
+function validateAcceptedUpdateEffectiveRecord(
+  record: AcceptedUpdateChangelogRecord,
+  correction: CorrectionChangelogRecord,
+  asOf: string,
+  errors: string[],
+) {
+  for (const [field, value] of [
+    ["title", record.title],
+    ["why_change_was_needed", record.whyChangeWasNeeded],
+    ["changes", record.changes],
+    ["outcome", record.outcome],
+    ["accepted_evidence_summary", record.acceptedEvidenceSummary],
+    ["accepted_evidence_limits", record.acceptedEvidenceLimits],
+    ["review_method", record.reviewMethod],
+  ] as const) {
+    if (!isAcceptedContent(value)) {
+      errors.push(
+        `${correction.sourcePath}: corrected ${field} must contain accepted content, not placeholder-only text`,
+      );
+    }
+  }
+  if (record.changeDate > asOf) {
+    errors.push(
+      `${correction.sourcePath}: corrected change_date cannot be later than validation date ${asOf}`,
+    );
+  }
+  if (record.affectedCapabilities.length === 0) {
+    errors.push(
+      `${correction.sourcePath}: an accepted update must retain at least one affected capability`,
+    );
+  }
+  if (!record.affectedCapabilities.includes(record.owningCapability)) {
+    errors.push(
+      `${correction.sourcePath}: a correction cannot remove the accepted update's owning capability`,
+    );
+  }
+  if (record.acceptedOn !== record.changeDate) {
+    errors.push(
+      `${correction.sourcePath}: corrected accepted_on must equal the effective change_date`,
     );
   }
 }
@@ -1686,7 +1958,9 @@ function validateCorrectionFieldScope(
   const allowed =
     root.variant === "accepted_closeout"
       ? ACCEPTED_CLARIFIED_FIELDS
-      : LEGACY_CLARIFIED_FIELDS;
+      : root.variant === "accepted_update"
+        ? ACCEPTED_UPDATE_CLARIFIED_FIELDS
+        : LEGACY_CLARIFIED_FIELDS;
   for (const [field, value] of Object.entries(correction.clarifiedFields)) {
     if (value !== undefined && !allowed.has(field as keyof ChangelogClarifiedFields)) {
       errors.push(
@@ -1729,7 +2003,9 @@ function validateCorrectionChangesEffectiveValue(
   const allowed =
     root.variant === "accepted_closeout"
       ? ACCEPTED_CLARIFIED_FIELDS
-      : LEGACY_CLARIFIED_FIELDS;
+      : root.variant === "accepted_update"
+        ? ACCEPTED_UPDATE_CLARIFIED_FIELDS
+        : LEGACY_CLARIFIED_FIELDS;
   const currentValues = root as unknown as Readonly<Record<string, unknown>>;
   for (const [rawField, clarifiedValue] of Object.entries(
     correction.clarifiedFields,
@@ -1831,6 +2107,13 @@ function validateCorrections(
         effectiveRecord = applyCorrectionToRoot(previousRecord, correction);
         if (effectiveRecord.variant === "accepted_closeout") {
           validateAcceptedEffectiveRecord(
+            effectiveRecord,
+            correction,
+            asOf,
+            errors,
+          );
+        } else if (effectiveRecord.variant === "accepted_update") {
+          validateAcceptedUpdateEffectiveRecord(
             effectiveRecord,
             correction,
             asOf,

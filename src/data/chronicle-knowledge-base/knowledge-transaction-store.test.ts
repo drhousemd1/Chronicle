@@ -12,6 +12,7 @@ import {
   rename,
   rm,
   stat,
+  symlink,
   writeFile,
 } from "node:fs/promises";
 import os from "node:os";
@@ -28,6 +29,8 @@ import {
   MAX_TRANSACTION_OPERATIONS,
   MAX_TRANSACTION_PAYLOAD_BYTES,
   acquireKnowledgeCertificationLease,
+  acquireKnowledgeScopedWriterLock,
+  acquireKnowledgeTransactionCommitLock,
   acquireKnowledgeTransactionLock,
   attachKnowledgeCertificationLeaseProtectedProcess,
   appendKnowledgeTransactionJournalEvent,
@@ -40,6 +43,7 @@ import {
   openVerifiedKnowledgeTransaction,
   readKnowledgeTransactionJournal,
   releaseKnowledgeCertificationLease,
+  releaseKnowledgeScopedWriterLock,
   releaseKnowledgeTransactionLock,
   resolveKnowledgeTransactionPaths,
   truncateTornKnowledgeTransactionJournal,
@@ -49,6 +53,7 @@ import {
   type TransactionStoreDependencies,
   type TransactionStoreMutationEvent,
 } from "../../../scripts/knowledge-records/transaction-store";
+import { inspectKnowledgeTransactionGuard } from "../../../scripts/knowledge-record-transaction-guard.mjs";
 
 const roots: string[] = [];
 const NOW = new Date("2026-08-01T12:34:56.789Z");
@@ -181,8 +186,91 @@ async function prepareFixture(
   return { ...fixture, injected, transactionId, lock, transaction };
 }
 
+async function prepareScopedIssueTransaction(
+  root: string,
+  issueId: string,
+  injected: TransactionStoreDependencies = dependencies(),
+) {
+  const beforeBytes = Buffer.from(`before-${issueId}`, "utf8");
+  const afterBytes = Buffer.from(`after-${issueId}`, "utf8");
+  const sourcePath =
+    `docs/architecture-knowledge/issues/community-gallery/${issueId}.md`;
+  const transactionId = generateKnowledgeTransactionId(injected);
+  const lock = await acquireKnowledgeTransactionLock({
+    repoRoot: root,
+    command: "prepare issue-update",
+    transactionId,
+    dependencies: injected,
+  });
+  await createPreparedKnowledgeTransaction({
+    lock,
+    transactionId,
+    kind: "issue-update",
+    snapshot: {
+      validationAsOf: "2026-08-01",
+      requestSha256: REQUEST_HASH,
+      packageSha256: null,
+      sources: [
+        {
+          path: sourcePath,
+          state: "present",
+          sha256: digest(beforeBytes),
+          mode: 0o644,
+        },
+      ],
+    },
+    operations: [
+      { action: "update", path: sourcePath, beforeBytes, afterBytes },
+    ],
+    dependencies: injected,
+  });
+  await releaseKnowledgeTransactionLock(lock);
+  return transactionId;
+}
+
+async function prepareScopedProjectTransaction(
+  root: string,
+  sourcePath: string,
+  injected: TransactionStoreDependencies = dependencies(),
+) {
+  const beforeBytes = Buffer.from(`before-${sourcePath}`, "utf8");
+  const afterBytes = Buffer.from(`after-${sourcePath}`, "utf8");
+  const transactionId = generateKnowledgeTransactionId(injected);
+  const lock = await acquireKnowledgeTransactionLock({
+    repoRoot: root,
+    command: "prepare project-update",
+    transactionId,
+    dependencies: injected,
+  });
+  await createPreparedKnowledgeTransaction({
+    lock,
+    transactionId,
+    kind: "project-update",
+    snapshot: {
+      validationAsOf: "2026-08-01",
+      requestSha256: REQUEST_HASH,
+      packageSha256: null,
+      sources: [
+        {
+          path: sourcePath,
+          state: "present",
+          sha256: digest(beforeBytes),
+          mode: 0o644,
+        },
+      ],
+    },
+    operations: [
+      { action: "update", path: sourcePath, beforeBytes, afterBytes },
+    ],
+    dependencies: injected,
+  });
+  await releaseKnowledgeTransactionLock(lock);
+  return transactionId;
+}
+
 type KilledStoreScenario =
   | "writer-release"
+  | "scoped-release"
   | "certification-release"
   | "marker-publish"
   | "marker-clear"
@@ -212,6 +300,7 @@ import { appendFileSync, closeSync, fsyncSync, openSync, writeFileSync } from "n
 import { createHash } from "node:crypto";
 import {
   acquireKnowledgeCertificationLease,
+  acquireKnowledgeScopedWriterLock,
   acquireKnowledgeTransactionLock,
   appendKnowledgeTransactionJournalEvent,
   clearKnowledgeTransactionUnfinished,
@@ -219,6 +308,7 @@ import {
   generateKnowledgeTransactionId,
   markKnowledgeTransactionUnfinished,
   releaseKnowledgeCertificationLease,
+  releaseKnowledgeScopedWriterLock,
   releaseKnowledgeTransactionLock,
   truncateTornKnowledgeTransactionJournal,
   writeKnowledgeTransactionTerminalReceipt,
@@ -275,6 +365,33 @@ async function prepare(recoveryCapable = false) {
   writeFileSync(identityPath, transactionId, { mode: 0o600 });
   return { lock, transactionId };
 }
+async function prepareIssue() {
+  const beforeBytes = Buffer.from("private-issue-before-bytes");
+  const afterBytes = Buffer.from("private-issue-after-bytes");
+  const transactionId = generateKnowledgeTransactionId(dependencies);
+  const sourcePath = "docs/architecture-knowledge/issues/community-gallery/CG-ISSUE-001.md";
+  const lock = await acquireKnowledgeTransactionLock({
+    repoRoot: root,
+    command: "prepare issue-update",
+    transactionId,
+    dependencies,
+  });
+  await createPreparedKnowledgeTransaction({
+    lock,
+    transactionId,
+    kind: "issue-update",
+    snapshot: {
+      validationAsOf: "2026-08-01",
+      requestSha256: digest("fixture request"),
+      packageSha256: null,
+      sources: [{ path: sourcePath, state: "present", sha256: digest(beforeBytes), mode: 0o644 }],
+    },
+    operations: [{ action: "update", path: sourcePath, beforeBytes, afterBytes }],
+    dependencies,
+  });
+  await releaseKnowledgeTransactionLock(lock);
+  return transactionId;
+}
 
 switch (${JSON.stringify(scenario)}) {
   case "writer-release": {
@@ -285,6 +402,18 @@ switch (${JSON.stringify(scenario)}) {
     });
     armed = true;
     await releaseKnowledgeTransactionLock(lock);
+    break;
+  }
+  case "scoped-release": {
+    const transactionId = await prepareIssue();
+    const lock = await acquireKnowledgeScopedWriterLock({
+      repoRoot: root,
+      command: "apply issue-update",
+      transactionId,
+      dependencies,
+    });
+    armed = true;
+    await releaseKnowledgeScopedWriterLock(lock);
     break;
   }
   case "certification-release": {
@@ -1365,7 +1494,7 @@ describe("knowledge transaction private store", () => {
       ).toBe(false);
       await releaseKnowledgeTransactionLock(recovered);
     }
-  });
+  }, 15_000);
 
   it("recovers a killed writer release at every explicit deletion boundary", async () => {
     for (let target = 0; target < DIRECTORY_REMOVAL_EVENT_KINDS.length; target += 1) {
@@ -2247,6 +2376,446 @@ describe("knowledge transaction private store", () => {
       }),
     ).rejects.toThrow(/maximum total payload size/);
     await releaseKnowledgeTransactionLock(lock);
+  });
+});
+
+describe("scoped Knowledge writer control", () => {
+  it("rejects a stored global-kind transaction before publishing scoped ownership", async () => {
+    const root = await createGitFixture();
+    const injected = dependencies();
+    const transactionId = generateKnowledgeTransactionId(injected);
+    const lock = await acquireKnowledgeTransactionLock({
+      repoRoot: root,
+      command: "prepare correction",
+      transactionId,
+      dependencies: injected,
+    });
+    const fixture = updateFixture();
+    await createPreparedKnowledgeTransaction({
+      lock,
+      transactionId,
+      kind: "correction",
+      snapshot: fixture.snapshot,
+      operations: fixture.operations,
+      dependencies: injected,
+    });
+    await releaseKnowledgeTransactionLock(lock);
+
+    await expect(
+      acquireKnowledgeScopedWriterLock({
+        repoRoot: root,
+        command: "apply correction",
+        transactionId,
+        dependencies: injected,
+      }),
+    ).rejects.toThrow(/requires global writer protection/i);
+    expect(inspectKnowledgeTransactionGuard({ repoRoot: root })).toMatchObject({
+      activeScopedWriterCount: 0,
+      recoveryArtifactsPresent: false,
+    });
+  });
+
+  it("allows unrelated Issue and project updates while rejecting the same target", async () => {
+    const root = await createGitFixture();
+    const injected = dependencies();
+    const firstTransactionId = await prepareScopedIssueTransaction(
+      root,
+      "CG-ISSUE-001",
+      injected,
+    );
+    const secondTransactionId = await prepareScopedIssueTransaction(
+      root,
+      "CG-ISSUE-002",
+      injected,
+    );
+    const conflictingTransactionId = await prepareScopedIssueTransaction(
+      root,
+      "CG-ISSUE-001",
+      dependencies({ pid: 42_425 }),
+    );
+    const firstProjectPath =
+      "docs/current-work/active/community-gallery/CG-WORK-001.md";
+    const secondProjectPath =
+      "docs/current-work/active/my-stories/MS-WORK-001.md";
+    const firstProjectTransactionId = await prepareScopedProjectTransaction(
+      root,
+      firstProjectPath,
+      injected,
+    );
+    const secondProjectTransactionId = await prepareScopedProjectTransaction(
+      root,
+      secondProjectPath,
+      injected,
+    );
+    const conflictingProjectTransactionId = await prepareScopedProjectTransaction(
+      root,
+      firstProjectPath,
+      dependencies({ pid: 42_426 }),
+    );
+    const first = await acquireKnowledgeScopedWriterLock({
+      repoRoot: root,
+      command: "apply issue-update",
+      transactionId: firstTransactionId,
+      dependencies: injected,
+    });
+    const second = await acquireKnowledgeScopedWriterLock({
+      repoRoot: root,
+      command: "apply issue-update",
+      transactionId: secondTransactionId,
+      dependencies: injected,
+    });
+    const firstProject = await acquireKnowledgeScopedWriterLock({
+      repoRoot: root,
+      command: "apply project-update",
+      transactionId: firstProjectTransactionId,
+      dependencies: injected,
+    });
+    const secondProject = await acquireKnowledgeScopedWriterLock({
+      repoRoot: root,
+      command: "apply project-update",
+      transactionId: secondProjectTransactionId,
+      dependencies: injected,
+    });
+    expect(inspectKnowledgeTransactionGuard({ repoRoot: root })).toMatchObject({
+      activeScopedWriterCount: 4,
+      ok: false,
+    });
+
+    await expect(
+      acquireKnowledgeScopedWriterLock({
+        repoRoot: root,
+        command: "apply issue-update",
+        transactionId: conflictingTransactionId,
+        dependencies: injected,
+      }),
+    ).rejects.toThrow(/conflicts with transaction/i);
+    await expect(
+      acquireKnowledgeScopedWriterLock({
+        repoRoot: root,
+        command: "apply project-update",
+        transactionId: conflictingProjectTransactionId,
+        dependencies: injected,
+      }),
+    ).rejects.toThrow(/conflicts with transaction/i);
+
+    await releaseKnowledgeScopedWriterLock(secondProject);
+    await releaseKnowledgeScopedWriterLock(firstProject);
+    await releaseKnowledgeScopedWriterLock(second);
+    await releaseKnowledgeScopedWriterLock(first);
+    expect(inspectKnowledgeTransactionGuard({ repoRoot: root })).toMatchObject({
+      activeScopedWriterCount: 0,
+      ok: true,
+    });
+  });
+
+  it("blocks certification in both start orders and permits only the integrated commit gate", async () => {
+    const root = await createGitFixture();
+    const injected = dependencies();
+    const transactionId = await prepareScopedIssueTransaction(
+      root,
+      "CG-ISSUE-001",
+      injected,
+    );
+    const secondTransactionId = await prepareScopedIssueTransaction(
+      root,
+      "CG-ISSUE-002",
+      injected,
+    );
+    const scoped = await acquireKnowledgeScopedWriterLock({
+      repoRoot: root,
+      command: "apply issue-update",
+      transactionId,
+      dependencies: injected,
+    });
+    await expect(
+      acquireKnowledgeCertificationLease({
+        repoRoot: root,
+        command: "knowledge check",
+        dependencies: injected,
+      }),
+    ).rejects.toThrow(/scoped writer/i);
+    await expect(
+      acquireKnowledgeTransactionLock({
+        repoRoot: root,
+        command: "apply transaction",
+        transactionId,
+        dependencies: injected,
+      }),
+    ).rejects.toThrow(/scoped writer/i);
+    await expect(
+      acquireKnowledgeTransactionCommitLock({
+        scopedWriterLock: { ...scoped },
+        command: "apply scoped commit",
+      }),
+    ).rejects.toThrow(/not active in this process/i);
+    const commit = await acquireKnowledgeTransactionCommitLock({
+      scopedWriterLock: scoped,
+      command: "apply scoped commit",
+    });
+    await releaseKnowledgeTransactionLock(commit);
+    await releaseKnowledgeScopedWriterLock(scoped);
+
+    const lease = await acquireKnowledgeCertificationLease({
+      repoRoot: root,
+      command: "knowledge check",
+      dependencies: injected,
+    });
+    await expect(
+      acquireKnowledgeScopedWriterLock({
+        repoRoot: root,
+        command: "apply issue-update",
+        transactionId: secondTransactionId,
+        dependencies: injected,
+      }),
+    ).rejects.toThrow(/certification lease/i);
+    await releaseKnowledgeCertificationLease(lease, { dependencies: injected });
+
+    const global = await acquireKnowledgeTransactionLock({
+      repoRoot: root,
+      command: "apply closeout",
+      dependencies: injected,
+    });
+    await expect(
+      acquireKnowledgeScopedWriterLock({
+        repoRoot: root,
+        command: "apply issue-update",
+        transactionId: secondTransactionId,
+        dependencies: injected,
+      }),
+    ).rejects.toThrow(/writer|lock/i);
+    await releaseKnowledgeTransactionLock(global);
+  }, 15_000);
+
+  it("recovers every interrupted scoped-lock publication without accepting partial ownership", async () => {
+    const baselineRoot = await createGitFixture();
+    const baselineEvents: TransactionStoreMutationEvent[] = [];
+    const baselineDependencies = dependencies({
+      afterStoreMutation: (event) => {
+        if (event.scope === "scoped-writer") baselineEvents.push(event);
+      },
+    });
+    const baselineTransactionId = await prepareScopedIssueTransaction(
+      baselineRoot,
+      "CG-ISSUE-001",
+      baselineDependencies,
+    );
+    const baseline = await acquireKnowledgeScopedWriterLock({
+      repoRoot: baselineRoot,
+      command: "apply issue-update",
+      transactionId: baselineTransactionId,
+      dependencies: baselineDependencies,
+    });
+    const publicationMutations = baselineEvents.length;
+    expect(publicationMutations).toBeGreaterThan(0);
+    await releaseKnowledgeScopedWriterLock(baseline);
+
+    for (let target = 1; target <= publicationMutations; target += 1) {
+      const root = await createGitFixture();
+      const interrupted = dependencies({
+        pid: 170_000 + target,
+        afterStoreMutation: failAtMutation("scoped-writer", target),
+      });
+      const transactionId = await prepareScopedIssueTransaction(
+        root,
+        "CG-ISSUE-001",
+        dependencies({ pid: 169_000 + target }),
+      );
+      await expect(
+        acquireKnowledgeScopedWriterLock({
+          repoRoot: root,
+          command: "apply issue-update",
+          transactionId,
+          dependencies: interrupted,
+        }),
+      ).rejects.toThrow(/Injected transaction-store interruption/);
+
+      await expect(
+        acquireKnowledgeTransactionLock({
+          repoRoot: root,
+          command: "status",
+          dependencies: dependencies({
+            pid: 171_000 + target,
+            isPidAlive: () => false,
+          }),
+        }),
+      ).rejects.toThrow(/explicit recovery|dead process|control recovery/i);
+      const recovered = await acquireKnowledgeTransactionLock({
+        repoRoot: root,
+        command: "recover",
+        recoveryCapable: true,
+        dependencies: dependencies({
+          pid: 172_000 + target,
+          isPidAlive: () => false,
+        }),
+      });
+      await releaseKnowledgeTransactionLock(recovered);
+      expect(inspectKnowledgeTransactionGuard({ repoRoot: root })).toMatchObject({
+        activeScopedWriterCount: 0,
+        recoveryArtifactsPresent: false,
+      });
+    }
+  }, 30_000);
+
+  it("recovers a killed scoped-lock release at every explicit deletion boundary", async () => {
+    for (let target = 0; target < DIRECTORY_REMOVAL_EVENT_KINDS.length; target += 1) {
+      const root = await createGitFixture();
+      const killed = await runKilledStoreScenario({
+        root,
+        scenario: "scoped-release",
+        scope: "scoped-writer",
+        kind: DIRECTORY_REMOVAL_EVENT_KINDS[target],
+      });
+      expect(killed.events.map((event) => event.kind)).toEqual(
+        DIRECTORY_REMOVAL_EVENT_KINDS.slice(0, target + 1),
+      );
+      const recovered = await acquireKnowledgeTransactionLock({
+        repoRoot: root,
+        command: "recover",
+        recoveryCapable: true,
+        dependencies: dependencies({
+          pid: 173_000 + target,
+          isPidAlive: () => false,
+        }),
+      });
+      await releaseKnowledgeTransactionLock(recovered);
+      expect(inspectKnowledgeTransactionGuard({ repoRoot: root })).toMatchObject({
+        activeScopedWriterCount: 0,
+        recoveryArtifactsPresent: false,
+      });
+    }
+  }, 60_000);
+
+  it("fails closed on malformed, tampered, wrongly-permissioned, and unknown scoped artifacts", async () => {
+    const root = await createGitFixture();
+    const injected = dependencies();
+    const transactionId = await prepareScopedIssueTransaction(
+      root,
+      "CG-ISSUE-001",
+      injected,
+    );
+    const scoped = await acquireKnowledgeScopedWriterLock({
+      repoRoot: root,
+      command: "apply issue-update",
+      transactionId,
+      dependencies: injected,
+    });
+    const metadataPath = path.join(scoped.lockDirectory, "lock.json");
+    const original = await readFile(metadataPath);
+    await chmod(metadataPath, 0o644);
+    expect(() => inspectKnowledgeTransactionGuard({ repoRoot: root })).toThrow(
+      /unsafe|malformed/i,
+    );
+    await chmod(metadataPath, 0o600);
+    const parsed = JSON.parse(original.toString("utf8"));
+    await writeFile(
+      metadataPath,
+      `${JSON.stringify({ ...parsed, command: "tampered" })}\n`,
+      { mode: 0o600 },
+    );
+    expect(() => inspectKnowledgeTransactionGuard({ repoRoot: root })).toThrow(
+      /hash|safe/i,
+    );
+    const otherTransactionId = generateKnowledgeTransactionId(
+      dependencies({ pid: 62_001 }),
+    );
+    const mismatchedIdentity = knowledgeControlMetadataWithHash({
+      ...parsed,
+      transactionId: otherTransactionId,
+      metadataSha256: undefined,
+    });
+    await writeFile(
+      metadataPath,
+      `${canonicalKnowledgeControlJson(mismatchedIdentity)}\n`,
+      { mode: 0o600 },
+    );
+    await expect(releaseKnowledgeScopedWriterLock(scoped)).rejects.toThrow(
+      /ownership changed/i,
+    );
+    const unsupportedScope = knowledgeControlMetadataWithHash({
+      ...parsed,
+      scopes: ["record:docs/architecture-knowledge/issues/other/OTHER-001.md"],
+      metadataSha256: undefined,
+    });
+    await writeFile(
+      metadataPath,
+      `${canonicalKnowledgeControlJson(unsupportedScope)}\n`,
+      { mode: 0o600 },
+    );
+    expect(() => inspectKnowledgeTransactionGuard({ repoRoot: root })).toThrow(
+      /malformed/i,
+    );
+    await writeFile(metadataPath, original, { mode: 0o600 });
+    const unknown = path.join(scoped.scopedRoot, "unknown");
+    await mkdir(unknown, { mode: 0o700 });
+    expect(() => inspectKnowledgeTransactionGuard({ repoRoot: root })).toThrow(
+      /unrecognized/i,
+    );
+    await rm(unknown, { recursive: true, force: true });
+    await releaseKnowledgeScopedWriterLock(scoped);
+  });
+
+  it("rejects a symlinked scoped-writer control root", async () => {
+    const root = await createGitFixture();
+    const transactionId = await prepareScopedIssueTransaction(
+      root,
+      "CG-ISSUE-001",
+    );
+    const paths = await resolveKnowledgeTransactionPaths(root, {
+      createTransactionRoot: true,
+    });
+    const outside = await mkdtemp(path.join(await realpath(os.tmpdir()), "scoped-outside-"));
+    roots.push(outside);
+    await chmod(outside, 0o700);
+    const scopedRoot = path.join(paths.transactionRoot, "scoped-writers");
+    await symlink(outside, scopedRoot, "dir");
+
+    await expect(
+      acquireKnowledgeScopedWriterLock({
+        repoRoot: root,
+        command: "apply issue-update",
+        transactionId,
+        dependencies: dependencies(),
+      }),
+    ).rejects.toThrow(/real directory|symbolic link|unsafe|unrecognized/i);
+    expect(() => inspectKnowledgeTransactionGuard({ repoRoot: root })).toThrow(
+      /directory|symbolic link|unsafe|unrecognized/i,
+    );
+  });
+
+  it("requires explicit recovery for a dead scoped owner and removes it exactly", async () => {
+    const root = await createGitFixture();
+    const live = dependencies({ pid: 61_001, isPidAlive: () => true });
+    const transactionId = await prepareScopedIssueTransaction(
+      root,
+      "CG-ISSUE-001",
+      live,
+    );
+    await acquireKnowledgeScopedWriterLock({
+      repoRoot: root,
+      command: "apply issue-update",
+      transactionId,
+      dependencies: live,
+    });
+    const dead = dependencies({ pid: 61_002, isPidAlive: () => false });
+    await expect(
+      acquireKnowledgeTransactionLock({
+        repoRoot: root,
+        command: "recover transaction",
+        recoveryCapable: false,
+        dependencies: dead,
+      }),
+    ).rejects.toThrow(/dead scoped writer requires explicit recovery/i);
+    const recovery = await acquireKnowledgeTransactionLock({
+      repoRoot: root,
+      command: "recover transaction",
+      recoveryCapable: true,
+      dependencies: dead,
+    });
+    await releaseKnowledgeTransactionLock(recovery);
+    expect(inspectKnowledgeTransactionGuard({ repoRoot: root })).toMatchObject({
+      activeScopedWriterCount: 0,
+      recoveryArtifactsPresent: false,
+    });
   });
 });
 

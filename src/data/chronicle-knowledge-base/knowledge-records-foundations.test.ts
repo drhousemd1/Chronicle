@@ -16,6 +16,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   APPROVED_RECORD_DIRECTORIES,
+  CANONICAL_RECORD_DIRECTORY_ENTRIES,
   CHANGELOG_MIGRATION_RECEIPT_LOCATION,
   CHANGELOG_MIGRATION_RECEIPT_RECORD_ID,
   CHANGELOG_MIGRATION_RECEIPT_SOURCE_PATH,
@@ -52,7 +53,9 @@ async function makeTemporaryRoot() {
 
 async function makeRepositoryFixture() {
   const repoRoot = await makeTemporaryRoot();
-  for (const directory of Object.values(APPROVED_RECORD_DIRECTORIES)) {
+  for (const directory of new Set(
+    CANONICAL_RECORD_DIRECTORY_ENTRIES.map((entry) => entry.directory),
+  )) {
     await mkdir(path.join(repoRoot, ...directory.split("/")), { recursive: true });
   }
   return repoRoot;
@@ -80,7 +83,7 @@ function issueContent(issueId: string, sourcePath: string) {
 }
 
 function changelogContent(
-  variant: "legacy_import" | "correction" | "accepted_closeout",
+  variant: "legacy_import" | "correction" | "accepted_closeout" | "accepted_update",
   changeId: string,
   sourcePath: string,
   extra: readonly [string, string | number][] = [],
@@ -250,6 +253,9 @@ describe("knowledge record path safety", () => {
     expect(deriveCorrectionChangeId("LEGACY-QH-first", 1)).toBe(
       "LEGACY-QH-first-COR-001",
     );
+    expect(deriveCorrectionChangeId("CG-UPDATE-001", 1)).toBe(
+      "CG-UPDATE-001-COR-001",
+    );
     expect(() => deriveCorrectionChangeId("CG-CHANGE-001-COR-001", 2)).toThrow(
       /accepted or legacy root/,
     );
@@ -262,6 +268,10 @@ describe("knowledge record path safety", () => {
   });
 
   it("keeps legacy root IDs disjoint from correction IDs", () => {
+    expect(isChangelogRootId("CG-UPDATE-001")).toBe(true);
+    expect(
+      parseCanonicalRecordId("changelog", "CG-UPDATE-001-COR-001"),
+    ).toBe("CG-UPDATE-001-COR-001");
     expect(isLegacyChangeId("LEGACY-QH-first")).toBe(true);
     expect(isChangelogRootId("LEGACY-QH-first")).toBe(true);
     expect(parseCanonicalRecordId("changelog", "LEGACY-QH-first")).toBe(
@@ -313,6 +323,52 @@ describe("knowledge record path safety", () => {
         "another-receipt",
       ),
     ).toThrow(/Invalid changelog-migration-receipt record ID/);
+  });
+
+  it("binds Current Work prefixes to the approved owner directories", () => {
+    expect(
+      canonicalRecordSourcePath("active-current-work", "KS-WORK-001"),
+    ).toBe("docs/current-work/active/knowledge-system/KS-WORK-001.md");
+    expect(
+      canonicalRecordSourcePath("archived-current-work", "KS-WORK-001"),
+    ).toBe("docs/current-work/archive/knowledge-system/KS-WORK-001.md");
+    expect(
+      parseCanonicalRecordSourcePath(
+        "docs/current-work/active/knowledge-system/KS-WORK-001.md",
+      ),
+    ).toMatchObject({
+      location: "active-current-work",
+      recordId: "KS-WORK-001",
+    });
+    expect(() =>
+      parseCanonicalRecordSourcePath(
+        "docs/current-work/active/community-gallery/KS-WORK-001.md",
+      ),
+    ).toThrow(/does not belong/);
+    expect(() =>
+      parseCanonicalRecordSourcePath(
+        "docs/current-work/active/knowledge-system/CG-WORK-001.md",
+      ),
+    ).toThrow(/does not belong/);
+    expect(() =>
+      parseCanonicalRecordId("active-current-work", "XY-WORK-001"),
+    ).toThrow(/Invalid active-current-work record ID/);
+  });
+
+  it("binds capability Issue prefixes to their canonical directories", () => {
+    expect(canonicalRecordSourcePath("issue", "MS-ISSUE-001")).toBe(
+      "docs/architecture-knowledge/issues/my-stories/MS-ISSUE-001.md",
+    );
+    expect(
+      parseCanonicalRecordSourcePath(
+        "docs/architecture-knowledge/issues/character-builder/CB-ISSUE-002.md",
+      ),
+    ).toMatchObject({ location: "issue", recordId: "CB-ISSUE-002" });
+    expect(() =>
+      parseCanonicalRecordSourcePath(
+        "docs/architecture-knowledge/issues/my-stories/CB-ISSUE-002.md",
+      ),
+    ).toThrow(/does not belong/);
   });
 
   it("rejects a symbolic-link canonical target", async () => {
@@ -446,6 +502,133 @@ describe("strict knowledge record requests", () => {
     });
   });
 
+  it("normalizes a supplied Accepted Update ID and rejects unregistered ownership", async () => {
+    const changeId = "CG-UPDATE-001";
+    const target = canonicalRecordSourcePath("changelog", changeId);
+    const validContent = changelogContent(
+      "accepted_update",
+      changeId,
+      target,
+      [
+        ["provenance", "accepted-update"],
+        ["owning_capability", "community-gallery"],
+      ],
+    );
+    const valid = await makeRequestPackage(
+      {
+        version: 1,
+        kind: "accepted-update",
+        as_of: "2026-08-21",
+        change_id: changeId,
+        owner_capability: "community-gallery",
+        content_file: `content/${changeId}.md`,
+      },
+      { [`${changeId}.md`]: validContent },
+    );
+    const parsed = await parseKnowledgeRecordRequest(valid.requestPath);
+    expect(parsed.kind).toBe("accepted-update");
+    expect(parsed.operations).toEqual([
+      expect.objectContaining({
+        action: "create",
+        recordId: changeId,
+        targetSourcePath: target,
+        expectedState: "absent",
+      }),
+    ]);
+
+    const wrongOwner = await makeRequestPackage(
+      {
+        version: 1,
+        kind: "accepted-update",
+        as_of: "2026-08-21",
+        change_id: changeId,
+        owner_capability: "chat-interface",
+        content_file: `content/${changeId}.md`,
+      },
+      { [`${changeId}.md`]: validContent },
+    );
+    await expect(
+      parseKnowledgeRecordRequest(wrongOwner.requestPath),
+    ).rejects.toThrow("belongs to community-gallery, not chat-interface");
+
+    const unsupportedPrefix = await makeRequestPackage(
+      {
+        version: 1,
+        kind: "accepted-update",
+        as_of: "2026-08-21",
+        change_id: "KS-UPDATE-001",
+        owner_capability: "knowledge-system",
+        content_file: "content/KS-UPDATE-001.md",
+      },
+      {
+        "KS-UPDATE-001.md": changelogContent(
+          "accepted_update",
+          "KS-UPDATE-001",
+          "docs/architecture-knowledge/changelog/entries/KS-UPDATE-001.md",
+          [
+            ["provenance", "accepted-update"],
+            ["owning_capability", "knowledge-system"],
+          ],
+        ),
+      },
+    );
+    await expect(
+      parseKnowledgeRecordRequest(unsupportedPrefix.requestPath),
+    ).rejects.toThrow("must identify a registered Accepted Update ID");
+  });
+
+  it("normalizes an explicitly identified Knowledge System project without allocating an ID", async () => {
+    const projectId = "KS-WORK-001";
+    const target = canonicalRecordSourcePath("active-current-work", projectId);
+    const valid = await makeRequestPackage(
+      {
+        version: 1,
+        kind: "project-create",
+        as_of: "2026-08-19",
+        project_id: projectId,
+        content_file: `content/${projectId}.md`,
+      },
+      { [`${projectId}.md`]: currentWorkContent(projectId, target) },
+    );
+    const parsed = await parseKnowledgeRecordRequest(valid.requestPath);
+    expect(parsed.operations[0]).toMatchObject({
+      recordId: projectId,
+      targetSourcePath: target,
+    });
+
+    const missingId = await makeRequestPackage(
+      {
+        version: 1,
+        kind: "project-create",
+        as_of: "2026-08-19",
+        content_file: `content/${projectId}.md`,
+      },
+      { [`${projectId}.md`]: currentWorkContent(projectId, target) },
+    );
+    await expect(parseKnowledgeRecordRequest(missingId.requestPath)).rejects.toThrow(
+      /project_id/,
+    );
+
+    const fabricatedPrefix = await makeRequestPackage(
+      {
+        version: 1,
+        kind: "project-create",
+        as_of: "2026-08-19",
+        project_id: "XY-WORK-001",
+        content_file: "content/XY-WORK-001.md",
+      },
+      {
+        "XY-WORK-001.md": currentWorkContent(
+          "XY-WORK-001",
+          "docs/current-work/active/knowledge-system/XY-WORK-001.md",
+        ),
+      },
+    );
+    await expect(
+      parseKnowledgeRecordRequest(fabricatedPrefix.requestPath),
+    ).rejects.toThrow(/approved operational project/);
+  });
+
   it("rejects project-create destination overrides and identity mismatches", async () => {
     const projectId = "CG-WORK-002";
     const target = canonicalRecordSourcePath("active-current-work", projectId);
@@ -531,6 +714,11 @@ describe("strict knowledge record requests", () => {
 
   it.each([
     { kind: "issue-create" as const, action: "create" as const, issueId: "CG-ISSUE-002" },
+    { kind: "issue-create" as const, action: "create" as const, issueId: "MS-ISSUE-002" },
+    { kind: "issue-create" as const, action: "create" as const, issueId: "CL-ISSUE-002" },
+    { kind: "issue-create" as const, action: "create" as const, issueId: "MI-ISSUE-002" },
+    { kind: "issue-create" as const, action: "create" as const, issueId: "SB-ISSUE-002" },
+    { kind: "issue-create" as const, action: "create" as const, issueId: "CB-ISSUE-002" },
     { kind: "issue-update" as const, action: "update" as const, issueId: "CG-ISSUE-001" },
   ])("normalizes one protected $kind request", async ({ kind, action, issueId }) => {
     const target = canonicalRecordSourcePath("issue", issueId);

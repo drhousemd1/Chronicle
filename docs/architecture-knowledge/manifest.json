@@ -9,7 +9,7 @@
     "tabs": [
       {
         "id": "overview",
-        "label": "Overview",
+        "label": "Chronicle",
         "contentKind": "markdown-section",
         "heading": "Overview",
         "reviewed": "07/25/2026",
@@ -24,53 +24,190 @@
       {
         "id": "my-stories",
         "label": "My Stories",
-        "contentKind": "blank"
+        "contentKind": "markdown-section",
+        "heading": "My Stories",
+        "reviewed": "08/21/2026",
+        "updated": "08/21/2026"
       },
       {
         "id": "character-library",
         "label": "Character Library",
-        "contentKind": "blank"
+        "contentKind": "markdown-section",
+        "heading": "Character Library",
+        "reviewed": "08/22/2026",
+        "updated": "08/22/2026"
       },
       {
         "id": "my-images",
-        "label": "My Images",
-        "contentKind": "blank"
+        "label": "Image Library",
+        "contentKind": "markdown-section",
+        "heading": "Image Library",
+        "reviewed": "08/22/2026",
+        "updated": "08/22/2026"
       },
       {
         "id": "story-builder",
         "label": "Story Builder",
-        "contentKind": "blank"
+        "contentKind": "markdown-section",
+        "heading": "Story Builder",
+        "reviewed": "08/22/2026",
+        "updated": "08/22/2026"
       },
       {
         "id": "character-builder",
         "label": "Character Builder",
-        "contentKind": "blank"
+        "contentKind": "markdown-section",
+        "heading": "Character Builder",
+        "reviewed": "08/22/2026",
+        "updated": "08/22/2026"
       },
       {
         "id": "chat-interface",
         "label": "Chat Interface",
-        "contentKind": "blank"
+        "contentKind": "markdown-section",
+        "heading": "Chat Interface",
+        "reviewed": "09/04/2026",
+        "updated": "09/04/2026"
+      },
+      {
+        "id": "roleplay-pipeline",
+        "label": "Roleplay Pipeline",
+        "contentKind": "markdown-section",
+        "heading": "Roleplay Pipeline",
+        "reviewed": "09/05/2026",
+        "updated": "09/05/2026"
       },
       {
         "id": "chat-history",
         "label": "Chat History",
-        "contentKind": "blank"
+        "contentKind": "markdown-section",
+        "heading": "Chat History",
+        "reviewed": "09/04/2026",
+        "updated": "09/04/2026"
       },
       {
         "id": "public-profile",
         "label": "Public Profile",
-        "contentKind": "blank"
+        "contentKind": "markdown-section",
+        "heading": "Public Profile",
+        "reviewed": "09/04/2026",
+        "updated": "09/04/2026"
       },
       {
         "id": "account",
-        "label": "Account Settings",
-        "contentKind": "blank"
+        "label": "Account & Subscription",
+        "contentKind": "markdown-section",
+        "heading": "Account & Subscription",
+        "reviewed": "09/04/2026",
+        "updated": "09/04/2026"
       },
       {
         "id": "admin",
         "label": "Admin Panel",
         "contentKind": "markdown-section",
-        "heading": "Admin Panel"
+        "heading": "Admin Panel",
+        "reviewed": "09/04/2026",
+        "updated": "09/04/2026"
+      },
+      {
+        "id": "shared-systems",
+        "label": "Shared Application Systems",
+        "contentKind": "markdown-section",
+        "heading": "Shared Application Systems",
+        "reviewed": "09/04/2026",
+        "updated": "09/04/2026"
+      }
+    ]
+  },
+  "workManual": {
+    "id": "chronicle-work-manual",
+    "label": "Chronicle Work Manual",
+    "description": "The active plain-English authority for choosing the size of Chronicle work, adding only justified safeguards, proving results, recording continuity, and stopping.",
+    "document": "chronicle-work-manual.md",
+    "tabs": [
+      {
+        "id": "overview",
+        "label": "Overview",
+        "contentKind": "work-manual-chapter",
+        "headings": [
+          "Overview"
+        ],
+        "reviewed": "09/05/2026",
+        "updated": "09/05/2026"
+      },
+      {
+        "id": "start-here",
+        "label": "Start Here",
+        "contentKind": "work-manual-chapter",
+        "headings": [
+          "1. Start Here"
+        ],
+        "reviewed": "08/30/2026",
+        "updated": "08/30/2026"
+      },
+      {
+        "id": "work-types",
+        "label": "Work Types",
+        "contentKind": "work-manual-chapter",
+        "headings": [
+          "2. Routine Local Work",
+          "3. Connected Feature Work",
+          "4. Multi-System Program Work"
+        ],
+        "legacyIds": [
+          "routine-local-work",
+          "connected-feature-work",
+          "multi-system-program-work"
+        ],
+        "reviewed": "08/30/2026",
+        "updated": "08/30/2026"
+      },
+      {
+        "id": "tests-tools-audits",
+        "label": "Tests, Tools, and Audits",
+        "contentKind": "work-manual-chapter",
+        "headings": [
+          "11. Checks, Delivery, and Reporting",
+          "10. Subagents, Research, and Independent Review"
+        ],
+        "legacyIds": [
+          "checks-delivery-reporting",
+          "subagents-research-review"
+        ],
+        "reviewed": "08/30/2026",
+        "updated": "08/30/2026"
+      },
+      {
+        "id": "safeguards-systems",
+        "label": "Safeguards and Systems",
+        "contentKind": "work-manual-chapter",
+        "headings": [
+          "5. Expansion and Approval Rules",
+          "6. Risk Safeguards",
+          "9. Chronicle-Specific Systems"
+        ],
+        "legacyIds": [
+          "expansion-and-approval",
+          "risk-safeguards",
+          "chronicle-specific-systems"
+        ],
+        "reviewed": "08/30/2026",
+        "updated": "08/30/2026"
+      },
+      {
+        "id": "evidence-records-stopping",
+        "label": "Evidence, Records, and Stopping",
+        "contentKind": "work-manual-chapter",
+        "headings": [
+          "7. Evidence and Human Review",
+          "8. Records and Continuity"
+        ],
+        "legacyIds": [
+          "evidence-and-review",
+          "records-and-continuity"
+        ],
+        "reviewed": "08/30/2026",
+        "updated": "08/30/2026"
       }
     ]
   },
@@ -132,90 +269,1096 @@
     {
       "id": "my-stories",
       "label": "My Stories",
-      "description": "How drafts, saved community stories, published work, imports, exports, and play entry are managed."
+      "description": "How people organize owned, draft, published, and saved stories before editing, removing, or starting a new playthrough.",
+      "document": "my-stories.md",
+      "tabs": [
+        {
+          "id": "overview",
+          "label": "Overview",
+          "contentKind": "markdown-section",
+          "heading": "Overview",
+          "reviewed": "08/21/2026",
+          "updated": "08/21/2026"
+        },
+        {
+          "id": "ui-elements-functions",
+          "label": "UI Elements and Functions",
+          "contentKind": "markdown-section",
+          "heading": "UI Elements and Functions",
+          "reviewed": "08/21/2026",
+          "updated": "08/21/2026"
+        },
+        {
+          "id": "app-architecture",
+          "label": "App Architecture",
+          "contentKind": "markdown-section",
+          "heading": "App Architecture",
+          "reviewed": "08/21/2026",
+          "updated": "08/21/2026"
+        },
+        {
+          "id": "issues",
+          "label": "Issues",
+          "contentKind": "issue-records"
+        },
+        {
+          "id": "current-work",
+          "label": "Current Work",
+          "contentKind": "current-work-records"
+        },
+        {
+          "id": "supabase-tables",
+          "label": "Supabase Tables",
+          "contentKind": "shared-supabase",
+          "reviewed": "08/21/2026",
+          "updated": "07/31/2026"
+        },
+        {
+          "id": "changelog",
+          "label": "Changelog",
+          "contentKind": "changelog-records"
+        }
+      ]
     },
     {
       "id": "character-library",
       "label": "Character Library",
-      "description": "How reusable global characters are created, edited, selected, copied into stories, and kept separate from story-owned characters."
+      "description": "How reusable global characters are created, edited, selected, copied into stories, and kept separate from story-owned characters.",
+      "document": "character-library.md",
+      "tabs": [
+        {
+          "id": "overview",
+          "label": "Overview",
+          "contentKind": "markdown-section",
+          "heading": "Overview",
+          "reviewed": "08/22/2026",
+          "updated": "08/22/2026"
+        },
+        {
+          "id": "ui-elements-functions",
+          "label": "UI Elements and Functions",
+          "contentKind": "markdown-section",
+          "heading": "UI Elements and Functions",
+          "reviewed": "08/22/2026",
+          "updated": "08/22/2026"
+        },
+        {
+          "id": "app-architecture",
+          "label": "App Architecture",
+          "contentKind": "markdown-section",
+          "heading": "App Architecture",
+          "reviewed": "08/22/2026",
+          "updated": "08/22/2026"
+        },
+        {
+          "id": "issues",
+          "label": "Issues",
+          "contentKind": "issue-records"
+        },
+        {
+          "id": "current-work",
+          "label": "Current Work",
+          "contentKind": "current-work-records"
+        },
+        {
+          "id": "supabase-tables",
+          "label": "Supabase Tables",
+          "contentKind": "shared-supabase",
+          "reviewed": "08/22/2026",
+          "updated": "07/31/2026"
+        },
+        {
+          "id": "changelog",
+          "label": "Changelog",
+          "contentKind": "changelog-records"
+        }
+      ]
     },
     {
       "id": "my-images",
-      "label": "My Images",
-      "description": "How private images are uploaded, organized, viewed, copied into consuming features, and deleted."
+      "label": "Image Library",
+      "description": "How private images are uploaded, organized, viewed, copied into consuming features, and deleted.",
+      "document": "my-images.md",
+      "tabs": [
+        {
+          "id": "overview",
+          "label": "Overview",
+          "contentKind": "markdown-section",
+          "heading": "Overview",
+          "reviewed": "08/22/2026",
+          "updated": "08/22/2026"
+        },
+        {
+          "id": "ui-elements-functions",
+          "label": "UI Elements and Functions",
+          "contentKind": "markdown-section",
+          "heading": "UI Elements and Functions",
+          "reviewed": "08/22/2026",
+          "updated": "08/22/2026"
+        },
+        {
+          "id": "app-architecture",
+          "label": "App Architecture",
+          "contentKind": "markdown-section",
+          "heading": "App Architecture",
+          "reviewed": "08/22/2026",
+          "updated": "08/22/2026"
+        },
+        {
+          "id": "issues",
+          "label": "Issues",
+          "contentKind": "issue-records"
+        },
+        {
+          "id": "current-work",
+          "label": "Current Work",
+          "contentKind": "current-work-records"
+        },
+        {
+          "id": "supabase-tables",
+          "label": "Supabase Tables",
+          "contentKind": "shared-supabase",
+          "reviewed": "08/22/2026",
+          "updated": "07/31/2026"
+        },
+        {
+          "id": "changelog",
+          "label": "Changelog",
+          "contentKind": "changelog-records"
+        }
+      ]
     },
     {
       "id": "story-builder",
       "label": "Story Builder",
-      "description": "How a story's world, direction, cast, opening state, media, and publication readiness are assembled."
+      "description": "How a story's world, direction, cast, opening state, media, and publication readiness are assembled.",
+      "document": "story-builder.md",
+      "tabs": [
+        {
+          "id": "overview",
+          "label": "Overview",
+          "contentKind": "markdown-section",
+          "heading": "Overview",
+          "reviewed": "08/22/2026",
+          "updated": "08/22/2026"
+        },
+        {
+          "id": "ui-elements-functions",
+          "label": "UI Elements and Functions",
+          "contentKind": "markdown-section",
+          "heading": "UI Elements and Functions",
+          "reviewed": "08/22/2026",
+          "updated": "08/22/2026"
+        },
+        {
+          "id": "app-architecture",
+          "label": "App Architecture",
+          "contentKind": "markdown-section",
+          "heading": "App Architecture",
+          "reviewed": "08/22/2026",
+          "updated": "08/22/2026"
+        },
+        {
+          "id": "issues",
+          "label": "Issues",
+          "contentKind": "issue-records"
+        },
+        {
+          "id": "current-work",
+          "label": "Current Work",
+          "contentKind": "current-work-records"
+        },
+        {
+          "id": "supabase-tables",
+          "label": "Supabase Tables",
+          "contentKind": "shared-supabase",
+          "reviewed": "08/22/2026",
+          "updated": "07/31/2026"
+        },
+        {
+          "id": "changelog",
+          "label": "Changelog",
+          "contentKind": "changelog-records"
+        }
+      ]
     },
     {
       "id": "character-builder",
       "label": "Character Builder",
-      "description": "How story and library characters are authored, enhanced, validated, and persisted."
+      "description": "How reusable and story-owned character profiles are authored, assisted, copied, and saved without losing lifecycle ownership.",
+      "document": "character-builder.md",
+      "tabs": [
+        {
+          "id": "overview",
+          "label": "Overview",
+          "contentKind": "markdown-section",
+          "heading": "Overview",
+          "reviewed": "08/22/2026",
+          "updated": "08/22/2026"
+        },
+        {
+          "id": "ui-elements-functions",
+          "label": "UI Elements and Functions",
+          "contentKind": "markdown-section",
+          "heading": "UI Elements and Functions",
+          "reviewed": "08/22/2026",
+          "updated": "08/22/2026"
+        },
+        {
+          "id": "app-architecture",
+          "label": "App Architecture",
+          "contentKind": "markdown-section",
+          "heading": "App Architecture",
+          "reviewed": "08/22/2026",
+          "updated": "08/22/2026"
+        },
+        {
+          "id": "issues",
+          "label": "Issues",
+          "contentKind": "issue-records"
+        },
+        {
+          "id": "current-work",
+          "label": "Current Work",
+          "contentKind": "current-work-records"
+        },
+        {
+          "id": "supabase-tables",
+          "label": "Supabase Tables",
+          "contentKind": "shared-supabase",
+          "reviewed": "08/22/2026",
+          "updated": "07/31/2026"
+        },
+        {
+          "id": "changelog",
+          "label": "Changelog",
+          "contentKind": "changelog-records"
+        }
+      ]
     },
     {
       "id": "chat-interface",
       "label": "Chat Interface",
-      "description": "The complete live roleplay lifecycle from player action through response construction, commit, support work, and evidence."
+      "description": "How the visible play screen presents a conversation, accepts user actions, exposes local controls, and hands an opaque turn request to the separate Roleplay Pipeline.",
+      "document": "chat-interface.md",
+      "tabs": [
+        {
+          "id": "overview",
+          "label": "Overview",
+          "contentKind": "markdown-section",
+          "heading": "Overview",
+          "reviewed": "09/04/2026",
+          "updated": "09/04/2026"
+        },
+        {
+          "id": "ui-elements-functions",
+          "label": "UI Elements and Functions",
+          "contentKind": "markdown-section",
+          "heading": "UI Elements and Functions",
+          "reviewed": "09/04/2026",
+          "updated": "09/04/2026"
+        },
+        {
+          "id": "app-architecture",
+          "label": "App Architecture",
+          "contentKind": "markdown-section",
+          "heading": "App Architecture",
+          "reviewed": "09/04/2026",
+          "updated": "09/04/2026"
+        },
+        {
+          "id": "issues",
+          "label": "Issues",
+          "contentKind": "issue-records"
+        },
+        {
+          "id": "current-work",
+          "label": "Current Work",
+          "contentKind": "current-work-records"
+        },
+        {
+          "id": "supabase-tables",
+          "label": "Supabase Tables",
+          "contentKind": "shared-supabase",
+          "reviewed": "09/04/2026",
+          "updated": "07/31/2026"
+        },
+        {
+          "id": "changelog",
+          "label": "Changelog",
+          "contentKind": "changelog-records"
+        }
+      ]
+    },
+    {
+      "id": "roleplay-pipeline",
+      "label": "Roleplay Pipeline",
+      "description": "How a Chat Interface action becomes a model request, a current accepted response, and saved state for later turns.",
+      "document": "roleplay-pipeline.md",
+      "tabs": [
+        {
+          "id": "overview",
+          "label": "Overview",
+          "contentKind": "markdown-section",
+          "heading": "Overview",
+          "reviewed": "09/04/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "app-architecture",
+          "label": "App Architecture",
+          "contentKind": "markdown-section",
+          "heading": "App Architecture",
+          "reviewed": "09/04/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "issues",
+          "label": "Issues",
+          "contentKind": "issue-records"
+        },
+        {
+          "id": "current-work",
+          "label": "Current Work",
+          "contentKind": "current-work-records"
+        },
+        {
+          "id": "supabase-tables",
+          "label": "Supabase Tables",
+          "contentKind": "markdown-section",
+          "heading": "Supabase Tables",
+          "reviewed": "09/04/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "changelog",
+          "label": "Changelog",
+          "contentKind": "changelog-records"
+        }
+      ]
     },
     {
       "id": "chat-history",
       "label": "Chat History",
-      "description": "How conversations are listed, resumed, paginated, identified, and deleted."
+      "description": "How saved conversations are listed, resumed, paginated, identified, and deleted without becoming the active play interface.",
+      "document": "chat-history.md",
+      "tabs": [
+        {
+          "id": "overview",
+          "label": "Overview",
+          "contentKind": "markdown-section",
+          "heading": "Overview",
+          "reviewed": "09/04/2026",
+          "updated": "09/04/2026"
+        },
+        {
+          "id": "ui-elements-functions",
+          "label": "UI Elements and Functions",
+          "contentKind": "markdown-section",
+          "heading": "UI Elements and Functions",
+          "reviewed": "09/04/2026",
+          "updated": "09/04/2026"
+        },
+        {
+          "id": "app-architecture",
+          "label": "App Architecture",
+          "contentKind": "markdown-section",
+          "heading": "App Architecture",
+          "reviewed": "09/04/2026",
+          "updated": "09/04/2026"
+        },
+        {
+          "id": "issues",
+          "label": "Issues",
+          "contentKind": "issue-records"
+        },
+        {
+          "id": "current-work",
+          "label": "Current Work",
+          "contentKind": "current-work-records"
+        },
+        {
+          "id": "supabase-tables",
+          "label": "Supabase Tables",
+          "contentKind": "shared-supabase",
+          "reviewed": "09/04/2026",
+          "updated": "07/31/2026"
+        },
+        {
+          "id": "changelog",
+          "label": "Changelog",
+          "contentKind": "changelog-records"
+        }
+      ]
     },
     {
       "id": "public-profile",
       "label": "Public Profile",
-      "description": "How creators edit their identity and how other users view, follow, and enter published work."
+      "description": "How creators edit their public identity and how other people view, follow, evaluate, and enter their published work.",
+      "document": "public-profile.md",
+      "tabs": [
+        {
+          "id": "overview",
+          "label": "Overview",
+          "contentKind": "markdown-section",
+          "heading": "Overview",
+          "reviewed": "09/04/2026",
+          "updated": "09/04/2026"
+        },
+        {
+          "id": "ui-elements-functions",
+          "label": "UI Elements and Functions",
+          "contentKind": "markdown-section",
+          "heading": "UI Elements and Functions",
+          "reviewed": "09/04/2026",
+          "updated": "09/04/2026"
+        },
+        {
+          "id": "app-architecture",
+          "label": "App Architecture",
+          "contentKind": "markdown-section",
+          "heading": "App Architecture",
+          "reviewed": "09/04/2026",
+          "updated": "09/04/2026"
+        },
+        {
+          "id": "issues",
+          "label": "Issues",
+          "contentKind": "issue-records"
+        },
+        {
+          "id": "current-work",
+          "label": "Current Work",
+          "contentKind": "current-work-records"
+        },
+        {
+          "id": "supabase-tables",
+          "label": "Supabase Tables",
+          "contentKind": "shared-supabase",
+          "reviewed": "09/04/2026",
+          "updated": "07/31/2026"
+        },
+        {
+          "id": "changelog",
+          "label": "Changelog",
+          "contentKind": "changelog-records"
+        }
+      ]
     },
     {
       "id": "account",
-      "label": "Account Settings",
-      "description": "How authentication, account settings, subscription visibility, sessions, and account actions work."
+      "label": "Account & Subscription",
+      "description": "How a signed-in user views private account facts, changes credentials, and understands the current subscription and available plans.",
+      "document": "account.md",
+      "tabs": [
+        {
+          "id": "overview",
+          "label": "Overview",
+          "contentKind": "markdown-section",
+          "heading": "Overview",
+          "reviewed": "09/04/2026",
+          "updated": "09/04/2026"
+        },
+        {
+          "id": "ui-elements-functions",
+          "label": "UI Elements and Functions",
+          "contentKind": "markdown-section",
+          "heading": "UI Elements and Functions",
+          "reviewed": "09/04/2026",
+          "updated": "09/04/2026"
+        },
+        {
+          "id": "app-architecture",
+          "label": "App Architecture",
+          "contentKind": "markdown-section",
+          "heading": "App Architecture",
+          "reviewed": "09/04/2026",
+          "updated": "09/04/2026"
+        },
+        {
+          "id": "issues",
+          "label": "Issues",
+          "contentKind": "issue-records"
+        },
+        {
+          "id": "current-work",
+          "label": "Current Work",
+          "contentKind": "current-work-records"
+        },
+        {
+          "id": "supabase-tables",
+          "label": "Supabase Tables",
+          "contentKind": "shared-supabase",
+          "reviewed": "09/04/2026",
+          "updated": "07/31/2026"
+        },
+        {
+          "id": "changelog",
+          "label": "Changelog",
+          "contentKind": "changelog-records"
+        }
+      ]
     },
     {
       "id": "admin",
       "label": "Admin Panel",
-      "description": "How privileged operators enter the Admin hub and use specialist tools without confusing documentation, diagnostics, validation, and operations."
+      "description": "How privileged operators enter the Admin hub and reach each registered specialist tool while preserving the boundary between the hub and the tools it launches.",
+      "document": "admin-panel.md",
+      "tabs": [
+        {
+          "id": "overview",
+          "label": "Overview",
+          "contentKind": "markdown-section",
+          "heading": "Overview",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "ui-elements-functions",
+          "label": "UI Elements and Functions",
+          "contentKind": "markdown-section",
+          "heading": "UI Elements and Functions",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "app-architecture",
+          "label": "App Architecture",
+          "contentKind": "markdown-section",
+          "heading": "App Architecture",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "issues",
+          "label": "Issues",
+          "contentKind": "issue-records"
+        },
+        {
+          "id": "current-work",
+          "label": "Current Work",
+          "contentKind": "current-work-records"
+        },
+        {
+          "id": "supabase-tables",
+          "label": "Supabase Tables",
+          "contentKind": "shared-supabase",
+          "reviewed": "09/04/2026",
+          "updated": "07/31/2026"
+        },
+        {
+          "id": "changelog",
+          "label": "Changelog",
+          "contentKind": "changelog-records"
+        }
+      ]
     },
     {
       "id": "shared-systems",
-      "label": "Shared Systems",
-      "description": "The shell, navigation, authentication, persistence, private media, caching, and shared state used across Chronicle."
-    },
-    {
-      "id": "ai-api-services",
-      "label": "AI & API Services",
-      "description": "Shared provider transport, AI operations, support calls, usage accounting, and service-level failure boundaries."
-    },
-    {
-      "id": "app-architecture-reference",
-      "label": "App Architecture Reference",
-      "description": "The exhaustive generated repository lookup that supports, but does not replace, the capability manuals."
-    }
-  ],
-  "defaultCapabilityTabs": [
-    {
-      "id": "overview",
-      "label": "Overview",
-      "contentKind": "blank"
-    },
-    {
-      "id": "architecture",
-      "label": "Architecture",
-      "contentKind": "blank"
-    },
-    {
-      "id": "supabase-tables",
-      "label": "Supabase Tables",
-      "contentKind": "shared-supabase",
-      "reviewed": "07/31/2026",
-      "updated": "07/31/2026"
+      "label": "Shared Application Systems",
+      "description": "How Chronicle's shell, navigation, authentication, common persistence adapters, private media, shared configuration, and cross-capability state support the application without absorbing feature ownership.",
+      "document": "shared-application-systems.md",
+      "tabs": [
+        {
+          "id": "overview",
+          "label": "Overview",
+          "contentKind": "markdown-section",
+          "heading": "Overview",
+          "reviewed": "09/04/2026",
+          "updated": "09/04/2026"
+        },
+        {
+          "id": "ui-elements-functions",
+          "label": "UI Elements and Functions",
+          "contentKind": "markdown-section",
+          "heading": "UI Elements and Functions",
+          "reviewed": "09/04/2026",
+          "updated": "09/04/2026"
+        },
+        {
+          "id": "app-architecture",
+          "label": "App Architecture",
+          "contentKind": "markdown-section",
+          "heading": "App Architecture",
+          "reviewed": "09/04/2026",
+          "updated": "09/04/2026"
+        },
+        {
+          "id": "issues",
+          "label": "Issues",
+          "contentKind": "issue-records"
+        },
+        {
+          "id": "current-work",
+          "label": "Current Work",
+          "contentKind": "current-work-records"
+        },
+        {
+          "id": "supabase-tables",
+          "label": "Supabase Tables",
+          "contentKind": "shared-supabase",
+          "reviewed": "09/04/2026",
+          "updated": "07/31/2026"
+        },
+        {
+          "id": "changelog",
+          "label": "Changelog",
+          "contentKind": "changelog-records"
+        }
+      ]
     }
   ],
   "sharedDocuments": {
-    "supabase": "supabase-tables.md",
-    "roughDraft": "chronicle-application-manual-writer-rough-draft.md"
-  }
+    "supabase": "supabase-tables.md"
+  },
+  "adminTools": [
+    {
+      "id": "knowledge-base-system",
+      "label": "Chronicle Knowledge Base",
+      "description": "How repository-backed manuals, architecture maps, operational records, and accepted history are read and maintained.",
+      "document": "knowledge-base-system.md",
+      "recordScope": "knowledge-system",
+      "tabs": [
+        {
+          "id": "overview",
+          "label": "Overview",
+          "contentKind": "markdown-section",
+          "heading": "Overview",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "ui-elements-and-functions",
+          "label": "UI Elements and Functions",
+          "contentKind": "markdown-section",
+          "heading": "UI Elements and Functions",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "app-architecture",
+          "label": "App Architecture",
+          "contentKind": "markdown-section",
+          "heading": "App Architecture",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "issues",
+          "label": "Issues",
+          "contentKind": "shared-records"
+        },
+        {
+          "id": "current-work",
+          "label": "Current Work",
+          "contentKind": "shared-records"
+        },
+        {
+          "id": "supabase-tables",
+          "label": "Supabase Tables",
+          "contentKind": "markdown-section",
+          "heading": "Supabase Tables",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "changelog",
+          "label": "Changelog",
+          "contentKind": "shared-records"
+        }
+      ]
+    },
+    {
+      "id": "schema-reference",
+      "label": "Supabase Schema Reference",
+      "description": "How to find database objects, read field and access descriptions, and distinguish the maintained reference from live deployment.",
+      "document": "schema-reference.md",
+      "recordScope": "admin",
+      "tabs": [
+        {
+          "id": "overview",
+          "label": "Overview",
+          "contentKind": "markdown-section",
+          "heading": "Overview",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "ui-elements-and-functions",
+          "label": "UI Elements and Functions",
+          "contentKind": "markdown-section",
+          "heading": "UI Elements and Functions",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "app-architecture",
+          "label": "App Architecture",
+          "contentKind": "markdown-section",
+          "heading": "App Architecture",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "issues",
+          "label": "Issues",
+          "contentKind": "shared-records"
+        },
+        {
+          "id": "current-work",
+          "label": "Current Work",
+          "contentKind": "shared-records"
+        },
+        {
+          "id": "supabase-tables",
+          "label": "Supabase Tables",
+          "contentKind": "markdown-section",
+          "heading": "Supabase Tables",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "changelog",
+          "label": "Changelog",
+          "contentKind": "shared-records"
+        }
+      ]
+    },
+    {
+      "id": "quality-hub",
+      "label": "Quality Hub",
+      "description": "How findings, saved quality workspaces, scan records, recovery, and canonical history are organized.",
+      "document": "quality-hub.md",
+      "recordScope": "knowledge-system",
+      "tabs": [
+        {
+          "id": "overview",
+          "label": "Overview",
+          "contentKind": "markdown-section",
+          "heading": "Overview",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "ui-elements-and-functions",
+          "label": "UI Elements and Functions",
+          "contentKind": "markdown-section",
+          "heading": "UI Elements and Functions",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "app-architecture",
+          "label": "App Architecture",
+          "contentKind": "markdown-section",
+          "heading": "App Architecture",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "issues",
+          "label": "Issues",
+          "contentKind": "shared-records"
+        },
+        {
+          "id": "current-work",
+          "label": "Current Work",
+          "contentKind": "shared-records"
+        },
+        {
+          "id": "supabase-tables",
+          "label": "Supabase Tables",
+          "contentKind": "markdown-section",
+          "heading": "Supabase Tables",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "changelog",
+          "label": "Changelog",
+          "contentKind": "shared-records"
+        }
+      ]
+    },
+    {
+      "id": "validation-evidence-ledger",
+      "label": "Validation Evidence Ledger",
+      "description": "How local roleplay gate definitions, execution receipts, manual reviews, and raw reports establish bounded evidence.",
+      "document": "validation-evidence-ledger.md",
+      "recordScope": "knowledge-system",
+      "tabs": [
+        {
+          "id": "overview",
+          "label": "Overview",
+          "contentKind": "markdown-section",
+          "heading": "Overview",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "ui-elements-and-functions",
+          "label": "UI Elements and Functions",
+          "contentKind": "markdown-section",
+          "heading": "UI Elements and Functions",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "app-architecture",
+          "label": "App Architecture",
+          "contentKind": "markdown-section",
+          "heading": "App Architecture",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "issues",
+          "label": "Issues",
+          "contentKind": "shared-records"
+        },
+        {
+          "id": "current-work",
+          "label": "Current Work",
+          "contentKind": "shared-records"
+        },
+        {
+          "id": "supabase-tables",
+          "label": "Supabase Tables",
+          "contentKind": "markdown-section",
+          "heading": "Supabase Tables",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "changelog",
+          "label": "Changelog",
+          "contentKind": "shared-records"
+        }
+      ]
+    },
+    {
+      "id": "finance-dashboard",
+      "label": "Finance Dashboard",
+      "description": "How administrative usage, costs, projections, users, tiers, and finance documents are managed, including unfinished behavior.",
+      "document": "finance-dashboard.md",
+      "recordScope": "admin",
+      "tabs": [
+        {
+          "id": "overview",
+          "label": "Overview",
+          "contentKind": "markdown-section",
+          "heading": "Overview",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "ui-elements-and-functions",
+          "label": "UI Elements and Functions",
+          "contentKind": "markdown-section",
+          "heading": "UI Elements and Functions",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "app-architecture",
+          "label": "App Architecture",
+          "contentKind": "markdown-section",
+          "heading": "App Architecture",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "issues",
+          "label": "Issues",
+          "contentKind": "shared-records"
+        },
+        {
+          "id": "current-work",
+          "label": "Current Work",
+          "contentKind": "shared-records"
+        },
+        {
+          "id": "supabase-tables",
+          "label": "Supabase Tables",
+          "contentKind": "markdown-section",
+          "heading": "Supabase Tables",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "changelog",
+          "label": "Changelog",
+          "contentKind": "shared-records"
+        }
+      ]
+    },
+    {
+      "id": "research-development",
+      "label": "Research & Development",
+      "description": "How isolated mock-ups are edited, recovered, saved to the repository, and preserved alongside production features.",
+      "document": "research-development.md",
+      "recordScope": "admin",
+      "tabs": [
+        {
+          "id": "overview",
+          "label": "Overview",
+          "contentKind": "markdown-section",
+          "heading": "Overview",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "ui-elements-and-functions",
+          "label": "UI Elements and Functions",
+          "contentKind": "markdown-section",
+          "heading": "UI Elements and Functions",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "app-architecture",
+          "label": "App Architecture",
+          "contentKind": "markdown-section",
+          "heading": "App Architecture",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "issues",
+          "label": "Issues",
+          "contentKind": "shared-records"
+        },
+        {
+          "id": "current-work",
+          "label": "Current Work",
+          "contentKind": "shared-records"
+        },
+        {
+          "id": "supabase-tables",
+          "label": "Supabase Tables",
+          "contentKind": "markdown-section",
+          "heading": "Supabase Tables",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "changelog",
+          "label": "Changelog",
+          "contentKind": "shared-records"
+        }
+      ]
+    },
+    {
+      "id": "image-generation",
+      "label": "Image Generation",
+      "description": "How art-style configuration and hidden prompt text are edited and consumed by image-generation features.",
+      "document": "image-generation.md",
+      "recordScope": "admin",
+      "tabs": [
+        {
+          "id": "overview",
+          "label": "Overview",
+          "contentKind": "markdown-section",
+          "heading": "Overview",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "ui-elements-and-functions",
+          "label": "UI Elements and Functions",
+          "contentKind": "markdown-section",
+          "heading": "UI Elements and Functions",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "app-architecture",
+          "label": "App Architecture",
+          "contentKind": "markdown-section",
+          "heading": "App Architecture",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "issues",
+          "label": "Issues",
+          "contentKind": "shared-records"
+        },
+        {
+          "id": "current-work",
+          "label": "Current Work",
+          "contentKind": "shared-records"
+        },
+        {
+          "id": "supabase-tables",
+          "label": "Supabase Tables",
+          "contentKind": "markdown-section",
+          "heading": "Supabase Tables",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "changelog",
+          "label": "Changelog",
+          "contentKind": "shared-records"
+        }
+      ]
+    },
+    {
+      "id": "app-dashboard",
+      "label": "App Dashboard",
+      "description": "How the retained style example, component edit register, and App Guide editing and synchronization work.",
+      "document": "app-dashboard.md",
+      "recordScope": "admin",
+      "tabs": [
+        {
+          "id": "overview",
+          "label": "Overview",
+          "contentKind": "markdown-section",
+          "heading": "Overview",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "ui-elements-and-functions",
+          "label": "UI Elements and Functions",
+          "contentKind": "markdown-section",
+          "heading": "UI Elements and Functions",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "app-architecture",
+          "label": "App Architecture",
+          "contentKind": "markdown-section",
+          "heading": "App Architecture",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "issues",
+          "label": "Issues",
+          "contentKind": "shared-records"
+        },
+        {
+          "id": "current-work",
+          "label": "Current Work",
+          "contentKind": "shared-records"
+        },
+        {
+          "id": "supabase-tables",
+          "label": "Supabase Tables",
+          "contentKind": "markdown-section",
+          "heading": "Supabase Tables",
+          "reviewed": "09/05/2026",
+          "updated": "09/05/2026"
+        },
+        {
+          "id": "changelog",
+          "label": "Changelog",
+          "contentKind": "shared-records"
+        }
+      ]
+    }
+  ]
 }

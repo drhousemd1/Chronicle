@@ -1,4 +1,7 @@
-export type ChangelogRecordScope = "global" | "community-gallery";
+import { buildChangelogRecordPath } from "@/data/chronicle-knowledge-base/knowledge-routes";
+import type { ChronicleCapabilityId } from "@/data/chronicle-knowledge-base/capability-ids";
+
+export type ChangelogRecordScope = "global" | ChronicleCapabilityId;
 
 export type ChangelogRecordOrigin =
   | "knowledge-base"
@@ -6,26 +9,29 @@ export type ChangelogRecordOrigin =
   | "quality-hub-overview"
   | "archive";
 
-export const CHANGELOG_RECORD_ORIGINS_BY_SCOPE = {
-  global: ["quality-hub", "quality-hub-overview"],
-  "community-gallery": ["knowledge-base", "quality-hub", "archive"],
-} as const satisfies Readonly<
-  Record<ChangelogRecordScope, readonly ChangelogRecordOrigin[]>
->;
+const GLOBAL_CHANGELOG_ORIGINS: readonly ChangelogRecordOrigin[] = [
+  "quality-hub",
+  "quality-hub-overview",
+];
+const CAPABILITY_CHANGELOG_ORIGINS: readonly ChangelogRecordOrigin[] = [
+  "knowledge-base",
+  "quality-hub",
+  "archive",
+];
 
 export function normalizeChangelogRecordOrigin(
   scope: ChangelogRecordScope,
   origin: string | null | undefined,
 ): ChangelogRecordOrigin {
   const compatibleOrigins: readonly ChangelogRecordOrigin[] =
-    CHANGELOG_RECORD_ORIGINS_BY_SCOPE[scope];
+    scope === "global" ? GLOBAL_CHANGELOG_ORIGINS : CAPABILITY_CHANGELOG_ORIGINS;
   if (
     origin &&
     compatibleOrigins.includes(origin as ChangelogRecordOrigin)
   ) {
     return origin as ChangelogRecordOrigin;
   }
-  return scope === "community-gallery" ? "knowledge-base" : "quality-hub";
+  return scope === "global" ? "quality-hub" : "knowledge-base";
 }
 
 export function buildChangelogRecordHref(
@@ -37,5 +43,5 @@ export function buildChangelogRecordHref(
     scope,
     from: normalizeChangelogRecordOrigin(scope, origin),
   });
-  return `/style-guide/changelog/${encodeURIComponent(recordId)}?${query.toString()}`;
+  return `${buildChangelogRecordPath(recordId)}?${query.toString()}`;
 }

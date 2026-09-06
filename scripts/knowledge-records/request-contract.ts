@@ -14,6 +14,7 @@ import {
   canonicalRecordSourcePath,
   deriveCorrectionChangeId,
   isAcceptedChangeId,
+  isAcceptedUpdateId,
   isLegacyChangeId,
   normalizeStrictRelativePath,
   parseCanonicalRecordId,
@@ -21,6 +22,11 @@ import {
   type CanonicalRecordLocation,
 } from "./path-safety";
 import { sha256Buffer } from "./source-set";
+import {
+  isOperationalIssueId,
+  isOperationalProjectId,
+} from "../../src/data/chronicle-knowledge-base/operational-capability-registry";
+import { assertAcceptedUpdateOwner } from "../../src/data/chronicle-knowledge-base/accepted-update-capability-registry";
 
 export const KNOWLEDGE_RECORD_REQUEST_VERSION = 1 as const;
 export const MAX_REQUEST_BYTES = 1024 * 1024;
@@ -33,6 +39,7 @@ export type KnowledgeRecordRequestKind =
   | "project-update"
   | "issue-create"
   | "issue-update"
+  | "accepted-update"
   | "legacy-import"
   | "correction"
   | "closeout";
@@ -93,8 +100,8 @@ export type NormalizedKnowledgeRecordRequest = Readonly<{
 }>;
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-const PROJECT_ID = /^CG-WORK-\d{3}$/;
-const ISSUE_ID = /^CG-ISSUE-\d{3}$/;
+const GALLERY_PROJECT_ID = /^CG-WORK-\d{3}$/;
+const GALLERY_ISSUE_ID = /^CG-ISSUE-\d{3}$/;
 const ACCEPTED_CHANGE_ID = /^CG-CHANGE-\d{3}$/;
 const CONTENT_FILE = /^content\/[^/]+\.md$/;
 const SHA256 = /^[a-f0-9]{64}$/;
@@ -112,6 +119,12 @@ const contentFileSchema = z.string().regex(
   CONTENT_FILE,
   "must name one direct Markdown file under content/",
 );
+const operationalProjectIdSchema = z
+  .string()
+  .refine(isOperationalProjectId, "must identify an approved operational project");
+const operationalIssueIdSchema = z
+  .string()
+  .refine(isOperationalIssueId, "must identify an approved operational Issue");
 
 const baseSchema = z.object({
   version: z.literal(KNOWLEDGE_RECORD_REQUEST_VERSION),
@@ -121,7 +134,7 @@ const baseSchema = z.object({
 const projectUpdateSchema = baseSchema
   .extend({
     kind: z.literal("project-update"),
-    project_id: z.string().regex(PROJECT_ID),
+    project_id: operationalProjectIdSchema,
     expected_source_sha256: z.string().regex(SHA256),
     content_file: contentFileSchema,
   })
@@ -130,7 +143,7 @@ const projectUpdateSchema = baseSchema
 const projectCreateSchema = baseSchema
   .extend({
     kind: z.literal("project-create"),
-    project_id: z.string().regex(PROJECT_ID),
+    project_id: operationalProjectIdSchema,
     content_file: contentFileSchema,
   })
   .strict();
@@ -138,7 +151,7 @@ const projectCreateSchema = baseSchema
 const issueCreateSchema = baseSchema
   .extend({
     kind: z.literal("issue-create"),
-    issue_id: z.string().regex(ISSUE_ID),
+    issue_id: operationalIssueIdSchema,
     content_file: contentFileSchema,
   })
   .strict();
@@ -146,8 +159,19 @@ const issueCreateSchema = baseSchema
 const issueUpdateSchema = baseSchema
   .extend({
     kind: z.literal("issue-update"),
-    issue_id: z.string().regex(ISSUE_ID),
+    issue_id: operationalIssueIdSchema,
     expected_source_sha256: z.string().regex(SHA256),
+    content_file: contentFileSchema,
+  })
+  .strict();
+
+const acceptedUpdateSchema = baseSchema
+  .extend({
+    kind: z.literal("accepted-update"),
+    change_id: z
+      .string()
+      .refine(isAcceptedUpdateId, "must identify a registered Accepted Update ID"),
+    owner_capability: z.string().trim().min(1),
     content_file: contentFileSchema,
   })
   .strict();
@@ -292,7 +316,7 @@ const correctionSchema = baseSchema
 const closeoutSchema = baseSchema
   .extend({
     kind: z.literal("closeout"),
-    project_id: z.string().regex(PROJECT_ID),
+    project_id: z.string().regex(GALLERY_PROJECT_ID),
     change_id: z.string().regex(ACCEPTED_CHANGE_ID),
     expected_project_sha256: z.string().regex(SHA256),
     archive_content_file: contentFileSchema,
@@ -301,7 +325,7 @@ const closeoutSchema = baseSchema
       .array(
         z
           .object({
-            issue_id: z.string().regex(ISSUE_ID),
+            issue_id: z.string().regex(GALLERY_ISSUE_ID),
             expected_source_sha256: z.string().regex(SHA256),
             content_file: contentFileSchema,
           })
@@ -317,6 +341,7 @@ const requestSchema = z.discriminatedUnion("kind", [
   projectUpdateSchema,
   issueCreateSchema,
   issueUpdateSchema,
+  acceptedUpdateSchema,
   legacyImportSchema,
   correctionSchema,
   closeoutSchema,
@@ -658,6 +683,7 @@ function requestedContentFiles(request: ParsedRequest) {
     request.kind === "project-update" ||
     request.kind === "issue-create" ||
     request.kind === "issue-update" ||
+    request.kind === "accepted-update" ||
     request.kind === "correction"
   ) {
     return [request.content_file];
@@ -882,6 +908,31 @@ async function normalizeOperations(
             content,
           ),
     ]);
+  }
+
+  if (request.kind === "accepted-update") {
+    const changeId = parseCanonicalRecordId("changelog", request.change_id);
+    assertAcceptedUpdateOwner(changeId, request.owner_capability);
+    const contentPath = requireContentFileName(request.content_file, changeId);
+    const content = await loadRequestContent(packageRoot, contentPath);
+    const metadata = parseFrontmatterMetadata(content.bytes, contentPath);
+    requireMetadataValue(metadata, "record_type", "changelog", contentPath);
+    requireMetadataValue(metadata, "variant", "accepted_update", contentPath);
+    requireMetadataValue(metadata, "provenance", "accepted-update", contentPath);
+    requireMetadataValue(metadata, "change_id", changeId, contentPath);
+    requireMetadataValue(
+      metadata,
+      "owning_capability",
+      request.owner_capability,
+      contentPath,
+    );
+    requireMetadataValue(
+      metadata,
+      "source_record",
+      canonicalRecordSourcePath("changelog", changeId),
+      contentPath,
+    );
+    return Object.freeze([createOperation(0, "changelog", changeId, content)]);
   }
 
   if (request.kind === "legacy-import") {

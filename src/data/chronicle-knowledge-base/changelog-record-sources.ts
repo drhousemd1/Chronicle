@@ -5,13 +5,14 @@ import {
   type ChangelogSourceMap,
 } from "./changelog-record-contract";
 import type { ChronicleCapabilityId } from "./capability-ids";
+import { getKnowledgeCheckDate } from "./knowledge-check-date";
 
 const changelogModules = import.meta.glob(
   "../../../docs/architecture-knowledge/changelog/entries/*.md",
   { eager: true, query: "?raw", import: "default" },
 );
 
-export const CHRONICLE_CHANGELOG_RECORDS_CHECKED_ON = "2026-08-08";
+export const CHRONICLE_CHANGELOG_RECORDS_CHECKED_ON = getKnowledgeCheckDate();
 
 export type ChangelogRegistryReadyResult = Readonly<{
   status: "ready";

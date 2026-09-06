@@ -15,10 +15,12 @@ const CHANGE_SOURCE_REVISION = `sha256:${"c".repeat(64)}`;
 
 const issuePath = (id = "CG-ISSUE-001") =>
   `docs/architecture-knowledge/issues/community-gallery/${id}.md`;
+const projectOwnerPath = (id: string) =>
+  id.startsWith("KS-") ? "knowledge-system" : "community-gallery";
 const activePath = (id = "CG-WORK-001") =>
-  `docs/current-work/active/community-gallery/${id}.md`;
+  `docs/current-work/active/${projectOwnerPath(id)}/${id}.md`;
 const archivePath = (id = "CG-WORK-001") =>
-  `docs/current-work/archive/community-gallery/${id}.md`;
+  `docs/current-work/archive/${projectOwnerPath(id)}/${id}.md`;
 const changePath = (id = "CG-CHANGE-001") =>
   `docs/architecture-knowledge/changelog/entries/${id}.md`;
 
@@ -130,6 +132,7 @@ type ProjectFixtureOptions = {
     | "Correction"
     | "Handoff"
     | "External Work";
+  ownerCapability?: "community-gallery" | "knowledge-system";
 };
 
 function projectFixture({
@@ -192,12 +195,16 @@ function projectFixture({
   ].includes(state)
     ? "Decision"
     : "Investigation",
+  ownerCapability = id.startsWith("KS-")
+    ? "knowledge-system"
+    : "community-gallery",
 }: ProjectFixtureOptions = {}) {
   const sourcePath = placement === "archive" ? archivePath(id) : activePath(id);
   const suffix = id.slice(-3);
-  const stepId = `CG-STEP-${suffix}`;
-  const proofId = `CG-EV-${suffix}`;
-  const logId = `CG-LOG-${suffix}`;
+  const recordPrefix = id.slice(0, 2);
+  const stepId = `${recordPrefix}-STEP-${suffix}`;
+  const proofId = `${recordPrefix}-EV-${suffix}`;
+  const logId = `${recordPrefix}-LOG-${suffix}`;
   const linkedIssuesYaml = linkedIssueIds.length
     ? `[${linkedIssueIds.join(", ")}]`
     : "[]";
@@ -230,7 +237,7 @@ record_type: current_work
 project_id: ${id}
 title: Gallery operational-record fixture ${id}
 origin: ${linkedIssueIds.length ? "verified_issue" : "documentation_architecture"}
-owner_capability: community-gallery
+owner_capability: ${ownerCapability}
 related_capabilities: [${relatedCapabilities.join(", ")}]
 linked_issue_ids: ${linkedIssuesYaml}
 approved_objective_ref: ${linkedIssueIds.length ? `issue:${linkedIssueIds[0]}` : objective}
@@ -579,6 +586,144 @@ function validClosedSources() {
   };
 }
 
+function smallCurrentWorkFixture({
+  route = "local-interaction",
+  omitField,
+  state = "Implementing",
+  blockerOrDecision = "None.",
+}: {
+  route?: "presentation" | "local-interaction" | "capability-workflow" | "system-critical";
+  omitField?: string;
+  state?: ProjectWorkflowState;
+  blockerOrDecision?: string;
+} = {}) {
+  const fields = [
+    ["Purpose", "Preserve a bounded interaction change long enough for another reader to resume it."],
+    ["Objective and scope", "Authorized: update and verify one Gallery interaction under implementation authorization granted on 2026-07-30 by Chronicle owner. Outside: Supabase, deployment, and unrelated Gallery behavior."],
+    ["Current status and coordinator", `${state} since 2026-07-30; last activity 2026-07-30; coordinator Main Work; resume priority Primary.`],
+    ["Latest verified result", "Source inspection established the exact bounded interaction path."],
+    ["Exact next action", "Implement the bounded change and run its focused deterministic checks."],
+    ["Blocker or decision", blockerOrDecision],
+    ["Strongest evidence and limits", "Source inspection identifies the current path; product behavior is not yet accepted."],
+    ["Source state and reading order", "Re-read this record, then inspect the named interaction source before changing it."],
+  ].filter(([label]) => label !== omitField);
+  return `---
+record_type: current_work
+current_work_version: 2
+workflow_route: ${route}
+project_id: CG-WORK-900
+title: Bounded Gallery interaction
+origin: approved_enhancement
+owner_capability: community-gallery
+related_capabilities: []
+linked_issue_ids: []
+approved_objective_ref: approved:bounded-gallery-interaction
+started: 2026-07-30
+source_record: ${activePath("CG-WORK-900")}
+---
+# CG-WORK-900: Bounded Gallery interaction
+
+Current Work is an operational companion. Stable capability behavior remains in the Chronicle Knowledge Base manual.
+
+## Current State / Resume Here
+
+${fields.map(([label, value]) => `- ${label}: ${value}`).join("\n")}
+`;
+}
+
+function systemCriticalCurrentWorkV2Fixture(
+  options: ProjectFixtureOptions = {},
+) {
+  const state = options.state ?? "Implementing";
+  const placement = options.placement ?? "active";
+  const statusSince = options.statusSince ?? "2026-07-25";
+  const lastActivity = options.lastActivity ?? "2026-07-30";
+  const primary = options.primary ?? placement === "active";
+  const blockerOrDecision = [
+    "Blocked",
+    "Paused",
+    "Deferred",
+    "Closed",
+    "Cancelled",
+    "Superseded",
+  ].includes(state)
+    ? `The controlling decision placed this project in ${state}.`
+    : "None.";
+  const fullRecord = projectFixture({ ...options, state, placement }).replace(
+    "record_type: current_work\n",
+    "record_type: current_work\ncurrent_work_version: 2\nworkflow_route: system-critical\n",
+  );
+  const resumeStart = fullRecord.indexOf("## Current State / Resume Here");
+  const contractStart = fullRecord.indexOf(
+    "## Versioned Outcome and Success Contract",
+    resumeStart,
+  );
+  const coreSummary = `## Current State / Resume Here
+
+- Purpose: Preserve the complete system-critical workflow while reducing copied current-state prose.
+- Objective and scope: Authorized: validate the complete Route 4 record contract. Outside: product runtime, Supabase, and deployment.
+- Current status and coordinator: ${state} since ${statusSince}; last activity ${lastActivity}; coordinator fixture-coordinator; resume priority ${primary ? "Primary" : "Secondary"}.
+- Latest verified result: The complete deep modules remain present for validation.
+- Exact next action: Run the deep contract and relationship checks.
+- Blocker or decision: ${blockerOrDecision}
+- Strongest evidence and limits: Structural fixtures cover the record contract but do not prove product behavior.
+- Source state and reading order: Read this core summary, then the contract, steps, proofs, and history in order.
+
+`;
+  return `${fullRecord.slice(0, resumeStart)}${coreSummary}${fullRecord.slice(contractStart)}`;
+}
+
+function appendVersionTwoHandoff(source: string) {
+  return source
+    .replace(
+      "last activity 2026-07-30; coordinator fixture-coordinator",
+      "last activity 2026-07-31; coordinator replacement-coordinator",
+    )
+    .replace(
+      "- Source state and reading order: Read this core summary, then the contract, steps, proofs, and history in order.",
+      "- Source state and reading order: fixture-transferred-source-state",
+    )
+    .concat(`
+
+### CG-LOG-002 — Handoff — 2026-07-31
+
+- Sender: fixture-coordinator
+- Recipient: replacement-coordinator
+- Transferred source state: fixture-transferred-source-state
+- Completed work: The first system-critical fixture validation is complete.
+- Stopping point: Work stopped after the first fixture result.
+- Remaining authorized work: Run the second system-critical fixture validation only.
+- Evidence limits: Product behavior and human acceptance remain unproved.
+- Blockers: None
+- Next action: Run the second system-critical fixture validation.
+- Reading order: Read the core summary, CG-LOG-001, then this Handoff.
+- Scope guard: Do not change Chronicle runtime behavior.
+`);
+}
+
+function appendVersionTwoCloseoutDecision(source: string) {
+  return source
+    .replace(
+      "- Closeout decision log: CG-LOG-001",
+      "- Closeout decision log: CG-LOG-002",
+    )
+    .concat(`
+
+### CG-LOG-002 — Decision — 2026-07-30
+
+- Authoring task/authority: item-6 fixture
+- Related Issue/Step/Evidence IDs: CG-STEP-001, CG-EV-001
+- Source state: fixture-source-state
+- Action and rationale: Accept the complete deep fixture closeout.
+- Affected systems: In-memory fixture only.
+- Result: The deep version 2 project moved into its reciprocal archive.
+- Proves: The version 2 archive retains its complete closeout history.
+- Does not prove: Product behavior or deployment.
+- Consequence/next action: Read the accepted Changelog record for the bounded result.
+- Supersedes/Amends/Reopens: None
+`);
+}
+
 describe("Chronicle operational-record contract", () => {
   it("builds a deterministic, deeply read-only empty registry", () => {
     const registry = buildOperationalRecordRegistry({}, { asOf: AS_OF });
@@ -599,6 +744,245 @@ describe("Chronicle operational-record contract", () => {
     });
     expect(Object.isFrozen(registry)).toBe(true);
     expect(Object.isFrozen(registry.activeProjects)).toBe(true);
+  });
+
+  it("parses the smaller version 2 Current Work core without inventing optional modules", () => {
+    const registry = buildOperationalRecordRegistry(
+      { [activePath("CG-WORK-900")]: smallCurrentWorkFixture() },
+      { asOf: AS_OF },
+    );
+    const project = registry.activeProjects[0];
+    expect(project.currentWorkVersion).toBe(2);
+    expect(project.workflowRoute).toBe("local-interaction");
+    expect(project.presentModules).toEqual([]);
+    expect(project.steps).toEqual([]);
+    expect(project.proofs).toEqual([]);
+    expect(project.logs).toEqual([]);
+    expect(project.coreSummary).toMatchObject({
+      purpose: expect.stringContaining("bounded interaction"),
+      blockerOrDecision: "None.",
+      exactNextAction: expect.stringContaining("focused deterministic checks"),
+    });
+  });
+
+  it("allows a presentation route only when a separate continuity trigger justified Current Work", () => {
+    const registry = buildOperationalRecordRegistry(
+      {
+        [activePath("CG-WORK-900")]: smallCurrentWorkFixture({
+          route: "presentation",
+        }),
+      },
+      { asOf: AS_OF },
+    );
+
+    expect(registry.activeProjects[0].workflowRoute).toBe("presentation");
+    expect(registry.activeProjects[0].presentModules).toEqual([]);
+  });
+
+  it.each(["Paused", "Deferred"] satisfies ProjectWorkflowState[])(
+    "keeps %s available in the smaller version 2 contract with an explicit decision",
+    (state) => {
+      const registry = buildOperationalRecordRegistry(
+        {
+          [activePath("CG-WORK-900")]: smallCurrentWorkFixture({
+            state,
+            blockerOrDecision:
+              "The product owner deferred this bounded change until the related design decision is settled.",
+          }),
+        },
+        { asOf: AS_OF },
+      );
+
+      expect(registry.activeProjects[0].workflowState).toBe(state);
+    },
+  );
+
+  it("rejects a paused smaller project with no recorded reason", () => {
+    const result = validateOperationalRecordSources(
+      {
+        [activePath("CG-WORK-900")]: smallCurrentWorkFixture({ state: "Paused" }),
+      },
+      { asOf: AS_OF },
+    );
+
+    expect(result.errors.join("\n")).toContain(
+      "Paused requires a meaningful blocker or decision in the core summary",
+    );
+  });
+
+  it("rejects a supposedly resumable small record that omits a core meaning", () => {
+    const result = validateOperationalRecordSources(
+      {
+        [activePath("CG-WORK-900")]: smallCurrentWorkFixture({
+          omitField: "Exact next action",
+        }),
+      },
+      { asOf: AS_OF },
+    );
+    expect(result.ok).toBe(false);
+    expect(result.errors.join("\n")).toContain(
+      "exactNextAction must be explicit and resumable",
+    );
+  });
+
+  it("does not let a smaller Implementing project omit dated implementation authority", () => {
+    const result = validateOperationalRecordSources(
+      {
+        [activePath("CG-WORK-900")]: smallCurrentWorkFixture().replace(
+          " under implementation authorization granted on 2026-07-30 by Chronicle owner",
+          "",
+        ),
+      },
+      { asOf: AS_OF },
+    );
+
+    expect(result.errors.join("\n")).toContain(
+      "Implementing requires explicit dated implementation authorization in the core scope or optional success-contract module",
+    );
+  });
+
+  it("does not let a system-critical version 2 project discard its deep modules", () => {
+    const result = validateOperationalRecordSources(
+      {
+        [activePath("CG-WORK-900")]: smallCurrentWorkFixture({
+          route: "system-critical",
+        }),
+      },
+      { asOf: AS_OF },
+    );
+    expect(result.ok).toBe(false);
+    expect(result.errors.join("\n")).toContain(
+      "system-critical Current Work requires the Work Steps module",
+    );
+  });
+
+  it("keeps the complete deep contract available to a version 2 system-critical project", () => {
+    const registry = buildOperationalRecordRegistry(
+      {
+        [activePath("CG-WORK-001")]: systemCriticalCurrentWorkV2Fixture(),
+      },
+      { asOf: AS_OF },
+    );
+    const project = registry.activeProjects[0];
+    expect(project.currentWorkVersion).toBe(2);
+    expect(project.workflowRoute).toBe("system-critical");
+    expect(project.presentModules).toEqual([
+      "Versioned Outcome and Success Contract",
+      "Current Verified State",
+      "Scope and Decisions",
+      "Traceability Chain",
+      "Work Steps",
+      "Proof Claims",
+      "Attempt and Decision Log",
+    ]);
+    expect(project.steps).toHaveLength(1);
+    expect(project.proofs).toHaveLength(1);
+    expect(project.logs).toHaveLength(1);
+  });
+
+  it("preserves the specialized Handoff contract in a deep version 2 project", () => {
+    const baseline = systemCriticalCurrentWorkV2Fixture();
+    const result = validateOperationalRecordSources(
+      {
+        [activePath("CG-WORK-001")]: appendVersionTwoHandoff(baseline),
+      },
+      {
+        asOf: AS_OF,
+        baselineSources: { [activePath("CG-WORK-001")]: baseline },
+      },
+    );
+
+    expect(result.ok, result.errors.join("\n")).toBe(true);
+    expect(result.registry.activeProjects[0].activeCoordinator).toBe(
+      "replacement-coordinator",
+    );
+    expect(result.registry.activeProjects[0].logs.at(-1)).toMatchObject({
+      type: "Handoff",
+      sender: "fixture-coordinator",
+      recipient: "replacement-coordinator",
+      transferredSourceState: "fixture-transferred-source-state",
+    });
+  });
+
+  it("keeps a deep version 2 project readable through accepted closeout and archive", () => {
+    const active = systemCriticalCurrentWorkV2Fixture({
+      state: "Closeout pending",
+    });
+    const archive = appendVersionTwoCloseoutDecision(
+      systemCriticalCurrentWorkV2Fixture({
+        placement: "archive",
+        state: "Closed",
+        primary: false,
+      }),
+    );
+    const result = validateOperationalRecordSources(
+      {
+        [archivePath("CG-WORK-001")]: archive,
+        [changePath()]: changelogFixture({
+          resolvedIssueIds: [],
+          remainingIssueIds: [],
+        }),
+      },
+      {
+        asOf: AS_OF,
+        baselineSources: { [activePath("CG-WORK-001")]: active },
+      },
+    );
+
+    expect(result.ok, result.errors.join("\n")).toBe(true);
+    expect(result.registry.archivedProjects[0]).toMatchObject({
+      currentWorkVersion: 2,
+      workflowRoute: "system-critical",
+      workflowState: "Closed",
+    });
+    const acceptedChange = result.registry.changelogEntries[0];
+    expect(acceptedChange.variant).toBe("accepted_closeout");
+    if (acceptedChange.variant !== "accepted_closeout") {
+      throw new Error("Accepted closeout fixture did not parse");
+    }
+    expect(acceptedChange.archivedProjectId).toBe("CG-WORK-001");
+  });
+
+  it("lets a bounded version 2 project refresh its canonical summary without inventing history", () => {
+    const baseline = smallCurrentWorkFixture();
+    const current = baseline
+      .replace(
+        "Source inspection established the exact bounded interaction path.",
+        "Focused checks established the bounded interaction result.",
+      )
+      .replace(
+        "Implement the bounded change and run its focused deterministic checks.",
+        "Record the accepted bounded update if the owner accepts the result.",
+      );
+    const result = validateOperationalRecordSources(
+      { [activePath("CG-WORK-900")]: current },
+      {
+        asOf: AS_OF,
+        baselineSources: { [activePath("CG-WORK-900")]: baseline },
+      },
+    );
+
+    expect(result.ok).toBe(true);
+  });
+
+  it("still requires a Handoff when the coordinator of a small project changes", () => {
+    const baseline = smallCurrentWorkFixture();
+    const current = baseline.replace(
+      "coordinator Main Work",
+      "coordinator Review Work",
+    );
+    const result = validateOperationalRecordSources(
+      { [activePath("CG-WORK-900")]: current },
+      {
+        asOf: AS_OF,
+        baselineSources: { [activePath("CG-WORK-900")]: baseline },
+      },
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.errors.join("\n")).toContain(
+      "changing Current coordinator/task requires exactly one appended Handoff entry",
+    );
   });
 
   it("recognizes separate Issue, active Current Work, archive, and Changelog sources", () => {
@@ -1662,6 +2046,130 @@ describe("Chronicle operational-record contract", () => {
       primaryResumeTarget: true,
       linkedIssueIds: ["CG-ISSUE-001"],
     });
+  });
+
+  it("validates one Primary Knowledge System project beside the Secondary Gallery pilot", () => {
+    const ksProjectId = "KS-WORK-001";
+    const result = validateOperationalRecordSources(
+      {
+        [activePath("CG-WORK-001")]: projectFixture({
+          id: "CG-WORK-001",
+          primary: false,
+        }),
+        [activePath(ksProjectId)]: projectFixture({
+          id: ksProjectId,
+          state: "Planned",
+          stepState: "Not started",
+          proofResult: "Not run",
+          primary: true,
+          relatedCapabilities: ["community-gallery"],
+        }),
+      },
+      { asOf: AS_OF },
+    );
+
+    expect(result.ok).toBe(true);
+    expect(result.errors).toEqual([]);
+    expect(result.registry.activeProjects.map((project) => project.id)).toEqual([
+      "KS-WORK-001",
+      "CG-WORK-001",
+    ]);
+    expect(result.registry.activeProjects[0]).toMatchObject({
+      ownerCapability: "knowledge-system",
+      primaryResumeTarget: true,
+    });
+    expect(result.registry.activeProjects[1]).toMatchObject({
+      ownerCapability: "community-gallery",
+      primaryResumeTarget: false,
+    });
+  });
+
+  it("rejects unsupported, wrong-prefix, wrong-owner, and wrong-path Knowledge System records", () => {
+    const validKs = projectFixture({
+      id: "KS-WORK-001",
+      state: "Planned",
+      stepState: "Not started",
+      proofResult: "Not run",
+      relatedCapabilities: ["community-gallery"],
+    });
+
+    const wrongOwner = validateOperationalRecordSources(
+      {
+        [activePath("KS-WORK-001")]: validKs.replace(
+          "owner_capability: knowledge-system",
+          "owner_capability: community-gallery",
+        ),
+      },
+      { asOf: AS_OF },
+    );
+    expect(wrongOwner.ok).toBe(false);
+    expect(wrongOwner.errors.join("\n")).toMatch(/belongs to knowledge-system/);
+
+    const wrongNestedPrefix = validateOperationalRecordSources(
+      {
+        [activePath("KS-WORK-001")]: validKs
+          .split("KS-STEP-001")
+          .join("CG-STEP-001"),
+      },
+      { asOf: AS_OF },
+    );
+    expect(wrongNestedPrefix.ok).toBe(false);
+    expect(wrongNestedPrefix.errors.join("\n")).toMatch(/invalid Step ID/);
+
+    const wrongPath = validateOperationalRecordSources(
+      {
+        "docs/current-work/active/community-gallery/KS-WORK-001.md": validKs,
+      },
+      { asOf: AS_OF },
+    );
+    expect(wrongPath.ok).toBe(false);
+    expect(wrongPath.errors.join("\n")).toMatch(/does not match the canonical/);
+
+    const unsupported = validateOperationalRecordSources(
+      {
+        "docs/current-work/active/knowledge-system/XY-WORK-001.md": validKs
+          .split("KS-WORK-001")
+          .join("XY-WORK-001")
+          .split("KS-STEP-001")
+          .join("XY-STEP-001")
+          .split("KS-EV-001")
+          .join("XY-EV-001")
+          .split("KS-LOG-001")
+          .join("XY-LOG-001"),
+      },
+      { asOf: AS_OF },
+    );
+    expect(unsupported.ok).toBe(false);
+    expect(unsupported.errors.join("\n")).toMatch(/approved operational project/);
+  });
+
+  it("rejects the same Knowledge System project ID in active and archive paths", () => {
+    const projectId = "KS-WORK-001";
+    const result = validateOperationalRecordSources(
+      {
+        [activePath(projectId)]: projectFixture({
+          id: projectId,
+          state: "Planned",
+          stepState: "Not started",
+          proofResult: "Not run",
+          primary: true,
+          relatedCapabilities: ["community-gallery"],
+        }),
+        [archivePath(projectId)]: projectFixture({
+          id: projectId,
+          placement: "archive",
+          state: "Cancelled",
+          primary: false,
+          relatedCapabilities: ["community-gallery"],
+        }),
+      },
+      { asOf: AS_OF },
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.errors.join("\n")).toContain(
+      `duplicate record ID ${projectId}`,
+    );
   });
 
   it("treats one active project as implicitly primary and orders multiple projects deterministically", () => {

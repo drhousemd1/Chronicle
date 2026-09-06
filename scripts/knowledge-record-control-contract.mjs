@@ -8,6 +8,8 @@ export const KNOWLEDGE_CONTROL_NAMES = Object.freeze({
   transactionRoot: "chronicle-knowledge-transactions",
   writerLock: "writer-lock",
   writerLockMetadata: "lock.json",
+  scopedWriterRoot: "scoped-writers",
+  scopedWriterMetadata: "lock.json",
   certificationLeaseRoot: "certification-leases",
   certificationLeaseMetadata: "lease.json",
   manifest: "manifest.json",
@@ -172,6 +174,101 @@ export function assertKnowledgeWriterLockMetadata(value) {
   assertIsoTimestamp(value.startedAt, `${label} startedAt`);
   assertKnowledgeControlCommand(value.command);
   return Object.freeze({ ...value });
+}
+
+export function assertKnowledgeScopedWriterMetadata(value) {
+  const label = "Knowledge scoped writer lock";
+  if (!isRecord(value)) throw new Error(`${label} metadata is malformed.`);
+  assertExactKeys(
+    value,
+    [
+      "storeVersion",
+      "lockId",
+      "pid",
+      "hostname",
+      "startedAt",
+      "command",
+      "transactionId",
+      "scopes",
+      "metadataSha256",
+    ],
+    label,
+  );
+  assertMetadataHash(value, label);
+  if (
+    value.storeVersion !== KNOWLEDGE_CONTROL_STORE_VERSION ||
+    typeof value.lockId !== "string" ||
+    !KNOWLEDGE_CERTIFICATION_LEASE_ID_PATTERN.test(value.lockId) ||
+    !Number.isSafeInteger(value.pid) ||
+    value.pid <= 0 ||
+    typeof value.hostname !== "string" ||
+    !HOSTNAME_PATTERN.test(value.hostname) ||
+    typeof value.startedAt !== "string" ||
+    typeof value.command !== "string" ||
+    !isKnowledgeTransactionId(value.transactionId) ||
+    !Array.isArray(value.scopes) ||
+    value.scopes.length === 0 ||
+    value.scopes.length > 8 ||
+    value.scopes.some(
+      (scope) =>
+        typeof scope !== "string" ||
+        scope.length === 0 ||
+        scope.length > 512 ||
+        !(
+          /^record:docs\/architecture-knowledge\/issues\/(?:community-gallery\/CG|my-stories\/MS|character-library\/CL|my-images\/MI|story-builder\/SB|character-builder\/CB)-ISSUE-\d{3}\.md$/.test(
+            scope,
+          ) ||
+          /^record:docs\/current-work\/active\/(?:community-gallery\/CG|my-stories\/MS|character-library\/CL|my-images\/MI|story-builder\/SB|character-builder\/CB|knowledge-system\/KS)-WORK-\d{3}\.md$/.test(
+            scope,
+          )
+        ),
+    ) ||
+    new Set(value.scopes).size !== value.scopes.length ||
+    [...value.scopes].sort().some((scope, index) => scope !== value.scopes[index])
+  ) {
+    throw new Error(`${label} metadata is malformed.`);
+  }
+  assertIsoTimestamp(value.startedAt, `${label} startedAt`);
+  assertKnowledgeControlCommand(value.command);
+  return Object.freeze({ ...value, scopes: Object.freeze([...value.scopes]) });
+}
+
+export function knowledgeScopedWriterDirectoryName(lockId) {
+  if (
+    typeof lockId !== "string" ||
+    !KNOWLEDGE_CERTIFICATION_LEASE_ID_PATTERN.test(lockId)
+  ) {
+    throw new Error("Knowledge scoped writer identifier is malformed.");
+  }
+  return `writer-${lockId}`;
+}
+
+export function parseKnowledgeScopedWriterDirectoryName(name) {
+  if (typeof name !== "string") return null;
+  const match = name.match(/^writer-([a-f0-9]{32})$/);
+  return match ? match[1] : null;
+}
+
+export function knowledgeScopedWriterTransitionName(mode, lockId, owner) {
+  if (!["preparing", "removing", "reclaimed"].includes(mode)) {
+    throw new Error("Knowledge scoped writer transition mode is invalid.");
+  }
+  knowledgeScopedWriterDirectoryName(lockId);
+  const token = `${owner.lockId}-${owner.pid}-${knowledgeControlHostFingerprint(owner.hostname)}`;
+  return `.${mode}-scoped-writer-${lockId}-${token}`;
+}
+
+export function parseKnowledgeScopedWriterTransitionName(name) {
+  if (typeof name !== "string") return null;
+  const match = name.match(
+    /^\.(preparing|removing|reclaimed)-scoped-writer-([a-f0-9]{32})-([a-f0-9]{32}-[1-9]\d*-[a-f0-9]{16})$/,
+  );
+  if (!match) return null;
+  return Object.freeze({
+    mode: match[1],
+    lockId: match[2],
+    owner: parseKnowledgeArtifactOwnerToken(match[3]),
+  });
 }
 
 export function assertKnowledgeCertificationLeaseMetadata(value) {

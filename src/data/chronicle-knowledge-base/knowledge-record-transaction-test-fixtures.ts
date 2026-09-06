@@ -11,7 +11,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 import {
-  APPROVED_RECORD_DIRECTORIES,
+  CANONICAL_RECORD_DIRECTORY_ENTRIES,
   CHANGELOG_MIGRATION_RECEIPT_RECORD_ID,
   CHANGELOG_MIGRATION_RECEIPT_SOURCE_PATH,
   canonicalRecordSourcePath,
@@ -31,7 +31,9 @@ export const KNOWLEDGE_TRANSACTION_FIXTURE_ISSUE_ID = "CG-ISSUE-001";
 export const KNOWLEDGE_TRANSACTION_FIXTURE_CREATED_ISSUE_ID = "CG-ISSUE-002";
 export const KNOWLEDGE_TRANSACTION_FIXTURE_PROJECT_ID = "CG-WORK-001";
 export const KNOWLEDGE_TRANSACTION_FIXTURE_CREATED_PROJECT_ID = "CG-WORK-002";
+export const KNOWLEDGE_TRANSACTION_FIXTURE_KS_PROJECT_ID = "KS-WORK-001";
 export const KNOWLEDGE_TRANSACTION_FIXTURE_CHANGE_ID = "CG-CHANGE-001";
+export const KNOWLEDGE_TRANSACTION_FIXTURE_ACCEPTED_UPDATE_ID = "CG-UPDATE-001";
 export const KNOWLEDGE_TRANSACTION_FIXTURE_LEGACY_ID =
   "LEGACY-QH-cl-fixture-import";
 export const KNOWLEDGE_TRANSACTION_FIXTURE_CORRECTION_TARGET_ID =
@@ -375,6 +377,27 @@ function createdProjectFixture() {
     .join("CG-EV-002")
     .split("CG-LOG-001")
     .join("CG-LOG-002");
+}
+
+function createdKnowledgeSystemProjectFixture() {
+  const projectId = KNOWLEDGE_TRANSACTION_FIXTURE_KS_PROJECT_ID;
+  const projectPath = canonicalRecordSourcePath("active-current-work", projectId);
+  return projectCreateBaselineFixture()
+    .split(ACTIVE_PROJECT_PATH)
+    .join(projectPath)
+    .split(KNOWLEDGE_TRANSACTION_FIXTURE_PROJECT_ID)
+    .join(projectId)
+    .split("Gallery guarded-transaction fixture")
+    .join("Chronicle Knowledge System guarded-transaction fixture")
+    .replace("owner_capability: community-gallery", "owner_capability: knowledge-system")
+    .replace("related_capabilities: []", "related_capabilities: [community-gallery]")
+    .replace("- Resume priority: Secondary", "- Resume priority: Primary")
+    .split("CG-STEP-001")
+    .join("KS-STEP-001")
+    .split("CG-EV-001")
+    .join("KS-EV-001")
+    .split("CG-LOG-001")
+    .join("KS-LOG-001");
 }
 
 const LEGACY_PAYLOAD_BASE: LegacyQualityHubPayload = {
@@ -751,6 +774,74 @@ The complete fixture project is preserved at ${ARCHIVED_PROJECT_PATH}.
 `;
 }
 
+function acceptedUpdateFixture() {
+  const id = KNOWLEDGE_TRANSACTION_FIXTURE_ACCEPTED_UPDATE_ID;
+  const sourcePath = canonicalRecordSourcePath("changelog", id);
+  return `---
+record_type: changelog
+variant: accepted_update
+change_id: ${id}
+title: Bounded Gallery interaction accepted
+change_date: 2026-08-01
+why_change_was_needed: The bounded Gallery interaction needed clearer accepted behavior.
+changes: The interaction now uses the reviewed bounded behavior.
+outcome: The bounded interaction was accepted at the named source state.
+accepted_evidence_summary: Focused deterministic checks and direct visual review passed.
+accepted_evidence_limits: The evidence covers only this interaction and not unrelated Gallery behavior.
+provenance: accepted-update
+affected_capabilities: [community-gallery]
+owning_capability: community-gallery
+accepted_on: 2026-08-01
+accepted_by: Chronicle owner
+review_method: Focused deterministic checks plus direct visual acceptance.
+source_revision: ${SOURCE_REVISION}
+workflow_record_context: no_issue_current_work_archive_or_proof_matrix
+source_record: ${sourcePath}
+---
+# ${id}: Bounded Gallery interaction accepted
+
+## Why the Change Was Needed
+
+The bounded Gallery interaction needed clearer accepted behavior.
+
+## Changes
+
+The interaction now uses the reviewed bounded behavior.
+
+## Outcome
+
+The bounded interaction was accepted at the named source state.
+
+## Accepted Evidence Summary
+
+Focused deterministic checks and direct visual review passed.
+
+## Accepted Evidence Limits
+
+The evidence covers only this interaction and not unrelated Gallery behavior.
+
+## Review Method
+
+Focused deterministic checks plus direct visual acceptance.
+
+## Acceptance and Source State
+
+Chronicle owner accepted source revision ${SOURCE_REVISION} on 2026-08-01.
+
+## Operational Record Context
+
+This bounded update did not require or create a Chronicle Issue, Current Work project, proof matrix, archived work record, or closeout transaction.
+
+## Provenance
+
+This is a bounded Accepted Update, not an accepted closeout.
+
+## Applicability
+
+Affected capabilities: community-gallery.
+`;
+}
+
 function assertValidOperationalSources(
   sources: OperationalRecordSourceMap,
   baselineSources?: OperationalRecordSourceMap,
@@ -818,7 +909,9 @@ export async function createKnowledgeRecordTransactionTestRepository(): Promise<
     path.join(physicalTemporaryRoot, "chronicle-knowledge-transaction-fixture-"),
   );
   execFileSync("git", ["init", "-q"], { cwd: repoRoot });
-  for (const directory of Object.values(APPROVED_RECORD_DIRECTORIES)) {
+  for (const directory of new Set(
+    CANONICAL_RECORD_DIRECTORY_ENTRIES.map((entry) => entry.directory),
+  )) {
     await mkdir(path.join(repoRoot, ...directory.split("/")), {
       recursive: true,
     });
@@ -896,6 +989,27 @@ export async function createProjectCreateRequestPackage() {
   );
 }
 
+export async function createKnowledgeSystemProjectCreateRequestPackage() {
+  const baseline = projectCreateBaselineSources();
+  const projectId = KNOWLEDGE_TRANSACTION_FIXTURE_KS_PROJECT_ID;
+  const projectPath = canonicalRecordSourcePath("active-current-work", projectId);
+  const createdProject = createdKnowledgeSystemProjectFixture();
+  assertValidOperationalSources(
+    { ...baseline, [projectPath]: createdProject },
+    baseline,
+  );
+  return createRequestPackage(
+    {
+      version: 1,
+      kind: "project-create",
+      as_of: KNOWLEDGE_TRANSACTION_FIXTURE_AS_OF,
+      project_id: projectId,
+      content_file: `content/${projectId}.md`,
+    },
+    { [`${projectId}.md`]: createdProject },
+  );
+}
+
 export async function createIssueCreateRequestPackage() {
   const baseline = baselineSources();
   const issueId = KNOWLEDGE_TRANSACTION_FIXTURE_CREATED_ISSUE_ID;
@@ -914,6 +1028,28 @@ export async function createIssueCreateRequestPackage() {
       content_file: `content/${issueId}.md`,
     },
     { [`${issueId}.md`]: createdIssue },
+  );
+}
+
+export async function createAcceptedUpdateRequestPackage() {
+  const baseline = baselineSources();
+  const changeId = KNOWLEDGE_TRANSACTION_FIXTURE_ACCEPTED_UPDATE_ID;
+  const changePath = canonicalRecordSourcePath("changelog", changeId);
+  const source = acceptedUpdateFixture();
+  assertValidOperationalSources(
+    { ...baseline, [changePath]: source },
+    baseline,
+  );
+  return createRequestPackage(
+    {
+      version: 1,
+      kind: "accepted-update",
+      as_of: KNOWLEDGE_TRANSACTION_FIXTURE_AS_OF,
+      change_id: changeId,
+      owner_capability: "community-gallery",
+      content_file: `content/${changeId}.md`,
+    },
+    { [`${changeId}.md`]: source },
   );
 }
 
@@ -937,6 +1073,37 @@ export async function createIssueUpdateRequestPackage() {
       content_file: `content/${KNOWLEDGE_TRANSACTION_FIXTURE_ISSUE_ID}.md`,
     },
     { [`${KNOWLEDGE_TRANSACTION_FIXTURE_ISSUE_ID}.md`]: updatedIssue },
+  );
+}
+
+export async function createIssueUpdateRequestPackageForSource({
+  issueId,
+  currentSource,
+  verificationNote,
+}: {
+  issueId: string;
+  currentSource: string;
+  verificationNote: string;
+}) {
+  const updatedIssue = currentSource
+    .replace("last_verified_on: 2026-07-30", "last_verified_on: 2026-08-01")
+    .replace(
+      "Live frequency and any future repair remain unverified.",
+      `Live frequency and any future repair remain unverified; ${verificationNote}`,
+    );
+  if (updatedIssue === currentSource) {
+    throw new Error("Issue update fixture did not change its source.");
+  }
+  return createRequestPackage(
+    {
+      version: 1,
+      kind: "issue-update",
+      as_of: KNOWLEDGE_TRANSACTION_FIXTURE_AS_OF,
+      issue_id: issueId,
+      expected_source_sha256: sha256Source(currentSource),
+      content_file: `content/${issueId}.md`,
+    },
+    { [`${issueId}.md`]: updatedIssue },
   );
 }
 

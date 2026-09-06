@@ -84,120 +84,34 @@ const sg = {
 
 const ALL_SWATCHES: SwatchOption[] = [];
 
-const GENERAL_PURPOSE_PROTOCOL = `\\~ (end) Prompt for all messages to LLM's (done every time)
+const GENERAL_PURPOSE_PROTOCOL = `Chronicle Work Manual: docs/architecture-knowledge/chronicle-work-manual.md
+Chronicle Work Manual version: 0.2.2-provisional
 
-**\\[MANDATORY PLANNING STEPS\\]**  
-1\\. Analyze the problem, review the codebase, and then review the app dashboard for any applicable documentation. Do not skip this step.  
-2\\. Proposed plans must indicate:  
-\\- Files, locations, directories where issues were located in the codebase  
-\\- Referenced sources in the app dashboard  
-\\- The proposed plan must include plans to update any sources in the app dashboard to keep them concurrent with changes made in the codebase, wherever this is needed.  
-\\- Track active implementation in the applicable capability's Current Work record in Chronicle Knowledge Base. After evidence and human acceptance, the guarded closeout workflow creates the repository Changelog record. Do not manually add or import Quality Hub Changelog entries.
-3\\. All plans must have a clear checklist of steps.  
-4\\. If implementing changes through multiple phases, you must always include an updated checklist to the user after every iteration, logging what's been completed and what's left to do.  
-5\\. All plans must include a combination of technical analysis and plain English, explaining:  
-\\- What the problem is  
-\\- Why it matters  
-\\- Why the proposed fix is important and/or suggested
+Open 1. Start Here in the canonical Work Manual before using this tool for Chronicle work. The manual owns work classification, records, checks, review, delivery, and stopping.
 
-**\\[Chronicle Knowledge Base\\]:**
-\\- Use for product behavior, capability architecture, current work, and source-backed code ownership.
-\\- Use this FIRST when locating current ownership or deciding which repository source governs a change.
+Tool mechanics:
+- Use App Style Guide as a visual and component reference.
+- Use Chronicle Knowledge Base capability manuals for verified product behavior and ownership.
+- Use App Guide for its maintained long-form page and system references.
+- Use Quality Hub to run or inspect an explicitly selected scan.
 
-**\\[App Style Guide\\]:**  
-\\- Reference components on App Style Guide to determine styling, layering, positioning of elements. If an element is not located in the app style guide, find it elsewhere in the app code and replicate it. Do not generate random variations of UI elements.
+This panel does not require a plan, audit, Current Work record, Issue, Changelog entry, full check package, or documentation update. Those actions occur only when the Work Manual or the user's explicit request triggers them.`;
 
-**\\[App Guide\\]:**  
-\\- Use for long-form page/system explanations and operational documentation by page.   
-\\- This is narrative context and process guidance.  
-1\\. App Overview & Global Systems:  
-\\- Global architecture baseline: stack, routing, app shell, and shared systems.   
-2\\. Community Gallery Page;   
-\\- Gallery UX \\+ data flow reference: discovery surfaces, sorting/filtering, and card behavior.  
-3\\. Your Stories Page:  
-\\- Page/system-specific implementation guide and maintenance reference.   
-4\\. Character Library Page:  
-\\- Character library architecture: sourcing, search/filter behavior, and tile/list interactions.   
-5\\. Image Library Page:  
-\\- Image pipeline guide: asset ingestion, folders, metadata, and downstream usage.   
-6\\. Chat History Page:  
-\\- Conversation registry behavior: session retrieval, resume flow, and retention/deletion rules.   
-7\\. Chat Interface Page:  
-\\-  Live chat runtime reference: message rendering, state sync, controls, and prompts.   
-8\\. Scenario Builder Page:  
-\\- Story Builder/World Builder behavior, sections, and save/compose flows.   
-9\\. Character Builder Page:  
-\\- Character Builder structure: containers, custom fields, AI-enhance mapping, and save behavior.   
-10\\. Admin Panel Page:  
-\\- Admin tool taxonomy, navigation patterns, and governance controls.   
-11\\. Account Page:  
-\\- Account/profile/subscription behavior and user-setting boundaries.   
-12\\. Shared Elements/Architecture:  
-\\- Cross-cutting components, primitives, and shared interaction contracts.  
-13\\. Edge Functions & AI Services:  
-\\- Page/system-specific implementation guide and maintenance reference. 
+const SCAN_ONLY_PROTOCOL = `Quality Hub scan mechanics
 
-**\\[Quality Hub\\]:**  
-1\\. Quality Hub: (Overview)  
-\\- Overview: scan entry point and module checklist selection.  
-\\- Issue Registry: diagnosed issues only (severity/confidence/evidence/files/status).  
-\\- Critical Supabase sync rule: if you inspect or fix any finding tagged Lovable Supabase Change Required, and you change live Supabase tables, columns, constraints, indexes, RLS policies, database functions/RPCs, triggers, storage buckets, storage policies, or grants, you must refresh the approved repo-owned schema snapshot before marking the finding current or solved. The current approved source is src/data/database-schema-inventory.ts unless a newer dedicated Supabase Schema Map is explicitly introduced.
-\\- Only update the approved schema snapshot/template. Include schema metadata, approximate row counts when available, role grants, RLS policies, functions/RPCs, triggers, storage buckets, and storage policies. Do not dump row contents, secrets, auth tokens, API keys, user emails, private chat/story text, images, or private NSFW user content. If a live detail cannot be verified, mark it unknown or needs_verification instead of inventing it.
-2 Quality Hub: (Scan Runs)  
-\\- Which "scan" was run  
-\\- "Profile" (I feel like this is useless. They all just say "deep". It doesn't provide any meaning. Remove?)  
-\\- Summary: How many tasks were completed? How many remain open/unaddressed from the scan.  
-\\- Date scan/tasks were completed.  
-3\\. Chronicle Knowledge Base: (Current Work and Changelog)
-\\- Current Work records the active objective, ordered work, decisions, evidence, stopping point, and next action.
-\\- Changelog is read-only accepted history created by guarded closeout. It is not manually edited in Quality Hub.
+Chronicle Work Manual: docs/architecture-knowledge/chronicle-work-manual.md
+Chronicle Work Manual version: 0.2.2-provisional
 
-\\~ need specific Prompt/instructions for just how to do scans`;
+Use this panel only after the Work Manual or the user selects a Quality Hub scan.
 
-const SCAN_ONLY_PROTOCOL = `~ Scan-only execution prompt (use this only for scan/audit tasks)
+1. Select the module that matches the authorized scan scope.
+2. Record the exact module, source surface inspected, checks run, skipped areas, result counts, agent label, and timestamp in Scan Runs.
+3. Treat a suspected problem as a finding to verify. Create or update an Issue only when the Work Manual's Issue trigger is met.
+4. Create or update Current Work only when the Work Manual's continuity trigger is met.
+5. Accepted Changelog history remains read-only here and is created only by the protected closeout or accepted-update mechanism.
+6. When live Supabase facts matter, follow the Work Manual's live-system safeguard and record what remains unverified.
 
-1) Start in Quality Hub -> Overview.
-- Select the scan module(s) that match the request.
-- Open each module and follow its checklist exactly.
-- Do not freestyle the scan scope.
-
-2) For every module scanned, produce a run summary and log it in Quality Hub -> Scan Runs:
-- scan name/module name
-- exact pages/files/folders checked
-- what was checked vs skipped
-- findings count (open/new/verified/fixed if applicable)
-- agent/model label
-- timestamp
-
-3) Every issue found during scan must be logged in Quality Hub -> Issue Registry:
-- title
-- severity + confidence
-- category
-- files/locations affected
-- concrete evidence
-- current status
-- recommendation
-
-4) If you implement fixes during the same scan task:
-- update the applicable capability's Current Work record
-- include what changed, where, why, expected impact, evidence, and the exact next action
-- do not manually add or import a Changelog entry
-
-5) Keep logs synchronized:
-- Scan Runs = what was scanned
-- Issue Registry = what is wrong
-- Current Work = active implementation and evidence
-- Changelog = read-only accepted history created by guarded closeout
-
-6) Supabase snapshot rule:
-- If you inspect or fix any issue tagged Lovable Supabase Change Required, and you change live Supabase tables, columns, constraints, indexes, RLS policies, database functions/RPCs, triggers, storage buckets, storage policies, or grants, refresh the approved repo-owned schema snapshot before marking the finding current or solved.
-- The current approved schema source is src/data/database-schema-inventory.ts unless a newer dedicated Supabase Schema Map is explicitly introduced.
-- Include schema metadata, approximate row counts when available, role grants, RLS policies, functions/RPCs, triggers, storage buckets, and storage policies.
-- Do not include row contents, secrets, auth tokens, API keys, user emails, private chat/story text, images, or private NSFW user content.
-- Mark unverifiable live details as unknown or needs_verification. Do not invent schema details and do not create alternate schema dump files unless explicitly requested.
-
-7) Completion rule for scans:
-- a scan is not complete until Scan Runs + Issue Registry (+ applicable Current Work if fixes were made) are updated. Accepted Changelog history is created only during guarded closeout.`;
+Quality Hub defines scan mechanics and stored scan data. It does not independently expand the work or decide which Chronicle records are required.`;
 
 
 
@@ -504,7 +418,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
             </div>
             <div style={{ padding: 18, display: 'grid', gap: 12, color: '#d4d4d8', fontSize: 14, lineHeight: 1.55 }}>
               <div style={{ borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)', background: '#1c1c1f', padding: 12 }}>
-                <div style={{ color: '#fff', fontWeight: 700, marginBottom: 8 }}>General-Purpose Protocol (always use this)</div>
+                <div style={{ color: '#fff', fontWeight: 700, marginBottom: 8 }}>Chronicle Workflow Pointer</div>
                 <pre
                   style={{
                     margin: 0,
@@ -520,7 +434,7 @@ export const StyleGuideTool: React.FC<StyleGuideToolProps> = ({ onRegisterDownlo
                 </pre>
               </div>
               <div style={{ borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)', background: '#1c1c1f', padding: 12 }}>
-                <div style={{ color: '#fff', fontWeight: 700, marginBottom: 8 }}>Scan-Only Protocol (use this only when running scans)</div>
+                <div style={{ color: '#fff', fontWeight: 700, marginBottom: 8 }}>Quality Hub Scan Mechanics</div>
                 <pre
                   style={{
                     margin: 0,

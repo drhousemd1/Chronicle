@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "include_roots": [
+    "src/",
+    "scripts/",
+    "supabase/functions/",
+    "supabase/migrations/",
+    "e2e/"
+  ],
+  "include_root_files": [
+    "docs/architecture-knowledge/community-gallery.md",
+    "docs/architecture-knowledge/my-stories.md",
+    "docs/architecture-knowledge/character-library.md",
+    "docs/architecture-knowledge/my-images.md",
+    "docs/architecture-knowledge/story-builder.md",
+    "docs/architecture-knowledge/character-builder.md",
+    "package.json",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "vitest.product.config.ts",
+    "playwright.config.ts",
+    "eslint.config.js",
+    "tailwind.config.ts",
+    "tsconfig.json",
+    "tsconfig.app.json",
+    "tsconfig.node.json",
+    "docs/architecture-knowledge/roleplay-pipeline.md",
+    "docs/architecture-knowledge/knowledge-base-system.md",
+    "docs/architecture-knowledge/schema-reference.md",
+    "docs/architecture-knowledge/quality-hub.md",
+    "docs/architecture-knowledge/validation-evidence-ledger.md",
+    "docs/architecture-knowledge/finance-dashboard.md",
+    "docs/architecture-knowledge/research-development.md",
+    "docs/architecture-knowledge/image-generation.md",
+    "docs/architecture-knowledge/app-dashboard.md"
+  ],
+  "include_extensions": [
+    ".ts",
+    ".tsx",
+    ".mts",
+    ".mjs",
+    ".js",
+    ".jsx",
+    ".json",
+    ".sql"
+  ],
+  "exclude_prefixes": [
+    "src/components/admin/research-development/prototypes/",
+    "src/generated/",
+    "src/data/architecture-",
+    "src/data/database-schema-inventory.ts",
+    "src/data/supabase-schema-map.ts",
+    "src/data/ui-audit-findings.ts",
+    "scripts/chronicle-repository-graph/fixtures/",
+    "scripts/__snapshots__/",
+    "supabase/.temp/"
+  ],
+  "max_file_bytes": 2000000,
+  "graphify_version": "0.9.52",
+  "normalizer_version": "1"
+}

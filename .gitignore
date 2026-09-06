@@ -13,6 +13,13 @@ dist-ssr
 *.local
 *.tsbuildinfo
 .validation-evidence/
+tools/graphify/.venv/
+
+# Private local planning, review evidence, and generated repository maps
+/.phase*/
+/.master-plan-audit/
+/.conflict-only-requests/
+/docs/research-development/generated/
 
 # Editor directories and files
 .vscode/*

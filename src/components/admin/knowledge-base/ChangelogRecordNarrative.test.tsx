@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 
 import type {
   AcceptedCloseoutChangelogRecord,
+  AcceptedUpdateChangelogRecord,
   CorrectionChangelogRecord,
   EffectiveChangelogEntry,
   LegacyImportChangelogRecord,
@@ -47,6 +48,46 @@ function acceptedRecord(id = "CG-CHANGE-900"): AcceptedCloseoutChangelogRecord {
 
 function acceptedEntry(): EffectiveChangelogEntry {
   const record = acceptedRecord();
+  return {
+    id: record.id,
+    variant: record.variant,
+    title: record.title,
+    changeDate: record.changeDate,
+    outcome: record.outcome,
+    provenance: record.provenance,
+    affectedCapabilities: record.affectedCapabilities,
+    sourcePath: record.sourcePath,
+    body: record.body,
+    rootRecord: record,
+    effectiveRecord: record,
+    appliedCorrections: [],
+  };
+}
+
+function acceptedUpdateEntry(): EffectiveChangelogEntry {
+  const record: AcceptedUpdateChangelogRecord = {
+    kind: "changelog",
+    variant: "accepted_update",
+    id: "CG-UPDATE-900",
+    title: "Bounded Gallery interaction accepted",
+    changeDate: "2026-08-05",
+    whyChangeWasNeeded: "The bounded interaction needed clearer behavior.",
+    changes: "The bounded interaction now uses the reviewed behavior.",
+    outcome: "The bounded interaction was accepted.",
+    acceptedEvidenceSummary: "Focused checks and direct visual review passed.",
+    acceptedEvidenceLimits: "The evidence does not cover unrelated Gallery behavior.",
+    provenance: "accepted-update",
+    affectedCapabilities: ["community-gallery"],
+    owningCapability: "community-gallery",
+    acceptedOn: "2026-08-05",
+    acceptedBy: "Chronicle owner",
+    reviewMethod: "Focused checks plus direct visual acceptance.",
+    sourceRevision: `sha256:${"f".repeat(64)}`,
+    workflowRecordContext: "no_issue_current_work_archive_or_proof_matrix",
+    sourcePath: "docs/architecture-knowledge/changelog/entries/CG-UPDATE-900.md",
+    body: "",
+    rawSource: "",
+  };
   return {
     id: record.id,
     variant: record.variant,
@@ -546,5 +587,25 @@ describe("ChangelogRecordNarrative", () => {
     expect(correctionItem).toHaveTextContent("Preserved Quality Hub title");
     expect(correctionItem).toHaveTextContent("Preserved Quality Hub summary");
     expect(correctionItem).toHaveTextContent("Preserved Quality Hub payload");
+  });
+
+  it("renders a bounded Accepted Update without implying a closeout or missing hidden detail", () => {
+    renderNarrative(acceptedUpdateEntry());
+
+    expect(screen.getByText("Accepted Chronicle update")).toBeInTheDocument();
+    expect(screen.getByText("The bounded interaction needed clearer behavior.")).toBeInTheDocument();
+    expect(screen.getByText("The bounded interaction now uses the reviewed behavior.")).toBeInTheDocument();
+    expect(screen.getByText("Focused checks plus direct visual acceptance.")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "No Chronicle Issue was required or created for this bounded accepted update.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Not applicable — this bounded accepted update did not require or create a Current Work project, proof matrix, archive, or closeout.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Archived Current Work/i)).not.toBeInTheDocument();
   });
 });

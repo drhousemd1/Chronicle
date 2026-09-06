@@ -6,7 +6,7 @@
 
 Chronicle is a story-authoring, discovery, publishing, and persistent roleplay platform. It gives people the structure to create an original world, define its characters and starting situation, play through that material as an ongoing conversation, and return to the same playthrough later. It also lets people discover stories shared by other creators, save them for later, begin their own playthroughs, and create separately owned adaptations when the creator permits it.
 
-The application is divided into capabilities that handle different parts of that experience. My Stories organizes the user’s owned and saved stories. Story Builder defines the reusable story source. Character Library and Character Builder manage reusable and story-specific characters. My Images manages reusable visual material. Community Gallery handles public discovery. Chat Interface runs the active playthrough, and Chat History returns the user to a particular conversation. Public Profile represents the creator publicly, while Account handles private account settings.
+The application is divided into capabilities that handle different parts of that experience. My Stories organizes the user’s owned and saved stories. Story Builder defines the reusable story source. Character Library and Character Builder manage reusable and story-specific characters. Image Library manages reusable visual material. Community Gallery handles public discovery. Chat Interface runs the active playthrough, and Chat History returns the user to a particular conversation. Public Profile represents the creator publicly, while Account & Subscription handles private account and plan presentation.
 
 ### Persistent Roleplay Built from Authored Sources
 
@@ -385,40 +385,210 @@ This separation is the central promise of the page. Community Gallery helps a pe
 
 # My Stories
 
+## My Stories
+
+### My Stories is the account-centered story workspace
+
+My Stories is where a signed-in user returns to stories connected to their account. It combines the user's owned sources and drafts with Community Gallery publications the user has saved, while preserving the fact that those records do not grant the same rights. An owned story can be edited or deleted by its owner. A saved story remains another creator's published source unless that publication permits reuse and the user deliberately creates a separate owned copy through the reuse flow.
+
+The workspace organizes the collection into **My Stories**, **Saved Stories**, **Published**, **Drafts**, and **All**. Those views distinguish an owned non-draft story, a saved publication, an owned source with an active publication record, and an owned draft. A saved relationship is excluded when its source identifier is already present in the owned collection, preventing the same source from being presented twice under different relationship labels.
+
+### What My Stories receives
+
+Community Gallery produces the saved relationships that appear in Saved Stories and the active publication records that identify owned stories as Published. Story Builder produces and updates the durable owned story sources and draft state that return to this collection. Authentication supplies the account boundary, while shared profile, classification, and background data supply the presentation attached to the current account and cards.
+
+My Stories consumes those inputs but does not become their upstream owner. It does not own public search, Likes, reviews, publication eligibility, authored story fields, or the original source behind another creator's saved publication.
+
+### What My Stories produces
+
+My Stories produces an explicit next action rather than a second authoring system. New Story opens a new unsaved Story Builder workspace. Edit on an owned story loads that source into Story Builder. When another creator's saved publication permits reuse, Edit asks for confirmation, creates a separately identified account-owned story, and opens that copy in Story Builder without modifying the source publication. A saved publication that does not permit reuse has no copy-to-edit handoff. Story Builder then owns authored changes, import, export, persistence, draft or final state, validation, and publication.
+
+### Play transfers a source into a new conversation
+
+Play is available for non-draft stories and always begins a fresh conversation from the current story source. My Stories supplies the source identity and creates the new session state; Chat Interface becomes responsible for the roleplay that follows. Chat History later owns returning to one particular persisted conversation. My Stories does not use Play to resume an existing session.
+
+### Removal actions preserve the difference between source and relationship
+
+Removing a saved story deletes only the current user's saved relationship and uses the shared confirmation interface. **Remove from Gallery** marks the owned publication inactive while preserving the owned source; the current action starts directly from Story Detail without a separate confirmation. Deleting an owned story uses its own destructive confirmation, removes the source through the owner-scoped persistence path, and can affect records dependent on that source. These outputs are materially different even though the user reaches all three from My Stories.
+
+### The workspace also owns a personal presentation preference
+
+My Stories includes an account-owned background picker. A user can choose Chronicle's default, select or upload a private background, copy an image from My Images into the background destination, and adjust the selected background's overlay. A copy creates a new background object rather than making the source My Images item responsible for later selection. That object joins the shared account background collection also used by My Images, while the My Stories selection remains a page preference. It does not belong to a story or travel with Story Builder, Community Gallery, or Chat Interface.
+
+### Responsibility transfers after the choice is made
+
+My Stories owns collection membership, filter meaning, card and account-detail presentation, and selection of the next action. Story Builder owns authored changes and publication. Community Gallery owns public presentation and engagement. Chat Interface and Chat History own conversations. Public Profile owns public creator identity; the current My Stories detail does not provide that profile handoff. My Images owns reusable source media before an explicit copy to a destination, and the shared background system owns the copied object afterward. The full My Stories manual records the current UI, source paths, persistence order, security boundaries, recovery behavior, and verified implementation limitations without duplicating them in this application map.
+
 # Character Library
 
-# My Images
+## Character Library
+
+### Character Library is the account's reusable character source
+
+Character Library gives a signed-in user one private collection of character profiles that can be reused across stories. It owns finding, creating, updating, and deleting those reusable sources. Character Builder supplies the profile-editing interface, but a library profile is not itself a story cast member, public publication, or live conversation participant.
+
+### What Character Library receives
+
+Authentication supplies the account boundary. The shared Character Builder supplies identity, appearance, clothing, personality, background, relationships, secrets, fears, goals, custom content, avatar, and AI-assisted authoring controls. My Images can supply a private source image, which is copied into the character-avatar destination before the profile adopts it. Shared model and art-style configuration shape AI requests without taking ownership of the profile.
+
+Character Library can also receive a deliberate copy of a story-owned character from Story Builder. That handoff creates a separately identified reusable profile; it does not reparent the story character or establish live synchronization between the two versions.
+
+### What Character Library produces
+
+Character Library produces an account-owned reusable profile with its own lifecycle and private media reference. Inside Story Builder, **Import from Library** must copy that profile into the selected story under a new story-owned identity. Story Builder owns the copied cast member and all later story persistence. Later library edits do not rewrite that story, and later story edits do not rewrite the reusable source.
+
+The library itself does not publish characters, import or export story files, create playthroughs, or expose profiles on Public Profile. Community Gallery and My Stories receive character material only as part of a story that Story Builder owns. Chat Interface and Chat History receive the story's copied character state and do not continuously synchronize it with Character Library.
+
+### Ownership transfers at the copy boundary
+
+My Images owns a selected source image until the avatar copy succeeds; Character Library then owns the copied avatar path and crop as part of the reusable profile workflow. Character Library owns a profile until the user deliberately imports a copy into Story Builder. Story Builder becomes the immediate next-stage owner, and Chat Interface owns conversation-scoped character state only after that story begins. The full Character Library manual records the current UI, source flows, persistence and security boundaries, and implementation limitations without duplicating them in this application map.
+
+# Image Library
+
+## Image Library is the account's private reusable media source
+
+Image Library gives an authenticated person one account-owned place to organize visual source material before a particular Chronicle capability uses it. The internal capability ID and historical record prefix remain `my-images` and `MI`, but the current user-facing name is **Image Library**. Folders, titles, tags, search, thumbnails, upload, inspection, and source deletion belong here. AI generation, story publication, character saving, scene saving, page-background preferences, and public presentation belong to the capability that requests or adopts the media.
+
+The defining boundary is independent copy ownership. A consumer does not persist My Images' temporary signed source URL. Chronicle copies the private source bytes into the consumer's named destination, and the consumer then adopts that destination reference. The reusable source and destination copy can change or be deleted independently.
+
+### What Image Library receives
+
+Authentication supplies the account and storage namespace. Device upload supplies image bytes and the original filename. The user supplies folder membership, a title, tags, and a folder-thumbnail choice. Private storage supplies temporary signed presentation URLs from durable paths; those URLs are for display and never become durable source identity.
+
+The page also receives the account's shared background collection and the My Images-specific selected-background preference. That appearance state is separate from the reusable folder library even when a background was copied from one of its sources.
+
+### What Image Library produces
+
+Image Library produces private account-owned folders and reusable image sources. Each portable source has a durable private path plus descriptive metadata. The main page can also produce a copied account-background object when a person deliberately chooses **From Library** in the page-background workspace.
+
+For Story Builder, Image Library can produce a copied private story-cover object or scene object. Story Builder owns attaching it to editor state, saving it with the story, and later publication behavior. For Character Library, story-scoped Character Builder, or Public Profile, Image Library can produce a copied avatar source; the receiving profile or character workflow owns adoption, crop, persistence, and later replacement. For My Stories or Image Library appearance, the shared page-background system owns the copied object and each page owns its own selection. For Chat Interface, the sidebar-theme workspace owns the copied theme object, its organization, selection, overlay, and deletion.
+
+Community Gallery never receives folder access or private source browsing. It receives only media that a publishing owner has deliberately attached to a public story. Chat History receives conversation identity and state, not a live My Images source.
+
+### Ownership transfers at the destination-copy boundary
+
+Image Library owns the source through folder organization, metadata edits, thumbnail selection, private rendering, and deletion. During a consumer selection, it also owns source discovery and the byte-copy attempt. Once the destination copy succeeds, the requesting capability owns whether that reference is adopted and durably saved. A later Image Library deletion must not break a previously adopted destination, and a later destination deletion must not remove the reusable source.
+
+Story Builder is the immediate next-stage owner for covers and scenes. Character Library or Story Builder is the immediate next-stage owner for reusable or story-owned character avatars. Public Profile owns profile imagery. The shared background system owns copied page backgrounds, and Chat Interface owns copied sidebar themes. The full Image Library manual records the current controls, ordered source flows, persistence and security boundaries, evidence limits, and implementation limitations without duplicating them in this application map.
 
 # Story Builder
 
+## Story Builder is Chronicle's story-source authoring owner
+
+Story Builder is the workspace where an account-owned idea becomes the durable source for a Chronicle story. It owns the story's title and summary, world premise, locations and custom world material, goals, opening dialog and clock, cast membership, cover and scene references, art-style preference, AI rules, content classification, story-file import and export, draft or final save, and publication readiness. It does not own the reusable libraries that supply source material, the collection that lists saved stories, the public catalog, or the conversation created when play begins.
+
+A new source can begin from the Story Builder sidebar destination or My Stories → New Story. Editing an owned story returns that same durable identity to the builder. A reuse-permitted saved publication must become a separately identified account-owned copy before the builder can edit it; the publisher's source remains unchanged.
+
+### What Story Builder receives
+
+My Stories supplies the new or owned story identity and later reopens saved drafts or final sources. Community Gallery exposes the publisher's reuse permission and can create the saved relationship; My Stories owns confirmation and creation of the separately owned reuse copy that Story Builder receives. Character Library supplies reusable profiles that must become independent story-owned cast members before editing. My Images supplies private reusable images that must be copied into story-cover or scene storage before adoption. Authentication supplies the owner boundary, while shared model and safe art-style settings shape optional AI-assisted text and image actions.
+
+Import can also supply story structure from Chronicle JSON, Markdown, Word-readable, and supported text/document formats. Import changes the working source first; it does not replace the need for a successful account save. Character Builder receives one story-owned cast member at a time and returns its edits to this workspace.
+
+### What Story Builder produces
+
+Save Draft produces an account-owned draft that My Stories can list and reopen. **Finalize and Close** produces a non-draft owned source and returns collection control to My Stories; it does not publish or start play. **Publish to Gallery** creates or updates a separate publication representation and reuse permission after the source meets readiness requirements. Community Gallery then owns discovery and engagement, and Public Profile may expose the creator's published work. Removing the publication must preserve the owned source.
+
+Story Builder also produces browser downloads for backup or transfer. Those files are artifacts rather than account records until a later import is deliberately saved. AI text or media output likewise remains working material until the receiving story state and private destination reference are durably saved.
+
+### Ownership transfers at save, publication, and play
+
+Story Builder owns edits while the workspace is open and remains the owner of later source revisions. My Stories owns collection presentation and the next Edit, Delete, publication-management, or Play choice after save. Publication transfers public presentation and engagement to Community Gallery without transferring private-source ownership. Play is initiated outside Story Builder: My Stories or Community Gallery supplies a durable source, a new conversation is created, and Chat Interface becomes the next-stage owner of the live roleplay. Chat History later owns discovery and resume for a particular persisted conversation.
+
+The full Story Builder manual records the complete authoring UI, import/export and AI/media flows, persistence and security boundaries, source ownership, recovery expectations, evidence limits, and verified implementation limitations without duplicating them in this application map.
+
 # Character Builder
+
+## Character Builder is Chronicle's shared profile-authoring workspace
+
+Character Builder is the focused editor Chronicle uses for one character profile at a time. It owns the visible identity, control assignment, story role, appearance, clothing, personality, tone, background, life events, relationships, secrets, fears, goals, custom content, avatar, and optional AI-assisted working changes. It does not own the collection or story that opened it: Character Library owns a reusable profile, while Story Builder owns a story cast member.
+
+That distinction is the essential lifecycle rule. Reusable and story-owned characters can begin with the same authored material, but they are separate identities after an explicit copy. Later changes do not flow automatically in either direction. Character Builder returns an edited profile to the capability that opened it; that capability owns the durable save, deletion rules, and next-stage handoff.
+
+### What Character Builder receives
+
+Character Library can supply an existing account-owned reusable profile or a clearly new reusable profile. Story Builder can supply an existing story-owned cast member, a clearly new cast member, or an eligible reusable source chosen through Import from Library. Every import must become an independently identified story child before the story save. A story character can also be copied deliberately into Character Library, where the destination becomes a separate reusable profile.
+
+Authentication supplies the account boundary. My Images can supply private source bytes through the shared picker; those bytes are copied into the private character-avatar destination before the character adopts them. Device upload and AI avatar generation can produce the same destination type. Shared model, usage, validation, and safe art-style services supply optional text or media proposals without owning the character or authorizing its save.
+
+### What Character Builder produces
+
+Character Builder produces a reviewed working character payload for its caller. In Character Library context, **Update Character** produces or revises a scenario-less reusable source that the library can list, search, reopen, copy, or delete. In Story Builder context, **Save** returns the edited cast member to the story aggregate; Story Builder owns the later draft/final save, publication readiness, and story lifecycle.
+
+An explicit story-to-library action can produce an independent reusable destination. An explicit library-to-story import can produce an independent story-owned destination. Neither action creates hidden two-way synchronization. A private avatar path, focal position, goals, custom sections, and other profile fields follow the destination row's lifecycle after the copy succeeds.
+
+### Ownership transfers at the caller's save boundary
+
+Character Builder owns field editing and recoverable working state while the editor is open. Character Library becomes the immediate owner when a reusable save succeeds. Story Builder remains the immediate owner when a story-character save returns to the roster and the story aggregate becomes durable. My Images owns only the reusable source before the avatar byte copy; the character workflow owns the destination path afterward.
+
+Play is initiated outside Character Builder. My Stories or Community Gallery loads a saved story and creates a new conversation; Chat Interface then owns conversation-scoped character overrides and side-character state through its own editor and persistence. Those playthrough changes do not live-sync back into the reusable or story source. Chat History later owns discovery and resume for the persisted conversation. The full Character Builder manual records the exact UI, entry modes, copy identity, persistence and security flows, AI/media operations, evidence limits, and verified implementation limitations without duplicating them in this application map.
 
 # Chat Interface
 
+## Chat Interface turns one selected story into one active playthrough
+
+Chat Interface is Chronicle’s active play screen. My Stories or Community Gallery can start a new conversation from a selected story, and Chat History can reopen a particular saved conversation. The interface receives both the story identity and the conversation identity so two playthroughs of the same source never collapse into one another.
+
+The screen owns the visible transcript, player composer, pending and failure presentation, message actions, current session clock, principal-character rail, conversation-scoped character and scene controls, and player-facing roleplay settings. Send adds a new player turn. Continue extends an accepted assistant response. Regenerate requests a replacement. Editing or deleting a message must preserve which accepted turn later state belongs to.
+
+Chat Interface does not own reusable story editing or saved-session discovery. Story Builder remains the authority for the authored source, and Chat History owns the index used to return later. Persistence owns durable conversation rows after a successful save. The separate Roleplay Pipeline begins behind an opaque response boundary and is intentionally excluded from this Knowledge project: the Chat Interface manual documents what the screen sends, shows while waiting, and accepts back, but not provider calls, prompt construction, or internal processing stages.
+
+# Roleplay Pipeline
+
+## Roleplay Pipeline
+
+Roleplay Pipeline covers the processing behind Send, Retry, and Continue: selecting model input, generating a candidate response through API Call 1, accepting and saving the current result, and running API Call 2 workers for later-turn state. Chat Interface remains the owner of the visible controls.
+
+[Open the Roleplay Pipeline architecture](/style-guide/chronicle-knowledge-base?section=roleplay-pipeline&tab=app-architecture).
+
 # Chat History
+
+## Chat History returns the player to one saved conversation
+
+Chat History is the authenticated index of existing playthroughs. Each row combines a conversation ID with enough story context to recognize it: cover, title, creator, message count, last-updated date, and latest-message preview. The list is ordered by most recent activity and initially shows 30 sessions before **Load More** reveals the next local page.
+
+Selecting a row loads the referenced story and that exact conversation, restores its recent accepted messages and supporting state, and hands the result to Chat Interface. Deleting removes the conversation, not the reusable story. Single and bulk deletion use confirmation, update the visible registry promptly, and restore the prior registry when durable deletion fails.
+
+My Stories and Community Gallery create entry opportunities for new playthroughs; Chat History owns later discovery; Chat Interface owns the resumed screen. Its summary registry is not the full transcript and must not be treated as one. The complete manual records the resume identity, pagination, deletion, rollback, loading, and evidence limits.
 
 # Public Profile
 
-# Account Settings
+## Public Profile represents the creator without exposing the private account
+
+Public Profile connects a Chronicle creator identity to display name, biography, avatar, preferred genres, visibility controls, Gallery statistics, published works, and following. The editor lives inside the signed-in Account area, while `/creator/:userId` presents the permitted public view to other people.
+
+The owner can update profile text, choose or generate an avatar, reposition its crop, manage preferred genres, hide all profile details, or hide only published works. The public route applies those choices, distinguishes a private profile from a missing profile, and lets an authenticated visitor follow or unfollow another creator. Published-story cards retain their Community Gallery Like, Save, detail, and Play handoffs.
+
+Account & Subscription owns entry to the private editor and its **Save** action. Community Gallery owns publication interactions. My Stories and Story Builder retain ownership of the creator’s underlying stories. Public Profile never grants another visitor access to drafts, conversations, private images, or account settings.
+
+# Account & Subscription
+
+## Account & Subscription groups private account controls
+
+Account & Subscription contains Account Settings, Subscription, and the entry to the Public Profile editor. Account Settings shows the authenticated email and current plan, then allows the signed-in person to change their password with length and confirmation checks. It does not edit the email address or subscription metadata.
+
+Subscription presents the current tier configuration, prices, usage limits, and feature comparisons. The cards can refresh from Chronicle’s subscription-tier service while the screen is open. The current implementation does not attach checkout or upgrade behavior to the non-current plan buttons, so the visual comparison must not be mistaken for a working billing flow.
+
+The shared authentication system owns session identity and password authorization. The subscription configuration service owns the displayed plan definitions. Public Profile owns the creator-facing fields and visibility behavior. This capability does not itself prove payment processing, entitlement enforcement, or deployed authentication policy.
 
 # Admin Panel
 
-## Admin Tools
+## Admin Panel is Chronicle’s restricted operations workspace
 
 ![Admin Panel](knowledge-asset:admin-panel-overview)
 
-### Image Generation
+Admin Panel groups the maintenance tools available only to a resolved administrator. Its current hub includes Image Generation, AI Status, App Dashboard, Chronicle Knowledge Base, Supabase Schema Reference, Quality Hub, Validation Evidence Ledger, Finance Dashboard, and Research & Development. Each card opens a real internal tool or a dedicated protected route; editing a card changes its presentation metadata, not the tool’s authority.
 
-### AI Status
+The main sidebar displays Admin only for an administrator. Dedicated Knowledge, schema, quality, and evidence routes also use the application-level administrator guard. Both checks matter: hidden navigation is not a security boundary, and a protected route does not by itself describe database authorization.
 
-### App Dashboard
+Research & Development remains a protected prototype workspace. Production adoption does not authorize prototype deletion, and production code must not import prototype code. The full Admin manual records tool routing, top-bar actions, metadata persistence, access checks, preservation rules, and evidence limits.
 
-### Chronicle Knowledge Base
+# Shared Application Systems
 
-### Supabase Schema Reference
+## Shared Application Systems documents the foundation used across capabilities
 
-### Quality Hub
+Shared Application Systems covers Chronicle’s product-wide routing, authentication state, administrator checks, persistent sidebar and top bar, application workspace, authenticated startup loading, shared types, and persistence service boundaries. It prevents those common mechanisms from being copied into every capability manual or inaccurately assigned to the first feature that calls them.
 
-### Validation Evidence Ledger
+The shared shell owns placement and navigation, not each feature’s meaning. Community Gallery still owns discovery, My Stories owns its collections, the builders own authored material, Chat History owns saved-session discovery, and Chat Interface owns the visible play screen. Shared services store or retrieve identified data without becoming the product authority for what that data means.
 
-### Finance Dashboard
+Authenticated startup loads the core personal collections in parallel and uses bounded fallbacks so one slow request does not hold the shell indefinitely. A fallback keeps the application usable but is not proof that the live source is empty. The complete manual documents the root providers, route list, shared session, Admin guard, shell contracts, startup data flow, persistence organization, and evidence limits while leaving the Roleplay Pipeline outside this project.

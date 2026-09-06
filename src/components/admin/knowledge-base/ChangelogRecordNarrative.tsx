@@ -31,6 +31,7 @@ const CLARIFIED_FIELD_LABELS: Readonly<Record<string, string>> = {
   affectedCapabilities: "Affected capabilities",
   acceptedOn: "Acceptance date",
   acceptedBy: "Acceptance reviewer",
+  reviewMethod: "Review method",
   acceptanceRef: "Acceptance proof",
   sourceRevision: "Source revision",
   archivedProjectId: "Archived project",
@@ -64,20 +65,24 @@ function clarifiedFieldLabel(
 }
 
 function underlyingRecordType(entry: EffectiveChangelogEntry) {
-  return entry.rootRecord.variant === "accepted_closeout"
-    ? "Accepted Chronicle change"
-    : "Historical Quality Hub record";
+  if (entry.rootRecord.variant === "accepted_closeout") {
+    return "Accepted Chronicle closeout";
+  }
+  if (entry.rootRecord.variant === "accepted_update") {
+    return "Accepted Chronicle update";
+  }
+  return "Historical Quality Hub record";
 }
 
 function originalHistoryDate(entry: EffectiveChangelogEntry) {
-  return entry.rootRecord.variant === "accepted_closeout"
+  return entry.rootRecord.variant !== "legacy_import"
     ? entry.rootRecord.acceptedOn
     : entry.rootRecord.originalRecord.updatedAt.slice(0, 10);
 }
 
 function HistoryDate({ entry }: { entry: EffectiveChangelogEntry }) {
   const corrected = entry.appliedCorrections.length > 0;
-  const accepted = entry.rootRecord.variant === "accepted_closeout";
+  const accepted = entry.rootRecord.variant !== "legacy_import";
   return (
     <div className="changelog-narrative__history-date">
       <span>{corrected ? "Corrected" : accepted ? "Accepted" : "Last updated in Quality Hub"}</span>
@@ -171,7 +176,7 @@ function formatClarifiedValue(value: unknown) {
 
 function ResultAndVerification({ entry }: { entry: EffectiveChangelogEntry }) {
   const record = entry.effectiveRecord;
-  if (record.variant === "accepted_closeout") {
+  if (record.variant !== "legacy_import") {
     return (
       <dl className="changelog-narrative__verification">
         <div>
@@ -223,7 +228,8 @@ function PrimaryNarrative({
 }) {
   const record = entry.effectiveRecord;
   const legacy = record.variant === "legacy_import" ? record : null;
-  const accepted = record.variant === "accepted_closeout" ? record : null;
+  const closeout = record.variant === "accepted_closeout" ? record : null;
+  const update = record.variant === "accepted_update" ? record : null;
   const historicalMissing = "Not recorded in the original Quality Hub entry.";
   return (
     <div className="changelog-narrative__body">
@@ -237,15 +243,19 @@ function PrimaryNarrative({
             is inferred.
           </p>
         </NarrativeSection>
-      ) : (
+      ) : closeout ? (
         <>
           <NarrativeSection heading="What was broken">
-            <NarrativeText>{accepted?.problem ?? ""}</NarrativeText>
+            <NarrativeText>{closeout.problem}</NarrativeText>
           </NarrativeSection>
           <NarrativeSection heading="Why the change was needed">
-            <NarrativeText>{accepted?.whyChangeWasNeeded ?? ""}</NarrativeText>
+            <NarrativeText>{closeout.whyChangeWasNeeded}</NarrativeText>
           </NarrativeSection>
         </>
+      ) : (
+        <NarrativeSection heading="Why the change was needed">
+          <NarrativeText>{update?.whyChangeWasNeeded ?? ""}</NarrativeText>
+        </NarrativeSection>
       )}
 
       {legacy ? (
@@ -260,7 +270,7 @@ function PrimaryNarrative({
         <NarrativeText>
           {legacy
             ? recordedOrFallback(legacy.originalRecord.changes, historicalMissing)
-            : accepted?.changes ?? ""}
+            : closeout?.changes ?? update?.changes ?? ""}
         </NarrativeText>
       </NarrativeSection>
 
@@ -276,8 +286,12 @@ function PrimaryNarrative({
             No modern Chronicle Issue disposition is available for this historical
             Quality Hub record.
           </p>
-        ) : (
+        ) : closeout ? (
           <AcceptedIssueDisposition entry={entry} />
+        ) : (
+          <p>
+            No Chronicle Issue was required or created for this bounded accepted update.
+          </p>
         )}
       </NarrativeSection>
 
@@ -293,6 +307,10 @@ function PrimaryNarrative({
               reciprocal archive were not verified together.
             </p>
           )
+        ) : record.variant === "accepted_update" ? (
+          <p>
+            Not applicable — this bounded accepted update did not require or create a Current Work project, proof matrix, archive, or closeout.
+          </p>
         ) : (
           <p>Not available — this record predates Chronicle Current Work.</p>
         )}
@@ -383,6 +401,29 @@ function OriginalRecordBeforeCorrections({
           <div><dt>Original archive route</dt><dd>{root.archiveRoute}</dd></div>
           <div><dt>Originally resolved Issues</dt><dd>{root.resolvedIssueIds.length > 0 ? root.resolvedIssueIds.join(", ") : "None"}</dd></div>
           <div><dt>Originally remaining Issues</dt><dd>{root.remainingIssueIds.length > 0 ? root.remainingIssueIds.join(", ") : "None"}</dd></div>
+          <div><dt>Original canonical source</dt><dd>{root.sourcePath}</dd></div>
+        </dl>
+      </NarrativeSection>
+    );
+  }
+  if (root.variant === "accepted_update") {
+    return (
+      <NarrativeSection heading="Immutable original narrative">
+        <dl className="changelog-narrative__detail-fields">
+          <div><dt>Original title</dt><dd><NarrativeText>{root.title}</NarrativeText></dd></div>
+          <div><dt>Original history date</dt><dd>{root.changeDate}</dd></div>
+          <div><dt>Why the change was needed</dt><dd><NarrativeText>{root.whyChangeWasNeeded}</NarrativeText></dd></div>
+          <div><dt>What changed</dt><dd><NarrativeText>{root.changes}</NarrativeText></dd></div>
+          <div><dt>Original accepted result</dt><dd><NarrativeText>{root.outcome}</NarrativeText></dd></div>
+          <div><dt>Original evidence summary</dt><dd><NarrativeText>{root.acceptedEvidenceSummary}</NarrativeText></dd></div>
+          <div><dt>Original evidence limits</dt><dd><NarrativeText>{root.acceptedEvidenceLimits}</NarrativeText></dd></div>
+          <div><dt>Original review method</dt><dd><NarrativeText>{root.reviewMethod}</NarrativeText></dd></div>
+          <div><dt>Original affected capabilities</dt><dd>{root.affectedCapabilities.join(", ")}</dd></div>
+          <div><dt>Original owning capability</dt><dd>{root.owningCapability}</dd></div>
+          <div><dt>Originally accepted on</dt><dd>{root.acceptedOn}</dd></div>
+          <div><dt>Original acceptance reviewer</dt><dd>{root.acceptedBy}</dd></div>
+          <div><dt>Original source revision</dt><dd>{root.sourceRevision}</dd></div>
+          <div><dt>Original operational-record context</dt><dd>No Issue, Current Work project, proof matrix, archive, or closeout was required or created.</dd></div>
           <div><dt>Original canonical source</dt><dd>{root.sourcePath}</dd></div>
         </dl>
       </NarrativeSection>
@@ -506,7 +547,7 @@ function LegacyDetail({ record }: { record: LegacyImportChangelogRecord }) {
 }
 
 function AcceptedDetail({ entry }: { entry: EffectiveChangelogEntry }) {
-  if (entry.effectiveRecord.variant !== "accepted_closeout") return null;
+  if (entry.effectiveRecord.variant === "legacy_import") return null;
   const record = entry.effectiveRecord;
   return (
     <div className="changelog-narrative__extended">
@@ -514,13 +555,23 @@ function AcceptedDetail({ entry }: { entry: EffectiveChangelogEntry }) {
         <dl className="changelog-narrative__detail-fields">
           <div><dt>Accepted by</dt><dd>{record.acceptedBy}</dd></div>
           <div><dt>Accepted on</dt><dd>{record.acceptedOn}</dd></div>
-          <div><dt>Acceptance proof</dt><dd>{record.acceptanceRef}</dd></div>
+          {record.variant === "accepted_closeout" ? (
+            <div><dt>Acceptance proof</dt><dd>{record.acceptanceRef}</dd></div>
+          ) : (
+            <div><dt>Review method</dt><dd><NarrativeText>{record.reviewMethod}</NarrativeText></dd></div>
+          )}
           <div><dt>Accepted source revision</dt><dd>{record.sourceRevision}</dd></div>
           <div><dt>Owning capability</dt><dd>{record.owningCapability}</dd></div>
           <div><dt>Affected capabilities</dt><dd>{record.affectedCapabilities.join(", ")}</dd></div>
-          <div><dt>Archived project</dt><dd>{record.archivedProjectId}</dd></div>
-          <div><dt>Archive source</dt><dd>{record.archiveRecord}</dd></div>
-          <div><dt>Archive route</dt><dd>{record.archiveRoute}</dd></div>
+          {record.variant === "accepted_closeout" ? (
+            <>
+              <div><dt>Archived project</dt><dd>{record.archivedProjectId}</dd></div>
+              <div><dt>Archive source</dt><dd>{record.archiveRecord}</dd></div>
+              <div><dt>Archive route</dt><dd>{record.archiveRoute}</dd></div>
+            </>
+          ) : (
+            <div><dt>Operational record context</dt><dd>No Issue, Current Work project, proof matrix, archive, or closeout was required or created.</dd></div>
+          )}
           <div><dt>Canonical source record</dt><dd>{record.sourcePath}</dd></div>
         </dl>
       </NarrativeSection>
@@ -569,7 +620,7 @@ export function ChangelogRecordNarrative({
           />
           {mode === "detail" ? (
             <>
-              {entry.effectiveRecord.variant === "accepted_closeout" ? (
+              {entry.effectiveRecord.variant !== "legacy_import" ? (
                 <AcceptedDetail entry={entry} />
               ) : (
                 <LegacyDetail record={entry.effectiveRecord} />

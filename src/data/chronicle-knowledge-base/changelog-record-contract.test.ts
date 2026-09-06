@@ -175,6 +175,81 @@ The complete Current Work history remains available at the declared archive path
 `;
 }
 
+function acceptedUpdateFixture({
+  id = "CG-UPDATE-001",
+  owner = "community-gallery",
+  title = "Gallery card wording accepted",
+}: {
+  id?: string;
+  owner?: string;
+  title?: string;
+} = {}) {
+  const sourcePath = changelogPath(id);
+  return `---
+record_type: changelog
+variant: accepted_update
+change_id: ${id}
+title: ${title}
+change_date: 2026-07-31
+why_change_was_needed: The existing wording did not explain the bounded interaction clearly enough.
+changes: The Gallery card now uses the accepted plain-language wording.
+outcome: The bounded Gallery interaction was accepted at the named source state.
+accepted_evidence_summary: Focused deterministic checks and the required visual review passed.
+accepted_evidence_limits: The review covered this bounded interaction and does not establish unrelated Gallery behavior.
+provenance: accepted-update
+affected_capabilities: [community-gallery]
+owning_capability: ${owner}
+accepted_on: 2026-07-31
+accepted_by: Chronicle owner
+review_method: Focused tests plus direct review of the visible Gallery interaction.
+source_revision: ${SOURCE_REVISION}
+workflow_record_context: no_issue_current_work_archive_or_proof_matrix
+source_record: ${sourcePath}
+---
+# ${id}: ${title}
+
+## Why the Change Was Needed
+
+The existing wording did not explain the bounded interaction clearly enough.
+
+## Changes
+
+The Gallery card now uses the accepted plain-language wording.
+
+## Outcome
+
+The bounded Gallery interaction was accepted at the named source state.
+
+## Accepted Evidence Summary
+
+Focused deterministic checks and the required visual review passed.
+
+## Accepted Evidence Limits
+
+The review covered this bounded interaction and does not establish unrelated Gallery behavior.
+
+## Review Method
+
+Focused tests plus direct review of the visible Gallery interaction.
+
+## Acceptance and Source State
+
+Chronicle owner accepted source revision ${SOURCE_REVISION} on 2026-07-31.
+
+## Operational Record Context
+
+This bounded update did not require or create a Chronicle Issue, Current Work project, proof matrix, archived work record, or closeout transaction.
+
+## Provenance
+
+This is a bounded Accepted Update, not an accepted closeout.
+
+## Applicability
+
+Affected capabilities: community-gallery.
+`;
+}
+
 function legacyFixture({
   originalId = "cl-20260620-001",
   title = "Original Quality Hub title",
@@ -1568,5 +1643,106 @@ accepted_on: 2099-01-01`,
     expect(result.errors.join("\n")).toContain(
       `duplicate Changelog ID ${legacyId}`,
     );
+  });
+
+  it("accepts a bounded Accepted Update without fabricated project, Issue, proof, archive, or closeout fields", () => {
+    const sourcePath = changelogPath("CG-UPDATE-001");
+    const registry = buildChangelogRecordRegistry(
+      { [sourcePath]: acceptedUpdateFixture() },
+      { asOf: AS_OF },
+    );
+    const record = registry.roots[0];
+    expect(record).toMatchObject({
+      variant: "accepted_update",
+      provenance: "accepted-update",
+      id: "CG-UPDATE-001",
+      owningCapability: "community-gallery",
+      reviewMethod: "Focused tests plus direct review of the visible Gallery interaction.",
+      workflowRecordContext: "no_issue_current_work_archive_or_proof_matrix",
+    });
+    expect(record).not.toHaveProperty("acceptanceRef");
+    expect(record).not.toHaveProperty("archivedProjectId");
+    expect(record).not.toHaveProperty("resolvedIssueIds");
+  });
+
+  it("applies an append-only correction to an Accepted Update without changing its underlying type", () => {
+    const targetId = "CG-UPDATE-001";
+    const correctionId = `${targetId}-COR-001`;
+    const registry = buildChangelogRecordRegistry(
+      {
+        [changelogPath(targetId)]: acceptedUpdateFixture(),
+        [changelogPath(correctionId)]: correctionFixture({
+          targetId,
+          clarified: "review_method: Focused checks plus corrected owner review.",
+          effectiveClarification: `### Review Method
+
+Focused checks plus corrected owner review.`,
+        }),
+      },
+      { asOf: AS_OF },
+    );
+
+    expect(registry.effectiveEntries[0].effectiveRecord).toMatchObject({
+      variant: "accepted_update",
+      provenance: "accepted-update",
+      reviewMethod: "Focused checks plus corrected owner review.",
+    });
+    expect(registry.effectiveEntries[0].appliedCorrections).toHaveLength(1);
+  });
+
+  it("rejects closeout-only correction fields for an Accepted Update", () => {
+    const targetId = "CG-UPDATE-001";
+    const correctionId = `${targetId}-COR-001`;
+    const result = validateChangelogRecordSources(
+      {
+        [changelogPath(targetId)]: acceptedUpdateFixture(),
+        [changelogPath(correctionId)]: correctionFixture({
+          targetId,
+          clarified: "archived_project_id: CG-WORK-001",
+          effectiveClarification: `### Archived Project ID
+
+CG-WORK-001`,
+        }),
+      },
+      { asOf: AS_OF },
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.errors.join("\n")).toContain(
+      "clarified field archivedProjectId does not apply to accepted_update records",
+    );
+  });
+
+  it.each([
+    ["unsupported prefix", acceptedUpdateFixture({ id: "XX-UPDATE-001" }), "explicitly registered"],
+    ["wrong owner", acceptedUpdateFixture({ owner: "chat-interface" }), "belongs to community-gallery"],
+    [
+      "missing honest context",
+      acceptedUpdateFixture().replace(
+        "workflow_record_context: no_issue_current_work_archive_or_proof_matrix\n",
+        "",
+      ),
+      "workflow_record_context",
+    ],
+    [
+      "fabricated closeout field",
+      acceptedUpdateFixture().replace(
+        `source_revision: ${SOURCE_REVISION}\n`,
+        `source_revision: ${SOURCE_REVISION}\nacceptance_ref: CG-EV-001\n`,
+      ),
+      "Unrecognized key",
+    ],
+    [
+      "fabricated closeout body section",
+      acceptedUpdateFixture().concat(`\n## Issue Disposition\n\nCG-ISSUE-001 was resolved.\n`),
+      "unexpected level-two heading",
+    ],
+  ])("rejects misleading Accepted Update data: %s", (_name, source, expected) => {
+    const result = validateChangelogRecordSources(
+      { [changelogPath("CG-UPDATE-001")]: source },
+      { asOf: AS_OF },
+    );
+    expect(result.ok).toBe(false);
+    expect(result.errors.join("\n")).toContain(expected);
   });
 });

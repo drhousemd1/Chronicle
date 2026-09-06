@@ -8,32 +8,6 @@ import {
   selectLoadedChangelogEntries,
 } from "./changelog-record-sources";
 
-const EXPECTED_GALLERY_IDS = [
-  "CG-CHANGE-001",
-  "LEGACY-QH-cl-20260327-001",
-  "LEGACY-QH-cl-20260327-006",
-  "LEGACY-QH-cl-20260330-001",
-  "LEGACY-QH-cl-20260404-004",
-  "LEGACY-QH-cl-20260405-001",
-  "LEGACY-QH-cl-20260405-002",
-  "LEGACY-QH-cl-20260410-001",
-  "LEGACY-QH-cl-20260411-002",
-  "LEGACY-QH-cl-20260417-001",
-  "LEGACY-QH-cl-20260417-002",
-  "LEGACY-QH-cl-20260417-003",
-  "LEGACY-QH-cl-20260417-005",
-  "LEGACY-QH-cl-20260417-007",
-  "LEGACY-QH-cl-20260417-008",
-  "LEGACY-QH-cl-20260613-003",
-  "LEGACY-QH-cl-20260614-003",
-  "LEGACY-QH-cl-20260614-004",
-  "LEGACY-QH-cl-20260614-005",
-  "LEGACY-QH-cl-20260619-001",
-  "LEGACY-QH-cl-20260619-002",
-  "LEGACY-QH-cl-20260619-003",
-  "LEGACY-QH-cl-20260620-001",
-].sort();
-
 function acceptedRecordOnSharedCheckDate() {
   const id = "CG-CHANGE-900";
   const sourcePath = `docs/architecture-knowledge/changelog/entries/${id}.md`;
@@ -115,7 +89,7 @@ The fixture points to its exact archived Current Work record.
 }
 
 describe("canonical Changelog record sources", () => {
-  it("loads one cached 204-record registry and the exact reviewed Gallery projection", async () => {
+  it("derives the cached global and Gallery views from one canonical registry", async () => {
     const first = await loadChronicleChangelogRegistry();
     const second = await loadChronicleChangelogRegistry();
 
@@ -128,11 +102,14 @@ describe("canonical Changelog record sources", () => {
     const globalIds = global.map((entry) => entry.id);
     const galleryIds = gallery.map((entry) => entry.id);
 
-    expect(global).toHaveLength(204);
-    expect(new Set(globalIds).size).toBe(204);
-    expect(gallery).toHaveLength(23);
-    expect(new Set(galleryIds).size).toBe(23);
-    expect([...galleryIds].sort()).toEqual(EXPECTED_GALLERY_IDS);
+    const expectedGalleryIds = global
+      .filter((entry) => entry.affectedCapabilities.includes("community-gallery"))
+      .map((entry) => entry.id);
+
+    expect(global).toHaveLength(first.registry.roots.length);
+    expect(new Set(globalIds).size).toBe(global.length);
+    expect(new Set(galleryIds).size).toBe(gallery.length);
+    expect(galleryIds).toEqual(expectedGalleryIds);
     expect(galleryIds.every((id) => globalIds.includes(id))).toBe(true);
     expect(
       gallery.every((entry) =>
@@ -140,6 +117,8 @@ describe("canonical Changelog record sources", () => {
       ),
     ).toBe(true);
     expect(galleryIds).not.toContain("LEGACY-QH-cl-20260331-005");
+    expect(galleryIds).toContain("CG-CHANGE-001");
+    expect(galleryIds).toContain("LEGACY-QH-cl-20260620-001");
 
     for (let index = 1; index < global.length; index += 1) {
       const previous = global[index - 1];
@@ -178,6 +157,53 @@ describe("canonical Changelog record sources", () => {
       expect(missingCanonicalSources.errors[0]).toContain(
         "source-loading failure, not an empty history",
       );
+    }
+  });
+
+  it("projects the positively reviewed legacy history for each completed capability", async () => {
+    const loaded = await loadChronicleChangelogRegistry();
+    expect(loaded.status).toBe("ready");
+    if (loaded.status !== "ready") return;
+
+    const expectedByCapability = {
+      "my-stories": [
+        "LEGACY-QH-cl-20260405-001",
+        "LEGACY-QH-cl-20260405-002",
+      ],
+      "character-library": ["LEGACY-QH-cl-20260402-002"],
+      "my-images": [
+        "LEGACY-QH-cl-20260327-001",
+        "LEGACY-QH-cl-20260402-002",
+        "LEGACY-QH-cl-20260418-002",
+      ],
+      "story-builder": [
+        "LEGACY-QH-cl-20260327-013",
+        "LEGACY-QH-cl-20260327-015",
+        "LEGACY-QH-cl-20260327-016",
+        "LEGACY-QH-cl-20260328-001",
+        "LEGACY-QH-cl-20260328-002",
+        "LEGACY-QH-cl-20260404-008",
+        "LEGACY-QH-cl-20260404-009",
+        "LEGACY-QH-cl-20260418-003",
+      ],
+      "character-builder": [
+        "LEGACY-QH-cl-20260327-015",
+        "LEGACY-QH-cl-20260328-001",
+        "LEGACY-QH-cl-20260404-008",
+        "LEGACY-QH-cl-20260404-009",
+      ],
+    } as const;
+
+    for (const [capabilityId, expectedIds] of Object.entries(
+      expectedByCapability,
+    )) {
+      const actualIds = selectLoadedChangelogEntries(
+        loaded,
+        capabilityId as keyof typeof expectedByCapability,
+      )
+        .map((entry) => entry.id)
+        .sort();
+      expect(actualIds, capabilityId).toEqual([...expectedIds].sort());
     }
   });
 

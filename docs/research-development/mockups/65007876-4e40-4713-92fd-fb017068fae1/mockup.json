@@ -1,0 +1,23 @@
+{
+  "repositoryFormatVersion": 1,
+  "savedAt": "2026-08-22T08:19:36.778Z",
+  "record": {
+    "schemaVersion": 1,
+    "id": "65007876-4e40-4713-92fd-fb017068fae1",
+    "displayTitle": "Story Opening Screen",
+    "purpose": "Prototype an optional story-opening scene with an image, setup text, visual treatments, audio, and a transition into the Chronicle chat interface.",
+    "documentBlocks": [
+      {
+        "id": "eefbaee4-80c8-40e9-8959-3cc473732d8f",
+        "type": "text",
+        "text": ""
+      }
+    ],
+    "notes": "",
+    "createdAt": "2026-08-22T08:19:25.255Z",
+    "contentUpdatedAt": "2026-08-22T08:19:36.699Z",
+    "previewBackground": "charcoal",
+    "assetIds": []
+  },
+  "assets": []
+}

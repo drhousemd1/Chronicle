@@ -411,6 +411,8 @@ describe("ChangelogRecordList", () => {
     renderList(
       <ChangelogRecordList
         {...defaultProps}
+        capability="community-gallery"
+        detailScope="community-gallery"
         loader={readyLoader([acceptedEntry("CG-CHANGE-001")])}
       />,
       "/style-guide/chronicle-knowledge-base?section=community-gallery&tab=changelog#changelog-CG-CHANGE-001",
@@ -422,5 +424,45 @@ describe("ChangelogRecordList", () => {
         "CG-CHANGE-001",
       );
     });
+  });
+
+  it("namespaces shared records and focuses only the capability requested by the route", async () => {
+    const sharedEntry = legacyEntry("LEGACY-QH-cl-shared", [
+      "community-gallery",
+      "my-stories",
+    ]);
+
+    renderList(
+      <>
+        <ChangelogRecordList
+          {...defaultProps}
+          capability="community-gallery"
+          detailScope="community-gallery"
+          loader={readyLoader([sharedEntry])}
+        />
+        <ChangelogRecordList
+          {...defaultProps}
+          capability="my-stories"
+          detailScope="my-stories"
+          loader={readyLoader([sharedEntry])}
+        />
+      </>,
+      "/style-guide/chronicle-knowledge-base?section=my-stories&tab=changelog#changelog-LEGACY-QH-cl-shared",
+    );
+
+    await waitFor(() => {
+      expect(document.querySelectorAll("[data-changelog-id]")).toHaveLength(2);
+    });
+    const sharedRecords = [
+      ...document.querySelectorAll<HTMLElement>(
+        '[data-changelog-id="LEGACY-QH-cl-shared"]',
+      ),
+    ];
+    expect(new Set(sharedRecords.map((record) => record.id)).size).toBe(2);
+    expect(sharedRecords.map((record) => record.id)).toEqual([
+      "changelog-community-gallery-LEGACY-QH-cl-shared",
+      "changelog-my-stories-LEGACY-QH-cl-shared",
+    ]);
+    expect(document.activeElement).toBe(sharedRecords[1]);
   });
 });

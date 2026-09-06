@@ -76,6 +76,8 @@ const App = () => (
               <Route path="/style-guide/ui-audit" element={<AdminOnlyRoute><UiAuditPage key="quality-hub-normal" /></AdminOnlyRoute>} />
               <Route path="/style-guide/ui-audit/changelog-migration-capture" element={<AdminOnlyRoute><UiAuditPage key="quality-hub-changelog-migration-capture" migrationCaptureMode /></AdminOnlyRoute>} />
               <Route path="/style-guide/chronicle-knowledge-base/archive/:projectId" element={<AdminOnlyRoute><ChronicleKnowledgeBasePage /></AdminOnlyRoute>} />
+              <Route path="/style-guide/chronicle-knowledge-base/work-manual" element={<AdminOnlyRoute><ChronicleKnowledgeBasePage /></AdminOnlyRoute>} />
+              <Route path="/style-guide/chronicle-knowledge-base/work-manual/:chapterId" element={<AdminOnlyRoute><ChronicleKnowledgeBasePage /></AdminOnlyRoute>} />
               <Route path="/style-guide/chronicle-knowledge-base" element={<AdminOnlyRoute><ChronicleKnowledgeBasePage /></AdminOnlyRoute>} />
               <Route path="/style-guide/changelog/:recordId" element={<AdminOnlyRoute><ChangelogRecordPage /></AdminOnlyRoute>} />
               <Route path="/style-guide/validation-evidence-ledger" element={<AdminOnlyRoute><ValidationEvidenceLedgerPage /></AdminOnlyRoute>} />

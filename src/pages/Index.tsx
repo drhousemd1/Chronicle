@@ -166,6 +166,52 @@ const IndexContent = () => {
   const styleGuideDownloadRef = React.useRef<(() => void) | null>(null);
   const styleGuideEditsRef = React.useRef<(() => void) | null>(null);
   const [styleGuideEditsCount, setStyleGuideEditsCount] = useState(0);
+  const adminBeforeLeaveRef = React.useRef<(() => Promise<boolean>) | null>(null);
+  const rndAddMockupRef = React.useRef<(() => Promise<void>) | null>(null);
+  const rndRepositorySaveRef = React.useRef<(() => Promise<void>) | null>(null);
+  const [rndAddMockupAvailable, setRndAddMockupAvailable] = useState(false);
+  const [rndRepositorySaveState, setRndRepositorySaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [rndRepositorySaveAvailable, setRndRepositorySaveAvailable] = useState(false);
+  const adminNavigationInFlightRef = React.useRef(false);
+  const registerAdminBeforeLeave = React.useCallback(
+    (handler: (() => Promise<boolean>) | null) => {
+      adminBeforeLeaveRef.current = handler;
+    },
+    [],
+  );
+  const registerRndRepositorySave = React.useCallback(
+    (handler: (() => Promise<void>) | null) => {
+      rndRepositorySaveRef.current = handler;
+      setRndRepositorySaveAvailable(handler !== null);
+    },
+    [],
+  );
+  const registerRndAddMockup = React.useCallback(
+    (handler: (() => Promise<void>) | null) => {
+      rndAddMockupRef.current = handler;
+      setRndAddMockupAvailable(handler !== null);
+    },
+    [],
+  );
+  const runAfterAdminWorkspaceSave = React.useCallback(
+    async (action: () => void | Promise<void>) => {
+      if (tab !== "admin" || adminActiveTool !== "research_development") {
+        await action();
+        return;
+      }
+
+      if (adminNavigationInFlightRef.current) return;
+      adminNavigationInFlightRef.current = true;
+      try {
+        const beforeLeave = adminBeforeLeaveRef.current;
+        if (beforeLeave && !(await beforeLeave())) return;
+        await action();
+      } finally {
+        adminNavigationInFlightRef.current = false;
+      }
+    },
+    [adminActiveTool, tab],
+  );
   const imageLibraryUploadRef = React.useRef<(() => void) | null>(null);
   const storyTransferFileRef = React.useRef<HTMLInputElement | null>(null);
   // Read URL query params for deep-linking (e.g. /?tab=admin&adminTool=app_guide)
@@ -772,18 +818,40 @@ const IndexContent = () => {
           avatarUrl={userProfile?.avatar_url ?? null}
           userMenuOpen={userMenuOpen}
           onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
-          onSelectGallery={() => handleNavigateAway("gallery")}
-          onSelectHub={() => requireAuth(() => handleNavigateAway("hub"))}
-          onSelectLibrary={() => requireAuth(() => handleNavigateAway("library"))}
-          onSelectImageLibrary={() => requireAuth(() => handleNavigateAway("image_library"))}
-          onSelectConversations={() => requireAuth(() => handleNavigateAway("conversations"))}
-          onSelectStoryBuilder={openStoryBuilderFromSidebar}
-          onSelectAdmin={() => requireAuth(() => { setAdminActiveTool("hub"); setTab("admin"); })}
+          onSelectGallery={() => { void runAfterAdminWorkspaceSave(() => handleNavigateAway("gallery")); }}
+          onSelectHub={() => requireAuth(() => { void runAfterAdminWorkspaceSave(() => handleNavigateAway("hub")); })}
+          onSelectLibrary={() => requireAuth(() => { void runAfterAdminWorkspaceSave(() => handleNavigateAway("library")); })}
+          onSelectImageLibrary={() => requireAuth(() => { void runAfterAdminWorkspaceSave(() => handleNavigateAway("image_library")); })}
+          onSelectConversations={() => requireAuth(() => { void runAfterAdminWorkspaceSave(() => handleNavigateAway("conversations")); })}
+          onSelectStoryBuilder={() => { void runAfterAdminWorkspaceSave(openStoryBuilderFromSidebar); }}
+          onSelectAdmin={() => requireAuth(() => {
+            void runAfterAdminWorkspaceSave(() => {
+              setAdminActiveTool("hub");
+              setTab("admin");
+            });
+          })}
           onToggleUserMenu={toggleUserMenu}
-          onSelectPublicProfile={() => { setAccountActiveTab("profile"); setTab("account"); closeUserMenu(); }}
-          onSelectAccountSettings={() => { setAccountActiveTab("settings"); setTab("account"); closeUserMenu(); }}
+          onSelectPublicProfile={() => {
+            void runAfterAdminWorkspaceSave(() => {
+              setAccountActiveTab("profile");
+              setTab("account");
+              closeUserMenu();
+            });
+          }}
+          onSelectAccountSettings={() => {
+            void runAfterAdminWorkspaceSave(() => {
+              setAccountActiveTab("settings");
+              setTab("account");
+              closeUserMenu();
+            });
+          }}
           onSignIn={openAuthModal}
-          onSignOut={() => { handleSignOut(); closeUserMenu(); }}
+          onSignOut={() => {
+            void runAfterAdminWorkspaceSave(() => {
+              handleSignOut();
+              closeUserMenu();
+            });
+          }}
         />
 
       <main className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden bg-ghost-white">
@@ -825,12 +893,17 @@ const IndexContent = () => {
               activeTool: adminActiveTool,
               guideTheme,
               styleGuideEditsCount,
-              onBackToHub: () => setAdminActiveTool("hub"),
+              rndRepositorySaveState,
+              rndRepositorySaveAvailable,
+              rndAddMockupAvailable,
+              onBackToHub: () => { void runAfterAdminWorkspaceSave(() => setAdminActiveTool("hub")); },
               onToggleGuideTheme: () => setGuideTheme((prev) => (prev === "dark" ? "light" : "dark")),
               onGuideSave: () => guideSaveRef.current?.(),
               onGuideSyncAll: () => guideSyncAllRef.current?.(),
               onOpenStyleGuideEdits: handleOpenStyleGuideEdits,
               onDownloadStyleGuide: () => styleGuideDownloadRef.current?.(),
+              onRndAddMockup: () => { void rndAddMockupRef.current?.(); },
+              onRndRepositorySave: () => { void rndRepositorySaveRef.current?.(); },
             }}
             account={{
               activeTab: accountActiveTab,
@@ -1157,7 +1230,7 @@ const IndexContent = () => {
 
           {tab === "admin" && isAdminState && (
             <React.Suspense fallback={<LazyTabFallback className="bg-black" />}>
-              <AdminPage activeTool={adminActiveTool} onSetActiveTool={setAdminActiveTool} onRegisterGuideSave={(fn) => { guideSaveRef.current = fn; }} onRegisterGuideSyncAll={(fn) => { guideSyncAllRef.current = fn; }} onRegisterStyleGuideDownload={(fn) => { styleGuideDownloadRef.current = fn; }} onRegisterStyleGuideEdits={(fn) => { styleGuideEditsRef.current = fn; getEditsCount().then(c => setStyleGuideEditsCount(c)); }} onStyleGuideEditsCountChange={(count) => setStyleGuideEditsCount(count)} guideTheme={guideTheme} />
+              <AdminPage activeTool={adminActiveTool} onSetActiveTool={setAdminActiveTool} onRegisterGuideSave={(fn) => { guideSaveRef.current = fn; }} onRegisterGuideSyncAll={(fn) => { guideSyncAllRef.current = fn; }} onRegisterStyleGuideDownload={(fn) => { styleGuideDownloadRef.current = fn; }} onRegisterStyleGuideEdits={(fn) => { styleGuideEditsRef.current = fn; getEditsCount().then(c => setStyleGuideEditsCount(c)); }} onRegisterRndBeforeLeave={registerAdminBeforeLeave} onRegisterRndAddMockup={registerRndAddMockup} onRegisterRndRepositorySave={registerRndRepositorySave} onRndRepositorySaveStateChange={setRndRepositorySaveState} onStyleGuideEditsCountChange={(count) => setStyleGuideEditsCount(count)} guideTheme={guideTheme} />
             </React.Suspense>
           )}
 

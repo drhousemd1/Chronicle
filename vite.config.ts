@@ -6,6 +6,8 @@ import { createHash } from "node:crypto";
 import { lstatSync, readFileSync, readlinkSync } from "node:fs";
 import { componentTagger } from "lovable-tagger";
 import { validationEvidenceDevPlugin } from "./src/features/validation-evidence/dev-middleware";
+import { rndRepositoryDevPlugin } from "./src/components/admin/research-development/rnd-repository-dev-middleware";
+import { repositoryGraphDevPlugin } from "./scripts/chronicle-repository-graph/dev-middleware";
 
 function readGitText(args: string[]): string | null {
   try {
@@ -119,7 +121,13 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  plugins: [react(), validationEvidenceDevPlugin(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [
+    react(),
+    validationEvidenceDevPlugin(),
+    rndRepositoryDevPlugin(),
+    repositoryGraphDevPlugin(),
+    mode === "development" && componentTagger(),
+  ].filter(Boolean),
   define: {
     "import.meta.env.VITE_CHRONICLE_APPLICATION_VERSION": JSON.stringify(applicationVersion),
     "import.meta.env.VITE_CHRONICLE_SOURCE_REVISION": JSON.stringify(sourceRevision),

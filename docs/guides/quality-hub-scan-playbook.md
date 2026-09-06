@@ -1,62 +1,45 @@
-# Quality Hub Scan Playbook
+# Quality Hub Scan Technical Procedure
 
-This playbook is the executable baseline for running Chronicle quality scans consistently across LLM agents.
+Chronicle Work Manual: docs/architecture-knowledge/chronicle-work-manual.md
+Chronicle Work Manual version: 0.2.2-provisional
 
-## Command Entry
+This playbook explains how the existing Quality Scan command and Quality Hub storage surfaces operate. It does not decide when a scan, broad check package, Issue, Current Work record, Changelog entry, Supabase investigation, or closeout is required. The canonical Work Manual or an explicit user request owns those triggers and limits.
 
-Run the full gate chain from the repo root:
+## Command operation
+
+From the Chronicle repository root:
 
 ```bash
 npm run quality:scan
 ```
 
-This executes:
-1. Lint (`npm run lint`)
-2. Type check (`npx tsc --noEmit`)
-3. Unit tests (`npm run test`)
-4. Build (`npm run build`)
-5. Dependency audit (`npm audit --omit=dev`)
+The package command first acquires the protected Knowledge certification lease, then runs these implemented checks in order and stops at the first failure:
 
-## Module Checklist Contract
+1. `npm run lint`
+2. `npm run typecheck`
+3. `node node_modules/vitest/vitest.mjs run`
+4. `node scripts/generate-roleplay-artifact-identity.mjs`
+5. `node node_modules/vite/bin/vite.js build`
+6. `npm audit --omit=dev`
 
-Every Quality Hub module must include:
-- Scope (files/folders)
-- Checks (what to inspect)
-- Evidence required (paths/repro/output)
-- Logging targets (Issue Registry / Scan Runs / capability Current Work)
-- Done criteria
+This is the exact expansion implemented by `scripts/run-quality-hub-scan.mjs`; it deliberately invokes Vitest and Vite directly rather than calling the package `test` or `build` scripts. Use the aggregate command only when the Work Manual or the user has authorized a Quality Scan. Its success proves that those commands passed on the source state named by the run. It does not prove deployment, inaccessible live Supabase state, every product requirement, or human acceptance.
 
-## Required Logging Flow
+## Module mechanics
 
-1. **Issue Registry**
-- Log only diagnosed issues.
-- Include severity, confidence, domain, route/component, concrete file paths, and recommendation.
+A Quality Hub scan module describes its technical scope, checks, required evidence, available logging surfaces, and done criteria. After a scan is authorized:
 
-2. **Scan Runs**
-- Log each run with profile, scope, summary counts, and notes.
+- select only the authorized module and scope;
+- record exact sources checked and skipped;
+- record the command results and evidence limits;
+- store the run identity, agent/model label, timestamp, and result counts in Scan Runs;
+- use Issue, Current Work, or accepted history only if the Work Manual's separate record trigger applies.
 
-3. **Capability Current Work**
-- Record active implementation, decisions, evidence, stopping point, and next action in the applicable Chronicle Knowledge Base capability.
-- Do not manually add or import Quality Hub Changelog entries. The repository Changelog is read-only accepted history created by guarded closeout.
+Issue Registry stores verified diagnosed problems. Scan Runs stores what the scan executed. The canonical repository Changelog remains read-only in Quality Hub. These surfaces do not create obligations merely because a module lists them as available destinations.
 
-## Supabase Snapshot Rule
+## Live-system mechanics
 
-When a scan or fix changes live Supabase tables, columns, constraints, indexes, RLS policies, database functions/RPCs, triggers, storage buckets, storage policies, or grants, refresh the repo-owned schema inventory before marking the Quality Hub entries current.
+When the authorized scan depends on inaccessible live Supabase facts, use the Work Manual's live-system safeguard. The approved repository schema reference is a synchronized document, not proof of current deployment. Preserve privacy: do not copy row contents, secrets, tokens, user emails, private story or chat text, or private media into scan evidence. Mark inaccessible facts unverified.
 
-- Update the approved schema snapshot source only. The current approved file is `src/data/database-schema-inventory.ts`; if a dedicated Supabase Schema Map is later created, update that approved source instead.
-- Include schema metadata, approximate row counts when available, role grants, RLS policies, functions/RPCs, triggers, storage buckets, and storage policies.
-- Do not include row contents, secrets, auth tokens, API keys, user emails, private chat/story text, images, or private NSFW user content.
-- Mark unverifiable live details as `unknown` or `needs_verification`. Do not invent schema details and do not create alternate schema dump files unless the task explicitly asks for a new schema-map artifact.
+## Failure behavior
 
-## Completion Rule
-
-A scan pass is complete only when:
-- Quality gate command succeeds, and
-- Open findings are either fixed + verified or explicitly reclassified with evidence, and
-- Issue Registry + Scan Runs + applicable Current Work are synchronized. Accepted Changelog history is created separately during guarded closeout.
-
-## Agent Guidance
-
-- Do not leave findings "open" without action.
-- Do not claim a fix without file-level evidence.
-- Re-run quality gates after changes and record outcomes.
+Stop the aggregate command at the first failed check. Report the exact failed command and what it proves or cannot prove. Do not silently broaden the scan, create a record, rerun unrelated checks, or claim the entire system failed without the Work Manual's expansion trigger.

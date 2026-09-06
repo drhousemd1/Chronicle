@@ -7,12 +7,12 @@ export const APPROVED_CAPABILITY_IDS = [
   "story-builder",
   "character-builder",
   "chat-interface",
+  "roleplay-pipeline",
   "chat-history",
   "public-profile",
   "account",
   "admin",
   "shared-systems",
-  "ai-api-services",
   "app-architecture-reference",
 ] as const;
 

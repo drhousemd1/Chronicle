@@ -1,0 +1,23 @@
+{
+  "repositoryFormatVersion": 1,
+  "savedAt": "2026-08-29T19:58:36.000Z",
+  "record": {
+    "schemaVersion": 1,
+    "id": "6f290eb9-a458-4dbf-bd2d-b12da34b2ac7",
+    "displayTitle": "Chronicle Repository & Database Map",
+    "purpose": "Evaluate Graphify's interactive repository and schema maps against Chronicle's checked-in code before considering wider integration.",
+    "documentBlocks": [
+      {
+        "id": "578da97d-eb27-4d71-8f91-a2924c6ffdb0",
+        "type": "text",
+        "text": ""
+      }
+    ],
+    "notes": "",
+    "createdAt": "2026-08-29T19:58:36.000Z",
+    "contentUpdatedAt": "2026-08-29T19:58:36.000Z",
+    "previewBackground": "charcoal",
+    "assetIds": []
+  },
+  "assets": []
+}

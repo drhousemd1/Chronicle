@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import type { ChronicleCapabilityId } from "@/data/chronicle-knowledge-base/capability-ids";
 import {
   compareIssueRecords,
   compareCurrentWorkProjects,
@@ -8,7 +9,11 @@ import {
   type IssueRecord,
   type OperationalRecordRegistry,
 } from "@/data/chronicle-knowledge-base/operational-record-contract";
-import { galleryOperationalRecordRegistry } from "@/data/chronicle-knowledge-base/operational-record-sources";
+import {
+  buildArchivedCurrentWorkHref,
+  buildKnowledgeBaseTabHref,
+  buildQualityHubChangelogHref,
+} from "@/data/chronicle-knowledge-base/knowledge-routes";
 import {
   CHRONICLE_CHANGELOG_RECORDS_CHECKED_ON,
   type ChangelogRegistryLoader,
@@ -18,8 +23,10 @@ import ChangelogRecordList from "./ChangelogRecordList";
 
 type OperationalRecordContentProps = {
   kind: "issues" | "current-work" | "changelog";
+  capabilityId: ChronicleCapabilityId;
+  capabilityLabel: string;
   renderMarkdown: (source: string) => ReactNode;
-  registry?: OperationalRecordRegistry;
+  registry: OperationalRecordRegistry;
   changelogLoader?: ChangelogRegistryLoader;
 };
 
@@ -54,9 +61,11 @@ function ChangelogFilesCheckedDate({ asOf }: { asOf: string }) {
 function IssueWorkRelationship({
   issue,
   registry,
+  capabilityId,
 }: {
   issue: IssueRecord;
   registry: OperationalRecordRegistry;
+  capabilityId: ChronicleCapabilityId;
 }) {
   const activeProjects = registry.activeProjects.filter((project) =>
     project.linkedIssueIds.includes(issue.id),
@@ -67,7 +76,7 @@ function IssueWorkRelationship({
 
   if (activeProjects.length > 0) {
     return (
-      <a href="/style-guide/chronicle-knowledge-base?section=community-gallery&amp;tab=current-work">
+      <a href={buildKnowledgeBaseTabHref(capabilityId, "current-work")}>
         Active Current Work: {activeProjects.map((project) => project.id).join(", ")}
       </a>
     );
@@ -79,7 +88,7 @@ function IssueWorkRelationship({
           <span key={project.id}>
             {index > 0 ? ", " : ""}
             <a
-              href={`/style-guide/chronicle-knowledge-base/archive/${project.id}`}
+              href={buildArchivedCurrentWorkHref(project.id)}
             >
               Archived Current Work: {project.id}
             </a>
@@ -94,10 +103,12 @@ function IssueWorkRelationship({
 function IssueRecordArticle({
   issue,
   registry,
+  capabilityId,
   renderMarkdown,
 }: {
   issue: IssueRecord;
   registry: OperationalRecordRegistry;
+  capabilityId: ChronicleCapabilityId;
   renderMarkdown: (source: string) => ReactNode;
 }) {
   const titleId = `issue-${issue.id}-title`;
@@ -131,7 +142,11 @@ function IssueRecordArticle({
           <div>
             <dt>Current Work relationship</dt>
             <dd>
-              <IssueWorkRelationship issue={issue} registry={registry} />
+              <IssueWorkRelationship
+                issue={issue}
+                registry={registry}
+                capabilityId={capabilityId}
+              />
             </dd>
           </div>
         </dl>
@@ -229,6 +244,23 @@ function CurrentWorkRecordArticle({
       <section className="knowledge-current-work__resume">
         <h3>Current State / Resume Here</h3>
 
+        {project.currentWorkVersion === 2 && project.coreSummary ? (
+          <section className="knowledge-current-work__group">
+            <h4>Core resumable summary</h4>
+            <dl>
+              <ResumeField label="Purpose" value={project.coreSummary.purpose} renderMarkdown={renderMarkdown} />
+              <ResumeField label="Objective and scope" value={project.coreSummary.objectiveAndScope} renderMarkdown={renderMarkdown} />
+              <ResumeField label="Current status and coordinator" value={project.coreSummary.currentStatusAndCoordinator} renderMarkdown={renderMarkdown} />
+              <ResumeField label="Latest verified result" value={project.coreSummary.latestVerifiedResult} renderMarkdown={renderMarkdown} />
+              <ResumeField label="Exact next action" value={project.coreSummary.exactNextAction} renderMarkdown={renderMarkdown} />
+              <ResumeField label="Blocker or decision" value={project.coreSummary.blockerOrDecision} renderMarkdown={renderMarkdown} />
+              <ResumeField label="Strongest evidence and limits" value={project.coreSummary.strongestEvidenceAndLimits} renderMarkdown={renderMarkdown} />
+              <ResumeField label="Source state and reading order" value={project.coreSummary.sourceStateAndReadingOrder} renderMarkdown={renderMarkdown} />
+            </dl>
+          </section>
+        ) : (
+          <>
+
         <section className="knowledge-current-work__group">
           <h4>Project and Status</h4>
           <dl>
@@ -277,6 +309,8 @@ function CurrentWorkRecordArticle({
             <ResumeField label="Scope guard" value={resume.scopeGuard} renderMarkdown={renderMarkdown} />
           </dl>
         </section>
+          </>
+        )}
       </section>
 
       <div className="knowledge-current-work__history">
@@ -288,20 +322,24 @@ function CurrentWorkRecordArticle({
 
 export function OperationalRecordContent({
   kind,
+  capabilityId,
+  capabilityLabel,
   renderMarkdown,
-  registry = galleryOperationalRecordRegistry,
+  registry,
   changelogLoader,
 }: OperationalRecordContentProps) {
   if (kind === "issues") {
     const issues = [...registry.issues].sort(compareIssueRecords);
     const openIssues = issues.filter((issue) => issue.status === "open");
     const resolvedIssues = issues.filter((issue) => issue.status === "resolved");
+    const openIssuesHeadingId = `${capabilityId}-open-issues-heading`;
+    const resolvedIssuesHeadingId = `${capabilityId}-resolved-issues-heading`;
     return (
       <>
         <h1>Identified Issues</h1>
         {issues.length === 0 ? (
           <p>
-            No verified Community Gallery Issue records are currently loaded.
+            No verified {capabilityLabel} Issue records are currently loaded.
             This empty state does not prove that the capability has no defects.
           </p>
         ) : (
@@ -309,15 +347,16 @@ export function OperationalRecordContent({
             {openIssues.length > 0 ? (
               <section
                 className="knowledge-issue-group"
-                aria-labelledby="open-issues-heading"
+                aria-labelledby={openIssuesHeadingId}
               >
-                <h2 id="open-issues-heading">Open Issues</h2>
+                <h2 id={openIssuesHeadingId}>Open Issues</h2>
                 <div className="knowledge-issue-group__records">
                   {openIssues.map((issue) => (
                     <IssueRecordArticle
                       key={issue.id}
                       issue={issue}
                       registry={registry}
+                      capabilityId={capabilityId}
                       renderMarkdown={renderMarkdown}
                     />
                   ))}
@@ -327,15 +366,16 @@ export function OperationalRecordContent({
             {resolvedIssues.length > 0 ? (
               <section
                 className="knowledge-issue-group"
-                aria-labelledby="resolved-issues-heading"
+                aria-labelledby={resolvedIssuesHeadingId}
               >
-                <h2 id="resolved-issues-heading">Resolved Issues</h2>
+                <h2 id={resolvedIssuesHeadingId}>Resolved Issues</h2>
                 <div className="knowledge-issue-group__records">
                   {resolvedIssues.map((issue) => (
                     <IssueRecordArticle
                       key={issue.id}
                       issue={issue}
                       registry={registry}
+                      capabilityId={capabilityId}
                       renderMarkdown={renderMarkdown}
                     />
                   ))}
@@ -358,12 +398,12 @@ export function OperationalRecordContent({
         <blockquote>
           <p>{CURRENT_WORK_AUTHORITY}</p>
         </blockquote>
-        <h1>Community Gallery Current Work</h1>
+        <h1>{capabilityLabel} Current Work</h1>
         <OperationalRecordsCheckedDate asOf={registry.asOf} />
         {activeProjects.length === 0 ? (
           <p>
-            No active, paused, blocked, deferred, or closeout-pending work
-            recorded as of {registry.asOf}.
+            No active, paused, blocked, deferred, or closeout-pending work is
+            recorded for {capabilityLabel} as of {registry.asOf}.
           </p>
         ) : (
           activeProjects.map((project) => (
@@ -380,12 +420,12 @@ export function OperationalRecordContent({
 
   return (
     <>
-      <h1>Community Gallery Changelog</h1>
+      <h1>{capabilityLabel} Changelog</h1>
       <ChangelogFilesCheckedDate asOf={CHRONICLE_CHANGELOG_RECORDS_CHECKED_ON} />
       <p>
         This history is filtered from Chronicle&apos;s one repository-owned
-        Changelog. It includes only records positively verified to affect
-        Community Gallery; historical Quality Hub status is not presented as
+        Changelog. It includes only records positively verified to affect{" "}
+        {capabilityLabel}; historical Quality Hub status is not presented as
         modern product acceptance.
       </p>
       <p>
@@ -394,18 +434,18 @@ export function OperationalRecordContent({
         complete record preserves the deeper technical history.
       </p>
       <p>
-        <a href="/style-guide/ui-audit?view=changelog&amp;capability=community-gallery">
-          Open the same Community Gallery history in Quality Hub
+        <a href={buildQualityHubChangelogHref(capabilityId)}>
+          Open the same {capabilityLabel} history in Quality Hub
         </a>
       </p>
       <ChangelogRecordList
-        capability="community-gallery"
-        detailScope="community-gallery"
+        capability={capabilityId}
+        detailScope={capabilityId}
         detailOrigin="knowledge-base"
         loader={changelogLoader}
         operationalRegistry={registry}
-        scopeLabel="Community Gallery records from the canonical Chronicle Changelog."
-        emptyMessage="No canonical Changelog records are currently verified as affecting Community Gallery."
+        scopeLabel={`${capabilityLabel} records from the canonical Chronicle Changelog.`}
+        emptyMessage={`No canonical Changelog records are currently verified as affecting ${capabilityLabel}.`}
       />
     </>
   );

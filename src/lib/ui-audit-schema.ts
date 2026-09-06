@@ -196,6 +196,7 @@ export interface QualityModuleChecklist {
     | "scan-runs"
     | "change-log"
     | "knowledge-base-current-work"
+    | "chronicle-records-if-triggered"
   >;
   doneCriteria: string[];
 }

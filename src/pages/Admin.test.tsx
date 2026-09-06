@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const source = readFileSync("src/pages/Admin.tsx", "utf8");
+const indexSource = readFileSync("src/pages/Index.tsx", "utf8");
 
 describe("Admin documentation tool registration", () => {
   it("keeps Chronicle Knowledge Base and omits the retired tool tiles and navigation", () => {
@@ -21,6 +22,23 @@ describe("Admin documentation tool registration", () => {
 
     expect(source).toContain(
       "'Central hub for Style Guide, App Guide, App Architecture, Quality Hub, and API Inspector'",
+    );
+  });
+
+  it("registers Research & Development as a normal editable embedded Admin tile", () => {
+    expect(source).toContain("id: 'research_development'");
+    expect(source).toContain("title: 'Research & Development'");
+    expect(source).toContain("<LazyResearchDevelopment");
+    expect(source).toContain("onOpenStyleGuide={() => onSetActiveTool('style_guide')}");
+    expect(source).toContain("onRegisterBeforeLeave={onRegisterRndBeforeLeave}");
+    expect(source).toContain("onRegisterAddMockup={onRegisterRndAddMockup}");
+    expect(source).toContain("onRegisterRepositorySave={onRegisterRndRepositorySave}");
+    expect(source).toContain("onRepositorySaveStateChange={onRndRepositorySaveStateChange}");
+    expect(indexSource).toContain("runAfterAdminWorkspaceSave");
+    expect(indexSource).toContain("onRndAddMockup: () => { void rndAddMockupRef.current?.(); }");
+    expect(indexSource).toContain("onRndRepositorySave: () => { void rndRepositorySaveRef.current?.(); }");
+    expect(indexSource).toContain(
+      'onBackToHub: () => { void runAfterAdminWorkspaceSave(() => setAdminActiveTool("hub")); }',
     );
   });
 });

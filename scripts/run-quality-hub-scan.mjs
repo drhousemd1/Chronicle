@@ -1,11 +1,39 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process";
 
+import {
+  assertActiveKnowledgeCertificationContext,
+  assertNoUnfinishedKnowledgeTransaction,
+} from "./knowledge-record-transaction-guard.mjs";
+
+const repoRoot = process.cwd();
+assertActiveKnowledgeCertificationContext({
+  repoRoot,
+  expectedCommand: "quality-scan",
+});
+assertNoUnfinishedKnowledgeTransaction({ repoRoot });
+
 const checks = [
   { id: "lint", label: "Lint", cmd: "npm", args: ["run", "lint"] },
-  { id: "types", label: "Type Check", cmd: "npx", args: ["tsc", "--noEmit"] },
-  { id: "tests", label: "Unit Tests", cmd: "npm", args: ["run", "test"] },
-  { id: "build", label: "Build", cmd: "npm", args: ["run", "build"] },
+  { id: "types", label: "Type Check", cmd: "npm", args: ["run", "typecheck"] },
+  {
+    id: "tests",
+    label: "Unit Tests",
+    cmd: process.execPath,
+    args: ["node_modules/vitest/vitest.mjs", "run"],
+  },
+  {
+    id: "build-preparation",
+    label: "Build Preparation",
+    cmd: process.execPath,
+    args: ["scripts/generate-roleplay-artifact-identity.mjs"],
+  },
+  {
+    id: "build",
+    label: "Build",
+    cmd: process.execPath,
+    args: ["node_modules/vite/bin/vite.js", "build"],
+  },
   { id: "audit", label: "Dependency Audit", cmd: "npm", args: ["audit", "--omit=dev"] },
 ];
 

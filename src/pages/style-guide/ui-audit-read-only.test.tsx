@@ -1418,7 +1418,7 @@ describe("Quality Hub permanent read-only Changelog behavior", () => {
     expect(mocks.secondOwnerRow).toBeNull();
   }, ASYNC_SAVE_TIMEOUT_MS);
 
-  it("directs active work to Current Work and accepted history to guarded closeout", async () => {
+  it("points to the Work Manual and keeps Quality Hub instructions mechanical", async () => {
     mocks.authState.user = null;
     mocks.authState.session = null;
     mocks.authState.isAuthenticated = false;
@@ -1431,15 +1431,14 @@ describe("Quality Hub permanent read-only Changelog behavior", () => {
     fireEvent.click(screen.getByRole("button", { name: "How to Use" }));
 
     const dialog = screen.getByRole("dialog");
-    expect(dialog).toHaveTextContent(
-      /Track active implementation in the applicable capability's Current Work tab in Chronicle Knowledge Base\./,
+    expect(dialog).toHaveTextContent(/Quality Hub stores scan mechanics and scan results\./);
+    expect(screen.getByRole("link", { name: /Open Chronicle Work Manual — Start Here/i })).toHaveAttribute(
+      "href",
+      "/style-guide/chronicle-knowledge-base?section=chronicle-work-manual&tab=start-here#chronicle-work-manual",
     );
-    expect(dialog).toHaveTextContent(
-      /After evidence and human acceptance, the guarded closeout workflow creates the repository Changelog record\./,
-    );
-    expect(dialog).toHaveTextContent(
-      /Changelog: read-only accepted history created by guarded closeout, never by a manual Quality Hub edit or import\./,
-    );
+    expect(dialog).toHaveTextContent(/A suspected finding is not automatically a verified Issue\./);
+    expect(dialog).not.toHaveTextContent(/Track active implementation/i);
+    expect(dialog).not.toHaveTextContent(/guarded closeout workflow creates/i);
     expect(dialog).not.toHaveTextContent(/Document implementation in Change Log/);
     expect(dialog).not.toHaveTextContent(/add a Change Log entry/i);
     expect(mocks.from).not.toHaveBeenCalled();

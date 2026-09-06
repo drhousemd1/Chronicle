@@ -6,8 +6,10 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { prepareKnowledgeRecordTransaction } from "../../../scripts/knowledge-records/engine";
 import {
+  acquireKnowledgeScopedWriterLock,
   acquireKnowledgeTransactionLock,
   markKnowledgeTransactionUnfinished,
+  releaseKnowledgeScopedWriterLock,
   releaseKnowledgeTransactionLock,
 } from "../../../scripts/knowledge-records/transaction-store";
 import {
@@ -126,6 +128,23 @@ async function fixtureRepository() {
   const repository = await createKnowledgeRecordTransactionTestRepository();
   cleanups.push(repository.cleanup);
   return repository;
+}
+
+async function prepareScopedProjectUpdate(repoRoot: string) {
+  const request = await createProjectUpdateRequestPackage();
+  cleanups.push(request.cleanup);
+  const prepared = await prepareKnowledgeRecordTransaction({
+    repoRoot,
+    requestPath: request.requestPath,
+    expectedKind: "project-update",
+    dependencies: { today: () => KNOWLEDGE_TRANSACTION_FIXTURE_AS_OF },
+  });
+  const scopedWriter = await acquireKnowledgeScopedWriterLock({
+    repoRoot,
+    command: "apply project-update",
+    transactionId: prepared.transactionId,
+  });
+  return scopedWriter;
 }
 
 describe("full-duration Knowledge certification runner", () => {
@@ -315,6 +334,60 @@ describe("full-duration Knowledge certification runner", () => {
       );
       await expect(access(protectedCommand.readyPath)).rejects.toThrow();
       await releaseKnowledgeTransactionLock(lock);
+    },
+    10_000,
+  );
+
+  it("waits for short-lived scoped record work before starting certification", async () => {
+    const repository = await fixtureRepository();
+    const scopedWriter = await prepareScopedProjectUpdate(repository.repoRoot);
+    const protectedCommand = spawn(
+      VITE_NODE,
+      [
+        RUNNER,
+        "lease-after-scoped-writer",
+        "--",
+        process.execPath,
+        "-e",
+        "process.stdout.write('certification-ran')",
+      ],
+      {
+        cwd: repository.repoRoot,
+        env: process.env,
+        stdio: ["ignore", "pipe", "pipe"],
+      },
+    );
+    children.add(protectedCommand);
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    await releaseKnowledgeScopedWriterLock(scopedWriter);
+
+    await expect(childResult(protectedCommand)).resolves.toMatchObject({
+      exitCode: 0,
+      signal: null,
+      stdout: "certification-ran",
+      stderr: "",
+    });
+  });
+
+  it(
+    "times out the later certification command without interrupting a live scoped writer",
+    async () => {
+      const repository = await fixtureRepository();
+      const scopedWriter = await prepareScopedProjectUpdate(repository.repoRoot);
+      const protectedCommand = startWaitingCertification(
+        repository.repoRoot,
+        "lease-times-out-after-scoped-writer",
+      );
+
+      const result = await protectedCommand.result;
+      expect(result.exitCode).toBe(1);
+      expect(result.stderr).toContain(
+        "Timed out waiting for active Knowledge record work before starting lease-times-out-after-scoped-writer.",
+      );
+      await expect(access(protectedCommand.readyPath)).rejects.toThrow();
+
+      await releaseKnowledgeScopedWriterLock(scopedWriter);
     },
     10_000,
   );

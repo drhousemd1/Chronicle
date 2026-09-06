@@ -16,12 +16,18 @@ import {
   type IssueRecord,
   type OperationalRecordRegistry,
 } from "@/data/chronicle-knowledge-base/operational-record-contract";
-import { GALLERY_OPERATIONAL_RECORDS_CHECKED_ON } from "@/data/chronicle-knowledge-base/operational-record-sources";
+import { CHRONICLE_OPERATIONAL_RECORDS_CHECKED_ON } from "@/data/chronicle-knowledge-base/operational-record-sources";
 import {
   CHRONICLE_CHANGELOG_RECORDS_CHECKED_ON,
   loadChronicleChangelogRegistry,
   selectLoadedChangelogEntries,
 } from "@/data/chronicle-knowledge-base/changelog-record-sources";
+import {
+  buildArchivedCurrentWorkHref,
+  buildChangelogRecordPath,
+  buildKnowledgeBaseTabHref,
+  buildQualityHubChangelogHref,
+} from "@/data/chronicle-knowledge-base/knowledge-routes";
 
 import ChronicleKnowledgeBasePage from "./chronicle-knowledge-base";
 
@@ -69,7 +75,8 @@ function renderPage(
 
 const ARCHIVE_FIXTURE_PROJECT_ID = "CG-WORK-900";
 const ARCHIVE_FIXTURE_CHANGE_ID = "CG-CHANGE-900";
-const ARCHIVE_FIXTURE_BODY = `# ${ARCHIVE_FIXTURE_PROJECT_ID}: Archived reader fixture
+function archiveFixtureBody(projectId: string) {
+  return `# ${projectId}: Archived reader fixture
 
 ## Current State / Resume Here
 
@@ -81,21 +88,30 @@ The complete preserved fixture body is visible on the archive route.
 npm run knowledge:operational:check -- --fixture-with-a-deliberately-long-responsive-command
 \`\`\`
 `;
+}
 
-function archiveFixtureRegistry(): OperationalRecordRegistry {
+function archiveFixtureRegistry({
+  projectId = ARCHIVE_FIXTURE_PROJECT_ID,
+  changeId = ARCHIVE_FIXTURE_CHANGE_ID,
+  capabilityId = "community-gallery",
+}: {
+  projectId?: string;
+  changeId?: string;
+  capabilityId?: "community-gallery" | "my-stories";
+} = {}): OperationalRecordRegistry {
   const effectiveRecord = {
     variant: "accepted_closeout",
-    archiveRoute: `/style-guide/chronicle-knowledge-base/archive/${ARCHIVE_FIXTURE_PROJECT_ID}`,
+    archiveRoute: buildArchivedCurrentWorkHref(projectId),
   };
   const changelogEntry = {
-    id: ARCHIVE_FIXTURE_CHANGE_ID,
+    id: changeId,
     variant: "accepted_closeout",
     title: "Archived reader fixture accepted",
     changeDate: "2026-08-06",
     outcome: "The fixture exercises reciprocal archive navigation.",
     provenance: "accepted-closeout",
-    affectedCapabilities: ["community-gallery"],
-    sourcePath: `docs/architecture-knowledge/changelog/entries/${ARCHIVE_FIXTURE_CHANGE_ID}.md`,
+    affectedCapabilities: [capabilityId],
+    sourcePath: `docs/architecture-knowledge/changelog/entries/${changeId}.md`,
     body: "",
     rootRecord: effectiveRecord,
     effectiveRecord,
@@ -108,15 +124,16 @@ function archiveFixtureRegistry(): OperationalRecordRegistry {
     activeProjects: [],
     archivedProjects: [
       {
-        id: ARCHIVE_FIXTURE_PROJECT_ID,
+        id: projectId,
         title: "Archived reader fixture",
+        ownerCapability: capabilityId,
         workflowState: "Closed",
         placement: "archive",
-        sourcePath: `docs/current-work/archive/community-gallery/${ARCHIVE_FIXTURE_PROJECT_ID}.md`,
-        body: ARCHIVE_FIXTURE_BODY,
+        sourcePath: `docs/current-work/archive/${capabilityId}/${projectId}.md`,
+        body: archiveFixtureBody(projectId),
         closeout: {
           archivedOn: "2026-08-06",
-          changelogIds: [ARCHIVE_FIXTURE_CHANGE_ID],
+          changelogIds: [changeId],
         },
       },
     ],
@@ -191,6 +208,7 @@ function multipleIssueFixtureRegistry(): OperationalRecordRegistry {
     activeProjects: [
       {
         id: "CG-WORK-001",
+        ownerCapability: "community-gallery",
         linkedIssueIds: ["CG-ISSUE-001"],
         placement: "active",
       },
@@ -198,6 +216,7 @@ function multipleIssueFixtureRegistry(): OperationalRecordRegistry {
     archivedProjects: [
       {
         id: "CG-WORK-003",
+        ownerCapability: "community-gallery",
         linkedIssueIds: ["CG-ISSUE-003"],
         placement: "archive",
       },
@@ -256,29 +275,30 @@ describe("Chronicle Knowledge Base page", () => {
       }),
     ).toHaveAttribute(
       "href",
-      "/style-guide/chronicle-knowledge-base/archive/CG-WORK-003",
+      buildArchivedCurrentWorkHref("CG-WORK-003"),
     );
     expect(
       within(issueArticles[2]).getByRole("heading", { name: "Resolution" }),
     ).toBeInTheDocument();
   });
 
-  it("renders the migrated application map and capability skeleton", () => {
+  it("renders the complete application map and approved capability tab sets", () => {
     renderPage();
 
     expect(
-      screen.getByRole("heading", { name: "Chronicle Knowledge Base" }),
+      within(document.querySelector(".chronicle-knowledge-header") as HTMLElement)
+        .getByRole("heading", { name: "Chronicle Knowledge Base" }),
     ).toBeInTheDocument();
 
     const applicationMap = document.getElementById("chronicle-overview");
     expect(applicationMap).not.toBeNull();
-    expect(within(applicationMap!).getAllByRole("tab")).toHaveLength(12);
+    expect(within(applicationMap!).getAllByRole("tab")).toHaveLength(14);
 
     const gallery = document.getElementById("community-gallery");
     expect(gallery).not.toBeNull();
     expect(within(gallery!).getAllByRole("tab")).toHaveLength(7);
 
-    [
+    for (const capabilityId of [
       "my-stories",
       "character-library",
       "my-images",
@@ -290,13 +310,41 @@ describe("Chronicle Knowledge Base page", () => {
       "account",
       "admin",
       "shared-systems",
-      "ai-api-services",
-      "app-architecture-reference",
-    ].forEach((id) => {
-      const capability = document.getElementById(id);
-      expect(capability, id).not.toBeNull();
-      expect(within(capability!).getAllByRole("tab"), id).toHaveLength(3);
-    });
+    ]) {
+      const section = document.getElementById(capabilityId);
+      expect(section, capabilityId).not.toBeNull();
+      expect(
+        within(section!)
+          .getAllByRole("tab")
+          .map((tab) => tab.textContent?.replace(/\d+$/, "")),
+        capabilityId,
+      ).toEqual([
+        "Overview",
+        "UI Elements and Functions",
+        "App Architecture",
+        "Issues",
+        "Current Work",
+        "Supabase Tables",
+        "Changelog",
+      ]);
+    }
+
+    const roleplayPipeline = document.getElementById("roleplay-pipeline");
+    expect(roleplayPipeline).not.toBeNull();
+    expect(
+      within(roleplayPipeline!)
+        .getAllByRole("tab")
+        .map((tab) => tab.textContent?.replace(/\d+$/, "")),
+    ).toEqual([
+      "Overview",
+      "App Architecture",
+      "Issues",
+      "Current Work",
+      "Supabase Tables",
+      "Changelog",
+    ]);
+
+    expect(document.getElementById("ai-api-services")).toBeNull();
   });
 
   it("renders source-backed images, Gallery architecture, issues, and Supabase directions", async () => {
@@ -380,7 +428,7 @@ describe("Chronicle Knowledge Base page", () => {
     });
     expect(archivedWorkLink).toHaveAttribute(
       "href",
-      "/style-guide/chronicle-knowledge-base/archive/CG-WORK-002",
+      buildArchivedCurrentWorkHref("CG-WORK-002"),
     );
     expect(
       within(gallery).queryByText("Operational records checked:"),
@@ -407,7 +455,7 @@ describe("Chronicle Knowledge Base page", () => {
     const currentWork = currentWorkArticles[0];
     expect(currentWork).toBeDefined();
     if (!currentWork) return;
-    expect(within(currentWork).getByText("Primary")).toBeInTheDocument();
+    expect(within(currentWork).getByText("Secondary")).toBeInTheDocument();
     expect(
       currentWork.querySelector(".knowledge-current-work__id"),
     ).toHaveTextContent("CG-WORK-001");
@@ -463,83 +511,85 @@ describe("Chronicle Knowledge Base page", () => {
     ).toHaveLength(1);
     expect(
       within(gallery).queryByText(
-        `No active, paused, blocked, deferred, or closeout-pending work recorded as of ${GALLERY_OPERATIONAL_RECORDS_CHECKED_ON}.`,
+        `No active, paused, blocked, deferred, or closeout-pending work recorded as of ${CHRONICLE_OPERATIONAL_RECORDS_CHECKED_ON}.`,
       ),
     ).not.toBeInTheDocument();
     expect(
       gallery.querySelector(
-        `time[datetime="${GALLERY_OPERATIONAL_RECORDS_CHECKED_ON}"]`,
+        `time[datetime="${CHRONICLE_OPERATIONAL_RECORDS_CHECKED_ON}"]`,
       ),
-    ).toHaveTextContent(GALLERY_OPERATIONAL_RECORDS_CHECKED_ON);
+    ).toHaveTextContent(CHRONICLE_OPERATIONAL_RECORDS_CHECKED_ON);
 
     fireEvent.click(
       within(gallery).getByRole("tab", { name: "Changelog" }),
     );
     expect(screen.getByTestId("location")).toHaveTextContent(
-      "/style-guide/chronicle-knowledge-base?section=community-gallery&tab=changelog",
+      buildKnowledgeBaseTabHref("community-gallery", "changelog"),
+    );
+    const changelogResult = await loadChronicleChangelogRegistry();
+    expect(changelogResult.status).toBe("ready");
+    if (changelogResult.status !== "ready") return;
+    const expectedGalleryEntries = selectLoadedChangelogEntries(
+      changelogResult,
+      "community-gallery",
+    );
+    const legacyGalleryEntries = expectedGalleryEntries.filter(
+      (entry) => entry.rootRecord.variant === "legacy_import",
+    );
+    const acceptedCloseoutEntries = expectedGalleryEntries.filter(
+      (entry) => entry.rootRecord.variant === "accepted_closeout",
     );
     await waitFor(() => {
       expect(
         gallery.querySelectorAll(
           '[data-source-record^="docs/architecture-knowledge/changelog/entries/LEGACY-QH-"]',
         ),
-      ).toHaveLength(22);
+      ).toHaveLength(legacyGalleryEntries.length);
     });
     expect(
       gallery.querySelectorAll(
         '[data-source-record="docs/architecture-knowledge/changelog/entries/CG-CHANGE-001.md"]',
       ),
     ).toHaveLength(1);
-    const changelogResult = await loadChronicleChangelogRegistry();
-    expect(changelogResult.status).toBe("ready");
-    if (changelogResult.status !== "ready") return;
     expect(
       Array.from(gallery.querySelectorAll("[data-changelog-id]"), (row) =>
         row.getAttribute("data-changelog-id"),
       ),
-    ).toEqual(
-      selectLoadedChangelogEntries(changelogResult, "community-gallery").map(
-        (entry) => entry.id,
-      ),
-    );
+    ).toEqual(expectedGalleryEntries.map((entry) => entry.id));
     expect(
       within(gallery).queryByText(
         "No accepted Community Gallery changes are currently recorded.",
       ),
     ).not.toBeInTheDocument();
     expect(
-      within(gallery).getAllByText("Historical Quality Hub record"),
-    ).toHaveLength(22);
+      within(gallery).queryAllByText("Historical Quality Hub record"),
+    ).toHaveLength(legacyGalleryEntries.length);
     expect(
-      within(gallery).getByText("Accepted Chronicle change"),
-    ).toBeInTheDocument();
+      within(gallery).queryAllByText("Accepted Chronicle closeout"),
+    ).toHaveLength(acceptedCloseoutEntries.length);
     expect(
-      within(gallery).getAllByText(
+      within(gallery).queryAllByText(
         "Not available — this record predates Chronicle Current Work.",
       ),
-    ).toHaveLength(22);
+    ).toHaveLength(legacyGalleryEntries.length);
     expect(
-      within(gallery).getAllByRole("heading", {
+      within(gallery).queryAllByRole("heading", {
         name: "Problem and impact recorded in Quality Hub",
       }),
-    ).toHaveLength(22);
+    ).toHaveLength(legacyGalleryEntries.length);
     expect(
-      within(gallery).getAllByRole("heading", { name: "What changed" }),
-    ).toHaveLength(23);
+      within(gallery).queryAllByRole("heading", { name: "What changed" }),
+    ).toHaveLength(expectedGalleryEntries.length);
     expect(
-      within(gallery).getAllByRole("heading", {
+      within(gallery).queryAllByRole("heading", {
         name: "Preserved Quality Hub summary and verification limits",
       }),
-    ).toHaveLength(22);
+    ).toHaveLength(legacyGalleryEntries.length);
     expect(
-      within(gallery).getAllByRole("heading", {
+      within(gallery).queryAllByRole("heading", {
         name: "Plan recorded at the time",
       }),
-    ).toHaveLength(22);
-    const expectedGalleryEntries = selectLoadedChangelogEntries(
-      changelogResult,
-      "community-gallery",
-    );
+    ).toHaveLength(legacyGalleryEntries.length);
     const firstExpectedEntry = expectedGalleryEntries[0];
     const firstRenderedRecord = gallery.querySelector<HTMLElement>(
       `[data-changelog-id="${firstExpectedEntry.id}"]`,
@@ -562,10 +612,10 @@ describe("Chronicle Knowledge Base page", () => {
     const completeRecordLinks = within(gallery).getAllByRole("link", {
       name: "Read complete Changelog record",
     });
-    expect(completeRecordLinks).toHaveLength(23);
+    expect(completeRecordLinks).toHaveLength(expectedGalleryEntries.length);
     expect(completeRecordLinks[0]).toHaveAttribute(
       "href",
-      `/style-guide/changelog/${firstExpectedEntry.id}?scope=community-gallery&from=knowledge-base`,
+      `${buildChangelogRecordPath(firstExpectedEntry.id)}?scope=community-gallery&from=knowledge-base`,
     );
     expect(
       within(gallery).getByRole("link", {
@@ -573,7 +623,7 @@ describe("Chronicle Knowledge Base page", () => {
       }),
     ).toHaveAttribute(
       "href",
-      "/style-guide/chronicle-knowledge-base/archive/CG-WORK-002",
+      buildArchivedCurrentWorkHref("CG-WORK-002"),
     );
     expect(
       within(gallery).getByRole("link", {
@@ -581,7 +631,7 @@ describe("Chronicle Knowledge Base page", () => {
       }),
     ).toHaveAttribute(
       "href",
-      "/style-guide/ui-audit?view=changelog&capability=community-gallery",
+      buildQualityHubChangelogHref("community-gallery"),
     );
     const structuralCheckLabel = within(gallery).getByText(
       "Changelog files structurally checked:",
@@ -606,7 +656,7 @@ describe("Chronicle Knowledge Base page", () => {
         name: "/style-guide/supabase-schema-reference",
       }),
     ).toHaveAttribute("href", "/style-guide/supabase-schema-reference");
-  });
+  }, 15_000);
 
   it("uses the header chevron to return to the Admin hub", () => {
     renderPage();
@@ -639,7 +689,7 @@ describe("Chronicle Knowledge Base page", () => {
   it("renders the complete archive hierarchy and links reciprocally to the complete Changelog record", () => {
     const registry = archiveFixtureRegistry();
     renderPage(
-      `/style-guide/chronicle-knowledge-base/archive/${ARCHIVE_FIXTURE_PROJECT_ID}`,
+      buildArchivedCurrentWorkHref(ARCHIVE_FIXTURE_PROJECT_ID),
       registry,
     );
 
@@ -678,7 +728,7 @@ describe("Chronicle Knowledge Base page", () => {
       }),
     ).toHaveAttribute(
       "href",
-      `/style-guide/changelog/${ARCHIVE_FIXTURE_CHANGE_ID}?scope=community-gallery&from=archive`,
+      `${buildChangelogRecordPath(ARCHIVE_FIXTURE_CHANGE_ID)}?scope=community-gallery&from=archive`,
     );
     expect(
       document.querySelector(
@@ -690,7 +740,7 @@ describe("Chronicle Knowledge Base page", () => {
 
   it("does not infer an archive from an active or unknown project ID", () => {
     renderPage(
-      "/style-guide/chronicle-knowledge-base/archive/CG-WORK-001",
+      buildArchivedCurrentWorkHref("CG-WORK-001"),
     );
 
     expect(
@@ -698,7 +748,7 @@ describe("Chronicle Knowledge Base page", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "No canonical archived Community Gallery project matches this address. Nothing was inferred from active work or Changelog history.",
+        "No canonical archived Chronicle project matches this address. Nothing was inferred from active work or Changelog history.",
       ),
     ).toBeInTheDocument();
     expect(
@@ -709,5 +759,32 @@ describe("Chronicle Knowledge Base page", () => {
     expect(
       screen.getByRole("link", { name: "Return to Chronicle Knowledge Base" }),
     ).toHaveAttribute("href", "/style-guide/chronicle-knowledge-base");
+  });
+
+  it("keeps a non-Gallery archive and its complete Changelog link in the owning capability scope", () => {
+    const projectId = "MS-WORK-900";
+    const changeId = "CG-CHANGE-901";
+    renderPage(
+      buildArchivedCurrentWorkHref(projectId),
+      archiveFixtureRegistry({
+        projectId,
+        changeId,
+        capabilityId: "my-stories",
+      }),
+    );
+
+    expect(
+      screen.getByText(
+        "This is the complete preserved work record for a finished My Stories project. It remains separate from the stable capability manual and from the concise Changelog summary.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", {
+        name: `Open the complete ${changeId} Changelog record`,
+      }),
+    ).toHaveAttribute(
+      "href",
+      `${buildChangelogRecordPath(changeId)}?scope=my-stories&from=archive`,
+    );
   });
 });

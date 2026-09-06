@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import React from "react";
+import { CHRONICLE_DARK } from "@/components/chronicle/chronicle-dark-ui";
 
 // ─── inject global styles for always-visible scrollbars ───────
 export const GLOBAL_STYLE = `
@@ -47,19 +48,19 @@ export const C = {
 
 // ─── dark palette — overview + sidebar only ───────────────────
 export const D = {
-  bg:          "#0d0e12",
-  sidebar:     "#1b1b20",
-  shell:       "#2a2a2f",
-  tray:        "#2e2e33",
-  elevated:    "#3c3e47",
-  recessed:    "#1c1c1f",
-  shellShadow: "0 12px 32px -2px rgba(0,0,0,0.50), inset 1px 1px 0 rgba(255,255,255,0.09), inset -1px -1px 0 rgba(0,0,0,0.35)",
-  trayShadow:  "inset 1px 1px 0 rgba(255,255,255,0.07), inset -1px -1px 0 rgba(0,0,0,0.30), 0 4px 12px rgba(0,0,0,0.25)",
-  btnShadow:   "0 8px 24px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.09), inset 0 -1px 0 rgba(0,0,0,0.20)",
-  text:        "#e4e1e8",
-  muted:       "#a1a1aa",
-  dim:         "#525260",
-  divider:     "rgba(255,255,255,0.06)",
+  bg:          CHRONICLE_DARK.background,
+  sidebar:     CHRONICLE_DARK.sidebar,
+  shell:       CHRONICLE_DARK.shell,
+  tray:        CHRONICLE_DARK.tray,
+  elevated:    CHRONICLE_DARK.elevated,
+  recessed:    CHRONICLE_DARK.recessed,
+  shellShadow: CHRONICLE_DARK.shellShadow,
+  trayShadow:  CHRONICLE_DARK.trayShadow,
+  btnShadow:   CHRONICLE_DARK.buttonShadow,
+  text:        CHRONICLE_DARK.text,
+  muted:       CHRONICLE_DARK.muted,
+  dim:         CHRONICLE_DARK.dim,
+  divider:     CHRONICLE_DARK.divider,
   blue:        "#3b82f6",
   blueGlow:    "0 2px 8px rgba(59,130,246,0.35)",
   blueActive:  "rgba(59,130,246,0.12)",

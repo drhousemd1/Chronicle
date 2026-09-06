@@ -21,6 +21,7 @@ import {
   KNOWLEDGE_TERMINAL_RECEIPT_NAME_PATTERN,
   assertKnowledgeCertificationLeaseMetadata,
   assertKnowledgeControlCommand,
+  assertKnowledgeScopedWriterMetadata,
   assertKnowledgeUnfinishedMarker,
   assertKnowledgeWriterLockMetadata,
   isKnowledgeTransactionId,
@@ -28,6 +29,8 @@ import {
   parseKnowledgeCertificationLeaseDirectoryName,
   parseKnowledgeCertificationLeaseTransitionName,
   parseKnowledgePendingFileName,
+  parseKnowledgeScopedWriterDirectoryName,
+  parseKnowledgeScopedWriterTransitionName,
   parseKnowledgeTransactionStagingName,
   parseKnowledgeWriterLockRecoveryName,
   parseKnowledgeWriterLockStagingName,
@@ -326,6 +329,68 @@ function inspectCertificationLeaseRoot(transactionRoot) {
   return Object.freeze({ leases, recoveryArtifactsPresent });
 }
 
+function inspectScopedWriterRoot(transactionRoot) {
+  const scopedRoot = ordinaryRealDirectory(
+    path.join(transactionRoot, KNOWLEDGE_CONTROL_NAMES.scopedWriterRoot),
+    "Knowledge scoped writer root",
+    0o700,
+  );
+  let activeCount = 0;
+  let recoveryArtifactsPresent = false;
+  for (const entry of readdirSync(scopedRoot, { withFileTypes: true })) {
+    const transition = parseKnowledgeScopedWriterTransitionName(entry.name);
+    if (transition) {
+      if (
+        !entry.isDirectory() ||
+        transition.owner.lockId !== transition.lockId
+      ) {
+        throw new Error("Knowledge scoped writer transition is unsafe.");
+      }
+      ordinaryRealDirectory(
+        path.join(scopedRoot, entry.name),
+        "Knowledge scoped writer transition",
+        0o700,
+      );
+      recoveryArtifactsPresent = true;
+      continue;
+    }
+    const lockId = parseKnowledgeScopedWriterDirectoryName(entry.name);
+    if (!lockId || !entry.isDirectory()) {
+      throw new Error("Knowledge scoped writer root contains an unrecognized artifact.");
+    }
+    const lockDirectory = ordinaryRealDirectory(
+      path.join(scopedRoot, entry.name),
+      "Knowledge scoped writer lock",
+      0o700,
+    );
+    const inventory = readdirSync(lockDirectory);
+    if (
+      inventory.length !== 1 ||
+      inventory[0] !== KNOWLEDGE_CONTROL_NAMES.scopedWriterMetadata
+    ) {
+      throw new Error("Knowledge scoped writer lock inventory is malformed.");
+    }
+    const metadata = assertKnowledgeScopedWriterMetadata(
+      readPrivateJson(
+        path.join(
+          lockDirectory,
+          KNOWLEDGE_CONTROL_NAMES.scopedWriterMetadata,
+        ),
+        "Knowledge scoped writer lock metadata",
+        KNOWLEDGE_CONTROL_LIMITS.metadataBytes,
+      ),
+    );
+    if (metadata.lockId !== lockId) {
+      throw new Error("Knowledge scoped writer identity does not match its directory.");
+    }
+    activeCount += 1;
+    if (metadata.hostname === os.hostname() && !isPidAlive(metadata.pid)) {
+      recoveryArtifactsPresent = true;
+    }
+  }
+  return Object.freeze({ activeCount, recoveryArtifactsPresent });
+}
+
 function inspectArtifactDirectory({
   directoryPath,
   label,
@@ -482,6 +547,7 @@ function inspectKnowledgeTransactionControl({ repoRoot }) {
       gitDirectory,
       transactionRoot,
       writerLockPresent: false,
+      activeScopedWriterCount: 0,
       activeCertificationLeaseCount: 0,
       unfinishedTransactionIds: [],
       recoveryArtifactsPresent: false,
@@ -495,6 +561,7 @@ function inspectKnowledgeTransactionControl({ repoRoot }) {
   );
 
   let writerLockPresent = false;
+  let activeScopedWriterCount = 0;
   let activeCertificationLeaseCount = 0;
   let recoveryArtifactsPresent = false;
   let certificationLeases = new Map();
@@ -516,6 +583,15 @@ function inspectKnowledgeTransactionControl({ repoRoot }) {
       const inspected = inspectCertificationLeaseRoot(transactionRoot);
       certificationLeases = inspected.leases;
       activeCertificationLeaseCount = certificationLeases.size;
+      recoveryArtifactsPresent ||= inspected.recoveryArtifactsPresent;
+      continue;
+    }
+    if (entry.name === KNOWLEDGE_CONTROL_NAMES.scopedWriterRoot) {
+      if (!entry.isDirectory() || activeScopedWriterCount > 0) {
+        throw new Error("Knowledge scoped writer root is unsafe.");
+      }
+      const inspected = inspectScopedWriterRoot(transactionRoot);
+      activeScopedWriterCount = inspected.activeCount;
       recoveryArtifactsPresent ||= inspected.recoveryArtifactsPresent;
       continue;
     }
@@ -554,6 +630,7 @@ function inspectKnowledgeTransactionControl({ repoRoot }) {
     gitDirectory,
     transactionRoot,
     writerLockPresent,
+    activeScopedWriterCount,
     activeCertificationLeaseCount,
     unfinishedTransactionIds,
     recoveryArtifactsPresent,
@@ -566,12 +643,14 @@ export function inspectKnowledgeTransactionGuard({ repoRoot }) {
   return Object.freeze({
     ok:
       !control.writerLockPresent &&
+      control.activeScopedWriterCount === 0 &&
       !control.recoveryArtifactsPresent &&
       control.unfinishedTransactionIds.length === 0,
     repositoryRoot: control.repositoryRoot,
     gitDirectory: control.gitDirectory,
     transactionRoot: control.transactionRoot,
     writerLockPresent: control.writerLockPresent,
+    activeScopedWriterCount: control.activeScopedWriterCount,
     activeCertificationLeaseCount: control.activeCertificationLeaseCount,
     unfinishedTransactionIds: Object.freeze([
       ...control.unfinishedTransactionIds,
@@ -596,6 +675,7 @@ export function assertActiveKnowledgeCertificationContext({
     const control = inspectKnowledgeTransactionControl({ repoRoot });
     if (
       control.writerLockPresent ||
+      control.activeScopedWriterCount > 0 ||
       control.recoveryArtifactsPresent ||
       control.unfinishedTransactionIds.length > 0
     ) {
@@ -632,6 +712,11 @@ export function assertNoUnfinishedKnowledgeTransaction({ repoRoot }) {
   const reasons = [];
   if (status.writerLockPresent) {
     reasons.push("a transaction writer lock is active");
+  }
+  if (status.activeScopedWriterCount > 0) {
+    reasons.push(
+      `${status.activeScopedWriterCount} scoped record writer${status.activeScopedWriterCount === 1 ? " is" : "s are"} active`,
+    );
   }
   if (status.unfinishedTransactionIds.length > 0) {
     reasons.push(

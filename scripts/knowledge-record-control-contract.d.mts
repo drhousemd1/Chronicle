@@ -27,6 +27,18 @@ export type KnowledgeCertificationLeaseMetadata = Readonly<{
   metadataSha256: string;
 }>;
 
+export type KnowledgeScopedWriterMetadata = Readonly<{
+  storeVersion: number;
+  lockId: string;
+  pid: number;
+  hostname: string;
+  startedAt: string;
+  command: string;
+  transactionId: string;
+  scopes: readonly string[];
+  metadataSha256: string;
+}>;
+
 export type KnowledgeUnfinishedMarker = Readonly<{
   storeVersion: number;
   transactionId: string;
@@ -42,6 +54,8 @@ export const KNOWLEDGE_CONTROL_NAMES: Readonly<{
   transactionRoot: "chronicle-knowledge-transactions";
   writerLock: "writer-lock";
   writerLockMetadata: "lock.json";
+  scopedWriterRoot: "scoped-writers";
+  scopedWriterMetadata: "lock.json";
   certificationLeaseRoot: "certification-leases";
   certificationLeaseMetadata: "lease.json";
   manifest: "manifest.json";
@@ -75,6 +89,9 @@ export function assertKnowledgeWriterLockMetadata(
 export function assertKnowledgeCertificationLeaseMetadata(
   value: unknown,
 ): KnowledgeCertificationLeaseMetadata;
+export function assertKnowledgeScopedWriterMetadata(
+  value: unknown,
+): KnowledgeScopedWriterMetadata;
 export function assertKnowledgeUnfinishedMarker(
   value: unknown,
   transactionId: string,
@@ -86,6 +103,22 @@ export function parseKnowledgeWriterLockStagingName(
 ): KnowledgeArtifactOwner | null;
 export function parseKnowledgeWriterLockRecoveryName(name: unknown): Readonly<{
   phase: "reclaimed" | "removing";
+  owner: KnowledgeArtifactOwner;
+}> | null;
+export function knowledgeScopedWriterDirectoryName(lockId: unknown): string;
+export function parseKnowledgeScopedWriterDirectoryName(
+  name: unknown,
+): string | null;
+export function knowledgeScopedWriterTransitionName(
+  mode: "preparing" | "removing" | "reclaimed",
+  lockId: string,
+  owner: Readonly<{ lockId: string; pid: number; hostname: string }>,
+): string;
+export function parseKnowledgeScopedWriterTransitionName(
+  name: unknown,
+): Readonly<{
+  mode: "preparing" | "removing" | "reclaimed";
+  lockId: string;
   owner: KnowledgeArtifactOwner;
 }> | null;
 export function parseKnowledgeTransactionStagingName(name: unknown): Readonly<{

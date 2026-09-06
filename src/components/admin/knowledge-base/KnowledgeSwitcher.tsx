@@ -18,6 +18,7 @@ const OPERATIONAL_CONTENT_KINDS = new Set([
   "issue-records",
   "current-work-records",
   "changelog-records",
+  "shared-records",
 ]);
 
 type KnowledgeSwitcherProps = {
@@ -25,6 +26,8 @@ type KnowledgeSwitcherProps = {
   renderContent: (tab: KnowledgeTab) => ReactNode;
   requestedTabId?: string;
   onTabSelected?: (tab: KnowledgeTab) => void;
+  /** Render the same panels together only while creating an offline snapshot. */
+  exportAllTabs?: boolean;
 };
 
 export function KnowledgeSwitcher({
@@ -32,6 +35,7 @@ export function KnowledgeSwitcher({
   renderContent,
   requestedTabId,
   onTabSelected,
+  exportAllTabs = false,
 }: KnowledgeSwitcherProps) {
   const [activeTabId, setActiveTabId] = useState(() =>
     section.tabs.some((tab) => tab.id === requestedTabId)
@@ -145,7 +149,7 @@ export function KnowledgeSwitcher({
                 .join(" ")}
               aria-label={accessibleLabel}
               aria-selected={selected}
-              aria-controls={panelId}
+              aria-controls={exportAllTabs ? `${section.id}-panel-${tab.id}` : panelId}
               tabIndex={selected ? 0 : -1}
               onClick={() => selectTab(index)}
               onKeyDown={(event) => handleTabKeyDown(event, index)}
@@ -161,26 +165,28 @@ export function KnowledgeSwitcher({
         })}
       </div>
 
-      <section
-        ref={panelRef}
-        id={panelId}
+      {(exportAllTabs ? section.tabs : [activeTab]).map((panelTab) => <section
+        key={exportAllTabs ? panelTab.id : "active-panel"}
+        ref={panelTab.id === activeTab.id ? panelRef : undefined}
+        id={exportAllTabs ? `${section.id}-panel-${panelTab.id}` : panelId}
+        hidden={exportAllTabs && panelTab.id !== activeTab.id}
         className="knowledge-content-panel"
         role="tabpanel"
-        aria-labelledby={`${section.id}-tab-${activeTab.id}`}
+        aria-labelledby={`${section.id}-tab-${panelTab.id}`}
         tabIndex={0}
       >
-        {!OPERATIONAL_CONTENT_KINDS.has(activeTab.contentKind) ? (
+        {!OPERATIONAL_CONTENT_KINDS.has(panelTab.contentKind) ? (
           <div className="knowledge-content-metadata">
             <span className="knowledge-metadata-pill">
-              Last Reviewed: {activeTab.reviewed ?? METADATA_PLACEHOLDER}
+              Last Reviewed: {panelTab.reviewed ?? METADATA_PLACEHOLDER}
             </span>
             <span className="knowledge-metadata-pill">
-              Last Updated: {activeTab.updated ?? METADATA_PLACEHOLDER}
+              Last Updated: {panelTab.updated ?? METADATA_PLACEHOLDER}
             </span>
           </div>
         ) : null}
-        <article className="knowledge-content">{renderContent(activeTab)}</article>
-      </section>
+        <article className="knowledge-content">{renderContent(panelTab)}</article>
+      </section>)}
     </section>
   );
 }

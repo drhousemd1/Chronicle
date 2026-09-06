@@ -14,6 +14,11 @@ import {
   loadChronicleChangelogRegistry,
   selectLoadedChangelogEntries,
 } from "@/data/chronicle-knowledge-base/changelog-record-sources";
+import {
+  buildChangelogRecordPath,
+  buildQualityHubChangelogHref,
+} from "@/data/chronicle-knowledge-base/knowledge-routes";
+import type { ChronicleCapabilityId } from "@/data/chronicle-knowledge-base/capability-ids";
 import UiAuditPage from "./ui-audit";
 
 const mocks = vi.hoisted(() => ({
@@ -65,17 +70,24 @@ function renderQualityHub(initialEntry: string) {
   );
 }
 
-async function expectCanonicalRows(count: number) {
-  await waitFor(() => {
-    expect(document.querySelectorAll("[data-changelog-id]")).toHaveLength(count);
-  });
-}
-
-async function expectedCanonicalIds(capability?: "community-gallery") {
+async function expectedCanonicalEntries(capability?: ChronicleCapabilityId) {
   const result = await loadChronicleChangelogRegistry();
   expect(result.status).toBe("ready");
   if (result.status !== "ready") return [];
-  return selectLoadedChangelogEntries(result, capability).map((entry) => entry.id);
+  return selectLoadedChangelogEntries(result, capability);
+}
+
+async function expectCanonicalRows(capability?: ChronicleCapabilityId, limit?: number) {
+  const entries = await expectedCanonicalEntries(capability);
+  const expectedCount = limit === undefined ? entries.length : Math.min(limit, entries.length);
+  await waitFor(() => {
+    expect(document.querySelectorAll("[data-changelog-id]")).toHaveLength(expectedCount);
+  });
+  return entries;
+}
+
+async function expectedCanonicalIds(capability?: ChronicleCapabilityId) {
+  return (await expectedCanonicalEntries(capability)).map((entry) => entry.id);
 }
 
 function renderedCanonicalIds() {
@@ -90,7 +102,7 @@ describe("Quality Hub canonical Changelog projection", () => {
     mocks.from.mockReset();
   });
 
-  it("opens the exact filtered URL with the same 23 repository records", async () => {
+  it("opens the exact filtered URL with the same derived repository projection", async () => {
     const ownerRegistry = structuredClone(qualityHubInitialRegistry);
     ownerRegistry.changeLog[0].title = "OWNER REGISTRY ONLY — MUST NOT RENDER";
     window.localStorage.setItem(
@@ -99,19 +111,21 @@ describe("Quality Hub canonical Changelog projection", () => {
     );
 
     renderQualityHub(
-      "/style-guide/ui-audit?view=changelog&capability=community-gallery",
+      buildQualityHubChangelogHref("community-gallery"),
     );
 
-    await expectCanonicalRows(23);
+    const filteredEntries = await expectCanonicalRows("community-gallery");
     expect(renderedCanonicalIds()).toEqual(
       await expectedCanonicalIds("community-gallery"),
     );
     expect(screen.getByTestId("location")).toHaveTextContent(
-      "/style-guide/ui-audit?view=changelog&capability=community-gallery",
+      buildQualityHubChangelogHref("community-gallery"),
     );
     expect(screen.getByText("Community Gallery")).toBeInTheDocument();
     expect(screen.queryByText("OWNER REGISTRY ONLY — MUST NOT RENDER")).not.toBeInTheDocument();
-    expect(screen.getAllByText("Historical Quality Hub record")).toHaveLength(22);
+    expect(screen.getAllByText("Historical Quality Hub record")).toHaveLength(
+      filteredEntries.filter((entry) => entry.rootRecord.variant === "legacy_import").length,
+    );
     const filteredIds = await expectedCanonicalIds("community-gallery");
     const firstFilteredRecord = document.querySelector<HTMLElement>(
       `[data-changelog-id="${filteredIds[0]}"]`,
@@ -127,7 +141,7 @@ describe("Quality Hub canonical Changelog projection", () => {
       screen.getAllByRole("link", { name: "Read complete Changelog record" })[0],
     ).toHaveAttribute(
       "href",
-      `/style-guide/changelog/${filteredIds[0]}?scope=community-gallery&from=quality-hub`,
+      `${buildChangelogRecordPath(filteredIds[0])}?scope=community-gallery&from=quality-hub`,
     );
     expect(
       screen.getByRole("button", { name: /^Changelog Read-only repository change history/ }),
@@ -138,7 +152,7 @@ describe("Quality Hub canonical Changelog projection", () => {
   it("presents the repository Changelog as read-only with no legacy edit controls", async () => {
     renderQualityHub("/style-guide/ui-audit?view=changelog");
 
-    await expectCanonicalRows(204);
+    await expectCanonicalRows();
     expect(screen.getByText("Repository history · Read-only")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /add entry/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /save entry/i })).not.toBeInTheDocument();
@@ -149,13 +163,13 @@ describe("Quality Hub canonical Changelog projection", () => {
       screen.getAllByRole("link", { name: "Read complete Changelog record" })[0],
     ).toHaveAttribute(
       "href",
-      `/style-guide/changelog/${globalIds[0]}?scope=global&from=quality-hub`,
+      `${buildChangelogRecordPath(globalIds[0])}?scope=global&from=quality-hub`,
     );
   });
 
-  it("shows all 204 records without a capability and treats an invalid capability as global", async () => {
+  it("shows the complete derived registry without a capability and treats an invalid capability as global", async () => {
     const { unmount } = renderQualityHub("/style-guide/ui-audit?view=changelog");
-    await expectCanonicalRows(204);
+    await expectCanonicalRows();
     expect(renderedCanonicalIds()).toEqual(await expectedCanonicalIds());
     expect(screen.getByText("All Chronicle records")).toBeInTheDocument();
     unmount();
@@ -163,8 +177,21 @@ describe("Quality Hub canonical Changelog projection", () => {
     renderQualityHub(
       "/style-guide/ui-audit?view=changelog&capability=unreviewed-capability",
     );
-    await expectCanonicalRows(204);
+    await expectCanonicalRows();
     expect(screen.getByText("All Chronicle records")).toBeInTheDocument();
+  });
+
+  it("preserves a capability-specific mapped history instead of widening it to global", async () => {
+    renderQualityHub(buildQualityHubChangelogHref("my-stories"));
+
+    await expectCanonicalRows("my-stories");
+    expect(screen.getByText("My Stories")).toBeInTheDocument();
+    expect(renderedCanonicalIds()).toEqual(await expectedCanonicalIds("my-stories"));
+    expect(screen.getByText("2 records")).toBeInTheDocument();
+    expect(screen.queryByText("No canonical Changelog records are currently verified as affecting My Stories.")).not.toBeInTheDocument();
+    expect(screen.getByTestId("location")).toHaveTextContent(
+      buildQualityHubChangelogHref("my-stories"),
+    );
   });
 
   it("falls back to Overview for an invalid view", async () => {
@@ -174,7 +201,7 @@ describe("Quality Hub canonical Changelog projection", () => {
     expect(screen.getByText("Quality Hub Navigation")).toBeInTheDocument();
     expect(screen.getByText("Recent Repository Changes Preview")).toBeInTheDocument();
     expect(screen.queryByText("Repository history")).not.toBeInTheDocument();
-    await expectCanonicalRows(5);
+    await expectCanonicalRows(undefined, 5);
   });
 
   it("uses canonical repository records for the Overview's recent history", async () => {
@@ -187,29 +214,37 @@ describe("Quality Hub canonical Changelog projection", () => {
 
     renderQualityHub("/style-guide/ui-audit");
 
-    await expectCanonicalRows(5);
+    const globalEntries = await expectCanonicalRows(undefined, 5);
     expect(screen.getByText("Recent Repository Changes Preview")).toBeInTheDocument();
-    expect(screen.getByText("5 of 204 records")).toBeInTheDocument();
+    const previewCount = Math.min(5, globalEntries.length);
+    expect(
+      screen.getByText(`${previewCount} of ${globalEntries.length} records`),
+    ).toBeInTheDocument();
     expect(
       screen.getByText(
         "This is a preview of the 5 newest records. Each preview links to the complete canonical record.",
       ),
     ).toBeInTheDocument();
+    const previewEntries = globalEntries.slice(0, previewCount);
     expect(
-      screen.getAllByRole("heading", {
+      screen.queryAllByRole("heading", {
         name: "Preserved Quality Hub summary preview",
       }),
-    ).toHaveLength(4);
+    ).toHaveLength(
+      previewEntries.filter((entry) => entry.rootRecord.variant === "legacy_import").length,
+    );
     expect(
-      screen.getByRole("heading", { name: "Accepted result preview" }),
-    ).toBeInTheDocument();
+      screen.queryAllByRole("heading", { name: "Accepted result preview" }),
+    ).toHaveLength(
+      previewEntries.filter((entry) => entry.rootRecord.variant !== "legacy_import").length,
+    );
     expect(screen.queryByRole("heading", { name: "What changed" })).not.toBeInTheDocument();
     const previewIds = (await expectedCanonicalIds()).slice(0, 5);
     const previewLinks = screen.getAllByRole("link", { name: "Read complete record" });
     expect(previewLinks).toHaveLength(5);
     expect(previewLinks[0]).toHaveAttribute(
       "href",
-      `/style-guide/changelog/${previewIds[0]}?scope=global&from=quality-hub-overview`,
+      `${buildChangelogRecordPath(previewIds[0])}?scope=global&from=quality-hub-overview`,
     );
     expect(screen.queryByText("OWNER REGISTRY ONLY — MUST NOT RENDER")).not.toBeInTheDocument();
     expect(screen.queryByText("Recent Change Log (Mirror)")).not.toBeInTheDocument();
@@ -221,27 +256,27 @@ describe("Quality Hub canonical Changelog projection", () => {
     fireEvent.click(
       screen.getByRole("button", { name: /^Changelog Read-only repository change history/ }),
     );
-    await expectCanonicalRows(204);
+    await expectCanonicalRows();
     expect(screen.getByTestId("location")).toHaveTextContent(
-      "/style-guide/ui-audit?view=changelog",
+      buildQualityHubChangelogHref(),
     );
 
     fireEvent.click(screen.getByRole("link", { name: "Show Community Gallery only" }));
-    await expectCanonicalRows(23);
+    await expectCanonicalRows("community-gallery");
     expect(screen.getByTestId("location")).toHaveTextContent(
-      "/style-guide/ui-audit?view=changelog&capability=community-gallery",
+      buildQualityHubChangelogHref("community-gallery"),
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Test Back" }));
-    await expectCanonicalRows(204);
+    await expectCanonicalRows();
     expect(screen.getByTestId("location")).toHaveTextContent(
-      "/style-guide/ui-audit?view=changelog",
+      buildQualityHubChangelogHref(),
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Test Forward" }));
-    await expectCanonicalRows(23);
+    await expectCanonicalRows("community-gallery");
     expect(screen.getByTestId("location")).toHaveTextContent(
-      "/style-guide/ui-audit?view=changelog&capability=community-gallery",
+      buildQualityHubChangelogHref("community-gallery"),
     );
   });
 
@@ -252,9 +287,9 @@ describe("Quality Hub canonical Changelog projection", () => {
       screen.getByRole("button", { name: /^Changelog Read-only repository change history/ }),
     );
 
-    await expectCanonicalRows(204);
+    await expectCanonicalRows();
     expect(screen.getByTestId("location")).toHaveTextContent(
-      "/style-guide/ui-audit?view=changelog",
+      buildQualityHubChangelogHref(),
     );
   });
 });

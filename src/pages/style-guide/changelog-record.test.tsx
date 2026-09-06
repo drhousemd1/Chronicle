@@ -274,6 +274,10 @@ describe("ChangelogRecordPage", () => {
   it.each([
     ["missing", "/style-guide/changelog/LEGACY-QH-cl-900"],
     ["invalid", "/style-guide/changelog/LEGACY-QH-cl-900?scope=not-a-scope"],
+    [
+      "not operational",
+      "/style-guide/changelog/LEGACY-QH-cl-900?scope=chronicle-overview",
+    ],
   ])("rejects an %s scope before loading canonical history", async (_label, address) => {
     const loader = vi.fn<ChangelogRegistryLoader>(readyLoader([legacyEntry()]));
     renderDetail(address, loader);
@@ -302,6 +306,28 @@ describe("ChangelogRecordPage", () => {
     ).toHaveAttribute(
       "href",
       "/style-guide/chronicle-knowledge-base?section=community-gallery&tab=changelog",
+    );
+  });
+
+  it.each([
+    ["my-stories", "My Stories"],
+    ["chat-interface", "Chat Interface"],
+  ])("preserves %s scope on an excluded complete-record address", async (scope, label) => {
+    const excluded = legacyEntry();
+    renderDetail(
+      `/style-guide/changelog/${excluded.id}?scope=${scope}&from=knowledge-base`,
+      readyLoader([excluded]),
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Record is outside the requested scope" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(`not positively verified as affecting ${label}`))).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: `Return to ${label} Changelog` }),
+    ).toHaveAttribute(
+      "href",
+      `/style-guide/chronicle-knowledge-base?section=${scope}&tab=changelog`,
     );
   });
 

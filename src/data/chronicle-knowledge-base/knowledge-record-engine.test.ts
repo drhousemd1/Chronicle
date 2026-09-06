@@ -41,6 +41,7 @@ import {
 } from "../../../scripts/knowledge-records/source-set";
 import {
   acquireKnowledgeCertificationLease,
+  acquireKnowledgeScopedWriterLock,
   acquireKnowledgeTransactionLock,
   appendKnowledgeTransactionJournalEvent,
   createPreparedKnowledgeTransaction,
@@ -49,26 +50,32 @@ import {
   openVerifiedKnowledgeTransaction,
   readKnowledgeTransactionJournal,
   releaseKnowledgeCertificationLease,
+  releaseKnowledgeScopedWriterLock,
   releaseKnowledgeTransactionLock,
   type KnowledgeTransactionOperationInput,
   type KnowledgeTransactionSnapshot,
 } from "../../../scripts/knowledge-records/transaction-store";
 import {
   KNOWLEDGE_TRANSACTION_FIXTURE_AS_OF,
+  KNOWLEDGE_TRANSACTION_FIXTURE_ACCEPTED_UPDATE_ID,
   KNOWLEDGE_TRANSACTION_FIXTURE_CHANGE_ID,
   KNOWLEDGE_TRANSACTION_FIXTURE_CORRECTION_ID,
   KNOWLEDGE_TRANSACTION_FIXTURE_CREATED_ISSUE_ID,
   KNOWLEDGE_TRANSACTION_FIXTURE_CREATED_PROJECT_ID,
+  KNOWLEDGE_TRANSACTION_FIXTURE_KS_PROJECT_ID,
   KNOWLEDGE_TRANSACTION_FIXTURE_ISSUE_ID,
   KNOWLEDGE_TRANSACTION_FIXTURE_LEGACY_ID,
   KNOWLEDGE_TRANSACTION_FIXTURE_PROJECT_ID,
   createCloseoutRequestPackage,
+  createAcceptedUpdateRequestPackage,
   createCorrectionRequestPackage,
   createIssueCreateRequestPackage,
   createIssueUpdateRequestPackage,
+  createIssueUpdateRequestPackageForSource,
   createKnowledgeRecordTransactionTestRepository,
   createLegacyImportRequestPackage,
   createProjectCreateRequestPackage,
+  createKnowledgeSystemProjectCreateRequestPackage,
   createProjectUpdateRequestPackage,
   createResolvedIssueCloseoutRequestPackage,
   installCorrectionTarget,
@@ -596,6 +603,7 @@ describe("knowledge record transaction engine", () => {
         transactionInventoryReadable: false,
         control: {
           writerLockPresent: true,
+          activeScopedWriterCount: 0,
           activeCertificationLeaseCount: 0,
           recoveryArtifactsPresent: false,
           blocker: "A Knowledge record writer is active or requires recovery.",
@@ -623,6 +631,7 @@ describe("knowledge record transaction engine", () => {
       expect(status.transactionInventoryReadable).toBe(true);
       expect(status.control).toEqual({
         writerLockPresent: false,
+        activeScopedWriterCount: 0,
         activeCertificationLeaseCount: 1,
         recoveryArtifactsPresent: false,
         blocker: null,
@@ -631,6 +640,43 @@ describe("knowledge record transaction engine", () => {
       await releaseKnowledgeCertificationLease(lease, {
         recoveryCapable: true,
       });
+    }
+  });
+
+  it("reports an active scoped writer as a safe status blocker", async () => {
+    const repository = track(
+      await createKnowledgeRecordTransactionTestRepository(),
+    );
+    const requestPackage = track(await createIssueUpdateRequestPackage());
+    const prepared = await prepareKnowledgeRecordTransaction({
+      repoRoot: repository.repoRoot,
+      requestPath: requestPackage.requestPath,
+      expectedKind: "issue-update",
+      dependencies: engineDependencies(),
+    });
+    const scoped = await acquireKnowledgeScopedWriterLock({
+      repoRoot: repository.repoRoot,
+      command: "apply issue-update",
+      transactionId: prepared.transactionId,
+    });
+
+    try {
+      await expect(
+        getKnowledgeRecordEngineStatus({ repoRoot: repository.repoRoot }),
+      ).resolves.toMatchObject({
+        transactions: [],
+        unfinishedTransactionIds: [],
+        transactionInventoryReadable: false,
+        control: {
+          writerLockPresent: false,
+          activeScopedWriterCount: 1,
+          activeCertificationLeaseCount: 0,
+          recoveryArtifactsPresent: false,
+          blocker: "A Knowledge record writer is active or requires recovery.",
+        },
+      });
+    } finally {
+      await releaseKnowledgeScopedWriterLock(scoped);
     }
   });
 
@@ -663,6 +709,7 @@ describe("knowledge record transaction engine", () => {
       transactionInventoryReadable: false,
       control: {
         writerLockPresent: false,
+        activeScopedWriterCount: 0,
         activeCertificationLeaseCount: 0,
         recoveryArtifactsPresent: true,
         blocker: "Transaction control recovery must finish before records can be inspected.",
@@ -1024,7 +1071,173 @@ describe("knowledge record transaction engine", () => {
     expect(repeatedJournal.events).toEqual(firstJournal.events);
     expect((await readFile(activePath)).equals(expectedBytes)).toBe(true);
     expect(await fileMode(activePath)).toBe(0o640);
+  }, 15_000);
+
+  it("keeps correction apply and idempotency on the global transaction path", async () => {
+    const repository = track(
+      await createKnowledgeRecordTransactionTestRepository(),
+    );
+    await installCorrectionTarget(repository.repoRoot);
+    const requestPackage = track(await createCorrectionRequestPackage());
+    const prepared = await prepareKnowledgeRecordTransaction({
+      repoRoot: repository.repoRoot,
+      requestPath: requestPackage.requestPath,
+      expectedKind: "correction",
+      dependencies: engineDependencies(),
+    });
+    const correctionPath = absoluteCanonicalPath(
+      repository.repoRoot,
+      canonicalRecordSourcePath(
+        "changelog",
+        KNOWLEDGE_TRANSACTION_FIXTURE_CORRECTION_ID,
+      ),
+    );
+    const expectedBytes = await readFile(
+      requestPackage.contentPaths[
+        `${KNOWLEDGE_TRANSACTION_FIXTURE_CORRECTION_ID}.md`
+      ],
+    );
+
+    const applied = await applyKnowledgeRecordTransaction({
+      repoRoot: repository.repoRoot,
+      transactionId: prepared.transactionId,
+      dependencies: engineDependencies(),
+    });
+    expect(applied.outcome).toBe("applied");
+    expect((await readFile(correctionPath)).equals(expectedBytes)).toBe(true);
+
+    await expect(
+      applyKnowledgeRecordTransaction({
+        repoRoot: repository.repoRoot,
+        transactionId: prepared.transactionId,
+        dependencies: engineDependencies(),
+      }),
+    ).resolves.toEqual({
+      transactionId: prepared.transactionId,
+      outcome: "already-applied",
+      validationSha256: applied.validationSha256,
+    });
   });
+
+  it("creates a supplied Accepted Update through the protected global transaction path", async () => {
+    const repository = track(
+      await createKnowledgeRecordTransactionTestRepository(),
+    );
+    const requestPackage = track(await createAcceptedUpdateRequestPackage());
+    const prepared = await prepareKnowledgeRecordTransaction({
+      repoRoot: repository.repoRoot,
+      requestPath: requestPackage.requestPath,
+      expectedKind: "accepted-update",
+      dependencies: engineDependencies(),
+    });
+    const targetPath = absoluteCanonicalPath(
+      repository.repoRoot,
+      canonicalRecordSourcePath(
+        "changelog",
+        KNOWLEDGE_TRANSACTION_FIXTURE_ACCEPTED_UPDATE_ID,
+      ),
+    );
+    const expectedBytes = await readFile(
+      requestPackage.contentPaths[
+        `${KNOWLEDGE_TRANSACTION_FIXTURE_ACCEPTED_UPDATE_ID}.md`
+      ],
+    );
+
+    const applied = await applyKnowledgeRecordTransaction({
+      repoRoot: repository.repoRoot,
+      transactionId: prepared.transactionId,
+      dependencies: engineDependencies(),
+    });
+    expect(applied.outcome).toBe("applied");
+    expect((await readFile(targetPath)).equals(expectedBytes)).toBe(true);
+    const status = await getKnowledgeRecordEngineStatus({
+      repoRoot: repository.repoRoot,
+    });
+    expect(status.transactionInventoryReadable).toBe(true);
+    expect(status.control.blocker).toBeNull();
+    expect(status.unfinishedTransactionIds).toEqual([]);
+  });
+
+  it("rebases two disjoint Issue updates against the latest registry and applies both", async () => {
+    const repository = track(
+      await createKnowledgeRecordTransactionTestRepository(),
+    );
+    const createPackage = track(await createIssueCreateRequestPackage());
+    const created = await prepareKnowledgeRecordTransaction({
+      repoRoot: repository.repoRoot,
+      requestPath: createPackage.requestPath,
+      expectedKind: "issue-create",
+      dependencies: engineDependencies(),
+    });
+    await applyKnowledgeRecordTransaction({
+      repoRoot: repository.repoRoot,
+      transactionId: created.transactionId,
+      dependencies: engineDependencies(),
+    });
+
+    const firstPath = absoluteCanonicalPath(
+      repository.repoRoot,
+      repository.issuePath,
+    );
+    const secondSourcePath = canonicalRecordSourcePath(
+      "issue",
+      KNOWLEDGE_TRANSACTION_FIXTURE_CREATED_ISSUE_ID,
+    );
+    const secondPath = absoluteCanonicalPath(
+      repository.repoRoot,
+      secondSourcePath,
+    );
+    const firstPackage = track(
+      await createIssueUpdateRequestPackageForSource({
+        issueId: KNOWLEDGE_TRANSACTION_FIXTURE_ISSUE_ID,
+        currentSource: await readFile(firstPath, "utf8"),
+        verificationNote: "the first disjoint update was revalidated",
+      }),
+    );
+    const secondPackage = track(
+      await createIssueUpdateRequestPackageForSource({
+        issueId: KNOWLEDGE_TRANSACTION_FIXTURE_CREATED_ISSUE_ID,
+        currentSource: await readFile(secondPath, "utf8"),
+        verificationNote: "the second disjoint update was revalidated",
+      }),
+    );
+    const firstPrepared = await prepareKnowledgeRecordTransaction({
+      repoRoot: repository.repoRoot,
+      requestPath: firstPackage.requestPath,
+      expectedKind: "issue-update",
+      dependencies: engineDependencies(),
+    });
+    const secondPrepared = await prepareKnowledgeRecordTransaction({
+      repoRoot: repository.repoRoot,
+      requestPath: secondPackage.requestPath,
+      expectedKind: "issue-update",
+      dependencies: engineDependencies(),
+    });
+
+    const results = await Promise.all([
+      applyKnowledgeRecordTransaction({
+        repoRoot: repository.repoRoot,
+        transactionId: firstPrepared.transactionId,
+        dependencies: engineDependencies(),
+      }),
+      applyKnowledgeRecordTransaction({
+        repoRoot: repository.repoRoot,
+        transactionId: secondPrepared.transactionId,
+        dependencies: engineDependencies(),
+      }),
+    ]);
+
+    expect(results.map((result) => result.outcome)).toEqual([
+      "applied",
+      "applied",
+    ]);
+    expect(await readFile(firstPath, "utf8")).toContain(
+      "the first disjoint update was revalidated",
+    );
+    expect(await readFile(secondPath, "utf8")).toContain(
+      "the second disjoint update was revalidated",
+    );
+  }, 15_000);
 
   it.each([
     {
@@ -1033,6 +1246,13 @@ describe("knowledge record transaction engine", () => {
       location: "active-current-work" as const,
       installBaseline: installProjectCreateBaseline,
       createPackage: createProjectCreateRequestPackage,
+    },
+    {
+      kind: "project-create" as const,
+      recordId: KNOWLEDGE_TRANSACTION_FIXTURE_KS_PROJECT_ID,
+      location: "active-current-work" as const,
+      installBaseline: installProjectCreateBaseline,
+      createPackage: createKnowledgeSystemProjectCreateRequestPackage,
     },
     {
       kind: "issue-create" as const,
@@ -1329,6 +1549,119 @@ describe("knowledge record transaction engine", () => {
         ],
       ),
     )).toBe(true);
+  });
+
+  it("restores an interrupted Knowledge System create to exact prior bytes and permits retry", async () => {
+    const repository = track(
+      await createKnowledgeRecordTransactionTestRepository(),
+    );
+    await installProjectCreateBaseline(repository.repoRoot);
+    const requestPackage = track(
+      await createKnowledgeSystemProjectCreateRequestPackage(),
+    );
+    const baseline = await readCanonicalSourceInventory(repository.repoRoot);
+    const projectPath = absoluteCanonicalPath(
+      repository.repoRoot,
+      canonicalRecordSourcePath(
+        "active-current-work",
+        KNOWLEDGE_TRANSACTION_FIXTURE_KS_PROJECT_ID,
+      ),
+    );
+    const prepared = await prepareKnowledgeRecordTransaction({
+      repoRoot: repository.repoRoot,
+      requestPath: requestPackage.requestPath,
+      expectedKind: "project-create",
+      dependencies: engineDependencies(),
+    });
+
+    await expect(
+      applyKnowledgeRecordTransaction({
+        repoRoot: repository.repoRoot,
+        transactionId: prepared.transactionId,
+        dependencies: engineDependencies({
+          afterCanonicalMutation: (event) => {
+            if (event.phase === "apply" && event.mutationCount === 1) {
+              throw new Error("injected Knowledge System create failure");
+            }
+          },
+        }),
+      }),
+    ).rejects.toThrow("injected Knowledge System create failure");
+    expectInventoriesIdentical(
+      await readCanonicalSourceInventory(repository.repoRoot),
+      baseline,
+    );
+    await expect(readFile(projectPath)).rejects.toMatchObject({ code: "ENOENT" });
+
+    const reapplied = await applyKnowledgeRecordTransaction({
+      repoRoot: repository.repoRoot,
+      transactionId: prepared.transactionId,
+      dependencies: engineDependencies(),
+    });
+    expect(reapplied.outcome).toBe("applied");
+    expect(
+      (await readFile(projectPath)).equals(
+        await readFile(
+          requestPackage.contentPaths[
+            `${KNOWLEDGE_TRANSACTION_FIXTURE_KS_PROJECT_ID}.md`
+          ],
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  it("rejects a stale Knowledge System create before adding the project", async () => {
+    const repository = track(
+      await createKnowledgeRecordTransactionTestRepository(),
+    );
+    await installProjectCreateBaseline(repository.repoRoot);
+    const requestPackage = track(
+      await createKnowledgeSystemProjectCreateRequestPackage(),
+    );
+    const prepared = await prepareKnowledgeRecordTransaction({
+      repoRoot: repository.repoRoot,
+      requestPath: requestPackage.requestPath,
+      expectedKind: "project-create",
+      dependencies: engineDependencies(),
+    });
+    const existingProjectPath = absoluteCanonicalPath(
+      repository.repoRoot,
+      canonicalRecordSourcePath(
+        "active-current-work",
+        KNOWLEDGE_TRANSACTION_FIXTURE_PROJECT_ID,
+      ),
+    );
+    await writeFile(
+      existingProjectPath,
+      `${await readFile(existingProjectPath, "utf8")}\n`,
+      "utf8",
+    );
+    const staleInventory = await readCanonicalSourceInventory(
+      repository.repoRoot,
+    );
+
+    await expect(
+      applyKnowledgeRecordTransaction({
+        repoRoot: repository.repoRoot,
+        transactionId: prepared.transactionId,
+        dependencies: engineDependencies(),
+      }),
+    ).rejects.toThrow(/Canonical source changed after preparation/);
+    expectInventoriesIdentical(
+      await readCanonicalSourceInventory(repository.repoRoot),
+      staleInventory,
+    );
+    await expect(
+      readFile(
+        absoluteCanonicalPath(
+          repository.repoRoot,
+          canonicalRecordSourcePath(
+            "active-current-work",
+            KNOWLEDGE_TRANSACTION_FIXTURE_KS_PROJECT_ID,
+          ),
+        ),
+      ),
+    ).rejects.toMatchObject({ code: "ENOENT" });
   });
 
   it("updates a resolved Issue in the same guarded closeout that creates its archive and Changelog record", async () => {
@@ -2220,7 +2553,7 @@ describe("knowledge record transaction engine", () => {
     ).toMatchObject({ events: [], tornFinalLine: false });
   });
 
-  it("rejects stale canonical membership before any engine mutation", async () => {
+  it("rebases a scoped project update over unrelated valid membership changes", async () => {
     const repository = track(
       await createKnowledgeRecordTransactionTestRepository(),
     );
@@ -2235,21 +2568,16 @@ describe("knowledge record transaction engine", () => {
         transactionId: prepared.transactionId,
         dependencies: engineDependencies({ afterCanonicalMutation: hook }),
       }),
-    ).rejects.toThrow(/Canonical source membership changed after this transaction was prepared/);
+    ).resolves.toMatchObject({ outcome: "applied" });
 
-    expect(hook).not.toHaveBeenCalled();
+    expect(hook).toHaveBeenCalledTimes(1);
     expect(
       await readFile(
         absoluteCanonicalPath(repository.repoRoot, externallyInstalled.targetPath),
         "utf8",
       ),
     ).toBe(externallyInstalled.targetSource);
-    expect(
-      await readKnowledgeTransactionJournal({
-        repoRoot: repository.repoRoot,
-        transactionId: prepared.transactionId,
-      }),
-    ).toMatchObject({ events: [], tornFinalLine: false });
+    expectRepositoryGuardPassed(repository.repoRoot);
   });
 
   it("rejects an expected-absent destination that appeared after prepare", async () => {

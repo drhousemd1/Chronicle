@@ -1,0 +1,23 @@
+{
+  "repositoryFormatVersion": 1,
+  "savedAt": "2026-08-16T04:35:51.516Z",
+  "record": {
+    "schemaVersion": 1,
+    "id": "7765bb8f-ef75-4b70-afd1-489a9c5bae6d",
+    "displayTitle": "Sound Effects & Visual Overlays",
+    "purpose": "This mockup is to work out and determine the viability for applying overlays and sound effects to both the character card tiles or background images that appear behind the text bubbles in the chat interface UI ",
+    "notes": "\n\n\nPlace mockup under this text  ",
+    "createdAt": "2026-08-10T06:23:28.258Z",
+    "contentUpdatedAt": "2026-08-16T04:35:51.455Z",
+    "previewBackground": "charcoal",
+    "assetIds": [],
+    "documentBlocks": [
+      {
+        "id": "7765bb8f-ef75-4b70-afd1-489a9c5bae6d-legacy-text-0",
+        "type": "text",
+        "text": "\n\n\nPlace mockup under this text  "
+      }
+    ]
+  },
+  "assets": []
+}

@@ -10,17 +10,23 @@ import {
   type ChangelogRecordRegistry,
   type ChangelogRootRecord,
 } from "./changelog-record-contract";
+import {
+  assertOperationalIssueOwner,
+  assertOperationalProjectOwner,
+  canonicalIssueSourcePath,
+  canonicalCurrentWorkSourcePath,
+  getOperationalCapability,
+  isOperationalIssueId,
+  isOperationalNestedId,
+  isOperationalProjectId,
+  parseOperationalProjectId,
+  type OperationalCapabilityId,
+} from "./operational-capability-registry";
 
 export { APPROVED_CAPABILITY_IDS } from "./capability-ids";
 
-const GALLERY_CAPABILITY_ID = "community-gallery";
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-const ISSUE_ID = /^CG-ISSUE-\d{3}$/;
-const PROJECT_ID = /^CG-WORK-\d{3}$/;
 const CHANGE_ID = /^CG-CHANGE-\d{3}$/;
-const STEP_ID = /^CG-STEP-\d{3}$/;
-const EVIDENCE_ID = /^CG-EV-\d{3}$/;
-const LOG_ID = /^CG-LOG-\d{3}$/;
 
 export const ISSUE_STATES = ["open", "resolved"] as const;
 
@@ -100,6 +106,14 @@ type ProofClass = (typeof PROOF_CLASSES)[number];
 type CompletionReviewMode = (typeof COMPLETION_REVIEW_MODES)[number];
 type LogEntryType = (typeof LOG_ENTRY_TYPES)[number];
 type ProjectOrigin = (typeof PROJECT_ORIGINS)[number];
+export type CurrentWorkVersion = 1 | 2;
+export const CURRENT_WORKFLOW_ROUTES = [
+  "presentation",
+  "local-interaction",
+  "capability-workflow",
+  "system-critical",
+] as const;
+export type CurrentWorkflowRoute = (typeof CURRENT_WORKFLOW_ROUTES)[number];
 
 export type OperationalRecordSourceMap = Readonly<Record<string, string>>;
 
@@ -119,7 +133,7 @@ export type IssueRecord = Readonly<{
   kind: "issue";
   id: string;
   title: string;
-  ownerCapability: typeof GALLERY_CAPABILITY_ID;
+  ownerCapability: OperationalCapabilityId;
   status: IssueState;
   discoveredOn: string;
   lastVerifiedOn: string;
@@ -217,6 +231,17 @@ export type CurrentWorkResumeHere = Readonly<{
   scopeGuard: string;
 }>;
 
+export type CurrentWorkCoreSummary = Readonly<{
+  purpose: string;
+  objectiveAndScope: string;
+  currentStatusAndCoordinator: string;
+  latestVerifiedResult: string;
+  exactNextAction: string;
+  blockerOrDecision: string;
+  strongestEvidenceAndLimits: string;
+  sourceStateAndReadingOrder: string;
+}>;
+
 export type ProjectCloseout = Readonly<{
   terminalState: "Closed" | "Cancelled" | "Superseded";
   previousWorkflowState: string;
@@ -232,13 +257,17 @@ export type CurrentWorkRecord = Readonly<{
   id: string;
   title: string;
   origin: ProjectOrigin;
-  ownerCapability: typeof GALLERY_CAPABILITY_ID;
+  ownerCapability: OperationalCapabilityId;
   relatedCapabilities: readonly string[];
   linkedIssueIds: readonly string[];
   approvedObjectiveRef: string;
   started: string;
   sourcePath: string;
   placement: "active" | "archive";
+  currentWorkVersion: CurrentWorkVersion;
+  workflowRoute: CurrentWorkflowRoute | null;
+  coreSummary: CurrentWorkCoreSummary | null;
+  presentModules: readonly string[];
   resumeHere: CurrentWorkResumeHere;
   workflowState: ProjectWorkflowState;
   statusSince: string;
@@ -295,39 +324,75 @@ const dateSchema = z
 const issueFrontmatterSchema = z
   .object({
     record_type: z.literal("issue"),
-    issue_id: z.string().regex(ISSUE_ID),
+    issue_id: z
+      .string()
+      .refine(isOperationalIssueId, "must identify an approved operational Issue"),
     title: z.string().trim().min(1),
-    owner_capability: z.literal(GALLERY_CAPABILITY_ID),
+    owner_capability: z
+      .string()
+      .refine(
+        (value) => getOperationalCapability(value) !== null,
+        "must identify an approved operational capability",
+      ),
     status: z.enum(ISSUE_STATES),
     discovered_on: dateSchema,
     last_verified_on: dateSchema,
     source_record: z.string().trim().min(1),
   })
-  .strict();
+  .strict()
+  .superRefine((value, context) => {
+    try {
+      assertOperationalIssueOwner(value.issue_id, value.owner_capability);
+    } catch (error) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["owner_capability"],
+        message: error instanceof Error ? error.message : "does not match Issue identity",
+      });
+    }
+  });
 
 const currentWorkFrontmatterSchema = z
   .object({
     record_type: z.literal("current_work"),
-    project_id: z.string().regex(PROJECT_ID),
+    project_id: z
+      .string()
+      .refine(isOperationalProjectId, "must identify an approved operational project"),
     title: z.string().trim().min(1),
     origin: z.enum(PROJECT_ORIGINS),
-    owner_capability: z.literal(GALLERY_CAPABILITY_ID),
+    owner_capability: z
+      .string()
+      .refine(
+        (value) => getOperationalCapability(value) !== null,
+        "must identify an approved operational capability",
+      ),
     related_capabilities: z.array(z.string().trim().min(1)),
-    linked_issue_ids: z.array(z.string().regex(ISSUE_ID)),
+    linked_issue_ids: z.array(
+      z.string().refine(isOperationalIssueId, "must identify an approved operational Issue"),
+    ),
     approved_objective_ref: z.string().trim().min(1),
     started: dateSchema,
     source_record: z.string().trim().min(1),
+    current_work_version: z.union([z.literal(1), z.literal(2)]).optional().default(1),
+    workflow_route: z.enum(CURRENT_WORKFLOW_ROUTES).optional(),
   })
-  .strict();
-
-const sourcePathPatterns = {
-  issue:
-    /^docs\/architecture-knowledge\/issues\/community-gallery\/(CG-ISSUE-\d{3})\.md$/,
-  active:
-    /^docs\/current-work\/active\/community-gallery\/(CG-WORK-\d{3})\.md$/,
-  archive:
-    /^docs\/current-work\/archive\/community-gallery\/(CG-WORK-\d{3})\.md$/,
-} as const;
+  .strict()
+  .superRefine((value, context) => {
+    if (value.current_work_version === 2 && !value.workflow_route) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["workflow_route"],
+        message: "is required for Current Work version 2",
+      });
+    }
+    if (value.current_work_version === 1 && value.workflow_route) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["workflow_route"],
+        message: "is only allowed for Current Work version 2",
+      });
+    }
+  });
 
 const issueRequiredHeadings = [
   "Expected Behavior",
@@ -363,6 +428,28 @@ const projectRequiredHeadings = [
   "Work Steps",
   "Proof Claims",
   "Attempt and Decision Log",
+] as const;
+
+const versionTwoCoreFields = [
+  "Purpose",
+  "Objective and scope",
+  "Current status and coordinator",
+  "Latest verified result",
+  "Exact next action",
+  "Blocker or decision",
+  "Strongest evidence and limits",
+  "Source state and reading order",
+] as const;
+
+const versionTwoOptionalModules = [
+  "Versioned Outcome and Success Contract",
+  "Current Verified State",
+  "Scope and Decisions",
+  "Traceability Chain",
+  "Work Steps",
+  "Proof Claims",
+  "Attempt and Decision Log",
+  "Closeout",
 ] as const;
 
 const currentStateRequiredFields = [
@@ -936,12 +1023,16 @@ function parseIssueRecord(
   }
 
   const metadata = parsed.data;
-  const pathMatch = sourcePath.match(sourcePathPatterns.issue);
-  if (!pathMatch) {
-    errors.push(`${sourcePath}: Issue record is not in the Gallery Issues source directory`);
-  } else if (pathMatch[1] !== metadata.issue_id) {
+  const filenameIssueId = sourcePath.match(/\/([^/]+)\.md$/)?.[1];
+  if (filenameIssueId && filenameIssueId !== metadata.issue_id) {
     errors.push(
-      `${sourcePath}: filename ID ${pathMatch[1]} does not match issue_id ${metadata.issue_id}`,
+      `${sourcePath}: filename ID ${filenameIssueId} does not match issue_id ${metadata.issue_id}`,
+    );
+  }
+  const expectedSourcePath = canonicalIssueSourcePath(metadata.issue_id);
+  if (sourcePath !== expectedSourcePath) {
+    errors.push(
+      `${sourcePath}: Issue ${metadata.issue_id} must use canonical path ${expectedSourcePath}`,
     );
   }
   if (metadata.source_record !== sourcePath) {
@@ -985,7 +1076,7 @@ function parseIssueRecord(
     kind: "issue",
     id: metadata.issue_id,
     title: metadata.title,
-    ownerCapability: metadata.owner_capability,
+    ownerCapability: metadata.owner_capability as OperationalCapabilityId,
     status: metadata.status,
     discoveredOn: metadata.discovered_on,
     lastVerifiedOn: metadata.last_verified_on,
@@ -997,6 +1088,7 @@ function parseIssueRecord(
 
 function parseProjectSteps(
   section: MarkdownSection | null,
+  projectId: string,
   sourcePath: string,
   errors: string[],
 ) {
@@ -1020,7 +1112,7 @@ function parseProjectSteps(
     const result = row.Result ?? "";
     const proofIds = parseReferenceList(row["Proof IDs"] ?? "");
 
-    if (!STEP_ID.test(id)) {
+    if (!isOperationalNestedId(projectId, "STEP", id)) {
       errors.push(`${sourcePath}: Work Steps contains invalid Step ID "${id}"`);
       continue;
     }
@@ -1048,7 +1140,7 @@ function parseProjectSteps(
       );
     }
     for (const proofId of proofIds) {
-      if (!EVIDENCE_ID.test(proofId)) {
+      if (!isOperationalNestedId(projectId, "EV", proofId)) {
         errors.push(`${sourcePath}: ${id} references invalid Evidence ID ${proofId}`);
       }
     }
@@ -1079,6 +1171,7 @@ function parseProjectSteps(
 
 function parseProjectProofs(
   section: MarkdownSection | null,
+  projectId: string,
   sourcePath: string,
   asOf: string,
   errors: string[],
@@ -1086,9 +1179,12 @@ function parseProjectProofs(
   if (!section) return [];
   const proofSections = getHeadingSections(section.content, 3);
   const proofs: ProofClaim[] = [];
+  const recordPrefix = parseOperationalProjectId(projectId).capability.recordPrefix;
 
   for (const proofSection of proofSections) {
-    const headingMatch = proofSection.heading.match(/^(CG-EV-\d{3}):\s+(.+)$/);
+    const headingMatch = proofSection.heading.match(
+      new RegExp(`^(${recordPrefix}-EV-\\d{3}):\\s+(.+)$`),
+    );
     if (!headingMatch) {
       errors.push(
         `${sourcePath}: invalid Proof Claim heading "### ${proofSection.heading}"`,
@@ -1224,14 +1320,16 @@ function parseProjectProofs(
 
 function parseProjectLogs(
   section: MarkdownSection | null,
+  projectId: string,
   sourcePath: string,
   errors: string[],
 ) {
   if (!section) return [];
   const logSections = getHeadingSections(section.content, 3);
   const logs: AttemptLogEntry[] = [];
+  const recordPrefix = parseOperationalProjectId(projectId).capability.recordPrefix;
   const headingPattern = new RegExp(
-    `^(CG-LOG-\\d{3}) — (${LOG_ENTRY_TYPES.join("|")}) — (\\d{4}-\\d{2}-\\d{2})(?:T[^\\s]+)?$`,
+    `^(${recordPrefix}-LOG-\\d{3}) — (${LOG_ENTRY_TYPES.join("|")}) — (\\d{4}-\\d{2}-\\d{2})(?:T[^\\s]+)?$`,
   );
 
   for (const logSection of logSections) {
@@ -1322,7 +1420,7 @@ function parseProjectLogs(
       }
     }
     references.forEach((reference) => {
-      if (!LOG_ID.test(reference)) {
+      if (!isOperationalNestedId(projectId, "LOG", reference)) {
         errors.push(`${sourcePath}: ${match[1]} has invalid history reference ${reference}`);
       }
     });
@@ -1344,6 +1442,7 @@ function parseProjectLogs(
 
 function parseProjectCloseout(
   section: MarkdownSection | null,
+  projectId: string,
   workflowState: ProjectWorkflowState,
   sourcePath: string,
   asOf: string,
@@ -1380,8 +1479,8 @@ function parseProjectCloseout(
       `${sourcePath}: Closeout terminal state ${terminalState} does not match workflow state ${workflowState}`,
     );
   }
-  if (!LOG_ID.test(decisionLogId)) {
-    errors.push(`${sourcePath}: Closeout decision log must be a CG-LOG ID`);
+  if (!isOperationalNestedId(projectId, "LOG", decisionLogId)) {
+    errors.push(`${sourcePath}: Closeout decision log must match the project prefix`);
   }
   if (!isRealIsoDate(archivedOn)) {
     errors.push(`${sourcePath}: Closeout archived date must use YYYY-MM-DD`);
@@ -1403,7 +1502,7 @@ function parseProjectCloseout(
   }
   if (
     terminalState === "Superseded" &&
-    (!replacementProjectId || !PROJECT_ID.test(replacementProjectId))
+    (!replacementProjectId || !isOperationalProjectId(replacementProjectId))
   ) {
     errors.push(`${sourcePath}: Superseded archive requires a replacement project`);
   }
@@ -1423,7 +1522,7 @@ function parseProjectCloseout(
   )) {
     const issueId = row["Issue ID"] ?? "";
     const disposition = (row.Disposition ?? "").toLowerCase();
-    if (!ISSUE_ID.test(issueId)) {
+    if (!isOperationalIssueId(issueId)) {
       errors.push(`${sourcePath}: invalid Closeout Issue ID ${issueId}`);
       continue;
     }
@@ -1516,6 +1615,7 @@ function hasExplicitImplementationAuthorization(value: string) {
 
 function parseLegacyCurrentStateFields(
   section: MarkdownSection,
+  projectId: string,
 ): ReadonlyMap<string, string> | null {
   const fields = parseBulletFields(section.content);
   if (
@@ -1527,8 +1627,10 @@ function parseLegacyCurrentStateFields(
   const blockerAndUnblock = fields.get("Blocker and unblock condition") ?? "";
   const stateReasonAndLog =
     fields.get("State reason and controlling log entry") ?? "";
+  const recordPrefix = parseOperationalProjectId(projectId).capability.recordPrefix;
   const controllingHistoryEntry =
-    stateReasonAndLog.match(/CG-LOG-\d{3}/)?.[0] ?? stateReasonAndLog;
+    stateReasonAndLog.match(new RegExp(`${recordPrefix}-LOG-\\d{3}`))?.[0] ??
+    stateReasonAndLog;
   return new Map<string, string>([
     ["Project status", fields.get("Workflow state") ?? ""],
     ["Status since", fields.get("Status since") ?? ""],
@@ -1621,6 +1723,450 @@ function parseStructuredCurrentStateFields(
   return allFields;
 }
 
+function parseVersionTwoCurrentWorkRecord({
+  sourcePath,
+  frontmatter,
+  metadata,
+  placement,
+  asOf,
+  errors,
+}: {
+  sourcePath: string;
+  frontmatter: ParsedFrontmatter;
+  metadata: z.infer<typeof currentWorkFrontmatterSchema>;
+  placement: "active" | "archive";
+  asOf: string;
+  errors: string[];
+}): CurrentWorkRecord {
+  const sections = getHeadingSections(frontmatter.body, 2).filter(
+    (section) => section.heading !== `${metadata.project_id}: ${metadata.title}`,
+  );
+  if (sections[0]?.heading !== "Current State / Resume Here") {
+    errors.push(`${sourcePath}: Current State / Resume Here must be the first substantive section`);
+  }
+  assertOnlyNamedSections(
+    sections,
+    ["Current State / Resume Here", ...versionTwoOptionalModules],
+    sourcePath,
+    2,
+    "Current Work version 2",
+    errors,
+  );
+  const summarySection = getSection(
+    sections,
+    "Current State / Resume Here",
+    sourcePath,
+    errors,
+  );
+  const fields = parseBulletFields(
+    summarySection?.content ?? "",
+    sourcePath,
+    "Current State / Resume Here",
+    errors,
+  );
+  requireFields(fields, versionTwoCoreFields, sourcePath, "Current State / Resume Here", errors);
+  assertOnlyNamedFields(fields, versionTwoCoreFields, sourcePath, "Current State / Resume Here", errors);
+
+  const summary = deepFreeze({
+    purpose: fields.get("Purpose") ?? "",
+    objectiveAndScope: fields.get("Objective and scope") ?? "",
+    currentStatusAndCoordinator: fields.get("Current status and coordinator") ?? "",
+    latestVerifiedResult: fields.get("Latest verified result") ?? "",
+    exactNextAction: fields.get("Exact next action") ?? "",
+    blockerOrDecision: fields.get("Blocker or decision") ?? "",
+    strongestEvidenceAndLimits: fields.get("Strongest evidence and limits") ?? "",
+    sourceStateAndReadingOrder: fields.get("Source state and reading order") ?? "",
+  });
+  for (const [field, value] of Object.entries(summary)) {
+    if (!isMeaningful(value) && !(field === "blockerOrDecision" && /^none\b/i.test(value.trim()))) {
+      errors.push(`${sourcePath}: Current Work version 2 ${field} must be explicit and resumable`);
+    }
+  }
+  if (!/\bauthorized\s*:/i.test(summary.objectiveAndScope) || !/\boutside\s*:/i.test(summary.objectiveAndScope)) {
+    errors.push(`${sourcePath}: Objective and scope must state both "Authorized:" and "Outside:" boundaries`);
+  }
+
+  const stateMatch = summary.currentStatusAndCoordinator.match(
+    /^(Investigating|Planned|Implementing|Validating|Blocked|Paused|Deferred|Closeout pending|Closed|Cancelled|Superseded) since (\d{4}-\d{2}-\d{2}); last activity (\d{4}-\d{2}-\d{2}); coordinator (.+); resume priority (Primary|Secondary)\.?$/,
+  );
+  if (!stateMatch) {
+    errors.push(
+      `${sourcePath}: Current status and coordinator must use "STATE since YYYY-MM-DD; last activity YYYY-MM-DD; coordinator NAME; resume priority Primary|Secondary"`,
+    );
+  }
+  const workflowState = (stateMatch?.[1] as ProjectWorkflowState | undefined) ?? "Investigating";
+  const statusSince = stateMatch?.[2] ?? metadata.started;
+  const lastActivity = stateMatch?.[3] ?? metadata.started;
+  const coordinator = stateMatch?.[4]?.trim() ?? "";
+  const resumePriority = stateMatch?.[5] === "Primary" ? "Primary" : "Secondary";
+  for (const [label, date] of [["Status since", statusSince], ["Last activity", lastActivity]] as const) {
+    if (!isRealIsoDate(date)) errors.push(`${sourcePath}: ${label} must use YYYY-MM-DD`);
+    if (isRealIsoDate(date) && (date < metadata.started || date > asOf)) {
+      errors.push(`${sourcePath}: ${label} must be between project start and validation date`);
+    }
+  }
+  if (statusSince > lastActivity) {
+    errors.push(`${sourcePath}: Status since cannot be after last activity`);
+  }
+
+  const presentModules = sections
+    .map((section) => section.heading)
+    .filter((heading) => (versionTwoOptionalModules as readonly string[]).includes(heading));
+  if (metadata.workflow_route === "system-critical") {
+    for (const heading of projectRequiredHeadings.slice(1)) {
+      if (!presentModules.includes(heading)) {
+        errors.push(`${sourcePath}: system-critical Current Work requires the ${heading} module`);
+      }
+    }
+  }
+
+  const contractSection = sections.find(
+    (section) => section.heading === "Versioned Outcome and Success Contract",
+  );
+  const contractFields = contractSection
+    ? parseBulletFields(
+        contractSection.content,
+        sourcePath,
+        "Versioned Outcome and Success Contract",
+        errors,
+      )
+    : new Map<string, string>();
+  if (contractSection) {
+    requireFields(
+      contractFields,
+      contractRequiredFields,
+      sourcePath,
+      "Versioned Outcome and Success Contract",
+      errors,
+    );
+    assertOnlyNamedFields(
+      contractFields,
+      contractRequiredFields,
+      sourcePath,
+      "Versioned Outcome and Success Contract",
+      errors,
+    );
+  }
+  if (
+    ["Implementing", "Validating", "Closeout pending", "Closed"].includes(
+      workflowState,
+    ) &&
+    ![
+      summary.objectiveAndScope,
+      contractFields.get("Implementation authorization") ?? "",
+    ].some(hasExplicitImplementationAuthorization)
+  ) {
+    errors.push(
+      `${sourcePath}: ${workflowState} requires explicit dated implementation authorization in the core scope or optional success-contract module`,
+    );
+  }
+
+  const verifiedStateSection = sections.find(
+    (section) => section.heading === "Current Verified State",
+  );
+  if (verifiedStateSection) {
+    const verifiedFields = parseBulletFields(
+      verifiedStateSection.content,
+      sourcePath,
+      "Current Verified State",
+      errors,
+    );
+    requireFields(
+      verifiedFields,
+      verifiedStateRequiredFields,
+      sourcePath,
+      "Current Verified State",
+      errors,
+    );
+    assertOnlyNamedFields(
+      verifiedFields,
+      verifiedStateRequiredFields,
+      sourcePath,
+      "Current Verified State",
+      errors,
+    );
+  }
+
+  const scopeSection = sections.find(
+    (section) => section.heading === "Scope and Decisions",
+  );
+  let settledDecisionRows: readonly Record<string, string>[] = [];
+  if (scopeSection) {
+    const scopeSubsections = getHeadingSections(scopeSection.content, 3);
+    const requiredScopeHeadings = [
+      "Included",
+      "Excluded",
+      "Dependencies and Related Capabilities",
+      "Settled Decisions",
+    ] as const;
+    for (const heading of requiredScopeHeadings) {
+      if (
+        scopeSubsections.filter((candidate) => candidate.heading === heading)
+          .length !== 1
+      ) {
+        errors.push(
+          `${sourcePath}: Scope and Decisions requires exactly one "### ${heading}"`,
+        );
+      }
+    }
+    assertOnlyNamedSections(
+      scopeSubsections,
+      requiredScopeHeadings,
+      sourcePath,
+      3,
+      '"## Scope and Decisions"',
+      errors,
+    );
+    const settledSection = scopeSubsections.find(
+      (section) => section.heading === "Settled Decisions",
+    );
+    settledDecisionRows = parseMarkdownTable(
+      settledSection?.content ?? "",
+      sourcePath,
+      "Settled Decisions",
+      errors,
+    );
+  }
+
+  const traceabilitySection = sections.find(
+    (section) => section.heading === "Traceability Chain",
+  );
+  if (traceabilitySection) {
+    const traceability = new Map<string, string>();
+    for (const row of parseMarkdownTable(
+      traceabilitySection.content,
+      sourcePath,
+      "Traceability Chain",
+      errors,
+    )) {
+      const label = row.Link ?? "";
+      if (traceability.has(label)) {
+        errors.push(
+          `${sourcePath}: Traceability Chain contains duplicate "${label}" row`,
+        );
+      } else {
+        traceability.set(label, row["Current answer"] ?? "");
+      }
+    }
+    for (const row of traceabilityRows) {
+      if (!traceability.has(row)) {
+        errors.push(`${sourcePath}: Traceability Chain is missing "${row}"`);
+      }
+    }
+    if (
+      ["Planned", "Implementing", "Validating", "Closeout pending", "Closed"].includes(
+        workflowState,
+      )
+    ) {
+      for (const row of traceabilityRows) {
+        if (!isMeaningful(traceability.get(row) ?? "")) {
+          errors.push(
+            `${sourcePath}: ${workflowState} requires a complete Traceability Chain; "${row}" is unresolved`,
+          );
+        }
+      }
+    }
+  }
+
+  const steps = presentModules.includes("Work Steps")
+    ? parseProjectSteps(getSection(sections, "Work Steps", sourcePath, errors), metadata.project_id, sourcePath, errors)
+    : [];
+  const proofs = presentModules.includes("Proof Claims")
+    ? parseProjectProofs(getSection(sections, "Proof Claims", sourcePath, errors), metadata.project_id, sourcePath, asOf, errors)
+    : [];
+  const logs = presentModules.includes("Attempt and Decision Log")
+    ? parseProjectLogs(getSection(sections, "Attempt and Decision Log", sourcePath, errors), metadata.project_id, sourcePath, errors)
+    : [];
+
+  const nestedIds = new Set<string>();
+  for (const entry of [...steps, ...proofs, ...logs]) {
+    if (nestedIds.has(entry.id)) errors.push(`${sourcePath}: duplicate nested record ID ${entry.id}`);
+    nestedIds.add(entry.id);
+  }
+  const proofIds = new Set(proofs.map((proof) => proof.id));
+  for (const proofId of steps.flatMap((step) => step.proofIds)) {
+    if (!proofIds.has(proofId)) errors.push(`${sourcePath}: Work Step references missing Proof Claim ${proofId}`);
+  }
+  for (let index = 1; index < logs.length; index += 1) {
+    if (logs[index].date < logs[index - 1].date) {
+      errors.push(`${sourcePath}: Attempt and Decision Log must remain chronological`);
+      break;
+    }
+  }
+  const logIds = new Set(logs.map((log) => log.id));
+  for (const log of logs) {
+    for (const reference of log.references) {
+      if (!logIds.has(reference)) {
+        errors.push(
+          `${sourcePath}: ${log.id} references missing history entry ${reference}`,
+        );
+      }
+    }
+  }
+  if (logs.length > 0 && lastActivity !== logs.at(-1)?.date) {
+    errors.push(`${sourcePath}: last activity must match the latest optional history entry`);
+  }
+
+  if (metadata.workflow_route === "system-critical") {
+    if (
+      ["Planned", "Implementing", "Validating", "Closeout pending", "Closed"].includes(
+        workflowState,
+      ) &&
+      (steps.length === 0 || proofs.length === 0 || logs.length === 0)
+    ) {
+      errors.push(
+        `${sourcePath}: system-critical ${workflowState} work requires Work Steps, Proof Claims, and typed history`,
+      );
+    }
+    const researchDecision = settledDecisionRows.find((row) =>
+      /precedent research/i.test(row.Decision ?? ""),
+    );
+    const controllingLogId = researchDecision?.["Controlling log ID"] ?? "";
+    const controllingLog = logs.find((log) => log.id === controllingLogId);
+    if (!researchDecision || !isMeaningful(researchDecision.Decision ?? "")) {
+      errors.push(
+        `${sourcePath}: system-critical Current Work requires a settled precedent-research decision`,
+      );
+    } else if (!isOperationalNestedId(metadata.project_id, "LOG", controllingLogId)) {
+      errors.push(
+        `${sourcePath}: precedent-research decision requires a controlling project Log ID`,
+      );
+    } else if (!controllingLog || controllingLog.type !== "Decision") {
+      errors.push(
+        `${sourcePath}: precedent-research decision must point to a Decision history entry`,
+      );
+    }
+  }
+
+  const closeoutSection = sections.find((section) => section.heading === "Closeout") ?? null;
+  const closeout = parseProjectCloseout(
+    closeoutSection,
+    metadata.project_id,
+    workflowState,
+    sourcePath,
+    asOf,
+    errors,
+  );
+  const terminal = ["Closed", "Cancelled", "Superseded"].includes(workflowState);
+  if (placement === "active" && terminal) errors.push(`${sourcePath}: terminal project state belongs in the archive`);
+  if (placement === "archive" && !terminal) errors.push(`${sourcePath}: archived project must use a terminal state`);
+  if (placement === "archive" && (!closeout || steps.length === 0 || proofs.length === 0 || logs.length === 0)) {
+    errors.push(`${sourcePath}: an archived version 2 project requires Closeout, Work Steps, Proof Claims, and history modules`);
+  }
+  if (placement === "active" && closeoutSection) errors.push(`${sourcePath}: active project cannot contain terminal Closeout data`);
+  if (closeout) {
+    const closeoutDecisionLog = logs.find(
+      (log) => log.id === closeout.decisionLogId,
+    );
+    if (!closeoutDecisionLog) {
+      errors.push(
+        `${sourcePath}: Closeout references missing decision log ${closeout.decisionLogId}`,
+      );
+    } else if (closeoutDecisionLog.type !== "Decision") {
+      errors.push(
+        `${sourcePath}: Closeout decision log ${closeout.decisionLogId} must be a Decision entry`,
+      );
+    }
+  }
+  if (workflowState === "Closeout pending" || workflowState === "Closed") {
+    for (const step of steps) {
+      if (step.state !== "Concluded" && step.state !== "Superseded") {
+        errors.push(
+          `${sourcePath}: ${workflowState} requires every Work Step to be Concluded or Superseded; ${step.id} is ${step.state}`,
+        );
+      }
+    }
+    for (const proof of proofs) {
+      if (proof.result !== "Passed" && proof.result !== "Not applicable") {
+        errors.push(
+          `${sourcePath}: ${workflowState} cannot retain ${proof.result} proof ${proof.id}`,
+        );
+      }
+      if (
+        proof.result === "Not applicable" &&
+        !hasApprovedNotApplicableRationale(proof.notApplicableApproval)
+      ) {
+        errors.push(
+          `${sourcePath}: ${workflowState} requires approved Not applicable proof ${proof.id}`,
+        );
+      }
+    }
+  }
+
+  const attemptHeadingIndex = frontmatter.body.indexOf("## Attempt and Decision Log");
+  const bodyBeforeAttemptLog = attemptHeadingIndex >= 0
+    ? frontmatter.body.slice(0, attemptHeadingIndex).trimEnd()
+    : frontmatter.body;
+  const rawBeforeAttemptLog = `---\n${frontmatter.rawHeader}\n---\n${bodyBeforeAttemptLog}`;
+  const needsStatusReview = placement === "active" && daysBetween(lastActivity, asOf) >= 14;
+  const noneBlocker = /^none\b/i.test(summary.blockerOrDecision.trim());
+  if (
+    ["Blocked", "Paused", "Deferred", "Cancelled", "Superseded"].includes(
+      workflowState,
+    ) &&
+    noneBlocker
+  ) {
+    errors.push(
+      `${sourcePath}: ${workflowState} requires a meaningful blocker or decision in the core summary`,
+    );
+  }
+  const latestLogId = logs.at(-1)?.id ?? "No history module is applicable to this bounded project.";
+  const resumeHere = deepFreeze({
+    projectStatus: workflowState,
+    statusSince,
+    lastRecordedActivity: lastActivity,
+    currentCoordinatorTask: coordinator,
+    resumePriority: resumePriority as "Primary" | "Secondary",
+    latestCompletedResult: summary.latestVerifiedResult,
+    whereWorkStopped: summary.latestVerifiedResult,
+    remainingWork: summary.exactNextAction,
+    nextAction: summary.exactNextAction,
+    bestCurrentEvidence: summary.strongestEvidenceAndLimits,
+    notYetProvenOrNeedingRecheck: summary.strongestEvidenceAndLimits,
+    blockingCondition: noneBlocker ? "None." : summary.blockerOrDecision,
+    unblockCondition: noneBlocker ? "None." : summary.blockerOrDecision,
+    externalDecisionAction: noneBlocker ? "None." : summary.blockerOrDecision,
+    statusReason: summary.blockerOrDecision,
+    controllingHistoryEntry: latestLogId,
+    sourceStateToRecheck: summary.sourceStateAndReadingOrder,
+    readFirst: summary.sourceStateAndReadingOrder,
+    scopeGuard: summary.objectiveAndScope,
+  });
+
+  return deepFreeze({
+    kind: "current_work",
+    id: metadata.project_id,
+    title: metadata.title,
+    origin: metadata.origin,
+    ownerCapability: metadata.owner_capability as OperationalCapabilityId,
+    relatedCapabilities: metadata.related_capabilities,
+    linkedIssueIds: metadata.linked_issue_ids,
+    approvedObjectiveRef: metadata.approved_objective_ref,
+    started: metadata.started,
+    sourcePath,
+    placement,
+    currentWorkVersion: 2,
+    workflowRoute: metadata.workflow_route ?? null,
+    coreSummary: summary,
+    presentModules: deepFreeze([...presentModules]),
+    resumeHere,
+    workflowState,
+    statusSince,
+    lastActivity,
+    activeCoordinator: coordinator,
+    primaryResumeTarget: resumePriority === "Primary",
+    blockerAndUnblockCondition: summary.blockerOrDecision,
+    stateReasonAndControllingLogEntry: `${summary.blockerOrDecision}; ${latestLogId}`,
+    needsStatusReview,
+    steps,
+    proofs,
+    logs,
+    closeout,
+    body: frontmatter.body,
+    rawBeforeAttemptLog,
+  });
+}
+
 function parseCurrentWorkRecord(
   sourcePath: string,
   frontmatter: ParsedFrontmatter,
@@ -1637,16 +2183,32 @@ function parseCurrentWorkRecord(
   }
 
   const metadata = parsed.data;
-  const activeMatch = sourcePath.match(sourcePathPatterns.active);
-  const archiveMatch = sourcePath.match(sourcePathPatterns.archive);
-  const placement = activeMatch ? "active" : archiveMatch ? "archive" : null;
-  const filenameId = activeMatch?.[1] ?? archiveMatch?.[1];
+  const expectedActivePath = canonicalCurrentWorkSourcePath(
+    "active",
+    metadata.project_id,
+  );
+  const expectedArchivePath = canonicalCurrentWorkSourcePath(
+    "archive",
+    metadata.project_id,
+  );
+  const placement =
+    sourcePath === expectedActivePath
+      ? "active"
+      : sourcePath === expectedArchivePath
+        ? "archive"
+        : null;
   if (!placement) {
-    errors.push(`${sourcePath}: Current Work record is not in an active or archive Gallery source directory`);
-  } else if (filenameId !== metadata.project_id) {
     errors.push(
-      `${sourcePath}: filename ID ${filenameId} does not match project_id ${metadata.project_id}`,
+      `${sourcePath}: Current Work record does not match the canonical active or archive path for ${metadata.project_id}`,
     );
+  }
+  try {
+    assertOperationalProjectOwner(
+      metadata.project_id,
+      metadata.owner_capability,
+    );
+  } catch (error) {
+    errors.push(`${sourcePath}: ${(error as Error).message}`);
   }
   if (metadata.source_record !== sourcePath) {
     errors.push(
@@ -1698,6 +2260,16 @@ function parseCurrentWorkRecord(
   if (!frontmatter.body.includes("Current Work is an operational companion")) {
     errors.push(`${sourcePath}: Current Work authority statement is missing`);
   }
+  if (metadata.current_work_version === 2) {
+    return parseVersionTwoCurrentWorkRecord({
+      sourcePath,
+      frontmatter,
+      metadata,
+      placement: placement ?? "active",
+      asOf,
+      errors,
+    });
+  }
   const sections = assertRequiredHeadings(
     frontmatter.body,
     projectRequiredHeadings,
@@ -1716,7 +2288,7 @@ function parseCurrentWorkRecord(
   );
   const legacyCurrentStateFields =
     allowLegacyCurrentState && currentStateSection
-      ? parseLegacyCurrentStateFields(currentStateSection)
+      ? parseLegacyCurrentStateFields(currentStateSection, metadata.project_id)
       : null;
   const currentStateFields =
     legacyCurrentStateFields ??
@@ -1899,17 +2471,20 @@ function parseCurrentWorkRecord(
 
   const steps = parseProjectSteps(
     getSection(sections, "Work Steps", sourcePath, []),
+    metadata.project_id,
     sourcePath,
     errors,
   );
   const proofs = parseProjectProofs(
     getSection(sections, "Proof Claims", sourcePath, []),
+    metadata.project_id,
     sourcePath,
     asOf,
     errors,
   );
   const logs = parseProjectLogs(
     getSection(sections, "Attempt and Decision Log", sourcePath, []),
+    metadata.project_id,
     sourcePath,
     errors,
   );
@@ -1961,9 +2536,9 @@ function parseCurrentWorkRecord(
       errors.push(
         `${sourcePath}: ${workflowState} requires a settled decision about whether precedent research is required`,
       );
-    } else if (!LOG_ID.test(controllingLogId)) {
+    } else if (!isOperationalNestedId(metadata.project_id, "LOG", controllingLogId)) {
       errors.push(
-        `${sourcePath}: precedent-research decision requires a controlling CG-LOG ID`,
+        `${sourcePath}: precedent-research decision requires a controlling project Log ID`,
       );
     } else if (!controllingLog || controllingLog.type !== "Decision") {
       errors.push(
@@ -1986,7 +2561,10 @@ function parseCurrentWorkRecord(
   }
 
   const strongestProof = currentStateFields.get("Best current evidence") ?? "";
-  const strongestProofMatch = strongestProof.match(/CG-EV-\d{3}/)?.[0];
+  const recordPrefix = parseOperationalProjectId(metadata.project_id).capability.recordPrefix;
+  const strongestProofMatch = strongestProof.match(
+    new RegExp(`${recordPrefix}-EV-\\d{3}`),
+  )?.[0];
   if (strongestProofMatch && !proofIds.has(strongestProofMatch)) {
     errors.push(`${sourcePath}: Best current evidence references missing ${strongestProofMatch}`);
   }
@@ -2003,9 +2581,12 @@ function parseCurrentWorkRecord(
     errors.push(`${sourcePath}: ${workflowState} requires a meaningful Status reason`);
   }
   const controllingId = controllingHistoryEntry.trim();
-  if (workflowState && !LOG_ID.test(controllingId)) {
+  if (
+    workflowState &&
+    !isOperationalNestedId(metadata.project_id, "LOG", controllingId)
+  ) {
     errors.push(
-      `${sourcePath}: ${workflowState} requires Controlling history entry to contain one CG-LOG ID`,
+      `${sourcePath}: ${workflowState} requires Controlling history entry to contain one project Log ID`,
     );
   } else if (workflowState && !logIds.has(controllingId)) {
     errors.push(
@@ -2028,7 +2609,14 @@ function parseCurrentWorkRecord(
 
   const closeoutSection = sections.find((section) => section.heading === "Closeout") ?? null;
   const closeout = workflowState
-    ? parseProjectCloseout(closeoutSection, workflowState, sourcePath, asOf, errors)
+    ? parseProjectCloseout(
+        closeoutSection,
+        metadata.project_id,
+        workflowState,
+        sourcePath,
+        asOf,
+        errors,
+      )
     : null;
   const terminalStates = ["Closed", "Cancelled", "Superseded"];
   if (placement === "active" && workflowState && terminalStates.includes(workflowState)) {
@@ -2163,13 +2751,17 @@ function parseCurrentWorkRecord(
     id: metadata.project_id,
     title: metadata.title,
     origin: metadata.origin,
-    ownerCapability: metadata.owner_capability,
+    ownerCapability: metadata.owner_capability as OperationalCapabilityId,
     relatedCapabilities: metadata.related_capabilities,
     linkedIssueIds: metadata.linked_issue_ids,
     approvedObjectiveRef: metadata.approved_objective_ref,
     started: metadata.started,
     sourcePath,
     placement: placement ?? "active",
+    currentWorkVersion: 1,
+    workflowRoute: null,
+    coreSummary: null,
+    presentModules: deepFreeze(projectRequiredHeadings.slice(1)),
     resumeHere,
     workflowState: resolvedWorkflowState,
     statusSince,
@@ -2309,10 +2901,13 @@ export function compareCurrentWorkProjects(
 }
 
 export function getCurrentWorkBodyAfterResumeHere(source: string) {
-  const nextSection = source.search(
-    /^## Versioned Outcome and Success Contract$/m,
-  );
-  return nextSection >= 0 ? source.slice(nextSection).trim() : "";
+  const resumeHeading = source.search(/^## Current State \/ Resume Here$/m);
+  if (resumeHeading < 0) return "";
+  const remainder = source.slice(resumeHeading + 1);
+  const nextSectionOffset = remainder.search(/^## (?!Current State \/ Resume Here$).+$/m);
+  return nextSectionOffset >= 0
+    ? remainder.slice(nextSectionOffset).trim()
+    : "";
 }
 
 function validateProjectLinks(
@@ -2401,7 +2996,7 @@ function validateProjectLinks(
   );
   if (activeProjects.length > 1 && primaryProjects.length !== 1) {
     errors.push(
-      `community-gallery: expected exactly one primary resume project, found ${primaryProjects.length}`,
+      `Chronicle operational registry: expected exactly one primary resume project, found ${primaryProjects.length}`,
     );
   }
 
@@ -2667,7 +3262,13 @@ function validateBaselineHistory(
     if (
       baseline.placement === "active" &&
       current.rawBeforeAttemptLog !== baseline.rawBeforeAttemptLog &&
-      appendedLogs.length === 0
+      appendedLogs.length === 0 &&
+      (
+        baseline.currentWorkVersion === 1 ||
+        current.currentWorkVersion === 1 ||
+        baseline.presentModules.includes("Attempt and Decision Log") ||
+        current.presentModules.includes("Attempt and Decision Log")
+      )
     ) {
       errors.push(
         `${current.sourcePath}: active project facts changed without an appended history entry`,

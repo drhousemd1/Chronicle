@@ -5,12 +5,47 @@ import {
 } from "node:fs/promises";
 import path from "node:path";
 
+import {
+  ISSUE_OPERATIONAL_CAPABILITIES,
+  OPERATIONAL_CAPABILITIES,
+  canonicalIssueSourcePath,
+  canonicalCurrentWorkSourcePath,
+  isOperationalIssueId,
+  isOperationalProjectId,
+} from "../../src/data/chronicle-knowledge-base/operational-capability-registry";
+import { isAcceptedUpdateId } from "../../src/data/chronicle-knowledge-base/accepted-update-capability-registry";
+
 export const APPROVED_RECORD_DIRECTORIES = Object.freeze({
   issue: "docs/architecture-knowledge/issues/community-gallery",
   "active-current-work": "docs/current-work/active/community-gallery",
   "archived-current-work": "docs/current-work/archive/community-gallery",
   changelog: "docs/architecture-knowledge/changelog/entries",
 } as const);
+
+export const CANONICAL_RECORD_DIRECTORY_ENTRIES = Object.freeze([
+  ...ISSUE_OPERATIONAL_CAPABILITIES.map((capability) =>
+    Object.freeze({
+      location: "issue" as const,
+      directory: `docs/architecture-knowledge/issues/${capability.id}`,
+    }),
+  ),
+  ...OPERATIONAL_CAPABILITIES.map((capability) =>
+    Object.freeze({
+      location: "active-current-work" as const,
+      directory: capability.activePath,
+    }),
+  ),
+  ...OPERATIONAL_CAPABILITIES.map((capability) =>
+    Object.freeze({
+      location: "archived-current-work" as const,
+      directory: capability.archivePath,
+    }),
+  ),
+  Object.freeze({
+    location: "changelog" as const,
+    directory: APPROVED_RECORD_DIRECTORIES.changelog,
+  }),
+] as const);
 
 export const CHANGELOG_MIGRATION_RECEIPT_LOCATION =
   "changelog-migration-receipt" as const;
@@ -37,8 +72,6 @@ export type CanonicalRecordTarget = CanonicalRecordIdentity &
     mode: number | null;
   }>;
 
-const ISSUE_ID = /^CG-ISSUE-\d{3}$/;
-const CURRENT_WORK_ID = /^CG-WORK-\d{3}$/;
 const ACCEPTED_CHANGE_ID = /^CG-CHANGE-\d{3}$/;
 const LEGACY_CHANGE_ID = /^LEGACY-QH-[A-Za-z0-9][A-Za-z0-9._-]*$/;
 const CORRECTION_SUFFIX = /^(.*)-COR-(?:00[1-9]|0[1-9]\d|[1-9]\d{2})$/;
@@ -195,7 +228,7 @@ export async function assertNoSymlinkComponents(
 
 export async function assertCanonicalRecordDirectories(repoRoot: string) {
   const resolvedRoot = await assertRealDirectory(repoRoot, "Repository root");
-  for (const relativeDirectory of Object.values(APPROVED_RECORD_DIRECTORIES)) {
+  for (const { directory: relativeDirectory } of CANONICAL_RECORD_DIRECTORY_ENTRIES) {
     const absoluteDirectory = resolveContainedPath(resolvedRoot, relativeDirectory);
     await assertNoSymlinkComponents(resolvedRoot, relativeDirectory);
     await assertRealDirectory(absoluteDirectory, `Canonical directory ${relativeDirectory}`);
@@ -219,12 +252,13 @@ function isValidRecordId(location: CanonicalRecordLocation, recordId: string) {
   if (location === CHANGELOG_MIGRATION_RECEIPT_LOCATION) {
     return recordId === CHANGELOG_MIGRATION_RECEIPT_RECORD_ID;
   }
-  if (location === "issue") return ISSUE_ID.test(recordId);
+  if (location === "issue") return isOperationalIssueId(recordId);
   if (location === "active-current-work" || location === "archived-current-work") {
-    return CURRENT_WORK_ID.test(recordId);
+    return isOperationalProjectId(recordId);
   }
   return (
     ACCEPTED_CHANGE_ID.test(recordId) ||
+    isAcceptedUpdateId(recordId) ||
     isLegacyChangeId(recordId) ||
     isCorrectionChangeId(recordId)
   );
@@ -244,6 +278,8 @@ export function isAcceptedChangeId(value: string) {
   return ACCEPTED_CHANGE_ID.test(value);
 }
 
+export { isAcceptedUpdateId };
+
 export function isLegacyChangeId(value: string) {
   if (!LEGACY_CHANGE_ID.test(value)) return false;
   const originalId = value.slice("LEGACY-QH-".length);
@@ -253,11 +289,11 @@ export function isLegacyChangeId(value: string) {
 function isCorrectionChangeId(value: string) {
   const match = value.match(CORRECTION_SUFFIX);
   if (!match) return false;
-  return isAcceptedChangeId(match[1]) || isLegacyChangeId(match[1]);
+  return isAcceptedChangeId(match[1]) || isAcceptedUpdateId(match[1]) || isLegacyChangeId(match[1]);
 }
 
 export function isChangelogRootId(value: string) {
-  return isAcceptedChangeId(value) || isLegacyChangeId(value);
+  return isAcceptedChangeId(value) || isAcceptedUpdateId(value) || isLegacyChangeId(value);
 }
 
 export function deriveCorrectionChangeId(targetChangeId: string, sequence: number) {
@@ -277,6 +313,15 @@ export function canonicalRecordSourcePath(
   const parsedId = parseCanonicalRecordId(location, recordId);
   if (location === CHANGELOG_MIGRATION_RECEIPT_LOCATION) {
     return CHANGELOG_MIGRATION_RECEIPT_SOURCE_PATH;
+  }
+  if (location === "active-current-work") {
+    return canonicalCurrentWorkSourcePath("active", parsedId);
+  }
+  if (location === "archived-current-work") {
+    return canonicalCurrentWorkSourcePath("archive", parsedId);
+  }
+  if (location === "issue") {
+    return canonicalIssueSourcePath(parsedId);
   }
   return `${APPROVED_RECORD_DIRECTORIES[location]}/${parsedId}.md`;
 }
@@ -313,14 +358,18 @@ export function parseCanonicalRecordSourcePath(
       `${CHANGELOG_MIGRATION_RECEIPT_RECORD_ID}.md`,
     );
   }
-  for (const [location, directory] of Object.entries(
-    APPROVED_RECORD_DIRECTORIES,
-  ) as [CanonicalRecordLocation, string][]) {
+  for (const { location, directory } of CANONICAL_RECORD_DIRECTORY_ENTRIES) {
     const prefix = `${directory}/`;
     if (normalized.startsWith(prefix)) {
       const fileName = normalized.slice(prefix.length);
       if (fileName.includes("/")) break;
-      return parseCanonicalRecordFileName(location, fileName);
+      const identity = parseCanonicalRecordFileName(location, fileName);
+      if (identity.sourcePath !== normalized) {
+        throw new Error(
+          `Record ${identity.recordId} does not belong in canonical directory ${directory}.`,
+        );
+      }
+      return identity;
     }
   }
   throw new Error("Path is not a canonical Chronicle operational-record source path.");

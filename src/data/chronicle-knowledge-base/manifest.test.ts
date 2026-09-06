@@ -1,11 +1,18 @@
+import fs from "node:fs";
+import path from "node:path";
+
 import { describe, expect, it } from "vitest";
+import { ADMIN_TOOL_SECTION_IDS } from "./admin-tool-ids";
 
 import {
   chronicleKnowledgeBaseManifest,
-  chronicleKnowledgeRoughDraft,
   chronicleKnowledgeSections,
+  chronicleWorkManualMetadata,
+  chronicleWorkManualSection,
+  chronicleWorkManualSource,
   getKnowledgeIssueCount,
   getKnowledgeTabMarkdown,
+  getWorkManualPreface,
 } from "./manifest";
 
 const expectedCapabilityIds = [
@@ -16,37 +23,40 @@ const expectedCapabilityIds = [
   "story-builder",
   "character-builder",
   "chat-interface",
+  "roleplay-pipeline",
   "chat-history",
   "public-profile",
   "account",
   "admin",
   "shared-systems",
-  "ai-api-services",
-  "app-architecture-reference",
 ];
 
 describe("Chronicle Knowledge Base manifest", () => {
   it("preserves the approved section and application-map order", () => {
     expect(chronicleKnowledgeSections.map((section) => section.id)).toEqual([
       "chronicle-overview",
+      "chronicle-work-manual",
       ...expectedCapabilityIds,
+      ...ADMIN_TOOL_SECTION_IDS,
     ]);
 
     expect(
       chronicleKnowledgeBaseManifest.applicationMap.tabs.map((tab) => tab.label),
     ).toEqual([
-      "Overview",
+      "Chronicle",
       "Community Gallery",
       "My Stories",
       "Character Library",
-      "My Images",
+      "Image Library",
       "Story Builder",
       "Character Builder",
       "Chat Interface",
+  "Roleplay Pipeline",
       "Chat History",
       "Public Profile",
-      "Account Settings",
+      "Account & Subscription",
       "Admin Panel",
+      "Shared Application Systems",
     ]);
     expect(
       chronicleKnowledgeBaseManifest.applicationMap.tabs.map((tab) => tab.id),
@@ -59,10 +69,12 @@ describe("Chronicle Knowledge Base manifest", () => {
       "story-builder",
       "character-builder",
       "chat-interface",
+  "roleplay-pipeline",
       "chat-history",
       "public-profile",
       "account",
       "admin",
+      "shared-systems",
     ]);
   });
 
@@ -70,35 +82,97 @@ describe("Chronicle Knowledge Base manifest", () => {
     expect(chronicleKnowledgeBaseManifest).not.toHaveProperty("migrationSource");
   });
 
-  it("preserves Gallery's seven tabs and the three-tab placeholder contract elsewhere", () => {
-    const gallery = chronicleKnowledgeSections.find(
-      (section) => section.id === "community-gallery",
+  it("loads the active Work Manual from the exact canonical Markdown bytes", () => {
+    const source = fs.readFileSync(
+      path.join(
+        process.cwd(),
+        "docs/architecture-knowledge/chronicle-work-manual.md",
+      ),
+      "utf8",
     );
-    expect(gallery?.tabs.map((tab) => tab.label)).toEqual([
-      "Overview",
-      "UI Elements and Functions",
-      "App Architecture",
-      "Issues",
-      "Current Work",
-      "Supabase Tables",
-      "Changelog",
-    ]);
 
-    chronicleKnowledgeSections
-      .filter(
-        (section) =>
-          section.id !== "chronicle-overview" &&
-          section.id !== "community-gallery",
-      )
-      .forEach((section) => {
-        expect(section.tabs.map((tab) => tab.label), section.id).toEqual([
-          "Overview",
-          "Architecture",
-          "Supabase Tables",
-        ]);
-        expect(section.tabs[0].contentKind, section.id).toBe("blank");
-        expect(section.tabs[1].contentKind, section.id).toBe("blank");
-      });
+    expect(chronicleWorkManualSource).toBe(source);
+    expect(chronicleKnowledgeBaseManifest.workManual.document).toBe(
+      "chronicle-work-manual.md",
+    );
+    expect(chronicleWorkManualMetadata).toMatchObject({
+      manualVersion: "0.2.3-provisional",
+      status: "active-provisional",
+      authorityEpoch: "chronicle-work-manual-2026-08-29-01",
+      canonicalPath: "docs/architecture-knowledge/chronicle-work-manual.md",
+    });
+    expect(chronicleWorkManualSection.tabs).toHaveLength(6);
+    expect(chronicleWorkManualSection.tabs[0]).toMatchObject({
+      id: "overview",
+      label: "Overview",
+    });
+    expect(chronicleWorkManualSection.tabs[1]).toMatchObject({
+      id: "start-here",
+      label: "Start Here",
+    });
+    expect(chronicleWorkManualSection.tabs.map((tab) => tab.headings)).toEqual([
+      ["Overview"],
+      ["1. Start Here"],
+      [
+        "2. Routine Local Work",
+        "3. Connected Feature Work",
+        "4. Multi-System Program Work",
+      ],
+      [
+        "11. Checks, Delivery, and Reporting",
+        "10. Subagents, Research, and Independent Review",
+      ],
+      [
+        "5. Expansion and Approval Rules",
+        "6. Risk Safeguards",
+        "9. Chronicle-Specific Systems",
+      ],
+      ["7. Evidence and Human Review", "8. Records and Continuity"],
+    ]);
+    expect(
+      getKnowledgeTabMarkdown(
+        chronicleWorkManualSection,
+        chronicleWorkManualSection.tabs[0],
+      ),
+    ).toContain("## Overview");
+    expect(
+      getKnowledgeTabMarkdown(
+        chronicleWorkManualSection,
+        chronicleWorkManualSection.tabs[1],
+      ),
+    ).toContain("## 1. Start Here");
+    expect(getWorkManualPreface(chronicleWorkManualSource)).toContain(
+      "Active provisional Chronicle workflow authority",
+    );
+  });
+
+  it("preserves the existing seven-tab capability contracts", () => {
+    for (const capabilityId of expectedCapabilityIds.filter((id) => id !== "roleplay-pipeline")) {
+      const section = chronicleKnowledgeSections.find(
+        (candidate) => candidate.id === capabilityId,
+      );
+      expect(section?.tabs.map((tab) => tab.label), capabilityId).toEqual([
+        "Overview",
+        "UI Elements and Functions",
+        "App Architecture",
+        "Issues",
+        "Current Work",
+        "Supabase Tables",
+        "Changelog",
+      ]);
+      expect(section?.tabs.map((tab) => tab.contentKind), capabilityId).toEqual([
+        "markdown-section",
+        "markdown-section",
+        "markdown-section",
+        "issue-records",
+        "current-work-records",
+        "shared-supabase",
+        "changelog-records",
+      ]);
+      expect(
+        section?.tabs.find((tab) => tab.id === "issues")?.openIssueCount,
+      ).toBeTypeOf("number");
+    }
   });
 
   it("preserves the standalone capability identities and descriptions verbatim", () => {
@@ -117,7 +191,7 @@ describe("Chronicle Knowledge Base manifest", () => {
         id: "my-stories",
         label: "My Stories",
         description:
-          "How drafts, saved community stories, published work, imports, exports, and play entry are managed.",
+          "How people organize owned, draft, published, and saved stories before editing, removing, or starting a new playthrough.",
       },
       {
         id: "character-library",
@@ -127,7 +201,7 @@ describe("Chronicle Knowledge Base manifest", () => {
       },
       {
         id: "my-images",
-        label: "My Images",
+        label: "Image Library",
         description:
           "How private images are uploaded, organized, viewed, copied into consuming features, and deleted.",
       },
@@ -141,55 +215,49 @@ describe("Chronicle Knowledge Base manifest", () => {
         id: "character-builder",
         label: "Character Builder",
         description:
-          "How story and library characters are authored, enhanced, validated, and persisted.",
+          "How reusable and story-owned character profiles are authored, assisted, copied, and saved without losing lifecycle ownership.",
       },
       {
         id: "chat-interface",
         label: "Chat Interface",
         description:
-          "The complete live roleplay lifecycle from player action through response construction, commit, support work, and evidence.",
+          "How the visible play screen presents a conversation, accepts user actions, exposes local controls, and hands an opaque turn request to the separate Roleplay Pipeline.",
+      },
+      {
+        id: "roleplay-pipeline",
+        label: "Roleplay Pipeline",
+        description:
+          "How a Chat Interface action becomes a model request, a current accepted response, and saved state for later turns.",
       },
       {
         id: "chat-history",
         label: "Chat History",
         description:
-          "How conversations are listed, resumed, paginated, identified, and deleted.",
+          "How saved conversations are listed, resumed, paginated, identified, and deleted without becoming the active play interface.",
       },
       {
         id: "public-profile",
         label: "Public Profile",
         description:
-          "How creators edit their identity and how other users view, follow, and enter published work.",
+          "How creators edit their public identity and how other people view, follow, evaluate, and enter their published work.",
       },
       {
         id: "account",
-        label: "Account Settings",
+        label: "Account & Subscription",
         description:
-          "How authentication, account settings, subscription visibility, sessions, and account actions work.",
+          "How a signed-in user views private account facts, changes credentials, and understands the current subscription and available plans.",
       },
       {
         id: "admin",
         label: "Admin Panel",
         description:
-          "How privileged operators enter the Admin hub and use specialist tools without confusing documentation, diagnostics, validation, and operations.",
+          "How privileged operators enter the Admin hub and reach each registered specialist tool while preserving the boundary between the hub and the tools it launches.",
       },
       {
         id: "shared-systems",
-        label: "Shared Systems",
+        label: "Shared Application Systems",
         description:
-          "The shell, navigation, authentication, persistence, private media, caching, and shared state used across Chronicle.",
-      },
-      {
-        id: "ai-api-services",
-        label: "AI & API Services",
-        description:
-          "Shared provider transport, AI operations, support calls, usage accounting, and service-level failure boundaries.",
-      },
-      {
-        id: "app-architecture-reference",
-        label: "App Architecture Reference",
-        description:
-          "The exhaustive generated repository lookup that supports, but does not replace, the capability manuals.",
+          "How Chronicle's shell, navigation, authentication, common persistence adapters, private media, shared configuration, and cross-capability state support the application without absorbing feature ownership.",
       },
     ]);
   });
@@ -199,7 +267,23 @@ describe("Chronicle Knowledge Base manifest", () => {
     const gallery = chronicleKnowledgeSections.find(
       (section) => section.id === "community-gallery",
     );
+    const myStories = chronicleKnowledgeSections.find(
+      (section) => section.id === "my-stories",
+    );
+    const characterLibrary = chronicleKnowledgeSections.find(
+      (section) => section.id === "character-library",
+    );
+    const myImages = chronicleKnowledgeSections.find(
+      (section) => section.id === "my-images",
+    );
+    const storyBuilder = chronicleKnowledgeSections.find(
+      (section) => section.id === "story-builder",
+    );
     expect(gallery).toBeDefined();
+    expect(myStories).toBeDefined();
+    expect(characterLibrary).toBeDefined();
+    expect(myImages).toBeDefined();
+    expect(storyBuilder).toBeDefined();
     const overviewMarkdown = getKnowledgeTabMarkdown(
       overview,
       overview.tabs[0],
@@ -215,6 +299,70 @@ describe("Chronicle Knowledge Base manifest", () => {
     const galleryArchitectureMarkdown = getKnowledgeTabMarkdown(
       gallery!,
       gallery!.tabs[2],
+    );
+    const applicationMapMyStories = getKnowledgeTabMarkdown(
+      overview,
+      overview.tabs[2],
+    );
+    const myStoriesOverviewMarkdown = getKnowledgeTabMarkdown(
+      myStories!,
+      myStories!.tabs[0],
+    );
+    const myStoriesUiMarkdown = getKnowledgeTabMarkdown(
+      myStories!,
+      myStories!.tabs[1],
+    );
+    const myStoriesArchitectureMarkdown = getKnowledgeTabMarkdown(
+      myStories!,
+      myStories!.tabs[2],
+    );
+    const applicationMapCharacterLibrary = getKnowledgeTabMarkdown(
+      overview,
+      overview.tabs[3],
+    );
+    const characterLibraryOverviewMarkdown = getKnowledgeTabMarkdown(
+      characterLibrary!,
+      characterLibrary!.tabs[0],
+    );
+    const characterLibraryUiMarkdown = getKnowledgeTabMarkdown(
+      characterLibrary!,
+      characterLibrary!.tabs[1],
+    );
+    const characterLibraryArchitectureMarkdown = getKnowledgeTabMarkdown(
+      characterLibrary!,
+      characterLibrary!.tabs[2],
+    );
+    const applicationMapMyImages = getKnowledgeTabMarkdown(
+      overview,
+      overview.tabs[4],
+    );
+    const myImagesOverviewMarkdown = getKnowledgeTabMarkdown(
+      myImages!,
+      myImages!.tabs[0],
+    );
+    const myImagesUiMarkdown = getKnowledgeTabMarkdown(
+      myImages!,
+      myImages!.tabs[1],
+    );
+    const myImagesArchitectureMarkdown = getKnowledgeTabMarkdown(
+      myImages!,
+      myImages!.tabs[2],
+    );
+    const applicationMapStoryBuilder = getKnowledgeTabMarkdown(
+      overview,
+      overview.tabs[5],
+    );
+    const storyBuilderOverviewMarkdown = getKnowledgeTabMarkdown(
+      storyBuilder!,
+      storyBuilder!.tabs[0],
+    );
+    const storyBuilderUiMarkdown = getKnowledgeTabMarkdown(
+      storyBuilder!,
+      storyBuilder!.tabs[1],
+    );
+    const storyBuilderArchitectureMarkdown = getKnowledgeTabMarkdown(
+      storyBuilder!,
+      storyBuilder!.tabs[2],
     );
     const issuesTab = gallery!.tabs.find((tab) => tab.id === "issues");
     const currentWorkTab = gallery!.tabs.find(
@@ -260,6 +408,130 @@ describe("Chronicle Knowledge Base manifest", () => {
     expect(galleryArchitectureMarkdown).toContain(
       "d9a3fa6adfd84ab896289e03d82283f676a1695e",
     );
+    expect(overview.tabs[2]).toMatchObject({
+      contentKind: "markdown-section",
+      heading: "My Stories",
+    });
+    expect(applicationMapMyStories).toContain(
+      "My Stories is the account-centered story workspace",
+    );
+    expect(myStories!.document).toBe("my-stories.md");
+    expect(myStories!.tabs.find((tab) => tab.id === "supabase-tables")).toMatchObject({
+      label: "Supabase Tables",
+      contentKind: "shared-supabase",
+      reviewed: "08/21/2026",
+      updated: "07/31/2026",
+    });
+    expect(myStoriesOverviewMarkdown.length).toBeGreaterThan(13_000);
+    expect(myStoriesOverviewMarkdown).toContain("My Stories at a Glance");
+    expect(myStoriesOverviewMarkdown).toContain(
+      "Story Builder owns authored changes",
+    );
+    expect(myStoriesUiMarkdown.length).toBeGreaterThan(13_000);
+    expect(myStoriesUiMarkdown).toContain("Workspace Entry and Header");
+    expect(myStoriesUiMarkdown).toContain("Clone Story for Editing");
+    expect(myStoriesArchitectureMarkdown.length).toBeGreaterThan(30_000);
+    expect(myStoriesArchitectureMarkdown).toContain(
+      "Delivery Boundary and Runtime Entry",
+    );
+    expect(myStoriesArchitectureMarkdown).toContain(
+      "Current Implementation Limitations",
+    );
+    expect(myStoriesArchitectureMarkdown).toContain(
+      "cc3a57ccc3c25ff86bbe0abe183457f1e28d92d7",
+    );
+    expect(overview.tabs[3]).toMatchObject({
+      contentKind: "markdown-section",
+      heading: "Character Library",
+      reviewed: "08/22/2026",
+      updated: "08/22/2026",
+    });
+    expect(applicationMapCharacterLibrary).toContain(
+      "Character Library is the account's reusable character source",
+    );
+    expect(characterLibrary!.document).toBe("character-library.md");
+    expect(
+      characterLibrary!.tabs.find((tab) => tab.id === "supabase-tables"),
+    ).toMatchObject({
+      label: "Supabase Tables",
+      contentKind: "shared-supabase",
+      reviewed: "08/22/2026",
+      updated: "07/31/2026",
+    });
+    expect(characterLibraryOverviewMarkdown.length).toBeGreaterThan(10_000);
+    expect(characterLibraryOverviewMarkdown).toContain(
+      "Character Library at a Glance",
+    );
+    expect(characterLibraryUiMarkdown.length).toBeGreaterThan(15_000);
+    expect(characterLibraryUiMarkdown).toContain(
+      "Collection Grid and Character Cards",
+    );
+    expect(characterLibraryArchitectureMarkdown.length).toBeGreaterThan(30_000);
+    expect(characterLibraryArchitectureMarkdown).toContain(
+      "Current Implementation Limitations",
+    );
+    expect(overview.tabs[4]).toMatchObject({
+      contentKind: "markdown-section",
+      heading: "Image Library",
+      reviewed: "08/22/2026",
+      updated: "08/22/2026",
+    });
+    expect(applicationMapMyImages).toContain(
+      "Image Library is the account's private reusable media source",
+    );
+    expect(myImages!.document).toBe("my-images.md");
+    expect(
+      myImages!.tabs.find((tab) => tab.id === "supabase-tables"),
+    ).toMatchObject({
+      label: "Supabase Tables",
+      contentKind: "shared-supabase",
+      reviewed: "08/22/2026",
+      updated: "07/31/2026",
+    });
+    expect(myImagesOverviewMarkdown.length).toBeGreaterThan(10_000);
+    expect(myImagesOverviewMarkdown).toContain("My Images at a Glance");
+    expect(myImagesOverviewMarkdown).toContain(
+      "A handoff creates an independent destination copy",
+    );
+    expect(myImagesUiMarkdown.length).toBeGreaterThan(14_000);
+    expect(myImagesUiMarkdown).toContain("Folder Library");
+    expect(myImagesUiMarkdown).toContain("Image Details Editor");
+    expect(myImagesArchitectureMarkdown.length).toBeGreaterThan(30_000);
+    expect(myImagesArchitectureMarkdown).toContain(
+      "Ordered Runtime and Data Flows",
+    );
+    expect(myImagesArchitectureMarkdown).toContain(
+      "Current Implementation Limitations",
+    );
+    expect(overview.tabs[5]).toMatchObject({
+      contentKind: "markdown-section",
+      heading: "Story Builder",
+      reviewed: "08/22/2026",
+      updated: "08/22/2026",
+    });
+    expect(applicationMapStoryBuilder).toContain(
+      "Story Builder is Chronicle's story-source authoring owner",
+    );
+    expect(storyBuilder!.document).toBe("story-builder.md");
+    expect(
+      storyBuilder!.tabs.find((tab) => tab.id === "supabase-tables"),
+    ).toMatchObject({
+      label: "Supabase Tables",
+      contentKind: "shared-supabase",
+      reviewed: "08/22/2026",
+      updated: "07/31/2026",
+    });
+    expect(storyBuilderOverviewMarkdown.length).toBeGreaterThan(15_000);
+    expect(storyBuilderOverviewMarkdown).toContain("Story Builder at a Glance");
+    expect(storyBuilderOverviewMarkdown).toContain("Finalize and Close");
+    expect(storyBuilderUiMarkdown.length).toBeGreaterThan(14_000);
+    expect(storyBuilderUiMarkdown).toContain("Workspace Frame and Header Actions");
+    expect(storyBuilderUiMarkdown).toContain("Share Your Story and Publication Controls");
+    expect(storyBuilderArchitectureMarkdown.length).toBeGreaterThan(30_000);
+    expect(storyBuilderArchitectureMarkdown).toContain("Ordered Runtime and Data Flows");
+    expect(storyBuilderArchitectureMarkdown).toContain(
+      "Current Implementation Limitations",
+    );
     expect(getKnowledgeIssueCount(issuesTab!)).toBe(0);
     expect(issuesTab).toMatchObject({ contentKind: "issue-records" });
     expect(currentWorkTab).toMatchObject({ contentKind: "current-work-records" });
@@ -267,9 +539,6 @@ describe("Chronicle Knowledge Base manifest", () => {
     expect(issuesTab).not.toHaveProperty("issues");
     expect(currentWorkTab).not.toHaveProperty("heading");
     expect(changelogTab).not.toHaveProperty("heading");
-    expect(chronicleKnowledgeRoughDraft).toContain(
-      "Chronicle Application Manual Writer",
-    );
   });
 
   it("keeps Supabase verification centralized and excludes the removed Preview audit", () => {
@@ -284,14 +553,16 @@ describe("Chronicle Knowledge Base manifest", () => {
       ...chronicleKnowledgeSections.flatMap((section) =>
         section.tabs.map((tab) => getKnowledgeTabMarkdown(section, tab)),
       ),
-      chronicleKnowledgeRoughDraft,
     ].join("\n");
 
     expect(supabaseMarkdown).toContain(
       "](/style-guide/supabase-schema-reference)",
     );
     expect(supabaseMarkdown).toContain(
-      "Anything that cannot be verified through the reference or by Lovable must be identified as unverified rather than guessed.",
+      "This page supplies reference and handoff mechanics; it does not decide when a Chronicle task requires",
+    );
+    expect(supabaseMarkdown).toContain(
+      "identify anything that cannot be verified as unverified rather than guessing",
     );
     expect(allActiveText).not.toContain("Workflow Failure Analysis");
     expect(allActiveText).not.toContain("Preview accordion");

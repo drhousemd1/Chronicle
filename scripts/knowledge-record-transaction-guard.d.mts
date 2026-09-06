@@ -4,6 +4,7 @@ export type KnowledgeTransactionGuardStatus = Readonly<{
   gitDirectory: string;
   transactionRoot: string;
   writerLockPresent: boolean;
+  activeScopedWriterCount: number;
   activeCertificationLeaseCount: number;
   unfinishedTransactionIds: readonly string[];
   recoveryArtifactsPresent: boolean;

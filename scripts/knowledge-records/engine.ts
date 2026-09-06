@@ -22,6 +22,7 @@ import {
 import {
   CHANGELOG_MIGRATION_RECEIPT_LOCATION,
   isAcceptedChangeId,
+  isAcceptedUpdateId,
   isLegacyChangeId,
   parseCanonicalRecordSourcePath,
 } from "./path-safety";
@@ -39,7 +40,9 @@ import {
 } from "./source-set";
 import {
   acquireKnowledgeCertificationLease,
+  acquireKnowledgeScopedWriterLock,
   acquireKnowledgeTransactionLock,
+  acquireKnowledgeTransactionCommitLock,
   appendKnowledgeTransactionJournalEvent,
   clearKnowledgeTransactionUnfinished,
   createPreparedKnowledgeTransaction,
@@ -51,6 +54,7 @@ import {
   openVerifiedKnowledgeTransaction,
   readKnowledgeTransactionJournal,
   releaseKnowledgeCertificationLease,
+  releaseKnowledgeScopedWriterLock,
   releaseKnowledgeTransactionLock,
   truncateTornKnowledgeTransactionJournal,
   writeKnowledgeTransactionTerminalReceipt,
@@ -60,6 +64,10 @@ import {
   type TransactionStoreDependencies,
   type VerifiedKnowledgeTransaction,
 } from "./transaction-store";
+import {
+  deriveKnowledgeTransactionProtection,
+  type KnowledgeTransactionProtection,
+} from "./protection-model";
 
 export type KnowledgeRecordMutationPhase = "apply" | "rollback" | "recover";
 
@@ -99,6 +107,7 @@ export type KnowledgeRecordEngineStatus = Readonly<{
   transactionInventoryReadable: boolean;
   control: Readonly<{
     writerLockPresent: boolean;
+    activeScopedWriterCount: number;
     activeCertificationLeaseCount: number;
     recoveryArtifactsPresent: boolean;
     blocker: string | null;
@@ -323,6 +332,17 @@ function assertChronicleTransactionShape(
     }
     return;
   }
+  if (transaction.kind === "accepted-update") {
+    if (
+      operations.length !== 1 ||
+      operations[0].action !== "create" ||
+      identities[0].location !== "changelog" ||
+      !isAcceptedUpdateId(identities[0].recordId)
+    ) {
+      throw new Error("Accepted Update transaction shape is invalid.");
+    }
+    return;
+  }
   if (transaction.kind === "legacy-import") {
     if (
       operations.length < 2 ||
@@ -411,6 +431,35 @@ function assertInventoryMatchesSnapshot(
   }
 }
 
+function assertScopedTargetsMatchSnapshot(
+  inventory: CanonicalSourceInventory,
+  transaction: VerifiedKnowledgeTransaction,
+  operations: readonly CandidateOperation[],
+) {
+  const actual = new Map(inventory.entries.map((entry) => [entry.sourcePath, entry]));
+  const snapshot = snapshotByPath(transaction);
+  for (const operation of operations) {
+    const expected = snapshot.get(operation.sourcePath);
+    if (!expected) {
+      throw new Error(`Transaction snapshot omits ${operation.sourcePath}.`);
+    }
+    const entry = actual.get(operation.sourcePath);
+    if (expected.state === "absent") {
+      if (entry) {
+        throw new Error(`Expected-absent canonical source now exists: ${operation.sourcePath}.`);
+      }
+      continue;
+    }
+    if (
+      !entry ||
+      entry.sha256 !== expected.sha256 ||
+      entry.mode !== expected.mode
+    ) {
+      throw new Error(`Canonical source changed after preparation: ${operation.sourcePath}.`);
+    }
+  }
+}
+
 function expectedFinalState(
   transaction: VerifiedKnowledgeTransaction,
   operations: readonly CandidateOperation[],
@@ -458,6 +507,34 @@ function assertInventoryMatchesFinalState(
       actualEntry.mode !== expectedEntry.mode
     ) {
       throw new Error(`Canonical source does not match the transaction's final state: ${sourcePath}.`);
+    }
+  }
+}
+
+function assertScopedTargetsMatchFinalState(
+  inventory: CanonicalSourceInventory,
+  operations: readonly CandidateOperation[],
+) {
+  const actual = new Map(inventory.entries.map((entry) => [entry.sourcePath, entry]));
+  for (const operation of operations) {
+    const entry = actual.get(operation.sourcePath);
+    if (operation.action === "remove") {
+      if (entry) {
+        throw new Error(`Removed canonical source still exists: ${operation.sourcePath}.`);
+      }
+      continue;
+    }
+    if (!operation.afterBytes || operation.afterMode === null) {
+      throw new Error(`Operation ${operation.index} has no final file state.`);
+    }
+    if (
+      !entry ||
+      entry.sha256 !== sha256Buffer(operation.afterBytes) ||
+      entry.mode !== operation.afterMode
+    ) {
+      throw new Error(
+        `Canonical source does not match the transaction's final state: ${operation.sourcePath}.`,
+      );
     }
   }
 }
@@ -718,6 +795,7 @@ async function rollbackAppliedOperations({
   lock,
   dependencies,
   reasonCode,
+  protection,
 }: {
   repoRoot: string;
   transaction: VerifiedKnowledgeTransaction;
@@ -725,6 +803,7 @@ async function rollbackAppliedOperations({
   lock: Awaited<ReturnType<typeof acquireKnowledgeTransactionLock>>;
   dependencies: KnowledgeRecordEngineDependencies;
   reasonCode: string;
+  protection: KnowledgeTransactionProtection;
 }) {
   const canonicalDependencies = await canonicalDependenciesForTransaction(
     repoRoot,
@@ -777,7 +856,12 @@ async function rollbackAppliedOperations({
     canonicalDependencies,
   );
   const restored = await readCanonicalSourceInventory(repoRoot);
-  assertInventoryMatchesSnapshot(restored, transaction);
+  if (protection.mode === "scoped") {
+    assertScopedTargetsMatchSnapshot(restored, transaction, operations);
+    validateFinalInventory(restored, transaction, Object.freeze({}));
+  } else {
+    assertInventoryMatchesSnapshot(restored, transaction);
+  }
   const validationSha256 = baselineDigest(restored);
   await appendKnowledgeTransactionJournalEvent({
     lock,
@@ -875,15 +959,44 @@ export async function applyKnowledgeRecordTransaction({
   transactionId: string;
   dependencies?: KnowledgeRecordEngineDependencies;
 }): Promise<AppliedKnowledgeRecordTransaction> {
-  const lock = await acquireKnowledgeTransactionLock({
-    repoRoot,
-    command: "apply transaction",
-    transactionId,
-    dependencies: dependencies.store,
-  });
+  const preview = await openVerifiedKnowledgeTransaction({ repoRoot, transactionId });
+  const previewOperations = storedTransactionToCandidateOperations(preview);
+  assertChronicleTransactionShape(preview, previewOperations);
+  const protection = deriveKnowledgeTransactionProtection(
+    preview.kind,
+    preview.operations,
+  );
+  const scopedLock =
+    protection.mode === "scoped"
+      ? await acquireKnowledgeScopedWriterLock({
+          repoRoot,
+          command: `apply ${preview.kind}`,
+          transactionId,
+          dependencies: dependencies.store,
+        })
+      : null;
+  let lock: Awaited<ReturnType<typeof acquireKnowledgeTransactionLock>> | null = null;
   try {
+    lock =
+      protection.mode === "scoped"
+        ? await acquireKnowledgeTransactionCommitLock({
+            scopedWriterLock: scopedLock!,
+            command: "apply scoped commit",
+          })
+        : await acquireKnowledgeTransactionLock({
+            repoRoot,
+            command: "apply transaction",
+            transactionId,
+            dependencies: dependencies.store,
+          });
     const unfinished = await assertNoOtherUnfinished(repoRoot, transactionId);
     const transaction = await openVerifiedKnowledgeTransaction({ repoRoot, transactionId });
+    if (
+      transaction.metadataSha256 !== preview.metadataSha256 ||
+      transaction.snapshotSha256 !== preview.snapshotSha256
+    ) {
+      throw new Error("Transaction changed while its protection boundary was acquired.");
+    }
     const operations = storedTransactionToCandidateOperations(transaction);
     assertChronicleTransactionShape(transaction, operations);
     const status = await getKnowledgeTransactionStatus({ repoRoot, transactionId });
@@ -892,7 +1005,11 @@ export async function applyKnowledgeRecordTransaction({
     }
     if (status.terminalOutcome === "applied") {
       const current = await readCanonicalSourceInventory(repoRoot);
-      assertInventoryMatchesFinalState(current, transaction, operations);
+      if (protection.mode === "scoped") {
+        assertScopedTargetsMatchFinalState(current, operations);
+      } else {
+        assertInventoryMatchesFinalState(current, transaction, operations);
+      }
       const validationSha256 = validateFinalInventory(
         current,
         transaction,
@@ -902,7 +1019,11 @@ export async function applyKnowledgeRecordTransaction({
     }
 
     const baseline = await readCanonicalSourceInventory(repoRoot);
-    assertInventoryMatchesSnapshot(baseline, transaction);
+    if (protection.mode === "scoped") {
+      assertScopedTargetsMatchSnapshot(baseline, transaction, operations);
+    } else {
+      assertInventoryMatchesSnapshot(baseline, transaction);
+    }
     const candidate: ValidatedKnowledgeRecordCandidate =
       validateStoredKnowledgeRecordCandidate(
         baseline,
@@ -968,7 +1089,11 @@ export async function applyKnowledgeRecordTransaction({
         canonicalDependencies,
       );
       const finalInventory = await readCanonicalSourceInventory(repoRoot);
-      assertInventoryMatchesFinalState(finalInventory, transaction, operations);
+      if (protection.mode === "scoped") {
+        assertScopedTargetsMatchFinalState(finalInventory, operations);
+      } else {
+        assertInventoryMatchesFinalState(finalInventory, transaction, operations);
+      }
       const validationSha256 = validateFinalInventory(
         finalInventory,
         transaction,
@@ -1005,6 +1130,7 @@ export async function applyKnowledgeRecordTransaction({
           lock,
           dependencies,
           reasonCode: "apply-error",
+          protection,
         });
       } catch (rollbackError) {
         throw new KnowledgeRecordAutomaticRecoveryError(
@@ -1016,7 +1142,8 @@ export async function applyKnowledgeRecordTransaction({
       throw applyError;
     }
   } finally {
-    await releaseKnowledgeTransactionLock(lock);
+    if (lock) await releaseKnowledgeTransactionLock(lock);
+    if (scopedLock) await releaseKnowledgeScopedWriterLock(scopedLock);
   }
 }
 
@@ -1042,6 +1169,10 @@ export async function recoverKnowledgeRecordTransaction({
     const transaction = await openVerifiedKnowledgeTransaction({ repoRoot, transactionId });
     const operations = storedTransactionToCandidateOperations(transaction);
     assertChronicleTransactionShape(transaction, operations);
+    const protection = deriveKnowledgeTransactionProtection(
+      transaction.kind,
+      transaction.operations,
+    );
     const status = await getKnowledgeTransactionStatus({ repoRoot, transactionId });
     const canonicalDependencies = await canonicalDependenciesForTransaction(
       repoRoot,
@@ -1055,7 +1186,11 @@ export async function recoverKnowledgeRecordTransaction({
     if (!status.unfinished) {
       if (status.terminalOutcome === "applied") {
         const current = await readCanonicalSourceInventory(repoRoot);
-        assertInventoryMatchesFinalState(current, transaction, operations);
+        if (protection.mode === "scoped") {
+          assertScopedTargetsMatchFinalState(current, operations);
+        } else {
+          assertInventoryMatchesFinalState(current, transaction, operations);
+        }
         return {
           transactionId,
           outcome: "already-applied",
@@ -1063,7 +1198,11 @@ export async function recoverKnowledgeRecordTransaction({
         };
       }
       const current = await readCanonicalSourceInventory(repoRoot);
-      assertInventoryMatchesSnapshot(current, transaction);
+      if (protection.mode === "scoped") {
+        assertScopedTargetsMatchSnapshot(current, transaction, operations);
+      } else {
+        assertInventoryMatchesSnapshot(current, transaction);
+      }
       return {
         transactionId,
         outcome: status.terminalOutcome === "recovered" ? "already-recovered" : "prepared",
@@ -1074,7 +1213,11 @@ export async function recoverKnowledgeRecordTransaction({
 
     if (status.terminalOutcome === "applied") {
       const current = await readCanonicalSourceInventory(repoRoot);
-      assertInventoryMatchesFinalState(current, transaction, operations);
+      if (protection.mode === "scoped") {
+        assertScopedTargetsMatchFinalState(current, operations);
+      } else {
+        assertInventoryMatchesFinalState(current, transaction, operations);
+      }
       const validationSha256 = validateFinalInventory(current, transaction, Object.freeze({}));
       await clearKnowledgeTransactionUnfinished({
         lock,
@@ -1085,7 +1228,11 @@ export async function recoverKnowledgeRecordTransaction({
     }
     if (status.terminalOutcome === "recovered") {
       const current = await readCanonicalSourceInventory(repoRoot);
-      assertInventoryMatchesSnapshot(current, transaction);
+      if (protection.mode === "scoped") {
+        assertScopedTargetsMatchSnapshot(current, transaction, operations);
+      } else {
+        assertInventoryMatchesSnapshot(current, transaction);
+      }
       const validationSha256 = baselineDigest(current);
       await clearKnowledgeTransactionUnfinished({
         lock,
@@ -1142,7 +1289,12 @@ export async function recoverKnowledgeRecordTransaction({
       canonicalDependencies,
     );
     const restored = await readCanonicalSourceInventory(repoRoot);
-    assertInventoryMatchesSnapshot(restored, transaction);
+    if (protection.mode === "scoped") {
+      assertScopedTargetsMatchSnapshot(restored, transaction, operations);
+      validateFinalInventory(restored, transaction, Object.freeze({}));
+    } else {
+      assertInventoryMatchesSnapshot(restored, transaction);
+    }
     const validationSha256 = baselineDigest(restored);
     await appendKnowledgeTransactionJournalEvent({
       lock,
@@ -1183,6 +1335,7 @@ export async function getKnowledgeRecordEngineStatus({
     transactionInventoryReadable: false,
     control: Object.freeze({
       writerLockPresent: control.writerLockPresent ?? false,
+      activeScopedWriterCount: control.activeScopedWriterCount ?? 0,
       activeCertificationLeaseCount:
         control.activeCertificationLeaseCount ?? 0,
       recoveryArtifactsPresent: control.recoveryArtifactsPresent ?? true,
@@ -1200,14 +1353,17 @@ export async function getKnowledgeRecordEngineStatus({
   }
 
   const inventoryReadable =
-    !guardStatus.writerLockPresent && !guardStatus.recoveryArtifactsPresent;
+    !guardStatus.writerLockPresent &&
+    guardStatus.activeScopedWriterCount === 0 &&
+    !guardStatus.recoveryArtifactsPresent;
   if (!inventoryReadable) {
     return unsafeStatus(
-      guardStatus.writerLockPresent
+      guardStatus.writerLockPresent || guardStatus.activeScopedWriterCount > 0
         ? "A Knowledge record writer is active or requires recovery."
         : "Transaction control recovery must finish before records can be inspected.",
       {
         writerLockPresent: guardStatus.writerLockPresent,
+        activeScopedWriterCount: guardStatus.activeScopedWriterCount,
         activeCertificationLeaseCount:
           guardStatus.activeCertificationLeaseCount,
         recoveryArtifactsPresent: guardStatus.recoveryArtifactsPresent,
@@ -1227,11 +1383,12 @@ export async function getKnowledgeRecordEngineStatus({
     try {
       const racedStatus = inspectKnowledgeTransactionGuard({ repoRoot });
       return unsafeStatus(
-        racedStatus.writerLockPresent
+        racedStatus.writerLockPresent || racedStatus.activeScopedWriterCount > 0
           ? "A Knowledge record writer is active or requires recovery."
           : "Transaction control changed before records could be inspected.",
         {
           writerLockPresent: racedStatus.writerLockPresent,
+          activeScopedWriterCount: racedStatus.activeScopedWriterCount,
           activeCertificationLeaseCount:
             racedStatus.activeCertificationLeaseCount,
           recoveryArtifactsPresent:
@@ -1252,12 +1409,14 @@ export async function getKnowledgeRecordEngineStatus({
     const leasedGuardStatus = inspectKnowledgeTransactionGuard({ repoRoot });
     if (
       leasedGuardStatus.writerLockPresent ||
+      leasedGuardStatus.activeScopedWriterCount > 0 ||
       leasedGuardStatus.recoveryArtifactsPresent
     ) {
       result = unsafeStatus(
         "Transaction control changed before records could be inspected.",
         {
           writerLockPresent: leasedGuardStatus.writerLockPresent,
+          activeScopedWriterCount: leasedGuardStatus.activeScopedWriterCount,
           activeCertificationLeaseCount: Math.max(
             0,
             leasedGuardStatus.activeCertificationLeaseCount - 1,
@@ -1277,6 +1436,7 @@ export async function getKnowledgeRecordEngineStatus({
         transactionInventoryReadable: true,
         control: Object.freeze({
           writerLockPresent: false,
+          activeScopedWriterCount: 0,
           activeCertificationLeaseCount: Math.max(
             0,
             leasedGuardStatus.activeCertificationLeaseCount - 1,

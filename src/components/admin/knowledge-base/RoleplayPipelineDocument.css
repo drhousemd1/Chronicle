@@ -1,0 +1,107 @@
+/* Approved mockup hierarchy on the shared Knowledge Base reading surface. */
+.knowledge-roleplay-document { container-type: inline-size; min-width: 0; }
+.knowledge-roleplay-document h4 {
+  margin: 20px 0 8px; color: #f1f1f1;
+  font-size: var(--knowledge-body-copy-size); font-weight: 600; line-height: 1.35;
+}
+.knowledge-roleplay-document [id] { scroll-margin-top: 24px; }
+.knowledge-roleplay-document a:focus-visible { outline: 2px solid #8eb6e8; outline-offset: 3px; }
+.knowledge-roleplay-document .pipeline-stage {
+  margin: 42px 0 0; padding: 34px 0 0; border-top: 1px solid #424242;
+}
+.knowledge-roleplay-document .pipeline-stage-heading-row {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin: 0 0 20px;
+}
+.knowledge-roleplay-document .pipeline-stage-heading-row .pipeline-chapter-title {
+  margin: 0; color: #fff; font-size: clamp(18px, calc(17px + 0.2vw), 20px);
+  font-weight: 500; line-height: 1.25;
+}
+.knowledge-roleplay-document .pipeline-stage__number,
+.knowledge-roleplay-document .pipeline-stage__scope {
+  padding: 4px 9px; border: 1px solid #5d5d5d; border-radius: 999px; background: #292929;
+  color: #f2f2f2; font-size: 11px; font-weight: 600; line-height: 1.2;
+}
+.knowledge-roleplay-document .pipeline-stage__scope--call1 { color: #b9d6ff; }
+.knowledge-roleplay-document .pipeline-stage__scope--call2 { color: #e5d6ff; }
+.knowledge-roleplay-document .pipeline-route-card,
+.knowledge-roleplay-document .pipeline-component-card {
+  min-width: 0; margin: 24px 0 0; padding: clamp(18px, 2.5vw, 28px);
+  border: 1px solid #444; border-radius: 8px; background: #202020;
+}
+.knowledge-roleplay-document .pipeline-route-card h3,
+.knowledge-roleplay-document .pipeline-component-card h3 {
+  margin: 0 0 14px; color: #f1f1f1; font-size: clamp(16px, calc(15px + 0.15vw), 17px);
+  font-weight: 600; line-height: 1.35;
+}
+.knowledge-roleplay-document .pipeline-route-card h4,
+.knowledge-roleplay-document .pipeline-component-card h4 { margin: 23px 0 8px; }
+.knowledge-roleplay-document .pipeline-route-card p:last-child,
+.knowledge-roleplay-document .pipeline-component-card p:last-child,
+.knowledge-roleplay-document .rp-stage-intro p:last-child,
+.knowledge-roleplay-document .rp-callout p:last-child { margin-bottom: 0; }
+.knowledge-roleplay-document .rp-stage-intro { margin-bottom: 24px; }
+.knowledge-roleplay-document .pipeline-stage__output {
+  margin: 24px 0 0; padding: 20px 0 0; border-top: 1px solid rgb(255 255 255 / 10%);
+}
+.knowledge-roleplay-document .pipeline-stage__output h3 { margin-top: 0; }
+.knowledge-roleplay-document .rp-action-intro { margin: 0 0 17px; }
+.knowledge-roleplay-document .rp-intro,
+.knowledge-roleplay-document .rp-callout { margin: 20px 0 28px; }
+.knowledge-roleplay-document .pipeline-taxonomy-badge {
+  display: inline-flex; align-items: center; width: fit-content; padding: 3px 9px;
+  border-top: 1px solid rgb(0 0 0 / 35%); border-radius: 8px; background: #1c1c1f;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 11px; font-weight: 700; letter-spacing: .5px; line-height: 1.2;
+  text-transform: uppercase; white-space: nowrap;
+}
+.knowledge-roleplay-document .pipeline-taxonomy-badge--code-logic { color: #94a3b8; }
+.knowledge-roleplay-document .pipeline-taxonomy-badge--function { color: #7dd3fc; }
+.knowledge-roleplay-document .pipeline-taxonomy-badge--handoff { color: #86efac; }
+.knowledge-roleplay-document .pipeline-taxonomy-badge--persistence { color: #facc15; }
+.knowledge-roleplay-document .pipeline-taxonomy-badge--enforcement { color: #fca5a5; }
+.knowledge-roleplay-document .pipeline-taxonomy-badge--diagnostic { color: #f0abfc; }
+.knowledge-roleplay-document .pipeline-route-line { display: block; margin: 0 0 16px; }
+.knowledge-roleplay-document .pipeline-route-line > .pipeline-taxonomy-badge { margin: 0 8px 0 0; vertical-align: baseline; }
+.knowledge-roleplay-document .pipeline-route-line > span:last-child { display: inline; }
+.knowledge-roleplay-document .pipeline-branch__source {
+  color: #b9cce5; font-family: SFMono-Regular, Consolas, monospace;
+  font-size: 9.5pt; overflow-wrap: anywhere;
+}
+.knowledge-roleplay-document .rp-flow-contents {
+  margin: 24px 0; padding: 18px 0; border-top: 1px solid #3b3b3b; border-bottom: 1px solid #3b3b3b;
+}
+.knowledge-roleplay-document .rp-flow-contents h3 { margin: 0 0 12px; }
+.knowledge-roleplay-document .rp-flow-contents__links { display: flex; flex-wrap: wrap; gap: 10px 20px; }
+.knowledge-roleplay-document .rp-handoff-map { margin: 28px 0; }
+.knowledge-roleplay-document .rp-handoff-map ol { display: flex; flex-wrap: wrap; gap: 8px 12px; padding: 0; list-style: none; }
+.knowledge-roleplay-document .rp-handoff-map li { margin: 0; }
+.knowledge-roleplay-document .rp-handoff-map li span { margin-left: 8px; color: #a1a1aa; }
+.knowledge-roleplay-document .rp-lifecycle { display: flex; flex-wrap: wrap; gap: 12px 24px; margin: 20px 0 28px; }
+.knowledge-roleplay-document .rp-lifecycle__number { margin-right: 8px; color: #a1a1aa; }
+.knowledge-roleplay-document .rp-inline-note { color: #a1a1aa; line-height: 1.55; }
+.knowledge-roleplay-document .rp-kicker { color: #a1a1aa; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.knowledge-roleplay-document .rp-section-divider,
+.knowledge-roleplay-document .rp-source-list,
+.knowledge-roleplay-document .rp-authority-links { margin-top: 24px; padding-top: 18px; border-top: 1px solid #3b3b3b; }
+.knowledge-roleplay-document .pipeline-register { overflow: visible; }
+.knowledge-roleplay-document .pipeline-register table { display: table; overflow: visible; min-width: 0; width: 100%; table-layout: fixed; }
+.knowledge-roleplay-document th,
+.knowledge-roleplay-document td { overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  #roleplay-pipeline .knowledge-tab-rail { width: 100%; flex-wrap: wrap; overflow: visible; border-radius: 18px; }
+  #roleplay-pipeline .knowledge-tab { flex: 1 1 auto; min-width: 0; }
+}
+@container (max-width: 600px) {
+  .knowledge-roleplay-document .pipeline-register table,
+  .knowledge-roleplay-document .pipeline-register tbody,
+  .knowledge-roleplay-document .pipeline-register tr,
+  .knowledge-roleplay-document .pipeline-register td { display: block; width: 100%; }
+  .knowledge-roleplay-document .pipeline-register thead {
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%);
+  }
+  .knowledge-roleplay-document .pipeline-register tr { margin-bottom: 18px; }
+  .knowledge-roleplay-document .pipeline-register td + td { border-top: 0; }
+  .knowledge-roleplay-document .pipeline-register td::before {
+    content: attr(data-label); display: block; margin-bottom: 6px; color: #fff; font-weight: 600;
+  }
+}

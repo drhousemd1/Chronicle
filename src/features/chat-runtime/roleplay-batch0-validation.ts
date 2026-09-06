@@ -908,7 +908,7 @@ export async function runRoleplayBatch0Validation({
         }),
         positiveAssertions: [
           { label: 'targeted command is documented', includes: '"targetedCommand": "npm run validation:roleplay:batch0"' },
-          { label: 'package script points at the protected ledger writer', includes: '"packageScript": "vite-node scripts/run-with-knowledge-certification-lease.ts validation-roleplay-batch0 -- vite-node scripts/write-roleplay-batch0-validation-ledger.ts"' },
+          { label: 'package script points at the independent ledger writer', includes: '"packageScript": "vite-node scripts/write-roleplay-batch0-validation-ledger.ts"' },
           { label: 'companion checks are listed', includes: '"companionChecks"' },
           { label: 'deterministic fixtures run before manual playthrough', includes: '"deterministicFixturesBeforeManualPlaythrough": true' },
           { label: 'manual admin export runs after fixtures', includes: '"manualAdminExportAfterFixtures": true' },

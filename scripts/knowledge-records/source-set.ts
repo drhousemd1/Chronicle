@@ -8,7 +8,7 @@ import {
 import path from "node:path";
 
 import {
-  APPROVED_RECORD_DIRECTORIES,
+  CANONICAL_RECORD_DIRECTORY_ENTRIES,
   CHANGELOG_MIGRATION_RECEIPT_LOCATION,
   CHANGELOG_MIGRATION_RECEIPT_RECORD_ID,
   CHANGELOG_MIGRATION_RECEIPT_SOURCE_PATH,
@@ -20,7 +20,8 @@ import {
   type CanonicalRecordLocation,
 } from "./path-safety";
 
-type DirectoryRecordLocation = keyof typeof APPROVED_RECORD_DIRECTORIES;
+type CanonicalDirectoryEntry =
+  (typeof CANONICAL_RECORD_DIRECTORY_ENTRIES)[number];
 
 export type CanonicalSourceEntry = Readonly<{
   location: CanonicalRecordLocation;
@@ -122,9 +123,9 @@ async function readOrdinaryFileWithoutFollowingLinks(
 
 async function readDirectoryEntries(
   repoRoot: string,
-  location: DirectoryRecordLocation,
+  directoryEntry: CanonicalDirectoryEntry,
 ) {
-  const relativeDirectory = APPROVED_RECORD_DIRECTORIES[location];
+  const { location, directory: relativeDirectory } = directoryEntry;
   const absoluteDirectory = resolveContainedPath(repoRoot, relativeDirectory);
   const names = (await readdir(absoluteDirectory)).sort((left, right) =>
     left.localeCompare(right),
@@ -151,6 +152,12 @@ async function readDirectoryEntries(
     }
 
     const identity = parseCanonicalRecordFileName(location, name);
+    const actualSourcePath = `${relativeDirectory}/${name}`;
+    if (identity.sourcePath !== actualSourcePath) {
+      throw new Error(
+        `Canonical record ${identity.recordId} is in the wrong directory: ${actualSourcePath}.`,
+      );
+    }
     const stableFile = await readOrdinaryFileWithoutFollowingLinks(
       entryPath,
       identity.sourcePath,
@@ -223,19 +230,18 @@ export async function readCanonicalSourceInventory(
 ): Promise<CanonicalSourceInventory> {
   const resolvedRoot = await assertCanonicalRecordDirectories(repoRoot);
   const entries: CanonicalSourceEntry[] = [];
-  const initialDirectoryMembership = new Map<DirectoryRecordLocation, readonly string[]>();
-  for (const location of Object.keys(
-    APPROVED_RECORD_DIRECTORIES,
-  ) as DirectoryRecordLocation[]) {
+  const initialDirectoryMembership = new Map<string, readonly string[]>();
+  for (const directoryEntry of CANONICAL_RECORD_DIRECTORY_ENTRIES) {
+    const relativeDirectory = directoryEntry.directory;
     const absoluteDirectory = resolveContainedPath(
       resolvedRoot,
-      APPROVED_RECORD_DIRECTORIES[location],
+      relativeDirectory,
     );
     initialDirectoryMembership.set(
-      location,
+      relativeDirectory,
       (await readdir(absoluteDirectory)).sort((left, right) => left.localeCompare(right)),
     );
-    entries.push(...(await readDirectoryEntries(resolvedRoot, location)));
+    entries.push(...(await readDirectoryEntries(resolvedRoot, directoryEntry)));
   }
   const initialReceipt = await readMigrationReceiptEntry(resolvedRoot);
   if (initialReceipt) entries.push(initialReceipt);
@@ -249,22 +255,21 @@ export async function readCanonicalSourceInventory(
     seenPaths.add(entry.sourcePath);
   }
 
-  for (const location of Object.keys(
-    APPROVED_RECORD_DIRECTORIES,
-  ) as DirectoryRecordLocation[]) {
+  for (const directoryEntry of CANONICAL_RECORD_DIRECTORY_ENTRIES) {
+    const relativeDirectory = directoryEntry.directory;
     const absoluteDirectory = resolveContainedPath(
       resolvedRoot,
-      APPROVED_RECORD_DIRECTORIES[location],
+      relativeDirectory,
     );
     const finalMembership = (await readdir(absoluteDirectory)).sort((left, right) =>
       left.localeCompare(right),
     );
     if (
       finalMembership.join("\0") !==
-      (initialDirectoryMembership.get(location) ?? []).join("\0")
+      (initialDirectoryMembership.get(relativeDirectory) ?? []).join("\0")
     ) {
       throw new Error(
-        `Canonical directory membership changed while it was being read: ${APPROVED_RECORD_DIRECTORIES[location]}.`,
+        `Canonical directory membership changed while it was being read: ${relativeDirectory}.`,
       );
     }
   }

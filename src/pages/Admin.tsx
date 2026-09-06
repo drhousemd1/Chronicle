@@ -17,6 +17,9 @@ const LazyStyleGuide = React.lazy(() =>
 const LazyFinanceDashboard = React.lazy(() =>
   import('@/components/admin/finance/FinanceDashboardTool')
 );
+const LazyResearchDevelopment = React.lazy(() =>
+  import('@/components/admin/research-development/ResearchDevelopmentTool').then(m => ({ default: m.ResearchDevelopmentTool }))
+);
 
 const lazyToolFallback = <div className="h-full w-full" />;
 const LEGACY_STYLE_GUIDE_DESCRIPTIONS = new Set([
@@ -67,6 +70,11 @@ const DEFAULT_TOOLS: ToolMeta[] = [
     title: 'Finance Dashboard',
     description: 'Business finance operations, projections, users, reporting, and API cost insights',
   },
+  {
+    id: 'research_development',
+    title: 'Research & Development',
+    description: 'Build protected mock-ups alongside editable notes and reference images',
+  },
 ];
 
 interface AdminPageProps {
@@ -76,11 +84,15 @@ interface AdminPageProps {
   onRegisterGuideSyncAll?: (syncFn: (() => Promise<void>) | null) => void;
   onRegisterStyleGuideDownload?: (fn: (() => void) | null) => void;
   onRegisterStyleGuideEdits?: (fn: (() => void) | null) => void;
+  onRegisterRndBeforeLeave?: (fn: (() => Promise<boolean>) | null) => void;
+  onRegisterRndAddMockup?: (fn: (() => Promise<void>) | null) => void;
+  onRegisterRndRepositorySave?: (fn: (() => Promise<void>) | null) => void;
+  onRndRepositorySaveStateChange?: (state: 'idle' | 'saving' | 'saved' | 'error') => void;
   onStyleGuideEditsCountChange?: (count: number) => void;
   guideTheme?: 'dark' | 'light';
 }
 
-export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveTool, onRegisterGuideSave, onRegisterGuideSyncAll, onRegisterStyleGuideDownload, onRegisterStyleGuideEdits, onStyleGuideEditsCountChange, guideTheme }) => {
+export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveTool, onRegisterGuideSave, onRegisterGuideSyncAll, onRegisterStyleGuideDownload, onRegisterStyleGuideEdits, onRegisterRndBeforeLeave, onRegisterRndAddMockup, onRegisterRndRepositorySave, onRndRepositorySaveStateChange, onStyleGuideEditsCountChange, guideTheme }) => {
   const navigate = useNavigate();
   const [tools, setTools] = useState<ToolMeta[]>(DEFAULT_TOOLS);
   const [editingTool, setEditingTool] = useState<ToolMeta | null>(null);
@@ -201,6 +213,20 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
     return (
       <React.Suspense fallback={lazyToolFallback}>
         <LazyFinanceDashboard />
+      </React.Suspense>
+    );
+  }
+
+  if (activeTool === 'research_development') {
+    return (
+      <React.Suspense fallback={lazyToolFallback}>
+        <LazyResearchDevelopment
+          onOpenStyleGuide={() => onSetActiveTool('style_guide')}
+          onRegisterBeforeLeave={onRegisterRndBeforeLeave}
+          onRegisterAddMockup={onRegisterRndAddMockup}
+          onRegisterRepositorySave={onRegisterRndRepositorySave}
+          onRepositorySaveStateChange={onRndRepositorySaveStateChange}
+        />
       </React.Suspense>
     );
   }

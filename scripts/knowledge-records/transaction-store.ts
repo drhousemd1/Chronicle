@@ -26,6 +26,7 @@ import {
   KNOWLEDGE_TRANSACTION_ID_PATTERN as SHARED_KNOWLEDGE_TRANSACTION_ID_PATTERN,
   assertKnowledgeCertificationLeaseMetadata,
   assertKnowledgeControlCommand,
+  assertKnowledgeScopedWriterMetadata,
   assertKnowledgeUnfinishedMarker,
   assertKnowledgeWriterLockMetadata,
   canonicalKnowledgeControlJson,
@@ -33,10 +34,23 @@ import {
   knowledgeControlMetadataWithHash,
   parseKnowledgeCertificationLeaseTransitionName,
   parseKnowledgePendingFileName,
+  parseKnowledgeScopedWriterDirectoryName,
+  parseKnowledgeScopedWriterTransitionName,
   parseKnowledgeTransactionStagingName,
   parseKnowledgeWriterLockRecoveryName,
   parseKnowledgeWriterLockStagingName,
+  knowledgeScopedWriterDirectoryName,
+  knowledgeScopedWriterTransitionName,
 } from "../knowledge-record-control-contract.mjs";
+
+import {
+  deriveKnowledgeTransactionProtection,
+  knowledgeProtectionMatchesScopes,
+  knowledgeProtectionScopesOverlap,
+  parseKnowledgeProtectionScope,
+  serializeKnowledgeProtectionScope,
+  type KnowledgeProtectionScope,
+} from "./protection-model";
 
 import {
   generateTransactionId,
@@ -55,6 +69,8 @@ const STORE_VERSION = KNOWLEDGE_CONTROL_STORE_VERSION;
 const TRANSACTION_ROOT_NAME = KNOWLEDGE_CONTROL_NAMES.transactionRoot;
 const LOCK_DIRECTORY_NAME = KNOWLEDGE_CONTROL_NAMES.writerLock;
 const LOCK_METADATA_NAME = KNOWLEDGE_CONTROL_NAMES.writerLockMetadata;
+const SCOPED_WRITER_ROOT_NAME = KNOWLEDGE_CONTROL_NAMES.scopedWriterRoot;
+const SCOPED_WRITER_METADATA_NAME = KNOWLEDGE_CONTROL_NAMES.scopedWriterMetadata;
 const CERTIFICATION_LEASE_ROOT_NAME =
   KNOWLEDGE_CONTROL_NAMES.certificationLeaseRoot;
 const CERTIFICATION_LEASE_METADATA_NAME =
@@ -109,6 +125,7 @@ export type KnowledgeTransactionKind =
   | "project-update"
   | "issue-create"
   | "issue-update"
+  | "accepted-update"
   | "legacy-import"
   | "correction"
   | "closeout";
@@ -235,6 +252,7 @@ export type TransactionStoreMutationEvent = Readonly<{
     | "journal-truncated";
   scope:
     | "writer-lock"
+    | "scoped-writer"
     | "transaction-prepare"
     | "transaction-control"
     | "certification-lease"
@@ -267,6 +285,18 @@ export type KnowledgeTransactionLock = {
   readonly transactionId: string | null;
   readonly recoveryCapable: boolean;
 };
+
+export type KnowledgeScopedWriterLock = Readonly<{
+  repositoryRoot: string;
+  gitDirectory: string;
+  transactionRoot: string;
+  scopedRoot: string;
+  lockDirectory: string;
+  lockId: string;
+  command: string;
+  transactionId: string;
+  scopes: readonly KnowledgeProtectionScope[];
+}>;
 
 type StoredPayload = {
   artifact: string;
@@ -374,6 +404,18 @@ type ActiveLockRecord = {
   dependencies: Required<TransactionStoreDependencies>;
 };
 
+type StoredScopedWriter = {
+  storeVersion: number;
+  lockId: string;
+  pid: number;
+  hostname: string;
+  startedAt: string;
+  command: string;
+  transactionId: string;
+  scopes: readonly string[];
+  metadataSha256: string;
+};
+
 type ActiveCertificationLeaseRecord = {
   leaseId: string;
   leaseDirectory: string;
@@ -401,6 +443,21 @@ type StoreArtifactOwner = Readonly<{
 }>;
 
 const activeLocks = new WeakMap<object, ActiveLockRecord>();
+const activeScopedWriters = new WeakMap<
+  object,
+  Readonly<{
+    lockId: string;
+    lockDirectory: string;
+    scopedRoot: string;
+    repositoryRoot: string;
+    transactionRoot: string;
+    pid: number;
+    hostname: string;
+    transactionId: string;
+    scopes: readonly KnowledgeProtectionScope[];
+    dependencies: Required<TransactionStoreDependencies>;
+  }>
+>();
 const activeCertificationLeases = new WeakMap<object, ActiveCertificationLeaseRecord>();
 
 class InjectedStoreInterruptionError extends Error {
@@ -1156,6 +1213,12 @@ function isAllowedRecoveryEntry({
     const pending = parsePrivatePendingFileName(name);
     return parent === "" && pending?.finalName === CERTIFICATION_LEASE_METADATA_NAME;
   }
+  if (scope === "scoped-writer") {
+    if (isDirectory) return false;
+    if (relativePath === SCOPED_WRITER_METADATA_NAME) return true;
+    const pending = parsePrivatePendingFileName(name);
+    return parent === "" && pending?.finalName === SCOPED_WRITER_METADATA_NAME;
+  }
   if (scope === "transaction-prepare") {
     if (isDirectory) {
       return (
@@ -1789,6 +1852,176 @@ async function inspectCertificationLeases({
   }
 }
 
+async function ensureScopedWriterRoot(
+  transactionRoot: string,
+  dependencies: Required<TransactionStoreDependencies>,
+) {
+  const scopedRoot = path.join(transactionRoot, SCOPED_WRITER_ROOT_NAME);
+  const existing = await lstat(scopedRoot).catch((error: NodeJS.ErrnoException) => {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  });
+  if (existing) {
+    await assertRealDirectory(scopedRoot, "Knowledge scoped writer root", 0o700);
+  } else {
+    await createPrivateDirectory(
+      scopedRoot,
+      dependencies,
+      "scoped-writer",
+      SCOPED_WRITER_ROOT_NAME,
+    );
+  }
+  return scopedRoot;
+}
+
+async function readScopedWriter(
+  lockDirectory: string,
+): Promise<StoredScopedWriter> {
+  await assertRealDirectory(lockDirectory, "Knowledge scoped writer lock", 0o700);
+  const inventory = (await readdir(lockDirectory)).sort();
+  if (
+    inventory.length !== 1 ||
+    inventory[0] !== SCOPED_WRITER_METADATA_NAME
+  ) {
+    throw new Error("Knowledge scoped writer lock inventory is malformed.");
+  }
+  const bytes = await readPrivateFile(
+    path.join(lockDirectory, SCOPED_WRITER_METADATA_NAME),
+    "Knowledge scoped writer lock metadata",
+    KNOWLEDGE_CONTROL_LIMITS.metadataBytes,
+  );
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(bytes.toString("utf8"));
+  } catch {
+    throw new Error("Knowledge scoped writer lock metadata is malformed.");
+  }
+  return assertKnowledgeScopedWriterMetadata(parsed) as StoredScopedWriter;
+}
+
+async function inspectScopedWriters({
+  paths,
+  recoveryCapable,
+  allowLiveWriters,
+  dependencies,
+}: {
+  paths: KnowledgeTransactionPaths;
+  recoveryCapable: boolean;
+  allowLiveWriters: boolean;
+  dependencies: Required<TransactionStoreDependencies>;
+}): Promise<StoredScopedWriter[]> {
+  const scopedRoot = path.join(paths.transactionRoot, SCOPED_WRITER_ROOT_NAME);
+  const rootInfo = await lstat(scopedRoot).catch((error: NodeJS.ErrnoException) => {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  });
+  if (!rootInfo) return [];
+  await assertRealDirectory(scopedRoot, "Knowledge scoped writer root", 0o700);
+  const live: StoredScopedWriter[] = [];
+  const entries = (await readdir(scopedRoot, { withFileTypes: true })).sort(
+    (left, right) => left.name.localeCompare(right.name),
+  );
+  for (const entry of entries) {
+    const transition = parseKnowledgeScopedWriterTransitionName(entry.name);
+    if (transition) {
+      if (
+        !entry.isDirectory() ||
+        transition.owner.lockId !== transition.lockId
+      ) {
+        throw new Error("Knowledge scoped writer transition is unsafe.");
+      }
+      assertRecoverableOwner(
+        transition.owner,
+        dependencies,
+        "Interrupted scoped writer transition",
+      );
+      if (!recoveryCapable) {
+        throw new Error(
+          "An interrupted scoped writer transition requires explicit recovery.",
+        );
+      }
+      const transitionDirectory = path.join(scopedRoot, entry.name);
+      await assertRealDirectory(
+        transitionDirectory,
+        "Interrupted scoped writer transition",
+        0o700,
+      );
+      await removePrivateDirectory({
+        directoryPath: transitionDirectory,
+        parentDirectory: scopedRoot,
+        dependencies,
+        scope: "scoped-writer",
+        artifact: entry.name,
+      });
+      continue;
+    }
+
+    const lockId = parseKnowledgeScopedWriterDirectoryName(entry.name);
+    if (!lockId || !entry.isDirectory()) {
+      throw new Error("Knowledge scoped writer root contains an unsafe artifact.");
+    }
+    const lockDirectory = path.join(scopedRoot, entry.name);
+    const stored = await readScopedWriter(lockDirectory).catch((error) => {
+      throw new Error(
+        `Knowledge scoped writer cannot be proven safe: ${(error as Error).message}`,
+      );
+    });
+    if (stored.lockId !== lockId) {
+      throw new Error("Knowledge scoped writer identity does not match its directory.");
+    }
+    const scopes = stored.scopes.map(parseKnowledgeProtectionScope);
+    if (
+      scopes.map(serializeKnowledgeProtectionScope).join("\0") !==
+      stored.scopes.join("\0")
+    ) {
+      throw new Error("Knowledge scoped writer contains an unsupported scope.");
+    }
+    const sameHost = stored.hostname === dependencies.hostname();
+    const ownerLive = sameHost && dependencies.isPidAlive(stored.pid);
+    if (sameHost && !ownerLive) {
+      if (!recoveryCapable) {
+        throw new Error("A dead scoped writer requires explicit recovery.");
+      }
+      const owner = {
+        lockId: stored.lockId,
+        pid: stored.pid,
+        hostname: stored.hostname,
+      } satisfies StoreArtifactOwner;
+      const transitionName = knowledgeScopedWriterTransitionName(
+        "reclaimed",
+        stored.lockId,
+        owner,
+      );
+      const transitionDirectory = path.join(scopedRoot, transitionName);
+      await quarantinePrivateDirectory({
+        directoryPath: lockDirectory,
+        quarantinePath: transitionDirectory,
+        parentDirectory: scopedRoot,
+        dependencies,
+        scope: "scoped-writer",
+        artifact: entry.name,
+      });
+      await removePrivateDirectory({
+        directoryPath: transitionDirectory,
+        parentDirectory: scopedRoot,
+        dependencies,
+        scope: "scoped-writer",
+        artifact: transitionName,
+      });
+      continue;
+    }
+    if (!allowLiveWriters) {
+      throw new Error(
+        sameHost
+          ? "Knowledge transaction writes are blocked by a live scoped writer."
+          : "Knowledge transaction writes are blocked by a scoped writer from another or unknown host.",
+      );
+    }
+    live.push(stored);
+  }
+  return live;
+}
+
 async function createLockDirectory(
   paths: KnowledgeTransactionPaths,
   command: string,
@@ -1953,6 +2186,7 @@ async function assertRecognizedTransactionRootInventory(
     const recognizedDirectory =
       entry.name === LOCK_DIRECTORY_NAME ||
       entry.name === CERTIFICATION_LEASE_ROOT_NAME ||
+      entry.name === SCOPED_WRITER_ROOT_NAME ||
       KNOWLEDGE_TRANSACTION_ID_PATTERN.test(entry.name) ||
       parseWriterLockStagingName(entry.name) !== null ||
       parseWriterLockRecoveryName(entry.name) !== null ||
@@ -1967,12 +2201,14 @@ async function recoverStoreArtifactsWhileWriterIsHeld({
   paths,
   recoveryCapable,
   allowLiveCertificationLeases,
+  allowLiveScopedWriters,
   waitForTransientArtifacts,
   dependencies,
 }: {
   paths: KnowledgeTransactionPaths;
   recoveryCapable: boolean;
   allowLiveCertificationLeases: boolean;
+  allowLiveScopedWriters: boolean;
   waitForTransientArtifacts: boolean;
   dependencies: Required<TransactionStoreDependencies>;
 }): Promise<void> {
@@ -1983,6 +2219,12 @@ async function recoverStoreArtifactsWhileWriterIsHeld({
       paths,
       recoveryCapable,
       allowLiveLeases: allowLiveCertificationLeases,
+      dependencies,
+    });
+    await inspectScopedWriters({
+      paths,
+      recoveryCapable,
+      allowLiveWriters: allowLiveScopedWriters,
       dependencies,
     });
     await clearInterruptedTransactionArtifacts(paths, recoveryCapable, dependencies);
@@ -2025,6 +2267,7 @@ async function acquireKnowledgeTransactionLockInternal({
 }: AcquireKnowledgeTransactionLockInput,
 allowLiveCertificationLeases: boolean,
 waitForTransientWriter = false,
+allowLiveScopedWriters = false,
 ): Promise<KnowledgeTransactionLock> {
   assertSafeCommand(command);
   if (transactionId !== null) assertTransactionId(transactionId);
@@ -2120,6 +2363,7 @@ waitForTransientWriter = false,
           paths,
           recoveryCapable,
           allowLiveCertificationLeases,
+          allowLiveScopedWriters,
           waitForTransientArtifacts: waitForTransientWriter,
           dependencies,
         });
@@ -2212,7 +2456,51 @@ waitForTransientWriter = false,
 export async function acquireKnowledgeTransactionLock(
   input: AcquireKnowledgeTransactionLockInput,
 ): Promise<KnowledgeTransactionLock> {
-  return acquireKnowledgeTransactionLockInternal(input, false);
+  return acquireKnowledgeTransactionLockInternal(input, false, false, false);
+}
+
+export async function acquireKnowledgeTransactionCommitLock(
+  {
+    scopedWriterLock,
+    command,
+  }: {
+    scopedWriterLock: KnowledgeScopedWriterLock;
+    command: string;
+  },
+): Promise<KnowledgeTransactionLock> {
+  assertSafeCommand(command);
+  const active = assertActiveScopedWriter(scopedWriterLock);
+  await assertScopedWriterStillOwned(scopedWriterLock);
+  const lock = await acquireKnowledgeTransactionLockInternal(
+    {
+      repoRoot: active.repositoryRoot,
+      command,
+      transactionId: active.transactionId,
+      dependencies: active.dependencies,
+    },
+    false,
+    true,
+    true,
+  );
+  try {
+    const transaction = await openVerifiedKnowledgeTransaction({
+      repoRoot: active.repositoryRoot,
+      transactionId: active.transactionId,
+    });
+    const protection = deriveKnowledgeTransactionProtection(
+      transaction.kind,
+      transaction.operations,
+    );
+    if (!knowledgeProtectionMatchesScopes(protection, active.scopes)) {
+      throw new Error(
+        "Knowledge scoped writer protection no longer matches its stored transaction.",
+      );
+    }
+    return lock;
+  } catch (error) {
+    await releaseKnowledgeTransactionLock(lock);
+    throw error;
+  }
 }
 
 function assertActiveLock(lock: KnowledgeTransactionLock): ActiveLockRecord {
@@ -2259,6 +2547,272 @@ export async function releaseKnowledgeTransactionLock(
     artifact: recoveryName,
   });
   activeLocks.delete(lock);
+}
+
+function assertActiveScopedWriter(
+  lock: KnowledgeScopedWriterLock,
+) {
+  const active = activeScopedWriters.get(lock);
+  if (!active || active.lockId !== lock.lockId) {
+    throw new Error("Knowledge scoped writer lock is not active in this process.");
+  }
+  return active;
+}
+
+async function assertScopedWriterStillOwned(
+  lock: KnowledgeScopedWriterLock,
+) {
+  const active = assertActiveScopedWriter(lock);
+  const stored = await readScopedWriter(active.lockDirectory);
+  if (
+    stored.lockId !== active.lockId ||
+    stored.transactionId !== active.transactionId ||
+    stored.hostname !== active.hostname ||
+    stored.pid !== active.pid ||
+    stored.scopes.join("\0") !==
+      active.scopes.map(serializeKnowledgeProtectionScope).join("\0")
+  ) {
+    throw new Error("Knowledge scoped writer lock ownership changed.");
+  }
+}
+
+export async function acquireKnowledgeScopedWriterLock({
+  repoRoot,
+  command,
+  transactionId,
+  recoveryCapable = false,
+  dependencies: injectedDependencies,
+}: {
+  repoRoot: string;
+  command: string;
+  transactionId: string;
+  recoveryCapable?: boolean;
+  dependencies?: TransactionStoreDependencies;
+}): Promise<KnowledgeScopedWriterLock> {
+  assertSafeCommand(command);
+  assertTransactionId(transactionId);
+  const transaction = await openVerifiedKnowledgeTransaction({
+    repoRoot,
+    transactionId,
+  });
+  const protection = deriveKnowledgeTransactionProtection(
+    transaction.kind,
+    transaction.operations,
+  );
+  if (protection.mode !== "scoped") {
+    throw new Error(
+      `Knowledge transaction ${transactionId} requires global writer protection.`,
+    );
+  }
+  const canonicalScopes = Object.freeze(
+    [...protection.scopes]
+      .map((scope) =>
+        parseKnowledgeProtectionScope(serializeKnowledgeProtectionScope(scope)),
+      )
+      .sort((left, right) =>
+        serializeKnowledgeProtectionScope(left).localeCompare(
+          serializeKnowledgeProtectionScope(right),
+        ),
+      ),
+  );
+  if (
+    new Set(canonicalScopes.map(serializeKnowledgeProtectionScope)).size !==
+    canonicalScopes.length
+  ) {
+    throw new Error("Knowledge scoped writer contains duplicate scopes.");
+  }
+  const dependencies = resolvedDependencies(injectedDependencies);
+  const gate = await acquireKnowledgeTransactionLockInternal(
+    {
+      repoRoot,
+      command: "scoped writer register",
+      transactionId,
+      recoveryCapable,
+      dependencies,
+    },
+    false,
+    true,
+    true,
+  );
+  let interrupted = false;
+  const lockId = dependencies.randomBytes(16).toString("hex");
+  if (!LOCK_ID_PATTERN.test(lockId)) {
+    await releaseKnowledgeTransactionLock(gate);
+    throw new Error("Secure random source returned an invalid scoped writer identifier.");
+  }
+  const owner = {
+    lockId,
+    pid: dependencies.pid,
+    hostname: dependencies.hostname(),
+  } satisfies StoreArtifactOwner;
+  let scopedRoot = "";
+  let stagingDirectory = "";
+  let lockDirectory = "";
+  let published = false;
+  try {
+    const paths: KnowledgeTransactionPaths = {
+      repositoryRoot: gate.repositoryRoot,
+      gitDirectory: gate.gitDirectory,
+      transactionRoot: gate.transactionRoot,
+      lockDirectory: gate.lockDirectory,
+    };
+    const existing = await inspectScopedWriters({
+      paths,
+      recoveryCapable,
+      allowLiveWriters: true,
+      dependencies,
+    });
+    for (const writer of existing) {
+      const writerScopes = writer.scopes.map(parseKnowledgeProtectionScope);
+      if (knowledgeProtectionScopesOverlap(canonicalScopes, writerScopes)) {
+        throw new Error(
+          `Knowledge scoped writer conflicts with transaction ${writer.transactionId}.`,
+        );
+      }
+    }
+    scopedRoot = await ensureScopedWriterRoot(gate.transactionRoot, dependencies);
+    const transitionName = knowledgeScopedWriterTransitionName(
+      "preparing",
+      lockId,
+      owner,
+    );
+    stagingDirectory = path.join(scopedRoot, transitionName);
+    lockDirectory = path.join(
+      scopedRoot,
+      knowledgeScopedWriterDirectoryName(lockId),
+    );
+    const stagingIdentity = await createPrivateDirectory(
+      stagingDirectory,
+      dependencies,
+      "scoped-writer",
+      transitionName,
+    );
+    const metadata = metadataWithHash({
+      storeVersion: STORE_VERSION,
+      lockId,
+      pid: dependencies.pid,
+      hostname: dependencies.hostname(),
+      startedAt: dependencies.now().toISOString(),
+      command,
+      transactionId,
+      scopes: canonicalScopes.map(serializeKnowledgeProtectionScope),
+    });
+    await writePrivateFileAtomicExclusive({
+      filePath: path.join(stagingDirectory, SCOPED_WRITER_METADATA_NAME),
+      bytes: `${canonicalJson(metadata)}\n`,
+      owner,
+      dependencies,
+      scope: "scoped-writer",
+    });
+    await publishPrivateDirectory({
+      stagingDirectory,
+      finalDirectory: lockDirectory,
+      parentDirectory: scopedRoot,
+      dependencies,
+      scope: "scoped-writer",
+      artifact: knowledgeScopedWriterDirectoryName(lockId),
+      expectedDirectories: [{ relativePath: "", identity: stagingIdentity }],
+    });
+    published = true;
+  } catch (error) {
+    interrupted = isInjectedStoreInterruption(error);
+    if (
+      stagingDirectory &&
+      !published &&
+      !interrupted &&
+      !isStoreArtifactIdentityChanged(error)
+    ) {
+      await removePrivateDirectory({
+        directoryPath: stagingDirectory,
+        parentDirectory: scopedRoot,
+        dependencies,
+        scope: "scoped-writer",
+        artifact: path.basename(stagingDirectory),
+      }).catch(() => undefined);
+    }
+    throw error;
+  } finally {
+    if (!interrupted) await releaseKnowledgeTransactionLock(gate);
+  }
+
+  const lock: KnowledgeScopedWriterLock = Object.freeze({
+    repositoryRoot: gate.repositoryRoot,
+    gitDirectory: gate.gitDirectory,
+    transactionRoot: gate.transactionRoot,
+    scopedRoot,
+    lockDirectory,
+    lockId,
+    command,
+    transactionId,
+    scopes: canonicalScopes,
+  });
+  activeScopedWriters.set(lock, {
+    lockId,
+    lockDirectory,
+    scopedRoot,
+    repositoryRoot: gate.repositoryRoot,
+    transactionRoot: gate.transactionRoot,
+    pid: dependencies.pid,
+    hostname: dependencies.hostname(),
+    transactionId,
+    scopes: canonicalScopes,
+    dependencies,
+  });
+  return lock;
+}
+
+export async function releaseKnowledgeScopedWriterLock(
+  lock: KnowledgeScopedWriterLock,
+): Promise<void> {
+  const active = assertActiveScopedWriter(lock);
+  await assertScopedWriterStillOwned(lock);
+  const gate = await acquireKnowledgeTransactionLockInternal(
+    {
+      repoRoot: active.repositoryRoot,
+      command: "scoped writer release",
+      transactionId: active.transactionId,
+      dependencies: active.dependencies,
+    },
+    false,
+    true,
+    true,
+  );
+  let interrupted = false;
+  try {
+    await assertScopedWriterStillOwned(lock);
+    const owner = {
+      lockId: active.lockId,
+      pid: active.pid,
+      hostname: active.hostname,
+    } satisfies StoreArtifactOwner;
+    const transitionName = knowledgeScopedWriterTransitionName(
+      "removing",
+      active.lockId,
+      owner,
+    );
+    const transitionDirectory = path.join(active.scopedRoot, transitionName);
+    await quarantinePrivateDirectory({
+      directoryPath: active.lockDirectory,
+      quarantinePath: transitionDirectory,
+      parentDirectory: active.scopedRoot,
+      dependencies: active.dependencies,
+      scope: "scoped-writer",
+      artifact: path.basename(active.lockDirectory),
+    });
+    await removePrivateDirectory({
+      directoryPath: transitionDirectory,
+      parentDirectory: active.scopedRoot,
+      dependencies: active.dependencies,
+      scope: "scoped-writer",
+      artifact: transitionName,
+    });
+  } catch (error) {
+    interrupted = isInjectedStoreInterruption(error);
+    throw error;
+  } finally {
+    if (!interrupted) await releaseKnowledgeTransactionLock(gate);
+  }
+  activeScopedWriters.delete(lock);
 }
 
 async function ensureCertificationLeaseRoot(
@@ -2978,7 +3532,7 @@ export async function createPreparedKnowledgeTransaction({
   if (lock.transactionId !== transactionId) {
     throw new Error("Prepare requires a writer lock scoped to the same transaction ID.");
   }
-  if (!(["project-create", "project-update", "issue-create", "issue-update", "legacy-import", "correction", "closeout"] as string[]).includes(kind)) {
+  if (!(["project-create", "project-update", "issue-create", "issue-update", "accepted-update", "legacy-import", "correction", "closeout"] as string[]).includes(kind)) {
     throw new Error("Knowledge transaction kind is invalid.");
   }
   const dependencies = resolvedDependencies(injectedDependencies);
@@ -3135,7 +3689,7 @@ function assertStoredManifest(value: unknown): asserts value is StoredManifest {
     manifest.storeVersion !== STORE_VERSION ||
     typeof manifest.transactionId !== "string" ||
     !KNOWLEDGE_TRANSACTION_ID_PATTERN.test(manifest.transactionId) ||
-    !(["project-create", "project-update", "issue-create", "issue-update", "legacy-import", "correction", "closeout"] as unknown[]).includes(manifest.kind) ||
+    !(["project-create", "project-update", "issue-create", "issue-update", "accepted-update", "legacy-import", "correction", "closeout"] as unknown[]).includes(manifest.kind) ||
     typeof manifest.command !== "string" ||
     typeof manifest.createdAt !== "string" ||
     !Number.isSafeInteger(manifest.operationCount) ||
@@ -4143,6 +4697,18 @@ async function transactionRootEntries(repoRoot: string): Promise<{
             paths,
             recoveryCapable: false,
             allowLiveLeases: true,
+            dependencies,
+          });
+          continue;
+        }
+        if (entry.name === SCOPED_WRITER_ROOT_NAME) {
+          if (!entry.isDirectory()) {
+            throw new Error("Knowledge transaction root contains an unrecognized artifact.");
+          }
+          await inspectScopedWriters({
+            paths,
+            recoveryCapable: false,
+            allowLiveWriters: true,
             dependencies,
           });
           continue;

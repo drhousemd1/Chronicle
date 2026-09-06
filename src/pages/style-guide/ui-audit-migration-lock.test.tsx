@@ -5,6 +5,10 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { qualityHubInitialRegistry } from "@/data/ui-audit-findings";
+import {
+  loadChronicleChangelogRegistry,
+  selectLoadedChangelogEntries,
+} from "@/data/chronicle-knowledge-base/changelog-record-sources";
 import UiAuditPage from "@/pages/style-guide/ui-audit";
 
 const FULL_SUITE_TEST_TIMEOUT_MS = 30_000;
@@ -54,6 +58,14 @@ function ownerRow(updatedAt: string | null = "2026-08-01T12:00:00.000Z") {
     },
     error: null,
   };
+}
+
+async function expectedGlobalChangelogCount() {
+  const result = await loadChronicleChangelogRegistry();
+  expect(result.status).toBe("ready");
+  return result.status === "ready"
+    ? selectLoadedChangelogEntries(result).length
+    : 0;
 }
 
 describe("Quality Hub normal and migration capture modes", () => {
@@ -161,8 +173,11 @@ describe("Quality Hub normal and migration capture modes", () => {
     expect(screen.queryByText(/read-only during migration/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/loading owner history/i)).not.toBeInTheDocument();
     expect(await screen.findByText("Repository history · Read-only")).toBeInTheDocument();
+    const globalChangelogCount = await expectedGlobalChangelogCount();
     await waitFor(() => {
-      expect(document.querySelectorAll("[data-changelog-id]")).toHaveLength(204);
+      expect(document.querySelectorAll("[data-changelog-id]")).toHaveLength(
+        globalChangelogCount,
+      );
     });
     expect(mocks.getUser).not.toHaveBeenCalled();
     expect(mocks.from).toHaveBeenCalledWith("quality_hub_registries");
@@ -341,8 +356,11 @@ describe("Quality Hub normal and migration capture modes", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /^Changelog Read-only repository change history/ }));
     expect(await screen.findByText("Repository history · Read-only")).toBeInTheDocument();
+    const globalChangelogCount = await expectedGlobalChangelogCount();
     await waitFor(() => {
-      expect(document.querySelectorAll("[data-changelog-id]")).toHaveLength(204);
+      expect(document.querySelectorAll("[data-changelog-id]")).toHaveLength(
+        globalChangelogCount,
+      );
     });
     expect(screen.queryByRole("button", { name: /add entry/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /add comment/i })).not.toBeInTheDocument();
