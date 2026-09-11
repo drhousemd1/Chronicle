@@ -597,10 +597,11 @@ describe("ChangelogRecordNarrative", () => {
     expect(screen.getByText("The bounded interaction now uses the reviewed behavior.")).toBeInTheDocument();
     expect(screen.getByText("Focused checks plus direct visual acceptance.")).toBeInTheDocument();
     expect(
-      screen.getByText(
+      screen.queryByText(
         "No Chronicle Issue was required or created for this bounded accepted update.",
       ),
-    ).toBeInTheDocument();
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Issue disposition" })).not.toBeInTheDocument();
     expect(
       screen.queryByText(
         "Not applicable — this bounded accepted update did not require or create a Current Work project, proof matrix, archive, or closeout.",
@@ -609,6 +610,19 @@ describe("ChangelogRecordNarrative", () => {
     expect(screen.queryByRole("heading", { name: "Related history" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Complete work record" })).not.toBeInTheDocument();
     expect(screen.queryByText(/Archived Current Work/i)).not.toBeInTheDocument();
+  });
+
+  it("retains an Issue citation in an ordinary update without claiming no Issue was involved", () => {
+    const entry = acceptedUpdateEntry();
+    const record = {
+      ...(entry.effectiveRecord as AcceptedUpdateChangelogRecord),
+      changes: "Resolved CG-ISSUE-900 by preserving the selected Gallery filter after retry.",
+    };
+    renderNarrative({ ...entry, rootRecord: record, effectiveRecord: record });
+
+    expect(screen.getByText(record.changes)).toBeInTheDocument();
+    expect(screen.queryByText(/No Chronicle Issue was required or created/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Issue disposition" })).not.toBeInTheDocument();
   });
 
   it.each([acceptedEntry(), acceptedUpdateEntry(), legacyEntry()])(

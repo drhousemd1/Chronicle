@@ -151,21 +151,23 @@ function issueFixtureRecord({
   status,
   lastVerifiedOn,
   title,
+  ownerCapability = "community-gallery",
 }: {
   id: string;
   status: "open" | "resolved";
   lastVerifiedOn: string;
   title: string;
+  ownerCapability?: "community-gallery" | "my-stories";
 }): IssueRecord {
   return {
     kind: "issue",
     id,
     title,
-    ownerCapability: "community-gallery",
+    ownerCapability,
     status,
     discoveredOn: "2026-07-20",
     lastVerifiedOn,
-    sourcePath: `docs/architecture-knowledge/issues/community-gallery/${id}.md`,
+    sourcePath: `docs/architecture-knowledge/issues/${ownerCapability}/${id}.md`,
     content: {
       expectedBehavior: `${title} expected behavior.`,
       currentBehavior: `${title} current behavior.`,
@@ -199,6 +201,13 @@ function multipleIssueFixtureRegistry(): OperationalRecordRegistry {
       lastVerifiedOn: "2026-08-01",
       title: "Newest open fixture",
     }),
+    issueFixtureRecord({
+      id: "MS-ISSUE-900",
+      status: "open",
+      lastVerifiedOn: "2026-08-01",
+      title: "Other capability fixture",
+      ownerCapability: "my-stories",
+    }),
   ];
   return {
     asOf: "2026-08-01",
@@ -213,6 +222,12 @@ function multipleIssueFixtureRegistry(): OperationalRecordRegistry {
     ],
     archivedProjects: [
       {
+        id: "CG-WORK-002",
+        ownerCapability: "community-gallery",
+        linkedIssueIds: ["CG-ISSUE-002"],
+        placement: "archive",
+      },
+      {
         id: "CG-WORK-003",
         ownerCapability: "community-gallery",
         linkedIssueIds: ["CG-ISSUE-003"],
@@ -226,15 +241,17 @@ function multipleIssueFixtureRegistry(): OperationalRecordRegistry {
       corrections: [],
       effectiveEntries: [],
     },
-    openIssueCount: 2,
+    openIssueCount: 3,
   } as unknown as OperationalRecordRegistry;
 }
 
 describe("Chronicle Knowledge Base page", () => {
-  it("keeps Issues independent and shows historical work links only when a preserved record exists", () => {
+  it("shows only the current capability's open Issues while retaining resolved source history", () => {
+    const registry = multipleIssueFixtureRegistry();
+    const retainedIssues = [...registry.issues];
     renderPage(
       "/style-guide/chronicle-knowledge-base?section=community-gallery&tab=issues",
-      multipleIssueFixtureRegistry(),
+      registry,
     );
 
     const gallery = document.getElementById("community-gallery")!;
@@ -244,22 +261,47 @@ describe("Chronicle Knowledge Base page", () => {
     expect(issueArticles.map((article) => article.dataset.issueId)).toEqual([
       "CG-ISSUE-001",
       "CG-ISSUE-002",
-      "CG-ISSUE-003",
     ]);
+    expect(within(gallery).getAllByRole("heading", { name: "Identified Issues" })).toHaveLength(1);
+    expect(within(gallery).queryByRole("heading", { name: "Open Issues" })).not.toBeInTheDocument();
+    expect(within(gallery).queryByRole("heading", { name: "Resolved Issues" })).not.toBeInTheDocument();
+    expect(within(gallery).queryByText("Resolved fixture")).not.toBeInTheDocument();
+    expect(within(gallery).queryByText("Other capability fixture")).not.toBeInTheDocument();
+    expect(within(gallery).queryByRole("heading", { name: "Resolution" })).not.toBeInTheDocument();
+    for (const heading of [
+      "Expected Behavior",
+      "Problem",
+      "Current Behavior",
+      "Why This Is a Problem",
+      "Evidence and Verification",
+      "Supporting Evidence",
+      "What This Evidence Establishes",
+      "What Remains Unverified",
+    ]) {
+      expect(within(issueArticles[0]).getByRole("heading", { name: heading })).toBeInTheDocument();
+    }
+    expect(within(issueArticles[0]).getByText("Open")).toBeInTheDocument();
+    expect(within(issueArticles[0]).getByText("2026-07-20")).toBeInTheDocument();
+    expect(within(issueArticles[0]).getByText("2026-08-01")).toBeInTheDocument();
+    expect(registry.issues).toEqual(retainedIssues);
     expect(within(issueArticles[0]).queryByRole("link", { name: /Current Work|Historical work record/ })).not.toBeInTheDocument();
-    expect(within(issueArticles[1]).queryByText("Related history")).not.toBeInTheDocument();
+    expect(within(issueArticles[0]).queryByText("Related history")).not.toBeInTheDocument();
     expect(within(gallery).queryByText("No Current Work record is linked.")).not.toBeInTheDocument();
     expect(
-      within(issueArticles[2]).getByRole("link", {
-        name: "Historical work record: CG-WORK-003",
+      within(issueArticles[1]).getByRole("link", {
+        name: "Historical work record: CG-WORK-002",
       }),
     ).toHaveAttribute(
       "href",
-      buildArchivedCurrentWorkHref("CG-WORK-003"),
+      buildArchivedCurrentWorkHref("CG-WORK-002"),
     );
-    expect(
-      within(issueArticles[2]).getByRole("heading", { name: "Resolution" }),
-    ).toBeInTheDocument();
+    expect(within(gallery).queryByRole("link", { name: "Historical work record: CG-WORK-003" })).not.toBeInTheDocument();
+
+    const myStories = document.getElementById("my-stories")!;
+    fireEvent.click(within(myStories).getByRole("tab", { name: /Issues/ }));
+    expect(within(myStories).getByText("Other capability fixture")).toBeInTheDocument();
+    expect(myStories.querySelectorAll("[data-issue-id]")).toHaveLength(1);
+    expect(within(myStories).queryByText("Newest open fixture")).not.toBeInTheDocument();
   });
 
   it("renders the complete application map and approved capability tab sets", () => {
@@ -370,47 +412,9 @@ describe("Chronicle Knowledge Base page", () => {
     });
     fireEvent.click(issuesTab);
     expect(
-      within(gallery).getByRole("heading", { name: "Identified Issues" }),
-    ).toBeInTheDocument();
-    expect(
-      within(gallery).getByRole("heading", {
-        name: "Gallery request failures appear as empty results",
-      }),
-    ).toBeInTheDocument();
-    expect(
-      within(gallery).getByRole("heading", { name: "Resolved Issues" }),
-    ).toBeInTheDocument();
-    expect(
-      within(gallery).queryByRole("heading", { name: "Open Issues" }),
-    ).not.toBeInTheDocument();
-    for (const heading of [
-      "Expected Behavior",
-      "Problem",
-      "Current Behavior",
-      "Why This Is a Problem",
-      "Evidence and Verification",
-      "Supporting Evidence",
-      "What This Evidence Establishes",
-      "What Remains Unverified",
-    ]) {
-      expect(
-        within(gallery).getByRole("heading", { name: heading }),
-      ).toBeInTheDocument();
-    }
-    expect(within(gallery).getByText("CG-ISSUE-001")).toBeInTheDocument();
-    expect(within(gallery).getByText("Resolved")).toBeInTheDocument();
-    expect(within(gallery).getByText("2026-07-25")).toBeInTheDocument();
-    expect(within(gallery).getByText("2026-08-08")).toBeInTheDocument();
-    const archivedWorkLink = within(gallery).getByRole("link", {
-      name: "Historical work record: CG-WORK-002",
-    });
-    expect(archivedWorkLink).toHaveAttribute(
-      "href",
-      buildArchivedCurrentWorkHref("CG-WORK-002"),
-    );
-    expect(
-      within(gallery).queryByText("Operational records checked:"),
-    ).not.toBeInTheDocument();
+      within(gallery).getByRole("tabpanel").querySelector(".knowledge-content"),
+    ).toBeEmptyDOMElement();
+    expect(within(gallery).queryByText("CG-ISSUE-001")).not.toBeInTheDocument();
     expect(issuesTab).not.toHaveClass("knowledge-tab--issues-active");
     expect(issuesTab).toHaveAttribute("aria-selected", "true");
 

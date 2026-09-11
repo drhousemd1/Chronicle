@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 
 import "@testing-library/jest-dom/vitest";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { Profiler } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -215,11 +216,28 @@ function historianLoader() {
   });
 }
 
-function mockPayload(value: RepositoryGraphViewPayload) {
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => value }));
+function graphResponse(value: RepositoryGraphViewPayload) {
+  return { ok: true, json: async () => value };
 }
 
-afterEach(() => vi.unstubAllGlobals());
+function mockPayload(value: RepositoryGraphViewPayload) {
+  const fetchMock = vi.fn().mockResolvedValue(graphResponse(value));
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
+}
+
+async function advanceGraphTime(milliseconds = 0) {
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(milliseconds);
+  });
+}
+
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 
 describe("RepositoryGraphView", () => {
   it("renders a clean interactive capability preview without the global evidence shell", async () => {
@@ -345,7 +363,7 @@ describe("RepositoryGraphView", () => {
     mockPayload({ ...payload, state: "error", reasons: ["artifact identity did not match"] });
     const artifactError = render(<RepositoryGraphView mode="global" capabilityId={null} capabilityLabel="Chronicle" />);
     expect(await screen.findByText("Map needs attention")).toBeInTheDocument();
-    expect(screen.getByText(/failed a safety or freshness check/)).toBeInTheDocument();
+    expect(screen.getByText("artifact identity did not match")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Repository relationships are hidden" })).toBeInTheDocument();
     artifactError.unmount();
 
@@ -365,5 +383,212 @@ describe("RepositoryGraphView", () => {
     render(<RepositoryGraphView mode="global" capabilityId={null} capabilityLabel="Chronicle" localGraphAvailable={false} />);
     expect(screen.getByRole("heading", { name: "Available only in local development" })).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it.each(["refreshing", "ready-stale", "unavailable"] as const)("automatically populates a %s graph after the pending retry interval", async (state) => {
+    vi.useFakeTimers();
+    const fetchMock = mockPayload({ ...payload, capability: null });
+    fetchMock.mockResolvedValueOnce(graphResponse({ ...payload, state, capability: null }));
+    render(<RepositoryGraphView mode="global" capabilityId={null} capabilityLabel="Chronicle" />);
+    await advanceGraphTime();
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("heading", { name: "Repository relationships are hidden" })).toBeInTheDocument();
+    await advanceGraphTime(1_999);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await advanceGraphTime(1);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(screen.getByText("Current map")).toBeInTheDocument();
+    expect(screen.getByLabelText("Chronicle product areas")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Repository relationships are hidden" })).not.toBeInTheDocument();
+  });
+
+  it("recovers from a network error immediately when the window regains focus", async () => {
+    vi.useFakeTimers();
+    const fetchMock = mockPayload({ ...payload, capability: null });
+    fetchMock.mockRejectedValueOnce(new Error("Network unavailable"));
+    render(<RepositoryGraphView mode="global" capabilityId={null} capabilityLabel="Chronicle" />);
+    await advanceGraphTime();
+
+    expect(screen.getByRole("heading", { name: "Local map could not be loaded" })).toBeInTheDocument();
+    expect(screen.getByText("Network unavailable")).toBeInTheDocument();
+    await advanceGraphTime(2_000);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    fireEvent(window, new Event("focus"));
+    await advanceGraphTime();
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(screen.getByText("Current map")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Local map could not be loaded" })).not.toBeInTheDocument();
+  });
+
+  it.each(["error response", "network failure"])("rechecks a %s at the steady interval", async (failure) => {
+    vi.useFakeTimers();
+    const fetchMock = mockPayload({ ...payload, capability: null });
+    if (failure === "network failure") fetchMock.mockRejectedValueOnce(new Error("Network unavailable"));
+    else fetchMock.mockResolvedValueOnce(graphResponse({ ...payload, state: "error", capability: null }));
+    render(<RepositoryGraphView mode="global" capabilityId={null} capabilityLabel="Chronicle" />);
+    await advanceGraphTime();
+
+    await advanceGraphTime(29_999);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await advanceGraphTime(1);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(screen.getByText("Current map")).toBeInTheDocument();
+  });
+
+  it("loads a changed graph on the steady recheck without losing the selected view, source, or search", async () => {
+    vi.useFakeTimers();
+    const newSourcePath = "src/services/gallery-refresh.ts";
+    const nextPayload: RepositoryGraphViewPayload = {
+      ...payload,
+      capability: null,
+      graphId: `graph:${"b".repeat(64)}`,
+      generatedAt: "2026-08-30T09:01:00.000Z",
+      counts: { ...payload.counts!, nodes: payload.nodes.length + 1 },
+      nodes: [...payload.nodes, {
+        ...payload.nodes[0],
+        id: "node:777777777777777777777777",
+        upstreamId: "seven",
+        label: "Gallery refresh",
+        qualifiedName: "Gallery refresh",
+        fileType: "ts",
+        sourcePath: newSourcePath,
+      }],
+    };
+    const fetchMock = mockPayload(nextPayload);
+    fetchMock.mockResolvedValueOnce(graphResponse({ ...payload, capability: null }));
+    render(<RepositoryGraphView mode="global" capabilityId={null} capabilityLabel="Chronicle" />);
+    await advanceGraphTime();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Dependency Graph" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "Selected source" }), { target: { value: "src/services/gallery-service.ts" } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Find a source file" }), { target: { value: "gallery" } });
+    await advanceGraphTime(29_999);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await advanceGraphTime(1);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole("tab", { name: "Dependency Graph" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("textbox", { name: "Find a source file" })).toHaveValue("gallery");
+    expect(screen.getByRole("combobox", { name: "Selected source" })).toHaveValue("src/services/gallery-service.ts");
+    expect(screen.getByRole("option", { name: newSourcePath })).toBeInTheDocument();
+  });
+
+  it("does not commit another graph render for an unchanged ready identity", async () => {
+    vi.useFakeTimers();
+    const onRender = vi.fn();
+    const fetchMock = mockPayload({ ...payload, capability: null });
+    fetchMock.mockResolvedValueOnce(graphResponse({ ...payload, capability: null, nodes: payload.nodes.map((node) => ({ ...node })) }));
+    render(
+      <Profiler id="repository-graph" onRender={onRender}>
+        <RepositoryGraphView mode="global" capabilityId={null} capabilityLabel="Chronicle" />
+      </Profiler>,
+    );
+    await advanceGraphTime();
+    const committedRenders = onRender.mock.calls.length;
+    await advanceGraphTime(30_000);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(onRender).toHaveBeenCalledTimes(committedRenders);
+    expect(screen.getByText("Current map")).toBeInTheDocument();
+  });
+
+  it("does not overlap requests when focus and visibility events arrive while loading", async () => {
+    vi.useFakeTimers();
+    let completeRequest!: (response: ReturnType<typeof graphResponse>) => void;
+    const fetchMock = mockPayload({ ...payload, capability: null });
+    fetchMock.mockReturnValueOnce(new Promise((resolve) => { completeRequest = resolve; }));
+    render(<RepositoryGraphView mode="global" capabilityId={null} capabilityLabel="Chronicle" />);
+
+    fireEvent(window, new Event("focus"));
+    fireEvent(document, new Event("visibilitychange"));
+    await advanceGraphTime(10_000);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      completeRequest(graphResponse({ ...payload, capability: null }));
+    });
+    expect(screen.getByText("Current map")).toBeInTheDocument();
+    await advanceGraphTime(30_000);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("pauses polling while hidden and rechecks immediately when visible again", async () => {
+    vi.useFakeTimers();
+    let hidden = false;
+    vi.spyOn(document, "hidden", "get").mockImplementation(() => hidden);
+    vi.spyOn(document, "visibilityState", "get").mockImplementation(() => hidden ? "hidden" : "visible");
+    const fetchMock = mockPayload({ ...payload, state: "refreshing", capability: null });
+    render(<RepositoryGraphView mode="global" capabilityId={null} capabilityLabel="Chronicle" />);
+    await advanceGraphTime();
+
+    hidden = true;
+    fireEvent(document, new Event("visibilitychange"));
+    fireEvent(window, new Event("focus"));
+    await advanceGraphTime(60_000);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    hidden = false;
+    fetchMock.mockResolvedValue(graphResponse({ ...payload, capability: null }));
+    fireEvent(document, new Event("visibilitychange"));
+    await advanceGraphTime();
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(screen.getByText("Current map")).toBeInTheDocument();
+  });
+
+  it("never polls or responds to refresh events outside local development", async () => {
+    vi.useFakeTimers();
+    const fetchMock = mockPayload(payload);
+    render(<RepositoryGraphView mode="global" capabilityId={null} capabilityLabel="Chronicle" localGraphAvailable={false} />);
+    fireEvent(window, new Event("focus"));
+    fireEvent(document, new Event("visibilitychange"));
+    await advanceGraphTime(60_000);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+    expect(screen.getByRole("heading", { name: "Available only in local development" })).toBeInTheDocument();
+  });
+
+  it("clears a scheduled retry when unmounted", async () => {
+    vi.useFakeTimers();
+    const fetchMock = mockPayload({ ...payload, state: "refreshing", capability: null });
+    const view = render(<RepositoryGraphView mode="global" capabilityId={null} capabilityLabel="Chronicle" />);
+    await advanceGraphTime();
+    expect(vi.getTimerCount()).toBeGreaterThan(0);
+    view.unmount();
+
+    expect(vi.getTimerCount()).toBe(0);
+    await advanceGraphTime(60_000);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("aborts an in-flight request and removes refresh listeners on unmount", async () => {
+    vi.useFakeTimers();
+    const addWindowListener = vi.spyOn(window, "addEventListener");
+    const removeWindowListener = vi.spyOn(window, "removeEventListener");
+    const addDocumentListener = vi.spyOn(document, "addEventListener");
+    const removeDocumentListener = vi.spyOn(document, "removeEventListener");
+    const fetchMock = mockPayload(payload);
+    fetchMock.mockReturnValueOnce(new Promise(() => undefined));
+    const view = render(<RepositoryGraphView mode="global" capabilityId={null} capabilityLabel="Chronicle" />);
+    const signal = fetchMock.mock.calls[0][1].signal as AbortSignal;
+    const focusListener = addWindowListener.mock.calls.find(([type]) => type === "focus")?.[1];
+    const visibilityListener = addDocumentListener.mock.calls.find(([type]) => type === "visibilitychange")?.[1];
+    expect(focusListener).toBeTypeOf("function");
+    expect(visibilityListener).toBeTypeOf("function");
+    expect(signal.aborted).toBe(false);
+    view.unmount();
+
+    expect(signal.aborted).toBe(true);
+    expect(removeWindowListener).toHaveBeenCalledWith("focus", focusListener);
+    expect(removeDocumentListener).toHaveBeenCalledWith("visibilitychange", visibilityListener);
+    expect(vi.getTimerCount()).toBe(0);
+    fireEvent(window, new Event("focus"));
+    fireEvent(document, new Event("visibilitychange"));
+    await advanceGraphTime(60_000);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(vi.getTimerCount()).toBe(0);
   });
 });

@@ -95,7 +95,8 @@ export const GRAPHIFY_ENVIRONMENT_IDENTITY_SHA256 = sha256(JSON.stringify({
 }));
 
 const activeInstructionPaths = [
-  "AGENTS.md",
+  // Project prose may explain the approved map. Skill, hook, and integration
+  // activation lives in these executable/discoverable configuration paths.
   ".codex",
   ".agents",
   ".claude",

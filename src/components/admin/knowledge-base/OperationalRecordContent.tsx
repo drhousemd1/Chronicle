@@ -182,59 +182,23 @@ export function OperationalRecordContent({
   changelogLoader,
 }: OperationalRecordContentProps) {
   if (kind === "issues") {
-    const issues = [...registry.issues].sort(compareIssueRecords);
-    const openIssues = issues.filter((issue) => issue.status === "open");
-    const resolvedIssues = issues.filter((issue) => issue.status === "resolved");
-    const openIssuesHeadingId = `${capabilityId}-open-issues-heading`;
-    const resolvedIssuesHeadingId = `${capabilityId}-resolved-issues-heading`;
+    const openIssues = registry.issues
+      .filter((issue) => issue.status === "open")
+      .sort(compareIssueRecords);
+    if (openIssues.length === 0) return null;
     return (
       <>
         <h1>Identified Issues</h1>
-        {issues.length === 0 ? (
-          <p>
-            No verified {capabilityLabel} Issue records are currently loaded.
-            This empty state does not prove that the capability has no defects.
-          </p>
-        ) : (
-          <div className="knowledge-issue-groups">
-            {openIssues.length > 0 ? (
-              <section
-                className="knowledge-issue-group"
-                aria-labelledby={openIssuesHeadingId}
-              >
-                <h2 id={openIssuesHeadingId}>Open Issues</h2>
-                <div className="knowledge-issue-group__records">
-                  {openIssues.map((issue) => (
-                    <IssueRecordArticle
-                      key={issue.id}
-                      issue={issue}
-                      registry={registry}
-                      renderMarkdown={renderMarkdown}
-                    />
-                  ))}
-                </div>
-              </section>
-            ) : null}
-            {resolvedIssues.length > 0 ? (
-              <section
-                className="knowledge-issue-group"
-                aria-labelledby={resolvedIssuesHeadingId}
-              >
-                <h2 id={resolvedIssuesHeadingId}>Resolved Issues</h2>
-                <div className="knowledge-issue-group__records">
-                  {resolvedIssues.map((issue) => (
-                    <IssueRecordArticle
-                      key={issue.id}
-                      issue={issue}
-                      registry={registry}
-                      renderMarkdown={renderMarkdown}
-                    />
-                  ))}
-                </div>
-              </section>
-            ) : null}
-          </div>
-        )}
+        <div className="knowledge-issue-group__records">
+          {openIssues.map((issue) => (
+            <IssueRecordArticle
+              key={issue.id}
+              issue={issue}
+              registry={registry}
+              renderMarkdown={renderMarkdown}
+            />
+          ))}
+        </div>
       </>
     );
   }

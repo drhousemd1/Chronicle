@@ -1,7 +1,8 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Plugin } from "vite";
 
-import { getRepositoryGraphRuntimeStatus } from "./cli";
+import type { getRepositoryGraphRuntimeStatus } from "./cli";
+import { getRepositoryGraphAutoRefreshStatus } from "./auto-refresh";
 
 const API_ROOT = "/__chronicle-repository-graph";
 const STATUS_PATH = `${API_ROOT}/status`;
@@ -13,6 +14,20 @@ const SAFE_NODE = /^node:[a-f0-9]{24}$/;
 function isLoopbackRequest(request: IncomingMessage) {
   const address = request.socket.remoteAddress ?? "";
   return address === "127.0.0.1" || address === "::1" || address === "::ffff:127.0.0.1";
+}
+
+function isCrossOriginBrowserRequest(request: IncomingMessage) {
+  const fetchSite = request.headers?.["sec-fetch-site"];
+  if (fetchSite === "cross-site" || fetchSite === "same-site") return true;
+  const origin = request.headers?.origin;
+  if (origin === undefined) return false;
+  if (typeof origin !== "string" || typeof request.headers.host !== "string") return true;
+  try {
+    const protocol = (request.socket as { encrypted?: boolean }).encrypted ? "https:" : "http:";
+    return new URL(origin).origin !== `${protocol}//${request.headers.host}`;
+  } catch {
+    return true;
+  }
 }
 
 function sendJson(response: ServerResponse, statusCode: number, value: unknown, headOnly = false) {
@@ -82,6 +97,7 @@ async function handleRepositoryGraphRequest(
   repositoryRoot: string,
   request: IncomingMessage,
   response: ServerResponse,
+  readRuntimeStatus = getRepositoryGraphAutoRefreshStatus,
 ) {
   const requestUrl = new URL(request.url ?? "/", "http://localhost");
   const isGraphRoute = requestUrl.pathname === STATUS_PATH || requestUrl.pathname === VIEW_PATH || requestUrl.pathname.startsWith(NODE_PATH_PREFIX);
@@ -90,33 +106,25 @@ async function handleRepositoryGraphRequest(
     sendJson(response, 403, { error: "repository_graph_is_loopback_only" });
     return true;
   }
+  if (isCrossOriginBrowserRequest(request)) {
+    sendJson(response, 403, { error: "repository_graph_is_same_origin_only" }, request.method === "HEAD");
+    return true;
+  }
   if (request.method !== "GET" && request.method !== "HEAD") {
     response.setHeader("Allow", "GET, HEAD");
     sendJson(response, 405, { error: "method_not_allowed" });
     return true;
   }
   const headOnly = request.method === "HEAD";
-  try {
-    const status = await getRepositoryGraphRuntimeStatus(repositoryRoot);
-    if (requestUrl.pathname === STATUS_PATH) {
-      sendJson(response, 200, runtimeSummary(status), headOnly);
-      return true;
-    }
-    if (requestUrl.pathname === VIEW_PATH) {
-      const capabilityId = requestUrl.searchParams.get("capability");
-      if (capabilityId && !SAFE_CAPABILITY.test(capabilityId)) {
-        sendJson(response, 400, { error: "invalid_capability" }, headOnly);
-        return true;
-      }
-      const view = graphView(status, capabilityId);
-      if (!view) {
-        sendJson(response, 404, { error: "capability_lens_not_available" }, headOnly);
-        return true;
-      }
-      sendJson(response, 200, view, headOnly);
-      return true;
-    }
-    let nodeId: string;
+  const capabilityId = requestUrl.pathname === VIEW_PATH ? requestUrl.searchParams.get("capability") : null;
+  if (requestUrl.pathname === VIEW_PATH && requestUrl.searchParams.has("capability") && (
+    requestUrl.searchParams.getAll("capability").length !== 1 || !capabilityId || !SAFE_CAPABILITY.test(capabilityId)
+  )) {
+    sendJson(response, 400, { error: "invalid_capability" }, headOnly);
+    return true;
+  }
+  let nodeId: string | null = null;
+  if (requestUrl.pathname.startsWith(NODE_PATH_PREFIX)) {
     try {
       nodeId = decodeURIComponent(requestUrl.pathname.slice(NODE_PATH_PREFIX.length));
     } catch {
@@ -125,6 +133,22 @@ async function handleRepositoryGraphRequest(
     }
     if (!SAFE_NODE.test(nodeId)) {
       sendJson(response, 400, { error: "invalid_node" }, headOnly);
+      return true;
+    }
+  }
+  try {
+    const status = await readRuntimeStatus(repositoryRoot, !headOnly);
+    if (requestUrl.pathname === STATUS_PATH) {
+      sendJson(response, 200, runtimeSummary(status), headOnly);
+      return true;
+    }
+    if (requestUrl.pathname === VIEW_PATH) {
+      const view = graphView(status, capabilityId);
+      if (!view) {
+        sendJson(response, 404, { error: "capability_lens_not_available" }, headOnly);
+        return true;
+      }
+      sendJson(response, 200, view, headOnly);
       return true;
     }
     if (status.state !== "ready-current" || !status.graph) {

@@ -94,9 +94,10 @@ describe("completed Chronicle Knowledge Base capabilities", () => {
       const section = document.getElementById(capability.id)!;
 
       fireEvent.click(within(section).getByRole("tab", { name: /Issues/ }));
-      expect(within(section).getByRole("tabpanel"), capability.id).toHaveTextContent(
-        `No verified ${capability.label} Issue records are currently loaded.`,
-      );
+      expect(
+        within(section).getByRole("tabpanel").querySelector(".knowledge-content"),
+        capability.id,
+      ).toBeEmptyDOMElement();
 
       expect(within(section).queryByRole("tab", { name: "Current Work" })).not.toBeInTheDocument();
 

@@ -90,6 +90,21 @@ describe("Chronicle Graphify toolchain custody", () => {
     await expect(verifyGraphifyToolchain(fixture)).rejects.toThrow("active instruction or hook path");
   });
 
+  it("allows project instructions to explain the approved Graphify map", async () => {
+    const fixture = await copyFixture();
+    await writeFile(path.join(fixture, "AGENTS.md"),
+      "Read relevant Graphify relationships with npm run graph:query. Do not enable a global Graphify skill or hooks.\n");
+    await expect(verifyGraphifyToolchain(fixture)).resolves.toMatchObject({ version: "0.9.52" });
+  });
+
+  it("still rejects a Graphify executable hook", async () => {
+    const fixture = await copyFixture();
+    const hook = path.join(fixture, ".githooks/pre-commit");
+    await mkdir(path.dirname(hook), { recursive: true });
+    await writeFile(hook, "#!/bin/sh\ngraphify update\n");
+    await expect(verifyGraphifyToolchain(fixture)).rejects.toThrow("active instruction or hook path");
+  });
+
   it("rejects an active skill filename inside inert vendor custody", async () => {
     const fixture = await copyFixture();
     await writeFile(path.join(fixture, "vendor/graphify/0.9.52/SKILL.md"), "# Graphify\n");

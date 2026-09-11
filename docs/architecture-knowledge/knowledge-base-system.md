@@ -16,17 +16,21 @@ The written explanations are maintained Markdown files. The page’s manifest as
 
 In local development, Chronicle Overview contains the global repository map. Individual architecture tabs show smaller filtered views of the same private graph artifact. The circles and connections help locate areas, source groups, and extracted relationships; selecting and exploring them provides supporting source evidence. The production application does not include this private graph and instead displays an availability notice; its written manuals remain readable.
 
+Opening a local graph automatically starts one shared rebuild if the graph is missing or stale. The page waits for the finished graph and populates it automatically. Mounted maps check for changes periodically and when the page becomes active again; there is no manual refresh step for ordinary source changes. An actual rebuild failure remains visible with its reason instead of being mistaken for an empty graph.
+
 A graph describes relationships extracted from the allowlisted local checkout snapshot, including eligible uncommitted and untracked source files. It does not establish the intended product behavior, prove that a request succeeded, or inspect a live Supabase deployment. The written architecture remains necessary to explain meaning and responsibility. When the graph is stale or unavailable, its state must remain visible rather than being silently treated as current.
 
 ## Manuals, Records, and Evidence Have Different Jobs
 
-A stable manual describes how an area works. An Issue records a verified problem or audit finding with its explanation and supporting evidence. Recording an Issue does not start a project or require progress paperwork. A Changelog entry records a meaningful completed change, not a running task diary or a list of test runs. A test receipt records what a particular check actually observed.
+A stable manual describes how an area works. An Issue records a verified problem or audit finding with its explanation and supporting evidence. The Issues tab shows unresolved findings only and is blank when none remain. A resolved Issue's source record is retained as historical evidence, not displayed as pending work. Recording an Issue does not start a project or require progress paperwork. A Changelog entry records a meaningful completed change, not a running task diary or a list of test runs. A test receipt records what a particular check actually observed.
 
 Current Work has been retired. Its old records are retained as historical reference, not active assignments or instructions to resume work. Issues and Changelog stand on their own; neither requires a Current Work project. Opening a tab does not create a record, run a test, or approve a result. The Validation Evidence Ledger has its own narrower roleplay evidence projection, documented in its tool section.
 
 ## Reading and Maintenance
 
-The page is behind the application’s administrator route guard. Its controls select tabs, navigate to documents or records, and explore the graph. There is no in-page editor or Save operation for these manuals. Documentation changes are made in the repository and are rendered through the registered source heading. Issue and Changelog records are maintained separately when the assigned work calls for them.
+The page is behind the application’s administrator route guard. Its controls select tabs, navigate to documents or records, and explore the graph. There is no in-page editor or Save operation for these manuals. Documentation changes are made in the repository and are rendered through the registered source heading.
+
+After a meaningful change is complete and verified, record one concise canonical Changelog entry describing what changed, why, and the verified result with any important limit. Related changes from the same assignment belong together; intermediate steps, routine test runs, record maintenance, and whitespace-only edits do not need entries. Do not duplicate a change already recorded. New entries use the existing `knowledge:records` accepted-update command without creating a project or starting another verification cycle. When the change fixes a tracked Issue, cite its ID in the Changelog narrative and add the Changelog ID to the Issue's Resolution before marking it resolved. It then disappears from Issues while the completed change remains in Changelog.
 
 The review and update dates identify documentation metadata. They are not a statement that every related tool, deployed database policy, or historical claim was rechecked at that moment. A tool can be documented accurately while still being unfinished.
 
@@ -62,9 +66,25 @@ Ordinary manual tabs show their recorded review and update dates. Issue counts o
 
 The global explorer offers Chronicle Areas, Repository Tree, Dependency Graph, Community Overview, and Recorded History. Capability views start with the relevant filtered area. Search and selection narrow the view; pan, zoom, reset, and source details support inspection without replacing the written explanation. Recorded History reads canonical Changelog information; it does not create graph-owned history.
 
+## Graphify Access for Agents
+
+The map and command-line readers use the same private graph for the selected checkout. Agents investigating implementation owners, dependencies, or handoffs must read the relevant nodes and relationships, not merely observe a map container or status label. The command-line path works without a browser or running website:
+
+```sh
+npm run -s graph:status
+npm run -s graph:query -- "src/services/gallery-data.ts"
+npm run -s graph:explain -- "<node ID returned by the query>"
+```
+
+The Gallery path is an example; select a path or symbol relevant to the assignment. Read the reported `state`: only `ready-current` establishes that the graph matches this checkout. `graph:status` can exit successfully in an unavailable or error state; query and explain refuse non-current data. Query returns up to 20 matching nodes, and explain returns up to 30 incident relationships. Those bounded results are not proof of complete coverage. When fuller data is needed, the running local server provides `/__chronicle-repository-graph/view` for the global graph and `/__chronicle-repository-graph/view?capability=<id>` for a capability lens. Confirm `state: ready-current` and inspect the relevant nodes and edges; HTTP success or empty arrays alone do not prove usable graph data. A current graph with no matching node is an extraction coverage limit to report, not proof that the source or relationship does not exist.
+
+The local page automatically rebuilds a missing or stale graph, checks again every two seconds while it is being prepared, and displays the finished map without a reload. Current maps recheck every 30 seconds while the page is visible and immediately on focus or return to visibility. Concurrent views share the server's rebuild; they do not each launch an extraction. A failed build reports its reason without endlessly retrying the same source state. A changed source state allows another attempt. For an error, address the specific reported access, source, or toolchain problem; do not bypass freshness/privacy checks or repeatedly regenerate unchanged failing input. Command-line-only work can use `npm run graph:update` once if the website is not running, then check the state and repeat the relevant read. If rendering fails but current data is readable, report the visual failure separately. If the data cannot be made readable, report the exact failure and pause conclusions or implementation decisions that depend on the graph. Do not describe it as inspected or quietly substitute an old screenshot or unchecked snapshot.
+
+Apply the same rule to subagents assigned architecture investigation. Their concise return should identify the graph ID and the relevant nodes or relationships they actually read, or the exact access failure. Reading the entire graph is unnecessary for a bounded assignment. After mapped source or the final Git state changes, check freshness once at handoff and refresh if needed. Coordinate one refresh for the checkout; avoid rebuilds for each edit, helper, or status report. This local access path does not publish private repository data or add Graphify to the deployed application.
+
 ## Record Links and Navigation
 
-Issues show the recorded problems and their supporting context. Changelog links open the full completed-change record. Existing links to historical work records open their retained source text; they do not reactivate those assignments. The header’s Back control returns to Admin Panel.
+Issues show unresolved problems and their supporting context. Resolved findings do not leave a second history list in that tab. Changelog links open the full completed-change record. Existing links to historical work records open their retained source text; they do not reactivate those assignments. The header’s Back control returns to Admin Panel.
 
 ## Unavailable and Restricted States
 
@@ -88,7 +108,7 @@ Administration & Maintenance sections use the same switcher and Markdown present
 
 ## Operational Sources and History
 
-The operational source loader derives the Issue registry from repository records. Capability selection filters those findings before rendering. Changelog loading and the record route use the canonical Changelog sources, including correction relationships, rather than the old Quality Hub copy. Historical work records remain readable through their existing links, but they do not supply an active work registry or a Current Work tab. The reading page does not create or update these records.
+The operational source loader derives the Issue registry from repository records. Capability selection filters those findings, and the Issues renderer displays only records whose status is open. A panel with no open records has no heading, resolved group, or explanatory filler. Resolved source records remain available for historical links and complete reference exports. Changelog loading and the record route use the canonical Changelog sources, including correction relationships, rather than the old Quality Hub copy. Historical work records remain readable through their existing links, but they do not supply an active work registry or a Current Work tab. The reading page does not create or update these records.
 
 ### Inspected Source Paths
 

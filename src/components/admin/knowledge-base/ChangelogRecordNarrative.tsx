@@ -280,20 +280,18 @@ function PrimaryNarrative({
         <ResultAndVerification entry={entry} />
       </NarrativeSection>
 
-      <NarrativeSection heading="Issue disposition">
-        {legacy ? (
-          <p>
-            No modern Chronicle Issue disposition is available for this historical
-            Quality Hub record.
-          </p>
-        ) : closeout ? (
-          <AcceptedIssueDisposition entry={entry} />
-        ) : (
-          <p>
-            No Chronicle Issue was required or created for this bounded accepted update.
-          </p>
-        )}
-      </NarrativeSection>
+      {legacy || closeout ? (
+        <NarrativeSection heading="Issue disposition">
+          {legacy ? (
+            <p>
+              No modern Chronicle Issue disposition is available for this historical
+              Quality Hub record.
+            </p>
+          ) : (
+            <AcceptedIssueDisposition entry={entry} />
+          )}
+        </NarrativeSection>
+      ) : null}
 
       {record.variant === "accepted_closeout" ? (
         <NarrativeSection heading="Related history">

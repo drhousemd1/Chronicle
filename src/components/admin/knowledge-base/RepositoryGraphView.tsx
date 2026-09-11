@@ -180,8 +180,8 @@ function stateCopy(payload: RepositoryGraphViewPayload) {
     const reasons = payload.reasons.map((reason) => knownReasons[reason] ?? "a verified source condition changed");
     return ["Older map", `Chronicle changed after this map was built${reasons.length ? `: ${reasons.join(", ")}.` : "."} Relationship data stays hidden until the private map is refreshed.`] as const;
   }
-  if (payload.state === "refreshing") return ["Map updating", "Relationship data stays hidden until the new private map has been generated and verified."] as const;
-  if (payload.state === "error") return ["Map needs attention", "The local graph failed a safety or freshness check. Relationship data stays hidden while the written manuals remain available."] as const;
+  if (payload.state === "refreshing") return ["Map updating", "Chronicle is rebuilding the private map. It will appear automatically when ready."] as const;
+  if (payload.state === "error") return ["Map needs attention", payload.reasons.length ? payload.reasons.join("; ") : "The local graph could not be prepared. Current relationship data is unavailable."] as const;
   return ["Map unavailable", "No private repository map has been generated for this checkout."] as const;
 }
 
@@ -812,13 +812,55 @@ export function RepositoryGraphView({
     setPayload(null);
     setError(null);
     if (!localGraphAvailable) return undefined;
-    const controller = new AbortController();
-    loadRepositoryGraphView(mode === "capability" ? capabilityId : null, controller.signal)
-      .then((nextPayload) => setPayload(nextPayload))
-      .catch((caught) => {
-        if (!controller.signal.aborted) setError(caught instanceof Error ? caught.message : String(caught));
-      });
-    return () => controller.abort();
+    let disposed = false;
+    let controller: AbortController | null = null;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let requestTimeout: ReturnType<typeof setTimeout> | undefined;
+
+    const refresh = async () => {
+      if (disposed || controller) return;
+      clearTimeout(timer);
+      if (document.visibilityState === "hidden") return;
+      const requestController = new AbortController();
+      controller = requestController;
+      requestTimeout = setTimeout(() => requestController.abort(), 15000);
+      let nextCheck = 30000;
+      try {
+        const nextPayload = await loadRepositoryGraphView(
+          mode === "capability" ? capabilityId : null,
+          requestController.signal,
+        );
+        if (disposed) return;
+        setError(null);
+        setPayload((previous) => previous?.state === "ready-current"
+          && nextPayload.state === "ready-current"
+          && previous.graphId === nextPayload.graphId ? previous : nextPayload);
+        if (["refreshing", "ready-stale", "unavailable"].includes(nextPayload.state)) {
+          nextCheck = 2000;
+        }
+      } catch (caught) {
+        if (!disposed) setError(requestController.signal.aborted
+          ? "The local graph request timed out. It will reconnect automatically."
+          : caught instanceof Error ? caught.message : String(caught));
+      } finally {
+        clearTimeout(requestTimeout);
+        controller = null;
+        if (!disposed) timer = setTimeout(() => void refresh(), nextCheck);
+      }
+    };
+
+    const resume = () => { void refresh(); };
+    window.addEventListener("focus", resume);
+    document.addEventListener("visibilitychange", resume);
+    void refresh();
+    return () => {
+      disposed = true;
+      clearTimeout(timer);
+      clearTimeout(requestTimeout);
+      controller?.abort();
+      window.removeEventListener("focus", resume);
+      document.removeEventListener("visibilitychange", resume);
+    };
   }, [capabilityId, localGraphAvailable, mode]);
   useEffect(() => setActiveView(initialView), [initialView, mode]);
 
@@ -872,7 +914,7 @@ export function RepositoryGraphView({
       </dl>
 
       {!hasGraph && activeView !== "recorded-history" ? (
-        <div className="repository-graph-empty"><h3>{graphReadable ? "No repository relationships are available" : "Repository relationships are hidden"}</h3><p>{graphReadable ? "The private graph is empty or this capability has not been mapped yet. The written architecture remains available." : "Only a verified current map may expose relationship data. Refresh the private map only when the current task authorizes it, or continue from the written manuals and source."}</p></div>
+        <div className="repository-graph-empty"><h3>{graphReadable ? "No repository relationships are available" : "Repository relationships are hidden"}</h3><p>{graphReadable ? "The private graph is empty or this capability has not been mapped yet. The written architecture remains available." : payload.state === "error" ? "The automatic map update could not finish. The failure must be resolved before current relationships can be shown." : "Chronicle is preparing the current private map. It will appear here automatically when ready."}</p></div>
       ) : null}
 
       {mode === "global" ? (
