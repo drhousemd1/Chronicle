@@ -140,13 +140,6 @@
       "manual_path": "docs/architecture-knowledge/image-generation.md",
       "source_heading": "Inspected Source Paths",
       "source_format": "text-fence"
-    },
-    {
-      "capability_id": "app-dashboard",
-      "label": "App Dashboard",
-      "manual_path": "docs/architecture-knowledge/app-dashboard.md",
-      "source_heading": "Inspected Source Paths",
-      "source_format": "text-fence"
     }
   ]
 }

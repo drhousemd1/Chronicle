@@ -1,0 +1,206 @@
+[
+  {
+    "path": "../../src/assets/ui-guide/story-builder/overview-narrow.png",
+    "width": 780,
+    "height": 2000,
+    "sha256": "3b86b1b7f104d855c101e74ec6c8375cad48c029e7d5436f4d3f629ab1f8a996"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/overview.png",
+    "width": 2880,
+    "height": 2000,
+    "sha256": "e7f596f9a689bc366e92b1be642e71ea55689f268cb3f3572e6c9f186a6de466"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/header-actions.png",
+    "width": 1170,
+    "height": 128,
+    "sha256": "8330fe6be23b2cfcc02112061b365a8ad9224f5a2965ef0d861e2275df7fe518"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/back-control.png",
+    "width": 112,
+    "height": 112,
+    "sha256": "510b394f9b404365691e15de6fcf384ec010da6bed69699e203bbbe39d9e2881"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/settings-control.png",
+    "width": 128,
+    "height": 128,
+    "sha256": "c1603bf8cb2e4dbee5f0364461eaf36f4d3ba84bba3c15b37c600ca11521a49e"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/settings-menu.png",
+    "width": 1170,
+    "height": 264,
+    "sha256": "3efd9d55a1f43f460d45da6808e0d966c3af6de4bb4e1906e8420a4621cc2b9a"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/upload-menu.png",
+    "width": 1152,
+    "height": 420,
+    "sha256": "33312baf791a1a1c2e0ae1a5cccea5246d83b1d1ee53d8de9ea439fe81c42ed6"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/ai-generate.png",
+    "width": 1152,
+    "height": 208,
+    "sha256": "2d4b0708e1e7cffa0d8e7bace8658111af69e551069a536f2c9ba0bcb37db959"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/ai-enhance.png",
+    "width": 520,
+    "height": 154,
+    "sha256": "2d94d8e19fed4ec5ba32e9337240a0186f4f87ce882957558ba0d1938cdbe916"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/add-actions.png",
+    "width": 664,
+    "height": 208,
+    "sha256": "89b1ff41b9aacc9f5034774ff870e4c0a447edd3ae54bf805d4c397e27acd351"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/overlay-actions.png",
+    "width": 432,
+    "height": 624,
+    "sha256": "44e0437062975f264e63a8eb7fbea63476441f30a703dddfa0ac60eadaeaf9aa"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/field-labels.png",
+    "width": 520,
+    "height": 154,
+    "sha256": "2d94d8e19fed4ec5ba32e9337240a0186f4f87ce882957558ba0d1938cdbe916"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/standard-field.png",
+    "width": 1072,
+    "height": 190,
+    "sha256": "68a58a02d2561aa2e7fbb4232524bc65f189d52324eb34931f6dd04639f0bd9c"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/field-validation.png",
+    "width": 1072,
+    "height": 238,
+    "sha256": "3ae6f0b7e1c4f86cd065187eb265fa36ec129452523956c7af8779a19c63d92c"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/paired-fields.png",
+    "width": 1520,
+    "height": 302,
+    "sha256": "053fb6e58e027464655a49439f7a4e317664f8678030cfe6d161f726f1699546"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/segmented-control.png",
+    "width": 374,
+    "height": 166,
+    "sha256": "fc3853537823766abd32f67b6c87065e7ee7f8e40e13ffc9f5f06d03da5e20d4"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/guidance-slider.png",
+    "width": 1600,
+    "height": 616,
+    "sha256": "fbcec7b0711c338d2d428bd18d82ee46831d2a07283412d37310f7810f864c8a"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/theme-chips.png",
+    "width": 1520,
+    "height": 208,
+    "sha256": "c72e912f5c297f9e4e13e6c20d8bb069787c5cefd577cf5385b71879acd0d1a7"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/day-time.png",
+    "width": 576,
+    "height": 160,
+    "sha256": "b934d63fad6a09aebf8c472f6308cba9579a61b8d695fbf58f3216e7df3687ea"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/checkbox.png",
+    "width": 1520,
+    "height": 122,
+    "sha256": "25a47fb441a7632c86476e489fda462e3a0991a58decbaaae455d150853b7196"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/shared-header.png",
+    "width": 2880,
+    "height": 130,
+    "sha256": "681f604b7f2f1b689939ce51bd47cbca16508d50bc81081fc6dc59223b391afd"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/roster-pane.png",
+    "width": 600,
+    "height": 1870,
+    "sha256": "c7fa542b52a48983570d6de28dfb9193fc318886b6ebc12f701355d71224da4a"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/roster-group.png",
+    "width": 584,
+    "height": 112,
+    "sha256": "85bb7bd090fcd7c8821d0df2d4ce2d26604bc3052510c02ae72ebc061f25636b"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/section-shell.png",
+    "width": 1744,
+    "height": 962,
+    "sha256": "683ad4d2f84c1ae2fcc6421d86ae2308a29c55d221b2fb46ee685e668225269c"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/media-frame.png",
+    "width": 432,
+    "height": 624,
+    "sha256": "ccbed9fb6d9695b86eee95055e919eccbd6e30691cfd12212d501bca1e461a7b"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/chooser-dialog.png",
+    "width": 585,
+    "height": 455,
+    "sha256": "e5041d2f907d8c15273e9e733085e726a7e78a1f464e98cca1e7eb5d289eb6b7"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/confirmation-dialog.png",
+    "width": 585,
+    "height": 455,
+    "sha256": "a3535faee1a7571de0ba85e34dd41a4a3c0f21a6b37c56156f381bae3926eb32"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/story-card-narrow.png",
+    "width": 700,
+    "height": 1672,
+    "sha256": "b5ab587db7ce8c4a27234d388453d3d06fcf7167cf1c1f3363353f54057542ba"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/story-card.png",
+    "width": 1744,
+    "height": 962,
+    "sha256": "922e1a2c4bf17d5c92e4628a0ab454e7c26c48fb961ae385c246316fb39c552e"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/character-roster.png",
+    "width": 600,
+    "height": 1280,
+    "sha256": "105494c979d473cde6950623af5c0d05d35e6f0d3c0e1c555d15642c9f49856d"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/character-roster-errors.png",
+    "width": 600,
+    "height": 880,
+    "sha256": "caca6fdb7fece967de6a6105bf1a88290a88b6aa2e146f9ebb4a2bf5534ad506"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/new-authoring-note-narrow.png",
+    "width": 317,
+    "height": 686,
+    "sha256": "0d455e8caa94983e4be85a6b1a819ea4289bfb04c662eab4936bdae5d923baad"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/new-authoring-note.png",
+    "width": 585,
+    "height": 585,
+    "sha256": "aa2d1c7f78ffc1bda409eb438398a9967eb788175d3a09651ed7bc4ad1d94105"
+  },
+  {
+    "path": "../../src/assets/ui-guide/story-builder/new-preview-options.png",
+    "width": 390,
+    "height": 390,
+    "sha256": "5ab96127219e0f7da3d4e7638e65b971e94c4decb57012917d41f9300ab8eb8c"
+  }
+]

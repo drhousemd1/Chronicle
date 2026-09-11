@@ -1,0 +1,147 @@
+{
+  "rendering": "Existing specimens import production React components and icons. Explicitly labeled reference-only compositions combine imported primitives and existing style treatments. All views use compiled current Chronicle CSS.",
+  "boundaries": [
+    "@/services/supabase-data",
+    "@/services/gallery-data",
+    "@/hooks/use-auth",
+    "@/contexts/ArtStylesContext",
+    "@/contexts/ModelSettingsContext",
+    "@/integrations/supabase/client"
+  ],
+  "data": "Fixed local gallery records, existing local imagery and controlled reads/failures. No live account, gallery search, review or interaction mutation is exercised.",
+  "sources": [
+    {
+      "path": "src/lib/utils.ts",
+      "sha256": "d1f1e0d62cb8d8d1e04c26e14de842d8a151f75812d81b046c65b5d1fe8e4b27"
+    },
+    {
+      "path": "src/components/ui/tooltip.tsx",
+      "sha256": "99f74ccdf63f008b07effc558ed407dac5543206618cbdf24fa072592042f053"
+    },
+    {
+      "path": "src/components/ui/labeled-toggle.tsx",
+      "sha256": "c44e06f420ca989a1aa2adcb645dada2dc6f62db3150c2089dec3cc00699243c"
+    },
+    {
+      "path": "src/components/chronicle/GalleryNsfwToggle.tsx",
+      "sha256": "32a0c0c2369f595d94338e0bcc303e0783ddedec8aa057c08e964f68dfc0419c"
+    },
+    {
+      "path": "src/components/chronicle/chronicle-dark-ui.ts",
+      "sha256": "90e29957776f20ccc1b340450a632379b7530b7c653c73c24955f2b65071fa3f"
+    },
+    {
+      "path": "src/components/chronicle/ChronicleDarkUi.tsx",
+      "sha256": "0b48621b21a6f637018b103dd62dfef8f34b15bd3e617dc773d0195632b3ca2b"
+    },
+    {
+      "path": "src/components/app-shell/AppShellHeader.tsx",
+      "sha256": "ec5bb8b67e976f81f9510e21398e81db7c30500cd14eeb9c748f987d19e2affe"
+    },
+    {
+      "path": "src/components/ui/dropdown-menu.tsx",
+      "sha256": "07914bdc1545c55771e5fcab89e633a722d9684ec1a5325fa38da61ee28369d2"
+    },
+    {
+      "path": "src/components/app-shell/AppShellTopBar.tsx",
+      "sha256": "769b0bb231a29aecd95f07b74698c62651e7bd9390695066a6a989fef2be6b9d"
+    },
+    {
+      "path": "src/components/chronicle/GalleryStoryCard.tsx",
+      "sha256": "fb1c158ed21bc44224b0052101768600961e3f634c7cedd574a2080665fff637"
+    },
+    {
+      "path": "src/components/ui/dialog.tsx",
+      "sha256": "566ee731ba666ee9e2de203e94414edef56edf8097d10fd749b62fcae28d6858"
+    },
+    {
+      "path": "src/components/ui/skeleton.tsx",
+      "sha256": "a229c310b9cbcb01ddd5e580865a6f14a19061aff7f6a97ef82a40b6a83583a4"
+    },
+    {
+      "path": "src/components/chronicle/StarRating.tsx",
+      "sha256": "c3df9569860d28174cfd9bdf6da21410a7041fe4c0ad89d5bbffd9e5c6ab8e41"
+    },
+    {
+      "path": "src/components/chronicle/SpiceRating.tsx",
+      "sha256": "62f80212a8f5af4e054754c042cf2c61adaceefb0a0cfe08cd5d7be074116c73"
+    },
+    {
+      "path": "src/components/ui/collapsible.tsx",
+      "sha256": "fbe07841b794e0d7d08e87ddaaafadf1dc0c63ecc8389cd2c5b4a0a3f5500df1"
+    },
+    {
+      "path": "src/components/ui/textarea.tsx",
+      "sha256": "a891729aa1cac99f976e9e6471e5c8eafc0311145f829cf43cb1092df432bd00"
+    },
+    {
+      "path": "src/components/ui/button.tsx",
+      "sha256": "ae65d5ed4fb57411f38475bf14cfb98abb688d293e76b0977827fbb680f46cb3"
+    },
+    {
+      "path": "src/components/ui/alert-dialog.tsx",
+      "sha256": "c8b01137c7552e63c9ccf2c38ef92e5417bd6616b6980d56d3015db027465283"
+    },
+    {
+      "path": "src/components/chronicle/DeleteConfirmDialog.tsx",
+      "sha256": "7c71d45f0cf7131dd2400a0cd284763e5cb58a11c633f1077357dc988457ef55"
+    },
+    {
+      "path": "src/services/review-ratings.ts",
+      "sha256": "c147da41a2e1e719270959d84d0fb2d0febb7b6ae91d1945c20bb7399ae2c475"
+    },
+    {
+      "path": "src/components/chronicle/ReviewModal.tsx",
+      "sha256": "5779e5ece8fcdc653303207f448094811db7617c8669013a05194e4c893f69c8"
+    },
+    {
+      "path": "src/components/chronicle/StoryDetailModal.tsx",
+      "sha256": "bde7a5569fd0a73dd4b7964c131f65f7c2cd9325639c41da0cee731b8cd1d600"
+    },
+    {
+      "path": "src/constants/content-themes.ts",
+      "sha256": "dbd5ffb89e09b7adbcef2ae45ea42dad8a322b0eef2eceda6e32c60e7096f98d"
+    },
+    {
+      "path": "src/components/chronicle/GalleryCategorySidebar.tsx",
+      "sha256": "8b93390cea9e636c0e58b545167c8f4a6f1691cccb8737a0b3ed025bc0d02ea9"
+    },
+    {
+      "path": "src/components/chronicle/GalleryHub.tsx",
+      "sha256": "9533d438c5fa11e9b6c23e8a1485b39aaa804531626999ff699173e93bfadcee"
+    },
+    {
+      "path": "src/components/chronicle/GalleryNsfwAgeModal.tsx",
+      "sha256": "575ba198ebded80b831098e86400432e538928894ba2a879f0448762c5cff67a"
+    },
+    {
+      "path": "src/components/ui/popover.tsx",
+      "sha256": "ee5f78ece57c9e8eb5f9b4186e2bb9ebe46b69b52f03f1edd9a601883bc64772"
+    },
+    {
+      "path": "docs/ui-guide/examples/community-gallery-compositions.tsx",
+      "sha256": "114e632623c1d90e60112ad14a6f863ee66ee41ccb583edfb856dfe0819929d7"
+    },
+    {
+      "path": "src/index.css",
+      "sha256": "5e14e8cc75fd0e01b154dd1f59d9bb4f23b435558872a9b4467858932ff34e79"
+    },
+    {
+      "path": "tailwind.config.ts",
+      "sha256": "ea133c9d352610179a54ad8fc7bdcfb88dee226a216f67615075d9581462871a"
+    }
+  ],
+  "capturedOn": "2026-09-10",
+  "assetManifest": "docs/ui-guide/community-gallery.assets.json",
+  "captureNotes": [
+    "Production specimens import AppShellTopBar, GalleryHub, GalleryScenarioCard, ScenarioDetailModal, ReviewModal and GalleryNsfwAgeModal. QueryClient and fixed local data exercise the rendered paths without live services.",
+    "At 1440 CSS pixels, Gallery card hover reveals actions and scales the image to1.1. Wrapper transform remains none. The card shadow changes from0 12px32px -2 rgba(0,0,0,.5) to0 25px50px -12 rgba(0,0,0,.25).",
+    "At390 CSS pixels the application header has636px scroll width. With the sidebar closed, the internal search field shrinks to106px; opening the280px sidebar leaves the main area110px and its grid62px wide. These source limitations are documented, not inherited as recommended responsive behavior.",
+    "Controlled initial loading, initial error and empty-filtered responses show distinct production UI. This does not verify a remote query or its recovery.",
+    "Production review selection enabled Submit, Additional Feedback expanded and a local comment was entered. No review submission or deletion was performed. The production detail and review markup had no semantic dialog role.",
+    "The proposed Private Story Rating saved4 and a note locally. Changing to2 with another note, canceling, then reopening restored the saved4 and original note. Escape dismissed and returned focus to its trigger.",
+    "The proposed Discovery Focus independently selected Fantasy and Romance, updated a local summary, collapsed its choices and cleared both. Both proposed examples fit390px without horizontal body overflow.",
+    "Computed mask styling is blur(24px) and scale1.06. The source /18 wash and /12 count-strip background classes produce transparent fills in current compiled CSS. The proposed count strip uses explicit bg-transparent and was recaptured after that clarification.",
+    "Captures use the Codex browser. Crops preserve screenshot pixels. Dependency hashes establish source identity at capture time, not full-file semantic review or live behavior."
+  ]
+}

@@ -1418,7 +1418,7 @@ describe("Quality Hub permanent read-only Changelog behavior", () => {
     expect(mocks.secondOwnerRow).toBeNull();
   }, ASYNC_SAVE_TIMEOUT_MS);
 
-  it("points to the Work Manual and keeps Quality Hub instructions mechanical", async () => {
+  it("keeps Quality Hub instructions focused on its own mechanics", async () => {
     mocks.authState.user = null;
     mocks.authState.session = null;
     mocks.authState.isAuthenticated = false;
@@ -1432,10 +1432,7 @@ describe("Quality Hub permanent read-only Changelog behavior", () => {
 
     const dialog = screen.getByRole("dialog");
     expect(dialog).toHaveTextContent(/Quality Hub stores scan mechanics and scan results\./);
-    expect(screen.getByRole("link", { name: /Open Chronicle Work Manual — Start Here/i })).toHaveAttribute(
-      "href",
-      "/style-guide/chronicle-knowledge-base?section=chronicle-work-manual&tab=start-here#chronicle-work-manual",
-    );
+    expect(dialog).not.toHaveTextContent(/Work Manual/i);
     expect(dialog).toHaveTextContent(/A suspected finding is not automatically a verified Issue\./);
     expect(dialog).not.toHaveTextContent(/Track active implementation/i);
     expect(dialog).not.toHaveTextContent(/guarded closeout workflow creates/i);

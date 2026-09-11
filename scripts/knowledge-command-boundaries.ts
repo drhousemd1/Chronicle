@@ -75,12 +75,6 @@ export const KNOWLEDGE_COMMAND_BOUNDARIES = Object.freeze([
     reason: "Certifies Current Work, Issues, evidence, and Changelog relationships against one stable source set.",
   },
   {
-    script: "knowledge:work-manual:check",
-    command: "vite-node scripts/run-with-knowledge-certification-lease.ts knowledge-work-manual-check -- vite-node scripts/validate-chronicle-work-manual.ts",
-    protection: "knowledge-certification",
-    reason: "Certifies the canonical Work Manual, thin synchronized pointers, and retirement of superseded Chronicle instruction paths.",
-  },
-  {
     script: "quality:scan",
     command: "vite-node scripts/run-with-knowledge-certification-lease.ts quality-scan -- node scripts/run-quality-hub-scan.mjs",
     protection: "knowledge-certification",

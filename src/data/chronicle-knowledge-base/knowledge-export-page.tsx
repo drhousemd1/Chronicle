@@ -3,6 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 import { ChronicleKnowledgeBasePage } from "@/pages/style-guide/chronicle-knowledge-base";
 import { chronicleOperationalRecordRegistry } from "./operational-record-sources";
 import { chronicleKnowledgeSections } from "./manifest";
+import skillCatalog from "./codex-skills.generated.json";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 
 /** Mount the actual page, not an export-specific reconstruction of its design. */
@@ -25,7 +26,7 @@ export async function captureKnowledgePage(): Promise<HTMLElement> {
         </DropdownMenuContent>
       </DropdownMenu>
     </MemoryRouter>);
-    const expectedPanels = chronicleKnowledgeSections.reduce((count, section) => count + section.tabs.length, 0);
+    const expectedPanels = chronicleKnowledgeSections.reduce((count, section) => count + section.tabs.length, skillCatalog.entries.length);
     const deadline = Date.now() + 30_000;
     // Effects load the same read-only graph/record views used by the live page.
     // Never serialize an unfinished loading placeholder as a completed export.

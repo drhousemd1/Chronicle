@@ -1,0 +1,56 @@
+[
+  {
+    "path": "../../src/assets/ui-guide/account-access/settings.png",
+    "width": 1440,
+    "height": 1000,
+    "sha256": "986597df7f118b99251658240cd07805f44618ac26878023dfc2ef30cb17ad62"
+  },
+  {
+    "path": "../../src/assets/ui-guide/account-access/profile.png",
+    "width": 1440,
+    "height": 1000,
+    "sha256": "ed230c999edd6c9c3f385a1244ca78bfa88423a3d76d0583e9cc8369a6a39c47"
+  },
+  {
+    "path": "../../src/assets/ui-guide/account-access/subscriptions.png",
+    "width": 1440,
+    "height": 1000,
+    "sha256": "60f262008c4abbb089a7bc654040297832586d4a68490776d9c7f0621d06c4a4"
+  },
+  {
+    "path": "../../src/assets/ui-guide/account-access/auth.png",
+    "width": 645,
+    "height": 686,
+    "sha256": "eb3190feb6967e388ab0cb4410af67e59d811f60d86e860fa9aaca66cbc68fee"
+  },
+  {
+    "path": "../../src/assets/ui-guide/account-access/auth-errors.png",
+    "width": 645,
+    "height": 824,
+    "sha256": "9fbe778ad08c07774c6a3639086ad23f3eeb8cc990e68fb8a7a3619bae1e8677"
+  },
+  {
+    "path": "../../src/assets/ui-guide/account-access/new-intro-narrow.png",
+    "width": 383,
+    "height": 448,
+    "sha256": "7b7bd24d6b9685508812778da5146cdf441320306686672d02c602c273abf911"
+  },
+  {
+    "path": "../../src/assets/ui-guide/account-access/new-intro.png",
+    "width": 645,
+    "height": 448,
+    "sha256": "1176e0302fcb8857ba5424b5f1b88d4f60d0efae3c70da5c34e23d3cce945431"
+  },
+  {
+    "path": "../../src/assets/ui-guide/account-access/new-privacy-narrow.png",
+    "width": 384,
+    "height": 557,
+    "sha256": "22c5db9def19cc2bdafe3dedde78d1af9764e8e6a1ec831cda02a44261cbd2c8"
+  },
+  {
+    "path": "../../src/assets/ui-guide/account-access/new-privacy.png",
+    "width": 1049,
+    "height": 272,
+    "sha256": "0ebaec1e57c0de7304f5eb0c0e90572b8fa6ff9a24f4ea5765511e2642999c86"
+  }
+]

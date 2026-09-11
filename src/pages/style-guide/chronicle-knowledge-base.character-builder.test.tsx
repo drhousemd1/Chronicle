@@ -29,7 +29,7 @@ describe("Chronicle Knowledge Base Character Builder manual", () => {
     renderPage();
     const section = document.getElementById("character-builder")!;
 
-    expect(within(section).getAllByRole("tab")).toHaveLength(7);
+    expect(within(section).getAllByRole("tab")).toHaveLength(6);
     expect(
       within(section).getByRole("heading", {
         name: "Character Builder at a Glance",
@@ -42,15 +42,14 @@ describe("Chronicle Knowledge Base Character Builder manual", () => {
     ).toBeInTheDocument();
   }, 30_000);
 
-  it("isolates Character Builder Issues, empty work, and verified history", async () => {
+  it("isolates Character Builder Issues and verified history without an active-work tab", async () => {
     renderPage();
     const section = document.getElementById("character-builder")!;
     fireEvent.click(within(section).getByRole("tab", { name: /Issues/ }));
     expect(within(section).getByText("CB-ISSUE-001")).toBeInTheDocument();
     expect(within(section).getByText("CB-ISSUE-002")).toBeInTheDocument();
     expect(within(section).queryByText("SB-ISSUE-001")).not.toBeInTheDocument();
-    fireEvent.click(within(section).getByRole("tab", { name: "Current Work" }));
-    expect(within(section).getByText(/recorded for Character Builder/)).toBeInTheDocument();
+    expect(within(section).queryByRole("tab", { name: "Current Work" })).not.toBeInTheDocument();
     fireEvent.click(within(section).getByRole("tab", { name: "Changelog" }));
     expect(await within(section).findByText("4 records")).toBeInTheDocument();
     expect(within(section).getByText("Repair silent AI Enhance failures across Story/Character builder actions")).toBeInTheDocument();

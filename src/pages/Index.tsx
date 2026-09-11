@@ -28,7 +28,6 @@ import { useIndexShellBootstrap } from "@/hooks/use-index-shell-bootstrap";
 import * as supabaseData from "@/services/supabase-data";
 import { DeleteConfirmDialog } from "@/components/chronicle/DeleteConfirmDialog";
 
-import { getEditsCount } from "@/components/admin/styleguide/StyleGuideEditsModal";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { hasPublishErrors, validateForPublish } from "@/utils/publish-validation";
 import { StoryExportFormatModal } from "@/components/chronicle/StoryExportFormatModal";
@@ -160,12 +159,6 @@ const IndexContent = () => {
   const [isApiUsageToggleBusy, setIsApiUsageToggleBusy] = useState(false);
   const [apiUsageToggleError, setApiUsageToggleError] = useState<string | null>(null);
   const [navButtonImages, setNavButtonImages] = useState<Record<string, any>>({});
-  const [guideTheme, setGuideTheme] = useState<'dark' | 'light'>('dark');
-  const guideSaveRef = React.useRef<(() => Promise<void>) | null>(null);
-  const guideSyncAllRef = React.useRef<(() => Promise<void>) | null>(null);
-  const styleGuideDownloadRef = React.useRef<(() => void) | null>(null);
-  const styleGuideEditsRef = React.useRef<(() => void) | null>(null);
-  const [styleGuideEditsCount, setStyleGuideEditsCount] = useState(0);
   const adminBeforeLeaveRef = React.useRef<(() => Promise<boolean>) | null>(null);
   const rndAddMockupRef = React.useRef<(() => Promise<void>) | null>(null);
   const rndRepositorySaveRef = React.useRef<(() => Promise<void>) | null>(null);
@@ -214,7 +207,7 @@ const IndexContent = () => {
   );
   const imageLibraryUploadRef = React.useRef<(() => void) | null>(null);
   const storyTransferFileRef = React.useRef<HTMLInputElement | null>(null);
-  // Read URL query params for deep-linking (e.g. /?tab=admin&adminTool=app_guide)
+  // Read URL query params for deep-linking (e.g. /?tab=admin&adminTool=research_development)
   const [searchParams, setSearchParams] = useSearchParams();
   // Pagination state
   const SCENARIO_PAGE_SIZE = 50;
@@ -795,10 +788,6 @@ const IndexContent = () => {
     }
   };
 
-  const handleOpenStyleGuideEdits = () => {
-    styleGuideEditsRef.current?.();
-  };
-
   const handleSaveAccountProfile = () => {
     void accountProfileSaveRef.current?.();
   };
@@ -891,17 +880,10 @@ const IndexContent = () => {
             }}
             admin={{
               activeTool: adminActiveTool,
-              guideTheme,
-              styleGuideEditsCount,
               rndRepositorySaveState,
               rndRepositorySaveAvailable,
               rndAddMockupAvailable,
               onBackToHub: () => { void runAfterAdminWorkspaceSave(() => setAdminActiveTool("hub")); },
-              onToggleGuideTheme: () => setGuideTheme((prev) => (prev === "dark" ? "light" : "dark")),
-              onGuideSave: () => guideSaveRef.current?.(),
-              onGuideSyncAll: () => guideSyncAllRef.current?.(),
-              onOpenStyleGuideEdits: handleOpenStyleGuideEdits,
-              onDownloadStyleGuide: () => styleGuideDownloadRef.current?.(),
               onRndAddMockup: () => { void rndAddMockupRef.current?.(); },
               onRndRepositorySave: () => { void rndRepositorySaveRef.current?.(); },
             }}
@@ -1230,7 +1212,14 @@ const IndexContent = () => {
 
           {tab === "admin" && isAdminState && (
             <React.Suspense fallback={<LazyTabFallback className="bg-black" />}>
-              <AdminPage activeTool={adminActiveTool} onSetActiveTool={setAdminActiveTool} onRegisterGuideSave={(fn) => { guideSaveRef.current = fn; }} onRegisterGuideSyncAll={(fn) => { guideSyncAllRef.current = fn; }} onRegisterStyleGuideDownload={(fn) => { styleGuideDownloadRef.current = fn; }} onRegisterStyleGuideEdits={(fn) => { styleGuideEditsRef.current = fn; getEditsCount().then(c => setStyleGuideEditsCount(c)); }} onRegisterRndBeforeLeave={registerAdminBeforeLeave} onRegisterRndAddMockup={registerRndAddMockup} onRegisterRndRepositorySave={registerRndRepositorySave} onRndRepositorySaveStateChange={setRndRepositorySaveState} onStyleGuideEditsCountChange={(count) => setStyleGuideEditsCount(count)} guideTheme={guideTheme} />
+              <AdminPage
+                activeTool={adminActiveTool}
+                onSetActiveTool={setAdminActiveTool}
+                onRegisterRndBeforeLeave={registerAdminBeforeLeave}
+                onRegisterRndAddMockup={registerRndAddMockup}
+                onRegisterRndRepositorySave={registerRndRepositorySave}
+                onRndRepositorySaveStateChange={setRndRepositorySaveState}
+              />
             </React.Suspense>
           )}
 

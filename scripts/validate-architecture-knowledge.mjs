@@ -54,42 +54,6 @@ const expectedApplicationTabIds = [
   "shared-systems",
 ];
 
-const expectedWorkManualTabs = [
-  ["overview", "Overview", ["Overview"]],
-  ["start-here", "Start Here", ["1. Start Here"]],
-  [
-    "work-types",
-    "Work Types",
-    [
-      "2. Routine Local Work",
-      "3. Connected Feature Work",
-      "4. Multi-System Program Work",
-    ],
-  ],
-  [
-    "tests-tools-audits",
-    "Tests, Tools, and Audits",
-    [
-      "11. Checks, Delivery, and Reporting",
-      "10. Subagents, Research, and Independent Review",
-    ],
-  ],
-  [
-    "safeguards-systems",
-    "Safeguards and Systems",
-    [
-      "5. Expansion and Approval Rules",
-      "6. Risk Safeguards",
-      "9. Chronicle-Specific Systems",
-    ],
-  ],
-  [
-    "evidence-records-stopping",
-    "Evidence, Records, and Stopping",
-    ["7. Evidence and Human Review", "8. Records and Continuity"],
-  ],
-];
-
 const expectedCapabilities = [
   {
     id: "community-gallery",
@@ -179,12 +143,11 @@ const expectedGalleryTabs = [
   "UI Elements and Functions",
   "App Architecture",
   "Issues",
-  "Current Work",
   "Supabase Tables",
   "Changelog",
 ];
 
-const expectedSevenTabContract = [
+const expectedCapabilityTabContract = [
   {
     id: "overview",
     label: "Overview",
@@ -210,12 +173,6 @@ const expectedSevenTabContract = [
     heading: null,
   },
   {
-    id: "current-work",
-    label: "Current Work",
-    contentKind: "current-work-records",
-    heading: null,
-  },
-  {
     id: "supabase-tables",
     label: "Supabase Tables",
     contentKind: "shared-supabase",
@@ -228,25 +185,22 @@ const expectedSevenTabContract = [
     heading: null,
   },
 ];
-const expectedMyStoriesTabs = expectedSevenTabContract;
-const expectedCharacterLibraryTabs = expectedSevenTabContract;
-const expectedMyImagesTabs = expectedSevenTabContract;
-const expectedStoryBuilderTabs = expectedSevenTabContract;
-const expectedCharacterBuilderTabs = expectedSevenTabContract;
+const expectedMyStoriesTabs = expectedCapabilityTabContract;
+const expectedCharacterLibraryTabs = expectedCapabilityTabContract;
+const expectedMyImagesTabs = expectedCapabilityTabContract;
+const expectedStoryBuilderTabs = expectedCapabilityTabContract;
+const expectedCharacterBuilderTabs = expectedCapabilityTabContract;
 
 const allowedContentKinds = new Set([
   "blank",
   "issue-records",
-  "current-work-records",
   "changelog-records",
   "shared-records",
   "markdown-section",
-  "work-manual-chapter",
   "shared-supabase",
 ]);
 const operationalContentKinds = new Set([
   "issue-records",
-  "current-work-records",
   "changelog-records",
   "shared-records",
 ]);
@@ -288,13 +242,6 @@ function parseTopLevelHeadings(source) {
   );
 }
 
-function parseLevelTwoHeadings(source) {
-  return Array.from(
-    source.matchAll(/^## ([^\r\n]+)\r?$/gm),
-    (match) => match[1].trim(),
-  );
-}
-
 function getTopLevelSection(source, heading) {
   const matches = Array.from(source.matchAll(/^# ([^\r\n]+)\r?$/gm));
   const matchIndex = matches.findIndex((match) => match[1].trim() === heading);
@@ -307,7 +254,7 @@ function getTopLevelSection(source, heading) {
 }
 
 function collectManifestSections() {
-  return [manifest.applicationMap, manifest.workManual, ...manifest.capabilities, ...(manifest.adminTools ?? [])];
+  return [manifest.applicationMap, ...manifest.capabilities, ...(manifest.adminTools ?? [])];
 }
 
 function readKnowledgeDocument(documentName, owner) {
@@ -339,15 +286,6 @@ function checkTabMetadata(owner, tab) {
 
   if (tab.contentKind === "markdown-section" && !tab.heading) {
     addError(`${owner}/${tab.id}: markdown-section needs a heading`);
-  }
-
-
-  if (
-    tab.contentKind === "work-manual-chapter" &&
-    !tab.heading &&
-    !tab.headings?.length
-  ) {
-    addError(`${owner}/${tab.id}: work-manual-chapter needs headings`);
   }
 
   if (
@@ -409,23 +347,6 @@ if (!sameOrder(capabilityIds, expectedCapabilityIds)) {
   addError("Capability order does not match the registered Knowledge Base contract.");
 }
 
-
-if (
-  manifest.workManual?.id !== "chronicle-work-manual" ||
-  manifest.workManual?.label !== "Chronicle Work Manual" ||
-  manifest.workManual?.document !== "chronicle-work-manual.md"
-) {
-  addError("Work Manual must be registered as the canonical top-level Knowledge document.");
-} else {
-  const actualTabs = (manifest.workManual.tabs ?? []).map((tab) => [
-    tab.id,
-    tab.label,
-    tab.headings,
-  ]);
-  if (JSON.stringify(actualTabs) !== JSON.stringify(expectedWorkManualTabs)) {
-    addError("Work Manual chapters do not match the registered source order.");
-  }
-}
 for (const expected of expectedCapabilities) {
   const actual = manifest.capabilities?.find(
     (capability) => capability.id === expected.id,
@@ -450,8 +371,8 @@ for (const expected of expectedCapabilities) {
   if (
     JSON.stringify(actualTabContract) !==
     JSON.stringify(expected.id === "roleplay-pipeline"
-      ? expectedSevenTabContract.filter((tab) => tab.id !== "ui-elements-functions").map((tab) => tab.id === "supabase-tables" ? { ...tab, contentKind: "markdown-section", heading: "Supabase Tables" } : tab)
-      : expectedSevenTabContract)
+      ? expectedCapabilityTabContract.filter((tab) => tab.id !== "ui-elements-functions").map((tab) => tab.id === "supabase-tables" ? { ...tab, contentKind: "markdown-section", heading: "Supabase Tables" } : tab)
+      : expectedCapabilityTabContract)
   ) {
     addError(
       `${expected.id}: capability tabs must match its approved tab contract.`,
@@ -473,7 +394,7 @@ if (!gallery) {
     expectedGalleryTabs,
   )
 ) {
-  addError("Community Gallery tabs do not match the approved seven-tab order.");
+  addError("Community Gallery tabs do not match the approved six-tab order.");
 }
 
 const myStories = manifest.capabilities?.find(
@@ -490,7 +411,7 @@ if (!myStories) {
   }));
   if (JSON.stringify(actualTabContract) !== JSON.stringify(expectedMyStoriesTabs)) {
     addError(
-      "My Stories tabs must match the approved seven-tab capability contract.",
+      "My Stories tabs must match the approved six-tab capability contract.",
     );
   }
   if (myStories.document !== "my-stories.md") {
@@ -527,7 +448,7 @@ if (!characterLibrary) {
     JSON.stringify(expectedCharacterLibraryTabs)
   ) {
     addError(
-      "Character Library tabs must match the approved seven-tab capability contract.",
+      "Character Library tabs must match the approved six-tab capability contract.",
     );
   }
   if (characterLibrary.document !== "character-library.md") {
@@ -566,7 +487,7 @@ if (!myImages) {
     JSON.stringify(expectedMyImagesTabs)
   ) {
     addError(
-      "My Images tabs must match the approved seven-tab capability contract.",
+      "My Images tabs must match the approved six-tab capability contract.",
     );
   }
   if (myImages.document !== "my-images.md") {
@@ -603,7 +524,7 @@ if (!storyBuilder) {
     JSON.stringify(expectedStoryBuilderTabs)
   ) {
     addError(
-      "Story Builder tabs must match the approved seven-tab capability contract.",
+      "Story Builder tabs must match the approved six-tab capability contract.",
     );
   }
   if (storyBuilder.document !== "story-builder.md") {
@@ -640,7 +561,7 @@ if (!characterBuilder) {
     JSON.stringify(expectedCharacterBuilderTabs)
   ) {
     addError(
-      "Character Builder tabs must match the approved seven-tab capability contract.",
+      "Character Builder tabs must match the approved six-tab capability contract.",
     );
   }
   if (characterBuilder.document !== "character-builder.md") {
@@ -702,14 +623,9 @@ for (const capabilityId of operationalCapabilityIds) {
 
 checkUniqueIds("knowledge sections", collectManifestSections());
 checkUniqueIds("Chronicle Overview tabs", manifest.applicationMap.tabs ?? []);
-checkUniqueIds("Chronicle Work Manual chapters", manifest.workManual?.tabs ?? []);
 
 for (const tab of manifest.applicationMap.tabs ?? []) {
   checkTabMetadata(manifest.applicationMap.id, tab);
-}
-
-for (const tab of manifest.workManual?.tabs ?? []) {
-  checkTabMetadata(manifest.workManual.id, tab);
 }
 
 for (const section of [...(manifest.capabilities ?? []), ...(manifest.adminTools ?? [])]) {
@@ -718,16 +634,16 @@ for (const section of [...(manifest.capabilities ?? []), ...(manifest.adminTools
   for (const tab of tabs) checkTabMetadata(section.id, tab);
 }
 
-const expectedAdminTools = ["knowledge-base-system", "schema-reference", "quality-hub", "validation-evidence-ledger", "finance-dashboard", "research-development", "image-generation", "app-dashboard"];
+const expectedAdminTools = ["knowledge-base-system", "schema-reference", "quality-hub", "validation-evidence-ledger", "finance-dashboard", "research-development", "image-generation"];
 if (!sameOrder((manifest.adminTools ?? []).map((section) => section.id), expectedAdminTools)) {
   addError("Administrative tool manual order does not match the registered contract.");
 }
 for (const section of manifest.adminTools ?? []) {
   if (!['admin', 'knowledge-system'].includes(section.recordScope)) addError(`${section.id}: shared record scope must name an existing owner.`);
-  const expectedTabs = ['overview', 'ui-elements-and-functions', 'app-architecture', 'issues', 'current-work', 'supabase-tables', 'changelog'];
+  const expectedTabs = ['overview', 'ui-elements-and-functions', 'app-architecture', 'issues', 'supabase-tables', 'changelog'];
   if (!sameOrder(section.tabs.map((tab) => tab.id), expectedTabs)) addError(`${section.id}: administrative manual tabs are incomplete or reordered.`);
   for (const tab of section.tabs) {
-    const expectedKind = ['issues', 'current-work', 'changelog'].includes(tab.id) ? 'shared-records' : 'markdown-section';
+    const expectedKind = ['issues', 'changelog'].includes(tab.id) ? 'shared-records' : 'markdown-section';
     if (tab.contentKind !== expectedKind) addError(`${section.id}/${tab.id}: must use ${expectedKind} without creating a new record authority.`);
   }
 }
@@ -756,7 +672,6 @@ for (const section of collectManifestSections()) {
   const tabs = section.tabs ?? [];
   const source = section.document ? documents.get(section.document) ?? "" : "";
   const headings = new Set(parseTopLevelHeadings(source));
-  const levelTwoHeadings = new Set(parseLevelTwoHeadings(source));
 
   for (const tab of tabs) {
     if (tab.contentKind === "markdown-section" && !headings.has(tab.heading)) {
@@ -764,21 +679,10 @@ for (const section of collectManifestSections()) {
         `${section.id}/${tab.id}: document ${section.document} is missing top-level heading "${tab.heading}"`,
       );
     }
-    if (
-      tab.contentKind === "work-manual-chapter" &&
-      !(tab.headings ?? [tab.heading]).every((heading) =>
-        levelTwoHeadings.has(heading),
-      )
-    ) {
-      addError(
-        `${section.id}/${tab.id}: document ${section.document} is missing one or more registered level-two headings`,
-      );
-    }
   }
 }
 
 const overviewSource = documents.get("chronicle-overview.md") ?? "";
-const workManualSource = documents.get("chronicle-work-manual.md") ?? "";
 const gallerySource = documents.get("community-gallery.md") ?? "";
 const myStoriesSource = documents.get("my-stories.md") ?? "";
 const characterLibrarySource = documents.get("character-library.md") ?? "";
@@ -796,21 +700,6 @@ const supabaseSource = documents.get("supabase-tables.md") ?? "";
 
 if (overviewSource.length < 50_000) {
   addError("Chronicle Overview migration is unexpectedly short.");
-}
-if (workManualSource.length < 60_000) {
-  addError("Chronicle Work Manual is unexpectedly short.");
-}
-if (
-  !workManualSource.includes("manual_version: 0.2.3-provisional") ||
-  !workManualSource.includes("status: active-provisional") ||
-  !workManualSource.includes(
-    "canonical_path: docs/architecture-knowledge/chronicle-work-manual.md",
-  )
-) {
-  addError("Chronicle Work Manual active metadata is missing or stale.");
-}
-if (workManualSource.includes("Inactive Phase C draft")) {
-  addError("Chronicle Work Manual still presents itself as an inactive draft.");
 }
 if (!overviewSource.includes("Adult and NSFW Material Is First-Class Story Data")) {
   addError("Chronicle Overview is missing its adult-content product contract.");
@@ -903,9 +792,6 @@ if (
   !myStoriesArchitectureSource.includes("defaultContentThemes") ||
   !myStoriesArchitectureSource.includes("Chat History resume depends on the current source") ||
   !myStoriesArchitectureSource.includes("internally inconsistent") ||
-  !myStoriesArchitectureSource.includes(
-    "The Chronicle Work Manual governs any later task that needs a live comparison",
-  ) ||
   !myStoriesArchitectureSource.includes("src/hooks/use-index-scenario-persistence.ts") ||
   !myStoriesArchitectureSource.includes("Inspected-source count: **34 paths**") ||
   myStoriesArchitectureSource.includes("SOURCE_COMPOSITE_PENDING_FINAL_TEST_EDITS")
@@ -1963,8 +1849,6 @@ const registeredRoutes = new Set(
 
 for (const route of [
   "/style-guide/chronicle-knowledge-base",
-  "/style-guide/chronicle-knowledge-base/work-manual",
-  "/style-guide/chronicle-knowledge-base/work-manual/:chapterId",
   "/style-guide/supabase-schema-reference",
 ]) {
   if (!registeredRoutes.has(route)) addError(`Missing registered route ${route}`);
@@ -1983,17 +1867,6 @@ if (
   )
 ) {
   addError("Chronicle Knowledge Base route is not protected by AdminOnlyRoute.");
-}
-
-if (
-  !appSource.includes(
-    '<Route path="/style-guide/chronicle-knowledge-base/work-manual" element={<AdminOnlyRoute><ChronicleKnowledgeBasePage /></AdminOnlyRoute>} />',
-  ) ||
-  !appSource.includes(
-    '<Route path="/style-guide/chronicle-knowledge-base/work-manual/:chapterId" element={<AdminOnlyRoute><ChronicleKnowledgeBasePage /></AdminOnlyRoute>} />',
-  )
-) {
-  addError("Chronicle Work Manual routes are missing AdminOnlyRoute protection.");
 }
 
 if (
@@ -2022,19 +1895,6 @@ if (
   !manifestLoaderSource.includes("operationalRegistry.openIssueCount")
 ) {
   addError("Every operational capability Issue counter must derive from its isolated operational-record registry.");
-}
-
-if (
-  !manifestLoaderSource.includes("chronicle-work-manual.md?raw") ||
-  !manifestLoaderSource.includes("chronicleWorkManualSource") ||
-  !manifestLoaderSource.includes("chronicleWorkManualSection,") ||
-  !pageSource.includes('section.id === chronicleWorkManualSection.id') ||
-  !pageSource.includes("knowledge-work-manual-source") ||
-  !pageSource.includes("data-reviewed-chapters-sha256") ||
-  pageSource.includes("knowledge-work-manual-entry") ||
-  pageSource.includes("knowledge-work-manual-view")
-) {
-  addError("Chronicle Work Manual shared-section canonical-source delivery wiring is incomplete.");
 }
 
 if (!pageSource.includes("OperationalRecordContent")) {

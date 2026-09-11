@@ -20,28 +20,22 @@ import type {
 } from "./knowledge-records/transaction-store";
 
 const PREPARE_KINDS = new Set<KnowledgeRecordRequestKind>([
-  "project-create",
-  "project-update",
   "issue-create",
   "issue-update",
   "accepted-update",
   "legacy-import",
   "correction",
-  "closeout",
 ]);
 
 function usage() {
   return [
     "Usage:",
     "  npm run knowledge:records -- status",
-    "  npm run knowledge:records -- prepare project-create --request <request.json>",
-    "  npm run knowledge:records -- prepare project-update --request <request.json>",
     "  npm run knowledge:records -- prepare issue-create --request <request.json>",
     "  npm run knowledge:records -- prepare issue-update --request <request.json>",
     "  npm run knowledge:records -- prepare accepted-update --request <request.json>",
     "  npm run knowledge:records -- prepare legacy-import --request <request.json>",
     "  npm run knowledge:records -- prepare correction --request <request.json>",
-    "  npm run knowledge:records -- prepare closeout --request <request.json>",
     "  npm run knowledge:records -- apply --transaction <transaction-id>",
     "  npm run knowledge:records -- recover --transaction <transaction-id>",
   ].join("\n");

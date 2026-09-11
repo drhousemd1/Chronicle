@@ -1,0 +1,194 @@
+{
+  "rendering": "Source-derived fragments, not the full production ChatInterfaceTab. Real shared React components and production CSS are imported. Selected ChatInterfaceTab JSX is reproduced with fixed public sample data and local callbacks. Teaching views are explicitly reference-only compositions.",
+  "views": {
+    "overview": "Fixed 300px sidebar, two single-speaker formatted text bubbles, quick actions and empty composer",
+    "settings": "Selected source Chat Settings interface, AI behavior and time controls",
+    "colors": "Both source compact native-color/hex-input groups, color family labels and Reset",
+    "typing": "Actual TypingIndicatorBubble",
+    "empty": "Source transcript empty state",
+    "inline-edit": "Actual InlineFormattedMessageEditor inside source bubble; Cancel discards the local draft",
+    "media": "Source generated-scene media card presentation using a pre-existing local room image",
+    "new-direction": "Parent-owned ResponseDirectionExample, initially open",
+    "new-aids": "Parent-owned TranscriptAidsExample with a fixed local portrait"
+  },
+  "boundaries": [
+    {
+      "import": "@/lib/chat-spellcheck",
+      "replacement": "Only loadEnglishSpellDictionary returns null; remaining utility functions are re-exported from source",
+      "proofLimit": "Dictionary download, misspelling overlays and suggestions are unexercised; the real ChatSpellcheckTextarea appearance is retained."
+    }
+  ],
+  "interaction": "Only local message Edit/Cancel, composer draft and Send receipt, modal open/close, settings toggles/choices and color input/reset. Menu open/close is supplied by imported primitives. Other visible affordances, including message Save, Copy, Delete, Continue, Regenerate, Generate Image, character editing/repositioning, theme, day/time and sidebar-collapse actions, are static; no real operation is invoked. Settings and color drafts affect their specimen controls only, not live conversation preferences.",
+  "omissions": "No backend, authentication, LLM, storage, saved conversation, generation, deletion, clipboard, avatar positioning/expansion, sidebar-theme logic, timer, speaker resolution, streaming accumulation, memory/goal/admin/debug controls, full responsive acceptance or production integration. The source fragments preserve source semantic quirks; improved semantics belong to separately labeled teaching examples.",
+  "sourceQuirks": "Settings heading uses span, close button is icon-only without an accessible label, LabeledToggle accessible names derive from its own On/Off labels rather than adjacent row title, segmented choices do not expose selected state, hex text inputs have no explicit labels, message actions remain hover-revealed. These source constructions have not been silently repaired.",
+  "proof": "Parent inspected source-derived layout and controls, imported display components, both new examples and stated local interactions. Captures and identities do not establish complete runtime integration or complete-file reading.",
+  "sources": [
+    {
+      "path": "src/features/chat-runtime/message-formatting-utils.ts",
+      "role": "imported",
+      "sha256": "b561fc9192f5dbd481f8c3b04577de37b42714883db3a1922433067b1db38a33"
+    },
+    {
+      "path": "src/features/chat-runtime/message-formatting.tsx",
+      "role": "imported",
+      "sha256": "f262fc0e0306aa99b8f058c005f8eb1cad73e6c15ab70d1d4e9f27a14207f044"
+    },
+    {
+      "path": "src/components/chronicle/chat/TypingIndicatorBubble.tsx",
+      "role": "imported",
+      "sha256": "bf8ba1d39adad03edec58e37a61a1fe1d979452262e667df1b928e9da0209f7a"
+    },
+    {
+      "path": "src/lib/utils.ts",
+      "role": "imported",
+      "sha256": "d1f1e0d62cb8d8d1e04c26e14de842d8a151f75812d81b046c65b5d1fe8e4b27"
+    },
+    {
+      "path": "src/lib/chat-spellcheck.ts",
+      "role": "imported",
+      "sha256": "aa61a6ff43e70332873bb5da23c156252485f93787adf50ec8ab2b128ce597cc"
+    },
+    {
+      "path": "src/components/chronicle/ChatSpellcheckTextarea.tsx",
+      "role": "imported",
+      "sha256": "2acda5cfe2987e60103b48f0553715c5e675f7352dda8a3ec820d52fcf6ec52c"
+    },
+    {
+      "path": "src/components/ui/badge.tsx",
+      "role": "imported",
+      "sha256": "90cfff4921a406f0e612da091b3f8e3ba30e6cf44592c65a852a41a8e063d24f"
+    },
+    {
+      "path": "src/components/ui/dropdown-menu.tsx",
+      "role": "imported",
+      "sha256": "07914bdc1545c55771e5fcab89e633a722d9684ec1a5325fa38da61ee28369d2"
+    },
+    {
+      "path": "src/components/chronicle/SideCharacterCard.tsx",
+      "role": "imported",
+      "sha256": "f250341a5ef857d1d4cda406c364afa0456e45b352393283f5a3844068eb42a9"
+    },
+    {
+      "path": "src/components/chronicle/ScrollableSection.tsx",
+      "role": "imported",
+      "sha256": "5ad143d58ff12650faf611e3b60b7fc8ce6d3922c4d9bb51fdf7de17ff6352b6"
+    },
+    {
+      "path": "src/components/ui/labeled-toggle.tsx",
+      "role": "imported",
+      "sha256": "c44e06f420ca989a1aa2adcb645dada2dc6f62db3150c2089dec3cc00699243c"
+    },
+    {
+      "path": "src/components/ui/dialog.tsx",
+      "role": "imported",
+      "sha256": "566ee731ba666ee9e2de203e94414edef56edf8097d10fd749b62fcae28d6858"
+    },
+    {
+      "path": "src/components/ui/tooltip.tsx",
+      "role": "imported",
+      "sha256": "99f74ccdf63f008b07effc558ed407dac5543206618cbdf24fa072592042f053"
+    },
+    {
+      "path": "src/features/chat-runtime/avatar-position.ts",
+      "role": "imported",
+      "sha256": "6c90f90b70d68601f3fdc9a4886a440d80202fe5f4197cfca836587ea979d6b2"
+    },
+    {
+      "path": "src/features/chat-runtime/chat-colors.ts",
+      "role": "imported",
+      "sha256": "50d5e8dc510f7231326b711949089f5cc1d7ec26d367f8795b8941fa8e4b29a2"
+    },
+    {
+      "path": "src/components/chronicle/chronicle-dark-ui.ts",
+      "role": "imported",
+      "sha256": "90e29957776f20ccc1b340450a632379b7530b7c653c73c24955f2b65071fa3f"
+    },
+    {
+      "path": "src/types.ts",
+      "role": "imported",
+      "sha256": "c71f2a75a139ea55b1dd07b3e2f9c726a99744e2db0368eb8ed30eadf87c2f41"
+    },
+    {
+      "path": "src/components/chronicle/ChronicleDarkUi.tsx",
+      "role": "imported",
+      "sha256": "0b48621b21a6f637018b103dd62dfef8f34b15bd3e617dc773d0195632b3ca2b"
+    },
+    {
+      "path": "docs/ui-guide/examples/active-roleplay-compositions.tsx",
+      "role": "imported",
+      "sha256": "61b3ab1c29f4b776ef76f1f15322edaa6e0cd2d71ca460a56985be4ca1020b3c"
+    },
+    {
+      "path": "src/index.css",
+      "role": "compiled styling",
+      "sha256": "5e14e8cc75fd0e01b154dd1f59d9bb4f23b435558872a9b4467858932ff34e79"
+    },
+    {
+      "path": "tailwind.config.ts",
+      "role": "compiled styling",
+      "sha256": "ea133c9d352610179a54ad8fc7bdcfb88dee226a216f67615075d9581462871a"
+    },
+    {
+      "path": "src/components/chronicle/ChatInterfaceTab.tsx",
+      "role": "reproduced JSX owner; component is not imported",
+      "sha256": "bd097f1ba97f9c5ebbe031e7cd69adecd6620062a18da4bcd2c0517ab6969b72"
+    },
+    {
+      "path": "src/components/app-shell/AppShellTopBar.tsx",
+      "role": "bounded named-owner inspection; not mounted in fixture",
+      "sha256": "769b0bb231a29aecd95f07b74698c62651e7bd9390695066a6a989fef2be6b9d"
+    },
+    {
+      "path": "src/pages/Index.tsx",
+      "role": "bounded named-owner inspection; not mounted in fixture",
+      "sha256": "29879c50a1a6d7b88f2ba1ffe51c9cea4b7014a91e6b89bf5b580edc3149747e"
+    }
+  ],
+  "assets": [
+    {
+      "path": "public/rnd/sound-effects-visual-overlays/chat-reference-bedroom-clean.png",
+      "sha256": "490d1fb86a11736b305e21ddfb6c57d10aeff0728c93ad043ca762e3789e9fcd"
+    },
+    {
+      "path": "public/rnd/sound-effects-visual-overlays/aria-avatar.jpg",
+      "sha256": "35c0790448769300b128d984a1f7944b6386ead68707b9da81b6368914c7e3df"
+    },
+    {
+      "path": "public/images/time-backgrounds/night.png",
+      "sha256": "242d76dca9a1360aa3bbac9bac306917b1d52085390f4d50bf1c626d9f80d9f9"
+    }
+  ],
+  "fixtureSources": [
+    {
+      "path": "fixture.tsx",
+      "sha256": "7aa00cb48f929115a0e62348e839bfc8197790557093c0d7ebf86027147159ec"
+    },
+    {
+      "path": "source-specimens.tsx",
+      "sha256": "4cbc2418d74033f7222a7673ee7691bf4b9cee1f206cb56de0b62aad9af8199f"
+    },
+    {
+      "path": "fixture-data.ts",
+      "sha256": "dafdfd975674376e051861e359101bafb1acbb424228de2da63dea0e81dcd3c2"
+    },
+    {
+      "path": "build.mjs",
+      "sha256": "442c3d970c48711c0935b04641269b976b5923351aa357895fe3702874325f50"
+    }
+  ],
+  "capturedOn": "2026-09-10",
+  "assetManifest": "docs/ui-guide/active-roleplay.assets.json",
+  "captureNotes": [
+    "At1440px the sidebar measured300px. Read-only message text inherited16px/24px in this fixture. The main source screenshots preserve float-based speaker identity and gray quick actions with the distinct slate Send family.",
+    "Blank Send was disabled. Entering a local prompt enabled Send with fill rgb(90,114,146) and border rgb(95,124,167); activation cleared the field and produced a local receipt. No message was saved or generated.",
+    "The shared message menu opened. Edit mounted the real InlineFormattedMessageEditor; replacing text then Cancel restored the original. Save/Copy/Delete/Continue/Regenerate remain static and unexercised.",
+    "Source settings controls updated local checked states and exclusive choice colors. The interval select appeared with Automatic time mode. Escape dismissed the dialog. The source title/X/switch naming quirks remain unchanged.",
+    "Entering valid #25364a updated the color control immediately. Invalid hex reverted on blur. Reset restored both #1a1b20 defaults. No live preference was updated.",
+    "The actual TypingIndicatorBubble was visually inspected in a fixed waiting state with a named live status, not a generation request.",
+    "ResponseDirectionExample: Apply retained note/detail on reopening; subsequent changes followed by Cancel restored applied values. Escape completed and focus returned to the trigger. Desktop and390px appearance inspected; narrow shell358px with24px radius and no horizontal overflow.",
+    "TranscriptAidsExample: switches had descriptive names; click hid only the name, Space hid only day/time, Reset restored both. Avatar stayed visible. At390px this widget stacked without horizontal overflow.",
+    "The390px source workspace kept300px sidebar and approximately90px main area, visibly clipping/compressing the chat composer. The source settings326px grid had353px scroll width and clipped switch groups. These limitations are documented rather than presented as responsive acceptance.",
+    "Ten figure captures and two narrow example variants were captured from the locally rendered fixture. No backend, storage, dictionary download, generation, user media, saved preference, deletion or actual conversation integration was exercised.",
+    "All seven integrated guide panels fit at1440px and390px without horizontal panel overflow, jump links or broken figures. Narrow teaching images use directly captured responsive variants."
+  ]
+}

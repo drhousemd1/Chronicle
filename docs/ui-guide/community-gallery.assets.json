@@ -1,0 +1,98 @@
+[
+  {
+    "path": "../../src/assets/ui-guide/community-gallery/overview-narrow.png",
+    "width": 390,
+    "height": 999,
+    "sha256": "1bce0a6449cfe25b31df1834faa73b7d603776b7eae882a07c16d415136b1035"
+  },
+  {
+    "path": "../../src/assets/ui-guide/community-gallery/overview.png",
+    "width": 1440,
+    "height": 1000,
+    "sha256": "9cc45df97a8161b1a1691fc95f7e0d04b1d31a03cdf6273c9790ad3c15964658"
+  },
+  {
+    "path": "../../src/assets/ui-guide/community-gallery/card-hover.png",
+    "width": 343,
+    "height": 502,
+    "sha256": "dab1bf6b5c2b45a714008aab8292e1edefbd803432dedcf91dc71a2c3cda3c2c"
+  },
+  {
+    "path": "../../src/assets/ui-guide/community-gallery/search-filters.png",
+    "width": 1173,
+    "height": 194,
+    "sha256": "65564978dbd644e8654d7961cac5f9b3ad89866798f166863deeb00a8ef017d9"
+  },
+  {
+    "path": "../../src/assets/ui-guide/community-gallery/review-expanded.png",
+    "width": 705,
+    "height": 784,
+    "sha256": "dcdccd9762a598989b24d6de45fc61067d042075e962aae8d9cda3f3c03bd531"
+  },
+  {
+    "path": "../../src/assets/ui-guide/community-gallery/category-sidebar.png",
+    "width": 292,
+    "height": 949,
+    "sha256": "eff41f8183d8046de17537f82d7cf7cf99eb0acb70280ef2820db60636577fbc"
+  },
+  {
+    "path": "../../src/assets/ui-guide/community-gallery/masked-card.png",
+    "width": 349,
+    "height": 511,
+    "sha256": "fbece51e6622a7b4c45aec008cbc9a0263490304130772713743ae0f33f179f1"
+  },
+  {
+    "path": "../../src/assets/ui-guide/community-gallery/loading.png",
+    "width": 1418,
+    "height": 455,
+    "sha256": "18d2a9d46296247aff8dddca477c51ec6b151af2d16c1e1acd51d436521580d8"
+  },
+  {
+    "path": "../../src/assets/ui-guide/community-gallery/error.png",
+    "width": 1418,
+    "height": 326,
+    "sha256": "fc44445765fc846ef0a03fd1d4e02e930c383641e5ae497878dfdfe12d250a2b"
+  },
+  {
+    "path": "../../src/assets/ui-guide/community-gallery/empty.png",
+    "width": 1440,
+    "height": 844,
+    "sha256": "d0c432b6a620588385970836bf80021d7e376a604e7bd7af01941668761269cf"
+  },
+  {
+    "path": "../../src/assets/ui-guide/community-gallery/public-detail.png",
+    "width": 925,
+    "height": 724,
+    "sha256": "92c3fbbf867dc7b126799ad46e8668e180e16987ceb0582870b8a8ec1a75de63"
+  },
+  {
+    "path": "../../src/assets/ui-guide/community-gallery/review-card.png",
+    "width": 505,
+    "height": 126,
+    "sha256": "af4fd49b2ecfb4fdcb4a8548ec016bd8b449f317063ea9f2e58bad9434faa503"
+  },
+  {
+    "path": "../../src/assets/ui-guide/community-gallery/review-form.png",
+    "width": 705,
+    "height": 784,
+    "sha256": "b4aacdc507f3ad04fa1535a5844ed5ee66d0c1e39b3221628c3ec04934d53f2e"
+  },
+  {
+    "path": "../../src/assets/ui-guide/community-gallery/age-confirmation.png",
+    "width": 665,
+    "height": 294,
+    "sha256": "89e0fda735c05895edb0bed2402f4e26b0793a9d3cf608bdb688e330a9fcf708"
+  },
+  {
+    "path": "../../src/assets/ui-guide/community-gallery/new-private-rating.png",
+    "width": 705,
+    "height": 634,
+    "sha256": "407ad10aca695e15857d8b542ee636b4b76d40bd60aa50fdfe935dc0a112f9dd"
+  },
+  {
+    "path": "../../src/assets/ui-guide/community-gallery/new-discovery-focus.png",
+    "width": 617,
+    "height": 307,
+    "sha256": "45e86791ec16c3d3d79d3e79bd4b74356099df1de80502265ccf34b751e634cf"
+  }
+]

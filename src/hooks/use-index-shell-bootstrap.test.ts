@@ -4,7 +4,7 @@ import { resolveShellQueryTarget } from "@/hooks/use-index-shell-bootstrap";
 
 describe("resolveShellQueryTarget", () => {
   it("does not allow a non-admin query string to resolve the admin shell", () => {
-    expect(resolveShellQueryTarget("admin", "app_guide", { isAdmin: false })).toEqual({
+    expect(resolveShellQueryTarget("admin", "research_development", { isAdmin: false })).toEqual({
       adminTool: null,
       requiresAdmin: true,
       tab: "gallery",
@@ -12,8 +12,8 @@ describe("resolveShellQueryTarget", () => {
   });
 
   it("preserves admin tool deep links for confirmed admins", () => {
-    expect(resolveShellQueryTarget("admin", "app_guide", { isAdmin: true })).toEqual({
-      adminTool: "app_guide",
+    expect(resolveShellQueryTarget("admin", "research_development", { isAdmin: true })).toEqual({
+      adminTool: "research_development",
       requiresAdmin: true,
       tab: "admin",
     });

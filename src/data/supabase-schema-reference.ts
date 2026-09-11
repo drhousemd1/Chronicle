@@ -3927,7 +3927,7 @@ export const schemaReferenceObjects = [
     "kind": "table",
     "type": "table",
     "fieldLabel": "Column",
-    "purpose": "Admin-managed guide document records for in-app guide tooling.",
+    "purpose": "Legacy records from the retired App Guide. No current application UI reads or edits this table.",
     "rationale": "Admin-only access prevents normal users from editing shared guide content. Live RLS access: read Admin; write Admin; update Admin; delete Admin.",
     "rows": [
       {

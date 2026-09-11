@@ -66,12 +66,6 @@ const DIRECT_GUARDED_ENTRY_POINTS = [
     executable: process.execPath,
   },
   {
-    sourcePath: "scripts/validate-chronicle-work-manual.ts",
-    expectedCommand: "knowledge-work-manual-check",
-    firstProtectedWork: "fs.readFileSync(filePath",
-    executable: VITE_NODE,
-  },
-  {
     sourcePath: "scripts/run-quality-hub-scan.mjs",
     expectedCommand: "quality-scan",
     firstProtectedWork: "for (const check of checks)",
@@ -337,7 +331,6 @@ describe("knowledge transaction package-script guard", () => {
       "architecture:refresh",
       "knowledge:check",
       "knowledge:operational:check",
-      "knowledge:work-manual:check",
       "quality:scan",
       "test",
       "test:watch",

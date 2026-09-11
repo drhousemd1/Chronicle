@@ -475,32 +475,6 @@ describe("canonical source inventory", () => {
 });
 
 describe("strict knowledge record requests", () => {
-  it("normalizes one valid protected project create", async () => {
-    const projectId = "CG-WORK-002";
-    const target = canonicalRecordSourcePath("active-current-work", projectId);
-    const { requestPath } = await makeRequestPackage(
-      {
-        version: 1,
-        kind: "project-create",
-        as_of: "2026-08-01",
-        project_id: projectId,
-        content_file: `content/${projectId}.md`,
-      },
-      { [`${projectId}.md`]: currentWorkContent(projectId, target) },
-    );
-
-    const parsed = await parseKnowledgeRecordRequest(requestPath);
-    expect(parsed.kind).toBe("project-create");
-    expect(parsed.operations).toHaveLength(1);
-    expect(parsed.operations[0]).toMatchObject({
-      order: 0,
-      action: "create",
-      location: "active-current-work",
-      recordId: projectId,
-      targetSourcePath: target,
-      expectedState: "absent",
-    });
-  });
 
   it("normalizes a supplied Accepted Update ID and rejects unregistered ownership", async () => {
     const changeId = "CG-UPDATE-001";
@@ -577,127 +551,23 @@ describe("strict knowledge record requests", () => {
     ).rejects.toThrow("must identify a registered Accepted Update ID");
   });
 
-  it("normalizes an explicitly identified Knowledge System project without allocating an ID", async () => {
-    const projectId = "KS-WORK-001";
-    const target = canonicalRecordSourcePath("active-current-work", projectId);
-    const valid = await makeRequestPackage(
-      {
-        version: 1,
-        kind: "project-create",
-        as_of: "2026-08-19",
-        project_id: projectId,
-        content_file: `content/${projectId}.md`,
-      },
-      { [`${projectId}.md`]: currentWorkContent(projectId, target) },
-    );
-    const parsed = await parseKnowledgeRecordRequest(valid.requestPath);
-    expect(parsed.operations[0]).toMatchObject({
-      recordId: projectId,
-      targetSourcePath: target,
-    });
-
-    const missingId = await makeRequestPackage(
-      {
-        version: 1,
-        kind: "project-create",
-        as_of: "2026-08-19",
-        content_file: `content/${projectId}.md`,
-      },
-      { [`${projectId}.md`]: currentWorkContent(projectId, target) },
-    );
-    await expect(parseKnowledgeRecordRequest(missingId.requestPath)).rejects.toThrow(
-      /project_id/,
-    );
-
-    const fabricatedPrefix = await makeRequestPackage(
-      {
-        version: 1,
-        kind: "project-create",
-        as_of: "2026-08-19",
-        project_id: "XY-WORK-001",
-        content_file: "content/XY-WORK-001.md",
-      },
-      {
-        "XY-WORK-001.md": currentWorkContent(
-          "XY-WORK-001",
-          "docs/current-work/active/knowledge-system/XY-WORK-001.md",
-        ),
-      },
-    );
-    await expect(
-      parseKnowledgeRecordRequest(fabricatedPrefix.requestPath),
-    ).rejects.toThrow(/approved operational project/);
-  });
-
-  it("rejects project-create destination overrides and identity mismatches", async () => {
-    const projectId = "CG-WORK-002";
-    const target = canonicalRecordSourcePath("active-current-work", projectId);
-    const withDestinationOverride = await makeRequestPackage(
-      {
-        version: 1,
-        kind: "project-create",
-        as_of: "2026-08-01",
-        project_id: projectId,
-        content_file: `content/${projectId}.md`,
-        target_path: "docs/current-work/active/community-gallery/arbitrary.md",
-      },
-      { [`${projectId}.md`]: currentWorkContent(projectId, target) },
-    );
-    await expect(
-      parseKnowledgeRecordRequest(withDestinationOverride.requestPath),
-    ).rejects.toThrow(/target_path/);
-
-    const mismatchedFilename = await makeRequestPackage(
-      {
-        version: 1,
-        kind: "project-create",
-        as_of: "2026-08-01",
-        project_id: projectId,
-        content_file: "content/CG-WORK-003.md",
-      },
-      { "CG-WORK-003.md": currentWorkContent(projectId, target) },
-    );
-    await expect(
-      parseKnowledgeRecordRequest(mismatchedFilename.requestPath),
-    ).rejects.toThrow(/Content filename must match record ID/);
-
-    const mismatchedFrontmatter = await makeRequestPackage(
-      {
-        version: 1,
-        kind: "project-create",
-        as_of: "2026-08-01",
-        project_id: projectId,
-        content_file: `content/${projectId}.md`,
-      },
-      {
-        [`${projectId}.md`]: currentWorkContent(
-          "CG-WORK-003",
-          target,
-        ),
-      },
-    );
-    await expect(
-      parseKnowledgeRecordRequest(mismatchedFrontmatter.requestPath),
-    ).rejects.toThrow(/mismatched project_id/);
-  });
-
-  it("normalizes one valid project update", async () => {
-    const projectId = "CG-WORK-001";
-    const target = canonicalRecordSourcePath("active-current-work", projectId);
+  it("normalizes one valid Issue update", async () => {
+    const issueId = "CG-ISSUE-001";
+    const target = canonicalRecordSourcePath("issue", issueId);
     const expectedSourceSha256 = "a".repeat(64);
     const { requestPath } = await makeRequestPackage(
       {
         version: 1,
-        kind: "project-update",
+        kind: "issue-update",
         as_of: "2026-08-01",
-        project_id: projectId,
+        issue_id: issueId,
         expected_source_sha256: expectedSourceSha256,
-        content_file: `content/${projectId}.md`,
+        content_file: `content/${issueId}.md`,
       },
-      { [`${projectId}.md`]: currentWorkContent(projectId, target) },
+      { [`${issueId}.md`]: issueContent(issueId, target) },
     );
     const parsed = await parseKnowledgeRecordRequest(requestPath);
-    expect(parsed.kind).toBe("project-update");
+    expect(parsed.kind).toBe("issue-update");
     expect(parsed.requestByteSize).toBe((await readFile(requestPath)).length);
     expect(parsed.requestSha256).toBe(
       createHash("sha256").update(await readFile(requestPath)).digest("hex"),
@@ -751,7 +621,6 @@ describe("strict knowledge record requests", () => {
   });
 
   it.each([
-    { kind: "project-update", idField: "project_id", id: "CG-WORK-001" },
     { kind: "issue-update", idField: "issue_id", id: "CG-ISSUE-001" },
   ])(
     "rejects $kind without the editor-read source hash",
@@ -782,18 +651,18 @@ describe("strict knowledge record requests", () => {
   );
 
   it("rejects a malformed editor-read source hash", async () => {
-    const projectId = "CG-WORK-001";
-    const target = canonicalRecordSourcePath("active-current-work", projectId);
+    const issueId = "CG-ISSUE-001";
+    const target = canonicalRecordSourcePath("issue", issueId);
     const { requestPath } = await makeRequestPackage(
       {
         version: 1,
-        kind: "project-update",
+        kind: "issue-update",
         as_of: "2026-08-01",
-        project_id: projectId,
+        issue_id: issueId,
         expected_source_sha256: "not-a-sha256",
-        content_file: `content/${projectId}.md`,
+        content_file: `content/${issueId}.md`,
       },
-      { [`${projectId}.md`]: currentWorkContent(projectId, target) },
+      { [`${issueId}.md`]: issueContent(issueId, target) },
     );
 
     await expect(parseKnowledgeRecordRequest(requestPath)).rejects.toThrow(
@@ -979,110 +848,6 @@ describe("strict knowledge record requests", () => {
     expect(parsed.operations[0]).toMatchObject({
       action: "create",
       recordId: changeId,
-    });
-  });
-
-  it("emits closeout in engine-controlled create, create, remove order", async () => {
-    const projectId = "CG-WORK-001";
-    const changeId = "CG-CHANGE-001";
-    const archivePath = canonicalRecordSourcePath("archived-current-work", projectId);
-    const changePath = canonicalRecordSourcePath("changelog", changeId);
-    const { requestPath } = await makeRequestPackage(
-      {
-        version: 1,
-        kind: "closeout",
-        as_of: "2026-08-01",
-        project_id: projectId,
-        change_id: changeId,
-        expected_project_sha256: "c".repeat(64),
-        archive_content_file: `content/${projectId}.md`,
-        changelog_content_file: `content/${changeId}.md`,
-      },
-      {
-        [`${projectId}.md`]: currentWorkContent(projectId, archivePath),
-        [`${changeId}.md`]: changelogContent(
-          "accepted_closeout",
-          changeId,
-          changePath,
-          [
-            ["archived_project_id", projectId],
-            ["archive_record", archivePath],
-          ],
-        ),
-      },
-    );
-    const parsed = await parseKnowledgeRecordRequest(requestPath);
-    expect(parsed.operations.map((operation) => ({
-      order: operation.order,
-      action: operation.action,
-      targetSourcePath: operation.targetSourcePath,
-      ...(operation.action === "remove"
-        ? { expectedSourceSha256: operation.expectedSourceSha256 }
-        : {}),
-    }))).toEqual([
-      { order: 0, action: "create", targetSourcePath: archivePath },
-      { order: 1, action: "create", targetSourcePath: changePath },
-      {
-        order: 2,
-        action: "remove",
-        targetSourcePath: canonicalRecordSourcePath("active-current-work", projectId),
-        expectedSourceSha256: "c".repeat(64),
-      },
-    ]);
-  });
-
-  it("carries editor-read hashes for closeout Issue updates and project removal", async () => {
-    const projectId = "CG-WORK-001";
-    const issueId = "CG-ISSUE-001";
-    const changeId = "CG-CHANGE-001";
-    const archivePath = canonicalRecordSourcePath("archived-current-work", projectId);
-    const issuePath = canonicalRecordSourcePath("issue", issueId);
-    const changePath = canonicalRecordSourcePath("changelog", changeId);
-    const issueHash = "d".repeat(64);
-    const projectHash = "e".repeat(64);
-    const { requestPath } = await makeRequestPackage(
-      {
-        version: 1,
-        kind: "closeout",
-        as_of: "2026-08-01",
-        project_id: projectId,
-        change_id: changeId,
-        expected_project_sha256: projectHash,
-        archive_content_file: `content/${projectId}.md`,
-        changelog_content_file: `content/${changeId}.md`,
-        issue_updates: [
-          {
-            issue_id: issueId,
-            expected_source_sha256: issueHash,
-            content_file: `content/${issueId}.md`,
-          },
-        ],
-      },
-      {
-        [`${issueId}.md`]: issueContent(issueId, issuePath),
-        [`${projectId}.md`]: currentWorkContent(projectId, archivePath),
-        [`${changeId}.md`]: changelogContent(
-          "accepted_closeout",
-          changeId,
-          changePath,
-          [
-            ["archived_project_id", projectId],
-            ["archive_record", archivePath],
-          ],
-        ),
-      },
-    );
-
-    const parsed = await parseKnowledgeRecordRequest(requestPath);
-    expect(parsed.operations[0]).toMatchObject({
-      action: "update",
-      recordId: issueId,
-      expectedSourceSha256: issueHash,
-    });
-    expect(parsed.operations.at(-1)).toMatchObject({
-      action: "remove",
-      recordId: projectId,
-      expectedSourceSha256: projectHash,
     });
   });
 

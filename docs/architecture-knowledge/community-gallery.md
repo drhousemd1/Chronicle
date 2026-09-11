@@ -398,7 +398,7 @@ The same rule applies inside Story Detail. Character and review failures must no
 
 This tab explains how the Community Gallery is currently assembled in Chronicle’s source code. It identifies the delivered route, the components that own each part of the interface, the state passed between them, the service calls and persistence involved, and the point where another Chronicle capability takes responsibility.
 
-The Overview and UI Elements and Functions tabs define the approved user experience. This tab does not silently promote whatever the current code happens to do into required behavior. When the current implementation differs from that approved experience, the implementation is described here as a source fact. This manual does not itself create an Issue or Current Work project; the Chronicle Work Manual owns those separate record triggers.
+The Overview and UI Elements and Functions tabs define the approved user experience. This tab does not silently promote whatever the current code happens to do into required behavior. When the current implementation differs from that approved experience, the implementation is described here as a source fact. Documenting that fact does not itself authorize a code change or automatically create an Issue.
 
 ### Curated Scope
 
@@ -439,7 +439,7 @@ This boundary matters because displaying a control, holding browser state, reque
 | Story session creation after Play | `use-index-scenario-lifecycle.ts` | Loading the source story, creating a conversation, and switching to Chat Interface |
 | Saved-story lifecycle after Save | My Stories and the root scenario lifecycle | Showing the relationship, opening the source, and creating an editable copy when requested |
 
-The deployed Supabase tables, functions, policies, and triggers—not `gallery-data.ts`—are the intended durable authority for accepted Gallery data. The repository proves what the client requests. The accessible Supabase reference documents the last synchronized backend account; an absent or consequential live definition remains unverified here. The Chronicle Work Manual's live-system safeguard governs any task that depends on that fact.
+The deployed Supabase tables, functions, policies, and triggers—not `gallery-data.ts`—are the intended durable authority for accepted Gallery data. The repository proves what the client requests. The accessible Supabase reference documents the last synchronized backend account; an absent or consequential live definition remains unverified here.
 
 ### Dormant Standalone Page
 
@@ -514,9 +514,9 @@ The frontend expects each `PublishedScenario` result to include:
 
 Two identifiers in this result serve different objects. `publishedScenario.id` is the public publication ID used by Likes, Saves, event counts, reviews, and remix lineage. `publishedScenario.scenario_id` is the source story ID used to load the underlying story for Play, publication changes, and later copying. Every interaction below names the identifier it passes because substituting one for the other can write against the wrong record or fail to load the story.
 
-Hashtag search sends parsed tags as the RPC parameter `p_search_tags`. The older generated snapshot in `src/data/supabase-schema-map.ts` contains a stored `fetch_gallery_scenarios` definition that compares those values with `published_scenarios.tags`. The accessible Supabase reference documents the tags column but does not include that RPC body. The generated snapshot is non-live historical evidence, so the exact deployed comparison remains unverified here; the Chronicle Work Manual governs whether a later task requires a live comparison.
+Hashtag search sends parsed tags as the RPC parameter `p_search_tags`. The older generated snapshot in `src/data/supabase-schema-map.ts` contains a stored `fetch_gallery_scenarios` definition that compares those values with `published_scenarios.tags`. The accessible Supabase reference documents the tags column but does not include that RPC body. The generated snapshot is non-live historical evidence, so the exact deployed comparison remains unverified here.
 
-The exact live RPC definition is not available to Codex because the production Supabase project is controlled through Lovable. The accessible Supabase Schema Reference records the last synchronized account of documented tables and access rules. Any conclusion that depends on the current RPC body, deployed function permissions, trigger definitions, or undocumented database behavior remains unverified here; the Chronicle Work Manual governs whether the task requires a live comparison or reference update.
+The exact live RPC definition is not available to Codex because the production Supabase project is controlled through Lovable. The accessible Supabase Schema Reference records the last synchronized account of documented tables and access rules. Any conclusion that depends on the current RPC body, deployed function permissions, trigger definitions, or undocumented database behavior remains unverified here.
 
 ### React Query Cache and Automatic Paging
 
@@ -677,7 +677,7 @@ Submit, delete, first-page, and later-page failures are written to the developer
 
 The current client permits a review when either a Story rating or Spice rating exists, sends absent detailed fields as `null`, and writes `raw_weighted_score` from the Story rating. The accessible Supabase reference describes that score as server-computed, while the generated client types in `src/integrations/supabase/types.ts` and the older `src/data/supabase-schema-map.ts` snapshot describe several rating fields as required that the current form treats as optional.
 
-This is a source conflict, not proof of the live table definition. Codex cannot inspect the Lovable-controlled live Supabase project. Nullability, defaults, validation triggers, aggregate triggers, the conflict key, public identity masking, and current access policies therefore remain unverified live facts. The Chronicle Work Manual governs work whose conclusion depends on resolving them.
+This is a source conflict, not proof of the live table definition. Codex cannot inspect the Lovable-controlled live Supabase project. Nullability, defaults, validation triggers, aggregate triggers, the conflict key, public identity masking, and current access policies therefore remain unverified live facts.
 
 ## Publication, Removal, and Editable Copies
 
@@ -735,7 +735,7 @@ When explicit material is hidden, Gallery still keeps NSFW publications in the r
 | Selected Chronicle workspace | `Index.tsx` React state | None | Session-local only; `Index.tsx` decides which workspace is rendered |
 | Selected Gallery feed | `Index.tsx` React state | `AppShellTopBar.tsx` calls the supplied setter | Session-local only; the new state changes the Gallery request description |
 | Search and category filters | `GalleryHub.tsx` React state | `GalleryHub.tsx` builds parameters for `gallery-data.ts` | Session-local only; the local values determine the next request |
-| Publication pages | React Query cache in `GalleryHub.tsx` | `fetchGalleryScenarios()` | The accepted sanitized RPC result is expected to win on refetch; its live definition remains unverified here, and the Chronicle Work Manual governs whether a later task requires a live comparison |
+| Publication pages | React Query cache in `GalleryHub.tsx` | `fetchGalleryScenarios()` | The accepted sanitized RPC result is expected to win on refetch; its live definition remains unverified here |
 | Selected publication and modal state | `GalleryHub.tsx` React state | None | Session-local only; a matching cached publication refreshes modal props |
 | Signed-in user | `useAuth()` | Supabase authentication client | The Supabase authentication session is authoritative for protected client handlers |
 | Like relationship | Interaction cache in `GalleryHub.tsx` | `getUserInteractions()` and `toggleLike()` | The accepted `scenario_likes` row and deployed policy are intended to win; the current client can display apparent success after an uninspected error |
@@ -748,7 +748,7 @@ When explicit material is hidden, Gallery still keeps NSFW publications in the r
 | New play session | Root conversation state | Conversation persistence service | Accepted `conversations` and `messages` rows are intended to survive reload; Chat Interface can open before the initial save finishes |
 | NSFW visibility and age acknowledgement | `useGalleryNsfwAccess()` | Browser storage calls | Browser `localStorage` is authoritative only for that browser’s presentation; it is not account or age authority |
 
-The separate Supabase Tables tab supplies the synchronized reference and handoff mechanics. The Chronicle Work Manual decides when either is required. Table and function names in this map identify current repository dependencies and expected durable owners; they do not claim that Codex inspected the live database or that every deployed rule matches the synchronized reference.
+The separate Supabase Tables tab supplies the synchronized reference and handoff mechanics. Table and function names in this map identify current repository dependencies and expected durable owners; they do not claim that Codex inspected the live database or that every deployed rule matches the synchronized reference.
 
 ## Responsibility and Handoff Map
 
@@ -854,7 +854,7 @@ A passing typecheck, build, or Knowledge Base content test proves that the docum
 
 ### Evidence Boundary of This Review
 
-Source inspection established the current owners and implemented branches described above. The named focused unit and component checks established only their deterministic client assertions. The browser inspection established only the exercised visible states. This review did not establish the complete durable handoffs, inaccessible live backend definitions, or human acceptance. The Chronicle Work Manual governs the evidence selected for later work; no diagnostic log, source comment, generated type, older schema snapshot, or documentation statement is itself backend enforcement.
+Source inspection established the current owners and implemented branches described above. The named focused unit and component checks established only their deterministic client assertions. The browser inspection established only the exercised visible states. This review did not establish the complete durable handoffs, inaccessible live backend definitions, or human acceptance. No diagnostic log, source comment, generated type, older schema snapshot, or documentation statement is itself backend enforcement.
 
 ## Review Metadata
 
@@ -909,4 +909,4 @@ src/utils/publish-validation.test.ts
 
 ### Verification Limit
 
-This review did not establish live Supabase RPC bodies, triggers, constraints, indexes, edge-function behavior, or access policies beyond what the accessible reference documents. The Supabase Tables tab provides reference and handoff mechanics; the Chronicle Work Manual governs whether later work uses them.
+This review did not establish live Supabase RPC bodies, triggers, constraints, indexes, edge-function behavior, or access policies beyond what the accessible reference documents. The Supabase Tables tab provides reference and handoff mechanics.

@@ -1,0 +1,145 @@
+{
+  "rendering": "Imports actual untransformed AdminPage (src/pages/Admin.tsx), AdminToolEditModal and AppShellTopBar. Embedded tool bodies are not imported. Only fixture framing, local destination receipts and callback ownership are composed outside the source components.",
+  "views": {
+    "hub": "Source Admin grid/default metadata with local thumbnail URL override",
+    "editor": "Separate actual AdminToolEditModal initially open; local callback success closes it",
+    "editor-save-error": "Same initial-open editor; clicking Save Tile rejects the local onSave callback and renders source error state",
+    "header": "Source App Dashboard header (Edits count/Download) with embedded body receipt",
+    "new-note": "Parent-owned OperatorNoteExample initially open",
+    "new-preview": "Parent-owned DisplayPreviewExample"
+  },
+  "examplesAvailable": true,
+  "boundaries": [
+    "@/integrations/supabase/client",
+    "@/components/chronicle/ModelSettingsTab",
+    "@/components/admin/ImageGenerationTool",
+    "@/components/admin/guide/AppGuideTool",
+    "@/components/admin/styleguide/StyleGuideTool",
+    "@/components/admin/finance/FinanceDashboardTool",
+    "@/components/admin/research-development/ResearchDevelopmentTool"
+  ],
+  "data": "AdminPage supplies its own default tool names, descriptions and IDs. Stub app_settings read overrides only Image Generation thumbnail URL so the same repository image resolves from the workspace fixture server. Editor sample uses that source-default tile metadata. Fixed admin@example.invalid identity is used only for the isolated upload flow.",
+  "mutations": "Admin metadata update/insert return local success receipts without storage. Hub editor uses the actual optimistic-update/onSave path against these stubs. Separate editor-save-error deliberately rejects onSave with an Error; it does not mutate the hub. Auth getUser returns fixed sample data. Storage upload returns an explicit local Error; no upload or public URL service is called.",
+  "destinations": "All six embedded tool module boundaries render named local receipts. All standalone navigate calls remain in MemoryRouter and resolve to named local destination receipts. Source target routes are displayed but their page bodies are not loaded.",
+  "allowedInteractions": "Source tile hover/Edit/Open and outer click, actual editor text/description/remove/Cancel/Close/Save flows, local error recovery, source header Back and action callback receipts. Upload may open a local file chooser but remote upload is blocked. Teaching examples only use local state.",
+  "limitations": "No admin route authorization, actual app_settings persistence or fallback-insert integration, real file upload, tool contents, finance/models/guide/R&D operations, standalone destination pages or production service checks. Source hover actions and clickable tile div semantics remain unchanged. The source editor keeps its narrow-screen stacking and lacks a viewport max-height/scroll treatment; the fixture does not repair short-height overflow. Default thumbnail path may request before the local metadata override resolves; stable rendered thumbnail uses the existing repository asset.",
+  "proof": "Parent visually inspected the actual imported launcher/editor and both existing reference compositions. Independent source/content review found no material styling mismatch. Captures use fixed local data; they do not establish live admin operations.",
+  "sources": [
+    {
+      "path": "src/lib/utils.ts",
+      "role": "imported",
+      "sha256": "d1f1e0d62cb8d8d1e04c26e14de842d8a151f75812d81b046c65b5d1fe8e4b27"
+    },
+    {
+      "path": "src/components/ui/dialog.tsx",
+      "role": "imported",
+      "sha256": "566ee731ba666ee9e2de203e94414edef56edf8097d10fd749b62fcae28d6858"
+    },
+    {
+      "path": "src/components/admin/AdminToolEditModal.tsx",
+      "role": "imported",
+      "sha256": "89c7ddb81ebda438b6b5ae3a845c254bad6055da85e9421bba0021e92c9bf71f"
+    },
+    {
+      "path": "src/pages/Admin.tsx",
+      "role": "imported",
+      "sha256": "57975ab262cbc3d0eeb16fcf3a954a520d486c3461a8dc9f4f6c9ee530db7054"
+    },
+    {
+      "path": "src/components/ui/labeled-toggle.tsx",
+      "role": "imported",
+      "sha256": "c44e06f420ca989a1aa2adcb645dada2dc6f62db3150c2089dec3cc00699243c"
+    },
+    {
+      "path": "src/components/chronicle/GalleryNsfwToggle.tsx",
+      "role": "imported",
+      "sha256": "32a0c0c2369f595d94338e0bcc303e0783ddedec8aa057c08e964f68dfc0419c"
+    },
+    {
+      "path": "src/components/chronicle/chronicle-dark-ui.ts",
+      "role": "imported",
+      "sha256": "90e29957776f20ccc1b340450a632379b7530b7c653c73c24955f2b65071fa3f"
+    },
+    {
+      "path": "src/components/chronicle/ChronicleDarkUi.tsx",
+      "role": "imported",
+      "sha256": "0b48621b21a6f637018b103dd62dfef8f34b15bd3e617dc773d0195632b3ca2b"
+    },
+    {
+      "path": "src/components/app-shell/AppShellHeader.tsx",
+      "role": "imported",
+      "sha256": "ec5bb8b67e976f81f9510e21398e81db7c30500cd14eeb9c748f987d19e2affe"
+    },
+    {
+      "path": "src/components/ui/dropdown-menu.tsx",
+      "role": "imported",
+      "sha256": "07914bdc1545c55771e5fcab89e633a722d9684ec1a5325fa38da61ee28369d2"
+    },
+    {
+      "path": "src/components/ui/tooltip.tsx",
+      "role": "imported",
+      "sha256": "99f74ccdf63f008b07effc558ed407dac5543206618cbdf24fa072592042f053"
+    },
+    {
+      "path": "src/components/app-shell/AppShellTopBar.tsx",
+      "role": "imported",
+      "sha256": "769b0bb231a29aecd95f07b74698c62651e7bd9390695066a6a989fef2be6b9d"
+    },
+    {
+      "path": "docs/ui-guide/examples/admin-panel-compositions.tsx",
+      "role": "imported",
+      "sha256": "7bf6132aa58629c803b6045145a52b8aec8cdd9f096e20c9d407e01c6525ea85"
+    },
+    {
+      "path": "src/index.css",
+      "role": "compiled styling",
+      "sha256": "5e14e8cc75fd0e01b154dd1f59d9bb4f23b435558872a9b4467858932ff34e79"
+    },
+    {
+      "path": "tailwind.config.ts",
+      "role": "compiled styling",
+      "sha256": "ea133c9d352610179a54ad8fc7bdcfb88dee226a216f67615075d9581462871a"
+    }
+  ],
+  "fixtureSources": [
+    {
+      "path": "fixture.tsx",
+      "sha256": "76d82ede55c896f70c4b4dda3ee320eed733ab71f4cd56a7313c03cd1c2bfc1f"
+    },
+    {
+      "path": "fixture-data.ts",
+      "sha256": "1e47c232d4579e07f8a702420aa98a5e78cfc4bc12ba0fc769beaefc961355de"
+    },
+    {
+      "path": "build.mjs",
+      "sha256": "f9b5ec85e44099e4c10eb944165071e6ee7af1bc9c19edf2eebf7e190db890db"
+    }
+  ],
+  "assets": [
+    {
+      "path": "public/images/styles/cinematic-2-5d.png",
+      "sha256": "6555ea99e4f69cb4aa6db52c1cf5c4ae4ef47ade660f80460a3ee0b1f49e7be9"
+    }
+  ],
+  "capturedOn": "2026-09-10",
+  "assetManifest": "docs/ui-guide/admin-panel.assets.json",
+  "captureNotes": [
+    "Four figures and two narrow composition variants. The source hub image shows its header, complete first tile row and partial next row, not every tool.",
+    "Source editor preserves its original shell/header/tray and field styling. At390x700 its stacked artwork/form/error content was approximately1198px tall and clipped. The new note example omits artwork and adds its own height limit; it fit that viewport.",
+    "The immediate preview stacks at390px with no horizontal page overflow. Its poster deliberately retains truncated title and two-line description. Earlier local interaction checks were performed, but are not a continuing requirement for maintaining this style reference."
+  ],
+  "overviewReplacement": {
+    "reason": "Removed retired App Dashboard from the reference illustration.",
+    "capture": "Current local application, first two Admin tiles and header; application sidebar excluded.",
+    "clip": {
+      "height": 578,
+      "width": 710,
+      "x": 72,
+      "y": 0
+    },
+    "viewport": {
+      "height": 952,
+      "width": 782
+    }
+  }
+}

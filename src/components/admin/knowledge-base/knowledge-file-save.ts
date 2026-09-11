@@ -29,13 +29,13 @@ export function knowledgeFileDetails(format: KnowledgeExportFormat, now: Date) {
 
 // Must run directly inside the user's click, before lazy imports or document
 // generation consume the browser's transient user activation.
-export function requestKnowledgeSaveFile(format: KnowledgeExportFormat, now: Date) {
+export function requestKnowledgeSaveFile(format: KnowledgeExportFormat, now: Date, destination?: { name: string; id: string }) {
   const browser = window as SavePickerWindow;
   if (typeof browser.showSaveFilePicker !== "function") return null;
   const file = knowledgeFileDetails(format, now);
   return browser.showSaveFilePicker({
-    id: "chronicle-knowledge-base",
-    suggestedName: file.name,
+    id: destination?.id ?? "chronicle-knowledge-base",
+    suggestedName: destination?.name ?? file.name,
     startIn: "desktop",
     types: [{ description: format === "html" ? "HTML" : "Markdown", accept: { [file.mime]: [`.${file.extension}`] } }],
   });

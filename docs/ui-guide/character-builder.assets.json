@@ -1,0 +1,98 @@
+[
+  {
+    "path": "../../src/assets/ui-guide/character-builder/overview-narrow.png",
+    "width": 390,
+    "height": 999,
+    "sha256": "1846ff33a71a3dec90796faf27cb6f66dbd1c477211ee5615cf73a5319422bb6"
+  },
+  {
+    "path": "../../src/assets/ui-guide/character-builder/overview.png",
+    "width": 1440,
+    "height": 1000,
+    "sha256": "6bfa58e5401d11d500bf38ddd3b0a7ce6c110be91298b861474da102124cd3d0"
+  },
+  {
+    "path": "../../src/assets/ui-guide/character-builder/media-actions.png",
+    "width": 845,
+    "height": 113,
+    "sha256": "8a61fbebadd313731eef2a1f46b72251f4b96dab041f8d1d22e1332d6b2ded88"
+  },
+  {
+    "path": "../../src/assets/ui-guide/character-builder/media-menu.png",
+    "width": 217,
+    "height": 99,
+    "sha256": "5cf436b88bdd0ca7524d53ed787c671d7c520bb51ddd836d99d5032743a2e1bf"
+  },
+  {
+    "path": "../../src/assets/ui-guide/character-builder/basics-narrow.png",
+    "width": 390,
+    "height": 1063,
+    "sha256": "b04bc2a92a87805c1a260884a42f9d3830931a968e0c16d0ce22db5f71759289"
+  },
+  {
+    "path": "../../src/assets/ui-guide/character-builder/basics.png",
+    "width": 1065,
+    "height": 848,
+    "sha256": "e0c537740001ad80eb6a72dac40c1a46819cb95b6f1912cf7a5db98d3789d576"
+  },
+  {
+    "path": "../../src/assets/ui-guide/character-builder/trait-row.png",
+    "width": 805,
+    "height": 61,
+    "sha256": "87eebb58e85979648f8e1cae85f69ada9855527f274bae87011b824e918ba19d"
+  },
+  {
+    "path": "../../src/assets/ui-guide/character-builder/extra-row.png",
+    "width": 805,
+    "height": 61,
+    "sha256": "7cd204297eafc0c8f778032d24f6461d64c33abcb00e48d7538b300c96ab3423"
+  },
+  {
+    "path": "../../src/assets/ui-guide/character-builder/fields-narrow.png",
+    "width": 376,
+    "height": 313,
+    "sha256": "51297d68a1e1adf83b46f58f15753155ecdd3c057922c856d6d969f687d8b1d5"
+  },
+  {
+    "path": "../../src/assets/ui-guide/character-builder/trait-section.png",
+    "width": 845,
+    "height": 250,
+    "sha256": "8a044501d8d230fefd763f9b9e54f88f50357a5b796bc030069849f7ce0348e1"
+  },
+  {
+    "path": "../../src/assets/ui-guide/character-builder/collapsed-section.png",
+    "width": 845,
+    "height": 201,
+    "sha256": "e04f0c4e351bdabf907f0caa3ab944387e187adcc037271f98fadb5998808d44"
+  },
+  {
+    "path": "../../src/assets/ui-guide/character-builder/trait-navigation.png",
+    "width": 332,
+    "height": 952,
+    "sha256": "98da92dbf339f55bf7d8814aaab67ee4e2b906c6b594d6a4f782b31805aed2c9"
+  },
+  {
+    "path": "../../src/assets/ui-guide/character-builder/trait-navigation-states.png",
+    "width": 325,
+    "height": 241,
+    "sha256": "dac2412714f4320f7f873a83c722698f6b282ef19a0c5ec2228257161d8deefa"
+  },
+  {
+    "path": "../../src/assets/ui-guide/character-builder/content-chooser.png",
+    "width": 545,
+    "height": 284,
+    "sha256": "1b6e2fa565406db439aac1d5edffa63ce337e1a5535772682d29f6dbec1c5f7d"
+  },
+  {
+    "path": "../../src/assets/ui-guide/character-builder/new-trait-section.png",
+    "width": 845,
+    "height": 350,
+    "sha256": "17412eb6161d4ce6bfa8abbea357f32794dc40879d15fd56d13170305f4ad664"
+  },
+  {
+    "path": "../../src/assets/ui-guide/character-builder/new-note-modal.png",
+    "width": 605,
+    "height": 406,
+    "sha256": "fc8b12499e9ec19c329607b24999776c1b850e9381a6877af84ba0801392edb2"
+  }
+]

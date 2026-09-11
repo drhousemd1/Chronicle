@@ -1,18 +1,11 @@
-import fs from "node:fs";
-import path from "node:path";
-
 import { describe, expect, it } from "vitest";
 import { ADMIN_TOOL_SECTION_IDS } from "./admin-tool-ids";
 
 import {
   chronicleKnowledgeBaseManifest,
   chronicleKnowledgeSections,
-  chronicleWorkManualMetadata,
-  chronicleWorkManualSection,
-  chronicleWorkManualSource,
   getKnowledgeIssueCount,
   getKnowledgeTabMarkdown,
-  getWorkManualPreface,
 } from "./manifest";
 
 const expectedCapabilityIds = [
@@ -35,7 +28,6 @@ describe("Chronicle Knowledge Base manifest", () => {
   it("preserves the approved section and application-map order", () => {
     expect(chronicleKnowledgeSections.map((section) => section.id)).toEqual([
       "chronicle-overview",
-      "chronicle-work-manual",
       ...expectedCapabilityIds,
       ...ADMIN_TOOL_SECTION_IDS,
     ]);
@@ -82,71 +74,7 @@ describe("Chronicle Knowledge Base manifest", () => {
     expect(chronicleKnowledgeBaseManifest).not.toHaveProperty("migrationSource");
   });
 
-  it("loads the active Work Manual from the exact canonical Markdown bytes", () => {
-    const source = fs.readFileSync(
-      path.join(
-        process.cwd(),
-        "docs/architecture-knowledge/chronicle-work-manual.md",
-      ),
-      "utf8",
-    );
-
-    expect(chronicleWorkManualSource).toBe(source);
-    expect(chronicleKnowledgeBaseManifest.workManual.document).toBe(
-      "chronicle-work-manual.md",
-    );
-    expect(chronicleWorkManualMetadata).toMatchObject({
-      manualVersion: "0.2.3-provisional",
-      status: "active-provisional",
-      authorityEpoch: "chronicle-work-manual-2026-08-29-01",
-      canonicalPath: "docs/architecture-knowledge/chronicle-work-manual.md",
-    });
-    expect(chronicleWorkManualSection.tabs).toHaveLength(6);
-    expect(chronicleWorkManualSection.tabs[0]).toMatchObject({
-      id: "overview",
-      label: "Overview",
-    });
-    expect(chronicleWorkManualSection.tabs[1]).toMatchObject({
-      id: "start-here",
-      label: "Start Here",
-    });
-    expect(chronicleWorkManualSection.tabs.map((tab) => tab.headings)).toEqual([
-      ["Overview"],
-      ["1. Start Here"],
-      [
-        "2. Routine Local Work",
-        "3. Connected Feature Work",
-        "4. Multi-System Program Work",
-      ],
-      [
-        "11. Checks, Delivery, and Reporting",
-        "10. Subagents, Research, and Independent Review",
-      ],
-      [
-        "5. Expansion and Approval Rules",
-        "6. Risk Safeguards",
-        "9. Chronicle-Specific Systems",
-      ],
-      ["7. Evidence and Human Review", "8. Records and Continuity"],
-    ]);
-    expect(
-      getKnowledgeTabMarkdown(
-        chronicleWorkManualSection,
-        chronicleWorkManualSection.tabs[0],
-      ),
-    ).toContain("## Overview");
-    expect(
-      getKnowledgeTabMarkdown(
-        chronicleWorkManualSection,
-        chronicleWorkManualSection.tabs[1],
-      ),
-    ).toContain("## 1. Start Here");
-    expect(getWorkManualPreface(chronicleWorkManualSource)).toContain(
-      "Active provisional Chronicle workflow authority",
-    );
-  });
-
-  it("preserves the existing seven-tab capability contracts", () => {
+  it("preserves the six-tab capability contracts without active work tracking", () => {
     for (const capabilityId of expectedCapabilityIds.filter((id) => id !== "roleplay-pipeline")) {
       const section = chronicleKnowledgeSections.find(
         (candidate) => candidate.id === capabilityId,
@@ -156,7 +84,6 @@ describe("Chronicle Knowledge Base manifest", () => {
         "UI Elements and Functions",
         "App Architecture",
         "Issues",
-        "Current Work",
         "Supabase Tables",
         "Changelog",
       ]);
@@ -165,13 +92,23 @@ describe("Chronicle Knowledge Base manifest", () => {
         "markdown-section",
         "markdown-section",
         "issue-records",
-        "current-work-records",
         "shared-supabase",
         "changelog-records",
       ]);
       expect(
         section?.tabs.find((tab) => tab.id === "issues")?.openIssueCount,
       ).toBeTypeOf("number");
+    }
+  });
+
+  it("removes Current Work from every registered section while keeping Issues and Changelog", () => {
+    for (const section of chronicleKnowledgeSections) {
+      expect(section.tabs.some((tab) => tab.id === "current-work"), section.id).toBe(false);
+      expect(section.tabs.some((tab) => tab.label === "Current Work"), section.id).toBe(false);
+      if (section.id !== "chronicle-overview") {
+        expect(section.tabs.some((tab) => tab.id === "issues"), section.id).toBe(true);
+        expect(section.tabs.some((tab) => tab.id === "changelog"), section.id).toBe(true);
+      }
     }
   });
 
@@ -534,10 +471,9 @@ describe("Chronicle Knowledge Base manifest", () => {
     );
     expect(getKnowledgeIssueCount(issuesTab!)).toBe(0);
     expect(issuesTab).toMatchObject({ contentKind: "issue-records" });
-    expect(currentWorkTab).toMatchObject({ contentKind: "current-work-records" });
+    expect(currentWorkTab).toBeUndefined();
     expect(changelogTab).toMatchObject({ contentKind: "changelog-records" });
     expect(issuesTab).not.toHaveProperty("issues");
-    expect(currentWorkTab).not.toHaveProperty("heading");
     expect(changelogTab).not.toHaveProperty("heading");
   });
 

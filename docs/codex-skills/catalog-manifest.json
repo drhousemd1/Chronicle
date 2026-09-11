@@ -1,0 +1,875 @@
+{
+  "schemaVersion": 1,
+  "skills": [
+    {
+      "id": "chronicle-document-library",
+      "displayName": "Obsidian Document Library for Chronicle",
+      "classification": "Chronicle",
+      "usage": "Find, open, and file historical supporting documents in the Obsidian Document Library for Chronicle. Preserve native sources, catalog identity and the existing formal-document adapter; this is separate from Chronicle's in-app Knowledge Base.",
+      "source": {
+        "kind": "personal",
+        "directory": "chronicle-document-library"
+      },
+      "supportingFiles": [
+        "agents/openai.yaml",
+        "references/library-contract.md"
+      ]
+    },
+    {
+      "id": "lovable-controlled-handoff",
+      "displayName": "Chronicle: Supabase Handoff through Lovable",
+      "classification": "Chronicle",
+      "usage": "Operate an authorized Lovable handoff only for Chronicle Supabase changes or inspection unavailable directly to Codex. Preserve the selected project, approved scope and mode; verify the actual named result.",
+      "source": {
+        "kind": "personal",
+        "directory": "lovable-controlled-handoff"
+      },
+      "supportingFiles": [
+        "agents/openai.yaml"
+      ]
+    },
+    {
+      "id": "chronicle-onboarding",
+      "displayName": "Chronicle: Product Orientation",
+      "classification": "Chronicle",
+      "usage": "Use only for explicitly requested product orientation of a new persistent Chronicle task. Read the complete Chronicle Overview once, locate its knowledge sources and historical document cabinet, then continue the authorized assignment. For UI design or styling, consult the Chronicle UI Guide through docs/ui-guide/README.md.",
+      "source": {
+        "kind": "personal",
+        "directory": "chronicle-onboarding"
+      },
+      "supportingFiles": [
+        "agents/openai.yaml"
+      ]
+    },
+    {
+      "id": "codex-security-assess-patch-risk",
+      "displayName": "Shared: Assess Patch Risk",
+      "classification": "Shared",
+      "usage": "Bounded immutable-patch impact review; use when that is the assigned review, not a second generic completion gate.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "codex-security@openai-curated-remote",
+        "entrypoint": "skills/assess-patch-risk/SKILL.md"
+      },
+      "supportingFiles": [
+        "skills/assess-patch-risk/agents/openai.yaml",
+        "skills/assess-patch-risk/references/risk-rubric.md"
+      ]
+    },
+    {
+      "id": "codex-security-attack-path-analysis",
+      "displayName": "Shared: Attack Path Analysis",
+      "classification": "Shared",
+      "usage": "Specialist security path analysis with existing scan context; narrow trigger, not ordinary dependency mapping.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "codex-security@openai-curated-remote",
+        "entrypoint": "skills/attack-path-analysis/SKILL.md"
+      },
+      "supportingFiles": [
+        "references/finding-detail-fields.md",
+        "references/scan-artifacts.md",
+        "references/scan-contract.md",
+        "skills/attack-path-analysis/agents/openai.yaml",
+        "skills/attack-path-analysis/references/attack-path-facts.md",
+        "skills/attack-path-analysis/references/severity-policy.md"
+      ]
+    },
+    {
+      "id": "diagnose",
+      "displayName": "Shared: Bounded Diagnosis",
+      "classification": "Shared",
+      "usage": "Use for a specific unresolved bug when reproduction or hypothesis testing is needed.",
+      "source": {
+        "kind": "personal",
+        "directory": "diagnose"
+      },
+      "supportingFiles": [
+        "agents/openai.yaml"
+      ]
+    },
+    {
+      "id": "research-workflow",
+      "displayName": "Shared: Bounded Research",
+      "classification": "Shared",
+      "usage": "Investigate a substantive question from actual sources and deliver the requested answer. Use one bounded method; add thorough research or UX techniques only when relevant.",
+      "source": {
+        "kind": "personal",
+        "directory": "research-workflow"
+      },
+      "supportingFiles": []
+    },
+    {
+      "id": "critical-patch-review",
+      "displayName": "Shared: Critical Patch Review",
+      "classification": "Shared",
+      "usage": "Perform one bounded independent review when requested or when a named material risk warrants it under the governing workflow. Do not trigger merely from file count, UI visibility, or task size.",
+      "source": {
+        "kind": "personal",
+        "directory": "critical-patch-review"
+      },
+      "supportingFiles": [
+        "agents/openai.yaml"
+      ]
+    },
+    {
+      "id": "codex-security-deep-security-scan",
+      "displayName": "Shared: Deep Security Scan",
+      "classification": "Shared",
+      "usage": "Separate exhaustive security campaign with durable MCP-owned scan and coverage. Only for explicit deep-scan scope; no ordinary-change trigger.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "codex-security@openai-curated-remote",
+        "entrypoint": "skills/deep-security-scan/SKILL.md"
+      },
+      "supportingFiles": [
+        "references/config-preflight.md",
+        "references/core-scan.md",
+        "references/desktop-config-preflight.md",
+        "references/finding-detail-fields.md",
+        "references/scan-prologue.md",
+        "references/threat-model.md",
+        "skills/deep-security-scan/agents/openai.yaml"
+      ]
+    },
+    {
+      "id": "codex-security-define-security-policy",
+      "displayName": "Shared: Define Security Policy",
+      "classification": "Shared",
+      "usage": "Use for explicitly requested SECURITY.md policy work; preserve Chronicle's threat model and the authorized scope.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "codex-security@openai-curated-remote",
+        "entrypoint": "skills/define-security-policy/SKILL.md"
+      },
+      "supportingFiles": [
+        "references/security-guidance.md",
+        "skills/define-security-policy/agents/openai.yaml"
+      ]
+    },
+    {
+      "id": "documentation-writer",
+      "displayName": "Requested Documentation Writing",
+      "classification": "Shared",
+      "usage": "Write or clarify requested documentation for Chronicle and other projects from the actual sources, preserving the user's format, structure, terminology and scope. This is writing guidance, not a document-app controller.",
+      "source": {
+        "kind": "personal",
+        "directory": "documentation-writer"
+      },
+      "supportingFiles": [
+        "agents/openai.yaml"
+      ]
+    },
+    {
+      "id": "documents-documents",
+      "displayName": "Shared: Documents",
+      "classification": "Shared",
+      "usage": "Retain Word authoring/render helpers for requested document delivery. Existing Chronicle template and user writing choices take priority over black-heading, no-callout and typography defaults.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "documents@openai-primary-runtime",
+        "entrypoint": "skills/documents/SKILL.md"
+      },
+      "supportingFiles": [
+        "skills/documents/agents/openai.yaml",
+        "skills/documents/ooxml/comments.md",
+        "skills/documents/ooxml/hyperlinks_and_fields.md",
+        "skills/documents/ooxml/tracked_changes.md",
+        "skills/documents/tasks/accessibility_a11y.md",
+        "skills/documents/tasks/captions_crossrefs.md",
+        "skills/documents/tasks/clean_tracked_changes.md",
+        "skills/documents/tasks/comments_manage.md",
+        "skills/documents/tasks/compare_diff.md",
+        "skills/documents/tasks/create_edit.md",
+        "skills/documents/tasks/fields_update.md",
+        "skills/documents/tasks/fixtures_edge_cases.md",
+        "skills/documents/tasks/footnotes_endnotes.md",
+        "skills/documents/tasks/forms_content_controls.md",
+        "skills/documents/tasks/headings_numbering.md",
+        "skills/documents/tasks/images_figures.md",
+        "skills/documents/tasks/multi_doc_merge.md",
+        "skills/documents/tasks/navigation_internal_links.md",
+        "skills/documents/tasks/privacy_scrub_metadata.md",
+        "skills/documents/tasks/protection_restrict_editing.md",
+        "skills/documents/tasks/read_review.md",
+        "skills/documents/tasks/redaction_anonymization.md",
+        "skills/documents/tasks/sections_layout.md",
+        "skills/documents/tasks/style_lint_normalize.md",
+        "skills/documents/tasks/tables_spreadsheets.md",
+        "skills/documents/tasks/templates_style_packs.md",
+        "skills/documents/tasks/toc_workflow.md",
+        "skills/documents/tasks/verify_render.md",
+        "skills/documents/tasks/watermarks_background.md",
+        "skills/documents/template-create.md",
+        "skills/documents/template-distill.md",
+        "skills/documents/troubleshooting/libreoffice_headless.md"
+      ]
+    },
+    {
+      "id": "spreadsheets-excel-live-control",
+      "displayName": "Shared: Excel Live Control",
+      "classification": "Shared",
+      "usage": "Purpose-built live Excel mechanics with clear setup/target boundaries. Preserve for explicitly targeted desktop Excel tasks.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "spreadsheets@openai-primary-runtime",
+        "entrypoint": "skills/excel-live-control/SKILL.md"
+      },
+      "supportingFiles": [
+        "skills/excel-live-control/agents/openai.yaml",
+        "skills/excel-live-control/domain_guidance/financial_models.md",
+        "skills/excel-live-control/domain_guidance/healthcare.md",
+        "skills/excel-live-control/domain_guidance/marketing_advertising.md",
+        "skills/excel-live-control/domain_guidance/scientific_research.md",
+        "skills/excel-live-control/features/charts.md",
+        "skills/excel-live-control/officejs.md",
+        "skills/excel-live-control/references/image-references.md",
+        "skills/excel-live-control/references/read_only_qna.md",
+        "skills/excel-live-control/style_guidelines.md",
+        "skills/excel-live-control/workflows/create_workflows.md",
+        "skills/excel-live-control/workflows/edit_workflows.md",
+        "skills/spreadsheets/domain_guidance/financial_models.md",
+        "skills/spreadsheets/domain_guidance/healthcare.md",
+        "skills/spreadsheets/domain_guidance/marketing_advertising.md",
+        "skills/spreadsheets/domain_guidance/scientific_research.md",
+        "skills/spreadsheets/features/charts.md",
+        "skills/spreadsheets/references/image-references.md",
+        "skills/spreadsheets/references/read_only_qna.md",
+        "skills/spreadsheets/style_guidelines.md",
+        "skills/spreadsheets/workflows/create_workflows.md",
+        "skills/spreadsheets/workflows/edit_workflows.md"
+      ]
+    },
+    {
+      "id": "codex-security-finding-discovery",
+      "displayName": "Shared: Finding Discovery",
+      "classification": "Shared",
+      "usage": "Large vulnerability checklist for assigned scan discovery. Do not load it merely because software is being changed.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "codex-security@openai-curated-remote",
+        "entrypoint": "skills/finding-discovery/SKILL.md"
+      },
+      "supportingFiles": [
+        "references/finding-detail-fields.md",
+        "references/scan-artifacts.md",
+        "references/scan-contract.md",
+        "references/security-guidance.md",
+        "skills/attack-path-analysis/references/severity-policy.md",
+        "skills/finding-discovery/agents/openai.yaml",
+        "skills/security-scan/references/scan-artifacts-and-ledger.md"
+      ]
+    },
+    {
+      "id": "codex-security-fix-finding",
+      "displayName": "Shared: Fix Finding",
+      "classification": "Shared",
+      "usage": "Use for an explicitly assigned security finding; verify the exact control and vulnerable path, with proportionate regression evidence.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "codex-security@openai-curated-remote",
+        "entrypoint": "skills/fix-finding/SKILL.md"
+      },
+      "supportingFiles": [
+        "references/finding-detail-fields.md",
+        "references/scan-artifacts.md",
+        "references/scan-contract.md",
+        "skills/fix-finding/agents/openai.yaml"
+      ]
+    },
+    {
+      "id": "google-drive-google-docs",
+      "displayName": "Shared: Google Docs",
+      "classification": "Shared",
+      "usage": "Native Google Docs routing with full tab/template preservation. Useful for explicit Google Docs work; must not replace Chronicle private document-library ownership. Mandatory chips and route-specific helpers can add substantial load.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "google-drive@openai-curated-remote",
+        "entrypoint": "skills/google-docs/SKILL.md"
+      },
+      "supportingFiles": [
+        "skills/google-docs/agents/openai.yaml",
+        "skills/google-docs/references/reference-citations-and-hyperlinks.md",
+        "skills/google-docs/references/reference-connector-runtime-and-safety.md",
+        "skills/google-docs/references/reference-direct-request-composition.md",
+        "skills/google-docs/references/reference-dropdown-code-mode.md",
+        "skills/google-docs/references/reference-figures-and-image-insertion.md",
+        "skills/google-docs/references/reference-foreground-guard.md",
+        "skills/google-docs/references/reference-headings-and-question-format.md",
+        "skills/google-docs/references/reference-import-docx-to-native-docs.md",
+        "skills/google-docs/references/reference-meeting-notes-direct.md",
+        "skills/google-docs/references/reference-native-create-direct.md",
+        "skills/google-docs/references/reference-pdf-export-visual-qa.md",
+        "skills/google-docs/references/reference-request-shapes-and-write-safety.md",
+        "skills/google-docs/references/reference-response-and-list-format.md",
+        "skills/google-docs/references/reference-section-completeness-and-final-pass.md",
+        "skills/google-docs/references/reference-smart-chips-and-building-blocks.md",
+        "skills/google-docs/references/reference-table-formatting-deep-dive.md",
+        "skills/google-docs/references/reference-template-preservation-and-edit-scope.md",
+        "skills/google-docs/references/reference-trusted-read-wrapper.md"
+      ]
+    },
+    {
+      "id": "google-drive-google-drive",
+      "displayName": "Shared: Google Drive",
+      "classification": "Shared",
+      "usage": "Useful exact-file discovery/lifecycle router. Its claim that new Docs always require DOCX is stale relative to sibling Google Docs direct/native-reference routes; follow the selected route and user instructions.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "google-drive@openai-curated-remote",
+        "entrypoint": "skills/google-drive/SKILL.md"
+      },
+      "supportingFiles": [
+        "skills/google-drive/agents/openai.yaml"
+      ]
+    },
+    {
+      "id": "google-drive-google-drive-comments",
+      "displayName": "Shared: Google Drive Comments",
+      "classification": "Shared",
+      "usage": "Useful exact-location comment mechanics. Posting comments requires the user request; do not create review comments merely because a document was read.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "google-drive@openai-curated-remote",
+        "entrypoint": "skills/google-drive-comments/SKILL.md"
+      },
+      "supportingFiles": [
+        "skills/google-drive-comments/agents/openai.yaml"
+      ]
+    },
+    {
+      "id": "google-drive-google-sheets",
+      "displayName": "Shared: Google Sheets",
+      "classification": "Shared",
+      "usage": "Useful range-precise native Sheets work with format routing. Its instruction to read every reference if uncertain is disproportionate; narrow the missing capability.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "google-drive@openai-curated-remote",
+        "entrypoint": "skills/google-sheets/SKILL.md"
+      },
+      "supportingFiles": [
+        "skills/google-sheets/agents/openai.yaml",
+        "skills/google-sheets/references/reference-batch-update-recipes.md",
+        "skills/google-sheets/references/reference-chart-recipes.md",
+        "skills/google-sheets/references/reference-edit-workflow.md",
+        "skills/google-sheets/references/reference-formula-patterns.md",
+        "skills/google-sheets/references/reference-import-spreadsheet-to-native-sheets.md",
+        "skills/google-sheets/references/reference-live-read-search-safety.md",
+        "skills/google-sheets/references/reference-native-cell-structure.md",
+        "skills/google-sheets/references/reference-visual-quality.md",
+        "skills/google-sheets/references/style-profiles.md"
+      ]
+    },
+    {
+      "id": "google-drive-google-slides",
+      "displayName": "Shared: Google Slides",
+      "classification": "Shared",
+      "usage": "Native template-copy and render workflow preserves full template structure. Use only on a Google Slides deliverable, not as Chronicle documentation architecture.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "google-drive@openai-curated-remote",
+        "entrypoint": "skills/google-slides/SKILL.md"
+      },
+      "supportingFiles": [
+        "skills/google-slides/agents/openai.yaml"
+      ]
+    },
+    {
+      "id": "system-imagegen",
+      "displayName": "Shared: Image Gen",
+      "classification": "Shared",
+      "usage": "Raster asset tool; preserve exact references. Do not use it to replace repo-native UI, SVG icons, or source inspection.",
+      "source": {
+        "kind": "system",
+        "directory": "imagegen"
+      },
+      "supportingFiles": [
+        "agents/openai.yaml",
+        "references/cli.md",
+        "references/codex-network.md",
+        "references/prompting.md"
+      ]
+    },
+    {
+      "id": "system-openai-docs",
+      "displayName": "Shared: OpenAI Docs",
+      "classification": "Shared",
+      "usage": "Useful for Codex/API setup and supported behavior. Prefer current local implementation evidence; use official sources when needed.",
+      "source": {
+        "kind": "system",
+        "directory": "openai-docs"
+      },
+      "supportingFiles": [
+        "agents/openai.yaml",
+        "references/codex-self-knowledge.md",
+        "references/latest-model.md",
+        "references/mcp-diagnostics.md",
+        "references/model-migration.md",
+        "references/model-selection.md",
+        "references/official-docs.md",
+        "references/prompting-guide.md",
+        "references/upgrade-guide.md",
+        "references/upgrading-to-gpt-5p6-sol.md"
+      ]
+    },
+    {
+      "id": "pdf-pdf",
+      "displayName": "Shared: PDF",
+      "classification": "Shared",
+      "usage": "Retain PDF extraction, visual QA and AcroForm validation. It is a format helper, not an instruction to make a PDF for every task.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "pdf@openai-primary-runtime",
+        "entrypoint": "skills/pdf/SKILL.md"
+      },
+      "supportingFiles": [
+        "skills/pdf/agents/openai.yaml"
+      ]
+    },
+    {
+      "id": "system-plugin-creator",
+      "displayName": "Shared: Plugin Creator",
+      "classification": "Shared",
+      "usage": "Useful for explicit plugin maintenance; use source package and normal update/install path, never overwrite a managed cache as the lasting implementation.",
+      "source": {
+        "kind": "system",
+        "directory": "plugin-creator"
+      },
+      "supportingFiles": [
+        "agents/openai.yaml",
+        "references/installing-and-updating.md",
+        "references/plugin-json-spec.md"
+      ]
+    },
+    {
+      "id": "plugin-management-plugin-management",
+      "displayName": "Shared: Plugin Management",
+      "classification": "Shared",
+      "usage": "Useful plugin discovery and permission maintenance. Prefer existing tools; current tool capability and user authorization override broad installation suggestions.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "plugin-management@openai-curated-remote",
+        "entrypoint": "skills/plugin-management/SKILL.md"
+      },
+      "supportingFiles": []
+    },
+    {
+      "id": "presentations-presentations",
+      "displayName": "Shared: Presentations",
+      "classification": "Shared",
+      "usage": "Retain requested deck authoring and editability checks. Strong generic prose/visual defaults are subordinate to supplied content and reference designs.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "presentations@openai-primary-runtime",
+        "entrypoint": "skills/presentations/SKILL.md"
+      },
+      "supportingFiles": [
+        "skills/presentations/agents/openai.yaml",
+        "skills/presentations/domain_guidance/finance.md",
+        "skills/presentations/references/cover_art_direction.md",
+        "skills/presentations/references/finalization.md",
+        "skills/presentations/references/implementation.md",
+        "skills/presentations/references/native_bullets.md",
+        "skills/presentations/references/native_evidence.md",
+        "skills/presentations/references/template_following.md",
+        "skills/presentations/routing/google_slides.md",
+        "skills/presentations/style_guidelines.md"
+      ]
+    },
+    {
+      "id": "codex-security-propose-security-hardening",
+      "displayName": "Shared: Propose Security Hardening",
+      "classification": "Shared",
+      "usage": "Useful evidence-backed structural options after a real security problem. It owns a portfolio and decision gate; not a mandatory architecture review for ordinary fixes.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "codex-security@openai-curated-remote",
+        "entrypoint": "skills/propose-security-hardening/SKILL.md"
+      },
+      "supportingFiles": [
+        "references/finding-detail-fields.md",
+        "references/scan-artifacts.md",
+        "references/scan-contract.md",
+        "skills/propose-security-hardening/agents/openai.yaml",
+        "skills/propose-security-hardening/references/proposal-format.md"
+      ]
+    },
+    {
+      "id": "build-web-apps-react-best-practices",
+      "displayName": "Shared: React Best Practices",
+      "classification": "Shared",
+      "usage": "Retain for a named React performance issue or relevant implementation choice. Read relevant rules rather than loading the compiled 64-rule guide or treating every edit as a performance audit.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "build-web-apps@openai-curated-remote",
+        "entrypoint": "skills/react-best-practices/SKILL.md"
+      },
+      "supportingFiles": [
+        "skills/react-best-practices/AGENTS.md",
+        "skills/react-best-practices/agents/openai.yaml"
+      ]
+    },
+    {
+      "id": "requirements-fidelity",
+      "displayName": "Shared: Requirements Fidelity",
+      "classification": "Shared",
+      "usage": "Preserve complex supplied requirements and references through planning, approved-document handoff and implementation. Invoke only when explicitly requested; ordinary bounded work does not trigger it.",
+      "source": {
+        "kind": "personal",
+        "directory": "requirements-fidelity-planning"
+      },
+      "supportingFiles": [
+        "agents/openai.yaml",
+        "references/chronicle-integration.md",
+        "references/critic-protocol.md",
+        "references/implementation-receipt.md",
+        "references/plan-trace.md",
+        "references/source-packet.md"
+      ]
+    },
+    {
+      "id": "system-review-agent",
+      "displayName": "Shared: Review Agent",
+      "classification": "Shared",
+      "usage": "Internal reviewer prompt has implicit invocation disabled. Preserve as a bounded independent-review tool, not an automatic phase for each edit.",
+      "source": {
+        "kind": "system",
+        "directory": "review-agent"
+      },
+      "supportingFiles": [
+        "agents/openai.yaml"
+      ]
+    },
+    {
+      "id": "screenshot",
+      "displayName": "Shared: Screenshot Capture",
+      "classification": "Shared",
+      "usage": "Capture an explicitly requested desktop/window screenshot, or use OS capture when needed visual evidence is unavailable from a more specific tool. Preserve exact target, output path and current platform permission rules.",
+      "source": {
+        "kind": "personal",
+        "directory": "screenshot"
+      },
+      "supportingFiles": [
+        "agents/openai.yaml"
+      ]
+    },
+    {
+      "id": "codex-security-security-diff-scan",
+      "displayName": "Shared: Security Diff Scan",
+      "classification": "Shared",
+      "usage": "Use for requested diff security review. Shared preflight can demand configuration/goal capabilities; this is not a normal Chronicle patch check.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "codex-security@openai-curated-remote",
+        "entrypoint": "skills/security-diff-scan/SKILL.md"
+      },
+      "supportingFiles": [
+        "references/config-preflight.md",
+        "references/desktop-config-preflight.md",
+        "references/final-report.md",
+        "references/finding-detail-fields.md",
+        "references/scan-artifacts.md",
+        "references/scan-contract.md",
+        "references/threat-model.md",
+        "skills/security-diff-scan/agents/openai.yaml"
+      ]
+    },
+    {
+      "id": "codex-security-security-scan",
+      "displayName": "Shared: Security Scan",
+      "classification": "Shared",
+      "usage": "One full standard scan, with mandatory capability preflight, worker and artifact contracts. Retain for an authorized audit, never infer it from general correctness work.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "codex-security@openai-curated-remote",
+        "entrypoint": "skills/security-scan/SKILL.md"
+      },
+      "supportingFiles": [
+        "references/config-preflight.md",
+        "references/core-scan.md",
+        "references/desktop-config-preflight.md",
+        "references/finding-detail-fields.md",
+        "references/scan-prologue.md",
+        "references/threat-model.md",
+        "skills/security-scan/agents/openai.yaml",
+        "skills/security-scan/references/desktop-scan.md"
+      ]
+    },
+    {
+      "id": "system-skill-creator",
+      "displayName": "Shared: Skill Creator",
+      "classification": "Shared",
+      "usage": "Useful for explicit skill maintenance and verified invocation metadata; does not authorize adding process to an unrelated product task.",
+      "source": {
+        "kind": "system",
+        "directory": "skill-creator"
+      },
+      "supportingFiles": [
+        "agents/openai.yaml",
+        "references/openai_yaml.md"
+      ]
+    },
+    {
+      "id": "system-skill-installer",
+      "displayName": "Shared: Skill Installer",
+      "classification": "Shared",
+      "usage": "Install/list mechanics only when needed. Installing a skill does not make its workflow appropriate for Chronicle.",
+      "source": {
+        "kind": "system",
+        "directory": "skill-installer"
+      },
+      "supportingFiles": [
+        "agents/openai.yaml"
+      ]
+    },
+    {
+      "id": "spreadsheets-spreadsheets",
+      "displayName": "Shared: Spreadsheets",
+      "classification": "Shared",
+      "usage": "Retain requested workbook authoring/analysis. Formula and native-object checks are useful; do not introduce workbooks as extra project records without need.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "spreadsheets@openai-primary-runtime",
+        "entrypoint": "skills/spreadsheets/SKILL.md"
+      },
+      "supportingFiles": [
+        "skills/excel-live-control/domain_guidance/financial_models.md",
+        "skills/excel-live-control/domain_guidance/healthcare.md",
+        "skills/excel-live-control/domain_guidance/marketing_advertising.md",
+        "skills/excel-live-control/domain_guidance/scientific_research.md",
+        "skills/excel-live-control/features/charts.md",
+        "skills/excel-live-control/references/image-references.md",
+        "skills/excel-live-control/references/read_only_qna.md",
+        "skills/excel-live-control/style_guidelines.md",
+        "skills/excel-live-control/workflows/create_workflows.md",
+        "skills/excel-live-control/workflows/edit_workflows.md",
+        "skills/spreadsheets/agents/openai.yaml",
+        "skills/spreadsheets/domain_guidance/financial_models.md",
+        "skills/spreadsheets/domain_guidance/healthcare.md",
+        "skills/spreadsheets/domain_guidance/marketing_advertising.md",
+        "skills/spreadsheets/domain_guidance/scientific_research.md",
+        "skills/spreadsheets/features/charts.md",
+        "skills/spreadsheets/references/image-references.md",
+        "skills/spreadsheets/references/read_only_qna.md",
+        "skills/spreadsheets/references/template-elicitation.md",
+        "skills/spreadsheets/routing/google_sheets.md",
+        "skills/spreadsheets/style_guidelines.md",
+        "skills/spreadsheets/workflows/create_workflows.md",
+        "skills/spreadsheets/workflows/edit_workflows.md"
+      ]
+    },
+    {
+      "id": "build-web-apps-stripe-best-practices",
+      "displayName": "Shared: Stripe Best Practices",
+      "classification": "Shared",
+      "usage": "Retain for scoped billing/API integration. The instruction to use latest APIs is not authorization for an unsolicited dependency or API migration; verify installed/account version.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "build-web-apps@openai-curated-remote",
+        "entrypoint": "skills/stripe-best-practices/SKILL.md"
+      },
+      "supportingFiles": [
+        "skills/stripe-best-practices/agents/openai.yaml",
+        "skills/stripe-best-practices/references/billing.md",
+        "skills/stripe-best-practices/references/connect.md",
+        "skills/stripe-best-practices/references/payments.md",
+        "skills/stripe-best-practices/references/treasury.md"
+      ]
+    },
+    {
+      "id": "build-web-apps-supabase-postgres-best-practices",
+      "displayName": "Shared: Supabase Postgres Best Practices",
+      "classification": "Shared",
+      "usage": "Retain targeted query/schema/performance guidance. Does not authorize live database access, migrations or broad audits.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "build-web-apps@openai-curated-remote",
+        "entrypoint": "skills/supabase-best-practices/SKILL.md"
+      },
+      "supportingFiles": [
+        "skills/supabase-best-practices/agents/openai.yaml",
+        "skills/supabase-best-practices/references/_contributing.md",
+        "skills/supabase-best-practices/references/_sections.md",
+        "skills/supabase-best-practices/references/_template.md",
+        "skills/supabase-best-practices/references/advanced-full-text-search.md",
+        "skills/supabase-best-practices/references/advanced-jsonb-indexing.md",
+        "skills/supabase-best-practices/references/conn-idle-timeout.md",
+        "skills/supabase-best-practices/references/conn-limits.md",
+        "skills/supabase-best-practices/references/conn-pooling.md",
+        "skills/supabase-best-practices/references/conn-prepared-statements.md",
+        "skills/supabase-best-practices/references/data-batch-inserts.md",
+        "skills/supabase-best-practices/references/data-n-plus-one.md",
+        "skills/supabase-best-practices/references/data-pagination.md",
+        "skills/supabase-best-practices/references/data-upsert.md",
+        "skills/supabase-best-practices/references/lock-advisory.md",
+        "skills/supabase-best-practices/references/lock-deadlock-prevention.md",
+        "skills/supabase-best-practices/references/lock-short-transactions.md",
+        "skills/supabase-best-practices/references/lock-skip-locked.md",
+        "skills/supabase-best-practices/references/monitor-explain-analyze.md",
+        "skills/supabase-best-practices/references/monitor-pg-stat-statements.md",
+        "skills/supabase-best-practices/references/monitor-vacuum-analyze.md",
+        "skills/supabase-best-practices/references/query-composite-indexes.md",
+        "skills/supabase-best-practices/references/query-covering-indexes.md",
+        "skills/supabase-best-practices/references/query-index-types.md",
+        "skills/supabase-best-practices/references/query-missing-indexes.md",
+        "skills/supabase-best-practices/references/query-partial-indexes.md",
+        "skills/supabase-best-practices/references/schema-constraints.md",
+        "skills/supabase-best-practices/references/schema-data-types.md",
+        "skills/supabase-best-practices/references/schema-foreign-key-indexes.md",
+        "skills/supabase-best-practices/references/schema-lowercase-identifiers.md",
+        "skills/supabase-best-practices/references/schema-partitioning.md",
+        "skills/supabase-best-practices/references/schema-primary-keys.md",
+        "skills/supabase-best-practices/references/security-privileges.md",
+        "skills/supabase-best-practices/references/security-rls-basics.md",
+        "skills/supabase-best-practices/references/security-rls-performance.md"
+      ]
+    },
+    {
+      "id": "template-creator-template-creator",
+      "displayName": "Shared: Template Creator",
+      "classification": "Shared",
+      "usage": "Explicit reusable artifact-template creation only; preserve source references and do not edit plugin caches. Does not authorize a new Chronicle design system.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "template-creator@openai-primary-runtime",
+        "entrypoint": "skills/template-creator/SKILL.md"
+      },
+      "supportingFiles": [
+        "skills/template-creator/agents/openai.yaml"
+      ]
+    },
+    {
+      "id": "codex-thread-connector-thread-orchestrator",
+      "displayName": "Shared: Thread Orchestrator",
+      "classification": "Shared",
+      "usage": "Required exact-task coordination mechanics preserve approved plans and real result review. Keep shared across Chronicle and accessory tasks; source package changes must use its verified install/update path.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "codex-thread-connector@personal",
+        "entrypoint": "skills/thread-orchestrator/SKILL.md"
+      },
+      "supportingFiles": [
+        "skills/thread-orchestrator/agents/openai.yaml"
+      ]
+    },
+    {
+      "id": "codex-security-threat-model",
+      "displayName": "Shared: Threat Model",
+      "classification": "Shared",
+      "usage": "Use for assigned threat-model work; preserve an existing source-backed security model and stated uncertainties.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "codex-security@openai-curated-remote",
+        "entrypoint": "skills/threat-model/SKILL.md"
+      },
+      "supportingFiles": [
+        "references/finding-detail-fields.md",
+        "references/scan-artifacts.md",
+        "references/scan-contract.md",
+        "references/security-guidance.md",
+        "references/threat-model.md",
+        "skills/threat-model/agents/openai.yaml"
+      ]
+    },
+    {
+      "id": "codex-security-track-findings",
+      "displayName": "Shared: Track Findings",
+      "classification": "Shared",
+      "usage": "Publishes findings to external trackers/advisories with destination and payload gates. Only invoke on an explicit tracking request; no automatic external messages.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "codex-security@openai-curated-remote",
+        "entrypoint": "skills/track-findings/SKILL.md"
+      },
+      "supportingFiles": [
+        "references/finding-detail-fields.md",
+        "skills/track-findings/agents/openai.yaml",
+        "skills/track-findings/references/github-security-advisories.md",
+        "skills/track-findings/references/jira.md"
+      ]
+    },
+    {
+      "id": "codex-security-triage-finding",
+      "displayName": "Shared: Triage Finding",
+      "classification": "Shared",
+      "usage": "Useful static assessment of supplied vulnerability claims; deliberately forbids runtime checks. Its static result cannot be reported as exploit reproduction.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "codex-security@openai-curated-remote",
+        "entrypoint": "skills/triage-finding/SKILL.md"
+      },
+      "supportingFiles": [
+        "references/security-guidance.md",
+        "references/static-finding-assessment.md",
+        "skills/triage-finding/agents/openai.yaml",
+        "skills/triage-finding/references/github-rest-intake.md",
+        "skills/triage-finding/references/ticket-intake.md",
+        "skills/triage-finding/references/triage-result-contract.md"
+      ]
+    },
+    {
+      "id": "codex-security-validation",
+      "displayName": "Shared: Validation",
+      "classification": "Shared",
+      "usage": "Specific finding-validation phase; use only with a real assigned claim and authorized environment.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "codex-security@openai-curated-remote",
+        "entrypoint": "skills/validation/SKILL.md"
+      },
+      "supportingFiles": [
+        "references/finding-detail-fields.md",
+        "references/scan-artifacts.md",
+        "references/scan-contract.md",
+        "references/static-finding-assessment.md",
+        "skills/validation/agents/openai.yaml",
+        "skills/validation/references/validation-guidance.md"
+      ]
+    },
+    {
+      "id": "codex-security-verify-fix",
+      "displayName": "Shared: Verify Fix",
+      "classification": "Shared",
+      "usage": "Good bounded check of an existing security remediation against its original claim; no implied discovery campaign.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "codex-security@openai-curated-remote",
+        "entrypoint": "skills/verify-fix/SKILL.md"
+      },
+      "supportingFiles": [
+        "references/static-finding-assessment.md",
+        "skills/verify-fix/agents/openai.yaml"
+      ]
+    },
+    {
+      "id": "visualize-visualize",
+      "displayName": "Shared: Visualize",
+      "classification": "Shared",
+      "usage": "Useful for an in-conversation explanation. Its generic chart styling must not become Chronicle styling. Mockup instruction to avoid project inspection and silent-work instruction yield to actual source-fidelity and communication requirements.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "visualize@openai-bundled",
+        "entrypoint": "skills/visualize/SKILL.md"
+      },
+      "supportingFiles": [
+        "skills/visualize/agents/openai.yaml",
+        "skills/visualize/tweak.md"
+      ]
+    },
+    {
+      "id": "codex-security-vulnerability-writeup",
+      "displayName": "Shared: Vulnerability Writeup",
+      "classification": "Shared",
+      "usage": "Detailed disclosure report requires exact source and one drafting subagent per finding; appropriate for that deliverable, disproportionate for ordinary review notes.",
+      "source": {
+        "kind": "plugin",
+        "pluginId": "codex-security@openai-curated-remote",
+        "entrypoint": "skills/vulnerability-writeup/SKILL.md"
+      },
+      "supportingFiles": [
+        "skills/vulnerability-writeup/agents/openai.yaml",
+        "skills/vulnerability-writeup/references/report-format.md"
+      ]
+    }
+  ]
+}

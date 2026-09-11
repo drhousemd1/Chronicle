@@ -8,12 +8,6 @@ import { supabase } from '@/integrations/supabase/client';
 const LazyImageGen = React.lazy(() =>
   import('@/components/admin/ImageGenerationTool').then(m => ({ default: m.ImageGenerationTool }))
 );
-const LazyAppGuide = React.lazy(() =>
-  import('@/components/admin/guide/AppGuideTool').then(m => ({ default: m.AppGuideTool }))
-);
-const LazyStyleGuide = React.lazy(() =>
-  import('@/components/admin/styleguide/StyleGuideTool').then(m => ({ default: m.StyleGuideTool }))
-);
 const LazyFinanceDashboard = React.lazy(() =>
   import('@/components/admin/finance/FinanceDashboardTool')
 );
@@ -22,11 +16,6 @@ const LazyResearchDevelopment = React.lazy(() =>
 );
 
 const lazyToolFallback = <div className="h-full w-full" />;
-const LEGACY_STYLE_GUIDE_DESCRIPTIONS = new Set([
-  'Central hub for Style Guide, App Guide, App Architecture, Quality Hub, and API Inspector',
-  'Central hub for Style Guide, App Guide, Quality Hub, and API Inspector',
-  'Central hub for Style Guide, App Guide, and Quality Hub',
-]);
 
 const DEFAULT_TOOLS: ToolMeta[] = [
   {
@@ -41,9 +30,9 @@ const DEFAULT_TOOLS: ToolMeta[] = [
     description: 'View active models and backend health',
   },
   {
-    id: 'style_guide',
-    title: 'App Dashboard',
-    description: 'Central hub for Style Guide and App Guide',
+    id: 'chronicle_ui_guide',
+    title: 'Chronicle UI Guide',
+    description: 'Page styling, reusable patterns, and examples for building consistent Chronicle interfaces',
   },
   {
     id: 'chronicle_knowledge_base',
@@ -75,24 +64,23 @@ const DEFAULT_TOOLS: ToolMeta[] = [
     title: 'Research & Development',
     description: 'Build protected mock-ups alongside editable notes and reference images',
   },
+  {
+    id: 'roadmap',
+    title: 'Roadmap',
+    description: 'Issues, improvements, and ideas organized by priority',
+  },
 ];
 
 interface AdminPageProps {
   activeTool: string;
   onSetActiveTool: (tool: string) => void;
-  onRegisterGuideSave?: (saveFn: (() => Promise<void>) | null) => void;
-  onRegisterGuideSyncAll?: (syncFn: (() => Promise<void>) | null) => void;
-  onRegisterStyleGuideDownload?: (fn: (() => void) | null) => void;
-  onRegisterStyleGuideEdits?: (fn: (() => void) | null) => void;
   onRegisterRndBeforeLeave?: (fn: (() => Promise<boolean>) | null) => void;
   onRegisterRndAddMockup?: (fn: (() => Promise<void>) | null) => void;
   onRegisterRndRepositorySave?: (fn: (() => Promise<void>) | null) => void;
   onRndRepositorySaveStateChange?: (state: 'idle' | 'saving' | 'saved' | 'error') => void;
-  onStyleGuideEditsCountChange?: (count: number) => void;
-  guideTheme?: 'dark' | 'light';
 }
 
-export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveTool, onRegisterGuideSave, onRegisterGuideSyncAll, onRegisterStyleGuideDownload, onRegisterStyleGuideEdits, onRegisterRndBeforeLeave, onRegisterRndAddMockup, onRegisterRndRepositorySave, onRndRepositorySaveStateChange, onStyleGuideEditsCountChange, guideTheme }) => {
+export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveTool, onRegisterRndBeforeLeave, onRegisterRndAddMockup, onRegisterRndRepositorySave, onRndRepositorySaveStateChange }) => {
   const navigate = useNavigate();
   const [tools, setTools] = useState<ToolMeta[]>(DEFAULT_TOOLS);
   const [editingTool, setEditingTool] = useState<ToolMeta | null>(null);
@@ -108,13 +96,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
           .maybeSingle();
         if (data?.setting_value && typeof data.setting_value === 'object') {
           const overrides = data.setting_value as Record<string, Partial<ToolMeta>>;
-          setTools(DEFAULT_TOOLS.map((t) => {
-            const override = { ...(overrides[t.id] || {}) };
-            if (t.id === 'style_guide' && override.description && LEGACY_STYLE_GUIDE_DESCRIPTIONS.has(override.description)) {
-              delete override.description;
-            }
-            return { ...t, ...override };
-          }));
+          setTools(DEFAULT_TOOLS.map((tool) => ({ ...tool, ...overrides[tool.id] })));
         }
       } catch {
         // keep defaults
@@ -154,6 +136,16 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
   };
 
   const handleOpenTool = (toolId: string) => {
+    if (toolId === 'roadmap') {
+      navigate('/admin/roadmap');
+      return;
+    }
+
+    if (toolId === 'chronicle_ui_guide') {
+      navigate('/style-guide/chronicle-ui-guide');
+      return;
+    }
+
     if (toolId === 'chronicle_knowledge_base') {
       navigate('/style-guide/chronicle-knowledge-base');
       return;
@@ -193,22 +185,6 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
     );
   }
 
-  if (activeTool === 'app_guide') {
-    return (
-      <React.Suspense fallback={lazyToolFallback}>
-        <LazyAppGuide onRegisterSave={onRegisterGuideSave} onRegisterSyncAll={onRegisterGuideSyncAll} theme={guideTheme} />
-      </React.Suspense>
-    );
-  }
-
-  if (activeTool === 'style_guide') {
-    return (
-      <React.Suspense fallback={lazyToolFallback}>
-        <LazyStyleGuide onRegisterDownload={onRegisterStyleGuideDownload} onRegisterEdits={onRegisterStyleGuideEdits} onEditsCountChange={onStyleGuideEditsCountChange} onSwitchToAppGuide={() => onSetActiveTool('app_guide')} />
-      </React.Suspense>
-    );
-  }
-
   if (activeTool === 'finance_dashboard') {
     return (
       <React.Suspense fallback={lazyToolFallback}>
@@ -221,7 +197,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ activeTool, onSetActiveToo
     return (
       <React.Suspense fallback={lazyToolFallback}>
         <LazyResearchDevelopment
-          onOpenStyleGuide={() => onSetActiveTool('style_guide')}
+          onOpenStyleGuide={() => navigate('/style-guide/chronicle-ui-guide')}
           onRegisterBeforeLeave={onRegisterRndBeforeLeave}
           onRegisterAddMockup={onRegisterRndAddMockup}
           onRegisterRepositorySave={onRegisterRndRepositorySave}

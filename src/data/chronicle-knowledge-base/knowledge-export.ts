@@ -26,7 +26,7 @@ export type KnowledgeSnapshot = {
   documents: ExportDocument[];
 };
 
-export const EXPORT_SCOPE = "This is a read-only snapshot of all registered Knowledge Base manuals, the complete Work Manual, the shared table reference, and repository Issue, Current Work, archive, and Changelog documents. It includes content from inactive tabs. Interactive Graphify maps, live application/database data, and the contents of separately linked tools or external files are not included. This download is a reference copy, not a new editable authority. Review private material before sharing it.";
+export const EXPORT_SCOPE = "This is a read-only snapshot of all registered Knowledge Base manuals, the shared table reference, and repository Issue, historical work, and Changelog documents. It includes content from inactive tabs. Interactive Graphify maps, live application/database data, and the contents of separately linked tools or external files are not included. This download is a reference copy, not a new editable authority. Review private material before sharing it.";
 
 const assets: Record<string, string> = {
   "knowledge-asset:admin-panel-overview": adminOverview,
@@ -73,18 +73,18 @@ function displaySource(source: string) {
 
 function recordGroup(path: string) {
   if (path.includes("/issues/")) return "issues";
-  if (path.includes("/current-work/")) return "current-work";
+  if (path.includes("/current-work/")) return "historical-work";
   if (path.includes("/changelog/")) return "changelog";
   return null;
 }
 
 function tabTarget(section: KnowledgeSection, tabId: string, snapshot: KnowledgeSnapshot) {
-  const tab = section.tabs.find(tab => tab.id === tabId || tab.legacyIds?.includes(tabId));
+  const tab = section.tabs.find(tab => tab.id === tabId);
   const doc = snapshot.documents.find(doc => doc.path === `docs/architecture-knowledge/${section.document}`);
   if (!tab || !doc) return doc?.id ?? "contents";
   if (tab.contentKind === "shared-supabase") return "shared-table-reference";
   if (tab.contentKind === "shared-records" || tab.contentKind.endsWith("-records")) return `records-${tab.id}`;
-  const heading = tab.heading ?? tab.headings?.[0];
+  const heading = tab.heading;
   return heading ? `${doc.id}--${slug(heading)}` : doc.id;
 }
 
@@ -100,7 +100,6 @@ function localLink(href: string, doc: ExportDocument, snapshot: KnowledgeSnapsho
     if (url.hash && url.hash !== `#${section.id}`) return `#${section.id}--${url.hash.slice(1)}`;
     return `#${tabTarget(section, url.searchParams.get("tab") ?? "overview", snapshot)}`;
   }
-  if (url.pathname.startsWith("/style-guide/chronicle-knowledge-base/work-manual")) return "#chronicle-work-manual";
   if (url.pathname.startsWith("/style-guide/chronicle-knowledge-base/archive/") || url.pathname.startsWith("/style-guide/changelog/")) {
     const id = decodeURIComponent(url.pathname.split("/").at(-1)!);
     const record = snapshot.documents.find(candidate => candidate.path.endsWith(`/${id}.md`));
@@ -165,9 +164,9 @@ function contents(snapshot: KnowledgeSnapshot) {
 }
 
 function recordIndexes(snapshot: KnowledgeSnapshot) {
-  return ["issues", "current-work", "changelog"].map(group => {
+  return ["issues", "historical-work", "changelog"].map(group => {
     const documents = snapshot.documents.filter(doc => recordGroup(doc.path) === group);
-    return `<section id="records-${group}"><h2>${{ issues: "Issues", "current-work": "Current Work and Archives", changelog: "Canonical Changelog" }[group]}</h2>
+    return `<section id="records-${group}"><h2>${{ issues: "Issues", "historical-work": "Historical Work Records", changelog: "Canonical Changelog" }[group]}</h2>
       <p>Original repository records are retained below, including their status, ownership, evidence limits, and any correction relationships. Inclusion does not make unfinished work accepted history.</p>
       ${documents.length ? `<ul>${documents.map(doc => `<li><a href="#${doc.id}">${escapeHtml(doc.path)}</a></li>`).join("")}</ul>` : "<p>No repository records in this snapshot.</p>"}</section>`;
   }).join("\n");
@@ -290,7 +289,7 @@ export async function buildKnowledgeHtml(snapshot: KnowledgeSnapshot, origin: st
       if (!parsed.getElementById(id)) anchor.href = `#${parsed.getElementById(`export-${id}`) ? `export-${id}` : "knowledge-base-top"}`;
     } else if (url.origin === origin && url.pathname === "/style-guide/chronicle-knowledge-base") {
       const section = snapshot.sections.find(section => section.id === url.searchParams.get("section"));
-      const tab = section?.tabs.find(tab => tab.id === url.searchParams.get("tab") || tab.legacyIds?.includes(url.searchParams.get("tab") ?? ""));
+      const tab = section?.tabs.find(tab => tab.id === url.searchParams.get("tab"));
       const target = url.hash.slice(1);
       anchor.href = `#${target && parsed.getElementById(target) ? target : section ? tab ? `${section.id}-panel-${tab.id}` : section.id : "knowledge-base-top"}`;
     } else {

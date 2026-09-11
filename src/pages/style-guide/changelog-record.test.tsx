@@ -248,9 +248,9 @@ describe("ChangelogRecordPage", () => {
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: "Complete Changelog record" })).toHaveFocus();
     });
-    expect(screen.getByRole("link", { name: "Back to Quality Hub Changelog" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Back to Admin Panel" })).toHaveAttribute(
       "href",
-      "/style-guide/ui-audit?view=changelog#changelog-LEGACY-QH-cl-900",
+      "/?tab=admin",
     );
   });
 
@@ -335,20 +335,20 @@ describe("ChangelogRecordPage", () => {
     [
       "global Knowledge Base origin",
       "/style-guide/changelog/LEGACY-QH-cl-900?scope=global&from=knowledge-base",
-      "Back to Quality Hub Changelog",
-      "/style-guide/ui-audit?view=changelog#changelog-LEGACY-QH-cl-900",
+      "Back to Admin Panel",
+      "/?tab=admin",
     ],
     [
       "global archive origin",
       "/style-guide/changelog/LEGACY-QH-cl-900?scope=global&from=archive",
-      "Back to Quality Hub Changelog",
-      "/style-guide/ui-audit?view=changelog#changelog-LEGACY-QH-cl-900",
+      "Back to Admin Panel",
+      "/?tab=admin",
     ],
     [
       "Gallery overview origin",
       "/style-guide/changelog/LEGACY-QH-cl-900?scope=community-gallery&from=quality-hub-overview",
-      "Back to Community Gallery Changelog",
-      "/style-guide/chronicle-knowledge-base?section=community-gallery&tab=changelog#changelog-LEGACY-QH-cl-900",
+      "Back to Admin Panel",
+      "/?tab=admin",
     ],
   ])(
     "falls back safely for an incompatible %s",
@@ -432,10 +432,10 @@ describe("ChangelogRecordPage", () => {
     expect(screen.getByRole("heading", { name: "CG-CORRECTION-900" })).toBeInTheDocument();
     expect(screen.getByText("The route result needed correction.")).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Back to Community Gallery Changelog" }),
+      screen.getByRole("link", { name: "Back to Admin Panel" }),
     ).toHaveAttribute(
       "href",
-      "/style-guide/chronicle-knowledge-base?section=community-gallery&tab=changelog#changelog-CG-CHANGE-900",
+      "/?tab=admin",
     );
     expect(
       screen.queryByRole("link", {
@@ -445,7 +445,7 @@ describe("ChangelogRecordPage", () => {
     expect(screen.getByText(/reciprocal archive were not verified together/)).toBeInTheDocument();
   });
 
-  it("uses the verified reciprocal archive for both accepted-record navigation paths", async () => {
+  it("keeps the verified archive link while the header returns to Admin", async () => {
     const entry = correctedAcceptedEntry();
     renderDetail(
       `/style-guide/changelog/${entry.id}?scope=community-gallery&from=archive`,
@@ -457,10 +457,10 @@ describe("ChangelogRecordPage", () => {
       await screen.findAllByText("Corrected accepted route fixture"),
     ).not.toHaveLength(0);
     expect(
-      screen.getByRole("link", { name: "Back to archived Current Work" }),
+      screen.getByRole("link", { name: "Back to Admin Panel" }),
     ).toHaveAttribute(
       "href",
-      "/style-guide/chronicle-knowledge-base/archive/CG-WORK-900",
+      "/?tab=admin",
     );
     expect(
       screen.getByRole("link", {

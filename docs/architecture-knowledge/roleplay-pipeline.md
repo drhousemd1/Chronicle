@@ -94,7 +94,7 @@
 
         <h2>What a Successful End-to-End Turn Accomplishes</h2>
         <p>The pipeline succeeds when the requested action is preserved from beginning to end: the selected context belongs to the correct conversation and action, the response returns to the correct current message version, the accepted exchange is durably saved, and any applied background changes are supported by that exchange. Later turns can then use current saved developments without reviving rejected text, duplicating player actions, granting characters unauthorized knowledge, or confusing a model suggestion with established state.</p>
-        <p>This Overview explains the connected behavior. <strong>App Architecture</strong> provides the detailed processing paths and source references. <strong>Supabase Tables</strong> relates the stages to the documented storage model. <strong>Issues</strong>, <strong>Current Work</strong>, and <strong>Changelog</strong> separately describe verified gaps, active work, and recorded history. The <a href="/style-guide/chronicle-knowledge-base?section=chat-interface&amp;tab=overview">Chat Interface Overview</a> remains the companion account of the visible play experience.</p>
+        <p>This Overview explains the connected behavior. <strong>App Architecture</strong> provides the detailed processing paths and source references. <strong>Supabase Tables</strong> relates the stages to the documented storage model. <strong>Issues</strong> describes verified problems and audit findings, while <strong>Changelog</strong> records meaningful completed changes. The <a href="/style-guide/chronicle-knowledge-base?section=chat-interface&amp;tab=overview">Chat Interface Overview</a> remains the companion account of the visible play experience.</p>
 
         <h2>Explore the Detailed Architecture</h2>
         <nav class="rp-lifecycle" aria-label="Roleplay Pipeline stages">
@@ -105,7 +105,7 @@
           <a href="/style-guide/chronicle-knowledge-base?section=roleplay-pipeline&amp;tab=app-architecture#pipeline-stage-extract-update"><span class="rp-lifecycle__number">Stage 5 · API Call 2</span>Extract and update</a>
         </nav>
 
-        <p class="rp-inline-note">This manual describes the referenced repository source. It does not establish live provider or Supabase behavior. Testing and work procedures remain in the <a class="rp-action-link" href="/style-guide/chronicle-knowledge-base?section=chronicle-work-manual&amp;tab=start-here">Chronicle Work Manual</a>.</p>
+        <p class="rp-inline-note">This manual describes the referenced repository source. It does not establish live provider or Supabase behavior.</p>
 
 # App Architecture
 

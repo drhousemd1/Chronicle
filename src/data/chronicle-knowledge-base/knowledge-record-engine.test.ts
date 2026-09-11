@@ -1,5 +1,4 @@
 import { spawnSync, type SpawnSyncReturns } from "node:child_process";
-import { createHash } from "node:crypto";
 import {
   chmod,
   mkdir,
@@ -19,16 +18,10 @@ import {
   applyKnowledgeRecordTransaction,
   getKnowledgeRecordEngineStatus,
   prepareKnowledgeRecordTransaction,
-  recoverKnowledgeRecordTransaction,
   type KnowledgeRecordEngineDependencies,
 } from "../../../scripts/knowledge-records/engine";
 import {
-  validateStoredKnowledgeRecordCandidate,
-  type CandidateOperation,
-} from "../../../scripts/knowledge-records/candidate";
-import {
   canonicalTemporarySourcePath,
-  readCanonicalFileState,
 } from "../../../scripts/knowledge-records/canonical-files";
 import {
   CHANGELOG_MIGRATION_RECEIPT_RECORD_ID,
@@ -44,29 +37,20 @@ import {
   acquireKnowledgeScopedWriterLock,
   acquireKnowledgeTransactionLock,
   appendKnowledgeTransactionJournalEvent,
-  createPreparedKnowledgeTransaction,
-  generateKnowledgeTransactionId,
   getKnowledgeTransactionStatus,
   openVerifiedKnowledgeTransaction,
   readKnowledgeTransactionJournal,
   releaseKnowledgeCertificationLease,
   releaseKnowledgeScopedWriterLock,
   releaseKnowledgeTransactionLock,
-  type KnowledgeTransactionOperationInput,
-  type KnowledgeTransactionSnapshot,
 } from "../../../scripts/knowledge-records/transaction-store";
 import {
   KNOWLEDGE_TRANSACTION_FIXTURE_AS_OF,
   KNOWLEDGE_TRANSACTION_FIXTURE_ACCEPTED_UPDATE_ID,
-  KNOWLEDGE_TRANSACTION_FIXTURE_CHANGE_ID,
   KNOWLEDGE_TRANSACTION_FIXTURE_CORRECTION_ID,
   KNOWLEDGE_TRANSACTION_FIXTURE_CREATED_ISSUE_ID,
-  KNOWLEDGE_TRANSACTION_FIXTURE_CREATED_PROJECT_ID,
-  KNOWLEDGE_TRANSACTION_FIXTURE_KS_PROJECT_ID,
   KNOWLEDGE_TRANSACTION_FIXTURE_ISSUE_ID,
   KNOWLEDGE_TRANSACTION_FIXTURE_LEGACY_ID,
-  KNOWLEDGE_TRANSACTION_FIXTURE_PROJECT_ID,
-  createCloseoutRequestPackage,
   createAcceptedUpdateRequestPackage,
   createCorrectionRequestPackage,
   createIssueCreateRequestPackage,
@@ -74,12 +58,7 @@ import {
   createIssueUpdateRequestPackageForSource,
   createKnowledgeRecordTransactionTestRepository,
   createLegacyImportRequestPackage,
-  createProjectCreateRequestPackage,
-  createKnowledgeSystemProjectCreateRequestPackage,
-  createProjectUpdateRequestPackage,
-  createResolvedIssueCloseoutRequestPackage,
   installCorrectionTarget,
-  installProjectCreateBaseline,
   type KnowledgeRecordRequestPackage,
   type KnowledgeRecordTransactionTestRepository,
 } from "./knowledge-record-transaction-test-fixtures";
@@ -93,14 +72,6 @@ const KNOWLEDGE_RECORDS_CLI = path.join(
 const KNOWLEDGE_TRANSACTION_GUARD = path.join(
   PROJECT_ROOT,
   "scripts/assert-no-unfinished-knowledge-transaction.mjs",
-);
-const ARCHIVED_PROJECT_PATH = canonicalRecordSourcePath(
-  "archived-current-work",
-  KNOWLEDGE_TRANSACTION_FIXTURE_PROJECT_ID,
-);
-const ACCEPTED_CHANGE_PATH = canonicalRecordSourcePath(
-  "changelog",
-  KNOWLEDGE_TRANSACTION_FIXTURE_CHANGE_ID,
 );
 const LEGACY_CHANGE_PATH = canonicalRecordSourcePath(
   "changelog",
@@ -152,85 +123,6 @@ function expectInventoriesIdentical(
     expect(actualEntry.sha256).toBe(expectedEntry.sha256);
     expect(actualEntry.bytes.equals(expectedEntry.bytes)).toBe(true);
   }
-}
-
-async function storedCloseoutOperations(
-  inventory: CanonicalSourceInventory,
-  requestPackage: KnowledgeRecordRequestPackage,
-  includeIssueUpdate: boolean,
-): Promise<readonly CandidateOperation[]> {
-  const byPath = new Map(
-    inventory.entries.map((entry) => [entry.sourcePath, entry]),
-  );
-  const activeEntry = byPath.get(
-    canonicalRecordSourcePath(
-      "active-current-work",
-      KNOWLEDGE_TRANSACTION_FIXTURE_PROJECT_ID,
-    ),
-  );
-  const issueEntry = byPath.get(
-    canonicalRecordSourcePath(
-      "issue",
-      KNOWLEDGE_TRANSACTION_FIXTURE_ISSUE_ID,
-    ),
-  );
-  if (!activeEntry || !issueEntry) {
-    throw new Error("Stored-closeout fixture is missing its active source state.");
-  }
-  const operations: CandidateOperation[] = [];
-  if (includeIssueUpdate) {
-    operations.push({
-      index: operations.length,
-      action: "update",
-      sourcePath: issueEntry.sourcePath,
-      beforeBytes: issueEntry.bytes,
-      beforeMode: issueEntry.mode,
-      afterBytes: await readFile(
-        requestPackage.contentPaths[
-          `${KNOWLEDGE_TRANSACTION_FIXTURE_ISSUE_ID}.md`
-        ],
-      ),
-      afterMode: issueEntry.mode,
-    });
-  }
-  operations.push(
-    {
-      index: operations.length,
-      action: "create",
-      sourcePath: ARCHIVED_PROJECT_PATH,
-      beforeBytes: null,
-      beforeMode: null,
-      afterBytes: await readFile(
-        requestPackage.contentPaths[
-          `${KNOWLEDGE_TRANSACTION_FIXTURE_PROJECT_ID}.md`
-        ],
-      ),
-      afterMode: 0o644,
-    },
-    {
-      index: operations.length + 1,
-      action: "create",
-      sourcePath: ACCEPTED_CHANGE_PATH,
-      beforeBytes: null,
-      beforeMode: null,
-      afterBytes: await readFile(
-        requestPackage.contentPaths[
-          `${KNOWLEDGE_TRANSACTION_FIXTURE_CHANGE_ID}.md`
-        ],
-      ),
-      afterMode: 0o644,
-    },
-    {
-      index: operations.length + 2,
-      action: "remove",
-      sourcePath: activeEntry.sourcePath,
-      beforeBytes: activeEntry.bytes,
-      beforeMode: activeEntry.mode,
-      afterBytes: null,
-      afterMode: null,
-    },
-  );
-  return operations;
 }
 
 function runCli(
@@ -334,87 +226,19 @@ async function expectTransactionUnfinished(
   ).toMatchObject({ unfinished: true, terminalOutcome: null });
 }
 
-async function closeoutFileStates(
-  repository: KnowledgeRecordTransactionTestRepository,
-) {
-  return {
-    archive: (
-      await readCanonicalFileState(
-        repository.repoRoot,
-        ARCHIVED_PROJECT_PATH,
-      )
-    ).state,
-    changelog: (
-      await readCanonicalFileState(
-        repository.repoRoot,
-        ACCEPTED_CHANGE_PATH,
-      )
-    ).state,
-    active: (
-      await readCanonicalFileState(
-        repository.repoRoot,
-        repository.activeProjectPath,
-      )
-    ).state,
-  };
-}
-
-async function createPreparedCloseoutFixture() {
+async function createPreparedIssueUpdateFixture() {
   const repository = track(
     await createKnowledgeRecordTransactionTestRepository(),
   );
-  const requestPackage = track(await createCloseoutRequestPackage());
+  const requestPackage = track(await createIssueUpdateRequestPackage());
   const activePath = absoluteCanonicalPath(
     repository.repoRoot,
-    repository.activeProjectPath,
+    repository.issuePath,
   );
   await chmod(activePath, 0o640);
   const baseline = await readCanonicalSourceInventory(repository.repoRoot);
-  const prepared = await prepareKnowledgeRecordTransaction({
-    repoRoot: repository.repoRoot,
-    requestPath: requestPackage.requestPath,
-    expectedKind: "closeout",
-    dependencies: engineDependencies(),
-  });
+  const prepared = await prepareIssueUpdate(repository, requestPackage);
   return { repository, requestPackage, activePath, baseline, prepared };
-}
-
-async function createPreparedProjectUpdateFixture() {
-  const repository = track(
-    await createKnowledgeRecordTransactionTestRepository(),
-  );
-  const requestPackage = track(await createProjectUpdateRequestPackage());
-  const activePath = absoluteCanonicalPath(
-    repository.repoRoot,
-    repository.activeProjectPath,
-  );
-  await chmod(activePath, 0o640);
-  const baseline = await readCanonicalSourceInventory(repository.repoRoot);
-  const prepared = await prepareProjectUpdate(repository, requestPackage);
-  return { repository, requestPackage, activePath, baseline, prepared };
-}
-
-async function createPreparedProjectCreateFixture() {
-  const repository = track(
-    await createKnowledgeRecordTransactionTestRepository(),
-  );
-  await installProjectCreateBaseline(repository.repoRoot);
-  const requestPackage = track(await createProjectCreateRequestPackage());
-  const projectPath = absoluteCanonicalPath(
-    repository.repoRoot,
-    canonicalRecordSourcePath(
-      "active-current-work",
-      KNOWLEDGE_TRANSACTION_FIXTURE_CREATED_PROJECT_ID,
-    ),
-  );
-  const baseline = await readCanonicalSourceInventory(repository.repoRoot);
-  const prepared = await prepareKnowledgeRecordTransaction({
-    repoRoot: repository.repoRoot,
-    requestPath: requestPackage.requestPath,
-    expectedKind: "project-create",
-    dependencies: engineDependencies(),
-  });
-  return { repository, requestPackage, projectPath, baseline, prepared };
 }
 
 function abruptEnvironment(
@@ -447,54 +271,9 @@ function expectAbruptCliExit(result: SpawnSyncReturns<string>) {
   expect(result.stderr).toBe("");
 }
 
-const APPLY_CANONICAL_CRASH_POINTS = [
-  "apply:partial-created:after-stage:1",
-  "apply:payload-written:after-stage:1",
-  "apply:mode-set:after-stage:1",
-  "apply:artifact-ready:after-stage:1",
-  "apply:artifact-removed:after-stage:1",
-  "apply:canonical-published:after-stage:1",
-  "apply:artifact-removed:after-stage:2",
-  "apply:anchor-created:before-anchor:1",
-  "apply:canonical-captured:capture:1",
-  "cleanup:capture-cleaned:capture:1",
-  "cleanup:artifact-removed:before-anchor:1",
-] as const;
 
-const RESTORE_CANONICAL_CRASH_POINTS = [
-  "restore:canonical-published:before-anchor:1",
-  "restore:capture-cleaned:capture:1",
-  "restore:artifact-removed:before-anchor:1",
-  "restore:anchor-created:after-anchor:1",
-  "restore:canonical-captured:capture:1",
-  "restore:capture-cleaned:capture:2",
-  "restore:artifact-removed:after-anchor:1",
-] as const;
 
-const CLOSEOUT_APPLY_PRIMITIVE_CRASH_POINTS = [
-  "apply:create:partial-created:after-stage:1",
-  "apply:chmod:partial-created:after-stage:1",
-  "apply:write:payload-written:after-stage:1",
-  "apply:chmod:mode-set:after-stage:1",
-  "apply:link:artifact-ready:after-stage:1",
-  "apply:unlink:artifact-removed:after-stage:1",
-  "apply:link:canonical-published:after-stage:1",
-  "apply:unlink:artifact-removed:after-stage:2",
-  "apply:link:anchor-created:before-anchor:1",
-  "apply:rename:canonical-captured:capture:1",
-  "cleanup:unlink:capture-cleaned:capture:1",
-  "cleanup:unlink:artifact-removed:before-anchor:1",
-] as const;
 
-const CLOSEOUT_RESTORE_PRIMITIVE_CRASH_POINTS = [
-  "restore:link:canonical-published:before-anchor:1",
-  "restore:unlink:capture-cleaned:capture:1",
-  "restore:unlink:artifact-removed:before-anchor:1",
-  "restore:link:anchor-created:after-anchor:1",
-  "restore:rename:canonical-captured:capture:1",
-  "restore:unlink:capture-cleaned:capture:2",
-  "restore:unlink:artifact-removed:after-anchor:1",
-] as const;
 
 const UPDATE_APPLY_PRIMITIVE_CRASH_POINTS = [
   "apply:create:partial-created:after-stage:1",
@@ -526,32 +305,20 @@ const UPDATE_RESTORE_PRIMITIVE_CRASH_POINTS = [
   "restore:unlink:artifact-removed:before-stage:2",
 ] as const;
 
-async function prepareProjectUpdate(
+async function prepareIssueUpdate(
   repository: KnowledgeRecordTransactionTestRepository,
   requestPackage: KnowledgeRecordRequestPackage,
 ) {
   return prepareKnowledgeRecordTransaction({
     repoRoot: repository.repoRoot,
     requestPath: requestPackage.requestPath,
-    expectedKind: "project-update",
+    expectedKind: "issue-update",
     dependencies: engineDependencies(),
   });
 }
 
 describe("knowledge record transaction engine", () => {
   const prepareCases = [
-    {
-      kind: "project-create" as const,
-      operationCount: 1,
-      installBaseline: installProjectCreateBaseline,
-      createPackage: createProjectCreateRequestPackage,
-    },
-    {
-      kind: "project-update" as const,
-      operationCount: 1,
-      installBaseline: async (_repoRoot: string) => undefined,
-      createPackage: createProjectUpdateRequestPackage,
-    },
     {
       kind: "issue-create" as const,
       operationCount: 1,
@@ -575,12 +342,6 @@ describe("knowledge record transaction engine", () => {
       operationCount: 1,
       installBaseline: installCorrectionTarget,
       createPackage: createCorrectionRequestPackage,
-    },
-    {
-      kind: "closeout" as const,
-      operationCount: 3,
-      installBaseline: async (_repoRoot: string) => undefined,
-      createPackage: createCloseoutRequestPackage,
     },
   ];
 
@@ -752,15 +513,6 @@ describe("knowledge record transaction engine", () => {
 
   it.each([
     {
-      kind: "project-update" as const,
-      sourcePath: canonicalRecordSourcePath(
-        "active-current-work",
-        KNOWLEDGE_TRANSACTION_FIXTURE_PROJECT_ID,
-      ),
-      contentName: `${KNOWLEDGE_TRANSACTION_FIXTURE_PROJECT_ID}.md`,
-      createPackage: createProjectUpdateRequestPackage,
-    },
-    {
       kind: "issue-update" as const,
       sourcePath: canonicalRecordSourcePath(
         "issue",
@@ -792,252 +544,20 @@ describe("knowledge record transaction engine", () => {
     },
   );
 
-  it("rejects a closeout that tries to update an Issue not linked by the active project", async () => {
+  it("applies a Issue update once and treats a repeated apply as idempotent", async () => {
     const repository = track(
       await createKnowledgeRecordTransactionTestRepository(),
     );
-    const requestPackage = track(
-      await createResolvedIssueCloseoutRequestPackage(),
-    );
+    const requestPackage = track(await createIssueUpdateRequestPackage());
     const activePath = absoluteCanonicalPath(
       repository.repoRoot,
-      repository.activeProjectPath,
-    );
-    await writeFile(
-      activePath,
-      (await readFile(activePath, "utf8"))
-        .replace("origin: verified_issue", "origin: documentation_architecture")
-        .replace(
-          `linked_issue_ids: [${KNOWLEDGE_TRANSACTION_FIXTURE_ISSUE_ID}]`,
-          "linked_issue_ids: []",
-        ),
-      "utf8",
-    );
-    const inventory = await readCanonicalSourceInventory(repository.repoRoot);
-    const activeEntry = inventory.entries.find(
-      (entry) => entry.sourcePath === repository.activeProjectPath,
-    );
-    if (!activeEntry) throw new Error("Missing active-project fixture source.");
-    const request = JSON.parse(
-      await readFile(requestPackage.requestPath, "utf8"),
-    ) as Record<string, unknown>;
-    request.expected_project_sha256 = activeEntry.sha256;
-    await writeFile(
-      requestPackage.requestPath,
-      `${JSON.stringify(request, null, 2)}\n`,
-      "utf8",
-    );
-
-    await expect(
-      prepareKnowledgeRecordTransaction({
-        repoRoot: repository.repoRoot,
-        requestPath: requestPackage.requestPath,
-        expectedKind: "closeout",
-        dependencies: engineDependencies(),
-      }),
-    ).rejects.toThrow(/only Issues linked by the active project/);
-  });
-
-  it("rejects a closeout that adds an Issue to the archived project", async () => {
-    const repository = track(
-      await createKnowledgeRecordTransactionTestRepository(),
-    );
-    const requestPackage = track(await createCloseoutRequestPackage());
-    const activePath = absoluteCanonicalPath(
-      repository.repoRoot,
-      repository.activeProjectPath,
-    );
-    await writeFile(
-      activePath,
-      (await readFile(activePath, "utf8"))
-        .replace("origin: verified_issue", "origin: documentation_architecture")
-        .replace(
-          `linked_issue_ids: [${KNOWLEDGE_TRANSACTION_FIXTURE_ISSUE_ID}]`,
-          "linked_issue_ids: []",
-        ),
-      "utf8",
-    );
-    const inventory = await readCanonicalSourceInventory(repository.repoRoot);
-    const activeEntry = inventory.entries.find(
-      (entry) => entry.sourcePath === repository.activeProjectPath,
-    );
-    if (!activeEntry) throw new Error("Missing active-project fixture source.");
-    const request = JSON.parse(
-      await readFile(requestPackage.requestPath, "utf8"),
-    ) as Record<string, unknown>;
-    request.expected_project_sha256 = activeEntry.sha256;
-    await writeFile(
-      requestPackage.requestPath,
-      `${JSON.stringify(request, null, 2)}\n`,
-      "utf8",
-    );
-
-    await expect(
-      prepareKnowledgeRecordTransaction({
-        repoRoot: repository.repoRoot,
-        requestPath: requestPackage.requestPath,
-        expectedKind: "closeout",
-        dependencies: engineDependencies(),
-      }),
-    ).rejects.toThrow(/must preserve the active project's linked Issues exactly/);
-  });
-
-  it("rejects a closeout candidate whose accepted Changelog narrative is incomplete", async () => {
-    const repository = track(
-      await createKnowledgeRecordTransactionTestRepository(),
-    );
-    const requestPackage = track(await createCloseoutRequestPackage());
-    const changelogContentPath =
-      requestPackage.contentPaths[`${KNOWLEDGE_TRANSACTION_FIXTURE_CHANGE_ID}.md`];
-    const incompleteChangelog = (await readFile(changelogContentPath, "utf8")).replace(
-      /^accepted_evidence_limits:.*\n/m,
-      "",
-    );
-    await writeFile(changelogContentPath, incompleteChangelog, "utf8");
-    const before = await readCanonicalSourceInventory(repository.repoRoot);
-
-    await expect(
-      prepareKnowledgeRecordTransaction({
-        repoRoot: repository.repoRoot,
-        requestPath: requestPackage.requestPath,
-        expectedKind: "closeout",
-        dependencies: engineDependencies(),
-      }),
-    ).rejects.toThrow(/accepted_evidence_limits/);
-    expectInventoriesIdentical(
-      await readCanonicalSourceInventory(repository.repoRoot),
-      before,
-    );
-  });
-
-  it.each([
-    {
-      name: "unlinked Issue update",
-      includeIssueUpdate: true,
-      createPackage: createResolvedIssueCloseoutRequestPackage,
-      message: /only Issues linked by the active project/,
-    },
-    {
-      name: "archive-only Issue ownership change",
-      includeIssueUpdate: false,
-      createPackage: createCloseoutRequestPackage,
-      message: /must preserve the active project's linked Issues exactly/,
-    },
-  ])(
-    "revalidates $name from a stored closeout before apply",
-    async ({ includeIssueUpdate, createPackage, message }) => {
-      const repository = track(
-        await createKnowledgeRecordTransactionTestRepository(),
-      );
-      const requestPackage = track(await createPackage());
-      const activePath = absoluteCanonicalPath(
-        repository.repoRoot,
-        repository.activeProjectPath,
-      );
-      await writeFile(
-        activePath,
-        (await readFile(activePath, "utf8"))
-          .replace("origin: verified_issue", "origin: documentation_architecture")
-          .replace(
-            `linked_issue_ids: [${KNOWLEDGE_TRANSACTION_FIXTURE_ISSUE_ID}]`,
-            "linked_issue_ids: []",
-          ),
-        "utf8",
-      );
-      const inventory = await readCanonicalSourceInventory(repository.repoRoot);
-      const operations = await storedCloseoutOperations(
-        inventory,
-        requestPackage,
-        includeIssueUpdate,
-      );
-
-      expect(() =>
-        validateStoredKnowledgeRecordCandidate(
-          inventory,
-          KNOWLEDGE_TRANSACTION_FIXTURE_AS_OF,
-          operations,
-          "closeout",
-        ),
-      ).toThrow(message);
-    },
-  );
-
-  it("rejects a closeout whose active-project source became stale before prepare", async () => {
-    const repository = track(
-      await createKnowledgeRecordTransactionTestRepository(),
-    );
-    const closeoutPackage = track(await createCloseoutRequestPackage());
-    const projectUpdatePackage = track(await createProjectUpdateRequestPackage());
-    await writeFile(
-      absoluteCanonicalPath(repository.repoRoot, repository.activeProjectPath),
-      await readFile(
-        projectUpdatePackage.contentPaths[
-          `${KNOWLEDGE_TRANSACTION_FIXTURE_PROJECT_ID}.md`
-        ],
-      ),
-    );
-    const before = await readCanonicalSourceInventory(repository.repoRoot);
-
-    await expect(
-      prepareKnowledgeRecordTransaction({
-        repoRoot: repository.repoRoot,
-        requestPath: closeoutPackage.requestPath,
-        expectedKind: "closeout",
-        dependencies: engineDependencies(),
-      }),
-    ).rejects.toThrow(/already stale when this request was prepared/);
-    expectInventoriesIdentical(
-      await readCanonicalSourceInventory(repository.repoRoot),
-      before,
-    );
-  });
-
-  it("rejects a closeout whose linked-Issue source became stale before prepare", async () => {
-    const repository = track(
-      await createKnowledgeRecordTransactionTestRepository(),
-    );
-    const closeoutPackage = track(
-      await createResolvedIssueCloseoutRequestPackage(),
-    );
-    const issueUpdatePackage = track(await createIssueUpdateRequestPackage());
-    await writeFile(
-      absoluteCanonicalPath(repository.repoRoot, repository.issuePath),
-      await readFile(
-        issueUpdatePackage.contentPaths[
-          `${KNOWLEDGE_TRANSACTION_FIXTURE_ISSUE_ID}.md`
-        ],
-      ),
-    );
-    const before = await readCanonicalSourceInventory(repository.repoRoot);
-
-    await expect(
-      prepareKnowledgeRecordTransaction({
-        repoRoot: repository.repoRoot,
-        requestPath: closeoutPackage.requestPath,
-        expectedKind: "closeout",
-        dependencies: engineDependencies(),
-      }),
-    ).rejects.toThrow(/already stale when this request was prepared/);
-    expectInventoriesIdentical(
-      await readCanonicalSourceInventory(repository.repoRoot),
-      before,
-    );
-  });
-
-  it("applies a project update once and treats a repeated apply as idempotent", async () => {
-    const repository = track(
-      await createKnowledgeRecordTransactionTestRepository(),
-    );
-    const requestPackage = track(await createProjectUpdateRequestPackage());
-    const activePath = absoluteCanonicalPath(
-      repository.repoRoot,
-      repository.activeProjectPath,
+      repository.issuePath,
     );
     await chmod(activePath, 0o640);
     const expectedBytes = await readFile(
-      requestPackage.contentPaths[`${KNOWLEDGE_TRANSACTION_FIXTURE_PROJECT_ID}.md`],
+      requestPackage.contentPaths[`${KNOWLEDGE_TRANSACTION_FIXTURE_ISSUE_ID}.md`],
     );
-    const prepared = await prepareProjectUpdate(repository, requestPackage);
+    const prepared = await prepareIssueUpdate(repository, requestPackage);
 
     const applied = await applyKnowledgeRecordTransaction({
       repoRoot: repository.repoRoot,
@@ -1241,20 +761,6 @@ describe("knowledge record transaction engine", () => {
 
   it.each([
     {
-      kind: "project-create" as const,
-      recordId: KNOWLEDGE_TRANSACTION_FIXTURE_CREATED_PROJECT_ID,
-      location: "active-current-work" as const,
-      installBaseline: installProjectCreateBaseline,
-      createPackage: createProjectCreateRequestPackage,
-    },
-    {
-      kind: "project-create" as const,
-      recordId: KNOWLEDGE_TRANSACTION_FIXTURE_KS_PROJECT_ID,
-      location: "active-current-work" as const,
-      installBaseline: installProjectCreateBaseline,
-      createPackage: createKnowledgeSystemProjectCreateRequestPackage,
-    },
-    {
       kind: "issue-create" as const,
       recordId: KNOWLEDGE_TRANSACTION_FIXTURE_CREATED_ISSUE_ID,
       location: "issue" as const,
@@ -1311,410 +817,6 @@ describe("knowledge record transaction engine", () => {
       transactionId: prepared.transactionId,
       outcome: "already-applied",
       validationSha256: applied.validationSha256,
-    });
-  });
-
-  it("rejects project-create when its canonical destination already exists", async () => {
-    const repository = track(
-      await createKnowledgeRecordTransactionTestRepository(),
-    );
-    await installProjectCreateBaseline(repository.repoRoot);
-    const requestPackage = track(await createProjectCreateRequestPackage());
-    const projectPath = absoluteCanonicalPath(
-      repository.repoRoot,
-      canonicalRecordSourcePath(
-        "active-current-work",
-        KNOWLEDGE_TRANSACTION_FIXTURE_CREATED_PROJECT_ID,
-      ),
-    );
-    await writeFile(
-      projectPath,
-      await readFile(
-        requestPackage.contentPaths[
-          `${KNOWLEDGE_TRANSACTION_FIXTURE_CREATED_PROJECT_ID}.md`
-        ],
-      ),
-      { mode: 0o644 },
-    );
-
-    await expect(
-      prepareKnowledgeRecordTransaction({
-        repoRoot: repository.repoRoot,
-        requestPath: requestPackage.requestPath,
-        expectedKind: "project-create",
-        dependencies: engineDependencies(),
-      }),
-    ).rejects.toThrow(/already exists|expected.*absent/i);
-  });
-
-  it("rejects a project-create candidate that would leave two explicit Primary projects", async () => {
-    const repository = track(
-      await createKnowledgeRecordTransactionTestRepository(),
-    );
-    await installProjectCreateBaseline(repository.repoRoot);
-    const existingProjectPath = absoluteCanonicalPath(
-      repository.repoRoot,
-      repository.activeProjectPath,
-    );
-    await writeFile(
-      existingProjectPath,
-      (await readFile(existingProjectPath, "utf8")).replace(
-        "- Resume priority: Secondary",
-        "- Resume priority: Primary",
-      ),
-      "utf8",
-    );
-    const requestPackage = track(await createProjectCreateRequestPackage());
-
-    await expect(
-      prepareKnowledgeRecordTransaction({
-        repoRoot: repository.repoRoot,
-        requestPath: requestPackage.requestPath,
-        expectedKind: "project-create",
-        dependencies: engineDependencies(),
-      }),
-    ).rejects.toThrow(/expected exactly one primary resume project, found 2/);
-  });
-
-  it.each([
-    {
-      label: "uses an update instead of a create",
-      build: async (repository: KnowledgeRecordTransactionTestRepository) => {
-        const sourcePath = repository.activeProjectPath;
-        const beforeBytes = await readFile(
-          absoluteCanonicalPath(repository.repoRoot, sourcePath),
-        );
-        return {
-          snapshotSources: [
-            {
-              path: sourcePath,
-              state: "present" as const,
-              sha256: createHash("sha256").update(beforeBytes).digest("hex"),
-              mode: await fileMode(
-                absoluteCanonicalPath(repository.repoRoot, sourcePath),
-              ),
-            },
-          ],
-          operations: [
-            {
-              action: "update" as const,
-              path: sourcePath,
-              beforeBytes,
-              afterBytes: Buffer.concat([beforeBytes, Buffer.from("\nupdated\n")]),
-            },
-          ],
-        };
-      },
-    },
-    {
-      label: "targets an Issue instead of active Current Work",
-      build: async (_repository: KnowledgeRecordTransactionTestRepository) => {
-        const sourcePath = canonicalRecordSourcePath("issue", "CG-ISSUE-002");
-        return {
-          snapshotSources: [{ path: sourcePath, state: "absent" as const }],
-          operations: [
-            {
-              action: "create" as const,
-              path: sourcePath,
-              afterBytes: Buffer.from("wrong canonical location", "utf8"),
-            },
-          ],
-        };
-      },
-    },
-    {
-      label: "contains more than one create operation",
-      build: async (_repository: KnowledgeRecordTransactionTestRepository) => {
-        const sourcePaths = ["CG-WORK-002", "CG-WORK-003"].map((projectId) =>
-          canonicalRecordSourcePath("active-current-work", projectId),
-        );
-        return {
-          snapshotSources: sourcePaths.map((sourcePath) => ({
-            path: sourcePath,
-            state: "absent" as const,
-          })),
-          operations: sourcePaths.map((sourcePath) => ({
-            action: "create" as const,
-            path: sourcePath,
-            afterBytes: Buffer.from(`unexpected extra create: ${sourcePath}`, "utf8"),
-          })),
-        };
-      },
-    },
-  ])(
-    "rejects a stored project-create before mutation when it $label",
-    async ({ build }) => {
-      const repository = track(
-        await createKnowledgeRecordTransactionTestRepository(),
-      );
-      const baseline = await readCanonicalSourceInventory(repository.repoRoot);
-      const malformed = await build(repository);
-      const transactionId = generateKnowledgeTransactionId();
-      const lock = await acquireKnowledgeTransactionLock({
-        repoRoot: repository.repoRoot,
-        command: "prepare malformed project-create fixture",
-        transactionId,
-      });
-      const snapshot: KnowledgeTransactionSnapshot = {
-        validationAsOf: KNOWLEDGE_TRANSACTION_FIXTURE_AS_OF,
-        requestSha256: "f".repeat(64),
-        packageSha256: null,
-        sources: malformed.snapshotSources,
-      };
-      try {
-        await createPreparedKnowledgeTransaction({
-          lock,
-          transactionId,
-          kind: "project-create",
-          snapshot,
-          operations:
-            malformed.operations as KnowledgeTransactionOperationInput[],
-        });
-      } finally {
-        await releaseKnowledgeTransactionLock(lock);
-      }
-
-      await expect(
-        applyKnowledgeRecordTransaction({
-          repoRoot: repository.repoRoot,
-          transactionId,
-          dependencies: engineDependencies(),
-        }),
-      ).rejects.toThrow(/project-create transaction shape is invalid/);
-      expectInventoriesIdentical(
-        await readCanonicalSourceInventory(repository.repoRoot),
-        baseline,
-      );
-      expect(
-        await readKnowledgeTransactionJournal({
-          repoRoot: repository.repoRoot,
-          transactionId,
-        }),
-      ).toMatchObject({ events: [], tornFinalLine: false });
-
-      await expect(
-        recoverKnowledgeRecordTransaction({
-          repoRoot: repository.repoRoot,
-          transactionId,
-          dependencies: engineDependencies(),
-        }),
-      ).rejects.toThrow(/project-create transaction shape is invalid/);
-      expectInventoriesIdentical(
-        await readCanonicalSourceInventory(repository.repoRoot),
-        baseline,
-      );
-      expect(
-        await readKnowledgeTransactionJournal({
-          repoRoot: repository.repoRoot,
-          transactionId,
-        }),
-      ).toMatchObject({ events: [], tornFinalLine: false });
-    },
-  );
-
-  it("automatically restores project-create after a caught failure, then permits apply", async () => {
-    const { repository, requestPackage, projectPath, baseline, prepared } =
-      await createPreparedProjectCreateFixture();
-    const hook = vi.fn(
-      (event: Parameters<NonNullable<KnowledgeRecordEngineDependencies["afterCanonicalMutation"]>>[0]) => {
-        if (event.phase === "apply" && event.mutationCount === 1) {
-          throw new Error("injected project-create failure");
-        }
-      },
-    );
-
-    await expect(
-      applyKnowledgeRecordTransaction({
-        repoRoot: repository.repoRoot,
-        transactionId: prepared.transactionId,
-        dependencies: engineDependencies({ afterCanonicalMutation: hook }),
-      }),
-    ).rejects.toThrow("injected project-create failure");
-    expectInventoriesIdentical(
-      await readCanonicalSourceInventory(repository.repoRoot),
-      baseline,
-    );
-    await expect(readFile(projectPath)).rejects.toMatchObject({ code: "ENOENT" });
-
-    const reapplied = await applyKnowledgeRecordTransaction({
-      repoRoot: repository.repoRoot,
-      transactionId: prepared.transactionId,
-      dependencies: engineDependencies(),
-    });
-    expect(reapplied.outcome).toBe("applied");
-    expect((await readFile(projectPath)).equals(
-      await readFile(
-        requestPackage.contentPaths[
-          `${KNOWLEDGE_TRANSACTION_FIXTURE_CREATED_PROJECT_ID}.md`
-        ],
-      ),
-    )).toBe(true);
-  });
-
-  it("restores an interrupted Knowledge System create to exact prior bytes and permits retry", async () => {
-    const repository = track(
-      await createKnowledgeRecordTransactionTestRepository(),
-    );
-    await installProjectCreateBaseline(repository.repoRoot);
-    const requestPackage = track(
-      await createKnowledgeSystemProjectCreateRequestPackage(),
-    );
-    const baseline = await readCanonicalSourceInventory(repository.repoRoot);
-    const projectPath = absoluteCanonicalPath(
-      repository.repoRoot,
-      canonicalRecordSourcePath(
-        "active-current-work",
-        KNOWLEDGE_TRANSACTION_FIXTURE_KS_PROJECT_ID,
-      ),
-    );
-    const prepared = await prepareKnowledgeRecordTransaction({
-      repoRoot: repository.repoRoot,
-      requestPath: requestPackage.requestPath,
-      expectedKind: "project-create",
-      dependencies: engineDependencies(),
-    });
-
-    await expect(
-      applyKnowledgeRecordTransaction({
-        repoRoot: repository.repoRoot,
-        transactionId: prepared.transactionId,
-        dependencies: engineDependencies({
-          afterCanonicalMutation: (event) => {
-            if (event.phase === "apply" && event.mutationCount === 1) {
-              throw new Error("injected Knowledge System create failure");
-            }
-          },
-        }),
-      }),
-    ).rejects.toThrow("injected Knowledge System create failure");
-    expectInventoriesIdentical(
-      await readCanonicalSourceInventory(repository.repoRoot),
-      baseline,
-    );
-    await expect(readFile(projectPath)).rejects.toMatchObject({ code: "ENOENT" });
-
-    const reapplied = await applyKnowledgeRecordTransaction({
-      repoRoot: repository.repoRoot,
-      transactionId: prepared.transactionId,
-      dependencies: engineDependencies(),
-    });
-    expect(reapplied.outcome).toBe("applied");
-    expect(
-      (await readFile(projectPath)).equals(
-        await readFile(
-          requestPackage.contentPaths[
-            `${KNOWLEDGE_TRANSACTION_FIXTURE_KS_PROJECT_ID}.md`
-          ],
-        ),
-      ),
-    ).toBe(true);
-  });
-
-  it("rejects a stale Knowledge System create before adding the project", async () => {
-    const repository = track(
-      await createKnowledgeRecordTransactionTestRepository(),
-    );
-    await installProjectCreateBaseline(repository.repoRoot);
-    const requestPackage = track(
-      await createKnowledgeSystemProjectCreateRequestPackage(),
-    );
-    const prepared = await prepareKnowledgeRecordTransaction({
-      repoRoot: repository.repoRoot,
-      requestPath: requestPackage.requestPath,
-      expectedKind: "project-create",
-      dependencies: engineDependencies(),
-    });
-    const existingProjectPath = absoluteCanonicalPath(
-      repository.repoRoot,
-      canonicalRecordSourcePath(
-        "active-current-work",
-        KNOWLEDGE_TRANSACTION_FIXTURE_PROJECT_ID,
-      ),
-    );
-    await writeFile(
-      existingProjectPath,
-      `${await readFile(existingProjectPath, "utf8")}\n`,
-      "utf8",
-    );
-    const staleInventory = await readCanonicalSourceInventory(
-      repository.repoRoot,
-    );
-
-    await expect(
-      applyKnowledgeRecordTransaction({
-        repoRoot: repository.repoRoot,
-        transactionId: prepared.transactionId,
-        dependencies: engineDependencies(),
-      }),
-    ).rejects.toThrow(/Canonical source changed after preparation/);
-    expectInventoriesIdentical(
-      await readCanonicalSourceInventory(repository.repoRoot),
-      staleInventory,
-    );
-    await expect(
-      readFile(
-        absoluteCanonicalPath(
-          repository.repoRoot,
-          canonicalRecordSourcePath(
-            "active-current-work",
-            KNOWLEDGE_TRANSACTION_FIXTURE_KS_PROJECT_ID,
-          ),
-        ),
-      ),
-    ).rejects.toMatchObject({ code: "ENOENT" });
-  });
-
-  it("updates a resolved Issue in the same guarded closeout that creates its archive and Changelog record", async () => {
-    const repository = track(
-      await createKnowledgeRecordTransactionTestRepository(),
-    );
-    const requestPackage = track(
-      await createResolvedIssueCloseoutRequestPackage(),
-    );
-    const prepared = await prepareKnowledgeRecordTransaction({
-      repoRoot: repository.repoRoot,
-      requestPath: requestPackage.requestPath,
-      expectedKind: "closeout",
-      dependencies: engineDependencies(),
-    });
-    const stored = await openVerifiedKnowledgeTransaction({
-      repoRoot: repository.repoRoot,
-      transactionId: prepared.transactionId,
-    });
-
-    expect(stored.operations.map(({ action, path: sourcePath }) => ({
-      action,
-      sourcePath,
-    }))).toEqual([
-      { action: "update", sourcePath: repository.issuePath },
-      { action: "create", sourcePath: ARCHIVED_PROJECT_PATH },
-      { action: "create", sourcePath: ACCEPTED_CHANGE_PATH },
-      { action: "remove", sourcePath: repository.activeProjectPath },
-    ]);
-
-    const applied = await applyKnowledgeRecordTransaction({
-      repoRoot: repository.repoRoot,
-      transactionId: prepared.transactionId,
-      dependencies: engineDependencies(),
-    });
-    expect(applied.outcome).toBe("applied");
-    expect(
-      (
-        await readFile(
-          absoluteCanonicalPath(repository.repoRoot, repository.issuePath),
-        )
-      ).equals(
-        await readFile(
-          requestPackage.contentPaths[
-            `${KNOWLEDGE_TRANSACTION_FIXTURE_ISSUE_ID}.md`
-          ],
-        ),
-      ),
-    ).toBe(true);
-    expect(await closeoutFileStates(repository)).toEqual({
-      archive: "present",
-      changelog: "present",
-      active: "absent",
     });
   });
 
@@ -2017,15 +1119,15 @@ describe("knowledge record transaction engine", () => {
       const repository = track(
         await createKnowledgeRecordTransactionTestRepository(),
       );
-      const requestPackage = track(await createProjectUpdateRequestPackage());
+      const requestPackage = track(await createIssueUpdateRequestPackage());
       const activePath = absoluteCanonicalPath(
         repository.repoRoot,
-        repository.activeProjectPath,
+        repository.issuePath,
       );
       await chmod(activePath, 0o640);
       const before = await readCanonicalSourceInventory(repository.repoRoot);
       const beforeBytes = await readFile(activePath);
-      const prepared = await prepareProjectUpdate(repository, requestPackage);
+      const prepared = await prepareIssueUpdate(repository, requestPackage);
       const hook = vi.fn(
         (event: Parameters<NonNullable<KnowledgeRecordEngineDependencies["afterCanonicalMutation"]>>[0]) => {
           if (event.phase === "apply" && event.mutationCount === 1) {
@@ -2071,7 +1173,7 @@ describe("knowledge record transaction engine", () => {
         dependencies: engineDependencies(),
       });
       const expectedBytes = await readFile(
-        requestPackage.contentPaths[`${KNOWLEDGE_TRANSACTION_FIXTURE_PROJECT_ID}.md`],
+        requestPackage.contentPaths[`${KNOWLEDGE_TRANSACTION_FIXTURE_ISSUE_ID}.md`],
       );
       expect(reapplied.outcome).toBe("applied");
       expect((await readFile(activePath)).equals(expectedBytes)).toBe(true);
@@ -2080,234 +1182,13 @@ describe("knowledge record transaction engine", () => {
     30_000,
   );
 
-  it.each([1, 2, 3])(
-    "automatically rolls back a caught closeout failure after apply mutation %i",
-    async (mutationPosition) => {
-      const { repository, activePath, baseline, prepared } =
-        await createPreparedCloseoutFixture();
-      const hook = vi.fn(
-        (event: Parameters<NonNullable<KnowledgeRecordEngineDependencies["afterCanonicalMutation"]>>[0]) => {
-          if (
-            event.phase === "apply" &&
-            event.mutationCount === mutationPosition
-          ) {
-            throw new Error(
-              `caught closeout failure after mutation ${mutationPosition}`,
-            );
-          }
-        },
-      );
-
-      await expect(
-        applyKnowledgeRecordTransaction({
-          repoRoot: repository.repoRoot,
-          transactionId: prepared.transactionId,
-          dependencies: engineDependencies({ afterCanonicalMutation: hook }),
-        }),
-      ).rejects.toThrow(
-        `caught closeout failure after mutation ${mutationPosition}`,
-      );
-
-      expect(hook).toHaveBeenCalledWith({
-        phase: "apply",
-        operationIndex: mutationPosition - 1,
-        mutationCount: mutationPosition,
-      });
-      expectInventoriesIdentical(
-        await readCanonicalSourceInventory(repository.repoRoot),
-        baseline,
-      );
-      expect(await fileMode(activePath)).toBe(0o640);
-      expect(
-        await getKnowledgeTransactionStatus({
-          repoRoot: repository.repoRoot,
-          transactionId: prepared.transactionId,
-        }),
-      ).toMatchObject({ unfinished: false, terminalOutcome: "recovered" });
-      expectRepositoryGuardPassed(repository.repoRoot);
-
-      if (mutationPosition === 3) {
-        const reapplied = await applyKnowledgeRecordTransaction({
-          repoRoot: repository.repoRoot,
-          transactionId: prepared.transactionId,
-          dependencies: engineDependencies(),
-        });
-        expect(reapplied.outcome).toBe("applied");
-        expect(await closeoutFileStates(repository)).toEqual({
-          archive: "present",
-          changelog: "present",
-          active: "absent",
-        });
-      }
-    },
-    30_000,
-  );
-
   it(
-    "recovers exact canonical bytes after abrupt process death at every apply filesystem stage",
-    async () => {
-      const cliBundle = track(await createCliBundle());
-      for (const failpoint of APPLY_CANONICAL_CRASH_POINTS) {
-        const { repository, activePath, baseline, prepared } =
-          await createPreparedCloseoutFixture();
-        const crashed = runCli(
-          cliBundle.cliPath,
-          repository.repoRoot,
-          ["apply", "--transaction", prepared.transactionId],
-          abruptCanonicalEnvironment(failpoint),
-        );
-        expectAbruptCliExit(crashed);
-        await expectTransactionUnfinished(
-          repository.repoRoot,
-          prepared.transactionId,
-        );
-
-        const recovered = runCli(cliBundle.cliPath, repository.repoRoot, [
-          "recover",
-          "--transaction",
-          prepared.transactionId,
-        ]);
-        expectCliStarted(recovered);
-        expect(recovered.status, `${failpoint}: ${recovered.stderr}`).toBe(0);
-        expect(recovered.stderr).toBe("");
-        expectInventoriesIdentical(
-          await readCanonicalSourceInventory(repository.repoRoot),
-          baseline,
-        );
-        expect(await fileMode(activePath)).toBe(0o640);
-        expectRepositoryGuardPassed(repository.repoRoot);
-      }
-    },
-    120_000,
-  );
-
-  it(
-    "resumes exact recovery after abrupt process death at every restore filesystem stage",
-    async () => {
-      const cliBundle = track(await createCliBundle());
-      for (const failpoint of RESTORE_CANONICAL_CRASH_POINTS) {
-        const { repository, activePath, baseline, prepared } =
-          await createPreparedCloseoutFixture();
-        const interruptedApply = runCli(
-          cliBundle.cliPath,
-          repository.repoRoot,
-          ["apply", "--transaction", prepared.transactionId],
-          abruptEnvironment("apply", 3),
-        );
-        expectAbruptCliExit(interruptedApply);
-
-        const interruptedRecovery = runCli(
-          cliBundle.cliPath,
-          repository.repoRoot,
-          ["recover", "--transaction", prepared.transactionId],
-          abruptCanonicalEnvironment(failpoint),
-        );
-        expectAbruptCliExit(interruptedRecovery);
-        await expectTransactionUnfinished(
-          repository.repoRoot,
-          prepared.transactionId,
-        );
-
-        const recovered = runCli(cliBundle.cliPath, repository.repoRoot, [
-          "recover",
-          "--transaction",
-          prepared.transactionId,
-        ]);
-        expectCliStarted(recovered);
-        expect(recovered.status, `${failpoint}: ${recovered.stderr}`).toBe(0);
-        expect(recovered.stderr).toBe("");
-        expectInventoriesIdentical(
-          await readCanonicalSourceInventory(repository.repoRoot),
-          baseline,
-        );
-        expect(await fileMode(activePath)).toBe(0o640);
-        expectRepositoryGuardPassed(repository.repoRoot);
-      }
-    },
-    120_000,
-  );
-
-  it(
-    "recovers closeout create and remove operations after every raw filesystem primitive",
-    async () => {
-      const cliBundle = track(await createCliBundle());
-      for (const failpoint of CLOSEOUT_APPLY_PRIMITIVE_CRASH_POINTS) {
-        const { repository, activePath, baseline, prepared } =
-          await createPreparedCloseoutFixture();
-        const crashed = runCli(
-          cliBundle.cliPath,
-          repository.repoRoot,
-          ["apply", "--transaction", prepared.transactionId],
-          abruptCanonicalPrimitiveEnvironment(failpoint),
-        );
-        expectAbruptCliExit(crashed);
-
-        const recovered = runCli(cliBundle.cliPath, repository.repoRoot, [
-          "recover",
-          "--transaction",
-          prepared.transactionId,
-        ]);
-        expectCliStarted(recovered);
-        expect(recovered.status, `${failpoint}: ${recovered.stderr}`).toBe(0);
-        expectInventoriesIdentical(
-          await readCanonicalSourceInventory(repository.repoRoot),
-          baseline,
-        );
-        expect(await fileMode(activePath)).toBe(0o640);
-        expectRepositoryGuardPassed(repository.repoRoot);
-      }
-    },
-    180_000,
-  );
-
-  it(
-    "resumes closeout create and remove restoration after every raw filesystem primitive",
-    async () => {
-      const cliBundle = track(await createCliBundle());
-      for (const failpoint of CLOSEOUT_RESTORE_PRIMITIVE_CRASH_POINTS) {
-        const { repository, activePath, baseline, prepared } =
-          await createPreparedCloseoutFixture();
-        const interruptedApply = runCli(
-          cliBundle.cliPath,
-          repository.repoRoot,
-          ["apply", "--transaction", prepared.transactionId],
-          abruptEnvironment("apply", 3),
-        );
-        expectAbruptCliExit(interruptedApply);
-
-        const interruptedRecovery = runCli(
-          cliBundle.cliPath,
-          repository.repoRoot,
-          ["recover", "--transaction", prepared.transactionId],
-          abruptCanonicalPrimitiveEnvironment(failpoint),
-        );
-        expectAbruptCliExit(interruptedRecovery);
-
-        const recovered = runCli(cliBundle.cliPath, repository.repoRoot, [
-          "recover",
-          "--transaction",
-          prepared.transactionId,
-        ]);
-        expectCliStarted(recovered);
-        expect(recovered.status, `${failpoint}: ${recovered.stderr}`).toBe(0);
-        expectInventoriesIdentical(
-          await readCanonicalSourceInventory(repository.repoRoot),
-          baseline,
-        );
-        expect(await fileMode(activePath)).toBe(0o640);
-        expectRepositoryGuardPassed(repository.repoRoot);
-      }
-    },
-    180_000,
-  );
-
-  it(
-    "recovers project updates after every raw apply filesystem primitive",
+    "recovers Issue updates after every raw apply filesystem primitive",
     async () => {
       const cliBundle = track(await createCliBundle());
       for (const failpoint of UPDATE_APPLY_PRIMITIVE_CRASH_POINTS) {
         const { repository, activePath, baseline, prepared } =
-          await createPreparedProjectUpdateFixture();
+          await createPreparedIssueUpdateFixture();
         const crashed = runCli(
           cliBundle.cliPath,
           repository.repoRoot,
@@ -2335,12 +1216,12 @@ describe("knowledge record transaction engine", () => {
   );
 
   it(
-    "resumes project-update restoration after every raw filesystem primitive",
+    "resumes issue-update restoration after every raw filesystem primitive",
     async () => {
       const cliBundle = track(await createCliBundle());
       for (const failpoint of UPDATE_RESTORE_PRIMITIVE_CRASH_POINTS) {
         const { repository, activePath, baseline, prepared } =
-          await createPreparedProjectUpdateFixture();
+          await createPreparedIssueUpdateFixture();
         const interruptedApply = runCli(
           cliBundle.cliPath,
           repository.repoRoot,
@@ -2378,7 +1259,7 @@ describe("knowledge record transaction engine", () => {
   it("reconstructs durable artifact ownership after a process restart", async () => {
     const cliBundle = track(await createCliBundle());
     const { repository, activePath, baseline, prepared } =
-      await createPreparedProjectUpdateFixture();
+      await createPreparedIssueUpdateFixture();
     const crashed = runCli(
       cliBundle.cliPath,
       repository.repoRoot,
@@ -2416,7 +1297,7 @@ describe("knowledge record transaction engine", () => {
 
   it("rejects a journal ownership proof whose valid-looking kind and path do not match its operation", async () => {
     const { repository, baseline, prepared } =
-      await createPreparedProjectUpdateFixture();
+      await createPreparedIssueUpdateFixture();
     const lock = await acquireKnowledgeTransactionLock({
       repoRoot: repository.repoRoot,
       command: "inject malformed ownership proof",
@@ -2424,7 +1305,7 @@ describe("knowledge record transaction engine", () => {
     });
     try {
       const artifactSourcePath = canonicalTemporarySourcePath(
-        repository.activeProjectPath,
+        repository.issuePath,
         prepared.transactionId,
         0,
       );
@@ -2434,7 +1315,7 @@ describe("knowledge record transaction engine", () => {
         event: {
           event: "artifact-ownership-recorded",
           operationIndex: 0,
-          canonicalSourcePath: repository.activeProjectPath,
+          canonicalSourcePath: repository.issuePath,
           artifactRole: "before-stage",
           artifactKind: "before-stage",
           artifactSourcePath,
@@ -2466,7 +1347,7 @@ describe("knowledge record transaction engine", () => {
   });
 
   it("does not let injected canonical callbacks replace journal-owned proof authority", async () => {
-    const { repository, prepared } = await createPreparedProjectUpdateFixture();
+    const { repository, prepared } = await createPreparedIssueUpdateFixture();
     const injectedPersist = vi.fn(() => {
       throw new Error("injected persistence must not run");
     });
@@ -2491,11 +1372,11 @@ describe("knowledge record transaction engine", () => {
     const repository = track(
       await createKnowledgeRecordTransactionTestRepository(),
     );
-    const requestPackage = track(await createProjectUpdateRequestPackage());
-    const prepared = await prepareProjectUpdate(repository, requestPackage);
+    const requestPackage = track(await createIssueUpdateRequestPackage());
+    const prepared = await prepareIssueUpdate(repository, requestPackage);
     const activePath = absoluteCanonicalPath(
       repository.repoRoot,
-      repository.activeProjectPath,
+      repository.issuePath,
     );
     const externallyChanged = Buffer.concat([
       await readFile(activePath),
@@ -2526,11 +1407,11 @@ describe("knowledge record transaction engine", () => {
     const repository = track(
       await createKnowledgeRecordTransactionTestRepository(),
     );
-    const requestPackage = track(await createProjectUpdateRequestPackage());
-    const prepared = await prepareProjectUpdate(repository, requestPackage);
+    const requestPackage = track(await createIssueUpdateRequestPackage());
+    const prepared = await prepareIssueUpdate(repository, requestPackage);
     const activePath = absoluteCanonicalPath(
       repository.repoRoot,
-      repository.activeProjectPath,
+      repository.issuePath,
     );
     await chmod(activePath, 0o600);
     const hook = vi.fn();
@@ -2553,12 +1434,12 @@ describe("knowledge record transaction engine", () => {
     ).toMatchObject({ events: [], tornFinalLine: false });
   });
 
-  it("rebases a scoped project update over unrelated valid membership changes", async () => {
+  it("rebases a scoped Issue update over unrelated valid membership changes", async () => {
     const repository = track(
       await createKnowledgeRecordTransactionTestRepository(),
     );
-    const requestPackage = track(await createProjectUpdateRequestPackage());
-    const prepared = await prepareProjectUpdate(repository, requestPackage);
+    const requestPackage = track(await createIssueUpdateRequestPackage());
+    const prepared = await prepareIssueUpdate(repository, requestPackage);
     const externallyInstalled = await installCorrectionTarget(repository.repoRoot);
     const hook = vi.fn();
 
@@ -2623,7 +1504,7 @@ describe("knowledge record transaction engine", () => {
     const repository = track(
       await createKnowledgeRecordTransactionTestRepository(),
     );
-    const requestPackage = track(await createProjectUpdateRequestPackage());
+    const requestPackage = track(await createIssueUpdateRequestPackage());
     const before = await readCanonicalSourceInventory(repository.repoRoot);
     const lock = await acquireKnowledgeTransactionLock({
       repoRoot: repository.repoRoot,
@@ -2631,7 +1512,7 @@ describe("knowledge record transaction engine", () => {
     });
     try {
       await expect(
-        prepareProjectUpdate(repository, requestPackage),
+        prepareIssueUpdate(repository, requestPackage),
       ).rejects.toThrow(/writer lock is held by a live process/);
     } finally {
       await releaseKnowledgeTransactionLock(lock);
@@ -2642,395 +1523,18 @@ describe("knowledge record transaction engine", () => {
     );
   });
 
-  it.each([1, 2, 3])(
-    "explicitly recovers an abrupt CLI closeout apply after mutation %i",
-    async (mutationPosition) => {
-      const { repository, activePath, baseline, prepared } =
-        await createPreparedCloseoutFixture();
-      const cliBundle = track(await createCliBundle());
-
-      const crashed = runCli(
-        cliBundle.cliPath,
-        repository.repoRoot,
-        ["apply", "--transaction", prepared.transactionId],
-        abruptEnvironment("apply", mutationPosition),
-      );
-      expectAbruptCliExit(crashed);
-      await expectTransactionUnfinished(
-        repository.repoRoot,
-        prepared.transactionId,
-      );
-      expectRepositoryGuardBlocked(
-        repository.repoRoot,
-        prepared.transactionId,
-      );
-
-      const expectedPartialStates = [
-        { archive: "present", changelog: "absent", active: "present" },
-        { archive: "present", changelog: "present", active: "present" },
-        { archive: "present", changelog: "present", active: "absent" },
-      ];
-      expect(await closeoutFileStates(repository)).toEqual(
-        expectedPartialStates[mutationPosition - 1],
-      );
-
-      const recovered = runCli(cliBundle.cliPath, repository.repoRoot, [
-        "recover",
-        "--transaction",
-        prepared.transactionId,
-      ]);
-      expectCliStarted(recovered);
-      expect(recovered.status).toBe(0);
-      expect(recovered.stderr).toBe("");
-      expect(recovered.stdout).toContain(
-        `Transaction ${prepared.transactionId}: recovered`,
-      );
-      expectInventoriesIdentical(
-        await readCanonicalSourceInventory(repository.repoRoot),
-        baseline,
-      );
-      expect(await fileMode(activePath)).toBe(0o640);
-      expectRepositoryGuardPassed(repository.repoRoot);
-
-      const repeatedRecovery = runCli(cliBundle.cliPath, repository.repoRoot, [
-        "recover",
-        "--transaction",
-        prepared.transactionId,
-      ]);
-      expectCliStarted(repeatedRecovery);
-      expect(repeatedRecovery.status).toBe(0);
-      expect(repeatedRecovery.stderr).toBe("");
-      expect(repeatedRecovery.stdout).toContain(
-        `Transaction ${prepared.transactionId}: already-recovered`,
-      );
-
-      if (mutationPosition === 3) {
-        const appliedAfterRecovery = await applyKnowledgeRecordTransaction({
-          repoRoot: repository.repoRoot,
-          transactionId: prepared.transactionId,
-          dependencies: engineDependencies(),
-        });
-        expect(appliedAfterRecovery.outcome).toBe("applied");
-        expect(await closeoutFileStates(repository)).toEqual({
-          archive: "present",
-          changelog: "present",
-          active: "absent",
-        });
-        const recoverApplied = runCli(cliBundle.cliPath, repository.repoRoot, [
-          "recover",
-          "--transaction",
-          prepared.transactionId,
-        ]);
-        expectCliStarted(recoverApplied);
-        expect(recoverApplied.status).toBe(0);
-        expect(recoverApplied.stderr).toBe("");
-        expect(recoverApplied.stdout).toContain(
-          `Transaction ${prepared.transactionId}: already-applied`,
-        );
-      }
-    },
-    30_000,
-  );
-
-  it.each([1, 2, 3])(
-    "resumes explicit recovery after abrupt CLI termination at restoration %i",
-    async (restorationPosition) => {
-      const { repository, activePath, baseline, prepared } =
-        await createPreparedCloseoutFixture();
-      const cliBundle = track(await createCliBundle());
-
-      const interruptedApply = runCli(
-        cliBundle.cliPath,
-        repository.repoRoot,
-        ["apply", "--transaction", prepared.transactionId],
-        abruptEnvironment("apply", 3),
-      );
-      expectAbruptCliExit(interruptedApply);
-      await expectTransactionUnfinished(
-        repository.repoRoot,
-        prepared.transactionId,
-      );
-
-      const interruptedRecover = runCli(
-        cliBundle.cliPath,
-        repository.repoRoot,
-        ["recover", "--transaction", prepared.transactionId],
-        abruptEnvironment("recover", restorationPosition),
-      );
-      expectAbruptCliExit(interruptedRecover);
-      await expectTransactionUnfinished(
-        repository.repoRoot,
-        prepared.transactionId,
-      );
-      expectRepositoryGuardBlocked(
-        repository.repoRoot,
-        prepared.transactionId,
-      );
-
-      const expectedPartialStates = [
-        { archive: "present", changelog: "present", active: "present" },
-        { archive: "present", changelog: "absent", active: "present" },
-        { archive: "absent", changelog: "absent", active: "present" },
-      ];
-      expect(await closeoutFileStates(repository)).toEqual(
-        expectedPartialStates[restorationPosition - 1],
-      );
-      expect(await fileMode(activePath)).toBe(0o640);
-
-      const recovered = runCli(cliBundle.cliPath, repository.repoRoot, [
-        "recover",
-        "--transaction",
-        prepared.transactionId,
-      ]);
-      expectCliStarted(recovered);
-      expect(recovered.status).toBe(0);
-      expect(recovered.stderr).toBe("");
-      expect(recovered.stdout).toContain(
-        `Transaction ${prepared.transactionId}: recovered`,
-      );
-      expectInventoriesIdentical(
-        await readCanonicalSourceInventory(repository.repoRoot),
-        baseline,
-      );
-      expect(await fileMode(activePath)).toBe(0o640);
-      expect(
-        await getKnowledgeTransactionStatus({
-          repoRoot: repository.repoRoot,
-          transactionId: prepared.transactionId,
-        }),
-      ).toMatchObject({ unfinished: false, terminalOutcome: "recovered" });
-      expectRepositoryGuardPassed(repository.repoRoot);
-    },
-    30_000,
-  );
-
-  it(
-    "does not let an older recovered receipt hide a later crashed reapply",
-    async () => {
-      const { repository, activePath, baseline, prepared } =
-        await createPreparedCloseoutFixture();
-      const cliBundle = track(await createCliBundle());
-
-      const firstApply = runCli(
-        cliBundle.cliPath,
-        repository.repoRoot,
-        ["apply", "--transaction", prepared.transactionId],
-        abruptEnvironment("apply", 3),
-      );
-      expectAbruptCliExit(firstApply);
-      const firstRecovery = runCli(cliBundle.cliPath, repository.repoRoot, [
-        "recover",
-        "--transaction",
-        prepared.transactionId,
-      ]);
-      expectCliStarted(firstRecovery);
-      expect(firstRecovery.status, firstRecovery.stderr).toBe(0);
-      expect(firstRecovery.stdout).toContain(": recovered");
-
-      const crashedReapply = runCli(
-        cliBundle.cliPath,
-        repository.repoRoot,
-        ["apply", "--transaction", prepared.transactionId],
-        abruptEnvironment("apply", 2),
-      );
-      expectAbruptCliExit(crashedReapply);
-      await expectTransactionUnfinished(
-        repository.repoRoot,
-        prepared.transactionId,
-      );
-
-      const secondRecovery = runCli(cliBundle.cliPath, repository.repoRoot, [
-        "recover",
-        "--transaction",
-        prepared.transactionId,
-      ]);
-      expectCliStarted(secondRecovery);
-      expect(secondRecovery.status, secondRecovery.stderr).toBe(0);
-      expect(secondRecovery.stdout).toContain(": recovered");
-      expectInventoriesIdentical(
-        await readCanonicalSourceInventory(repository.repoRoot),
-        baseline,
-      );
-      expect(await fileMode(activePath)).toBe(0o640);
-      expectRepositoryGuardPassed(repository.repoRoot);
-    },
-    30_000,
-  );
-
-  it("applies closeout in archive, Changelog, then active-removal order and records that order in the journal", async () => {
-    const repository = track(
-      await createKnowledgeRecordTransactionTestRepository(),
-    );
-    const requestPackage = track(await createCloseoutRequestPackage());
-    const prepared = await prepareKnowledgeRecordTransaction({
-      repoRoot: repository.repoRoot,
-      requestPath: requestPackage.requestPath,
-      expectedKind: "closeout",
-      dependencies: engineDependencies(),
-    });
-    const observations: Array<{
-      mutationCount: number;
-      operationIndex: number;
-      archive: string;
-      changelog: string;
-      active: string;
-    }> = [];
-
-    const applied = await applyKnowledgeRecordTransaction({
-      repoRoot: repository.repoRoot,
-      transactionId: prepared.transactionId,
-      dependencies: engineDependencies({
-        afterCanonicalMutation: async (event) => {
-          if (event.phase !== "apply") return;
-          observations.push({
-            mutationCount: event.mutationCount,
-            operationIndex: event.operationIndex,
-            archive: (
-              await readCanonicalFileState(
-                repository.repoRoot,
-                ARCHIVED_PROJECT_PATH,
-              )
-            ).state,
-            changelog: (
-              await readCanonicalFileState(
-                repository.repoRoot,
-                ACCEPTED_CHANGE_PATH,
-              )
-            ).state,
-            active: (
-              await readCanonicalFileState(
-                repository.repoRoot,
-                repository.activeProjectPath,
-              )
-            ).state,
-          });
-        },
-      }),
-    });
-    expect(applied.outcome).toBe("applied");
-    expect(observations).toEqual([
-      {
-        mutationCount: 1,
-        operationIndex: 0,
-        archive: "present",
-        changelog: "absent",
-        active: "present",
-      },
-      {
-        mutationCount: 2,
-        operationIndex: 1,
-        archive: "present",
-        changelog: "present",
-        active: "present",
-      },
-      {
-        mutationCount: 3,
-        operationIndex: 2,
-        archive: "present",
-        changelog: "present",
-        active: "absent",
-      },
-    ]);
-
-    const transaction = await openVerifiedKnowledgeTransaction({
-      repoRoot: repository.repoRoot,
-      transactionId: prepared.transactionId,
-    });
-    expect(
-      transaction.operations.map(({ action, path: sourcePath }) => ({
-        action,
-        sourcePath,
-      })),
-    ).toEqual([
-      { action: "create", sourcePath: ARCHIVED_PROJECT_PATH },
-      { action: "create", sourcePath: ACCEPTED_CHANGE_PATH },
-      { action: "remove", sourcePath: repository.activeProjectPath },
-    ]);
-
-    const journal = await readKnowledgeTransactionJournal({
-      repoRoot: repository.repoRoot,
-      transactionId: prepared.transactionId,
-    });
-    expect(
-      journal.events
-        .filter((entry) => entry.event !== "artifact-ownership-recorded")
-        .map(({ event, operationIndex }) => ({
-          event,
-          operationIndex,
-        })),
-    ).toEqual([
-      { event: "apply-started", operationIndex: undefined },
-      { event: "mutation-intent", operationIndex: 0 },
-      { event: "mutation-completed", operationIndex: 0 },
-      { event: "mutation-intent", operationIndex: 1 },
-      { event: "mutation-completed", operationIndex: 1 },
-      { event: "mutation-intent", operationIndex: 2 },
-      { event: "mutation-completed", operationIndex: 2 },
-      { event: "apply-completed", operationIndex: undefined },
-    ]);
-    expect(
-      journal.events
-        .filter((entry) => entry.event === "artifact-ownership-recorded")
-        .map((entry) => entry.operationIndex),
-    ).toEqual([0, 0, 1, 1, 2, 2]);
-
-    const expectedArchive = await readFile(
-      requestPackage.contentPaths[`${KNOWLEDGE_TRANSACTION_FIXTURE_PROJECT_ID}.md`],
-    );
-    const expectedChangelog = await readFile(
-      requestPackage.contentPaths[`${KNOWLEDGE_TRANSACTION_FIXTURE_CHANGE_ID}.md`],
-    );
-    const archivePath = absoluteCanonicalPath(
-      repository.repoRoot,
-      ARCHIVED_PROJECT_PATH,
-    );
-    const changelogPath = absoluteCanonicalPath(
-      repository.repoRoot,
-      ACCEPTED_CHANGE_PATH,
-    );
-    expect((await readFile(archivePath)).equals(expectedArchive)).toBe(true);
-    expect((await readFile(changelogPath)).equals(expectedChangelog)).toBe(true);
-    expect(await fileMode(archivePath)).toBe(0o644);
-    expect(await fileMode(changelogPath)).toBe(0o644);
-  });
-
-  it("prepares project-create through the CLI without exposing private request content", async () => {
-    const repository = track(
-      await createKnowledgeRecordTransactionTestRepository(),
-    );
-    await installProjectCreateBaseline(repository.repoRoot);
-    const requestPackage = track(await createProjectCreateRequestPackage());
-    const cliBundle = track(await createCliBundle());
-
-    const prepared = runCli(cliBundle.cliPath, repository.repoRoot, [
-      "prepare",
-      "project-create",
-      "--request",
-      requestPackage.requestPath,
-    ]);
-    expectCliStarted(prepared);
-    expect(prepared.status, prepared.stderr).toBe(0);
-    expect(prepared.stderr).toBe("");
-    expect(prepared.stdout).toMatch(
-      /^Prepared project-create transaction kr-[A-Za-z0-9-]+ with 1 operation\(s\)\.\n$/,
-    );
-    expect(prepared.stdout).not.toContain(requestPackage.packageRoot);
-    expect(prepared.stdout).not.toContain(requestPackage.requestPath);
-    expect(prepared.stdout).not.toContain("Gallery guarded project-create fixture");
-  });
-
   it("rejects unsupported CLI arguments and keeps request paths and record contents out of CLI output", async () => {
     const repository = track(
       await createKnowledgeRecordTransactionTestRepository(),
     );
-    const requestPackage = track(await createProjectUpdateRequestPackage());
+    const requestPackage = track(await createIssueUpdateRequestPackage());
     const cliBundle = track(await createCliBundle());
     const privateRecordPhrase =
-      "Append a source-backed project update without rewriting prior history.";
+      "Append a source-backed Issue update without rewriting prior history.";
 
     const prepared = runCli(cliBundle.cliPath, repository.repoRoot, [
       "prepare",
-      "project-update",
+      "issue-update",
       "--request",
       requestPackage.requestPath,
     ]);
@@ -3038,7 +1542,7 @@ describe("knowledge record transaction engine", () => {
     expect(prepared.status, prepared.stderr).toBe(0);
     expect(prepared.stderr).toBe("");
     expect(prepared.stdout).toMatch(
-      /^Prepared project-update transaction kr-[A-Za-z0-9-]+ with 1 operation\(s\)\.\n$/,
+      /^Prepared issue-update transaction kr-[A-Za-z0-9-]+ with 1 operation\(s\)\.\n$/,
     );
     expect(prepared.stdout).not.toContain(requestPackage.packageRoot);
     expect(prepared.stdout).not.toContain(requestPackage.requestPath);
@@ -3055,7 +1559,7 @@ describe("knowledge record transaction engine", () => {
     const privateArgument = "do-not-echo-this-private-argument";
     const rejected = runCli(cliBundle.cliPath, repository.repoRoot, [
       "prepare",
-      "project-update",
+      "issue-update",
       "--request",
       requestPackage.requestPath,
       "--unsupported",

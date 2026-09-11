@@ -471,7 +471,7 @@ The owned story identifier is the source key used by Story Builder, publication 
 
 The synchronized schema reference documents `stories` and `characters` at both table and field level as Owner/Admin/Public for eligible visible publications, with owner-only mutation. It describes `saved_scenarios`, `remixed_scenarios`, and `user_backgrounds` as owner-scoped, and raw `published_scenarios` control rows as Owner/Admin reads with owner mutations. Publication metadata visibility is therefore documented through the curated saved/publication flows and the table summaries available to this review.
 
-The saved-source runtime needs a broader boundary than publication metadata. `fetchScenarioById` and `fetchScenarioForPlay` directly query `stories`, `characters`, `codex_entries`, and `scenes`; Play also directly queries `content_themes`, while saved-source Edit reaches the clone branch before loading themes. The synchronized reference is internally inconsistent for that source: the `codex_entries`, `scenes`, and `content_themes` table rationales say public reads are allowed for visible published stories, while their individual field rows say Owner/Admin. Because Codex cannot reconcile that disagreement against the deployed policies, complete saved-source authorization and field completeness are not proven live. The Chronicle Work Manual governs any later task that needs a live comparison or synchronized-reference update before making a stronger claim.
+The saved-source runtime needs a broader boundary than publication metadata. `fetchScenarioById` and `fetchScenarioForPlay` directly query `stories`, `characters`, `codex_entries`, and `scenes`; Play also directly queries `content_themes`, while saved-source Edit reaches the clone branch before loading themes. The synchronized reference is internally inconsistent for that source: the `codex_entries`, `scenes`, and `content_themes` table rationales say public reads are allowed for visible published stories, while their individual field rows say Owner/Admin. Because Codex cannot reconcile that disagreement against the deployed policies, complete saved-source authorization and field completeness are not proven live.
 
 The synchronized reference covers tables and storage, not database-function definitions. Curated Gallery and saved-list RPCs remain the documented way to obtain publication presentation, but their successful metadata response does not by itself prove that every direct full-source read will succeed.
 
@@ -503,7 +503,7 @@ Console messages currently report initial load failures, page-load failures, det
 
 Visible labels are likewise not enforcement. **Published** is derived from the last publication map. **EDITABLE** is derived from loaded `allow_remix`. **DRAFT** is derived from the story row. The backend policy and successful service response determine whether the corresponding durable operation actually occurred.
 
-The current page has no My Stories-specific telemetry event contract, request status ledger, or automated end-to-end evidence that connects a clicked control to a persisted downstream result. This review therefore does not establish the relationship between a clicked control and the persisted downstream result; the Chronicle Work Manual governs the evidence selected for later work.
+The current page has no My Stories-specific telemetry event contract, request status ledger, or automated end-to-end evidence that connects a clicked control to a persisted downstream result. This review therefore does not establish the relationship between a clicked control and the persisted downstream result.
 
 ## Current Implementation Limitations
 
@@ -544,7 +544,7 @@ The current page has no My Stories-specific telemetry event contract, request st
 - My Stories background selection uses two non-transactional updates; a second-step failure can leave the database with no selected row while the UI retains its prior selection. Overlay color and opacity update optimistically, and a persistence failure is logged without rolling the controls back or marking their displayed values as unsaved. Background copy or deletion can also leave an unreferenced private storage object when later row work fails.
 - Story Detail's lightweight character request does not resolve private avatar paths, so private-only avatar references can fail to render there even though the full edit and play loaders hydrate them.
 
-These limitations are implementation facts, not stable product requirements. **MS-ISSUE-001** tracks the misleading loading, partial-data, action-feedback, and stale-state branches; **MS-ISSUE-002** tracks the clone, private-media, conversation-durability, and resume boundary. The capability's **Issues** tab is the operational status authority. No active Current Work or modern accepted closeout is currently registered for My Stories. Its Changelog tab does include two positively mapped historical Quality Hub records for the shared story-detail and review flows; their historical status is not modern product acceptance.
+These limitations are implementation facts, not stable product requirements. **MS-ISSUE-001** tracks the misleading loading, partial-data, action-feedback, and stale-state branches; **MS-ISSUE-002** tracks the clone, private-media, conversation-durability, and resume boundary. The capability's **Issues** tab holds these findings and their recorded status. Its Changelog tab includes two positively mapped historical Quality Hub records for the shared story-detail and review flows; their historical status is not current product acceptance.
 
 ## Curated Source Map
 
@@ -593,7 +593,7 @@ These limitations are implementation facts, not stable product requirements. **M
 
 - `src/services/persistence/scenario-delete-cover-cleanup.test.ts` — checks that managed public-cover cleanup is attempted without making cleanup failure block story deletion.
 - `src/services/persistence/scene-media-portability.test.ts` — checks supported scene-media portability behavior used by clone persistence.
-- `src/data/chronicle-knowledge-base/manifest.test.ts` — repository-coupled Knowledge manifest contract, including the seven-tab capability shape and capability-derived Issue counters.
+- `src/data/chronicle-knowledge-base/manifest.test.ts` — repository-coupled Knowledge manifest contract, including the six-tab capability shape and capability-derived Issue counters.
 - `src/data/chronicle-knowledge-base/my-stories-manifest.test.ts` — capability-isolated source, heading, stable-tab, Supabase-link, operational-tab isolation, and source-path checks.
 - `src/pages/style-guide/chronicle-knowledge-base.my-stories.test.tsx` — focused renderer test for the My Stories manual tabs without editing the concurrently owned application-wide Knowledge test.
 
@@ -607,9 +607,13 @@ There is no current component test dedicated to `StoryHub.tsx`, no lifecycle tes
 - Inspected base commit: `cc3a57ccc3c25ff86bbe0abe183457f1e28d92d7`.
 - Worktree boundary: the checkout contained concurrent unrelated changes. This review used the current on-disk versions of only the paths listed below and did not treat unrelated dirty files as accepted My Stories behavior.
 - Inspected-source count: **34 paths**.
-- Inspected-source composite SHA-256: `ccf19bb9b553c7eea1aeb81e066421632fb32995fcb02705173e5f7c21b8ad46`, computed from the ordered `shasum -a 256` output for the paths below.
+- Inspected-source composite SHA-256: `ef38853d7c09e544bad9eb4928cd1641296304fb470b0ffa112e724149ecfcd9`, computed from the ordered `shasum -a 256` output for the paths below.
 
-Source-only reconciliation on **09/06/2026** inspected the changes since that base in `App.tsx`, `Index.tsx`, `AppShellTopBar.tsx`, and the three changed Knowledge tests in the source list. The changes add Work Manual routes, R&D-specific header and departure handling, shared button presentation, and documentation checks. The remaining 28 source inputs are unchanged from the recorded base; My Stories controls, ownership, persistence, lifecycle, and schema are unchanged. The departure guard is documented above. This updates the source fingerprint and its narrow entry-boundary account, not the August 21 live observation or its verification limits.
+Source-only reconciliation on **09/06/2026** inspected the changes since that base in `App.tsx`, `Index.tsx`, `AppShellTopBar.tsx`, and the three changed Knowledge tests in the source list. The changes added the now-retired Work Manual routes, R&D-specific header and departure handling, shared button presentation, and documentation checks. The remaining 28 source inputs are unchanged from the recorded base; My Stories controls, ownership, persistence, lifecycle, and schema are unchanged. The departure guard is documented above. This updates the source fingerprint and its narrow entry-boundary account, not the August 21 live observation or its verification limits.
+
+Source-only reconciliation on **09/11/2026** inspected the working-tree changes in `src/App.tsx`, `src/data/chronicle-knowledge-base/manifest.test.ts`, and `src/data/chronicle-knowledge-base/my-stories-manifest.test.ts`. The retirement removes the two Work Manual routes and their documentation expectations. Existing Roadmap and Chronicle UI Guide route additions are retained. The composite above reflects the current bytes of the same 34 listed paths; this narrow reconciliation does not claim new My Stories behavior, a new live inspection, or additional database verification.
+
+Current Work retirement reconciliation **09/11/2026**: the fingerprint uses the current bytes of the same ordered source list after updating Knowledge Base tab and historical-record tests. This is reference maintenance, not a renewed capability audit; the original product-review dates and live-evidence limits remain unchanged.
 
 ### Direct live observation
 
@@ -656,4 +660,4 @@ The live account had no saved-story card, so saved-detail and clone-confirmation
 
 ### Verification limit
 
-This manual is source-backed and includes one authenticated read-only UI inspection. It does not prove a successful database insert, update, delete, unpublish, clone, background mutation, or conversation save in the inspected session. It does not replace the shared Supabase Tables reference, and it does not establish that dormant, legacy, generated, or retired documents match current behavior. Changes to the route, shell state, persistence services, RPCs, storage policies, or live RLS can make the related claims stale; the Chronicle Work Manual governs any later factual update.
+This manual is source-backed and includes one authenticated read-only UI inspection. It does not prove a successful database insert, update, delete, unpublish, clone, background mutation, or conversation save in the inspected session. It does not replace the shared Supabase Tables reference, and it does not establish that dormant, legacy, generated, or retired documents match current behavior. Changes to the route, shell state, persistence services, RPCs, storage policies, or live RLS can make the related claims stale.

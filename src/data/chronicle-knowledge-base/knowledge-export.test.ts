@@ -5,6 +5,7 @@ import { marked } from "marked";
 import { chronicleKnowledgeSections, getKnowledgeDocumentSource } from "./manifest";
 import { chronicleOperationalRecordSources } from "./operational-record-sources";
 import { KNOWLEDGE_EXPORT_SCRIPT } from "./knowledge-export-navigation";
+import skillCatalog from "./codex-skills.generated.json";
 import { buildKnowledgeHtml, buildKnowledgeMarkdown, createKnowledgeSnapshot, type KnowledgeSnapshot } from "./knowledge-export";
 
 const origin = "http://127.0.0.1:8080";
@@ -39,13 +40,16 @@ describe("complete Knowledge Base downloads", () => {
     expect(page.querySelector(".chronicle-knowledge-download-button")).not.toBeNull();
     expect(page.querySelectorAll(".knowledge-switcher")).toHaveLength(chronicleKnowledgeSections.length + 1);
     const skills = page.querySelector("#codex-skills-for-chronicle")!;
-    expect(skills.previousElementSibling?.id).toBe("chronicle-work-manual");
+    expect(skills.previousElementSibling?.id).toBe("chronicle-overview");
     expect(skills.nextElementSibling?.id).toBe("community-gallery");
     expect(skills.querySelector(".knowledge-section-title")?.textContent).toBe("Codex Skills for Chronicle");
-    expect(skills.querySelector(".knowledge-tab-rail")?.textContent).toBe("");
-    expect(skills.querySelector(".knowledge-content-panel")?.textContent).toBe("");
+    expect(skills.querySelectorAll('[role="tab"]')).toHaveLength(skillCatalog.entries.length);
+    expect(skills.querySelectorAll('[data-skill-id]')).toHaveLength(skillCatalog.entries.length);
     expect(page.querySelector(".chronicle-knowledge-main > .knowledge-switcher")?.id).toBe("chronicle-overview");
     expect(page.querySelector(".export-summary, .export-document")).toBeNull();
+    expect(page.querySelector('[role="tab"][id$="-tab-current-work"]')).toBeNull();
+    expect(page.querySelector("[data-current-work-id]")).toBeNull();
+    expect(snapshot.documents.some(doc => doc.path.startsWith("docs/current-work/active/"))).toBe(false);
 
     for (const section of chronicleKnowledgeSections) {
       const surface = page.querySelector<HTMLElement>(`#${section.id}`)!;
@@ -91,7 +95,7 @@ describe("complete Knowledge Base downloads", () => {
     }
   });
 
-  it("preserves pipeline prose and tables in real tabs and complete Work Manual source metadata", () => {
+  it("preserves pipeline prose and tables in real tabs", () => {
     const source = getKnowledgeDocumentSource("roleplay-pipeline.md");
     // This canonical document intentionally contains authored HTML. Passing it
     // through Markdown first would turn indented HTML into code and hide loss.
@@ -114,10 +118,8 @@ describe("complete Knowledge Base downloads", () => {
     expect(pipelineViews.reduce((count, view) => count + view.querySelectorAll("table").length, 0)).toBe(original.querySelectorAll("table").length);
     expect(markdownDocument.querySelectorAll("table").length).toBe(original.querySelectorAll("table").length);
     expect(pipelineText).toContain("buildNormalSendResponseJob");
-    const manual = exported.getElementById("chronicle-work-manual")!;
-    expect(normalizedText(manual)).toContain("Active provisional Chronicle workflow authority.");
-    expect(normalizedText(exported.getElementById("export-chronicle-work-manual")!)).toContain("manual_version: 0.2.3-provisional");
-    expect(markdown).toContain("manual_version: 0.2.3-provisional");
+    expect(exported.getElementById("chronicle-work-manual")).toBeNull();
+    expect(snapshot.documents.some(doc => doc.path.endsWith("/chronicle-work-manual.md"))).toBe(false);
   });
 
   it("has unique identities and resolved internal navigation and accessibility references", () => {

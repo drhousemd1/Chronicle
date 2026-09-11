@@ -1,0 +1,128 @@
+{
+  "rendering": "Existing specimens import production React components and icons. Explicitly labeled reference-only compositions combine imported primitives and existing style treatments. All views use compiled current Chronicle CSS.",
+  "boundaries": [
+    "@/integrations/supabase/client",
+    "@/services/persistence/signed-media"
+  ],
+  "data": "Fixed local folders/images and controlled reads/failures. Existing local imagery uses public fixture URLs; private signed-media access and all storage/database mutations are disabled.",
+  "sources": [
+    {
+      "path": "src/lib/utils.ts",
+      "sha256": "d1f1e0d62cb8d8d1e04c26e14de842d8a151f75812d81b046c65b5d1fe8e4b27"
+    },
+    {
+      "path": "src/components/ui/tooltip.tsx",
+      "sha256": "99f74ccdf63f008b07effc558ed407dac5543206618cbdf24fa072592042f053"
+    },
+    {
+      "path": "src/components/ui/labeled-toggle.tsx",
+      "sha256": "c44e06f420ca989a1aa2adcb645dada2dc6f62db3150c2089dec3cc00699243c"
+    },
+    {
+      "path": "src/components/chronicle/GalleryNsfwToggle.tsx",
+      "sha256": "32a0c0c2369f595d94338e0bcc303e0783ddedec8aa057c08e964f68dfc0419c"
+    },
+    {
+      "path": "src/components/chronicle/chronicle-dark-ui.ts",
+      "sha256": "90e29957776f20ccc1b340450a632379b7530b7c653c73c24955f2b65071fa3f"
+    },
+    {
+      "path": "src/components/chronicle/ChronicleDarkUi.tsx",
+      "sha256": "0b48621b21a6f637018b103dd62dfef8f34b15bd3e617dc773d0195632b3ca2b"
+    },
+    {
+      "path": "src/components/app-shell/AppShellHeader.tsx",
+      "sha256": "ec5bb8b67e976f81f9510e21398e81db7c30500cd14eeb9c748f987d19e2affe"
+    },
+    {
+      "path": "src/components/ui/dropdown-menu.tsx",
+      "sha256": "07914bdc1545c55771e5fcab89e633a722d9684ec1a5325fa38da61ee28369d2"
+    },
+    {
+      "path": "src/components/app-shell/AppShellTopBar.tsx",
+      "sha256": "769b0bb231a29aecd95f07b74698c62651e7bd9390695066a6a989fef2be6b9d"
+    },
+    {
+      "path": "src/components/chronicle/AspectRatioUtils.tsx",
+      "sha256": "3bed287095b6c5f143bb3e3af999bafb46c4ad3722b57d8d503b1c4b3f3660c0"
+    },
+    {
+      "path": "src/components/ui/dialog.tsx",
+      "sha256": "566ee731ba666ee9e2de203e94414edef56edf8097d10fd749b62fcae28d6858"
+    },
+    {
+      "path": "src/components/ui/input.tsx",
+      "sha256": "b71d38379d8777ab96b7fd7b313acb7ca2521214f90af416fc6ceb5caf6e4597"
+    },
+    {
+      "path": "src/components/ui/textarea.tsx",
+      "sha256": "a891729aa1cac99f976e9e6471e5c8eafc0311145f829cf43cb1092df432bd00"
+    },
+    {
+      "path": "src/components/ui/label.tsx",
+      "sha256": "d5dc9497cbb28a5401b864bd44a15f010c302584fbe8e07e015dbe443f103753"
+    },
+    {
+      "path": "src/components/chronicle/FolderEditModal.tsx",
+      "sha256": "3207fa858bf727cdb06be2acb7bea19f7f7b97616f181083aa6571565ae02b9e"
+    },
+    {
+      "path": "src/components/ui/button.tsx",
+      "sha256": "ae65d5ed4fb57411f38475bf14cfb98abb688d293e76b0977827fbb680f46cb3"
+    },
+    {
+      "path": "src/components/ui/alert-dialog.tsx",
+      "sha256": "c8b01137c7552e63c9ccf2c38ef92e5417bd6616b6980d56d3015db027465283"
+    },
+    {
+      "path": "src/components/chronicle/DeleteConfirmDialog.tsx",
+      "sha256": "7c71d45f0cf7131dd2400a0cd284763e5cb58a11c633f1077357dc988457ef55"
+    },
+    {
+      "path": "src/types.ts",
+      "sha256": "c71f2a75a139ea55b1dd07b3e2f9c726a99744e2db0368eb8ed30eadf87c2f41"
+    },
+    {
+      "path": "src/constants.tsx",
+      "sha256": "7266f818bd4adb1eb94b2b87d41e41f5be3eaf530f6337d262219ca0b81fb576"
+    },
+    {
+      "path": "src/lib/canonical-field-registry.ts",
+      "sha256": "3c791d3c64c6260f4568eca3801edb61a1d24636eb3db713fe917b20b529c3f9"
+    },
+    {
+      "path": "src/utils.ts",
+      "sha256": "eab7fc80bb854415b417303f54f91ee954cebd4e1a6f2179bfe272e194e795e3"
+    },
+    {
+      "path": "src/components/chronicle/ImageLibraryTab.tsx",
+      "sha256": "10426c29ead89bb75a895d10d0c60b011498c3a4b61ef38f6579269d582d85cb"
+    },
+    {
+      "path": "docs/ui-guide/examples/image-library-compositions.tsx",
+      "sha256": "efbf153c49abaee50c4176b3c5542294f81ad16cf8567a0dd4f3f1e722464b43"
+    },
+    {
+      "path": "src/index.css",
+      "sha256": "5e14e8cc75fd0e01b154dd1f59d9bb4f23b435558872a9b4467858932ff34e79"
+    },
+    {
+      "path": "tailwind.config.ts",
+      "sha256": "ea133c9d352610179a54ad8fc7bdcfb88dee226a216f67615075d9581462871a"
+    }
+  ],
+  "capturedOn": "2026-09-10",
+  "assetManifest": "docs/ui-guide/image-library.assets.json",
+  "captureNotes": [
+    "Production components are imported with local folder/image records and controlled reads. Storage and database mutations are disabled; private signed-media access is not exercised.",
+    "At 1440px the folder hover changes its image scale to 1.1 and its shadow to Tailwind shadow-2xl. Its outer transform remains none.",
+    "At 390px the root folder grid and header fit. The in-folder header wraps and has 394px body scroll width; the two-column image grid fits.",
+    "Folder-grid Delete sets its target without mounting a dialog; observed zero dialogs after the local click. The actual image-delete alert dialog was opened and canceled without deletion.",
+    "Image Details has no dialog role. Its focused field resolved to 14px type and a blue border/ring. Changing the title then Cancel/reopen restored the original. Escape dismissed to body without focus restoration. Tags were not changed through this source component.",
+    "Compact FolderEditModal resolved to a 448px zinc-900/slate-border shell at desktop, 24px inset and 8px corners. Focused Input used the existing white token offset and dark ring. Source Input changes from 16px before md to 14px at md.",
+    "Initial loading/error and empty-folder source branches were captured with controlled data. A nonmatching search produced zero images and no empty-result message. No real query/retry recovery, upload, deletion or title/tag persistence is established.",
+    "The proposed collection dialog canceled without creating, created a local receipt, reset its fields when reopened, and closed on Escape with focus returned to its trigger. At 390px its 358px shell fit.",
+    "The proposed review workspace discarded staged title/tag changes on Cancel, retained applied title when switching previews and kept cover selection independent of preview selection. At 390px alternatives appeared above the editor and the body fit without horizontal overflow.",
+    "Crops preserve browser screenshot pixels. Source hashes establish identity, not complete-file reading or live feature proof."
+  ]
+}

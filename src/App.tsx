@@ -15,9 +15,11 @@ const queryClient = new QueryClient();
 
 const UiAuditPage = lazy(() => import("./pages/style-guide/ui-audit"));
 const ChronicleKnowledgeBasePage = lazy(() => import("./pages/style-guide/chronicle-knowledge-base"));
+const ChronicleUiGuidePage = lazy(() => import("./pages/style-guide/chronicle-ui-guide"));
 const ChangelogRecordPage = lazy(() => import("./pages/style-guide/changelog-record"));
 const ValidationEvidenceLedgerPage = lazy(() => import("./pages/style-guide/validation-evidence-ledger"));
 const SupabaseSchemaReferencePage = lazy(() => import("./pages/style-guide/supabase-schema-reference"));
+const RoadmapPage = lazy(() => import("./pages/admin/roadmap"));
 
 export const AdminOnlyRoute = ({ children }: { children: ReactNode }) => {
   const { user, loading, isAuthenticated } = useAuth();
@@ -71,14 +73,14 @@ const App = () => (
           <Suspense fallback={null}>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/admin/roadmap" element={<AdminOnlyRoute><RoadmapPage /></AdminOnlyRoute>} />
               <Route path="/auth" element={<Navigate to="/?auth=1" replace />} />
               <Route path="/creator/:userId" element={<CreatorProfile />} />
               <Route path="/style-guide/ui-audit" element={<AdminOnlyRoute><UiAuditPage key="quality-hub-normal" /></AdminOnlyRoute>} />
               <Route path="/style-guide/ui-audit/changelog-migration-capture" element={<AdminOnlyRoute><UiAuditPage key="quality-hub-changelog-migration-capture" migrationCaptureMode /></AdminOnlyRoute>} />
               <Route path="/style-guide/chronicle-knowledge-base/archive/:projectId" element={<AdminOnlyRoute><ChronicleKnowledgeBasePage /></AdminOnlyRoute>} />
-              <Route path="/style-guide/chronicle-knowledge-base/work-manual" element={<AdminOnlyRoute><ChronicleKnowledgeBasePage /></AdminOnlyRoute>} />
-              <Route path="/style-guide/chronicle-knowledge-base/work-manual/:chapterId" element={<AdminOnlyRoute><ChronicleKnowledgeBasePage /></AdminOnlyRoute>} />
               <Route path="/style-guide/chronicle-knowledge-base" element={<AdminOnlyRoute><ChronicleKnowledgeBasePage /></AdminOnlyRoute>} />
+              <Route path="/style-guide/chronicle-ui-guide/:pageId?" element={<AdminOnlyRoute><ChronicleUiGuidePage /></AdminOnlyRoute>} />
               <Route path="/style-guide/changelog/:recordId" element={<AdminOnlyRoute><ChangelogRecordPage /></AdminOnlyRoute>} />
               <Route path="/style-guide/validation-evidence-ledger" element={<AdminOnlyRoute><ValidationEvidenceLedgerPage /></AdminOnlyRoute>} />
               <Route path="/style-guide/supabase-schema-reference" element={<AdminOnlyRoute><SupabaseSchemaReferencePage /></AdminOnlyRoute>} />

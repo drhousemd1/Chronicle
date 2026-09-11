@@ -12,7 +12,7 @@ The Admin Panel opens Quality Hub at `/style-guide/ui-audit`. After the protecte
 
 The workspace still supports manual changes despite the tool’s reduced role. An administrator can import a compatible JSON package, change a finding’s status or verification label, add a comment, and log a snapshot of the existing findings. Those actions first create a recoverable local copy, update the page, and then attempt a guarded owner-database save. Export Workspace downloads a transfer package without saving it or changing history.
 
-The Chronicle Work Manual remains the authority for when testing, scanning, or operational records are required. The scan names and checklists in this tool describe available mechanics and previously recorded work; they do not impose a new testing schedule. In particular, **Log Snapshot does not run a scan**. It records the current workspace summary under the selected agent attribution.
+The scan names and checklists in this tool describe available mechanics and previously recorded work; they do not impose a new testing schedule. In particular, **Log Snapshot does not run a scan**. It records the current workspace summary under the selected agent attribution.
 
 ## Data Ownership and Evidence Limits
 
@@ -32,7 +32,7 @@ These are implemented source paths, not a claim that the current deployment, dat
 
 ## Header and Workspace Actions
 
-The back arrow returns to the Admin Panel. **How to Use** opens an explanatory modal with a link to the Work Manual and closes through its **Close** button.
+The back arrow returns to the Admin Panel. **How to Use** opens an explanatory modal and closes through its **Close** button.
 
 **Import Workspace** accepts either a registry object or a transfer package containing `registry`. Compatible data is merged into the current workspace rather than replacing the entire registry blindly. A package that changes the protected legacy `changeLog` is rejected. Parse errors, invalid registry structure, owner changes during file reading, and save-state restrictions produce feedback rather than a successful import claim.
 

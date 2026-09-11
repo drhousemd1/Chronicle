@@ -1,0 +1,44 @@
+[
+  {
+    "path": "../../src/assets/ui-guide/creator-profile/overview.png",
+    "width": 1440,
+    "height": 1000,
+    "sha256": "1a2c3044a11106bc672282ccc402514de2995147cd35d4ab4e1f587a671a231b"
+  },
+  {
+    "path": "../../src/assets/ui-guide/creator-profile/private.png",
+    "width": 1440,
+    "height": 1000,
+    "sha256": "83a64dd190922cf50e450918a75480b03bd44f9833b2c99a7e7cbc552550af0d"
+  },
+  {
+    "path": "../../src/assets/ui-guide/creator-profile/works.png",
+    "width": 1368,
+    "height": 510,
+    "sha256": "8b0a4e978c3750243965d790eeeb05d366b14b760e4e5615375b8770cf7817b7"
+  },
+  {
+    "path": "../../src/assets/ui-guide/creator-profile/new-snapshot-narrow.png",
+    "width": 383,
+    "height": 588,
+    "sha256": "a542f815c36c1af1eefd7708c6db771230cd1bddec0728b0c9861648d3daf905"
+  },
+  {
+    "path": "../../src/assets/ui-guide/creator-profile/new-snapshot.png",
+    "width": 793,
+    "height": 332,
+    "sha256": "3e3ee1d10e86b2a662c534295be6d8c735ddd6412204f5103b0a517d6964d27b"
+  },
+  {
+    "path": "../../src/assets/ui-guide/creator-profile/new-rating-narrow.png",
+    "width": 384,
+    "height": 473,
+    "sha256": "e6108f157324a0345079b8a7e4e8f9674a0848866d48057d75de12750c5902da"
+  },
+  {
+    "path": "../../src/assets/ui-guide/creator-profile/new-rating.png",
+    "width": 1049,
+    "height": 282,
+    "sha256": "de31118ce050d7fe36328158b432060b5bcb3769669b8c52b5c9b24e6505a538"
+  }
+]

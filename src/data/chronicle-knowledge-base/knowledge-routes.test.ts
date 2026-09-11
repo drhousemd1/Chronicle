@@ -6,11 +6,10 @@ import {
   buildKnowledgeBaseTabHref,
   buildQualityHubChangelogHref,
   buildQualityHubOverviewHref,
-  buildWorkManualHref,
 } from "./knowledge-routes";
 
 describe("Chronicle Knowledge navigation registry", () => {
-  it("owns each live Changelog and Current Work destination in one source", () => {
+  it("owns live Changelog destinations and the historical work archive reader in one source", () => {
     expect(buildKnowledgeBaseTabHref("community-gallery", "changelog")).toBe(
       "/style-guide/chronicle-knowledge-base?section=community-gallery&tab=changelog",
     );
@@ -28,15 +27,6 @@ describe("Chronicle Knowledge navigation registry", () => {
     );
     expect(buildArchivedCurrentWorkHref("CG WORK/001")).toBe(
       "/style-guide/chronicle-knowledge-base/archive/CG%20WORK%2F001",
-    );
-    expect(buildWorkManualHref()).toBe(
-      "/style-guide/chronicle-knowledge-base?section=chronicle-work-manual&tab=start-here#chronicle-work-manual",
-    );
-    expect(buildWorkManualHref("risk safeguards")).toBe(
-      "/style-guide/chronicle-knowledge-base?section=chronicle-work-manual&tab=risk+safeguards#chronicle-work-manual",
-    );
-    expect(buildWorkManualHref("records-and-continuity", "82-issues")).toBe(
-      "/style-guide/chronicle-knowledge-base?section=chronicle-work-manual&tab=records-and-continuity#82-issues",
     );
   });
 });

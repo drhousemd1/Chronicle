@@ -295,31 +295,25 @@ function PrimaryNarrative({
         )}
       </NarrativeSection>
 
-      <NarrativeSection heading="Complete work record">
-        {record.variant === "accepted_closeout" ? (
-          verifiedArchiveRoute ? (
+      {record.variant === "accepted_closeout" ? (
+        <NarrativeSection heading="Related history">
+          {verifiedArchiveRoute ? (
             <p>
-              <Link to={verifiedArchiveRoute}>Open the complete archived Current Work record</Link>
+              <Link to={verifiedArchiveRoute}>Open the historical work record</Link>
             </p>
           ) : (
             <p>
-              Archived Current Work link unavailable — the accepted record and
+              Historical work record link unavailable — the accepted record and
               reciprocal archive were not verified together.
             </p>
-          )
-        ) : record.variant === "accepted_update" ? (
-          <p>
-            Not applicable — this bounded accepted update did not require or create a Current Work project, proof matrix, archive, or closeout.
-          </p>
-        ) : (
-          <p>Not available — this record predates Chronicle Current Work.</p>
-        )}
-        {showDetailLink ? (
-          <p className="changelog-narrative__detail-link">
-            <Link to={detailHref}>Read complete Changelog record</Link>
-          </p>
-        ) : null}
-      </NarrativeSection>
+          )}
+        </NarrativeSection>
+      ) : null}
+      {showDetailLink ? (
+        <p className="changelog-narrative__detail-link">
+          <Link to={detailHref}>Read complete Changelog record</Link>
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -423,7 +417,7 @@ function OriginalRecordBeforeCorrections({
           <div><dt>Originally accepted on</dt><dd>{root.acceptedOn}</dd></div>
           <div><dt>Original acceptance reviewer</dt><dd>{root.acceptedBy}</dd></div>
           <div><dt>Original source revision</dt><dd>{root.sourceRevision}</dd></div>
-          <div><dt>Original operational-record context</dt><dd>No Issue, Current Work project, proof matrix, archive, or closeout was required or created.</dd></div>
+          <div><dt>Original operational-record context</dt><dd>This change is recorded independently, without a linked work archive.</dd></div>
           <div><dt>Original canonical source</dt><dd>{root.sourcePath}</dd></div>
         </dl>
       </NarrativeSection>
@@ -570,7 +564,7 @@ function AcceptedDetail({ entry }: { entry: EffectiveChangelogEntry }) {
               <div><dt>Archive route</dt><dd>{record.archiveRoute}</dd></div>
             </>
           ) : (
-            <div><dt>Operational record context</dt><dd>No Issue, Current Work project, proof matrix, archive, or closeout was required or created.</dd></div>
+            <div><dt>Operational record context</dt><dd>This change is recorded independently, without a linked work archive.</dd></div>
           )}
           <div><dt>Canonical source record</dt><dd>{record.sourcePath}</dd></div>
         </dl>

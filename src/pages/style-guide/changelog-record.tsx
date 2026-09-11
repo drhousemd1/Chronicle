@@ -193,9 +193,9 @@ export function ChangelogRecordPage({
       <header className="changelog-record-page__header">
         <Link
           className="changelog-record-page__back"
-          to={backDestination.to}
-          aria-label={backDestination.label}
-          title={backDestination.label}
+          to="/?tab=admin"
+          aria-label="Back to Admin Panel"
+          title="Back to Admin Panel"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

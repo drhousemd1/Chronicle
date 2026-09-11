@@ -683,7 +683,7 @@ export function ResearchDevelopmentTool({
           >
             <BookOpen className="h-4 w-4 shrink-0 text-white/70" aria-hidden="true" />
             <span>
-              <span className="block">App Style Guide</span>
+              <span className="block">Chronicle UI Guide</span>
               <span className="mt-0.5 block text-[10px] font-normal text-white/40">Open the canonical guide</span>
             </span>
           </button>

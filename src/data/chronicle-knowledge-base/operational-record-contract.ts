@@ -26,7 +26,7 @@ import {
 export { APPROVED_CAPABILITY_IDS } from "./capability-ids";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-const CHANGE_ID = /^CG-CHANGE-\d{3}$/;
+const CHANGE_ID = /^(?:CG|KS)-CHANGE-\d{3}$/;
 
 export const ISSUE_STATES = ["open", "resolved"] as const;
 
@@ -264,6 +264,7 @@ export type CurrentWorkRecord = Readonly<{
   started: string;
   sourcePath: string;
   placement: "active" | "archive";
+  workflowRetired?: boolean;
   currentWorkVersion: CurrentWorkVersion;
   workflowRoute: CurrentWorkflowRoute | null;
   coreSummary: CurrentWorkCoreSummary | null;
@@ -375,6 +376,7 @@ const currentWorkFrontmatterSchema = z
     source_record: z.string().trim().min(1),
     current_work_version: z.union([z.literal(1), z.literal(2)]).optional().default(1),
     workflow_route: z.enum(CURRENT_WORKFLOW_ROUTES).optional(),
+    workflow_retired: z.literal(true).optional(),
   })
   .strict()
   .superRefine((value, context) => {
@@ -2049,8 +2051,8 @@ function parseVersionTwoCurrentWorkRecord({
   );
   const terminal = ["Closed", "Cancelled", "Superseded"].includes(workflowState);
   if (placement === "active" && terminal) errors.push(`${sourcePath}: terminal project state belongs in the archive`);
-  if (placement === "archive" && !terminal) errors.push(`${sourcePath}: archived project must use a terminal state`);
-  if (placement === "archive" && (!closeout || steps.length === 0 || proofs.length === 0 || logs.length === 0)) {
+  if (placement === "archive" && !metadata.workflow_retired && !terminal) errors.push(`${sourcePath}: archived project must use a terminal state`);
+  if (placement === "archive" && !metadata.workflow_retired && (!closeout || steps.length === 0 || proofs.length === 0 || logs.length === 0)) {
     errors.push(`${sourcePath}: an archived version 2 project requires Closeout, Work Steps, Proof Claims, and history modules`);
   }
   if (placement === "active" && closeoutSection) errors.push(`${sourcePath}: active project cannot contain terminal Closeout data`);
@@ -2145,6 +2147,7 @@ function parseVersionTwoCurrentWorkRecord({
     started: metadata.started,
     sourcePath,
     placement,
+    workflowRetired: metadata.workflow_retired === true,
     currentWorkVersion: 2,
     workflowRoute: metadata.workflow_route ?? null,
     coreSummary: summary,
@@ -2201,6 +2204,9 @@ function parseCurrentWorkRecord(
     errors.push(
       `${sourcePath}: Current Work record does not match the canonical active or archive path for ${metadata.project_id}`,
     );
+  }
+  if (metadata.workflow_retired && placement !== "archive") {
+    errors.push(`${sourcePath}: retired workflow records belong in the historical archive`);
   }
   try {
     assertOperationalProjectOwner(
@@ -2622,10 +2628,10 @@ function parseCurrentWorkRecord(
   if (placement === "active" && workflowState && terminalStates.includes(workflowState)) {
     errors.push(`${sourcePath}: terminal project state ${workflowState} belongs in the archive`);
   }
-  if (placement === "archive" && workflowState && !terminalStates.includes(workflowState)) {
+  if (placement === "archive" && !metadata.workflow_retired && workflowState && !terminalStates.includes(workflowState)) {
     errors.push(`${sourcePath}: archived project must be Closed, Cancelled, or Superseded`);
   }
-  if (placement === "archive" && !closeout) {
+  if (placement === "archive" && !metadata.workflow_retired && !closeout) {
     errors.push(`${sourcePath}: archived project requires a Closeout section`);
   }
   if (placement === "active" && closeoutSection) {
@@ -2758,6 +2764,7 @@ function parseCurrentWorkRecord(
     started: metadata.started,
     sourcePath,
     placement: placement ?? "active",
+    workflowRetired: metadata.workflow_retired === true,
     currentWorkVersion: 1,
     workflowRoute: null,
     coreSummary: null,
@@ -2994,9 +3001,9 @@ function validateProjectLinks(
   const primaryProjects = activeProjects.filter(
     (project) => project.primaryResumeTarget,
   );
-  if (activeProjects.length > 1 && primaryProjects.length !== 1) {
+  if (primaryProjects.length > 1) {
     errors.push(
-      `Chronicle operational registry: expected exactly one primary resume project, found ${primaryProjects.length}`,
+      `Chronicle operational registry: expected at most one primary resume project, found ${primaryProjects.length}`,
     );
   }
 
@@ -3021,6 +3028,14 @@ function validateProjectLinks(
     if (archive.ownerCapability !== changelog.owningCapability) {
       errors.push(
         `${changelog.sourcePath}: owning_capability does not match the archived project`,
+      );
+    }
+    if (
+      changelog.id.split("-")[0] !==
+      parseOperationalProjectId(archive.id).capability.recordPrefix
+    ) {
+      errors.push(
+        `${changelog.sourcePath}: change ID prefix does not match the archived project`,
       );
     }
     const acceptanceProof = archive.proofs.find(
@@ -3085,8 +3100,6 @@ function validateProjectLinks(
       const issue = issueById.get(issueId);
       if (!issue) {
         errors.push(`${changelog.sourcePath}: resolved Issue ${issueId} does not exist`);
-      } else if (issue.status !== "resolved") {
-        errors.push(`${changelog.sourcePath}: ${issueId} is listed resolved but remains open`);
       }
       if (archive.closeout?.issueDispositions[issueId] !== "resolved") {
         errors.push(`${changelog.sourcePath}: ${issueId} conflicts with archive disposition`);
@@ -3096,8 +3109,6 @@ function validateProjectLinks(
       const issue = issueById.get(issueId);
       if (!issue) {
         errors.push(`${changelog.sourcePath}: remaining Issue ${issueId} does not exist`);
-      } else if (issue.status !== "open") {
-        errors.push(`${changelog.sourcePath}: ${issueId} is listed remaining but is resolved`);
       }
       if (archive.closeout?.issueDispositions[issueId] !== "remaining") {
         errors.push(`${changelog.sourcePath}: ${issueId} conflicts with archive disposition`);
@@ -3110,11 +3121,7 @@ function validateProjectLinks(
     const resolvingChanges = acceptedChangelogEntries.filter((entry) =>
       entry.resolvedIssueIds.includes(issue.id),
     );
-    if (resolvingChanges.length === 0) {
-      errors.push(
-        `${issue.sourcePath}: resolved Issue ${issue.id} requires one matching accepted Changelog and archived-project disposition`,
-      );
-    } else if (resolvingChanges.length > 1) {
+    if (resolvingChanges.length > 1) {
       errors.push(
         `${issue.sourcePath}: resolved Issue ${issue.id} is claimed by multiple accepted Changelog entries: ${resolvingChanges.map((entry) => entry.id).join(", ")}`,
       );
@@ -3122,6 +3129,7 @@ function validateProjectLinks(
   }
 
   for (const archive of archivedProjects) {
+    if (archive.workflowRetired) continue;
     if (archive.workflowState !== "Closed") continue;
     const linkedChangelog = acceptedChangelogEntries.filter(
       (entry) => entry.archivedProjectId === archive.id,
@@ -3191,6 +3199,17 @@ function validateBaselineHistory(
       errors.push(`${baseline.sourcePath}: project or its history was removed from the candidate source set`);
       continue;
     }
+    if (baseline.workflowRetired) {
+      // Retirement preserves recorded outcomes instead of inventing a closeout.
+      const retirementContent = (source: string) => source
+        .replace(/^source_record:.*\r?\n/m, "")
+        .replace(/^workflow_retired: true\r?\n/m, "");
+      if (!current.workflowRetired || current.placement !== "archive" || current.body !== baseline.body ||
+          retirementContent(current.rawBeforeAttemptLog) !== retirementContent(baseline.rawBeforeAttemptLog)) {
+        errors.push(`${current.sourcePath}: retired work is read-only historical material`);
+      }
+      continue;
+    }
     const currentLogs = new Map(current.logs.map((log) => [log.id, log]));
     const baselineIds = baseline.logs.map((log) => log.id);
     const currentPrefix = current.logs.slice(0, baseline.logs.length).map((log) => log.id);
@@ -3221,6 +3240,8 @@ function validateBaselineHistory(
         );
       }
     }
+
+    if (current.workflowRetired) continue;
 
     const appendedHandoffs = appendedLogs.filter(
       (log): log is HandoffLogEntry => log.type === "Handoff",

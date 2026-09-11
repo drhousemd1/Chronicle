@@ -50,17 +50,10 @@ describe("AppShellTopBar", () => {
         tab="admin"
         admin={{
           activeTool: "research_development",
-          guideTheme: "dark",
-          styleGuideEditsCount: 0,
           rndRepositorySaveState: "idle",
           rndRepositorySaveAvailable: true,
           rndAddMockupAvailable: true,
           onBackToHub,
-          onToggleGuideTheme: () => {},
-          onGuideSave: () => {},
-          onGuideSyncAll: () => {},
-          onOpenStyleGuideEdits: () => {},
-          onDownloadStyleGuide: () => {},
           onRndAddMockup,
           onRndRepositorySave,
         }}
@@ -87,17 +80,10 @@ describe("AppShellTopBar", () => {
         tab="admin"
         admin={{
           activeTool: "research_development",
-          guideTheme: "dark",
-          styleGuideEditsCount: 0,
           rndRepositorySaveState: "saved",
           rndRepositorySaveAvailable: true,
           rndAddMockupAvailable: true,
           onBackToHub: () => {},
-          onToggleGuideTheme: () => {},
-          onGuideSave: () => {},
-          onGuideSyncAll: () => {},
-          onOpenStyleGuideEdits: () => {},
-          onDownloadStyleGuide: () => {},
           onRndAddMockup: () => {},
           onRndRepositorySave: () => {},
         }}

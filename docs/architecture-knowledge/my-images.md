@@ -104,7 +104,7 @@ The library is private by default. The account identity is the ownership boundar
 
 Temporary signed URLs are presentation credentials. They may be cached in memory for responsive rendering and renewed before expiry, but they must not be persisted as durable application data. A consumer must copy the source bytes into an explicit destination rather than retaining a signed source URL. A legacy public URL may remain readable for compatibility, but it does not replace the private-path contract for a portable library image.
 
-The synchronized Supabase Schema Reference describes the repository's last documented `image_folders`, `library_images`, `user_backgrounds`, and storage boundaries. It is not proof that every live database detail is unchanged or represented. The separate **Supabase Tables** tab supplies reference and handoff mechanics; the Chronicle Work Manual governs whether a task uses them.
+The synchronized Supabase Schema Reference describes the repository's last documented `image_folders`, `library_images`, `user_backgrounds`, and storage boundaries. It is not proof that every live database detail is unchanged or represented. The separate **Supabase Tables** tab supplies reference and handoff mechanics.
 
 ## Loading, Empty, Failure, and Recovery Expectations
 
@@ -514,7 +514,7 @@ After `copyLibraryImageTo()` succeeds, the destination storage object is real ev
 
 The requesting capability owns adoption after copy. Story Builder owns covers, scenes, and later publication. Character Library or Story Builder owns a character avatar according to character scope. Public Profile owns its profile avatar. Chat Interface owns sidebar themes. Page-background workspaces own background rows and page selection. Community Gallery owns public presentation only after a publishing workflow supplies public media.
 
-Supabase RLS and storage policies, not these React components, own final authorization. The live hosted project is controlled through Lovable, while the synchronized schema reference is Codex-accessible documentation of the last recorded boundary. The Chronicle Work Manual governs any task that depends on comparing or changing the live state.
+Supabase RLS and storage policies, not these React components, own final authorization. The live hosted project is controlled through Lovable, while the synchronized schema reference is Codex-accessible documentation of the last recorded boundary.
 
 ## Persistence, Security, and Supabase Boundary
 
@@ -522,7 +522,7 @@ The synchronized reference describes `image_folders` and `library_images` as own
 
 The reference documents the current source-used `library_images` fields, including filename, thumbnail flag, creation time, tags, title, and private image path. It does not list the `get_folders_with_details` RPC that both the main page and consumer picker call. Repository migrations and generated types contain a no-argument function shape, but they are not a substitute for a synchronized live function reference.
 
-The deployed folder-summary query, fallback behavior, function body, RPC grant, and private-media enforcement remain unverified here. The relevant table fields and table or bucket access summaries are documented, but they are not a live comparison. The Chronicle Work Manual governs any later task whose conclusion depends on resolving that boundary.
+The deployed folder-summary query, fallback behavior, function body, RPC grant, and private-media enforcement remain unverified here. The relevant table fields and table or bucket access summaries are documented, but they are not a live comparison.
 
 Most direct image/folder updates and deletes constrain by row ID or folder ID without repeating `user_id` in the browser query. The account ID is present on creates and storage paths. Correct isolation therefore depends on deployed RLS, storage policies, and the auth-bound RPC. Client state, UUID obscurity, and folder filtering are not security mechanisms.
 
@@ -623,9 +623,11 @@ These are delivered departures or unproven boundaries. They do not redefine the 
 - `src/hooks/use-index-shell-bootstrap.test.ts` verifies query-target behavior but does not exercise the signed-out private-tab effect.
 - `src/services/persistence/media-settings.test.ts` verifies story UI-settings persistence, not My Images background selection or overlay.
 - `src/services/persistence/scene-media-portability.test.ts` verifies separate scene portability logic and mocks the copy layer; it does not test the picker or source-to-destination copy.
-- The capability-specific Knowledge tests verify manifest parsing, raw headings, substantive stable sections, exact seven-tab rendering, application-map content, shared Supabase directions, source-path existence/composite, capability-local Issue isolation, an explicit empty Current Work state, and three positively mapped historical Changelog records. **MI-ISSUE-001** tracks misleading load/search/media states; **MI-ISSUE-002** tracks mutation, storage, background, and consumer-copy durability. No active Current Work or modern accepted closeout is currently registered for My Images. The mapped Image Library history remains historical rather than modern product acceptance. These checks do not substitute for product runtime tests.
+- The capability-specific Knowledge tests check manifest parsing, raw headings, substantive stable sections, exact six-tab rendering, application-map content, shared Supabase directions, source-path existence/composite, capability-local Issue isolation, and three positively mapped historical Changelog records. **MI-ISSUE-001** tracks misleading load/search/media states; **MI-ISSUE-002** tracks mutation, storage, background, and consumer-copy durability. The mapped Image Library history remains historical rather than current product acceptance. These checks do not substitute for product runtime tests.
 
 ## Reproducible Inspected-Source Composite
+
+Current Work retirement reconciliation **09/11/2026**: the fingerprint uses the current bytes of the same ordered source list after updating Knowledge Base tab and historical-record tests. This is reference maintenance, not a renewed capability audit; the original product-review dates and live-evidence limits remain unchanged.
 
 ### Exact ordered source paths
 
@@ -691,7 +693,7 @@ For each path in order, calculate the lowercase SHA-256 digest of its raw file b
 
 Concatenate the 47 lines without sorting them again, then calculate the SHA-256 digest of that UTF-8 listing.
 
-Inspected-source composite SHA-256: `3e6495239a496e6dd1b6b27082ace9604fa81156c55eae08d6bcdae22e3a6bfa`.
+Inspected-source composite SHA-256: `58ac25c73d67384518592b4f74c832d6f41f7ddaaffcd96eb0c8fac40cef3561`.
 
 This composite proves which repository bytes were reviewed. It does not prove the deployed Supabase state, a successful mutation, responsive presentation, or authenticated live behavior.
 
@@ -699,4 +701,4 @@ This composite proves which repository bytes were reviewed. It does not prove th
 
 Source review confirms the current React branches, local state changes, query construction, persistence order, destination names, and error propagation described above. Signed-out inspection confirms the runtime label and authentication boundary. The synchronized reference confirms its documented table fields and storage access summaries while exposing the absence of the current folder-summary RPC.
 
-Still unverified are the authenticated My Images layout and focus order; responsive grids; live folder/image/background rows; deployed RLS, storage policies, buckets, and RPC grants; successful upload/copy/delete mutations; legacy migration completeness; storage cleanup on partial failure; and consumer adoption after destination copy. The Chronicle Work Manual governs the scope and evidence for any later task that resolves these unknowns; this capability manual does not prescribe that future procedure.
+Still unverified are the authenticated My Images layout and focus order; responsive grids; live folder/image/background rows; deployed RLS, storage policies, buckets, and RPC grants; successful upload/copy/delete mutations; legacy migration completeness; storage cleanup on partial failure; and consumer adoption after destination copy.

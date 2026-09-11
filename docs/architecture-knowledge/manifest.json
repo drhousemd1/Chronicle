@@ -119,98 +119,6 @@
       }
     ]
   },
-  "workManual": {
-    "id": "chronicle-work-manual",
-    "label": "Chronicle Work Manual",
-    "description": "The active plain-English authority for choosing the size of Chronicle work, adding only justified safeguards, proving results, recording continuity, and stopping.",
-    "document": "chronicle-work-manual.md",
-    "tabs": [
-      {
-        "id": "overview",
-        "label": "Overview",
-        "contentKind": "work-manual-chapter",
-        "headings": [
-          "Overview"
-        ],
-        "reviewed": "09/05/2026",
-        "updated": "09/05/2026"
-      },
-      {
-        "id": "start-here",
-        "label": "Start Here",
-        "contentKind": "work-manual-chapter",
-        "headings": [
-          "1. Start Here"
-        ],
-        "reviewed": "08/30/2026",
-        "updated": "08/30/2026"
-      },
-      {
-        "id": "work-types",
-        "label": "Work Types",
-        "contentKind": "work-manual-chapter",
-        "headings": [
-          "2. Routine Local Work",
-          "3. Connected Feature Work",
-          "4. Multi-System Program Work"
-        ],
-        "legacyIds": [
-          "routine-local-work",
-          "connected-feature-work",
-          "multi-system-program-work"
-        ],
-        "reviewed": "08/30/2026",
-        "updated": "08/30/2026"
-      },
-      {
-        "id": "tests-tools-audits",
-        "label": "Tests, Tools, and Audits",
-        "contentKind": "work-manual-chapter",
-        "headings": [
-          "11. Checks, Delivery, and Reporting",
-          "10. Subagents, Research, and Independent Review"
-        ],
-        "legacyIds": [
-          "checks-delivery-reporting",
-          "subagents-research-review"
-        ],
-        "reviewed": "08/30/2026",
-        "updated": "08/30/2026"
-      },
-      {
-        "id": "safeguards-systems",
-        "label": "Safeguards and Systems",
-        "contentKind": "work-manual-chapter",
-        "headings": [
-          "5. Expansion and Approval Rules",
-          "6. Risk Safeguards",
-          "9. Chronicle-Specific Systems"
-        ],
-        "legacyIds": [
-          "expansion-and-approval",
-          "risk-safeguards",
-          "chronicle-specific-systems"
-        ],
-        "reviewed": "08/30/2026",
-        "updated": "08/30/2026"
-      },
-      {
-        "id": "evidence-records-stopping",
-        "label": "Evidence, Records, and Stopping",
-        "contentKind": "work-manual-chapter",
-        "headings": [
-          "7. Evidence and Human Review",
-          "8. Records and Continuity"
-        ],
-        "legacyIds": [
-          "evidence-and-review",
-          "records-and-continuity"
-        ],
-        "reviewed": "08/30/2026",
-        "updated": "08/30/2026"
-      }
-    ]
-  },
   "capabilities": [
     {
       "id": "community-gallery",
@@ -246,11 +154,6 @@
           "id": "issues",
           "label": "Issues",
           "contentKind": "issue-records"
-        },
-        {
-          "id": "current-work",
-          "label": "Current Work",
-          "contentKind": "current-work-records"
         },
         {
           "id": "supabase-tables",
@@ -302,11 +205,6 @@
           "contentKind": "issue-records"
         },
         {
-          "id": "current-work",
-          "label": "Current Work",
-          "contentKind": "current-work-records"
-        },
-        {
           "id": "supabase-tables",
           "label": "Supabase Tables",
           "contentKind": "shared-supabase",
@@ -354,11 +252,6 @@
           "id": "issues",
           "label": "Issues",
           "contentKind": "issue-records"
-        },
-        {
-          "id": "current-work",
-          "label": "Current Work",
-          "contentKind": "current-work-records"
         },
         {
           "id": "supabase-tables",
@@ -410,11 +303,6 @@
           "contentKind": "issue-records"
         },
         {
-          "id": "current-work",
-          "label": "Current Work",
-          "contentKind": "current-work-records"
-        },
-        {
           "id": "supabase-tables",
           "label": "Supabase Tables",
           "contentKind": "shared-supabase",
@@ -462,11 +350,6 @@
           "id": "issues",
           "label": "Issues",
           "contentKind": "issue-records"
-        },
-        {
-          "id": "current-work",
-          "label": "Current Work",
-          "contentKind": "current-work-records"
         },
         {
           "id": "supabase-tables",
@@ -518,11 +401,6 @@
           "contentKind": "issue-records"
         },
         {
-          "id": "current-work",
-          "label": "Current Work",
-          "contentKind": "current-work-records"
-        },
-        {
           "id": "supabase-tables",
           "label": "Supabase Tables",
           "contentKind": "shared-supabase",
@@ -572,11 +450,6 @@
           "contentKind": "issue-records"
         },
         {
-          "id": "current-work",
-          "label": "Current Work",
-          "contentKind": "current-work-records"
-        },
-        {
           "id": "supabase-tables",
           "label": "Supabase Tables",
           "contentKind": "shared-supabase",
@@ -616,11 +489,6 @@
           "id": "issues",
           "label": "Issues",
           "contentKind": "issue-records"
-        },
-        {
-          "id": "current-work",
-          "label": "Current Work",
-          "contentKind": "current-work-records"
         },
         {
           "id": "supabase-tables",
@@ -673,11 +541,6 @@
           "contentKind": "issue-records"
         },
         {
-          "id": "current-work",
-          "label": "Current Work",
-          "contentKind": "current-work-records"
-        },
-        {
           "id": "supabase-tables",
           "label": "Supabase Tables",
           "contentKind": "shared-supabase",
@@ -725,11 +588,6 @@
           "id": "issues",
           "label": "Issues",
           "contentKind": "issue-records"
-        },
-        {
-          "id": "current-work",
-          "label": "Current Work",
-          "contentKind": "current-work-records"
         },
         {
           "id": "supabase-tables",
@@ -781,11 +639,6 @@
           "contentKind": "issue-records"
         },
         {
-          "id": "current-work",
-          "label": "Current Work",
-          "contentKind": "current-work-records"
-        },
-        {
           "id": "supabase-tables",
           "label": "Supabase Tables",
           "contentKind": "shared-supabase",
@@ -835,11 +688,6 @@
           "contentKind": "issue-records"
         },
         {
-          "id": "current-work",
-          "label": "Current Work",
-          "contentKind": "current-work-records"
-        },
-        {
           "id": "supabase-tables",
           "label": "Supabase Tables",
           "contentKind": "shared-supabase",
@@ -887,11 +735,6 @@
           "id": "issues",
           "label": "Issues",
           "contentKind": "issue-records"
-        },
-        {
-          "id": "current-work",
-          "label": "Current Work",
-          "contentKind": "current-work-records"
         },
         {
           "id": "supabase-tables",
@@ -949,11 +792,6 @@
           "contentKind": "shared-records"
         },
         {
-          "id": "current-work",
-          "label": "Current Work",
-          "contentKind": "shared-records"
-        },
-        {
           "id": "supabase-tables",
           "label": "Supabase Tables",
           "contentKind": "markdown-section",
@@ -1002,11 +840,6 @@
         {
           "id": "issues",
           "label": "Issues",
-          "contentKind": "shared-records"
-        },
-        {
-          "id": "current-work",
-          "label": "Current Work",
           "contentKind": "shared-records"
         },
         {
@@ -1061,11 +894,6 @@
           "contentKind": "shared-records"
         },
         {
-          "id": "current-work",
-          "label": "Current Work",
-          "contentKind": "shared-records"
-        },
-        {
           "id": "supabase-tables",
           "label": "Supabase Tables",
           "contentKind": "markdown-section",
@@ -1114,11 +942,6 @@
         {
           "id": "issues",
           "label": "Issues",
-          "contentKind": "shared-records"
-        },
-        {
-          "id": "current-work",
-          "label": "Current Work",
           "contentKind": "shared-records"
         },
         {
@@ -1173,11 +996,6 @@
           "contentKind": "shared-records"
         },
         {
-          "id": "current-work",
-          "label": "Current Work",
-          "contentKind": "shared-records"
-        },
-        {
           "id": "supabase-tables",
           "label": "Supabase Tables",
           "contentKind": "markdown-section",
@@ -1229,11 +1047,6 @@
           "contentKind": "shared-records"
         },
         {
-          "id": "current-work",
-          "label": "Current Work",
-          "contentKind": "shared-records"
-        },
-        {
           "id": "supabase-tables",
           "label": "Supabase Tables",
           "contentKind": "markdown-section",
@@ -1282,67 +1095,6 @@
         {
           "id": "issues",
           "label": "Issues",
-          "contentKind": "shared-records"
-        },
-        {
-          "id": "current-work",
-          "label": "Current Work",
-          "contentKind": "shared-records"
-        },
-        {
-          "id": "supabase-tables",
-          "label": "Supabase Tables",
-          "contentKind": "markdown-section",
-          "heading": "Supabase Tables",
-          "reviewed": "09/05/2026",
-          "updated": "09/05/2026"
-        },
-        {
-          "id": "changelog",
-          "label": "Changelog",
-          "contentKind": "shared-records"
-        }
-      ]
-    },
-    {
-      "id": "app-dashboard",
-      "label": "App Dashboard",
-      "description": "How the retained style example, component edit register, and App Guide editing and synchronization work.",
-      "document": "app-dashboard.md",
-      "recordScope": "admin",
-      "tabs": [
-        {
-          "id": "overview",
-          "label": "Overview",
-          "contentKind": "markdown-section",
-          "heading": "Overview",
-          "reviewed": "09/05/2026",
-          "updated": "09/05/2026"
-        },
-        {
-          "id": "ui-elements-and-functions",
-          "label": "UI Elements and Functions",
-          "contentKind": "markdown-section",
-          "heading": "UI Elements and Functions",
-          "reviewed": "09/05/2026",
-          "updated": "09/05/2026"
-        },
-        {
-          "id": "app-architecture",
-          "label": "App Architecture",
-          "contentKind": "markdown-section",
-          "heading": "App Architecture",
-          "reviewed": "09/05/2026",
-          "updated": "09/05/2026"
-        },
-        {
-          "id": "issues",
-          "label": "Issues",
-          "contentKind": "shared-records"
-        },
-        {
-          "id": "current-work",
-          "label": "Current Work",
           "contentKind": "shared-records"
         },
         {

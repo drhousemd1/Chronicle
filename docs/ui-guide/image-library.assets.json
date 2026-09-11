@@ -1,0 +1,92 @@
+[
+  {
+    "path": "../../src/assets/ui-guide/image-library/overview-narrow.png",
+    "width": 390,
+    "height": 999,
+    "sha256": "d6d927a2278b916db32b06c8068e17e31ca8c5eb98b56a8b3870281a3908b996"
+  },
+  {
+    "path": "../../src/assets/ui-guide/image-library/overview.png",
+    "width": 1440,
+    "height": 1000,
+    "sha256": "3ecbd870f06d65f28ce0713d04ba0e8d92f82a8b90cf09fb603a395b22c2d264"
+  },
+  {
+    "path": "../../src/assets/ui-guide/image-library/settings-menu.png",
+    "width": 1440,
+    "height": 114,
+    "sha256": "4e5e4681d45bb71bd48e8d4a3be01cd30e4a43941a396ea935afec0deffe63da"
+  },
+  {
+    "path": "../../src/assets/ui-guide/image-library/folder-hover.png",
+    "width": 342,
+    "height": 500,
+    "sha256": "603da9dcc75b3c8c078b161b7995db49c673669de3e2cfe15e6d90d0c591adee"
+  },
+  {
+    "path": "../../src/assets/ui-guide/image-library/image-card.png",
+    "width": 236,
+    "height": 287,
+    "sha256": "6acc51b70cccb7926f9d38739f55841dc1c27feaae7b064cdf7ca7fea9dd9be1"
+  },
+  {
+    "path": "../../src/assets/ui-guide/image-library/inside-folder-narrow.png",
+    "width": 390,
+    "height": 999,
+    "sha256": "cef7f4fc44571e11e57bc8ce65de1d58e2f282b6a952abc69f83bc8007f0968f"
+  },
+  {
+    "path": "../../src/assets/ui-guide/image-library/inside-folder.png",
+    "width": 1440,
+    "height": 1000,
+    "sha256": "8f14ecd11e024345b7b59a6d328c7a6d7fb660963f7a9941197b61865e60e918"
+  },
+  {
+    "path": "../../src/assets/ui-guide/image-library/folder-editor.png",
+    "width": 473,
+    "height": 406,
+    "sha256": "4d815ce41b2d1eda1d209a776f57533f679c6a15bb70415df65b1291fb608726"
+  },
+  {
+    "path": "../../src/assets/ui-guide/image-library/image-details.png",
+    "width": 845,
+    "height": 890,
+    "sha256": "a227b03caaaed4a98f21a0d2f561fc45bf0ab3504eece8781c470409d46a6c10"
+  },
+  {
+    "path": "../../src/assets/ui-guide/image-library/loading.png",
+    "width": 1386,
+    "height": 217,
+    "sha256": "2e5c80e68005bdc0ee289aad948c52cdf5738bea1540c0a5f0b383607305c937"
+  },
+  {
+    "path": "../../src/assets/ui-guide/image-library/load-error.png",
+    "width": 1386,
+    "height": 77,
+    "sha256": "f03c2ab2aee921d68f8c49ceede163a0288855ec444a7270a75443658493b33e"
+  },
+  {
+    "path": "../../src/assets/ui-guide/image-library/empty-folder.png",
+    "width": 1177,
+    "height": 301,
+    "sha256": "98baedf49d65c7e0e49d308e2648d29e9f7dad3bed739d9683ea26aff2976bac"
+  },
+  {
+    "path": "../../src/assets/ui-guide/image-library/image-delete-confirmation.png",
+    "width": 665,
+    "height": 244,
+    "sha256": "bfc59be5329ce664f43971df86a9ec3b5b0749265c729ba53f1e0dde73ccae7e"
+  },
+  {
+    "path": "../../src/assets/ui-guide/image-library/new-collection.png",
+    "width": 665,
+    "height": 406,
+    "sha256": "ee6e68b9ffdf22ee82b0808283be7cb26f857b4e9af93d3cc2fe9499f22c50de"
+  },
+  {
+    "path": "../../src/assets/ui-guide/image-library/new-review.png",
+    "width": 1177,
+    "height": 883,
+    "sha256": "77a4053c058b235056ec30c7133f234b67adcabcc4a748e95277450664d3cd9e"
+  }
+]

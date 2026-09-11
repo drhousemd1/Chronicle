@@ -1,0 +1,38 @@
+[
+  {
+    "path": "../../src/assets/ui-guide/admin-panel/overview.png",
+    "width": 710,
+    "height": 578,
+    "sha256": "c0f8318eb1586bd5d79b50ac35261a366880b5b3a82d2d0dcd10d2a8757dae61"
+  },
+  {
+    "path": "../../src/assets/ui-guide/admin-panel/editor.png",
+    "width": 645,
+    "height": 642,
+    "sha256": "b23d299a8b1521c648e642d093246a8895896939fa59a64d54716f39e5d24774"
+  },
+  {
+    "path": "../../src/assets/ui-guide/admin-panel/new-note-narrow.png",
+    "width": 390,
+    "height": 512,
+    "sha256": "7d9f304101727cd25bf8f8e11e5d3b7b081cad2d160f5b5590e1c43f28db8812"
+  },
+  {
+    "path": "../../src/assets/ui-guide/admin-panel/new-note.png",
+    "width": 645,
+    "height": 480,
+    "sha256": "77fffb9d330f4ba90fe7d549a2b0af132de8f1c8543d65545287471147f7d240"
+  },
+  {
+    "path": "../../src/assets/ui-guide/admin-panel/new-preview-narrow.png",
+    "width": 384,
+    "height": 771,
+    "sha256": "f3e3dd87240c4f57d01804b02e3b0b5d55109a37ce942cac32d81dca3c0e0f6a"
+  },
+  {
+    "path": "../../src/assets/ui-guide/admin-panel/new-preview.png",
+    "width": 921,
+    "height": 510,
+    "sha256": "1482e3392f8fca12517aefb74d6722c050652f86ddbb825502ed39f35a082a7f"
+  }
+]

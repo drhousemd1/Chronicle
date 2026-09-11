@@ -83,7 +83,6 @@ function acceptedUpdateEntry(): EffectiveChangelogEntry {
     acceptedBy: "Chronicle owner",
     reviewMethod: "Focused checks plus direct visual acceptance.",
     sourceRevision: `sha256:${"f".repeat(64)}`,
-    workflowRecordContext: "no_issue_current_work_archive_or_proof_matrix",
     sourcePath: "docs/architecture-knowledge/changelog/entries/CG-UPDATE-900.md",
     body: "",
     rawSource: "",
@@ -393,7 +392,7 @@ describe("ChangelogRecordNarrative", () => {
     }
     expect(
       screen.getByRole("link", {
-        name: "Open the complete archived Current Work record",
+        name: "Open the historical work record",
       }),
     ).toHaveAttribute(
       "href",
@@ -408,12 +407,12 @@ describe("ChangelogRecordNarrative", () => {
 
     expect(
       screen.queryByRole("link", {
-        name: "Open the complete archived Current Work record",
+        name: "Open the historical work record",
       }),
     ).not.toBeInTheDocument();
     expect(
       screen.getByText(
-        /Archived Current Work link unavailable.*reciprocal archive were not verified together/,
+        /Historical work record link unavailable.*reciprocal archive were not verified together/,
       ),
     ).toBeInTheDocument();
   });
@@ -521,7 +520,8 @@ describe("ChangelogRecordNarrative", () => {
         "Quality Hub did not store a separate why-needed field, so no rationale is inferred.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getByText("Not available — this record predates Chronicle Current Work.")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Related history" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Not available — this record predates Chronicle Current Work.")).not.toBeInTheDocument();
   });
 
   it("renders the effective legacy correction while preserving the complete original payload and migration metadata", () => {
@@ -602,10 +602,28 @@ describe("ChangelogRecordNarrative", () => {
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(
+      screen.queryByText(
         "Not applicable — this bounded accepted update did not require or create a Current Work project, proof matrix, archive, or closeout.",
       ),
-    ).toBeInTheDocument();
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Related history" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Complete work record" })).not.toBeInTheDocument();
     expect(screen.queryByText(/Archived Current Work/i)).not.toBeInTheDocument();
   });
+
+  it.each([acceptedEntry(), acceptedUpdateEntry(), legacyEntry()])(
+    "keeps the complete Changelog link available in a primary $variant entry",
+    (entry) => {
+      const href = `/style-guide/changelog/${entry.id}?scope=global&from=quality-hub`;
+      render(
+        <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <ChangelogRecordNarrative entry={entry} mode="primary" detailHref={href} verifiedArchiveRoute={null} />
+        </MemoryRouter>,
+      );
+      expect(screen.getByRole("link", { name: "Read complete Changelog record" })).toHaveAttribute("href", href);
+      if (entry.variant !== "accepted_closeout") {
+        expect(screen.queryByRole("heading", { name: "Related history" })).not.toBeInTheDocument();
+      }
+    },
+  );
 });

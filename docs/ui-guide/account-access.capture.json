@@ -1,0 +1,174 @@
+{
+  "rendering": "Imports actual AccountSettingsTab, PublicProfileTab, SubscriptionTab, AuthModal, AppShellTopBar and AvatarActionButtons. Only Index account canvas/pill JSX is reproduced. Source components are not transformed. Teaching examples are separate reference-only compositions.",
+  "views": {
+    "settings": "Actual settings panels, sample email/current-plan data and local password form",
+    "subscriptions": "Actual subscription cards with fixed illustrative data; live-update text is preserved source wording",
+    "profile": "Actual editable profile, existing local portrait, privacy checkboxes and empty published-works state",
+    "auth": "Actual AuthModal Sign In initial state; Sign up control opens actual Create Account state",
+    "auth-signup": "Alias of auth; opens Sign In, then use the source Sign up button (AuthModal has no initial-mode prop)",
+    "new-intro": "Parent-owned ProfileIntroExample initially open",
+    "new-privacy": "Parent-owned PrivacyPreviewExample"
+  },
+  "boundaries": [
+    "@/integrations/supabase/client",
+    "@/hooks/use-auth",
+    "@/integrations/lovable/index",
+    "@/services/subscription-tier-config",
+    "@/utils",
+    "@/services/gallery-data",
+    "@/components/chronicle/GalleryStoryCard",
+    "@/components/chronicle/StoryDetailModal",
+    "@/components/chronicle/AvatarGenerationModal",
+    "fixture-image-picker"
+  ],
+  "data": "Fixed avery@example.invalid account and local portrait. Profile reads return fixed data; works, interactions and stats are empty/zero. Subscription prices, limits, features and badges are illustrations, not current live offers or entitlements.",
+  "mutations": "Password and profile updates call a local receipt stub returning mock success. Any source success wording describes this mock result only. Auth/sign-up/OAuth return explicit local errors, without submitting credentials, redirects or sessions. No credential values are logged, returned or written. Storage/image generation/picker operations stop at local boundaries. Page CSP connect-src none also blocks fetch/XHR/WebSocket connections.",
+  "allowedInteractions": "Account pill selection, password typing/reveal/validation/mock update, actual sign-in/sign-up switch and validation/reveal, profile text edits, genre add/remove, privacy checkbox state, local avatar repositioning, mock profile Save receipt and actual shared menu behavior. Teaching examples use local drafts only.",
+  "omitted": "No production authentication, password change, profile persistence, OAuth, storage, subscriptions/realtime config, billing, image library, generation, public profile visibility enforcement or populated published-work grid/detail interaction. Source subscription CTA buttons have no handler and remain static. Upload-from-device may open a local file chooser; remote upload cannot occur. No browser inspection performed by this worker.",
+  "quirks": "Preserved source unassociated field labels and account password reveal button without an accessible name; subscription CTA inactivity, live-data wording and duplicated free-tier feature rendering; profile privacy checkboxes do not hide the owner editor. No source semantic fixes were applied.",
+  "proof": "Parent inspected imported source components, reproduced account canvas/pills, and both new compositions at stated viewports. Build/captures do not prove real authentication, updates or full production integration.",
+  "sources": [
+    {
+      "path": "src/components/account/AccountSettingsTab.tsx",
+      "role": "imported",
+      "sha256": "8bf54d2472e146bbc234c6594346527a3e06a1d181a9a029e23ec866b9c06a3e"
+    },
+    {
+      "path": "src/lib/utils.ts",
+      "role": "imported",
+      "sha256": "d1f1e0d62cb8d8d1e04c26e14de842d8a151f75812d81b046c65b5d1fe8e4b27"
+    },
+    {
+      "path": "src/components/ui/checkbox.tsx",
+      "role": "imported",
+      "sha256": "178f8177bedb1704b4dd3e748f4826848981c8af43178c04e1a276a7f017cf1f"
+    },
+    {
+      "path": "src/components/ui/dropdown-menu.tsx",
+      "role": "imported",
+      "sha256": "07914bdc1545c55771e5fcab89e633a722d9684ec1a5325fa38da61ee28369d2"
+    },
+    {
+      "path": "src/components/chronicle/AvatarActionButtons.tsx",
+      "role": "imported",
+      "sha256": "03b32d4de3b8984f6485487834a62a44aa897a73e5f78d47daa5336c45e88bd7"
+    },
+    {
+      "path": "src/components/ui/tooltip.tsx",
+      "role": "imported",
+      "sha256": "99f74ccdf63f008b07effc558ed407dac5543206618cbdf24fa072592042f053"
+    },
+    {
+      "path": "src/components/account/PublicProfileTab.tsx",
+      "role": "imported",
+      "sha256": "d16be50d36e830b0b9bea925c135600ada13b3620e1bce9e2751fde251c23851"
+    },
+    {
+      "path": "src/services/subscription-tier-config.ts",
+      "role": "imported",
+      "sha256": "17415f681370536058245e8091ce48f92996dddf85089aaca0eb4793edf309b6"
+    },
+    {
+      "path": "src/components/account/SubscriptionTab.tsx",
+      "role": "imported",
+      "sha256": "cedcbb7bd0b73b0d7fd53fcde251172a503f206f7bc89a07f0fb664228470c45"
+    },
+    {
+      "path": "src/components/ui/dialog.tsx",
+      "role": "imported",
+      "sha256": "566ee731ba666ee9e2de203e94414edef56edf8097d10fd749b62fcae28d6858"
+    },
+    {
+      "path": "src/components/auth/AuthModal.tsx",
+      "role": "imported",
+      "sha256": "43ff68e151cc3d4cc6113b4732ea24028543b553fae98773842d9341ab39e510"
+    },
+    {
+      "path": "src/components/ui/labeled-toggle.tsx",
+      "role": "imported",
+      "sha256": "c44e06f420ca989a1aa2adcb645dada2dc6f62db3150c2089dec3cc00699243c"
+    },
+    {
+      "path": "src/components/chronicle/GalleryNsfwToggle.tsx",
+      "role": "imported",
+      "sha256": "32a0c0c2369f595d94338e0bcc303e0783ddedec8aa057c08e964f68dfc0419c"
+    },
+    {
+      "path": "src/components/chronicle/chronicle-dark-ui.ts",
+      "role": "imported",
+      "sha256": "90e29957776f20ccc1b340450a632379b7530b7c653c73c24955f2b65071fa3f"
+    },
+    {
+      "path": "src/components/chronicle/ChronicleDarkUi.tsx",
+      "role": "imported",
+      "sha256": "0b48621b21a6f637018b103dd62dfef8f34b15bd3e617dc773d0195632b3ca2b"
+    },
+    {
+      "path": "src/components/app-shell/AppShellHeader.tsx",
+      "role": "imported",
+      "sha256": "ec5bb8b67e976f81f9510e21398e81db7c30500cd14eeb9c748f987d19e2affe"
+    },
+    {
+      "path": "src/components/app-shell/AppShellTopBar.tsx",
+      "role": "imported",
+      "sha256": "769b0bb231a29aecd95f07b74698c62651e7bd9390695066a6a989fef2be6b9d"
+    },
+    {
+      "path": "docs/ui-guide/examples/account-access-compositions.tsx",
+      "role": "imported",
+      "sha256": "b23f04f448da71a9915ae6f502a070bb8a87622190de4a9caadba41eb7d2e794"
+    },
+    {
+      "path": "src/index.css",
+      "role": "compiled styling",
+      "sha256": "5e14e8cc75fd0e01b154dd1f59d9bb4f23b435558872a9b4467858932ff34e79"
+    },
+    {
+      "path": "tailwind.config.ts",
+      "role": "compiled styling",
+      "sha256": "ea133c9d352610179a54ad8fc7bdcfb88dee226a216f67615075d9581462871a"
+    },
+    {
+      "path": "src/pages/Index.tsx",
+      "role": "reproduced account canvas/pill JSX owner; page is not imported",
+      "sha256": "29879c50a1a6d7b88f2ba1ffe51c9cea4b7014a91e6b89bf5b580edc3149747e"
+    }
+  ],
+  "fixtureSources": [
+    {
+      "path": "fixture.tsx",
+      "sha256": "1eaae1bf17d44d9d09107ae473c78c32630afeccada1b093af1dfe987962622d"
+    },
+    {
+      "path": "source-specimens.tsx",
+      "sha256": "6b95fa7873c60387bd72db305c250f60f15087a774b38ed0c2b04fdc1a27ce2f"
+    },
+    {
+      "path": "fixture-data.ts",
+      "sha256": "ddfde0061ed565a916522381d4673bc986dea908c915fd333b73ed93f07145ff"
+    },
+    {
+      "path": "build.mjs",
+      "sha256": "e9cf71d856f87baf5390e3c5471e0dd8daef7c1c8e5a3324a0d8633186ebec99"
+    }
+  ],
+  "assets": [
+    {
+      "path": "public/rnd/sound-effects-visual-overlays/aria-avatar.jpg",
+      "sha256": "35c0790448769300b128d984a1f7944b6386ead68707b9da81b6368914c7e3df"
+    }
+  ],
+  "capturedOn": "2026-09-10",
+  "assetManifest": "docs/ui-guide/account-access.assets.json",
+  "captureNotes": [
+    "At1440px, actual AccountSettingsTab displayed static email/current plan/recessed fields. Blank submit disabled; short and mismatched entries produced source rose messages. Matching synthetic strings reached only the mock boundary; source success cleared fields, accompanied by an explicit local receipt.",
+    "Actual PublicProfileTab displayed fixed portrait, text, genres, privacy and empty works. Genre Enter added locally. Checking Hide Profile Details did not hide the owner editor. Header Save invoked only the mock update receipt. No real profile or media write occurred.",
+    "At390px account pills and the single-column profile form fit the viewport. This is a bounded layout check, not all account breakpoints or populated work-grid acceptance.",
+    "Actual SubscriptionTab showed configured local samples, duplicate first-tier feature boxes, Current Plan and Coming Soon semantics. Source enabled-looking choices have no action handler. The captured1440px frame shows the upper comparison rows; no live pricing or checkout is verified.",
+    "Actual AuthModal displayed Sign In, then source Sign up switched to Create Account. Empty submit produced inline email/password validation. At390x700 the799px dialog extended~49px beyond top and bottom with visible overflow; this source short-viewport limitation is documented. No valid auth/OAuth request was made.",
+    "ProfileIntroExample used named fields/removals. Enter/Add appended chips and duplicates disabled Add. Save retained values; subsequent edits/removal then Cancel restored saved content and chips. Escape returned trigger focus. Corrected6px outer label/8px inner interest spacing matched the source recipe;390px shell358px fit.",
+    "PrivacyPreviewExample checkboxes independently hid only their preview portions. Keyboard Space and Reset worked. Checked background/border were rgb(59,130,246)/rgb(96,165,250); focus retained2px white offset and2px rgb(2,8,23) ring. Narrow390px widget stacked and fit.",
+    "Seven main figures and two narrow example variants use current imported CSS/source and fixed illustrative data. Pending requests, rejection recovery, populated works, image picker/generation/upload/reposition, identity-provider redirects, checkout and persisted account visibility are unexercised. Source hashes prove identity, not complete-file reading.",
+    "All seven registered guide panels were inspected at1440px and390px with no horizontal panel overflow or jump links; the narrow introduction image uses its captured responsive variant. Selected-section reader returned six sections and nine direct images; all nine assets and21 source identities matched."
+  ]
+}

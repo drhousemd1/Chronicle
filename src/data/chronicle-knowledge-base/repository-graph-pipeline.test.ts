@@ -252,7 +252,7 @@ describe("repository graph capability lenses", () => {
       ["chat-history", 9],
       ["public-profile", 12],
       ["account", 10],
-      ["admin", 14],
+      ["admin", 13],
       ["shared-systems", 18],
       ["roleplay-pipeline", 16],
       ["knowledge-base-system", 13],
@@ -262,7 +262,6 @@ describe("repository graph capability lenses", () => {
       ["finance-dashboard", 30],
       ["research-development", 13],
       ["image-generation", 11],
-      ["app-dashboard", 13],
     ]);
     const expectedEntryPointByCapability = {
       "community-gallery": "src/components/chronicle/GalleryHub.tsx",
@@ -285,7 +284,6 @@ describe("repository graph capability lenses", () => {
       "finance-dashboard": "src/components/admin/finance/FinanceDashboardTool.tsx",
       "research-development": "src/components/admin/research-development/ResearchDevelopmentTool.tsx",
       "image-generation": "src/components/admin/ImageGenerationTool.tsx",
-      "app-dashboard": "src/components/admin/styleguide/StyleGuideTool.tsx",
     } as const;
     for (const sourceSet of sourceSets) {
       expect(new Set(sourceSet.sourcePaths).size).toBe(sourceSet.sourcePaths.length);

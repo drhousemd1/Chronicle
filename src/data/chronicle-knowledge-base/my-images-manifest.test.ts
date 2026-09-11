@@ -189,7 +189,6 @@ describe("My Images Knowledge manifest", () => {
       "UI Elements and Functions",
       "App Architecture",
       "Issues",
-      "Current Work",
       "Supabase Tables",
       "Changelog",
     ]);

@@ -50,7 +50,6 @@ import {
 import ChangelogRecordList from "@/components/admin/knowledge-base/ChangelogRecordList";
 import {
   buildQualityHubChangelogHref,
-  buildWorkManualHref,
 } from "@/data/chronicle-knowledge-base/knowledge-routes";
 import {
   isChronicleCapabilityId,
@@ -581,29 +580,25 @@ function QualityHubHowToModal({
         <div className={cn(panelBodyClass, "overflow-y-auto max-h-[calc(85vh-70px)]")}>
           <div className="space-y-4 text-sm text-[#c7c9cf]">
             <div className={cn(recessedBlockClass, "p-4")}>
-              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Workflow authority</div>
+              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Tool scope</div>
               <p>
                 Quality Hub stores scan mechanics and scan results. It does not decide whether
-                Chronicle work needs a scan, Issue, Current Work project, Changelog entry, or
+                Chronicle work needs a scan, Issue, Changelog entry, or
                 broad check package.
               </p>
-              <Link className="mt-3 inline-block font-semibold text-[#8dc5ff] hover:underline" to={buildWorkManualHref("start-here")}>
-                Open Chronicle Work Manual — Start Here
-              </Link>
             </div>
             <div className={cn(recessedBlockClass, "p-4")}>
               <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Quality Hub mechanics</div>
               <ul className="list-disc pl-5 space-y-1">
                 <li><strong className="text-white">Overview</strong> selects an already-authorized scan module.</li>
                 <li><strong className="text-white">Scan Runs</strong> records who scanned, when, the bounded scope, checks, omissions, and result summary.</li>
-                <li><strong className="text-white">Issue Registry</strong> stores findings that meet the Work Manual&apos;s Issue trigger.</li>
+                <li><strong className="text-white">Issue Registry</strong> stores recorded findings and their supporting evidence.</li>
                 <li><strong className="text-white">Changelog</strong> is a read-only projection of canonical accepted history.</li>
               </ul>
             </div>
             <div className={cn(recessedBlockClass, "p-4")}>
               <div className="text-[11px] font-black uppercase tracking-[0.16em] text-[#a1a1aa] mb-2">Live-system evidence</div>
               <ul className="list-disc pl-5 space-y-1">
-                <li>The Work Manual decides when live Lovable or Supabase inspection is required.</li>
                 <li>The synchronized repository reference states the last documented backend structure; it does not prove inaccessible live state.</li>
                 <li>Never store private rows, secrets, tokens, user emails, story or chat contents, or private media in scan evidence.</li>
                 <li>Label inaccessible live facts as unverified rather than inventing them.</li>
@@ -648,9 +643,8 @@ function CanonicalChangeLogView({
           <p className="text-sm leading-6 text-[#d4d4d8]">
             This view reads Chronicle&apos;s canonical repository Changelog. Historical
             Quality Hub records remain historical and are not relabeled as modern
-            accepted changes. It is a read-only history surface; the Chronicle Work
-            Manual separately governs when Current Work or an accepted Changelog
-            record is created.
+            accepted changes. This is a read-only history of meaningful completed changes,
+            not a task-progress or test-run diary.
           </p>
           <p className="text-sm leading-6 text-[#d4d4d8]">
             The primary records below explain what was broken, why the work was
@@ -1570,7 +1564,7 @@ export default function UiAuditPage({
               target === "change-log" ||
               target === "knowledge-base-current-work" ||
               target === "chronicle-records-if-triggered"
-                ? "Chronicle records only when the Work Manual trigger applies"
+                ? "Related Chronicle records"
                 : target.replace(/-/g, " ")
             ))),
           );
@@ -1967,7 +1961,7 @@ export default function UiAuditPage({
                             <div className="text-xs text-[#a1a1aa]">
                               {row.logTargets.length > 0
                                 ? row.logTargets.join(" • ")
-                                : "Issue Registry • Scan Runs • capability Current Work"}
+                                : "Issue Registry • Scan Runs"}
                             </div>
                           </div>
                         </div>

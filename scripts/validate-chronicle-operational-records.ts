@@ -76,12 +76,16 @@ if (!result.ok) {
   process.exit(1);
 }
 
+if (result.registry.activeProjects.length > 0) {
+  console.error("Current Work is retired. Active project records must remain in the historical archive, not the active directory.");
+  process.exit(1);
+}
+
 console.log(
   [
     "Chronicle operational-record validation passed:",
     `${result.registry.issues.length} Issues`,
-    `${result.registry.activeProjects.length} active projects`,
-    `${result.registry.archivedProjects.length} archived projects`,
+    `${result.registry.archivedProjects.length} historical work records`,
     `${result.registry.changelogEntries.length} Changelog entries`,
   ].join(" "),
 );

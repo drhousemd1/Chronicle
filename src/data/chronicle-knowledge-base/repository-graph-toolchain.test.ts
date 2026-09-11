@@ -30,7 +30,7 @@ async function copyFixture() {
     recursive: true,
     filter: (source) => !source.includes(`${path.sep}.venv${path.sep}`) && !source.endsWith(`${path.sep}.venv`),
   });
-  await writeFile(path.join(target, "AGENTS.md"), "Chronicle Work Manual pointer only.\n");
+  await writeFile(path.join(target, "AGENTS.md"), "Chronicle project instructions.\n");
   return target;
 }
 

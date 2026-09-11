@@ -1,0 +1,292 @@
+{
+  "rendering": "Existing specimens import production React components and icons. Explicitly labeled reference-only compositions combine imported primitives and existing style treatments. All views use compiled current Chronicle CSS.",
+  "boundaries": [
+    "@/hooks/use-auth",
+    "@/contexts/ArtStylesContext",
+    "@/contexts/ModelSettingsContext",
+    "@/integrations/supabase/client"
+  ],
+  "data": "Fixed local character summaries and an existing local portrait; service and authentication boundaries are stubbed. Search in the fixture filters local summary fields only; the guide names the broader production search owner.",
+  "sources": [
+    {
+      "path": "src/lib/utils.ts",
+      "sha256": "d1f1e0d62cb8d8d1e04c26e14de842d8a151f75812d81b046c65b5d1fe8e4b27"
+    },
+    {
+      "path": "src/components/ui/tooltip.tsx",
+      "sha256": "99f74ccdf63f008b07effc558ed407dac5543206618cbdf24fa072592042f053"
+    },
+    {
+      "path": "src/components/ui/labeled-toggle.tsx",
+      "sha256": "c44e06f420ca989a1aa2adcb645dada2dc6f62db3150c2089dec3cc00699243c"
+    },
+    {
+      "path": "src/components/chronicle/GalleryNsfwToggle.tsx",
+      "sha256": "32a0c0c2369f595d94338e0bcc303e0783ddedec8aa057c08e964f68dfc0419c"
+    },
+    {
+      "path": "src/components/chronicle/chronicle-dark-ui.ts",
+      "sha256": "90e29957776f20ccc1b340450a632379b7530b7c653c73c24955f2b65071fa3f"
+    },
+    {
+      "path": "src/components/chronicle/ChronicleDarkUi.tsx",
+      "sha256": "0b48621b21a6f637018b103dd62dfef8f34b15bd3e617dc773d0195632b3ca2b"
+    },
+    {
+      "path": "src/components/app-shell/AppShellHeader.tsx",
+      "sha256": "ec5bb8b67e976f81f9510e21398e81db7c30500cd14eeb9c748f987d19e2affe"
+    },
+    {
+      "path": "src/components/ui/dropdown-menu.tsx",
+      "sha256": "07914bdc1545c55771e5fcab89e633a722d9684ec1a5325fa38da61ee28369d2"
+    },
+    {
+      "path": "src/components/app-shell/AppShellTopBar.tsx",
+      "sha256": "769b0bb231a29aecd95f07b74698c62651e7bd9390695066a6a989fef2be6b9d"
+    },
+    {
+      "path": "src/types.ts",
+      "sha256": "c71f2a75a139ea55b1dd07b3e2f9c726a99744e2db0368eb8ed30eadf87c2f41"
+    },
+    {
+      "path": "src/components/ui/dialog.tsx",
+      "sha256": "566ee731ba666ee9e2de203e94414edef56edf8097d10fd749b62fcae28d6858"
+    },
+    {
+      "path": "src/components/chronicle/ChooserModal.tsx",
+      "sha256": "f3ca1ce1ad4dbcad7c024451886375dfb6c747e538ae8f703c6691fe887bfb8a"
+    },
+    {
+      "path": "src/components/chronicle/CustomContentTypeModal.tsx",
+      "sha256": "88c3ce9976befd454b4b574b8fe4ed0bbd6c6841f5b1c2b57b5a19cf6a7a2374"
+    },
+    {
+      "path": "src/components/chronicle/TabFieldNavigator.tsx",
+      "sha256": "c66d7cae1b0604167a8eead976896796f7e6524fe78db32c8497c0a0fae8db75"
+    },
+    {
+      "path": "src/constants.tsx",
+      "sha256": "7266f818bd4adb1eb94b2b87d41e41f5be3eaf530f6337d262219ca0b81fb576"
+    },
+    {
+      "path": "src/lib/canonical-field-registry.ts",
+      "sha256": "3c791d3c64c6260f4568eca3801edb61a1d24636eb3db713fe917b20b529c3f9"
+    },
+    {
+      "path": "src/utils.ts",
+      "sha256": "eab7fc80bb854415b417303f54f91ee954cebd4e1a6f2179bfe272e194e795e3"
+    },
+    {
+      "path": "src/services/persistence/shared.ts",
+      "sha256": "7f0799337744a7613b790218eb4e6b2a669189b7f3d2dd7491948992040da28a"
+    },
+    {
+      "path": "src/services/persistence/signed-media.ts",
+      "sha256": "ceeb8791c0583a38f5b3e4eb68d266a42a00118e5f2ee9f3c994fca97cfc20ad"
+    },
+    {
+      "path": "src/services/persistence/characters.ts",
+      "sha256": "07ca2329f8cdf7b0c414f6b01fcc88d4877075a3e8568c50800a5a61b0f3879e"
+    },
+    {
+      "path": "src/features/chat-debug/types.ts",
+      "sha256": "b9208d8fddf6f3260a24bfd9fbe685d62fc9b21b041f31713aa57fc3cf64b1c5"
+    },
+    {
+      "path": "src/lib/goal-alignment.ts",
+      "sha256": "ab766b353e82e8f4b4f6eeb0030acb225eeedefcdcc1ce519f0a8cd32b201e95"
+    },
+    {
+      "path": "src/features/chat-runtime/roleplay-user-state-authority.ts",
+      "sha256": "0bec5b5728ae1c732935786ef81b3e35a21d4679aefbd4b10145be5e5cfc3a86"
+    },
+    {
+      "path": "src/features/chat-runtime/effective-state.ts",
+      "sha256": "93dfb0fb9ddf535f2fb6d91e26c521948763225bdd9f291776364b6b2e597d0b"
+    },
+    {
+      "path": "src/services/persistence/conversations.ts",
+      "sha256": "57b13de92de623f30164a35bc144bb6d8685f35e394cfb28338bfccaf5127dd3"
+    },
+    {
+      "path": "src/services/persistence/library-copy.ts",
+      "sha256": "ef616f5c77329301d66c31a1838f46a46e6b0da7c99e8c0634c368f6efebf136"
+    },
+    {
+      "path": "src/services/persistence/scene-media-portability.ts",
+      "sha256": "7bc9b0256e563256451352ec52080a53ddec4783eb070ccda0ffb3ceff498f1b"
+    },
+    {
+      "path": "src/services/persistence/scenarios.ts",
+      "sha256": "e30e3dbfadd4b05b560b2b69c552e37fe66c272cc05b2971378b271242809b4b"
+    },
+    {
+      "path": "src/services/persistence/side-characters.ts",
+      "sha256": "8fba67d44055e79cfe2ccde0d7a4b5bea8ca06dfb9e88c71ecf65f53c9748a3d"
+    },
+    {
+      "path": "src/services/persistence/content-themes.ts",
+      "sha256": "4fc9249fa88e6ab4c43a9af1531a74bb219d294f5a33e892dd274f45fe963f55"
+    },
+    {
+      "path": "src/services/persistence/media-settings.ts",
+      "sha256": "ad58c334d016a2a9a8599c13fa7257647266d17749b1d8b0e4ea11799529da8d"
+    },
+    {
+      "path": "src/services/supabase-data.ts",
+      "sha256": "67ca338878fb25461f3cdf71e458fae533b268e7b36f3866318b02f1e47d2ff8"
+    },
+    {
+      "path": "src/components/ui/textarea.tsx",
+      "sha256": "a891729aa1cac99f976e9e6471e5c8eafc0311145f829cf43cb1092df432bd00"
+    },
+    {
+      "path": "src/components/ui/collapsible.tsx",
+      "sha256": "fbe07841b794e0d7d08e87ddaaafadf1dc0c63ecc8389cd2c5b4a0a3f5500df1"
+    },
+    {
+      "path": "src/services/usage-tracking.ts",
+      "sha256": "c359623426fc5d26139269f8698e73a75af65b8f91f3aee96cfd0b61898b168a"
+    },
+    {
+      "path": "src/services/api-usage-test-session.ts",
+      "sha256": "21f9b51009768108ab98eaa07fb947a357e7098050925883a2173b5080118343"
+    },
+    {
+      "path": "src/data/api-usage-validation-registry.ts",
+      "sha256": "7ca2c9349b9ba61c352de6b86c96b9a7f0dcaccf98210ff6f1a254f54dd4b22f"
+    },
+    {
+      "path": "src/features/chat-runtime/roleplay-character-card-facts.ts",
+      "sha256": "bb1f6dd6d2e1916b11080f04cd7c49c423ba3e44b93b1c9b1af9d75eaaaf8d4a"
+    },
+    {
+      "path": "src/services/api-usage-validation.ts",
+      "sha256": "0609e3a6b9f3521dc3519225e97d317db7c56207a72518fa7edc83156716c1b4"
+    },
+    {
+      "path": "src/components/chronicle/AvatarGenerationModal.tsx",
+      "sha256": "101254acd3c93c4aa18aab1b2192791d5b661f147573eeebc7d88c8d86dc5a11"
+    },
+    {
+      "path": "src/components/ui/button.tsx",
+      "sha256": "ae65d5ed4fb57411f38475bf14cfb98abb688d293e76b0977827fbb680f46cb3"
+    },
+    {
+      "path": "src/components/ui/scroll-area.tsx",
+      "sha256": "efebd489d75334c1dbcb2e7f24e4aa38a50e386a5312d10c0a447d3e9985bebd"
+    },
+    {
+      "path": "src/components/chronicle/ImageLibraryPickerModal.tsx",
+      "sha256": "8f0b3bea67dad2be46e95437644288224e2e8e5727a4ad0cb6ca727f223f6869"
+    },
+    {
+      "path": "src/components/chronicle/AvatarActionButtons.tsx",
+      "sha256": "03b32d4de3b8984f6485487834a62a44aa897a73e5f78d47daa5336c45e88bd7"
+    },
+    {
+      "path": "src/constants/tag-injection-registry.ts",
+      "sha256": "ee6ae73d4c16dd131dff8d669fcd1f6df16279d9f4c22e9d415ba0491dbba69f"
+    },
+    {
+      "path": "src/services/character-ai.ts",
+      "sha256": "733f6423bb2e1b9adb88f9d646c7fe9dfd5374b10f4cef261bf432698ff10ba3"
+    },
+    {
+      "path": "src/components/chronicle/EnhanceModeModal.tsx",
+      "sha256": "93b56954e313caed6c8ce15d584e1ebc6d2a3b5610a6074368f828faa5e69ca4"
+    },
+    {
+      "path": "src/components/chronicle/GuidanceStrengthSlider.tsx",
+      "sha256": "2076d9ac72fd24d5644821bf8d8e2b88ea326151a0cfac76aadb6e3e9dd30179"
+    },
+    {
+      "path": "src/components/chronicle/CircularProgress.tsx",
+      "sha256": "2fcbcee58d7a65b59586a66f1b5510108829e6f7770c233544d3f419ae3afe1d"
+    },
+    {
+      "path": "src/components/ui/checkbox.tsx",
+      "sha256": "178f8177bedb1704b4dd3e748f4826848981c8af43178c04e1a276a7f017cf1f"
+    },
+    {
+      "path": "src/components/chronicle/AutoResizeTextarea.tsx",
+      "sha256": "17245a5df3bb1adcd1c34d098ff34c8fa8b63b1171e30e58a4f1b8d82e8a6db3"
+    },
+    {
+      "path": "src/components/chronicle/CharacterGoalsSection.tsx",
+      "sha256": "773606cb6cf7a145a78a00c0ba66d55da5e730e3bf5991e97a1800626a612fdd"
+    },
+    {
+      "path": "src/components/chronicle/PersonalitySection.tsx",
+      "sha256": "fb438ca9627440ad882f8019d91d8d839e1c6b1290867ae0f5b1f03d75cfc88d"
+    },
+    {
+      "path": "src/features/character-builder/rows/AutoResizeTextareaField.tsx",
+      "sha256": "7593d367dee2f82fa804a0106e99185c5a1100307213010b75c8b51c1e66fc19"
+    },
+    {
+      "path": "src/features/character-builder/sections/HardcodedSection.tsx",
+      "sha256": "e4ab77a4ad882859fb499bef0d1a2c060977def11796af4bcc4ee52a604ab2d2"
+    },
+    {
+      "path": "src/features/character-builder/rows/HardcodedRow.tsx",
+      "sha256": "85fad627b33ffb57d007d45dd6a1e11da30efef9a58a9e74fe248f33b6e4c55f"
+    },
+    {
+      "path": "src/features/character-builder/rows/ExtraRow.tsx",
+      "sha256": "d37e878032d7a41c9c3ec12866dc1e8ae51fdfb0680a699fab5c64dacb08467d"
+    },
+    {
+      "path": "src/features/character-builder/sidebar/TraitProgressRing.tsx",
+      "sha256": "9e3610445485b95093eebfb6bbbc40c49439111df2916257bddbabb86556a081"
+    },
+    {
+      "path": "src/features/character-builder/sidebar/TraitNavButton.tsx",
+      "sha256": "5f78f47d6b453780ae9ef9d8f2e23c6010c8d2a3c1e96fdc995979a2f17185c3"
+    },
+    {
+      "path": "src/features/character-builder/utils/section-keys.ts",
+      "sha256": "4ecd79cbf89b3a4797aae7e3e7a6a3c3a6a624f0fee0408ebfc5507943718ad5"
+    },
+    {
+      "path": "src/features/character-builder/utils/section-progress.ts",
+      "sha256": "dcb3357c9636008454b346908f27fdfb22f799c689d5e0f426533b041c205ff5"
+    },
+    {
+      "path": "src/features/shared-builder/utils/image-position.ts",
+      "sha256": "d1e2dc3cdee3181aab6e20932d45a83712c05f08094424088c83e99e8fab1f99"
+    },
+    {
+      "path": "src/features/character-builder/CharacterBuilderScreen.tsx",
+      "sha256": "5622d615e9b4f971909825b000500f223e5b3b59fd5d809dfe1d8c19c4d955a6"
+    },
+    {
+      "path": "src/components/ui/alert-dialog.tsx",
+      "sha256": "c8b01137c7552e63c9ccf2c38ef92e5417bd6616b6980d56d3015db027465283"
+    },
+    {
+      "path": "src/components/chronicle/DeleteConfirmDialog.tsx",
+      "sha256": "7c71d45f0cf7131dd2400a0cd284763e5cb58a11c633f1077357dc988457ef55"
+    },
+    {
+      "path": "src/components/ui/popover.tsx",
+      "sha256": "ee5f78ece57c9e8eb5f9b4186e2bb9ebe46b69b52f03f1edd9a601883bc64772"
+    },
+    {
+      "path": "src/index.css",
+      "sha256": "5e14e8cc75fd0e01b154dd1f59d9bb4f23b435558872a9b4467858932ff34e79"
+    },
+    {
+      "path": "tailwind.config.ts",
+      "sha256": "ea133c9d352610179a54ad8fc7bdcfb88dee226a216f67615075d9581462871a"
+    }
+  ],
+  "capturedOn": "2026-09-10",
+  "assetManifest": "docs/ui-guide/character-library.assets.json",
+  "captureNotes": [
+    "Existing specimens import the unselected CharacterBuilderScreen, AppShellTopBar and DeleteConfirmDialog. The outer library canvas reproduces its exact Index.tsx wrapper.",
+    "Grid create and delete callbacks are inert/local; these images do not verify account changes, persistence or APIs.",
+    "The derived collection and display-options examples are reference-only compositions. Their layout choices are not new global standards.",
+    "Source hover inspection confirmed image scale, title tint and reveal-delete; the wrapper did not translate and its important base shadow stayed in force."
+  ]
+}

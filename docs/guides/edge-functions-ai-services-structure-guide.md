@@ -1,11 +1,8 @@
 > **PAGE-REFERENCE MECHANICS**
 >
-> Chronicle Work Manual: docs/architecture-knowledge/chronicle-work-manual.md
-> Chronicle Work Manual version: 0.2.2-provisional
+> This document describes the current page or system architecture. It does not decide when Chronicle work requires an audit, document update, Issue, Changelog entry, check package, or review.
 >
-> This document describes the current page or system architecture. It does not decide when Chronicle work requires an audit, document update, Issue, Current Work project, Changelog entry, check package, or review.
->
-> When the Work Manual or the user triggers a factual update to this reference, use `docs/guides/GUIDE_STYLE_RULES.md` for formatting mechanics, edit the applicable section in place, preserve the established section structure, use verified source values, and cross-reference shared owners when relevant. If a section does not apply, write `N/A — [specific reason]`.
+> When the user requests a factual update to this reference, use `docs/guides/GUIDE_STYLE_RULES.md` for formatting mechanics, edit the applicable section in place, preserve the established section structure, use verified source values, and cross-reference shared owners when relevant. If a section does not apply, write `N/A — [specific reason]`.
 # PAGE: EDGE FUNCTIONS & AI SERVICES
 
 ---
@@ -33,7 +30,6 @@
 | `generate-side-character-avatar` | `supabase/functions/generate-side-character-avatar/index.ts` | Generates avatars for side characters | Image generation model |
 | `check-shared-keys` | `supabase/functions/check-shared-keys/index.ts` | Validates shared API keys | N/A |
 | `compress-day-memories` | `supabase/functions/compress-day-memories/index.ts` | Compresses completed-day bullet memories into a 2-3 sentence synopsis | `grok-4.3` |
-| `sync-guide-to-github` | `supabase/functions/sync-guide-to-github/index.ts` | Syncs guide documents to GitHub repo | N/A |
 | `migrate-base64-images` | `supabase/functions/migrate-base64-images/index.ts` | Migrates legacy base64 images to storage | N/A |
 
 ---

@@ -34,7 +34,7 @@ export function resolveShellQueryTarget(
     }
 
     return {
-      adminTool: queryTool || "hub",
+      adminTool: !queryTool || queryTool === "style_guide" || queryTool === "app_guide" ? "hub" : queryTool,
       requiresAdmin: true,
       tab: "admin",
     };

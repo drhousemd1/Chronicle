@@ -27,6 +27,7 @@ import {
   parseCanonicalRecordSourcePath,
 } from "./path-safety";
 import {
+  assertWritableKnowledgeRecordKind,
   parseKnowledgeRecordRequest,
   type KnowledgeRecordRequestKind,
   type NormalizedKnowledgeRecordRequest,
@@ -895,6 +896,7 @@ export async function prepareKnowledgeRecordTransaction({
   expectedKind: KnowledgeRecordRequestKind;
   dependencies?: KnowledgeRecordEngineDependencies;
 }): Promise<PreparedKnowledgeRecordTransaction> {
+  assertWritableKnowledgeRecordKind(expectedKind);
   const request = await parseKnowledgeRecordRequest(requestPath);
   if (request.kind !== expectedKind) {
     throw new Error(
@@ -960,6 +962,7 @@ export async function applyKnowledgeRecordTransaction({
   dependencies?: KnowledgeRecordEngineDependencies;
 }): Promise<AppliedKnowledgeRecordTransaction> {
   const preview = await openVerifiedKnowledgeTransaction({ repoRoot, transactionId });
+  assertWritableKnowledgeRecordKind(preview.kind);
   const previewOperations = storedTransactionToCandidateOperations(preview);
   assertChronicleTransactionShape(preview, previewOperations);
   const protection = deriveKnowledgeTransactionProtection(

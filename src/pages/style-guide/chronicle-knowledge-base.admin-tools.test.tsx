@@ -10,7 +10,6 @@ import { isChronicleCapabilityId } from "@/data/chronicle-knowledge-base/capabil
 import {
   chronicleAdminToolSections,
   chronicleKnowledgeSections,
-  chronicleWorkManualSection,
   getKnowledgeDocumentSource,
   getKnowledgeTabMarkdown,
   parseKnowledgeDocument,
@@ -33,7 +32,7 @@ describe("Administration and Maintenance manuals", () => {
     expect(chronicleAdminToolSections.map(({ id }) => id)).toEqual(ADMIN_TOOL_SECTION_IDS);
     for (const section of chronicleAdminToolSections) {
       expect(isChronicleCapabilityId(section.id)).toBe(false);
-      expect(section.tabs.map(({ label }) => label)).toEqual(["Overview", "UI Elements and Functions", "App Architecture", "Issues", "Current Work", "Supabase Tables", "Changelog"]);
+      expect(section.tabs.map(({ label }) => label)).toEqual(["Overview", "UI Elements and Functions", "App Architecture", "Issues", "Supabase Tables", "Changelog"]);
       expect(parseKnowledgeDocument(getKnowledgeDocumentSource(section.document!)).headings).toEqual(["Overview", "UI Elements and Functions", "App Architecture", "Supabase Tables"]);
       for (const link of getKnowledgeDocumentSource(section.document!).matchAll(/\[[^\]]+\]\(([^)]+)\)/g)) {
         const url = new URL(link[1], "http://localhost/style-guide/chronicle-knowledge-base");
@@ -43,7 +42,7 @@ describe("Administration and Maintenance manuals", () => {
         if (url.searchParams.has("tab")) expect(target!.tabs.some(({ id }) => id === url.searchParams.get("tab")), link[1]).toBe(true);
       }
       for (const tab of section.tabs) {
-        if (["issues", "current-work", "changelog"].includes(tab.id)) {
+        if (["issues", "changelog"].includes(tab.id)) {
           expect(tab.contentKind).toBe("shared-records");
           expect(tab.openIssueCount).toBeUndefined();
         } else {
@@ -88,7 +87,7 @@ describe("Administration and Maintenance manuals", () => {
       expect(element.previousElementSibling).toHaveClass("knowledge-switcher");
       expect(element.querySelector(".knowledge-section-title")).toHaveTextContent(tool.label);
       expect(within(element).getByRole("tablist")).toHaveClass("knowledge-tab-rail");
-      expect(within(element).getAllByRole("tab")).toHaveLength(7);
+      expect(within(element).getAllByRole("tab")).toHaveLength(6);
       expect(within(element).getByRole("tabpanel")).toHaveClass("knowledge-content-panel");
     }
   });
@@ -99,10 +98,7 @@ describe("Administration and Maintenance manuals", () => {
       const element = document.getElementById(section.id)!;
       fireEvent.click(within(element).getByRole("tab", { name: "Issues" }));
       expect(within(element).getByRole("link", { name: "Open Admin Panel Issues" })).toHaveAttribute("href", buildKnowledgeBaseTabHref("admin", "issues"));
-      fireEvent.click(within(element).getByRole("tab", { name: "Current Work" }));
-      expect(within(element).getByRole("link", { name: "Open Admin Panel Current Work" })).toHaveAttribute("href", buildKnowledgeBaseTabHref("admin", "current-work"));
-      const manualLink = within(element).getByRole("link", { name: "Work Manual’s record rules" }).getAttribute("href")!;
-      expect(chronicleWorkManualSection.tabs.some(({ id }) => id === new URL(manualLink, "http://localhost").searchParams.get("tab"))).toBe(true);
+      expect(within(element).queryByRole("tab", { name: "Current Work" })).not.toBeInTheDocument();
       fireEvent.click(within(element).getByRole("tab", { name: "Changelog" }));
       expect(within(element).getByRole("link", { name: "Open the canonical Changelog" })).toHaveAttribute("href", "/style-guide/ui-audit?view=changelog");
     }

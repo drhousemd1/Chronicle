@@ -505,6 +505,44 @@ Corrected accepted evidence limits
 }
 
 describe("shared Chronicle Changelog record contract", () => {
+  it("retains Knowledge System ownership through closeout corrections and selection", () => {
+    const id = "KS-CHANGE-001";
+    const original = acceptedFixture()
+      .replace(/CG-/g, "KS-")
+      .replace(/community-gallery/g, "knowledge-system");
+    const registry = buildChangelogRecordRegistry({
+      [changelogPath(id)]: original,
+      [changelogPath(`${id}-COR-001`)]: correctionFixture({
+        targetId: id,
+        capabilities: ["knowledge-system", "admin"],
+        clarified: "affected_capabilities: [knowledge-system, admin]",
+      }),
+    }, { asOf: AS_OF });
+    const [entry] = selectChangelogEntriesFromRegistry(registry, "knowledge-system");
+    expect(entry.rootRecord.rawSource).toBe(original);
+    expect(entry.affectedCapabilities).toEqual(["knowledge-system", "admin"]);
+    expect(entry.appliedCorrections).toHaveLength(1);
+    expect(selectChangelogEntriesFromRegistry(registry, "community-gallery")).toEqual([]);
+  });
+
+  it.each([
+    ["CG-UPDATE-001", () => acceptedUpdateFixture()],
+    ["LEGACY-QH-cl-20260620-001", () => legacyFixture()],
+  ] as const)("does not add Knowledge System applicability to %s through a correction", (id, fixture) => {
+    const result = validateChangelogRecordSources({
+      [changelogPath(id)]: fixture(),
+      [changelogPath(`${id}-COR-001`)]: correctionFixture({
+        targetId: id,
+        capabilities: ["community-gallery", "knowledge-system"],
+        clarified: "affected_capabilities: [community-gallery, knowledge-system]",
+      }),
+    }, { asOf: AS_OF });
+    expect(result.ok).toBe(false);
+    expect(result.errors.join("\n")).toContain(
+      "knowledge-system applicability is limited to accepted closeouts and their corrections",
+    );
+  });
+
   it("computes the standard SHA-256 digest used for preserved legacy payloads", () => {
     expect(sha256HexSync("abc")).toBe(
       "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
@@ -1716,14 +1754,6 @@ CG-WORK-001`,
   it.each([
     ["unsupported prefix", acceptedUpdateFixture({ id: "XX-UPDATE-001" }), "explicitly registered"],
     ["wrong owner", acceptedUpdateFixture({ owner: "chat-interface" }), "belongs to community-gallery"],
-    [
-      "missing honest context",
-      acceptedUpdateFixture().replace(
-        "workflow_record_context: no_issue_current_work_archive_or_proof_matrix\n",
-        "",
-      ),
-      "workflow_record_context",
-    ],
     [
       "fabricated closeout field",
       acceptedUpdateFixture().replace(

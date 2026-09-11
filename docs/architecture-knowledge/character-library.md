@@ -129,7 +129,7 @@ From Library opens the My Images picker. The user chooses a folder, chooses an e
 
 Character Library requires an authenticated Chronicle user. The library read is scoped to the current account and to records marked as library profiles. Save and insert payloads carry the current account identifier, use no story parent, and set the library flag. Delete is limited to a library row and relies on the backend owner boundary as final enforcement.
 
-The client filters and flags are useful request constraints, not security by themselves. The synchronized Supabase reference describes the documented `characters` table and private media boundaries; it is not live-deployment proof. App Architecture identifies the exact repository requests and reference limits. Live enforcement beyond those sources remains unverified here, and the Chronicle Work Manual governs whether a later task requires a live comparison.
+The client filters and flags are useful request constraints, not security by themselves. The synchronized Supabase reference describes the documented `characters` table and private media boundaries; it is not live-deployment proof. App Architecture identifies the exact repository requests and reference limits. Live enforcement beyond those sources remains unverified here.
 
 ### Private adult material remains first-class profile data
 
@@ -412,7 +412,7 @@ My Images owns source folders and images until an explicit avatar copy succeeds.
 
 This chapter traces the current Character Library implementation from Chronicle's single browser route through the internal library tab, shared Character Builder, account-scoped character services, private avatar storage, AI helpers, and Story Builder copy handoffs. It separates three things that are easy to conflate: the stable user contract described in Overview and UI Elements and Functions; the current repository mechanisms that attempt to deliver it; and verified implementation limitations that must not be promoted into product behavior.
 
-Character Library exposes capability-isolated Issues, Current Work, and Changelog tabs. **CL-ISSUE-001** tracks misleading collection/edit-session state, and **CL-ISSUE-002** tracks copy identity and avatar ownership. No active Current Work or modern accepted closeout is currently registered for Character Library. Its Changelog tab includes one positively mapped historical Quality Hub record for the character-role badge change; unrelated capability history must remain excluded.
+Character Library exposes capability-isolated Issues and Changelog tabs. **CL-ISSUE-001** tracks misleading collection/edit-session state, and **CL-ISSUE-002** tracks copy identity and avatar ownership. Its Changelog tab includes one positively mapped historical Quality Hub record for the character-role badge change; unrelated capability history must remain excluded. That historical record does not establish current product acceptance.
 
 ### Evidence standard and review metadata
 
@@ -421,7 +421,7 @@ Character Library exposes capability-isolated Issues, Current Work, and Changelo
 - **Inspected repository revision:** `cc3a57ccc3c25ff86bbe0abe183457f1e28d92d7`
 - **Working-tree condition:** the inspected checkout contained concurrent Phase 4/5 and product-source changes. The source composite below identifies the exact on-disk files reviewed for this manual; the revision alone does not describe those uncommitted bytes.
 - **Direct UI evidence:** Chronicle's local shell at `http://localhost:8080/` was inspected signed out. Selecting **Character Library** opened the current authentication interface. No authenticated local session was available, so the authenticated Character Library grid, editor, persistence mutations, AI requests, and failure branches were not exercised live during this review.
-- **Backend evidence:** the synchronized Supabase reference and repository migrations were inspected as documented/repository-defined boundaries. Neither is proof of the currently deployed Supabase project. Live RLS, RPC, function, and storage behavior remains unverified here; the Chronicle Work Manual governs whether a later task requires a live comparison.
+- **Backend evidence:** the synchronized Supabase reference and repository migrations were inspected as documented/repository-defined boundaries. Neither is proof of the currently deployed Supabase project. Live RLS, RPC, function, and storage behavior remains unverified here.
 
 The Overview and UI chapter are therefore source-backed product documentation with a directly observed authentication entry gate. Architecture statements about repository flows are confirmed by current code. Statements about deployed Supabase enforcement are deliberately qualified.
 
@@ -528,7 +528,7 @@ My Images remains the source owner; the newly copied object belongs to the chara
 5. A successful response supplies a signed image URL and durable image path. The client records its success usage event, then Character Builder stores both values in the current profile, recentres the crop, enters reposition mode, and closes the modal.
 6. The later character upsert persists the path/sentinel boundary; failure stays in the generation dialog.
 
-The synchronized reference lists `art_styles` as Admin-readable while the runtime depends on a public-safe RPC, and the reference does not define that RPC. The current deployed art-style read boundary therefore remains unverified here; the Chronicle Work Manual governs any later reconciliation.
+The synchronized reference lists `art_styles` as Admin-readable while the runtime depends on a public-safe RPC, and the reference does not define that RPC. The current deployed art-style read boundary therefore remains unverified here.
 
 ### 9. AI Fill and per-field enhancement
 
@@ -771,9 +771,11 @@ The Knowledge tests added with this manual validate registration, substantive Ma
 | Source | Role in Character Library |
 |---|---|
 | `src/data/chronicle-knowledge-base/character-library-manifest.test.ts` | Verifies the exact stable-tab contract, substantive section ownership, source-path existence, and reproducible source composite. |
-| `src/pages/style-guide/chronicle-knowledge-base.character-library.test.tsx` | Proves the real Knowledge renderer resolves all seven Character Library tabs, isolates its Issues, preserves the explicit empty Current Work state, and renders only its positively mapped historical Changelog record. |
+| `src/pages/style-guide/chronicle-knowledge-base.character-library.test.tsx` | Checks that the real Knowledge renderer resolves all six Character Library tabs, isolates its Issues, and renders only its positively mapped historical Changelog record. |
 
 ## Inspected Source Set and Reproducible Composite
+
+Current Work retirement reconciliation **09/11/2026**: the fingerprint uses the current bytes of the same ordered source list after updating Knowledge Base tab and historical-record tests. This is reference maintenance, not a renewed capability audit; the original product-review dates and live-evidence limits remain unchanged.
 
 ### Exact ordered source paths
 
@@ -843,9 +845,15 @@ supabase/migrations/20260719001853_b7174d69-8075-443a-a464-6da9a10d50df.sql
 
 ### Composite algorithm and value
 
-For each path above, read its raw bytes and compute lowercase SHA-256. Build one ordered text listing with exactly one line per source in the form `<file-sha256><two spaces><path><newline>`. SHA-256 that complete UTF-8 listing. For the on-disk files reviewed on 08/22/2026, the resulting composite is:
+For each path above, read its raw bytes and compute lowercase SHA-256. Build one ordered text listing with exactly one line per source in the form `<file-sha256><two spaces><path><newline>`. SHA-256 that complete UTF-8 listing. The current composite, including the bounded update recorded below, is:
 
-`e20c1f20e18f16fc510ae2498e8dea5ed4f599551e30afb7eeafc0c817e794e1`
+`7b8f4e3a0a9e224460110d00c6dfdba4c517fdb2dfd6907f4ed6e4a9e1748d2e`
+
+Snapshot update **09/11/2026**: the only changed listed source is `src/App.tsx`, where the two retired Work Manual routes were removed. Substituting the pre-removal `src/App.tsx` bytes from the external recovery package reproduces the preceding composite `39ad06e1d820da7d911f14e46ffe13f9b11f11a5cf793659e00b21f62184ad69`; the other listed source bytes remain consistent with that snapshot. This source-only reconciliation does not repeat the Character Library review, claim new capability behavior, or extend its live-evidence limits.
+
+Snapshot update **09/10/2026**: `src/App.tsx` adds only the Roadmap lazy import and protected `/admin/roadmap` route. Removing those two additions reproduces the preceding composite `dfbbfd4a66a382ce58ea2db603ecee189b71a5c9e64c113164f08ce69759f3a6`; the other listed source bytes are unchanged from that snapshot. Focused Roadmap route tests cover admin entry and signed-out/non-admin redirects. This bounded update does not repeat the Character Library review or extend its live-evidence claims.
+
+Snapshot update **09/07/2026**: the only changed file in this inspected set is `src/App.tsx`, which adds the lazy Chronicle UI Guide import and its `AdminOnlyRoute` registration. Recomputing with the prior `src/App.tsx` bytes reproduces the previous composite `e20c1f20e18f16fc510ae2498e8dea5ed4f599551e30afb7eeafc0c817e794e1`; all other listed bytes therefore remain consistent with that snapshot. The new route and shared admin guard were checked with focused tests. The original capability review date and live-evidence limits remain unchanged.
 
 This value is a reproducible review fingerprint, not a release signature. It changes if any inspected source changes, including concurrent working-tree edits. The focused Character Library Knowledge test recomputes it and fails when the manual's source evidence becomes stale.
 
@@ -855,4 +863,4 @@ The source review confirmed the route composition, visible labels and branches, 
 
 The signed-out local observation confirmed the application shell and authentication precondition only. It did not prove authenticated layout, responsive behavior, browser focus order, successful Supabase mutations, deployed RLS, storage grants, RPC availability, edge-function output, AI provider behavior, or user-visible failure recovery. No Character Library row or media object was created, updated, or deleted during documentation work.
 
-The shared **Supabase Tables** tab supplies the synchronized table and storage reference. It is a coordination artifact, not deployed-state proof, and this review does not establish the live state of `characters`, `character_avatars_private`, `image_folders`, `library_images`, `app_settings`, `art_styles`, `get_folders_with_details`, `get_public_art_styles`, or `save_scenario_atomic`. The Chronicle Work Manual governs any later live comparison.
+The shared **Supabase Tables** tab supplies the synchronized table and storage reference. It is a coordination artifact, not deployed-state proof, and this review does not establish the live state of `characters`, `character_avatars_private`, `image_folders`, `library_images`, `app_settings`, `art_styles`, `get_folders_with_details`, `get_public_art_styles`, or `save_scenario_atomic`.

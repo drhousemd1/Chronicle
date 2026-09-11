@@ -28,13 +28,13 @@ describe("Chronicle Knowledge Base My Stories manual", () => {
   it("renders the Overview gate from the My Stories source document", () => {
     renderPage();
     const myStories = document.getElementById("my-stories")!;
-    expect(within(myStories).getAllByRole("tab")).toHaveLength(7);
+    expect(within(myStories).getAllByRole("tab")).toHaveLength(6);
     expect(
       within(myStories).getByRole("heading", { name: "My Stories at a Glance" }),
     ).toBeInTheDocument();
   }, 30_000);
 
-  it("isolates My Stories Issues, empty work, and verified shared history", async () => {
+  it("isolates My Stories Issues and verified shared history without an active-work tab", async () => {
     renderPage();
     const myStories = document.getElementById("my-stories")!;
 
@@ -43,10 +43,7 @@ describe("Chronicle Knowledge Base My Stories manual", () => {
     expect(within(myStories).getByText("MS-ISSUE-002")).toBeInTheDocument();
     expect(within(myStories).queryByText("CG-ISSUE-001")).not.toBeInTheDocument();
 
-    fireEvent.click(within(myStories).getByRole("tab", { name: "Current Work" }));
-    expect(within(myStories).getByText(/No active, paused, blocked, deferred, or closeout-pending work is recorded for My Stories/)).toBeInTheDocument();
-    expect(within(myStories).queryByText("CG-WORK-001")).not.toBeInTheDocument();
-    expect(within(myStories).queryByText("KS-WORK-001")).not.toBeInTheDocument();
+    expect(within(myStories).queryByRole("tab", { name: "Current Work" })).not.toBeInTheDocument();
 
     fireEvent.click(within(myStories).getByRole("tab", { name: "Changelog" }));
     expect(await within(myStories).findByText("2 records")).toBeInTheDocument();

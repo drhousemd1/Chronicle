@@ -167,11 +167,11 @@ describe("ResearchDevelopmentTool", () => {
     expect(screen.queryByText(/Saved to docs\/research-development\/mockups/)).not.toBeInTheDocument();
   });
 
-  it("opens the existing canonical App Style Guide destination", async () => {
+  it("opens the existing canonical Chronicle UI Guide destination", async () => {
     const onOpenStyleGuide = vi.fn();
     render(<ResearchDevelopmentTool onOpenStyleGuide={onOpenStyleGuide} />);
 
-    fireEvent.click(await screen.findByRole("button", { name: /app style guide/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /chronicle ui guide/i }));
     await waitFor(() => expect(onOpenStyleGuide).toHaveBeenCalledTimes(1));
   });
 
@@ -358,7 +358,7 @@ describe("ResearchDevelopmentTool", () => {
     await waitFor(() =>
       expect(screen.getByRole("region", { name: "Editable mock-up document" })).toHaveAttribute("aria-busy", "true"),
     );
-    expect(screen.getByRole("button", { name: /app style guide/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /chronicle ui guide/i })).toBeDisabled();
     fireEvent.change(title, { target: { value: "Saving study, revised" } });
 
     await act(async () => {

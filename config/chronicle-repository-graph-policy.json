@@ -31,8 +31,7 @@
     "docs/architecture-knowledge/validation-evidence-ledger.md",
     "docs/architecture-knowledge/finance-dashboard.md",
     "docs/architecture-knowledge/research-development.md",
-    "docs/architecture-knowledge/image-generation.md",
-    "docs/architecture-knowledge/app-dashboard.md"
+    "docs/architecture-knowledge/image-generation.md"
   ],
   "include_extensions": [
     ".ts",
@@ -48,6 +47,7 @@
     "src/components/admin/research-development/prototypes/",
     "src/generated/",
     "src/data/architecture-",
+    "src/data/chronicle-knowledge-base/codex-skills.generated.json",
     "src/data/database-schema-inventory.ts",
     "src/data/supabase-schema-map.ts",
     "src/data/ui-audit-findings.ts",

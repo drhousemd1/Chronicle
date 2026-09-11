@@ -1,0 +1,188 @@
+{
+  "rendering": "Five static source-pattern figures for screenshots only, not full workspaces. Imported source components and copied visual fragments use fixed illustrative props. Entire rendered root is inert: controls do not receive pointer/keyboard interaction. No fixture state changes or service behavior is simulated.",
+  "views": {
+    "asset-config": "Copied 320px ImageGenerationTool card visuals: existing local thumbnail and no-thumbnail states, fixed read-only name/prompt, collapsed Gender Variants, Saved/Save Changes treatments",
+    "status": "Copied ModelSettingsTab visual fragments with pure UI Card/SectionTitle/Button and Switch; fixed sample model names and ok/error/warn status row treatments",
+    "operations": "Imported finance ShellCard/Tray/SlateHeader/HdrToggle/Stat in a labeled illustrative composition; fixed selected Month toggle and sample statistic values",
+    "documents": "Imported GuideSidebar dark and light variants side-by-side with fixed selected document, freshness labels and TOC levels",
+    "notebook": "Imported RndPrototypeShell with fixed light preview background, default closed Component Details and a harmless static image Preview"
+  },
+  "exactOwners": {
+    "asset-config": "src/components/admin/ImageGenerationTool.tsx; src/components/ui/input.tsx; src/components/ui/textarea.tsx",
+    "status": "src/components/chronicle/ModelSettingsTab.tsx; src/components/chronicle/UI.tsx; src/components/ui/switch.tsx",
+    "operations": "src/components/admin/finance/shared/finance-shared.tsx; src/components/chronicle/chronicle-dark-ui.ts",
+    "documents": "src/components/admin/guide/GuideSidebar.tsx",
+    "notebook": "src/components/admin/research-development/RndPrototypeShell.tsx; src/components/ui/collapsible.tsx"
+  },
+  "copiedLimits": "Asset and status JSX retains selected source classes with fixed illustrative text, readOnly values and no handlers. Full asset configuration and model status components are not imported. Omitted gender-variant content, uploads/saves, health checks, auth and shared-key writes. Copying visual fragments does not establish behavior or complete-page coverage.",
+  "importedLimits": "Finance primitives, GuideSidebar and RndPrototypeShell are imported without transforms. Required callback props are empty functions, header toggles receive no callback, root inert blocks interaction. RndPrototypeShell remains at its default closed details state. Document selection/freshness and notebook content are fixed fixture data.",
+  "data": "All numbers, statuses, badge freshness, titles and prompts are illustrative. The existing repository cinematic thumbnail is the only media asset. No current pricing, health, reviewed freshness, saved notebook or configured model claim is made.",
+  "proof": "Five static source-based figures were captured and visually inspected for the reference. The parent read the complete reference and compared the selected shell, card, controls, tokens, record and notebook specifications with their named owners. This establishes a styling reference, not live product behavior or an exhaustive tool inventory.",
+  "sources": [
+    {
+      "path": "src/lib/utils.ts",
+      "role": "imported source dependency",
+      "sha256": "d1f1e0d62cb8d8d1e04c26e14de842d8a151f75812d81b046c65b5d1fe8e4b27"
+    },
+    {
+      "path": "src/components/ui/input.tsx",
+      "role": "imported source dependency",
+      "sha256": "b71d38379d8777ab96b7fd7b313acb7ca2521214f90af416fc6ceb5caf6e4597"
+    },
+    {
+      "path": "src/components/ui/textarea.tsx",
+      "role": "imported source dependency",
+      "sha256": "a891729aa1cac99f976e9e6471e5c8eafc0311145f829cf43cb1092df432bd00"
+    },
+    {
+      "path": "src/components/ui/switch.tsx",
+      "role": "imported source dependency",
+      "sha256": "99cda942c2d215d8f25dd33ae06ed1278bcf912b262ed0e907b04f35881ac507"
+    },
+    {
+      "path": "src/components/chronicle/UI.tsx",
+      "role": "imported source dependency",
+      "sha256": "a69b223523cef1319fbb90e0bf9e4c13b3510c2baccedbd13a78f4a35b0d7996"
+    },
+    {
+      "path": "src/components/chronicle/chronicle-dark-ui.ts",
+      "role": "imported source dependency",
+      "sha256": "90e29957776f20ccc1b340450a632379b7530b7c653c73c24955f2b65071fa3f"
+    },
+    {
+      "path": "src/components/admin/finance/shared/finance-shared.tsx",
+      "role": "imported source dependency",
+      "sha256": "0ae82191c13514b861b1080f1843d79a0b6ca5298376ff8e8e1c2a0b4faa241c"
+    },
+    {
+      "path": "src/components/admin/guide/GuideSidebar.tsx",
+      "role": "imported source dependency",
+      "sha256": "d8111ce471de57024348606b7764bed5765dc23505d92e3208b38d94106a46ec"
+    },
+    {
+      "path": "src/components/ui/collapsible.tsx",
+      "role": "imported source dependency",
+      "sha256": "fbe07841b794e0d7d08e87ddaaafadf1dc0c63ecc8389cd2c5b4a0a3f5500df1"
+    },
+    {
+      "path": "src/components/admin/research-development/RndPrototypeShell.tsx",
+      "role": "imported source dependency",
+      "sha256": "035f7b0a75761a4e57e336f4b2cd1e884312252e94a3d1b08ccddf966b181d05"
+    },
+    {
+      "path": "src/components/admin/ImageGenerationTool.tsx",
+      "role": "copied selected card/field/collapsed-control visual JSX from render block; component not mounted",
+      "sha256": "51ed48ccc028a7467955756b3848d2a56b74f781c9b6063ffc24b4fe743e5306"
+    },
+    {
+      "path": "src/components/chronicle/ModelSettingsTab.tsx",
+      "role": "copied StatusRow/StatusDot and selected card/row/control visual JSX; component not mounted",
+      "sha256": "2bdf29f8c3944619f680839fa80dfdfa7ecccd535a327eba939c65232c946b07"
+    },
+    {
+      "path": "src/index.css",
+      "role": "compiled styling",
+      "sha256": "5e14e8cc75fd0e01b154dd1f59d9bb4f23b435558872a9b4467858932ff34e79"
+    },
+    {
+      "path": "tailwind.config.ts",
+      "role": "compiled styling",
+      "sha256": "ea133c9d352610179a54ad8fc7bdcfb88dee226a216f67615075d9581462871a"
+    }
+  ],
+  "fixtureSources": [
+    {
+      "path": "fixture.tsx",
+      "sha256": "34844f15147b7228791a9ec5a1fceebbe3604719f2e9c8dece0f80a07d17f2d0"
+    },
+    {
+      "path": "fixture-data.ts",
+      "sha256": "7af341c6d4f91c30c19fe775317b86dbee24cccecd2fde916667197eefe8bf33"
+    },
+    {
+      "path": "source-specimens.tsx",
+      "sha256": "da8519fd6f96ef33d43318ca399257b5e553745245e26b6dcbcc8f1ece72e405"
+    },
+    {
+      "path": "build.mjs",
+      "sha256": "f8815b36c7d78b7bd8b97668eba3a8e4765c98f9365c50b8e2f4bf57cd498b92"
+    }
+  ],
+  "assets": [
+    {
+      "path": "public/images/styles/cinematic-2-5d.png",
+      "sha256": "6555ea99e4f69cb4aa6db52c1cf5c4ae4ef47ade660f80460a3ee0b1f49e7be9"
+    }
+  ],
+  "captures": [
+    {
+      "image": "asset-config.png",
+      "clip": {
+        "height": 707,
+        "width": 685,
+        "x": 35,
+        "y": 71
+      },
+      "viewport": {
+        "height": 813,
+        "width": 845
+      }
+    },
+    {
+      "image": "documents.png",
+      "clip": {
+        "height": 629,
+        "width": 537,
+        "x": 154,
+        "y": 47
+      },
+      "viewport": {
+        "height": 1000,
+        "width": 845
+      }
+    },
+    {
+      "image": "notebook.png",
+      "clip": {
+        "height": 450,
+        "width": 823,
+        "x": 11,
+        "y": 47
+      },
+      "viewport": {
+        "height": 1000,
+        "width": 845
+      }
+    },
+    {
+      "image": "operations.png",
+      "clip": {
+        "height": 298,
+        "width": 823,
+        "x": 11,
+        "y": 47
+      },
+      "viewport": {
+        "height": 1000,
+        "width": 845
+      }
+    },
+    {
+      "image": "status.png",
+      "clip": {
+        "height": 709,
+        "width": 697,
+        "x": 74,
+        "y": 139
+      },
+      "viewport": {
+        "height": 1000,
+        "width": 845
+      }
+    }
+  ],
+  "imageManifest": "docs/ui-guide/admin-workspaces.assets.json",
+  "retiredFigures": {
+    "documents": "Removed with the retired App Dashboard/App Guide feature; the remaining captures retain their original provenance."
+  }
+}

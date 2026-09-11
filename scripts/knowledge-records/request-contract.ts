@@ -44,6 +44,15 @@ export type KnowledgeRecordRequestKind =
   | "correction"
   | "closeout";
 
+/** Historical transaction kinds remain readable for recovery, not new work. */
+export function assertWritableKnowledgeRecordKind(kind: string) {
+  if (["project-create", "project-update", "closeout"].includes(kind)) {
+    throw new Error(
+      "Current Work has been retired. Project creation, updates, and closeout are disabled. Issues and Changelog entries are independent records.",
+    );
+  }
+}
+
 export type LoadedRequestContent = Readonly<{
   requestRelativePath: string;
   absolutePath: string;
@@ -100,9 +109,9 @@ export type NormalizedKnowledgeRecordRequest = Readonly<{
 }>;
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-const GALLERY_PROJECT_ID = /^CG-WORK-\d{3}$/;
+const CLOSEOUT_PROJECT_ID = /^(?:CG|KS)-WORK-\d{3}$/;
 const GALLERY_ISSUE_ID = /^CG-ISSUE-\d{3}$/;
-const ACCEPTED_CHANGE_ID = /^CG-CHANGE-\d{3}$/;
+const ACCEPTED_CHANGE_ID = /^(?:CG|KS)-CHANGE-\d{3}$/;
 const CONTENT_FILE = /^content\/[^/]+\.md$/;
 const SHA256 = /^[a-f0-9]{64}$/;
 const LEGACY_SOURCE_LINEAGE = [
@@ -316,7 +325,7 @@ const correctionSchema = baseSchema
 const closeoutSchema = baseSchema
   .extend({
     kind: z.literal("closeout"),
-    project_id: z.string().regex(GALLERY_PROJECT_ID),
+    project_id: z.string().regex(CLOSEOUT_PROJECT_ID),
     change_id: z.string().regex(ACCEPTED_CHANGE_ID),
     expected_project_sha256: z.string().regex(SHA256),
     archive_content_file: contentFileSchema,
@@ -1029,9 +1038,12 @@ async function normalizeOperations(
     request.project_id,
   );
   if (!isAcceptedChangeId(request.change_id)) {
-    throw new Error("Closeout change_id must be a Community Gallery accepted-change ID.");
+    throw new Error("Closeout change_id must be a supported accepted-change ID.");
   }
   const changeId = parseCanonicalRecordId("changelog", request.change_id);
+  if (projectId.split("-")[0] !== changeId.split("-")[0]) {
+    throw new Error("Closeout change ID prefix must match the archived project.");
+  }
   const archiveContentPath = requireContentFileName(
     request.archive_content_file,
     projectId,
@@ -1185,6 +1197,9 @@ export async function parseKnowledgeRecordRequest(
     rawRequest = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(requestBytes));
   } catch {
     throw new Error("Knowledge record request is not valid UTF-8 JSON.");
+  }
+  if (rawRequest && typeof rawRequest === "object" && "kind" in rawRequest) {
+    assertWritableKnowledgeRecordKind(String(rawRequest.kind));
   }
   const parsedResult = requestSchema.safeParse(rawRequest);
   if (!parsedResult.success) {

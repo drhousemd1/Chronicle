@@ -1,9 +1,6 @@
 # Quality Hub Scan Technical Procedure
 
-Chronicle Work Manual: docs/architecture-knowledge/chronicle-work-manual.md
-Chronicle Work Manual version: 0.2.2-provisional
-
-This playbook explains how the existing Quality Scan command and Quality Hub storage surfaces operate. It does not decide when a scan, broad check package, Issue, Current Work record, Changelog entry, Supabase investigation, or closeout is required. The canonical Work Manual or an explicit user request owns those triggers and limits.
+This playbook explains how the existing Quality Scan command and Quality Hub storage surfaces operate. It does not decide when a scan, broad check package, Issue, Changelog entry, or Supabase investigation is required. The user's assignment sets the scope and limits.
 
 ## Command operation
 
@@ -22,7 +19,7 @@ The package command first acquires the protected Knowledge certification lease, 
 5. `node node_modules/vite/bin/vite.js build`
 6. `npm audit --omit=dev`
 
-This is the exact expansion implemented by `scripts/run-quality-hub-scan.mjs`; it deliberately invokes Vitest and Vite directly rather than calling the package `test` or `build` scripts. Use the aggregate command only when the Work Manual or the user has authorized a Quality Scan. Its success proves that those commands passed on the source state named by the run. It does not prove deployment, inaccessible live Supabase state, every product requirement, or human acceptance.
+This is the exact expansion implemented by `scripts/run-quality-hub-scan.mjs`; it deliberately invokes Vitest and Vite directly rather than calling the package `test` or `build` scripts. Use the aggregate command only when the user has authorized a Quality Scan. Its success proves that those commands passed on the source state named by the run. It does not prove deployment, inaccessible live Supabase state, every product requirement, or human acceptance.
 
 ## Module mechanics
 
@@ -32,14 +29,14 @@ A Quality Hub scan module describes its technical scope, checks, required eviden
 - record exact sources checked and skipped;
 - record the command results and evidence limits;
 - store the run identity, agent/model label, timestamp, and result counts in Scan Runs;
-- use Issue, Current Work, or accepted history only if the Work Manual's separate record trigger applies.
+- record verified problems as Issues only when called for by the authorized assignment. A scan does not automatically start a project or require a Changelog entry; Changelog records meaningful completed changes, not scan progress.
 
 Issue Registry stores verified diagnosed problems. Scan Runs stores what the scan executed. The canonical repository Changelog remains read-only in Quality Hub. These surfaces do not create obligations merely because a module lists them as available destinations.
 
 ## Live-system mechanics
 
-When the authorized scan depends on inaccessible live Supabase facts, use the Work Manual's live-system safeguard. The approved repository schema reference is a synchronized document, not proof of current deployment. Preserve privacy: do not copy row contents, secrets, tokens, user emails, private story or chat text, or private media into scan evidence. Mark inaccessible facts unverified.
+The approved repository schema reference is a synchronized document, not proof of current deployment. Preserve privacy: do not copy row contents, secrets, tokens, user emails, private story or chat text, or private media into scan evidence. Mark inaccessible facts unverified.
 
 ## Failure behavior
 
-Stop the aggregate command at the first failed check. Report the exact failed command and what it proves or cannot prove. Do not silently broaden the scan, create a record, rerun unrelated checks, or claim the entire system failed without the Work Manual's expansion trigger.
+Stop the aggregate command at the first failed check. Report the exact failed command and what it proves or cannot prove. Do not silently broaden the scan, create a record, rerun unrelated checks, or claim the entire system failed without a concrete reason relevant to the assigned work.

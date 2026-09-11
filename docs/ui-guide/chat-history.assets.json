@@ -1,0 +1,56 @@
+[
+  {
+    "path": "../../src/assets/ui-guide/chat-history/overview-narrow.png",
+    "width": 390,
+    "height": 999,
+    "sha256": "f5b0af1916a95c6172d7137d0168ab16b428d7e6963f04713dced64ae4e68444"
+  },
+  {
+    "path": "../../src/assets/ui-guide/chat-history/overview.png",
+    "width": 1440,
+    "height": 1000,
+    "sha256": "a8c0e20ff246484887f5046295576b5bd2765692b76e439727bc8f72fcbbd8f0"
+  },
+  {
+    "path": "../../src/assets/ui-guide/chat-history/load-more.png",
+    "width": 1049,
+    "height": 111,
+    "sha256": "2d72a648e4a500ca879a0348cb67cce2d4b5c5f2ad20ca2651cdee8effc858a7"
+  },
+  {
+    "path": "../../src/assets/ui-guide/chat-history/session-row.png",
+    "width": 1049,
+    "height": 185,
+    "sha256": "f41eb34623515a1dd908d1f21355a5c8d9afe0fb63182dcc828e7238a508face"
+  },
+  {
+    "path": "../../src/assets/ui-guide/chat-history/empty.png",
+    "width": 1049,
+    "height": 309,
+    "sha256": "c1c15f9885b7b32a6536c15c06d361a3a94cb5c1e095ea9d981b682a1b9b496b"
+  },
+  {
+    "path": "../../src/assets/ui-guide/chat-history/resuming.png",
+    "width": 1440,
+    "height": 1000,
+    "sha256": "561ba33f2d3e75497aac3b9b26cf85de3400dfe86b4039cd7ae8a643cbd6bbe5"
+  },
+  {
+    "path": "../../src/assets/ui-guide/chat-history/delete-session.png",
+    "width": 665,
+    "height": 244,
+    "sha256": "033408cc4cbe417896d27284077621a32b82688a73a8782e86f65052890b3a24"
+  },
+  {
+    "path": "../../src/assets/ui-guide/chat-history/new-recap.png",
+    "width": 745,
+    "height": 394,
+    "sha256": "aa873a3430bee11218a9ce721912f376d342b07f7b52eac7788c730966392719"
+  },
+  {
+    "path": "../../src/assets/ui-guide/chat-history/new-comparison.png",
+    "width": 1049,
+    "height": 357,
+    "sha256": "a7fb8310f3c0d01dcd98c0ba5ca7253c324120c6e5487e1b692b5b7b5574b826"
+  }
+]

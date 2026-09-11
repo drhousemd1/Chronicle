@@ -16,7 +16,6 @@ import {
 const METADATA_PLACEHOLDER = "**/**/**";
 const OPERATIONAL_CONTENT_KINDS = new Set([
   "issue-records",
-  "current-work-records",
   "changelog-records",
   "shared-records",
 ]);
@@ -24,6 +23,7 @@ const OPERATIONAL_CONTENT_KINDS = new Set([
 type KnowledgeSwitcherProps = {
   section: KnowledgeSection;
   renderContent: (tab: KnowledgeTab) => ReactNode;
+  renderMetadata?: (tab: KnowledgeTab) => ReactNode;
   requestedTabId?: string;
   onTabSelected?: (tab: KnowledgeTab) => void;
   /** Render the same panels together only while creating an offline snapshot. */
@@ -33,6 +33,7 @@ type KnowledgeSwitcherProps = {
 export function KnowledgeSwitcher({
   section,
   renderContent,
+  renderMetadata,
   requestedTabId,
   onTabSelected,
   exportAllTabs = false,
@@ -175,7 +176,7 @@ export function KnowledgeSwitcher({
         aria-labelledby={`${section.id}-tab-${panelTab.id}`}
         tabIndex={0}
       >
-        {!OPERATIONAL_CONTENT_KINDS.has(panelTab.contentKind) ? (
+        {renderMetadata ? renderMetadata(panelTab) : !OPERATIONAL_CONTENT_KINDS.has(panelTab.contentKind) ? (
           <div className="knowledge-content-metadata">
             <span className="knowledge-metadata-pill">
               Last Reviewed: {panelTab.reviewed ?? METADATA_PLACEHOLDER}

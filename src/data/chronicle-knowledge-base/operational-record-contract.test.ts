@@ -904,7 +904,10 @@ describe("Chronicle operational-record contract", () => {
     });
   });
 
-  it("keeps a deep version 2 project readable through accepted closeout and archive", () => {
+  it.each(["CG", "KS"])("keeps a deep version 2 %s project readable through accepted closeout and archive", (prefix) => {
+    const scoped = (value: string) => prefix === "KS"
+      ? value.replace(/CG-/g, "KS-").replace(/community-gallery/g, "knowledge-system")
+      : value;
     const active = systemCriticalCurrentWorkV2Fixture({
       state: "Closeout pending",
     });
@@ -917,15 +920,15 @@ describe("Chronicle operational-record contract", () => {
     );
     const result = validateOperationalRecordSources(
       {
-        [archivePath("CG-WORK-001")]: archive,
-        [changePath()]: changelogFixture({
+        [scoped(archivePath("CG-WORK-001"))]: scoped(archive),
+        [scoped(changePath())]: scoped(changelogFixture({
           resolvedIssueIds: [],
           remainingIssueIds: [],
-        }),
+        })),
       },
       {
         asOf: AS_OF,
-        baselineSources: { [activePath("CG-WORK-001")]: active },
+        baselineSources: { [scoped(activePath("CG-WORK-001"))]: scoped(active) },
       },
     );
 
@@ -940,7 +943,20 @@ describe("Chronicle operational-record contract", () => {
     if (acceptedChange.variant !== "accepted_closeout") {
       throw new Error("Accepted closeout fixture did not parse");
     }
-    expect(acceptedChange.archivedProjectId).toBe("CG-WORK-001");
+    expect(acceptedChange.archivedProjectId).toBe(`${prefix}-WORK-001`);
+  });
+
+  it("rejects a Knowledge System closeout using a Gallery change ID", () => {
+    const scoped = (value: string) => value.replace(/CG-/g, "KS-").replace(/community-gallery/g, "knowledge-system");
+    const active = scoped(systemCriticalCurrentWorkV2Fixture({ state: "Closeout pending" }));
+    const archive = scoped(appendVersionTwoCloseoutDecision(systemCriticalCurrentWorkV2Fixture({ placement: "archive", state: "Closed", primary: false }))).replace(/KS-CHANGE-001/g, "CG-CHANGE-001");
+    const change = scoped(changelogFixture({ resolvedIssueIds: [], remainingIssueIds: [] })).replace(/KS-CHANGE-001/g, "CG-CHANGE-001");
+    const result = validateOperationalRecordSources({
+      [scoped(archivePath("CG-WORK-001"))]: archive,
+      [changePath()]: change,
+    }, { asOf: AS_OF, baselineSources: { [scoped(activePath("CG-WORK-001"))]: active } });
+    expect(result.ok).toBe(false);
+    expect(result.errors.join("\n")).toContain("change ID prefix does not match the archived project");
   });
 
   it("lets a bounded version 2 project refresh its canonical summary without inventing history", () => {
@@ -1468,16 +1484,14 @@ describe("Chronicle operational-record contract", () => {
       "archived project CG-WORK-001 does not exist",
     );
 
-    const wrongIssueState = validateOperationalRecordSources(
+    const laterReopenedIssue = validateOperationalRecordSources(
       {
         ...validClosedSources(),
         [issuePath()]: issueFixture({ status: "open" }),
       },
       { asOf: AS_OF },
     );
-    expect(wrongIssueState.errors.join("\n")).toContain(
-      "CG-ISSUE-001 is listed resolved but remains open",
-    );
+    expect(laterReopenedIssue.errors).toEqual([]);
 
     const interrupted = validateOperationalRecordSources(
       {
@@ -2230,8 +2244,26 @@ describe("Chronicle operational-record contract", () => {
       },
       { asOf: AS_OF },
     );
-    expect(noExplicitPrimary.errors.join("\n")).toContain(
-      "expected exactly one primary resume project, found 0",
+    expect(noExplicitPrimary.errors).toEqual([]);
+    expect(noExplicitPrimary.registry.activeProjects.map((project) => project.primaryResumeTarget)).toEqual([
+      false,
+      false,
+    ]);
+  });
+
+  it("rejects multiple explicitly Primary projects", () => {
+    const multiplePrimary = validateOperationalRecordSources(
+      {
+        [activePath()]: projectFixture({ primary: true }),
+        [activePath("CG-WORK-002")]: projectFixture({
+          id: "CG-WORK-002",
+          primary: true,
+        }),
+      },
+      { asOf: AS_OF },
+    );
+    expect(multiplePrimary.errors.join("\n")).toContain(
+      "expected at most one primary resume project, found 2",
     );
   });
 

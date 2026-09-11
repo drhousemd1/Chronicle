@@ -12,11 +12,9 @@ import { describe, expect, it } from "vitest";
 
 import type { EffectiveChangelogEntry } from "@/data/chronicle-knowledge-base/changelog-record-contract";
 import {
-  getCurrentWorkBodyAfterResumeHere,
   type IssueRecord,
   type OperationalRecordRegistry,
 } from "@/data/chronicle-knowledge-base/operational-record-contract";
-import { CHRONICLE_OPERATIONAL_RECORDS_CHECKED_ON } from "@/data/chronicle-knowledge-base/operational-record-sources";
 import {
   CHRONICLE_CHANGELOG_RECORDS_CHECKED_ON,
   loadChronicleChangelogRegistry,
@@ -233,17 +231,7 @@ function multipleIssueFixtureRegistry(): OperationalRecordRegistry {
 }
 
 describe("Chronicle Knowledge Base page", () => {
-  it("keeps the rendered Resume Here separate from the remaining project history", () => {
-    expect(
-      getCurrentWorkBodyAfterResumeHere(
-        "# Project\n\n## Current State / Resume Here\n\nSummary.\n\n## Versioned Outcome and Success Contract\n\nContract.\n\n## Attempt and Decision Log\n\nHistory.",
-      ),
-    ).toBe(
-      "## Versioned Outcome and Success Contract\n\nContract.\n\n## Attempt and Decision Log\n\nHistory.",
-    );
-  });
-
-  it("gives multiple Issues clear boundaries, approved ordering, and derived Current Work links", () => {
+  it("keeps Issues independent and shows historical work links only when a preserved record exists", () => {
     renderPage(
       "/style-guide/chronicle-knowledge-base?section=community-gallery&tab=issues",
       multipleIssueFixtureRegistry(),
@@ -258,20 +246,12 @@ describe("Chronicle Knowledge Base page", () => {
       "CG-ISSUE-002",
       "CG-ISSUE-003",
     ]);
-    expect(
-      within(issueArticles[0]).getByRole("link", {
-        name: "Active Current Work: CG-WORK-001",
-      }),
-    ).toHaveAttribute(
-      "href",
-      "/style-guide/chronicle-knowledge-base?section=community-gallery&tab=current-work",
-    );
-    expect(
-      within(issueArticles[1]).getByText("No Current Work record is linked."),
-    ).toBeInTheDocument();
+    expect(within(issueArticles[0]).queryByRole("link", { name: /Current Work|Historical work record/ })).not.toBeInTheDocument();
+    expect(within(issueArticles[1]).queryByText("Related history")).not.toBeInTheDocument();
+    expect(within(gallery).queryByText("No Current Work record is linked.")).not.toBeInTheDocument();
     expect(
       within(issueArticles[2]).getByRole("link", {
-        name: "Archived Current Work: CG-WORK-003",
+        name: "Historical work record: CG-WORK-003",
       }),
     ).toHaveAttribute(
       "href",
@@ -296,7 +276,7 @@ describe("Chronicle Knowledge Base page", () => {
 
     const gallery = document.getElementById("community-gallery");
     expect(gallery).not.toBeNull();
-    expect(within(gallery!).getAllByRole("tab")).toHaveLength(7);
+    expect(within(gallery!).getAllByRole("tab")).toHaveLength(6);
 
     for (const capabilityId of [
       "my-stories",
@@ -323,7 +303,6 @@ describe("Chronicle Knowledge Base page", () => {
         "UI Elements and Functions",
         "App Architecture",
         "Issues",
-        "Current Work",
         "Supabase Tables",
         "Changelog",
       ]);
@@ -339,7 +318,6 @@ describe("Chronicle Knowledge Base page", () => {
       "Overview",
       "App Architecture",
       "Issues",
-      "Current Work",
       "Supabase Tables",
       "Changelog",
     ]);
@@ -424,7 +402,7 @@ describe("Chronicle Knowledge Base page", () => {
     expect(within(gallery).getByText("2026-07-25")).toBeInTheDocument();
     expect(within(gallery).getByText("2026-08-08")).toBeInTheDocument();
     const archivedWorkLink = within(gallery).getByRole("link", {
-      name: "Archived Current Work: CG-WORK-002",
+      name: "Historical work record: CG-WORK-002",
     });
     expect(archivedWorkLink).toHaveAttribute(
       "href",
@@ -436,89 +414,7 @@ describe("Chronicle Knowledge Base page", () => {
     expect(issuesTab).not.toHaveClass("knowledge-tab--issues-active");
     expect(issuesTab).toHaveAttribute("aria-selected", "true");
 
-    fireEvent.click(
-      within(gallery).getByRole("tab", { name: "Current Work" }),
-    );
-    expect(
-      within(gallery).getByText(
-        "This tab tracks active work for this capability. It does not define Chronicle’s intended behavior, replace the current architecture explanation, or prove that an issue is resolved. Read the stable capability documentation and the linked Issues or approved objective before acting.",
-      ),
-    ).toBeInTheDocument();
-    const currentWorkArticles = Array.from(
-      gallery.querySelectorAll<HTMLElement>("[data-current-work-id]"),
-    );
-    expect(
-      currentWorkArticles.map((article) =>
-        article.getAttribute("data-current-work-id"),
-      ),
-    ).toEqual(["CG-WORK-001"]);
-    const currentWork = currentWorkArticles[0];
-    expect(currentWork).toBeDefined();
-    if (!currentWork) return;
-    expect(within(currentWork).getByText("Secondary")).toBeInTheDocument();
-    expect(
-      currentWork.querySelector(".knowledge-current-work__id"),
-    ).toHaveTextContent("CG-WORK-001");
-    expect(
-      within(currentWork).getByRole("heading", {
-        name: "Complete and validate the Community Gallery Knowledge Base pilot",
-      }),
-    ).toBeInTheDocument();
-    expect(
-      within(currentWork).getByRole("heading", {
-        name: "Current State / Resume Here",
-      }),
-    ).toBeInTheDocument();
-    for (const heading of [
-      "Project and Status",
-      "Resume Point",
-      "Evidence and Uncertainty",
-      "Ownership and Blockers",
-      "Source and Reading Order",
-    ]) {
-      expect(
-        within(currentWork).getByRole("heading", { name: heading }),
-      ).toBeInTheDocument();
-    }
-    for (const field of [
-      "Project status",
-      "Last recorded activity",
-      "Current coordinator/task",
-      "Latest completed result",
-      "Where work stopped",
-      "Remaining work",
-      "Next action",
-      "Best current evidence",
-      "Not yet proven or needing re-check",
-      "Blocking condition",
-      "Unblock condition",
-      "External decision/action",
-      "Status reason",
-      "Controlling history entry",
-      "Source state to re-check",
-      "Read first",
-      "Scope guard",
-    ]) {
-      expect(within(currentWork).getByText(field)).toBeInTheDocument();
-    }
-    expect(
-      within(currentWork).getByText(
-        "Codex task /root under the user-approved Community Gallery governing plan",
-      ),
-    ).toBeInTheDocument();
-    expect(
-      currentWork.querySelectorAll(".knowledge-current-work__header"),
-    ).toHaveLength(1);
-    expect(
-      within(gallery).queryByText(
-        `No active, paused, blocked, deferred, or closeout-pending work recorded as of ${CHRONICLE_OPERATIONAL_RECORDS_CHECKED_ON}.`,
-      ),
-    ).not.toBeInTheDocument();
-    expect(
-      gallery.querySelector(
-        `time[datetime="${CHRONICLE_OPERATIONAL_RECORDS_CHECKED_ON}"]`,
-      ),
-    ).toHaveTextContent(CHRONICLE_OPERATIONAL_RECORDS_CHECKED_ON);
+    expect(within(gallery).queryByRole("tab", { name: "Current Work" })).not.toBeInTheDocument();
 
     fireEvent.click(
       within(gallery).getByRole("tab", { name: "Changelog" }),
@@ -571,7 +467,7 @@ describe("Chronicle Knowledge Base page", () => {
       within(gallery).queryAllByText(
         "Not available — this record predates Chronicle Current Work.",
       ),
-    ).toHaveLength(legacyGalleryEntries.length);
+    ).toHaveLength(0);
     expect(
       within(gallery).queryAllByRole("heading", {
         name: "Problem and impact recorded in Quality Hub",
@@ -619,7 +515,7 @@ describe("Chronicle Knowledge Base page", () => {
     );
     expect(
       within(gallery).getByRole("link", {
-        name: "Open the complete archived Current Work record",
+        name: "Open the historical work record",
       }),
     ).toHaveAttribute(
       "href",
@@ -658,6 +554,19 @@ describe("Chronicle Knowledge Base page", () => {
     ).toHaveAttribute("href", "/style-guide/supabase-schema-reference");
   }, 15_000);
 
+  it("redirects a retired Current Work tab link to that section's Overview", async () => {
+    renderPage("/style-guide/chronicle-knowledge-base?section=community-gallery&tab=current-work");
+    await waitFor(() => {
+      expect(screen.getByTestId("location")).toHaveTextContent(
+        "/style-guide/chronicle-knowledge-base?section=community-gallery&tab=overview",
+      );
+    });
+    const gallery = document.getElementById("community-gallery")!;
+    expect(within(gallery).getByRole("tab", { name: "Overview" })).toHaveAttribute("aria-selected", "true");
+    expect(within(gallery).queryByRole("tab", { name: "Current Work" })).not.toBeInTheDocument();
+    expect(document.querySelector("[data-current-work-id]")).toBeNull();
+  });
+
   it("uses the header chevron to return to the Admin hub", () => {
     renderPage();
 
@@ -694,7 +603,7 @@ describe("Chronicle Knowledge Base page", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "Archived Current Work" }),
+      screen.getByRole("heading", { name: "Historical work record" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
@@ -738,13 +647,13 @@ describe("Chronicle Knowledge Base page", () => {
     expect(document.querySelector("pre.knowledge-code-block > code")).not.toBeNull();
   });
 
-  it("does not infer an archive from an active or unknown project ID", () => {
+  it("does not infer historical work for an unknown project ID", () => {
     renderPage(
-      buildArchivedCurrentWorkHref("CG-WORK-001"),
+      buildArchivedCurrentWorkHref("CG-WORK-999"),
     );
 
     expect(
-      screen.getByRole("heading", { name: "Archived Current Work not found" }),
+      screen.getByRole("heading", { name: "Historical work record not found" }),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
@@ -775,7 +684,7 @@ describe("Chronicle Knowledge Base page", () => {
 
     expect(
       screen.getByText(
-        "This is the complete preserved work record for a finished My Stories project. It remains separate from the stable capability manual and from the concise Changelog summary.",
+        "This preserved My Stories work record is historical reference. Its workflow instructions and resume points are retired, not current assignments. The recorded state is retained; archiving does not mean unfinished work was completed.",
       ),
     ).toBeInTheDocument();
     expect(

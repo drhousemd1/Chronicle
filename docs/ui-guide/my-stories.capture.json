@@ -1,0 +1,170 @@
+{
+  "rendering": "Existing specimens import production React components and icons. Explicitly labeled reference-only compositions combine imported primitives and existing style treatments. All views use compiled current Chronicle CSS.",
+  "boundaries": [
+    "@/services/supabase-data",
+    "@/services/gallery-data",
+    "@/hooks/use-auth",
+    "@/contexts/ArtStylesContext",
+    "@/contexts/ModelSettingsContext",
+    "@/integrations/supabase/client"
+  ],
+  "data": "Fixed local scenario/background records, existing local images and stubbed character/theme/publication responses. No account, database, upload, review or play mutation is exercised.",
+  "sources": [
+    {
+      "path": "src/lib/utils.ts",
+      "sha256": "d1f1e0d62cb8d8d1e04c26e14de842d8a151f75812d81b046c65b5d1fe8e4b27"
+    },
+    {
+      "path": "src/components/ui/tooltip.tsx",
+      "sha256": "99f74ccdf63f008b07effc558ed407dac5543206618cbdf24fa072592042f053"
+    },
+    {
+      "path": "src/components/ui/labeled-toggle.tsx",
+      "sha256": "c44e06f420ca989a1aa2adcb645dada2dc6f62db3150c2089dec3cc00699243c"
+    },
+    {
+      "path": "src/components/chronicle/GalleryNsfwToggle.tsx",
+      "sha256": "32a0c0c2369f595d94338e0bcc303e0783ddedec8aa057c08e964f68dfc0419c"
+    },
+    {
+      "path": "src/components/chronicle/chronicle-dark-ui.ts",
+      "sha256": "90e29957776f20ccc1b340450a632379b7530b7c653c73c24955f2b65071fa3f"
+    },
+    {
+      "path": "src/components/chronicle/ChronicleDarkUi.tsx",
+      "sha256": "0b48621b21a6f637018b103dd62dfef8f34b15bd3e617dc773d0195632b3ca2b"
+    },
+    {
+      "path": "src/components/app-shell/AppShellHeader.tsx",
+      "sha256": "ec5bb8b67e976f81f9510e21398e81db7c30500cd14eeb9c748f987d19e2affe"
+    },
+    {
+      "path": "src/components/ui/dropdown-menu.tsx",
+      "sha256": "07914bdc1545c55771e5fcab89e633a722d9684ec1a5325fa38da61ee28369d2"
+    },
+    {
+      "path": "src/components/app-shell/AppShellTopBar.tsx",
+      "sha256": "769b0bb231a29aecd95f07b74698c62651e7bd9390695066a6a989fef2be6b9d"
+    },
+    {
+      "path": "src/components/ui/dialog.tsx",
+      "sha256": "566ee731ba666ee9e2de203e94414edef56edf8097d10fd749b62fcae28d6858"
+    },
+    {
+      "path": "src/components/ui/skeleton.tsx",
+      "sha256": "a229c310b9cbcb01ddd5e580865a6f14a19061aff7f6a97ef82a40b6a83583a4"
+    },
+    {
+      "path": "src/components/chronicle/StarRating.tsx",
+      "sha256": "c3df9569860d28174cfd9bdf6da21410a7041fe4c0ad89d5bbffd9e5c6ab8e41"
+    },
+    {
+      "path": "src/components/chronicle/SpiceRating.tsx",
+      "sha256": "62f80212a8f5af4e054754c042cf2c61adaceefb0a0cfe08cd5d7be074116c73"
+    },
+    {
+      "path": "src/components/ui/collapsible.tsx",
+      "sha256": "fbe07841b794e0d7d08e87ddaaafadf1dc0c63ecc8389cd2c5b4a0a3f5500df1"
+    },
+    {
+      "path": "src/components/ui/textarea.tsx",
+      "sha256": "a891729aa1cac99f976e9e6471e5c8eafc0311145f829cf43cb1092df432bd00"
+    },
+    {
+      "path": "src/components/ui/button.tsx",
+      "sha256": "ae65d5ed4fb57411f38475bf14cfb98abb688d293e76b0977827fbb680f46cb3"
+    },
+    {
+      "path": "src/components/ui/alert-dialog.tsx",
+      "sha256": "c8b01137c7552e63c9ccf2c38ef92e5417bd6616b6980d56d3015db027465283"
+    },
+    {
+      "path": "src/components/chronicle/DeleteConfirmDialog.tsx",
+      "sha256": "7c71d45f0cf7131dd2400a0cd284763e5cb58a11c633f1077357dc988457ef55"
+    },
+    {
+      "path": "src/services/review-ratings.ts",
+      "sha256": "c147da41a2e1e719270959d84d0fb2d0febb7b6ae91d1945c20bb7399ae2c475"
+    },
+    {
+      "path": "src/components/chronicle/ReviewModal.tsx",
+      "sha256": "5779e5ece8fcdc653303207f448094811db7617c8669013a05194e4c893f69c8"
+    },
+    {
+      "path": "src/components/chronicle/StoryDetailModal.tsx",
+      "sha256": "bde7a5569fd0a73dd4b7964c131f65f7c2cd9325639c41da0cee731b8cd1d600"
+    },
+    {
+      "path": "src/components/chronicle/StoryHub.tsx",
+      "sha256": "4177afc43ba129c54120e5c7f17e7478d1f5e0866de146c4aa9ed4eab174d14e"
+    },
+    {
+      "path": "src/constants.tsx",
+      "sha256": "7266f818bd4adb1eb94b2b87d41e41f5be3eaf530f6337d262219ca0b81fb576"
+    },
+    {
+      "path": "src/components/ui/scroll-area.tsx",
+      "sha256": "efebd489d75334c1dbcb2e7f24e4aa38a50e386a5312d10c0a447d3e9985bebd"
+    },
+    {
+      "path": "src/services/persistence/signed-media.ts",
+      "sha256": "ceeb8791c0583a38f5b3e4eb68d266a42a00118e5f2ee9f3c994fca97cfc20ad"
+    },
+    {
+      "path": "src/types.ts",
+      "sha256": "c71f2a75a139ea55b1dd07b3e2f9c726a99744e2db0368eb8ed30eadf87c2f41"
+    },
+    {
+      "path": "src/lib/canonical-field-registry.ts",
+      "sha256": "3c791d3c64c6260f4568eca3801edb61a1d24636eb3db713fe917b20b529c3f9"
+    },
+    {
+      "path": "src/utils.ts",
+      "sha256": "eab7fc80bb854415b417303f54f91ee954cebd4e1a6f2179bfe272e194e795e3"
+    },
+    {
+      "path": "src/services/persistence/library-copy.ts",
+      "sha256": "ef616f5c77329301d66c31a1838f46a46e6b0da7c99e8c0634c368f6efebf136"
+    },
+    {
+      "path": "src/components/chronicle/ImageLibraryPickerModal.tsx",
+      "sha256": "8f0b3bea67dad2be46e95437644288224e2e8e5727a4ad0cb6ca727f223f6869"
+    },
+    {
+      "path": "src/components/ui/slider.tsx",
+      "sha256": "b81a683197551322cd8f13653bc955ad4c3bca6fe62376d33acb2bcd04361d02"
+    },
+    {
+      "path": "src/components/chronicle/BackgroundPickerModal.tsx",
+      "sha256": "d13f9ff3b0a35a4aa69922e4a83983a96a7957ce519ff73f9f84f745360a2bd1"
+    },
+    {
+      "path": "src/components/ui/popover.tsx",
+      "sha256": "ee5f78ece57c9e8eb5f9b4186e2bb9ebe46b69b52f03f1edd9a601883bc64772"
+    },
+    {
+      "path": "docs/ui-guide/examples/my-stories-compositions.tsx",
+      "sha256": "d5bc1f206efaab7be7c2a39ffad0840cc3805c6231646d3785caff0c165ab31a"
+    },
+    {
+      "path": "src/index.css",
+      "sha256": "5e14e8cc75fd0e01b154dd1f59d9bb4f23b435558872a9b4467858932ff34e79"
+    },
+    {
+      "path": "tailwind.config.ts",
+      "sha256": "ea133c9d352610179a54ad8fc7bdcfb88dee226a216f67615075d9581462871a"
+    }
+  ],
+  "capturedOn": "2026-09-10",
+  "assetManifest": "docs/ui-guide/my-stories.assets.json",
+  "captureNotes": [
+    "Existing specimens import AppShellTopBar, ScenarioHub, ScenarioDetailModal and BackgroundPickerModal. The outer canvas reproduces the Index.tsx wrapper.",
+    "At 1440 CSS pixels, card hover revealed actions, scaled the image to 1.1, retained the important base shadow and did not translate the wrapper.",
+    "At 390 CSS pixels, the source header exceeded the viewport (554px scroll width); the grid fit. The source detail shell kept its 340px cover column and left insufficient room for the synopsis. These captures document limitations, not recommended responsive behavior.",
+    "The source story-detail surface has no dialog role and remained open after Escape in this fixture. Its backdrop and close button supply pointer dismissal; it does not use DialogContent.",
+    "The proposed Chapter Preview uses actual dialog content, named title/description and a responsive scrolling shell. Escape returned focus to its trigger, and Begin invoked the local callback and closed.",
+    "The proposed Background Appearance uses a named Radix Slider Thumb with the shared Slider styling. White selection and keyboard opacity changes immediately updated the local preview; Reset restored black at 30%.",
+    "At 390 CSS pixels, both proposed examples fit the viewport. The chapter shell uses a single auto-scrolling container; the background preview remains visible above the compact controls. This checks local reference layout, not production feature delivery.",
+    "Captured through the Codex browser. Crops retain screenshot pixels. Imported source hashes identify the current fixture dependencies; they do not by themselves prove source correctness or full file review."
+  ]
+}

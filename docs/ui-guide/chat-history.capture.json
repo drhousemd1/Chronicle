@@ -1,0 +1,93 @@
+{
+  "rendering": "Existing specimens import production React components and icons. Explicitly labeled reference-only compositions combine imported primitives and existing style treatments. All views use compiled current Chronicle CSS.",
+  "boundaries": [],
+  "data": "Fixed local session metadata, callback receipts and controlled empty/resuming views. Fixture imports no persistence service; no real resume or deletion is performed.",
+  "sources": [
+    {
+      "path": "src/lib/utils.ts",
+      "sha256": "d1f1e0d62cb8d8d1e04c26e14de842d8a151f75812d81b046c65b5d1fe8e4b27"
+    },
+    {
+      "path": "src/components/ui/labeled-toggle.tsx",
+      "sha256": "c44e06f420ca989a1aa2adcb645dada2dc6f62db3150c2089dec3cc00699243c"
+    },
+    {
+      "path": "src/components/chronicle/GalleryNsfwToggle.tsx",
+      "sha256": "32a0c0c2369f595d94338e0bcc303e0783ddedec8aa057c08e964f68dfc0419c"
+    },
+    {
+      "path": "src/components/chronicle/chronicle-dark-ui.ts",
+      "sha256": "90e29957776f20ccc1b340450a632379b7530b7c653c73c24955f2b65071fa3f"
+    },
+    {
+      "path": "src/components/chronicle/ChronicleDarkUi.tsx",
+      "sha256": "0b48621b21a6f637018b103dd62dfef8f34b15bd3e617dc773d0195632b3ca2b"
+    },
+    {
+      "path": "src/components/app-shell/AppShellHeader.tsx",
+      "sha256": "ec5bb8b67e976f81f9510e21398e81db7c30500cd14eeb9c748f987d19e2affe"
+    },
+    {
+      "path": "src/components/ui/dropdown-menu.tsx",
+      "sha256": "07914bdc1545c55771e5fcab89e633a722d9684ec1a5325fa38da61ee28369d2"
+    },
+    {
+      "path": "src/components/ui/tooltip.tsx",
+      "sha256": "99f74ccdf63f008b07effc558ed407dac5543206618cbdf24fa072592042f053"
+    },
+    {
+      "path": "src/components/app-shell/AppShellTopBar.tsx",
+      "sha256": "769b0bb231a29aecd95f07b74698c62651e7bd9390695066a6a989fef2be6b9d"
+    },
+    {
+      "path": "src/components/chronicle/ConversationsTab.tsx",
+      "sha256": "819a01e3db8755b2e1104f4e070fee324a2e23a0d1b0148cd0d8e0270a9b9b77"
+    },
+    {
+      "path": "src/components/ui/button.tsx",
+      "sha256": "ae65d5ed4fb57411f38475bf14cfb98abb688d293e76b0977827fbb680f46cb3"
+    },
+    {
+      "path": "src/components/ui/alert-dialog.tsx",
+      "sha256": "c8b01137c7552e63c9ccf2c38ef92e5417bd6616b6980d56d3015db027465283"
+    },
+    {
+      "path": "src/components/chronicle/DeleteConfirmDialog.tsx",
+      "sha256": "7c71d45f0cf7131dd2400a0cd284763e5cb58a11c633f1077357dc988457ef55"
+    },
+    {
+      "path": "src/components/ui/dialog.tsx",
+      "sha256": "566ee731ba666ee9e2de203e94414edef56edf8097d10fd749b62fcae28d6858"
+    },
+    {
+      "path": "docs/ui-guide/examples/chat-history-compositions.tsx",
+      "sha256": "268c18f9eeb51794de22906e0c9377817c23c40dcd4e0aa59c09d16ca9f8576f"
+    },
+    {
+      "path": "src/index.css",
+      "sha256": "5e14e8cc75fd0e01b154dd1f59d9bb4f23b435558872a9b4467858932ff34e79"
+    },
+    {
+      "path": "tailwind.config.ts",
+      "sha256": "ea133c9d352610179a54ad8fc7bdcfb88dee226a216f67615075d9581462871a"
+    },
+    {
+      "path": "src/pages/Index.tsx",
+      "sha256": "29879c50a1a6d7b88f2ba1ffe51c9cea4b7014a91e6b89bf5b580edc3149747e"
+    }
+  ],
+  "capturedOn": "2026-09-10",
+  "assetManifest": "docs/ui-guide/chat-history.assets.json",
+  "captureNotes": [
+    "Production ConversationsTab, AppShellTopBar and DeleteConfirmDialog are imported with fixed local session metadata and callback receipts. No persistence service is imported. Index resuming overlay markup is reproduced around the imported list; Index itself is not mounted.",
+    "The 390px source list and header fit without horizontal overflow; titles truncate, metadata wraps and the recessed last-message excerpt clamps. Missing image, message and creator fallbacks are represented.",
+    "The thumbnail declared hover ring did not enter computed box-shadow because its inline shadow overrides the ring composition. The hovered thumb retained the two-part image shadow; the slate ring variable was present but obscured.",
+    "Single-session and all-session confirmations were opened and canceled. Cancel received initial focus. The preview Resume callback produced a local receipt only.",
+    "31 supplied records initially rendered 30. Load More revealed the final record and disappeared. No server pagination or load recovery was exercised.",
+    "The empty source state hid Delete All. Tooltip focus resolved to white background and rgb(2,8,23) text under the root theme. The fixed resuming view illustrates source markup without exercising delayed loading.",
+    "The recap example had a 720px desktop/358px narrow shell, 16px corners and 16px/24px title. Close preserved its no-resume receipt, Continue recorded local intent, reopening worked, and completed Escape returned focus to the trigger.",
+    "The comparison initially disabled Continue. Selecting another session exclusively changed pressed state; keyboard selection followed by Continue used that selection. Computed selected shadow included both the 2px slate ring and complete shell shadow. At390px cards stacked and the body fit.",
+    "Captures establish local rendering and stated interactions, not real resume/deletion or remote error recovery. Source hashes establish byte identity, not complete-file reading.",
+    "Focused independent review found two inherited confirmation details. In the Chat History fixture, hovered Cancel resolved to rgb(15,23,42) on rgb(68,70,79); desktop footer combined 8px gap and8px sibling margin for16px separation. At390px it was column-reverse with8px gap and no sibling margin. The shared source stayed unchanged; guide descriptions were corrected."
+  ]
+}

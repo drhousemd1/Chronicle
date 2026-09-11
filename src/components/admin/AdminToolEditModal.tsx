@@ -60,12 +60,13 @@ export const AdminToolEditModal: React.FC<AdminToolEditModalProps> = ({
 
       const ext = file.name.split('.').pop() || 'jpg';
       const path = `${userId}/admin-tools/${tool.id}-${Date.now()}.${ext}`;
+      // Admin artwork uses the admin-writable image bucket; avatars only accepts profile filenames.
       const { error: uploadError } = await supabase.storage
-        .from('avatars')
+        .from('guide_images')
         .upload(path, file, { upsert: true, contentType: file.type || 'image/jpeg' });
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
+        .from('guide_images')
         .getPublicUrl(path);
       setThumbnailUrl(publicUrl);
     } catch (err) {

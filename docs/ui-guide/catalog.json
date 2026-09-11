@@ -1,0 +1,470 @@
+[
+  {
+    "id": "story-builder",
+    "title": "Story Builder UI Reference",
+    "description": "A practical menu of patterns for designing new UI that belongs in Chronicle.",
+    "source": "docs/ui-guide/story-builder.md",
+    "assets": "docs/ui-guide/story-builder.assets.json",
+    "reviewedOn": "2026-09-07",
+    "updatedOn": "2026-09-07",
+    "sections": [
+      {
+        "id": "overview",
+        "label": "Overview"
+      },
+      {
+        "id": "colors",
+        "label": "Color Palette"
+      },
+      {
+        "id": "typography",
+        "label": "Typography & Spacing"
+      },
+      {
+        "id": "buttons",
+        "label": "Buttons & Menus"
+      },
+      {
+        "id": "fields",
+        "label": "Fields & Controls"
+      },
+      {
+        "id": "panels",
+        "label": "Panels & Layout"
+      },
+      {
+        "id": "mockups",
+        "label": "Composition Examples"
+      }
+    ]
+  },
+  {
+    "id": "character-builder",
+    "title": "Character Builder UI Reference",
+    "description": "A practical menu of patterns for designing new UI that belongs in Chronicle's character editor.",
+    "source": "docs/ui-guide/character-builder.md",
+    "assets": "docs/ui-guide/character-builder.assets.json",
+    "reviewedOn": "2026-09-10",
+    "updatedOn": "2026-09-10",
+    "sections": [
+      {
+        "id": "overview",
+        "label": "Overview"
+      },
+      {
+        "id": "colors",
+        "label": "Color Palette"
+      },
+      {
+        "id": "typography",
+        "label": "Typography & Spacing"
+      },
+      {
+        "id": "buttons",
+        "label": "Buttons & Menus"
+      },
+      {
+        "id": "fields",
+        "label": "Fields & Controls"
+      },
+      {
+        "id": "panels",
+        "label": "Panels & Layout"
+      },
+      {
+        "id": "mockups",
+        "label": "Composition Examples"
+      }
+    ]
+  },
+  {
+    "id": "character-library",
+    "title": "Character Library UI Reference",
+    "description": "A practical menu of patterns for designing new UI that belongs in Chronicle's reusable-character library.",
+    "source": "docs/ui-guide/character-library.md",
+    "assets": "docs/ui-guide/character-library.assets.json",
+    "reviewedOn": "2026-09-10",
+    "updatedOn": "2026-09-10",
+    "sections": [
+      {
+        "id": "overview",
+        "label": "Overview"
+      },
+      {
+        "id": "colors",
+        "label": "Color Palette"
+      },
+      {
+        "id": "typography",
+        "label": "Typography & Spacing"
+      },
+      {
+        "id": "buttons",
+        "label": "Buttons & Menus"
+      },
+      {
+        "id": "fields",
+        "label": "Fields & Controls"
+      },
+      {
+        "id": "panels",
+        "label": "Panels & Layout"
+      },
+      {
+        "id": "mockups",
+        "label": "Composition Examples"
+      }
+    ]
+  },
+  {
+    "id": "my-stories",
+    "title": "My Stories UI Reference",
+    "description": "A practical menu of patterns for designing new UI that belongs in Chronicle's private story workspace.",
+    "source": "docs/ui-guide/my-stories.md",
+    "assets": "docs/ui-guide/my-stories.assets.json",
+    "reviewedOn": "2026-09-10",
+    "updatedOn": "2026-09-10",
+    "sections": [
+      {
+        "id": "overview",
+        "label": "Overview"
+      },
+      {
+        "id": "colors",
+        "label": "Color Palette"
+      },
+      {
+        "id": "typography",
+        "label": "Typography & Spacing"
+      },
+      {
+        "id": "buttons",
+        "label": "Buttons & Menus"
+      },
+      {
+        "id": "fields",
+        "label": "Fields & Controls"
+      },
+      {
+        "id": "panels",
+        "label": "Panels & Layout"
+      },
+      {
+        "id": "mockups",
+        "label": "Composition Examples"
+      }
+    ]
+  },
+  {
+    "id": "community-gallery",
+    "title": "Community Gallery UI Reference",
+    "description": "A practical menu of patterns for designing new UI that belongs in Chronicle's public story discovery workspace.",
+    "source": "docs/ui-guide/community-gallery.md",
+    "assets": "docs/ui-guide/community-gallery.assets.json",
+    "reviewedOn": "2026-09-10",
+    "updatedOn": "2026-09-10",
+    "sections": [
+      {
+        "id": "overview",
+        "label": "Overview"
+      },
+      {
+        "id": "colors",
+        "label": "Color Palette"
+      },
+      {
+        "id": "typography",
+        "label": "Typography & Spacing"
+      },
+      {
+        "id": "buttons",
+        "label": "Buttons & Menus"
+      },
+      {
+        "id": "fields",
+        "label": "Fields & Controls"
+      },
+      {
+        "id": "panels",
+        "label": "Panels & Layout"
+      },
+      {
+        "id": "mockups",
+        "label": "Composition Examples"
+      }
+    ]
+  },
+  {
+    "id": "image-library",
+    "title": "Image Library UI Reference",
+    "description": "A practical menu of patterns for designing new UI that belongs in Chronicle's image organization workspace.",
+    "source": "docs/ui-guide/image-library.md",
+    "assets": "docs/ui-guide/image-library.assets.json",
+    "reviewedOn": "2026-09-10",
+    "updatedOn": "2026-09-10",
+    "sections": [
+      {
+        "id": "overview",
+        "label": "Overview"
+      },
+      {
+        "id": "colors",
+        "label": "Color Palette"
+      },
+      {
+        "id": "typography",
+        "label": "Typography & Spacing"
+      },
+      {
+        "id": "buttons",
+        "label": "Buttons & Menus"
+      },
+      {
+        "id": "fields",
+        "label": "Fields & Controls"
+      },
+      {
+        "id": "panels",
+        "label": "Panels & Layout"
+      },
+      {
+        "id": "mockups",
+        "label": "Composition Examples"
+      }
+    ]
+  },
+  {
+    "id": "chat-history",
+    "title": "Chat History UI Reference",
+    "description": "A practical menu of patterns for designing new UI that belongs in Chronicle's saved-session workspace.",
+    "source": "docs/ui-guide/chat-history.md",
+    "assets": "docs/ui-guide/chat-history.assets.json",
+    "reviewedOn": "2026-09-10",
+    "updatedOn": "2026-09-10",
+    "sections": [
+      {
+        "id": "overview",
+        "label": "Overview"
+      },
+      {
+        "id": "colors",
+        "label": "Color Palette"
+      },
+      {
+        "id": "typography",
+        "label": "Typography & Spacing"
+      },
+      {
+        "id": "buttons",
+        "label": "Buttons & Menus"
+      },
+      {
+        "id": "fields",
+        "label": "Fields & Controls"
+      },
+      {
+        "id": "panels",
+        "label": "Panels & Layout"
+      },
+      {
+        "id": "mockups",
+        "label": "Composition Examples"
+      }
+    ]
+  },
+  {
+    "id": "active-roleplay",
+    "title": "Active Roleplay UI Reference",
+    "description": "A practical menu of patterns for designing new UI that belongs in Chronicle's active conversation workspace.",
+    "source": "docs/ui-guide/active-roleplay.md",
+    "assets": "docs/ui-guide/active-roleplay.assets.json",
+    "reviewedOn": "2026-09-10",
+    "updatedOn": "2026-09-10",
+    "sections": [
+      {
+        "id": "overview",
+        "label": "Overview"
+      },
+      {
+        "id": "colors",
+        "label": "Color Palette"
+      },
+      {
+        "id": "typography",
+        "label": "Typography & Spacing"
+      },
+      {
+        "id": "buttons",
+        "label": "Buttons & Menus"
+      },
+      {
+        "id": "fields",
+        "label": "Fields & Controls"
+      },
+      {
+        "id": "panels",
+        "label": "Panels & Layout"
+      },
+      {
+        "id": "mockups",
+        "label": "Composition Examples"
+      }
+    ]
+  },
+  {
+    "id": "account-access",
+    "title": "Account & Access UI Reference",
+    "description": "A practical menu of patterns for designing new UI that belongs in Chronicle's account settings, editable profile and access forms.",
+    "source": "docs/ui-guide/account-access.md",
+    "assets": "docs/ui-guide/account-access.assets.json",
+    "reviewedOn": "2026-09-10",
+    "updatedOn": "2026-09-10",
+    "sections": [
+      {
+        "id": "overview",
+        "label": "Overview"
+      },
+      {
+        "id": "colors",
+        "label": "Color Palette"
+      },
+      {
+        "id": "typography",
+        "label": "Typography & Spacing"
+      },
+      {
+        "id": "buttons",
+        "label": "Buttons & Menus"
+      },
+      {
+        "id": "fields",
+        "label": "Fields & Controls"
+      },
+      {
+        "id": "panels",
+        "label": "Panels & Layout"
+      },
+      {
+        "id": "mockups",
+        "label": "Composition Examples"
+      }
+    ]
+  },
+  {
+    "id": "creator-profile",
+    "title": "Creator Profile UI Reference",
+    "description": "A practical menu of patterns for designing new UI that belongs in Chronicle's public creator profile.",
+    "source": "docs/ui-guide/creator-profile.md",
+    "assets": "docs/ui-guide/creator-profile.assets.json",
+    "reviewedOn": "2026-09-10",
+    "updatedOn": "2026-09-10",
+    "sections": [
+      {
+        "id": "overview",
+        "label": "Overview"
+      },
+      {
+        "id": "colors",
+        "label": "Color Palette"
+      },
+      {
+        "id": "typography",
+        "label": "Typography & Spacing"
+      },
+      {
+        "id": "buttons",
+        "label": "Buttons & Menus"
+      },
+      {
+        "id": "fields",
+        "label": "Fields & Controls"
+      },
+      {
+        "id": "panels",
+        "label": "Panels & Layout"
+      },
+      {
+        "id": "mockups",
+        "label": "Composition Examples"
+      }
+    ]
+  },
+  {
+    "id": "admin-panel",
+    "title": "Admin Panel UI Reference",
+    "description": "A practical menu of patterns for designing new UI that belongs in Chronicle's admin launcher and tile editor.",
+    "source": "docs/ui-guide/admin-panel.md",
+    "assets": "docs/ui-guide/admin-panel.assets.json",
+    "reviewedOn": "2026-09-10",
+    "updatedOn": "2026-09-10",
+    "sections": [
+      {
+        "id": "overview",
+        "label": "Overview"
+      },
+      {
+        "id": "colors",
+        "label": "Color Palette"
+      },
+      {
+        "id": "typography",
+        "label": "Typography & Spacing"
+      },
+      {
+        "id": "buttons",
+        "label": "Buttons & Menus"
+      },
+      {
+        "id": "fields",
+        "label": "Fields & Controls"
+      },
+      {
+        "id": "panels",
+        "label": "Panels & Layout"
+      },
+      {
+        "id": "mockups",
+        "label": "Composition Examples"
+      }
+    ]
+  },
+  {
+    "id": "admin-workspaces",
+    "title": "Admin Workspaces UI Reference",
+    "description": "A practical menu of styling for Chronicle's configuration, status, operations and notebook workspaces.",
+    "source": "docs/ui-guide/admin-workspaces.md",
+    "assets": "docs/ui-guide/admin-workspaces.assets.json",
+    "reviewedOn": "2026-09-10",
+    "updatedOn": "2026-09-10",
+    "sections": [
+      {
+        "id": "overview",
+        "label": "Overview"
+      },
+      {
+        "id": "colors",
+        "label": "Color Palette"
+      },
+      {
+        "id": "typography",
+        "label": "Typography & Spacing"
+      },
+      {
+        "id": "buttons",
+        "label": "Buttons & Menus"
+      },
+      {
+        "id": "fields",
+        "label": "Fields & Controls"
+      },
+      {
+        "id": "panels",
+        "label": "Panels & Layout"
+      },
+      {
+        "id": "mockups",
+        "label": "Composition Examples"
+      }
+    ]
+  }
+]

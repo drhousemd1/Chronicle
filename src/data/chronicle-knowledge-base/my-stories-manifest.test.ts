@@ -105,9 +105,6 @@ describe("My Stories Knowledge manifest", () => {
     expect(markdown).toContain("Chat History resume depends on the current source");
     expect(markdown).toContain("do not contain a complete snapshot of the story source");
     expect(markdown).toContain("internally inconsistent");
-    expect(markdown).toContain(
-      "The Chronicle Work Manual governs any later task that needs a live comparison",
-    );
     expect(markdown).toContain("src/hooks/use-index-scenario-persistence.ts");
 
     const referencedSourcePaths = [
@@ -215,7 +212,7 @@ describe("My Stories Knowledge manifest", () => {
     expect(markdown).not.toContain("allow_remix");
   });
 
-  it("registers the isolated seven-tab operational contract", () => {
+  it("registers the isolated six-tab reference contract", () => {
     const myStories = chronicleKnowledgeSections.find(
       (section) => section.id === "my-stories",
     )!;
@@ -225,7 +222,6 @@ describe("My Stories Knowledge manifest", () => {
       "UI Elements and Functions",
       "App Architecture",
       "Issues",
-      "Current Work",
       "Supabase Tables",
       "Changelog",
     ]);
@@ -233,9 +229,7 @@ describe("My Stories Knowledge manifest", () => {
       contentKind: "issue-records",
       openIssueCount: 2,
     });
-    expect(myStories.tabs.find((tab) => tab.id === "current-work")).toMatchObject({
-      contentKind: "current-work-records",
-    });
+    expect(myStories.tabs.find((tab) => tab.id === "current-work")).toBeUndefined();
     expect(myStories.tabs.find((tab) => tab.id === "changelog")).toMatchObject({
       contentKind: "changelog-records",
     });

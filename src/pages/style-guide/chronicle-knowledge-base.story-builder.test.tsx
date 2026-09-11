@@ -29,7 +29,7 @@ describe("Chronicle Knowledge Base Story Builder manual", () => {
     renderPage();
     const section = document.getElementById("story-builder")!;
 
-    expect(within(section).getAllByRole("tab")).toHaveLength(7);
+    expect(within(section).getAllByRole("tab")).toHaveLength(6);
     expect(
       within(section).getByRole("heading", { name: "Story Builder at a Glance" }),
     ).toBeInTheDocument();
@@ -40,15 +40,14 @@ describe("Chronicle Knowledge Base Story Builder manual", () => {
     ).toBeInTheDocument();
   }, 30_000);
 
-  it("isolates Story Builder Issues, empty work, and verified history", async () => {
+  it("isolates Story Builder Issues and verified history without an active-work tab", async () => {
     renderPage();
     const section = document.getElementById("story-builder")!;
     fireEvent.click(within(section).getByRole("tab", { name: /Issues/ }));
     expect(within(section).getByText("SB-ISSUE-001")).toBeInTheDocument();
     expect(within(section).getByText("SB-ISSUE-002")).toBeInTheDocument();
     expect(within(section).queryByText("MI-ISSUE-001")).not.toBeInTheDocument();
-    fireEvent.click(within(section).getByRole("tab", { name: "Current Work" }));
-    expect(within(section).getByText(/recorded for Story Builder/)).toBeInTheDocument();
+    expect(within(section).queryByRole("tab", { name: "Current Work" })).not.toBeInTheDocument();
     fireEvent.click(within(section).getByRole("tab", { name: "Changelog" }));
     expect(await within(section).findByText("8 records")).toBeInTheDocument();
     expect(within(section).getByText("Restore reliable auto-expanding behavior for Story Builder Custom AI Rules textarea")).toBeInTheDocument();

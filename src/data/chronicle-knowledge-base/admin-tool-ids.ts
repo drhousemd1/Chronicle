@@ -7,7 +7,6 @@ export const ADMIN_TOOL_SECTION_IDS = [
   "finance-dashboard",
   "research-development",
   "image-generation",
-  "app-dashboard",
 ] as const;
 
 export type AdminToolSectionId = (typeof ADMIN_TOOL_SECTION_IDS)[number];

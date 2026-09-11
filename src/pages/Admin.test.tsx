@@ -20,16 +20,14 @@ describe("Admin documentation tool registration", () => {
     expect(source).not.toContain("title: 'Roleplay Pipeline'");
     expect(source).not.toContain("navigate('/style-guide/api-inspector')");
 
-    expect(source).toContain(
-      "'Central hub for Style Guide, App Guide, App Architecture, Quality Hub, and API Inspector'",
-    );
+
   });
 
   it("registers Research & Development as a normal editable embedded Admin tile", () => {
     expect(source).toContain("id: 'research_development'");
     expect(source).toContain("title: 'Research & Development'");
     expect(source).toContain("<LazyResearchDevelopment");
-    expect(source).toContain("onOpenStyleGuide={() => onSetActiveTool('style_guide')}");
+    expect(source).toContain("onOpenStyleGuide={() => navigate('/style-guide/chronicle-ui-guide')}");
     expect(source).toContain("onRegisterBeforeLeave={onRegisterRndBeforeLeave}");
     expect(source).toContain("onRegisterAddMockup={onRegisterRndAddMockup}");
     expect(source).toContain("onRegisterRepositorySave={onRegisterRndRepositorySave}");

@@ -18,6 +18,10 @@ A person should be able to assemble a complete story in one workspace, understan
 
 The story source remains private and editable until the owner publishes it. Finalizing is not publication: it saves the source as a non-draft and returns to My Stories. Publishing creates or updates a separate publication record and can expose an approved public representation through Community Gallery and Public Profile. Playing creates a conversation from the current durable source; the conversation then has its own identity and lifecycle.
 
+## UI Reference for New Designs
+
+The Admin Panel's **Chronicle UI Guide** opens the Story Builder styling reference at `/style-guide/chronicle-ui-guide`. Its canonical content is `docs/ui-guide/story-builder.md`. Coding tasks can run `npm run -s ui-guide:read -- story-builder --section fields,panels,mockups --images --json` to receive the relevant construction guidance, shared foundations, and original image paths without navigating the frontend. Load the needed image files through an image-reading tool. `docs/ui-guide/README.md` explains selection, complete supporting source, and maintenance. This reference covers Story Builder's reviewed styling; it does not establish every other Chronicle page's local variants.
+
 ## Ownership and Story Lifecycle
 
 ### One story source owns its world, cast, and opening state
@@ -426,7 +430,7 @@ The current repository save path depends on `stories`, `characters`, `codex_entr
 
 Repository migrations define owner checks in the atomic function and RLS that allows owners to mutate their source rows. The synchronized Supabase reference describes stories, story-attached characters, entries, scenes, and themes as available to visible published-story flows at the table-purpose level, but several field rows still say Owner/Admin. It does not enumerate every RPC used here, including `save_scenario_atomic` and `get_public_art_styles`.
 
-These are repository/reference-defined expectations, not proof of live deployment. Publication metadata visibility is documented; complete public authorization for every child read and private signed-media path was not exercised live. The deployed grants, policies, functions, buckets, and provider-secret configuration therefore remain unverified here; the Chronicle Work Manual governs any later live comparison.
+These are repository/reference-defined expectations, not proof of live deployment. Publication metadata visibility is documented; complete public authorization for every child read and private signed-media path was not exercised live. The deployed grants, policies, functions, buckets, and provider-secret configuration therefore remain unverified here.
 
 ### Private storage boundary
 
@@ -517,7 +521,7 @@ Supabase Auth, deployed RLS, storage policies, authenticated edge functions, the
 
 `publish-validation.test.ts` covers readiness rules. `story-transfer.test.ts` covers transfer formats, merge/rewrite, warnings, and restore behavior. `docx-import.test.ts` covers extraction and safety limits. `scene-media-portability.test.ts` covers owner-path copy and clear/throw behavior. `api-usage-validation.test.ts` covers diagnostic shape construction.
 
-There is no focused Story Builder component test that exercises the full top-bar-to-builder workflow, unsaved navigation, theme persistence, save feedback, publication, signed-out actions, media object cleanup, accessibility, or the imported-library UUID conflict. No existing test proves `save_scenario_atomic` is deployed or that a current story save preserves every field beyond the three child counts. **SB-ISSUE-001** tracks Builder-owned save, classification, character-copy, and publication divergence; **SB-ISSUE-002** tracks media portability and action-recovery gaps. My Stories owns saved-story reuse and Play, whose persistence limitations are tracked separately by **MS-ISSUE-002**. No active Current Work or modern accepted closeout is currently registered for Story Builder. Its Changelog tab includes eight positively mapped historical Quality Hub records for navigation, field contracts, Custom AI Rules, AI Enhance, and media ownership; those records remain historical rather than modern acceptance. The Knowledge tests prove seven-tab registration and isolation; they do not repair or behavior-test these runtime limitations.
+There is no focused Story Builder component test that exercises the full top-bar-to-builder workflow, unsaved navigation, theme persistence, save feedback, publication, signed-out actions, media object cleanup, accessibility, or the imported-library UUID conflict. No existing test proves `save_scenario_atomic` is deployed or that a current story save preserves every field beyond the three child counts. **SB-ISSUE-001** tracks Builder-owned save, classification, character-copy, and publication divergence; **SB-ISSUE-002** tracks media portability and action-recovery gaps. My Stories owns saved-story reuse and Play, whose persistence limitations are tracked separately by **MS-ISSUE-002**. Its Changelog tab includes eight positively mapped historical Quality Hub records for navigation, field contracts, Custom AI Rules, AI Enhance, and media ownership; those records remain historical rather than current product acceptance. The Knowledge tests check six-tab registration and isolation; they do not repair or behavior-test these runtime limitations.
 
 ## Curated Source and Test Map
 
@@ -645,6 +649,8 @@ There is no focused Story Builder component test that exercises the full top-bar
 
 ## Inspected Source Set and Reproducible Composite
 
+Current Work retirement reconciliation **09/11/2026**: the fingerprint uses the current bytes of the same ordered source list after updating Knowledge Base tab and historical-record tests. This is reference maintenance, not a renewed capability audit; the original product-review dates and live-evidence limits remain unchanged.
+
 ### Exact ordered source paths
 
 The architecture review inspected these **92 existing paths** in this exact order:
@@ -750,7 +756,13 @@ For each path above, in order, compute the SHA-256 digest of the file's current 
 
 Inspected-source count: **92 paths**.
 
-Inspected-source composite: `09a7b0ab8da2339d56d3ab8ed0a829bfb074a8a1ee0cbfd01119aeab8e575644`
+Inspected-source composite: `c3286b95b84251d8ef24b1ea14a5a839758e7026c9594a24c055402e0097e38e`
+
+Snapshot update **09/11/2026**: the only changed listed source is `src/App.tsx`, where the two retired Work Manual routes were removed. Substituting the pre-removal `src/App.tsx` bytes from the external recovery package reproduces the preceding composite `64d72810d27348071717d84ea6682ff5947a6f77a3e22169696f574057e4fc62`; the other listed source bytes remain consistent with that snapshot. This source-only reconciliation does not repeat the Story Builder review, claim new capability behavior, or extend its live-evidence limits.
+
+Snapshot update **09/10/2026**: `src/App.tsx` adds only the Roadmap lazy import and protected `/admin/roadmap` route. Removing those two additions reproduces the preceding composite `c14441e4f639ba287d9d72f82be85ca6cbfa49548c18c65f1efe8085e5d5dfce`; the other listed source bytes are unchanged from that snapshot. Focused Roadmap route tests cover admin entry and signed-out/non-admin redirects. This bounded update does not repeat the Story Builder review or extend its live-evidence claims.
+
+Snapshot update **09/07/2026**: the only changed file in this inspected set is `src/App.tsx`, which adds the lazy Chronicle UI Guide import and its `AdminOnlyRoute` registration. Recomputing with the prior `src/App.tsx` bytes reproduces the previous composite `09a7b0ab8da2339d56d3ab8ed0a829bfb074a8a1ee0cbfd01119aeab8e575644`; all other listed bytes therefore remain consistent with that snapshot. The new route and shared admin guard were checked with focused tests. The original capability review date and live-evidence limits remain unchanged.
 
 ## Review Metadata and Evidence Limits
 

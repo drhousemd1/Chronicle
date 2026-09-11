@@ -108,9 +108,9 @@ The shared application header places **Add New Mock-up** immediately before Save
 
 Header **Save** sends the selected record and reference assets to the local repository service. It is not an autosave toggle and does not save every page at once. **Saving...** indicates the request is active. A failure is displayed near the selected page’s metadata; a return to the ordinary label should be interpreted alongside that error state. This control does not commit, push, or deploy the written files.
 
-### App Style Guide and mock-up list
+### Chronicle UI Guide and mock-up list
 
-**App Style Guide** preserves the local draft before opening the guide. Selecting a mock-up row similarly preserves the current local draft before switching. The selected row is highlighted. A lock icon identifies a registered coded preview, not an uneditable notes page or a global work lock. The title shown in the list follows the editable record, while its ID remains stable.
+**Chronicle UI Guide** preserves the local draft before opening `/style-guide/chronicle-ui-guide`. The page-level Back control returns to the main Admin tile view. Selecting a mock-up row similarly preserves the current local draft before switching. The selected row is highlighted. A lock icon identifies a registered coded preview, not an uneditable notes page or a global work lock. The title shown in the list follows the editable record, while its ID remains stable.
 
 ## Editable Page Fields
 

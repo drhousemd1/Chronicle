@@ -26,10 +26,10 @@ function renderPipeline(tab = "app-architecture") {
 }
 
 describe("Approved Roleplay Pipeline manual transfer", () => {
-  it("keeps its six approved tabs and uses real operational records instead of mockup specimens", () => {
+  it("keeps its five remaining tabs and uses real records instead of mockup specimens", () => {
     expect(section.tabs.map(({ id, contentKind }) => [id, contentKind])).toEqual([
       ["overview", "markdown-section"], ["app-architecture", "markdown-section"],
-      ["issues", "issue-records"], ["current-work", "current-work-records"],
+      ["issues", "issue-records"],
       ["supabase-tables", "markdown-section"], ["changelog", "changelog-records"],
     ]);
   });

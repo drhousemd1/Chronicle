@@ -1,0 +1,456 @@
+/* Presentation migrated from the accepted Story Builder reference mockup. */
+
+    .chronicle-ui-guide {
+      --knowledge-page-gutter: clamp(16px, 4vw, 64px);
+      --knowledge-page-top: clamp(28px, 4vw, 54px);
+      --knowledge-page-bottom: clamp(58px, 6vw, 88px);
+      --knowledge-layout-width: 1720px;
+      --knowledge-reading-width: 1080px;
+      --knowledge-content-gutter: clamp(22px, 4vw, 52px);
+      --knowledge-body-copy-size: clamp(15px, calc(14px + 0.2vw), 17px);
+      --chronicle-background: #0d0e12;
+      --chronicle-sidebar: #1b1b20;
+      --chronicle-shell: #2a2a2f;
+      --chronicle-tray: #2e2e33;
+      --chronicle-elevated: #3c3e47;
+      --chronicle-elevated-hover: #44464f;
+      --chronicle-recessed: #1c1c1f;
+      --chronicle-text: #e4e1e8;
+      --chronicle-control-text: #eaedf1;
+      --chronicle-muted: #a1a1aa;
+      --chronicle-dim: #525260;
+      --chronicle-slate-top: #5a7292;
+      --chronicle-slate-bottom: #4a5f7f;
+      color-scheme: light;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #fff;
+      color: #202124;
+    }
+
+    .chronicle-ui-guide *,
+    .chronicle-ui-guide *::before,
+    .chronicle-ui-guide *::after {
+      box-sizing: border-box;
+    }
+
+    .chronicle-ui-guide {
+      scroll-behavior: smooth;
+    }
+
+    .chronicle-ui-guide {
+      min-width: 0;
+      min-height: 100vh;
+      margin: 0;
+      overflow-x: hidden;
+      background: #fff;
+    }
+
+    .chronicle-ui-guide button,
+    .chronicle-ui-guide input,
+    .chronicle-ui-guide textarea,
+    .chronicle-ui-guide select {
+      font: inherit;
+    }
+
+    .chronicle-ui-guide button {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .chronicle-ui-guide .page {
+      width: 100%;
+      min-width: 0;
+      padding: var(--knowledge-page-top) var(--knowledge-page-gutter) var(--knowledge-page-bottom);
+    }
+
+    .chronicle-ui-guide .page-inner {
+      width: min(var(--knowledge-layout-width), 100%);
+      min-width: 0;
+      margin-inline: auto;
+    }
+
+    .chronicle-ui-guide .page-header {
+      margin-bottom: 30px;
+    }
+
+    /* Same separation between regions as the Chronicle Knowledge Base. */
+    .chronicle-ui-guide .reference-section + .reference-section {
+      margin-top: 44px;
+      padding-top: 44px;
+      border-top: 1px solid #292929;
+    }
+
+    .chronicle-ui-guide .page-title {
+      margin: 0 0 7px;
+      color: #202124;
+      font-size: clamp(26px, 2.2vw, 32px);
+      font-weight: 500;
+      line-height: 1.2;
+    }
+
+    .chronicle-ui-guide .page-description {
+      max-width: 980px;
+      margin: 0;
+      color: #5f6368;
+      font-size: clamp(14px, calc(13px + 0.15vw), 15px);
+      line-height: 1.5;
+    }
+
+    .chronicle-ui-guide .tab-rail {
+      display: flex;
+      width: fit-content;
+      max-width: 100%;
+      min-width: 0;
+      align-items: center;
+      gap: 2px;
+      padding: 4px;
+      overflow-x: auto;
+      border: 1px solid #2b2b2e;
+      border-radius: 999px;
+      background: #2b2b2e;
+      overscroll-behavior-inline: contain;
+      scrollbar-width: none;
+    }
+
+    .chronicle-ui-guide .tab-rail::-webkit-scrollbar {
+      display: none;
+    }
+
+    .chronicle-ui-guide .tab {
+      width: auto;
+      min-width: max-content;
+      flex: 0 0 auto;
+      padding: 6px 16px;
+      border: 0;
+      border-top: 1px solid transparent;
+      border-radius: 999px;
+      background: transparent;
+      color: #a1a1aa;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 16px;
+      transition: color 150ms ease, background-color 150ms ease;
+      white-space: nowrap;
+    }
+
+    .chronicle-ui-guide .tab:hover {
+      color: #e4e4e7;
+    }
+
+    .chronicle-ui-guide .tab:focus-visible {
+      outline: 2px solid #8eb6e8;
+      outline-offset: 1px;
+    }
+
+    .chronicle-ui-guide .tab[aria-selected="true"] {
+      border-top-color: rgba(255, 255, 255, 0.2);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, transparent 50%),
+        linear-gradient(180deg, #5a7292 0%, #4a5f7f 100%);
+      color: #fff;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .chronicle-ui-guide .content-panel {
+      width: 100%;
+      height: clamp(480px, 68vh, 760px);
+      min-width: 0;
+      margin-top: 16px;
+      overflow-x: hidden;
+      overflow-y: auto;
+      border: 1px solid #343434;
+      border-radius: 10px;
+      background: #1e1e1e;
+      scrollbar-color: #737373 #252525;
+      scrollbar-width: thin;
+    }
+
+    .chronicle-ui-guide .content-panel:focus-visible {
+      outline: 2px solid #8eb6e8;
+      outline-offset: 2px;
+    }
+
+    .chronicle-ui-guide .content-panel::-webkit-scrollbar {
+      width: 10px;
+    }
+
+    .chronicle-ui-guide .content-panel::-webkit-scrollbar-track {
+      border-radius: 0 10px 10px 0;
+      background: #252525;
+    }
+
+    .chronicle-ui-guide .content-panel::-webkit-scrollbar-thumb {
+      border: 2px solid #252525;
+      border-radius: 999px;
+      background: #737373;
+    }
+
+    .chronicle-ui-guide .metadata {
+      display: flex;
+      width: min(var(--knowledge-reading-width), 100%);
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-inline: auto;
+      padding: clamp(16px, 2.5vw, 22px) var(--knowledge-content-gutter) 0;
+    }
+
+    .chronicle-ui-guide .metadata-item {
+      padding: 6px 10px;
+      border: 1px solid #5d5d5d;
+      border-radius: 999px;
+      background: #292929;
+      color: #f2f2f2;
+      font-size: 9.5pt;
+      font-weight: 600;
+      line-height: 1.1;
+      white-space: nowrap;
+    }
+
+    .chronicle-ui-guide .content {
+      width: min(var(--knowledge-reading-width), 100%);
+      min-width: 0;
+      margin-inline: auto;
+      padding: clamp(34px, 4vw, 48px) var(--knowledge-content-gutter) clamp(52px, 6vw, 72px);
+      overflow-wrap: anywhere;
+    }
+
+    .chronicle-ui-guide .tab-panel[hidden] {
+      display: none;
+    }
+
+    .chronicle-ui-guide .content h3 {
+      margin: 0 0 24px;
+      color: #fff;
+      font-size: clamp(28px, 3vw, 40px);
+      font-weight: 500;
+      line-height: 1.15;
+    }
+
+    .chronicle-ui-guide .content h4 {
+      margin: 34px 0 11px;
+      color: #fff;
+      font-size: clamp(18px, calc(17px + 0.2vw), 20px);
+      font-weight: 500;
+      line-height: 1.25;
+    }
+
+    .chronicle-ui-guide .content h5 {
+      margin: 23px 0 8px;
+      color: #f1f1f1;
+      font-size: clamp(16px, calc(15px + 0.15vw), 17px);
+      font-weight: 600;
+      line-height: 1.35;
+    }
+
+    .chronicle-ui-guide .content p,
+    .chronicle-ui-guide .content li {
+      color: #d2d2d2;
+      font-size: var(--knowledge-body-copy-size);
+      font-weight: 400;
+      line-height: 1.62;
+    }
+
+    .chronicle-ui-guide .content p {
+      margin: 0 0 17px;
+    }
+
+    .chronicle-ui-guide .content ul,
+    .chronicle-ui-guide .content ol {
+      margin: 0 0 20px;
+      padding-left: 22px;
+    }
+
+    /* Restore the standalone manual's native markers after Tailwind's reset. */
+    .chronicle-ui-guide .content ul { list-style-type: disc; }
+    .chronicle-ui-guide .content ol { list-style-type: decimal; }
+
+    .chronicle-ui-guide .content li + li {
+      margin-top: 6px;
+    }
+
+    .chronicle-ui-guide .content strong {
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .chronicle-ui-guide code {
+      padding: 1px 4px;
+      border: 1px solid #3a3a3a;
+      border-radius: 4px;
+      background: #171717;
+      color: #cfe3ff;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 0.9em;
+      overflow-wrap: anywhere;
+    }
+
+    .chronicle-ui-guide pre {
+      width: 100%;
+      max-width: 100%;
+      margin: 14px 0 22px;
+      padding: 14px 16px;
+      overflow-x: auto;
+      border: 1px solid #3a3a3a;
+      border-radius: 6px;
+      background: #171717;
+      scrollbar-width: thin;
+    }
+
+    .chronicle-ui-guide pre code {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: #cfe3ff;
+      white-space: pre;
+      overflow-wrap: normal;
+    }
+
+    .chronicle-ui-guide .content figure {
+      margin: 24px 0 34px;
+    }
+
+    .chronicle-ui-guide .content figure > img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 1px solid #343434;
+      border-radius: 2px;
+    }
+
+    .chronicle-ui-guide figcaption {
+      margin-top: 9px;
+      color: #a1a1aa;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .chronicle-ui-guide .table-wrap {
+      width: 100%;
+      max-width: 100%;
+      margin: 0 0 22px;
+      overflow-x: auto;
+    }
+
+    .chronicle-ui-guide table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10.5pt;
+    }
+
+    .chronicle-ui-guide th,
+    .chronicle-ui-guide td {
+      padding: 9px 10px;
+      border: 1px solid #3b3b3b;
+      color: #d5d5d5;
+      line-height: 1.5;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .chronicle-ui-guide th {
+      background: #272727;
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .chronicle-ui-guide td:first-child {
+      color: #f3f3f3;
+      font-weight: 600;
+    }
+
+    .chronicle-ui-guide .source-line {
+      margin: -3px 0 17px;
+      color: #a1a1aa;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .chronicle-ui-guide .source-line strong {
+      color: #d2d2d2;
+    }
+
+    .chronicle-ui-guide .manual-entry {
+      padding-top: 1px;
+    }
+
+    .chronicle-ui-guide .manual-entry + .manual-entry {
+      margin-top: 38px;
+      padding-top: 34px;
+      border-top: 1px solid #424242;
+    }
+
+    .chronicle-ui-guide .manual-entry > h4:first-child {
+      margin-top: 0;
+    }
+
+    .chronicle-ui-guide details.implementation {
+      margin: 18px 0 6px;
+      padding-top: 14px;
+      border-top: 1px solid #414141;
+    }
+
+    .chronicle-ui-guide details.implementation > summary {
+      width: fit-content;
+      color: #cfe3ff;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .chronicle-ui-guide details.implementation > summary:focus-visible {
+      outline: 2px solid #8eb6e8;
+      outline-offset: 3px;
+      border-radius: 3px;
+    }
+
+    .chronicle-ui-guide details.implementation[open] > summary {
+      margin-bottom: 16px;
+    }
+
+    .chronicle-ui-guide .verification-note {
+      margin: 25px 0 0;
+      padding: 14px 0 0;
+      border-top: 1px solid #424242;
+      color: #bcbcbc !important;
+      font-size: 14px !important;
+    }
+
+    .chronicle-ui-guide .inline-swatch {
+      display: inline-block;
+      width: 28px;
+      height: 18px;
+      margin-right: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 2px;
+      vertical-align: -4px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .chronicle-ui-guide *,
+      .chronicle-ui-guide *::before,
+      .chronicle-ui-guide *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+
+
+
+
+
+
+
+
+/* Documentation framing only; all product visuals are source-rendered PNGs. */
+.chronicle-ui-guide .capture-background {width:100%;padding:20px;background:#19191c;display:flex;justify-content:center;align-items:flex-start;}
+.chronicle-ui-guide .capture-background picture {display:block;max-width:100%;}
+.chronicle-ui-guide .capture-background img {display:block;max-width:100%;height:auto;object-fit:contain;}
+.chronicle-ui-guide pre code {white-space:pre-wrap;overflow-wrap:anywhere;}
+.chronicle-ui-guide pre,.chronicle-ui-guide .table-wrap {overflow-x:hidden;}
+.chronicle-ui-guide table {table-layout:fixed;}
+.chronicle-ui-guide td,.chronicle-ui-guide th {overflow-wrap:anywhere;}
+@media(max-width:600px){.chronicle-ui-guide .capture-background{padding:8px;}.chronicle-ui-guide table thead{display:none;}.chronicle-ui-guide table tr,.chronicle-ui-guide table td{display:block;width:100%;}.chronicle-ui-guide table tr{margin-bottom:16px;}.chronicle-ui-guide table td::before{content:attr(data-label);display:block;color:#fff;font-weight:600;margin-bottom:4px;}.chronicle-ui-guide table td:first-child{background:#272727;}}
+
+.chronicle-ui-guide .reuse-recipe {margin-top:22px}.chronicle-ui-guide .metadata-item{padding:0;border:0;background:none;border-radius:0;color:#a1a1aa;font-weight:400}.chronicle-ui-guide .metadata-item+.metadata-item::before{content:"·";margin-right:8px}.chronicle-ui-guide .content .manual-entry h5{margin-top:22px}

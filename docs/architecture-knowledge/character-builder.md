@@ -640,7 +640,7 @@ The admin navigation-image editor writes `app_settings.nav_button_images` and up
 
 ### Shared Supabase reference
 
-The **Supabase Tables** tab renders the shared synchronized reference for documented `characters`, `app_settings`, storage, and related fields. An older manual, generated client type, or migration alone is not evidence of live deployment. The Chronicle Work Manual governs any later task that needs to reconcile those sources or inspect the live boundary.
+The **Supabase Tables** tab renders the shared synchronized reference for documented `characters`, `app_settings`, storage, and related fields. An older manual, generated client type, or migration alone is not evidence of live deployment.
 
 ## Diagnostics Versus Enforcement
 
@@ -817,9 +817,11 @@ The Knowledge tests introduced with this manual prove registration, substantive 
 | Source | Role in Character Builder |
 |---|---|
 | `src/data/chronicle-knowledge-base/character-builder-manifest.test.ts` | Verifies the exact stable-tab contract, substantive section ownership, source paths, and reproducible source composite. |
-| `src/pages/style-guide/chronicle-knowledge-base.character-builder.test.tsx` | Proves the real renderer resolves all seven Character Builder tabs, isolates **CB-ISSUE-001** and **CB-ISSUE-002**, preserves the explicit empty Current Work state, and renders four positively mapped historical Quality Hub records without adjacent-capability bleed. No active work or modern accepted closeout is currently registered for this capability. |
+| `src/pages/style-guide/chronicle-knowledge-base.character-builder.test.tsx` | Checks that the real renderer resolves all six Character Builder tabs, isolates **CB-ISSUE-001** and **CB-ISSUE-002**, and renders four positively mapped historical Quality Hub records without adjacent-capability bleed. Those records remain historical evidence, not current product acceptance. |
 
 ## Inspected Source Set and Reproducible Composite
+
+Current Work retirement reconciliation **09/11/2026**: the fingerprint uses the current bytes of the same ordered source list after updating Knowledge Base tab and historical-record tests. This is reference maintenance, not a renewed capability audit; the original product-review dates and live-evidence limits remain unchanged.
 
 ### Exact ordered source paths
 
@@ -908,7 +910,13 @@ For each path above, in order, compute the SHA-256 digest of the file's current 
 
 Inspected-source count: **74 paths**.
 
-Inspected-source composite: `998ce65fe910e90a13eb4d32aecad4c26e9ab7ea899f48283b6cde33871b3e49`
+Inspected-source composite: `a6512d2cae43a00184c35feffbd251e5f822b80a3c686fec2b71b7acebf51a9c`
+
+Snapshot update **09/11/2026**: the only changed listed source is `src/App.tsx`, where the two retired Work Manual routes were removed. Substituting the pre-removal `src/App.tsx` bytes from the external recovery package reproduces the preceding composite `3b2b72a4c250c22973b8a22fa7ede51781d30aa08c8922831d6a205d25511d1e`; the other listed source bytes remain consistent with that snapshot. This source-only reconciliation does not repeat the Character Builder review, claim new capability behavior, or extend its live-evidence limits.
+
+Snapshot update **09/10/2026**: `src/App.tsx` adds only the Roadmap lazy import and protected `/admin/roadmap` route. Removing those two additions reproduces the preceding composite `7303e372580f6264829e1413b58c84b5e7d066b1d01abbf6f955e79cbef8baba`; the other listed source bytes are unchanged from that snapshot. Focused Roadmap route tests cover admin entry and signed-out/non-admin redirects. This bounded update does not repeat the Character Builder review or extend its live-evidence claims.
+
+Snapshot update **09/07/2026**: the only changed file in this inspected set is `src/App.tsx`, which adds the lazy Chronicle UI Guide import and its `AdminOnlyRoute` registration. Recomputing with the prior `src/App.tsx` bytes reproduces the previous composite `998ce65fe910e90a13eb4d32aecad4c26e9ab7ea899f48283b6cde33871b3e49`; all other listed bytes therefore remain consistent with that snapshot. The new route and shared admin guard were checked with focused tests. The original capability review date and live-evidence limits remain unchanged.
 
 ## Review Metadata and Evidence Limits
 

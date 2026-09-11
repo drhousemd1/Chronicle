@@ -15,12 +15,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import {
   Download,
   Image as ImageIcon,
-  Moon,
-  Pencil,
   Plus,
   Settings,
   Sparkles,
-  Sun,
   Upload,
 } from "lucide-react";
 
@@ -69,17 +66,10 @@ interface ImageLibraryHeaderConfig {
 
 interface AdminHeaderConfig {
   activeTool: string;
-  guideTheme: "dark" | "light";
-  styleGuideEditsCount: number;
   rndRepositorySaveState: "idle" | "saving" | "saved" | "error";
   rndRepositorySaveAvailable: boolean;
   rndAddMockupAvailable: boolean;
   onBackToHub: () => void;
-  onToggleGuideTheme: () => void;
-  onGuideSave: () => void;
-  onGuideSyncAll: () => void;
-  onOpenStyleGuideEdits: () => void;
-  onDownloadStyleGuide: () => void;
   onRndAddMockup: () => void;
   onRndRepositorySave: () => void;
 }
@@ -543,46 +533,6 @@ export function AppShellTopBar({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
-    );
-  }
-
-  if (tab === "admin" && admin?.activeTool === "app_guide") {
-    rightContent = (
-      <div className="flex items-center gap-2">
-        <SurfaceButton
-          onClick={admin.onToggleGuideTheme}
-          className="w-10 px-0"
-          title={admin.guideTheme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-        >
-          {admin.guideTheme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
-        </SurfaceButton>
-        <SurfaceButton onClick={admin.onGuideSave} className="px-6">
-          Save
-        </SurfaceButton>
-        <SurfaceButton onClick={admin.onGuideSyncAll} className="px-6">
-          Sync All
-        </SurfaceButton>
-      </div>
-    );
-  }
-
-  if (tab === "admin" && admin?.activeTool === "style_guide") {
-    rightContent = (
-      <div className="flex items-center gap-2">
-        <SurfaceButton onClick={admin.onOpenStyleGuideEdits} className="relative px-5 gap-2">
-          <Pencil size={14} />
-          Edits
-          {admin.styleGuideEditsCount > 0 && (
-            <span className="ml-1 inline-flex items-center justify-center h-4 min-w-[16px] rounded-full bg-zinc-600 text-[9px] font-bold px-1">
-              {admin.styleGuideEditsCount}
-            </span>
-          )}
-        </SurfaceButton>
-        <SurfaceButton onClick={admin.onDownloadStyleGuide} className="px-6 gap-2">
-          <Download size={14} />
-          Download
-        </SurfaceButton>
       </div>
     );
   }

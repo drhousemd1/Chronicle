@@ -1,6 +1,5 @@
 import rawManifest from "../../../docs/architecture-knowledge/manifest.json";
 import chronicleOverviewSource from "../../../docs/architecture-knowledge/chronicle-overview.md?raw";
-import chronicleWorkManualDocumentSource from "../../../docs/architecture-knowledge/chronicle-work-manual.md?raw";
 import communityGallerySource from "../../../docs/architecture-knowledge/community-gallery.md?raw";
 import myStoriesSource from "../../../docs/architecture-knowledge/my-stories.md?raw";
 import characterLibrarySource from "../../../docs/architecture-knowledge/character-library.md?raw";
@@ -22,18 +21,15 @@ import validationEvidenceLedgerSource from "../../../docs/architecture-knowledge
 import financeDashboardSource from "../../../docs/architecture-knowledge/finance-dashboard.md?raw";
 import researchDevelopmentSource from "../../../docs/architecture-knowledge/research-development.md?raw";
 import imageGenerationSource from "../../../docs/architecture-knowledge/image-generation.md?raw";
-import appDashboardSource from "../../../docs/architecture-knowledge/app-dashboard.md?raw";
 import { getOperationalCapability } from "./operational-capability-registry";
 import { getCapabilityOperationalRecordRegistry } from "./operational-record-sources";
 
 export type KnowledgeContentKind =
   | "blank"
   | "issue-records"
-  | "current-work-records"
   | "changelog-records"
   | "shared-records"
   | "markdown-section"
-  | "work-manual-chapter"
   | "shared-supabase";
 
 export type KnowledgeTab = {
@@ -41,8 +37,6 @@ export type KnowledgeTab = {
   label: string;
   contentKind: KnowledgeContentKind;
   heading?: string;
-  headings?: string[];
-  legacyIds?: string[];
   reviewed?: string;
   updated?: string;
   openIssueCount?: number;
@@ -61,7 +55,6 @@ export type ChronicleKnowledgeBaseManifest = {
   version: number;
   reviewedCommit: string;
   applicationMap: KnowledgeSection;
-  workManual: KnowledgeSection;
   capabilities: KnowledgeSection[];
   adminTools: KnowledgeSection[];
   sharedDocuments: {
@@ -79,7 +72,6 @@ export const chronicleKnowledgeBaseManifest =
 
 const markdownDocuments: Record<string, string> = {
   "chronicle-overview.md": chronicleOverviewSource,
-  "chronicle-work-manual.md": chronicleWorkManualDocumentSource,
   "community-gallery.md": communityGallerySource,
   "my-stories.md": myStoriesSource,
   "character-library.md": characterLibrarySource,
@@ -101,7 +93,6 @@ const markdownDocuments: Record<string, string> = {
   "finance-dashboard.md": financeDashboardSource,
   "research-development.md": researchDevelopmentSource,
   "image-generation.md": imageGenerationSource,
-  "app-dashboard.md": appDashboardSource,
 };
 
 function cloneTabs(tabs: KnowledgeTab[], sectionId: string) {
@@ -118,14 +109,6 @@ function cloneTabs(tabs: KnowledgeTab[], sectionId: string) {
   }));
 }
 
-export const chronicleWorkManualSection: KnowledgeSection = {
-  ...chronicleKnowledgeBaseManifest.workManual,
-  tabs: cloneTabs(
-    chronicleKnowledgeBaseManifest.workManual.tabs,
-    chronicleKnowledgeBaseManifest.workManual.id,
-  ),
-};
-
 export const chronicleAdminToolSections: KnowledgeSection[] =
   chronicleKnowledgeBaseManifest.adminTools.map((section) => ({
     ...section,
@@ -140,51 +123,12 @@ export const chronicleKnowledgeSections: KnowledgeSection[] = [
       chronicleKnowledgeBaseManifest.applicationMap.id,
     ),
   },
-  chronicleWorkManualSection,
   ...chronicleKnowledgeBaseManifest.capabilities.map((capability) => ({
     ...capability,
     tabs: cloneTabs(capability.tabs, capability.id),
   })),
   ...chronicleAdminToolSections,
 ];
-
-export const chronicleWorkManualSource = chronicleWorkManualDocumentSource;
-
-export type ChronicleWorkManualDisplayMetadata = Readonly<{
-  manualVersion: string;
-  status: string;
-  authorityEpoch: string;
-  reviewedOn: string;
-  reviewedRepositoryHead: string;
-  reviewedChaptersSha256: string;
-  canonicalPath: string;
-}>;
-
-function parseSimpleFrontmatter(source: string) {
-  const match = source.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n/);
-  if (!match) throw new Error("Chronicle Work Manual is missing frontmatter.");
-  const values = new Map<string, string>();
-  for (const line of match[1].split(/\r?\n/)) {
-    const field = line.match(/^([a-z0-9_]+):\s*(.+)$/i);
-    if (field) values.set(field[1], field[2].trim());
-  }
-  return values;
-}
-
-export const chronicleWorkManualMetadata: ChronicleWorkManualDisplayMetadata = (() => {
-  const metadata = parseSimpleFrontmatter(chronicleWorkManualDocumentSource);
-  return Object.freeze({
-    manualVersion: metadata.get("manual_version") ?? "Unknown",
-    status: metadata.get("status") ?? "Unknown",
-    authorityEpoch: metadata.get("authority_epoch") ?? "Unknown",
-    reviewedOn: metadata.get("reviewed_on") ?? "Unknown",
-    reviewedRepositoryHead:
-      metadata.get("reviewed_repository_head") ?? "Unknown",
-    reviewedChaptersSha256:
-      metadata.get("reviewed_chapters_sha256") ?? "Unknown",
-    canonicalPath: metadata.get("canonical_path") ?? "Unknown",
-  });
-})();
 
 export function parseKnowledgeDocument(source: string): ParsedKnowledgeDocument {
   const headingPattern = /^# ([^\r\n]+)\r?$/gm;
@@ -202,41 +146,6 @@ export function parseKnowledgeDocument(source: string): ParsedKnowledgeDocument 
     headings: matches.map((match) => match[1].trim()),
     contentByHeading,
   };
-}
-
-export function parseWorkManualDocument(
-  source: string,
-): ParsedKnowledgeDocument {
-  const headingPattern = /^## ([^\r\n]+)\r?$/gm;
-  const matches = Array.from(source.matchAll(headingPattern));
-  const contentByHeading = new Map<string, string>();
-
-  matches.forEach((match, index) => {
-    const heading = match[1].trim();
-    const start = (match.index ?? 0) + match[0].length;
-    const end = matches[index + 1]?.index ?? source.length;
-    contentByHeading.set(heading, source.slice(start, end).trim());
-  });
-
-  return {
-    headings: matches.map((match) => match[1].trim()),
-    contentByHeading,
-  };
-}
-
-export function getWorkManualPreface(source: string) {
-  const withoutFrontmatter = source.replace(
-    /^---\r?\n[\s\S]*?\r?\n---\r?\n/,
-    "",
-  );
-  const firstChapterIndex = withoutFrontmatter.search(/^## /m);
-  const preface = (
-    firstChapterIndex >= 0
-      ? withoutFrontmatter.slice(0, firstChapterIndex)
-      : withoutFrontmatter
-  ).trim();
-
-  return preface.replace(/^# Chronicle Work Manual\r?\n+/, "").trim();
 }
 
 export function getKnowledgeDocumentSource(documentName: string) {
@@ -257,28 +166,6 @@ export function getKnowledgeTabMarkdown(
     return getKnowledgeDocumentSource(
       chronicleKnowledgeBaseManifest.sharedDocuments.supabase,
     );
-  }
-
-  if (
-    tab.contentKind === "work-manual-chapter" &&
-    section.document &&
-    (tab.headings?.length || tab.heading)
-  ) {
-    const parsed = parseWorkManualDocument(
-      getKnowledgeDocumentSource(section.document),
-    );
-    const headings = tab.headings?.length
-      ? tab.headings
-      : tab.heading
-        ? [tab.heading]
-        : [];
-
-    return headings
-      .map((heading) => {
-        const content = parsed.contentByHeading.get(heading) ?? "";
-        return `## ${heading}\n\n${content}`;
-      })
-      .join("\n\n");
   }
 
   if (tab.contentKind !== "markdown-section" || !section.document || !tab.heading) {

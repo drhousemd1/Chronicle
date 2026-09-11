@@ -168,6 +168,9 @@ type LegacySourceLineage = (typeof LEGACY_SOURCE_LINEAGE)[number];
 
 export type ChangelogSourceMap = Readonly<Record<string, string>>;
 
+// Knowledge System is an operational owner, not a product capability.
+export type ChangelogCapabilityId = ChronicleCapabilityId | "knowledge-system";
+
 type ParsedFrontmatter = Readonly<{
   data: unknown;
   body: string;
@@ -181,7 +184,7 @@ type ChangelogRecordBase = Readonly<{
   changeDate: string;
   outcome: string;
   provenance: ChangelogProvenance;
-  affectedCapabilities: readonly ChronicleCapabilityId[];
+  affectedCapabilities: readonly ChangelogCapabilityId[];
   sourcePath: string;
   body: string;
   rawSource: string;
@@ -196,7 +199,7 @@ export type AcceptedCloseoutChangelogRecord = ChangelogRecordBase &
     changes: string;
     acceptedEvidenceSummary: string;
     acceptedEvidenceLimits: string;
-    owningCapability: ChronicleCapabilityId;
+    owningCapability: ChangelogCapabilityId;
     acceptedOn: string;
     acceptedBy: string;
     acceptanceRef: string;
@@ -221,7 +224,7 @@ export type AcceptedUpdateChangelogRecord = ChangelogRecordBase &
     acceptedBy: string;
     reviewMethod: string;
     sourceRevision: string;
-    workflowRecordContext: typeof ACCEPTED_UPDATE_WORKFLOW_CONTEXT;
+    workflowRecordContext?: typeof ACCEPTED_UPDATE_WORKFLOW_CONTEXT;
   }>;
 
 export type LegacyQualityHubComment = Readonly<{
@@ -288,7 +291,7 @@ export type ChangelogClarifiedFields = Readonly<{
   outcome?: string;
   acceptedEvidenceSummary?: string;
   acceptedEvidenceLimits?: string;
-  affectedCapabilities?: readonly ChronicleCapabilityId[];
+  affectedCapabilities?: readonly ChangelogCapabilityId[];
   acceptedOn?: string;
   acceptedBy?: string;
   reviewMethod?: string;
@@ -343,7 +346,7 @@ export type EffectiveChangelogEntry = Readonly<{
   changeDate: string;
   outcome: string;
   provenance: ChangelogProvenance;
-  affectedCapabilities: readonly ChronicleCapabilityId[];
+  affectedCapabilities: readonly ChangelogCapabilityId[];
   sourcePath: string;
   body: string;
   rootRecord: ChangelogRootRecord;
@@ -424,22 +427,31 @@ const acceptedContentSchema = z
   .refine(isAcceptedContent, "must contain accepted content, not placeholder-only text");
 
 const capabilitySchema = z.enum(APPROVED_CAPABILITY_IDS);
+const closeoutCapabilitySchema = z.enum([
+  ...APPROVED_CAPABILITY_IDS,
+  "knowledge-system",
+]);
+
+function validateUniqueCapabilities(values: string[], context: z.RefinementCtx) {
+  const seen = new Set<string>();
+  values.forEach((value, index) => {
+    if (seen.has(value)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `contains duplicate capability ${value}`,
+        path: [index],
+      });
+    }
+    seen.add(value);
+  });
+}
 
 const capabilityListSchema = z
   .array(capabilitySchema)
-  .superRefine((values, context) => {
-    const seen = new Set<string>();
-    values.forEach((value, index) => {
-      if (seen.has(value)) {
-        context.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `contains duplicate capability ${value}`,
-          path: [index],
-        });
-      }
-      seen.add(value);
-    });
-  });
+  .superRefine(validateUniqueCapabilities);
+const closeoutCapabilityListSchema = z
+  .array(closeoutCapabilitySchema)
+  .superRefine(validateUniqueCapabilities);
 
 const nonEmptyCapabilityListSchema = capabilityListSchema.refine(
   (values) => values.length > 0,
@@ -469,8 +481,11 @@ const acceptedCloseoutSchema = commonSchema
     outcome: acceptedContentSchema,
     accepted_evidence_summary: acceptedContentSchema,
     accepted_evidence_limits: acceptedContentSchema,
-    affected_capabilities: nonEmptyCapabilityListSchema,
-    owning_capability: capabilitySchema,
+    affected_capabilities: closeoutCapabilityListSchema.refine(
+      (values) => values.length > 0,
+      "must contain at least one capability",
+    ),
+    owning_capability: closeoutCapabilitySchema,
     accepted_on: dateSchema,
     accepted_by: meaningfulAuthoritySchema,
     acceptance_ref: z.string().regex(PROOF_ID),
@@ -501,7 +516,7 @@ const acceptedUpdateSchema = commonSchema
     accepted_by: meaningfulAuthoritySchema,
     review_method: acceptedContentSchema,
     source_revision: z.string().regex(SOURCE_REVISION),
-    workflow_record_context: z.literal(ACCEPTED_UPDATE_WORKFLOW_CONTEXT),
+    workflow_record_context: z.literal(ACCEPTED_UPDATE_WORKFLOW_CONTEXT).optional(),
   })
   .strict();
 
@@ -584,7 +599,7 @@ const clarifiedFieldsSchema = z
     outcome: acceptedContentSchema.optional(),
     accepted_evidence_summary: acceptedContentSchema.optional(),
     accepted_evidence_limits: acceptedContentSchema.optional(),
-    affected_capabilities: capabilityListSchema.optional(),
+    affected_capabilities: closeoutCapabilityListSchema.optional(),
     accepted_on: dateSchema.optional(),
     accepted_by: meaningfulAuthoritySchema.optional(),
     review_method: acceptedContentSchema.optional(),
@@ -627,6 +642,7 @@ const correctionSchema = commonSchema
   .extend({
     variant: z.literal("correction"),
     provenance: z.literal("correction"),
+    affected_capabilities: closeoutCapabilityListSchema,
     title: acceptedContentSchema,
     outcome: acceptedContentSchema,
     target_change_id: z.string().trim().min(1),
@@ -1054,7 +1070,6 @@ function assertMarkdownStructure(
       "Accepted Evidence Limits",
       "Review Method",
       "Acceptance and Source State",
-      "Operational Record Context",
     ],
     legacy_import: [
       "Original Quality Hub Record",
@@ -1072,7 +1087,7 @@ function assertMarkdownStructure(
     }
   }
   if (variant === "accepted_update") {
-    const allowed = new Set([...commonHeadings, ...variantHeadings.accepted_update]);
+    const allowed = new Set([...commonHeadings, ...variantHeadings.accepted_update, "Operational Record Context"]);
     for (const heading of levelTwoHeadings) {
       const count = levelTwoHeadings.filter((candidate) => candidate === heading).length;
       if (!allowed.has(heading)) {
@@ -1297,15 +1312,18 @@ function parseChangelogRecord(
       sourcePath,
       errors,
     );
-    assertMarkdownSectionAgreement(
-      getMarkdownSections(frontmatter.body, 2),
-      "Operational Record Context",
-      ACCEPTED_UPDATE_CONTEXT_NARRATIVE,
-      sourcePath,
-      errors,
-      2,
-      "workflow_record_context",
-    );
+    // Retain old context prose when supplied; new history needs no workflow disclaimer.
+    if (metadata.workflow_record_context) {
+      assertMarkdownSectionAgreement(
+        getMarkdownSections(frontmatter.body, 2),
+        "Operational Record Context",
+        ACCEPTED_UPDATE_CONTEXT_NARRATIVE,
+        sourcePath,
+        errors,
+        2,
+        "workflow_record_context",
+      );
+    }
     if (!isAcceptedUpdateId(metadata.change_id)) {
       errors.push(
         `${sourcePath}: accepted update ID must use an explicitly registered PREFIX-UPDATE-NNN identity`,
@@ -2105,6 +2123,14 @@ function validateCorrections(
         );
         const previousRecord = effectiveRecord;
         effectiveRecord = applyCorrectionToRoot(previousRecord, correction);
+        if (
+          effectiveRecord.variant !== "accepted_closeout" &&
+          effectiveRecord.affectedCapabilities.includes("knowledge-system")
+        ) {
+          errors.push(
+            `${correction.sourcePath}: knowledge-system applicability is limited to accepted closeouts and their corrections`,
+          );
+        }
         if (effectiveRecord.variant === "accepted_closeout") {
           validateAcceptedEffectiveRecord(
             effectiveRecord,
@@ -2263,9 +2289,13 @@ export function buildChangelogRecordRegistry(
 
 export function selectChangelogEntriesFromRegistry(
   registry: ChangelogRecordRegistry,
-  capability?: ChronicleCapabilityId,
+  capability?: ChangelogCapabilityId,
 ) {
-  if (capability !== undefined && !isChronicleCapabilityId(capability)) {
+  if (
+    capability !== undefined &&
+    capability !== "knowledge-system" &&
+    !isChronicleCapabilityId(capability)
+  ) {
     return deepFreeze([] as EffectiveChangelogEntry[]);
   }
   return deepFreeze(

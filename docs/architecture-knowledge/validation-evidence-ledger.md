@@ -12,7 +12,7 @@ Repository definitions identify fixture, command, and manual gates. A fixture is
 
 Opening the ledger through Admin requests a newly derived local snapshot. The snapshot joins each definition to its execution and review history, derives a status from the latest relevant evidence, and separately evaluates freshness. **View** opens the complete gate data and retrieves the latest automated execution’s raw report when one exists.
 
-The browser page does not run a test, approve a manual gate, edit a receipt, or repair a failed feature. It is a reading surface. Test selection, required evidence, and when a check is authorized remain governed by the Chronicle Work Manual, not by the presence of a gate or button here.
+The browser page does not run a test, approve a manual gate, edit a receipt, or repair a failed feature. It is a reading surface. A displayed gate or button does not authorize additional tests.
 
 ## Local-Development and Data Boundaries
 

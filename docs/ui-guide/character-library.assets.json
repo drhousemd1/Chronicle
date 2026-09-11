@@ -1,0 +1,74 @@
+[
+  {
+    "path": "../../src/assets/ui-guide/character-library/overview-narrow.png",
+    "width": 390,
+    "height": 999,
+    "sha256": "fc81a89eb227d2eb7276875300b8f0aa0ad9fa591861b00f8e17b741dc53c165"
+  },
+  {
+    "path": "../../src/assets/ui-guide/character-library/overview.png",
+    "width": 1440,
+    "height": 1000,
+    "sha256": "1639c5ac0e245c6140e404b40db25881a06dad2ca1d23c087e6284e7cfa2f5d8"
+  },
+  {
+    "path": "../../src/assets/ui-guide/character-library/create-tile.png",
+    "width": 341,
+    "height": 499,
+    "sha256": "61e12741bc4313b8d1dcf66086d092beeffb8dd4829d1d4bfe28db41256cfa4d"
+  },
+  {
+    "path": "../../src/assets/ui-guide/character-library/card-hover.png",
+    "width": 342,
+    "height": 499,
+    "sha256": "44102208b6856388c204f236210932149cd3d2a8d58ee54eddb6101e4be25a86"
+  },
+  {
+    "path": "../../src/assets/ui-guide/character-library/header-search.png",
+    "width": 1440,
+    "height": 75,
+    "sha256": "66baaa2c3f52585ac2cffa8d106e7e34c58be7b2528b4d22596b3e3cafd0faed"
+  },
+  {
+    "path": "../../src/assets/ui-guide/character-library/portrait-card.png",
+    "width": 342,
+    "height": 499,
+    "sha256": "383b12d10e89038b197ee994e3db2d55fc7fa067bab74c1419bb4c145a0a8d26"
+  },
+  {
+    "path": "../../src/assets/ui-guide/character-library/fallback-card.png",
+    "width": 341,
+    "height": 499,
+    "sha256": "7ffbb45a6524958b3ce5dbf9af1c1c383d8d0c90eba1429344542d88b1309432"
+  },
+  {
+    "path": "../../src/assets/ui-guide/character-library/empty-library.png",
+    "width": 1440,
+    "height": 1000,
+    "sha256": "7bde3ff693943f7ef9aaad2f61eaf7556c8211bc06da2351ad690d4907b6485a"
+  },
+  {
+    "path": "../../src/assets/ui-guide/character-library/no-match.png",
+    "width": 1440,
+    "height": 1000,
+    "sha256": "89e42ccc3fe9dbfab6c9bb611c7dc6e421432c7d370316c15096fc1955cd0c7b"
+  },
+  {
+    "path": "../../src/assets/ui-guide/character-library/delete-confirm.png",
+    "width": 665,
+    "height": 244,
+    "sha256": "52df7bdeebc0e25f243cd4f2de49e754e358e821d6ebed406191e8417d4b82f2"
+  },
+  {
+    "path": "../../src/assets/ui-guide/character-library/new-collection.png",
+    "width": 385,
+    "height": 295,
+    "sha256": "8151ac47e80017e43488d4720a0a3d8cf0552cd69c75ee00956a93111641de44"
+  },
+  {
+    "path": "../../src/assets/ui-guide/character-library/new-display-options.png",
+    "width": 573,
+    "height": 385,
+    "sha256": "fbf9172890e67bc60dc1b9704ae4eb73a5c22f8234eddc1db6044bf4909b7e8f"
+  }
+]

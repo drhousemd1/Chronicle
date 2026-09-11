@@ -1,0 +1,106 @@
+{
+  "rendering": "Imports untransformed src/pages/CreatorProfile.tsx at MemoryRouter /creator/:userId and actual StarRating. No source profile JSX is reproduced. Teaching examples are separately labeled reference-only compositions.",
+  "views": {
+    "overview": "Fixed profile, genres, creator rating, totals, Follow control and three static works including null-cover fallback",
+    "private": "hide_profile_details public-data flag renders source private branch",
+    "missing": "Null public profile renders source not-found branch",
+    "empty": "Empty works, zero stats and no rating render source empty branch",
+    "hidden-works": "hide_published_works hides entire source works section",
+    "anonymous": "Signed-out viewer; same public creator data and no Follow button",
+    "own": "Viewer ID equals creator route ID; no Follow button",
+    "loading": "Unresolved local RPC promises retain actual page loading spinner",
+    "new-snapshot": "Parent-owned read-only CreatorSnapshotExample initially open with existing local portrait",
+    "new-rating": "Parent-owned local RatingPreviewExample with existing local portrait"
+  },
+  "boundaries": [
+    {
+      "import": "@/integrations/supabase/client",
+      "replacement": "Only two RPC reads and creator_follows read/insert/delete query shapes are implemented. RPC data comes from fixed fixtures. Follow mutations update an in-memory flag and emit a local receipt; unknown tables/RPCs fail."
+    },
+    {
+      "import": "@/hooks/use-auth",
+      "replacement": "Fixed sample viewer, null visitor or creator identity selected by view."
+    },
+    {
+      "import": "@/services/gallery-data",
+      "replacement": "fetchCreatorOverallRating returns a fixed sample or null."
+    }
+  ],
+  "data": "All IDs, counts, ratings, genres and work records are fixtures. Portrait and room URLs point to existing workspace public assets. Private/hidden-work variants omit works from the stub result. No external profile, gallery or authentication state is read.",
+  "allowedInteractions": "Actual Follow/Unfollow handler toggles local UI and follower count through mock query results. Back uses MemoryRouter and lands on a labeled local destination. Teaching examples have only local state. Work posters remain static as in source.",
+  "omissions": "No real authentication, follow writes, public-data RPC/security/privacy enforcement, live rating aggregation, story opening/play/remix/save/like, gallery cards or persistent state. Loading variant never resolves by design. No responsive repair: source fixed 288px avatar and unwrapped row, flat 16px panels, inline stats, disabled display stars and custom poster JSX remain unchanged.",
+  "proof": "Parent inspected actual imported CreatorProfile and both local teaching examples at 1440px and 390px. Captures and local callbacks do not prove production follow writes, privacy enforcement or rating aggregation.",
+  "sources": [
+    {
+      "path": "src/lib/utils.ts",
+      "role": "imported",
+      "sha256": "d1f1e0d62cb8d8d1e04c26e14de842d8a151f75812d81b046c65b5d1fe8e4b27"
+    },
+    {
+      "path": "src/components/chronicle/StarRating.tsx",
+      "role": "imported",
+      "sha256": "c3df9569860d28174cfd9bdf6da21410a7041fe4c0ad89d5bbffd9e5c6ab8e41"
+    },
+    {
+      "path": "src/pages/CreatorProfile.tsx",
+      "role": "imported",
+      "sha256": "ae017c2f6f0d97c85e24e16e517d361220d8ee48cd45755895e85f1648ca5c3d"
+    },
+    {
+      "path": "src/components/ui/dialog.tsx",
+      "role": "imported",
+      "sha256": "566ee731ba666ee9e2de203e94414edef56edf8097d10fd749b62fcae28d6858"
+    },
+    {
+      "path": "docs/ui-guide/examples/creator-profile-compositions.tsx",
+      "role": "imported",
+      "sha256": "83739d55c3cb5120d8efcd44bc9da5f26309d2ad6fce3c8afaa7ec6eed0b9f2f"
+    },
+    {
+      "path": "src/index.css",
+      "role": "compiled styling",
+      "sha256": "5e14e8cc75fd0e01b154dd1f59d9bb4f23b435558872a9b4467858932ff34e79"
+    },
+    {
+      "path": "tailwind.config.ts",
+      "role": "compiled styling",
+      "sha256": "ea133c9d352610179a54ad8fc7bdcfb88dee226a216f67615075d9581462871a"
+    }
+  ],
+  "fixtureSources": [
+    {
+      "path": "fixture.tsx",
+      "sha256": "30fef376adbf7bd53aa0f2fe105922f6080faaf4b6d7c88498c66136d0b43510"
+    },
+    {
+      "path": "fixture-data.ts",
+      "sha256": "33c8db57d6a29213127fd4cfd8305e784e8a5e8600144eb8ff0a82c3680ecbde"
+    },
+    {
+      "path": "build.mjs",
+      "sha256": "5881756864ffe7a5b962ba31c7cb68ed8bf7c06a1ea650fb57509045af5790a0"
+    }
+  ],
+  "assets": [
+    {
+      "path": "public/rnd/sound-effects-visual-overlays/aria-avatar.jpg",
+      "sha256": "35c0790448769300b128d984a1f7944b6386ead68707b9da81b6368914c7e3df"
+    },
+    {
+      "path": "public/rnd/sound-effects-visual-overlays/chat-reference-bedroom-clean.png",
+      "sha256": "490d1fb86a11736b305e21ddfb6c57d10aeff0728c93ad043ca762e3789e9fcd"
+    }
+  ],
+  "capturedOn": "2026-09-10",
+  "assetManifest": "docs/ui-guide/creator-profile.assets.json",
+  "captureNotes": [
+    "Five main figures and two narrow example variants. Source overview shows full identity and upper works; separate works image shows all three fixed static posters including fallback. Private branch captured with centered source message. Back reached the labeled local destination.",
+    "Follow and Unfollow ran only through the local mock; follower count changed 42 to43 then42, with explicit receipt. Posters have no action ancestor or callback. Hover gave image scale1.1 and shadow2xl while wrapper transform remained none.",
+    "Missing, empty, hidden-works, anonymous and owner branches inspected in the DOM. Empty works omitted rating; hidden-works omitted the whole panel; anonymous/owner omitted Follow. Loading branch showed no named status. No real service/security enforcement was tested.",
+    "At390px the source fixed portrait/info row overflowed: document scroll width629px versus390px viewport. This limitation is documented without repairing production UI.",
+    "CreatorSnapshotExample retained flat styling; Close/reopen and completed Escape returned focus to the trigger. At390px its own responsive contents stacked with357px inner shell width and no internal horizontal overflow.",
+    "RatingPreviewExample named native buttons selected exclusively on click and Space, status reported the committed value, Reset cleared it; temporary pointer hover remained separate. Computed filled glyph rgb77,98,128. At390px the panel stacked with357px inner width and no page overflow. No public rating was submitted.",
+    "Independent reviewer read complete proposed text before reconstructing both briefs, then compared named source owners/examples and bounded Story Builder sections. Incorrect missing-bio color was corrected and reread; no material findings remain within that review scope.",
+    "All seven guide panels inspected at1440px and390px: panel scrollWidth equaled clientWidth and zero jump links. Narrow snapshot image visibly uses the responsive variant. Selected reader includes six sections and seven direct image paths; all seven assets and seven captured source hashes match. Shared content/page tests passed21."
+  ]
+}

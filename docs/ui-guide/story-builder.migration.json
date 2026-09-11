@@ -1,0 +1,167 @@
+{
+  "migratedOn": "2026-09-07",
+  "mockupSha256": "b93c8f5919860a4a0dd85c8ce0e14f47978263295052fc33eb6f0bab854b7cf5",
+  "sectionCount": 7,
+  "figureCount": 32,
+  "imageReferences": 35,
+  "uniqueImages": 34,
+  "sourceBlocks": [
+    {
+      "sha256": "3aa00c7713cf3aa3965a56914d88c9e804b5f8663814f8ca2db74cf0aa0fe131",
+      "source": "src/components/chronicle/chronicle-dark-ui.ts"
+    },
+    {
+      "sha256": "68ca6b66bc3391fac2946f99bbcd5b3e108f2f1af8b2bb321736445126b39ddd",
+      "source": "src/components/chronicle/chronicle-dark-ui.ts"
+    },
+    {
+      "sha256": "27d52514acbbc5fdf23e3e065723e7fd80e2e4c72538aaced61e7b2a5a21ab5f",
+      "source": "src/components/app-shell/AppShellTopBar.tsx"
+    },
+    {
+      "sha256": "026e15b751279e31a5af4bdbedcc5b3219b2c3b3ed44598c53465fe89e95ebb1",
+      "source": "src/components/chronicle/chronicle-dark-ui.ts"
+    },
+    {
+      "sha256": "a0a9ec9177ffa697d1991aa255f0a3913bb78b910efd7ad29611991437c50b4c",
+      "source": "src/components/chronicle/ChronicleDarkUi.tsx"
+    },
+    {
+      "sha256": "b53feee1dc2192914f2d89b1835d8ea636438ed5de5d3a000628396bcee7a14f",
+      "source": "src/components/app-shell/AppShellTopBar.tsx"
+    },
+    {
+      "sha256": "105f0419e8c2b760ec41e9f88e77bf3a92c914758c08a72c89edcf3c9f00cc9f",
+      "source": "src/components/app-shell/AppShellTopBar.tsx"
+    },
+    {
+      "sha256": "c44e06f420ca989a1aa2adcb645dada2dc6f62db3150c2089dec3cc00699243c",
+      "source": "src/components/ui/labeled-toggle.tsx"
+    },
+    {
+      "sha256": "ec121234f9efdbc12c4343ce208f33abde00cd4c497312c773a119da0d79c956",
+      "source": "src/components/chronicle/CoverImageActionButtons.tsx"
+    },
+    {
+      "sha256": "07914bdc1545c55771e5fcab89e633a722d9684ec1a5325fa38da61ee28369d2",
+      "source": "src/components/ui/dropdown-menu.tsx"
+    },
+    {
+      "sha256": "34b9a33258394e75fee021e13b337cb05d85ac51372f34ff13926893c2e4621b",
+      "source": "src/components/chronicle/CoverImageActionButtons.tsx"
+    },
+    {
+      "sha256": "0d1f4430424e441d71eef7d7036cdcdb31a6ab835d551ffb41e61bbc44f783b3",
+      "source": "src/features/story-builder/sidebar/AddCharacterPlaceholderCard.tsx"
+    },
+    {
+      "sha256": "945c1e2d215a45bc04e3be9f6e0b3d4e81f9c38681a0040a99d73c58c9c86ea9",
+      "source": "src/features/story-builder/sidebar/AddCharacterPlaceholderCard.tsx"
+    },
+    {
+      "sha256": "0de052d06e9263ff83b29b8c56ede075ce086e289eacb295a92016eab8ff90f3",
+      "source": "src/features/story-builder/StoryBuilderScreen.tsx"
+    },
+    {
+      "sha256": "7f75a56555f504de54f400d6159a710f72433db24cb5e7d4f8ebccbbd8a35369",
+      "source": "src/features/story-builder/StoryBuilderScreen.tsx"
+    },
+    {
+      "sha256": "7906931e921e0097f5f8b5085c4f1ced100af6b56c2d3a6d5fc956401d327504",
+      "source": "src/features/story-builder/components/StoryBuilderFieldLabel.tsx"
+    },
+    {
+      "sha256": "4ee421b34a55451f55be8f6d9c0d1f157dd52b1b457b224158e4618e99dce494",
+      "source": "src/features/story-builder/StoryBuilderScreen.tsx"
+    },
+    {
+      "sha256": "17245a5df3bb1adcd1c34d098ff34c8fa8b63b1171e30e58a4f1b8d82e8a6db3",
+      "source": "src/components/chronicle/AutoResizeTextarea.tsx"
+    },
+    {
+      "sha256": "49f00340677f4c1a71d056254b77431ff3ccf5289fd8db56caf206c680255884",
+      "source": "src/features/story-builder/StoryBuilderScreen.tsx"
+    },
+    {
+      "sha256": "2076d9ac72fd24d5644821bf8d8e2b88ea326151a0cfac76aadb6e3e9dd30179",
+      "source": "src/components/chronicle/GuidanceStrengthSlider.tsx"
+    },
+    {
+      "sha256": "96d91b35e9ce30148bab5c5b3eba72d4b3401940e7616c8851a37ec24ba6ffd6",
+      "source": "src/components/chronicle/ContentThemesSection.tsx"
+    },
+    {
+      "sha256": "ea66e1dc0be8254571695126dc4693f8e17d1df8ab7dd602afdc2b51eb66e47b",
+      "source": "src/components/chronicle/StoryGoalsSection.tsx"
+    },
+    {
+      "sha256": "178f8177bedb1704b4dd3e748f4826848981c8af43178c04e1a276a7f017cf1f",
+      "source": "src/components/ui/checkbox.tsx"
+    },
+    {
+      "sha256": "0608a03e2c0f9443f1795f18fe7520896876ee184cb88b5c8f9e7a63f325d8fc",
+      "source": "src/components/chronicle/StoryGoalsSection.tsx"
+    },
+    {
+      "sha256": "ec5bb8b67e976f81f9510e21398e81db7c30500cd14eeb9c748f987d19e2affe",
+      "source": "src/components/app-shell/AppShellHeader.tsx"
+    },
+    {
+      "sha256": "f3bf64d39c3cfa8777de8e82c39e9432bdedc02c2b61e47e5df131c75e322872",
+      "source": "src/components/app-shell/AppShellTopBar.tsx"
+    },
+    {
+      "sha256": "e9739b9f268ba89d46d1ba81ed77dca018697db5d71384016488a4ed563a1ac3",
+      "source": "src/features/story-builder/StoryBuilderScreen.tsx"
+    },
+    {
+      "sha256": "c66d7cae1b0604167a8eead976896796f7e6524fe78db32c8497c0a0fae8db75",
+      "source": "src/components/chronicle/TabFieldNavigator.tsx"
+    },
+    {
+      "sha256": "f3ca1ce1ad4dbcad7c024451886375dfb6c747e538ae8f703c6691fe887bfb8a",
+      "source": "src/components/chronicle/ChooserModal.tsx"
+    },
+    {
+      "sha256": "93b56954e313caed6c8ce15d584e1ebc6d2a3b5610a6074368f828faa5e69ca4",
+      "source": "src/components/chronicle/EnhanceModeModal.tsx"
+    },
+    {
+      "sha256": "566ee731ba666ee9e2de203e94414edef56edf8097d10fd749b62fcae28d6858",
+      "source": "src/components/ui/dialog.tsx"
+    },
+    {
+      "sha256": "7c71d45f0cf7131dd2400a0cd284763e5cb58a11c633f1077357dc988457ef55",
+      "source": "src/components/chronicle/DeleteConfirmDialog.tsx"
+    },
+    {
+      "sha256": "562473ceff43a4c7818a327675f40a9f0f7d3cc97fd9fd60499f7e8d3adab41f",
+      "source": "src/features/story-builder/components/StoryCardSection.tsx"
+    },
+    {
+      "sha256": "3c10ae6986b205da4d2b3a1df97abc810f949e8719599b9db6e01a1cdfd3b31e",
+      "source": "src/features/story-builder/sidebar/StoryRosterSidebar.tsx"
+    },
+    {
+      "sha256": "80dd3b629be843adae6176ee009d006300d6dbc5af9aa68326d169cfcef1641d",
+      "source": "src/features/story-builder/sidebar/StoryRosterGroup.tsx"
+    },
+    {
+      "sha256": "e24baba14c26216c23074f53973864eb36ab31e14fa06c1377c507c6153e916c",
+      "source": "src/features/story-builder/sidebar/StoryRosterCharacterTile.tsx"
+    },
+    {
+      "sha256": "d1e2dc3cdee3181aab6e20932d45a83712c05f08094424088c83e99e8fab1f99",
+      "source": "src/features/shared-builder/utils/image-position.ts"
+    },
+    {
+      "sha256": "b90ee56d3cc2c9fb41edd67fe2596d0b2fe4eb2c8f00e2a9adc12b80d36181bf",
+      "source": "story-builder-reference-assets/source-render/composition-examples.tsx"
+    },
+    {
+      "sha256": "ee5f78ece57c9e8eb5f9b4186e2bb9ebe46b69b52f03f1edd9a601883bc64772",
+      "source": "src/components/ui/popover.tsx"
+    }
+  ],
+  "sourceSnapshot": "Source excerpts and captures were verified during the concept review. They describe that reviewed source state; later source changes require deliberate review."
+}

@@ -6,6 +6,7 @@
   "scripts": {
     "prebuild": "node scripts/generate-roleplay-artifact-identity.mjs",
     "dev": "vite",
+    "ui-guide:read": "vite-node scripts/read-chronicle-ui-guide.mjs",
     "build": "vite-node scripts/run-with-knowledge-certification-lease.ts build -- vite build",
     "prebuild:dev": "node -e \"process.exit(0)\"",
     "build:dev": "vite-node scripts/run-with-knowledge-certification-lease.ts build-dev -- vite build --mode development",
@@ -15,7 +16,6 @@
     "architecture:refresh": "vite-node scripts/run-with-knowledge-certification-lease.ts architecture-refresh -- node scripts/refresh-architecture-paths.mjs",
     "knowledge:check": "vite-node scripts/run-with-knowledge-certification-lease.ts knowledge-check -- node scripts/validate-architecture-knowledge.mjs",
     "knowledge:operational:check": "vite-node scripts/run-with-knowledge-certification-lease.ts knowledge-operational-check -- vite-node scripts/validate-chronicle-operational-records.ts",
-    "knowledge:work-manual:check": "vite-node scripts/run-with-knowledge-certification-lease.ts knowledge-work-manual-check -- vite-node scripts/validate-chronicle-work-manual.ts",
     "knowledge:records": "vite-node scripts/knowledge-records.ts",
     "quality-hub:migration:stage": "node scripts/stage-quality-hub-changelog-migration.mjs",
     "quality-hub:migration:reconcile": "CHRONICLE_QUALITY_HUB_RECONCILE_CLI=1 vite-node scripts/reconcile-quality-hub-changelog-migration.ts",
@@ -46,7 +46,9 @@
     "graph:explain": "vite-node --script scripts/chronicle-repository-graph/cli-entry.ts explain",
     "graph:history": "vite-node scripts/run-with-knowledge-certification-lease.ts graph-history -- vite-node --script scripts/chronicle-repository-graph/history-cli-entry.ts",
     "graph:recover": "vite-node --script scripts/chronicle-repository-graph/cli-entry.ts recover",
-    "graph:check": "vite-node scripts/run-with-knowledge-certification-lease.ts graph-check -- vitest run src/data/chronicle-knowledge-base/repository-graph-toolchain.test.ts src/data/chronicle-knowledge-base/repository-graph-contract.test.ts src/data/chronicle-knowledge-base/repository-graph-pipeline.test.ts src/data/chronicle-knowledge-base/repository-graph-historian.test.ts src/components/admin/knowledge-base/ChangelogHistorianView.test.tsx src/components/admin/knowledge-base/RepositoryGraphView.test.tsx src/pages/style-guide/chronicle-knowledge-base.repository-graph.test.tsx"
+    "graph:check": "vite-node scripts/run-with-knowledge-certification-lease.ts graph-check -- vitest run src/data/chronicle-knowledge-base/repository-graph-toolchain.test.ts src/data/chronicle-knowledge-base/repository-graph-contract.test.ts src/data/chronicle-knowledge-base/repository-graph-pipeline.test.ts src/data/chronicle-knowledge-base/repository-graph-historian.test.ts src/components/admin/knowledge-base/ChangelogHistorianView.test.tsx src/components/admin/knowledge-base/RepositoryGraphView.test.tsx src/pages/style-guide/chronicle-knowledge-base.repository-graph.test.tsx",
+    "knowledge:skills:sync": "node scripts/sync-chronicle-skills.mjs",
+    "knowledge:skills:check": "node scripts/sync-chronicle-skills.mjs --check"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

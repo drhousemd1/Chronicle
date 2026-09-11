@@ -34,48 +34,21 @@ describe("Community Gallery browser operational sources", () => {
       galleryOperationalRecordRegistry.changelogRegistry.roots.length +
         galleryOperationalRecordRegistry.changelogRegistry.corrections.length,
     ).toBe(changelogPaths.length);
-    expect(galleryOperationalRecordRegistry.archivedProjects).toHaveLength(1);
-    expect(galleryOperationalRecordRegistry.archivedProjects[0]?.id).toBe(
-      "CG-WORK-002",
-    );
+    expect(galleryOperationalRecordRegistry.archivedProjects.map((project) => project.id))
+      .toEqual(["CG-WORK-001", "CG-WORK-002"]);
   });
 
-  it("validates the mixed registry while keeping Knowledge System work out of the Gallery projection", () => {
-    expect(
-      chronicleOperationalRecordSources[
-        "docs/current-work/active/knowledge-system/KS-WORK-001.md"
-      ],
-    ).toBeDefined();
-    expect(
-      chronicleOperationalRecordSources[
-        "docs/current-work/active/knowledge-system/KS-WORK-002.md"
-      ],
-    ).toBeDefined();
-    expect(
-      new Set(
-        chronicleOperationalRecordRegistry.activeProjects.map(
-          (project) => project.id,
-        ),
-      ),
-    ).toEqual(
-      new Set([
-        "KS-WORK-001",
-        "KS-WORK-002",
-        "KS-WORK-003",
-        "KS-WORK-004",
-        "CG-WORK-001",
-      ]),
-    );
-    expect(
-      chronicleOperationalRecordRegistry.activeProjects
-        .filter((project) => project.primaryResumeTarget)
-        .map((project) => project.id),
-    ).toEqual(["KS-WORK-001"]);
-    expect(galleryOperationalRecordRegistry.activeProjects).toHaveLength(1);
-    expect(galleryOperationalRecordRegistry.activeProjects[0]).toMatchObject({
+  it("keeps retired work in history and exposes no active project or resume target", () => {
+    expect(Object.keys(chronicleOperationalRecordSources)
+      .some((sourcePath) => sourcePath.includes("/current-work/active/"))).toBe(false);
+    expect(chronicleOperationalRecordRegistry.activeProjects).toEqual([]);
+    expect(galleryOperationalRecordRegistry.activeProjects).toEqual([]);
+    expect(chronicleOperationalRecordRegistry.archivedProjects.map((project) => project.id))
+      .toEqual(["CG-WORK-001", "CG-WORK-002", "KS-WORK-001", "KS-WORK-002", "KS-WORK-003", "KS-WORK-004", "KS-WORK-005", "KS-WORK-006", "KS-WORK-007"]);
+    expect(galleryOperationalRecordRegistry.archivedProjects[0]).toMatchObject({
       id: "CG-WORK-001",
       ownerCapability: "community-gallery",
-      primaryResumeTarget: false,
+      workflowRetired: true,
     });
     expect(
       Object.keys(galleryOperationalRecordSources).some((sourcePath) =>

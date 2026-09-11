@@ -69,7 +69,7 @@ describe("completed Chronicle Knowledge Base capabilities", () => {
     for (const capability of completedCapabilities) {
       const section = document.getElementById(capability.id)!;
       expect(section, capability.id).not.toBeNull();
-      expect(within(section).getAllByRole("tab"), capability.id).toHaveLength(7);
+      expect(within(section).getAllByRole("tab"), capability.id).toHaveLength(6);
       expect(
         within(section).getByRole("heading", { name: capability.overview }),
         capability.id,
@@ -87,7 +87,7 @@ describe("completed Chronicle Knowledge Base capabilities", () => {
     }
   }, 30_000);
 
-  it("renders owner-isolated empty Issues, Current Work, and Changelog states", async () => {
+  it("renders owner-isolated Issues and Changelog without an active-work tab", async () => {
     renderPage();
 
     for (const capability of completedCapabilities) {
@@ -98,12 +98,7 @@ describe("completed Chronicle Knowledge Base capabilities", () => {
         `No verified ${capability.label} Issue records are currently loaded.`,
       );
 
-      fireEvent.click(
-        within(section).getByRole("tab", { name: "Current Work" }),
-      );
-      expect(within(section).getByRole("tabpanel"), capability.id).toHaveTextContent(
-        `No active, paused, blocked, deferred, or closeout-pending work is recorded for ${capability.label}`,
-      );
+      expect(within(section).queryByRole("tab", { name: "Current Work" })).not.toBeInTheDocument();
 
       fireEvent.click(within(section).getByRole("tab", { name: "Changelog" }));
       expect(

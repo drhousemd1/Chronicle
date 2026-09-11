@@ -231,15 +231,22 @@ export async function readCanonicalSourceInventory(
   const resolvedRoot = await assertCanonicalRecordDirectories(repoRoot);
   const entries: CanonicalSourceEntry[] = [];
   const initialDirectoryMembership = new Map<string, readonly string[]>();
+  const readMembership = async (entry: CanonicalDirectoryEntry) => {
+    try {
+      return (await readdir(resolveContainedPath(resolvedRoot, entry.directory)))
+        .sort((left, right) => left.localeCompare(right));
+    } catch (error) {
+      if (entry.location === "active-current-work" && (error as NodeJS.ErrnoException).code === "ENOENT") return null;
+      throw error;
+    }
+  };
   for (const directoryEntry of CANONICAL_RECORD_DIRECTORY_ENTRIES) {
     const relativeDirectory = directoryEntry.directory;
-    const absoluteDirectory = resolveContainedPath(
-      resolvedRoot,
-      relativeDirectory,
-    );
+    const membership = await readMembership(directoryEntry);
+    if (membership === null) continue;
     initialDirectoryMembership.set(
       relativeDirectory,
-      (await readdir(absoluteDirectory)).sort((left, right) => left.localeCompare(right)),
+      membership,
     );
     entries.push(...(await readDirectoryEntries(resolvedRoot, directoryEntry)));
   }
@@ -257,16 +264,11 @@ export async function readCanonicalSourceInventory(
 
   for (const directoryEntry of CANONICAL_RECORD_DIRECTORY_ENTRIES) {
     const relativeDirectory = directoryEntry.directory;
-    const absoluteDirectory = resolveContainedPath(
-      resolvedRoot,
-      relativeDirectory,
-    );
-    const finalMembership = (await readdir(absoluteDirectory)).sort((left, right) =>
-      left.localeCompare(right),
-    );
+    const finalMembership = await readMembership(directoryEntry);
+    const initialMembership = initialDirectoryMembership.get(relativeDirectory);
     if (
-      finalMembership.join("\0") !==
-      (initialDirectoryMembership.get(relativeDirectory) ?? []).join("\0")
+      (finalMembership === null) !== (initialMembership === undefined) ||
+      finalMembership?.join("\0") !== initialMembership?.join("\0")
     ) {
       throw new Error(
         `Canonical directory membership changed while it was being read: ${relativeDirectory}.`,

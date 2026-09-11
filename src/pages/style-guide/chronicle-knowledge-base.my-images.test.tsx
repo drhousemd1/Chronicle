@@ -29,7 +29,7 @@ describe("Chronicle Knowledge Base My Images manual", () => {
     renderPage();
     const section = document.getElementById("my-images")!;
 
-    expect(within(section).getAllByRole("tab")).toHaveLength(7);
+    expect(within(section).getAllByRole("tab")).toHaveLength(6);
     expect(
       within(section).getByRole("heading", { name: "My Images at a Glance" }),
     ).toBeInTheDocument();
@@ -40,17 +40,14 @@ describe("Chronicle Knowledge Base My Images manual", () => {
     ).toBeInTheDocument();
   }, 30_000);
 
-  it("isolates My Images Issues, empty work, and verified history", async () => {
+  it("isolates My Images Issues and verified history without an active-work tab", async () => {
     renderPage();
     const section = document.getElementById("my-images")!;
     fireEvent.click(within(section).getByRole("tab", { name: /Issues/ }));
     expect(within(section).getByText("MI-ISSUE-001")).toBeInTheDocument();
     expect(within(section).getByText("MI-ISSUE-002")).toBeInTheDocument();
     expect(within(section).queryByText("CL-ISSUE-001")).not.toBeInTheDocument();
-    fireEvent.click(within(section).getByRole("tab", { name: "Current Work" }));
-    expect(within(section).getByRole("tabpanel")).toHaveTextContent(
-      /recorded for Image Library/,
-    );
+    expect(within(section).queryByRole("tab", { name: "Current Work" })).not.toBeInTheDocument();
     fireEvent.click(within(section).getByRole("tab", { name: "Changelog" }));
     expect(await within(section).findByText("3 records")).toBeInTheDocument();
     expect(within(section).getByText("Fix loadFolders ReferenceError causing white screen")).toBeInTheDocument();

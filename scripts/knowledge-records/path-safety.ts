@@ -72,7 +72,7 @@ export type CanonicalRecordTarget = CanonicalRecordIdentity &
     mode: number | null;
   }>;
 
-const ACCEPTED_CHANGE_ID = /^CG-CHANGE-\d{3}$/;
+const ACCEPTED_CHANGE_ID = /^(?:CG|KS)-CHANGE-\d{3}$/;
 const LEGACY_CHANGE_ID = /^LEGACY-QH-[A-Za-z0-9][A-Za-z0-9._-]*$/;
 const CORRECTION_SUFFIX = /^(.*)-COR-(?:00[1-9]|0[1-9]\d|[1-9]\d{2})$/;
 
@@ -228,8 +228,16 @@ export async function assertNoSymlinkComponents(
 
 export async function assertCanonicalRecordDirectories(repoRoot: string) {
   const resolvedRoot = await assertRealDirectory(repoRoot, "Repository root");
-  for (const { directory: relativeDirectory } of CANONICAL_RECORD_DIRECTORY_ENTRIES) {
+  for (const { location, directory: relativeDirectory } of CANONICAL_RECORD_DIRECTORY_ENTRIES) {
     const absoluteDirectory = resolveContainedPath(resolvedRoot, relativeDirectory);
+    if (location === "active-current-work") {
+      try {
+        await lstat(absoluteDirectory);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT") continue;
+        throw error;
+      }
+    }
     await assertNoSymlinkComponents(resolvedRoot, relativeDirectory);
     await assertRealDirectory(absoluteDirectory, `Canonical directory ${relativeDirectory}`);
   }

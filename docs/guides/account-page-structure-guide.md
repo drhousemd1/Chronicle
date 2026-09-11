@@ -1,11 +1,8 @@
 > **PAGE-REFERENCE MECHANICS**
 >
-> Chronicle Work Manual: docs/architecture-knowledge/chronicle-work-manual.md
-> Chronicle Work Manual version: 0.2.2-provisional
+> This document describes the current page or system architecture. It does not decide when Chronicle work requires an audit, document update, Issue, Changelog entry, check package, or review.
 >
-> This document describes the current page or system architecture. It does not decide when Chronicle work requires an audit, document update, Issue, Current Work project, Changelog entry, check package, or review.
->
-> When the Work Manual or the user triggers a factual update to this reference, use `docs/guides/GUIDE_STYLE_RULES.md` for formatting mechanics, edit the applicable section in place, preserve the established section structure, use verified source values, and cross-reference shared owners when relevant. If a section does not apply, write `N/A — [specific reason]`.
+> When the user requests a factual update to this reference, use `docs/guides/GUIDE_STYLE_RULES.md` for formatting mechanics, edit the applicable section in place, preserve the established section structure, use verified source values, and cross-reference shared owners when relevant. If a section does not apply, write `N/A — [specific reason]`.
 # PAGE: ACCOUNT
 
 ---

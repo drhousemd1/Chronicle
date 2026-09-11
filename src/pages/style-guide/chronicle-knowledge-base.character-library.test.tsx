@@ -29,7 +29,7 @@ describe("Chronicle Knowledge Base Character Library manual", () => {
     renderPage();
     const section = document.getElementById("character-library")!;
 
-    expect(within(section).getAllByRole("tab")).toHaveLength(7);
+    expect(within(section).getAllByRole("tab")).toHaveLength(6);
     expect(
       within(section).getByRole("heading", {
         name: "Character Library at a Glance",
@@ -42,15 +42,14 @@ describe("Chronicle Knowledge Base Character Library manual", () => {
     ).toBeInTheDocument();
   }, 30_000);
 
-  it("isolates Character Library Issues, empty work, and verified history", async () => {
+  it("isolates Character Library Issues and verified history without an active-work tab", async () => {
     renderPage();
     const section = document.getElementById("character-library")!;
     fireEvent.click(within(section).getByRole("tab", { name: /Issues/ }));
     expect(within(section).getByText("CL-ISSUE-001")).toBeInTheDocument();
     expect(within(section).getByText("CL-ISSUE-002")).toBeInTheDocument();
     expect(within(section).queryByText("MS-ISSUE-001")).not.toBeInTheDocument();
-    fireEvent.click(within(section).getByRole("tab", { name: "Current Work" }));
-    expect(within(section).getByText(/recorded for Character Library/)).toBeInTheDocument();
+    expect(within(section).queryByRole("tab", { name: "Current Work" })).not.toBeInTheDocument();
     fireEvent.click(within(section).getByRole("tab", { name: "Changelog" }));
     expect(await within(section).findByText("1 record")).toBeInTheDocument();
     expect(within(section).getByText("Align style-guide tile specs to code truth and standardize character role badge wording")).toBeInTheDocument();

@@ -1,0 +1,92 @@
+[
+  {
+    "path": "../../src/assets/ui-guide/my-stories/overview-narrow.png",
+    "width": 390,
+    "height": 999,
+    "sha256": "b8144f65674d17938626f4e92befa156afc3962fa1620e6c150741162b97fb48"
+  },
+  {
+    "path": "../../src/assets/ui-guide/my-stories/overview.png",
+    "width": 1440,
+    "height": 1000,
+    "sha256": "77b1311a4606ee3633d55f7e68d16c2213ffb2bff373462f532344e5da0a7e72"
+  },
+  {
+    "path": "../../src/assets/ui-guide/my-stories/settings-menu.png",
+    "width": 217,
+    "height": 70,
+    "sha256": "20f05dd28cfa393b7d21ec700d2c3fe665136017ceae59f023abf1099dece13b"
+  },
+  {
+    "path": "../../src/assets/ui-guide/my-stories/card-hover.png",
+    "width": 342,
+    "height": 500,
+    "sha256": "d2d5eca092fa339603ba5d086fca6970f8472f8f0505535fea4baa42df6affc5"
+  },
+  {
+    "path": "../../src/assets/ui-guide/my-stories/new-story.png",
+    "width": 341,
+    "height": 500,
+    "sha256": "95f9a067c20027fdfbb0e510c3fd7dcd720f3dfcecda609f115acee73ec306c2"
+  },
+  {
+    "path": "../../src/assets/ui-guide/my-stories/header-filters.png",
+    "width": 1440,
+    "height": 77,
+    "sha256": "2fa26bf1e451e19a360f8c160d970efd80113a554cfe08c4a5922527ae083e20"
+  },
+  {
+    "path": "../../src/assets/ui-guide/my-stories/overlay-controls.png",
+    "width": 1225,
+    "height": 118,
+    "sha256": "c5bdda13bdd08591be2b8701334622692cc60094c8d287e1b78fc07e16184b1a"
+  },
+  {
+    "path": "../../src/assets/ui-guide/my-stories/published-card.png",
+    "width": 342,
+    "height": 500,
+    "sha256": "542c646f80e7c340e71c46ae35903990a562e02f896b023151c89ed74d7d94a4"
+  },
+  {
+    "path": "../../src/assets/ui-guide/my-stories/draft-card.png",
+    "width": 341,
+    "height": 500,
+    "sha256": "de99824ceaa8b3d07302559af470634f4f8c9319070ae0194b3b8e6258c47251"
+  },
+  {
+    "path": "../../src/assets/ui-guide/my-stories/empty-stories.png",
+    "width": 1440,
+    "height": 1000,
+    "sha256": "e0eef06b388f2f9ee80f6640c35cade463fd310cc902b5da8dc37d328688d8b7"
+  },
+  {
+    "path": "../../src/assets/ui-guide/my-stories/story-detail.png",
+    "width": 925,
+    "height": 724,
+    "sha256": "2b6a95feafc7cfdd73c62af08822e26ceda3401cc946d5a24f0fc0b15f52099a"
+  },
+  {
+    "path": "../../src/assets/ui-guide/my-stories/story-detail-narrow.png",
+    "width": 384,
+    "height": 724,
+    "sha256": "c59c3c459ee9a94f5b5aba6876a79e6b302f0ef65ad53bb10ab2158d891dbb24"
+  },
+  {
+    "path": "../../src/assets/ui-guide/my-stories/background-picker.png",
+    "width": 1305,
+    "height": 570,
+    "sha256": "0b147933556141410f492cc5b5336e8e69c98b88ea4802fd1f6d63be17f5d595"
+  },
+  {
+    "path": "../../src/assets/ui-guide/my-stories/new-chapter-preview.png",
+    "width": 925,
+    "height": 518,
+    "sha256": "76b55057fd71555ba190691bf3d10c864efeb0c230c01e292dfe321325bd4fe5"
+  },
+  {
+    "path": "../../src/assets/ui-guide/my-stories/new-background-appearance.png",
+    "width": 692,
+    "height": 251,
+    "sha256": "675a04c77ad4877a1adb58eed659eb5b134c93a3ae677035fdd1affb7c55a5c8"
+  }
+]

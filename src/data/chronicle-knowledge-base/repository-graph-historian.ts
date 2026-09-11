@@ -2,10 +2,10 @@ import {
   isSafeRepositoryGraphPath,
 } from "./repository-graph-contract";
 import type {
+  ChangelogCapabilityId,
   ChangelogRecordRegistry,
   EffectiveChangelogEntry,
 } from "./changelog-record-contract";
-import type { ChronicleCapabilityId } from "./capability-ids";
 
 export type RepositoryGraphHistoryEntry = Readonly<{
   id: string;
@@ -14,7 +14,7 @@ export type RepositoryGraphHistoryEntry = Readonly<{
   originalDate: string;
   dateLabel: "Accepted" | "Last updated in Quality Hub" | "Corrected";
   recordType: "Accepted Chronicle change" | "Accepted bounded update" | "Historical Quality Hub record";
-  affectedCapabilities: readonly ChronicleCapabilityId[];
+  affectedCapabilities: readonly ChangelogCapabilityId[];
   problem: string | null;
   whyChangeWasNeeded: string | null;
   planRecordedAtTheTime: string | null;
@@ -172,7 +172,7 @@ function deriveHistoryEntry(entry: EffectiveChangelogEntry): RepositoryGraphHist
 
 export function deriveRepositoryGraphHistory(
   registry: ChangelogRecordRegistry,
-  capability?: ChronicleCapabilityId,
+  capability?: ChangelogCapabilityId,
 ) {
   return Object.freeze(
     registry.effectiveEntries

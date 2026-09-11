@@ -13,10 +13,6 @@ const issueModules = import.meta.glob(
   "../../../docs/architecture-knowledge/issues/*/*.md",
   { eager: true, query: "?raw", import: "default" },
 );
-const activeWorkModules = import.meta.glob(
-  "../../../docs/current-work/active/*/*.md",
-  { eager: true, query: "?raw", import: "default" },
-);
 const archivedWorkModules = import.meta.glob(
   "../../../docs/current-work/archive/*/*.md",
   { eager: true, query: "?raw", import: "default" },
@@ -47,7 +43,6 @@ export const CHRONICLE_OPERATIONAL_RECORDS_CHECKED_ON = getKnowledgeCheckDate();
 export const chronicleOperationalRecordSources: OperationalRecordSourceMap =
   Object.freeze({
     ...collectRawSources(issueModules),
-    ...collectRawSources(activeWorkModules),
     ...collectRawSources(archivedWorkModules),
     ...chronicleChangelogRecordSources,
   });

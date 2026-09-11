@@ -1,0 +1,26 @@
+[
+  {
+    "path": "../../src/assets/ui-guide/admin-workspaces/asset-config.png",
+    "width": 685,
+    "height": 707,
+    "sha256": "412fb0ce5261fdb6a021869cb497f8ae6a4217b0be946a363fb852aed6bbbe67"
+  },
+  {
+    "path": "../../src/assets/ui-guide/admin-workspaces/status.png",
+    "width": 697,
+    "height": 709,
+    "sha256": "1bb8d8ffed4ef9f23a825a0f138e357312689bf69b6363df150447c1afd0ba27"
+  },
+  {
+    "path": "../../src/assets/ui-guide/admin-workspaces/operations.png",
+    "width": 823,
+    "height": 298,
+    "sha256": "3655b0b1b957d52f9fbca7483f91b0e95147405301365035176891e4dbd957f7"
+  },
+  {
+    "path": "../../src/assets/ui-guide/admin-workspaces/notebook.png",
+    "width": 823,
+    "height": 450,
+    "sha256": "0c5233a86f69b7f5943059d9ff005fe0fc29c12bd33fcab4940cf3b8c2c1bd01"
+  }
+]

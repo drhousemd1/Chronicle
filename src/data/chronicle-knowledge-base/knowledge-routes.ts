@@ -4,12 +4,10 @@ import type { AdminToolSectionId } from "./admin-tool-ids";
 export type ChronicleKnowledgeSectionId =
   | ChronicleCapabilityId
   | AdminToolSectionId
-  | "chronicle-overview"
-  | "chronicle-work-manual";
+  | "chronicle-overview";
 
 export const CHRONICLE_KNOWLEDGE_ROUTE_REGISTRY = Object.freeze({
   knowledgeBase: "/style-guide/chronicle-knowledge-base",
-  workManual: "/style-guide/chronicle-knowledge-base/work-manual",
   qualityHub: "/style-guide/ui-audit",
   changelogRecord: "/style-guide/changelog",
 } as const);
@@ -46,16 +44,4 @@ export function buildChangelogRecordPath(recordId: string) {
 
 export function buildArchivedCurrentWorkHref(projectId: string) {
   return `${CHRONICLE_KNOWLEDGE_ROUTE_REGISTRY.knowledgeBase}/archive/${encodeURIComponent(projectId)}`;
-}
-
-export function buildWorkManualHref(
-  chapterId = "start-here",
-  anchor = "chronicle-work-manual",
-) {
-  const query = new URLSearchParams({
-    section: "chronicle-work-manual",
-    tab: chapterId,
-  });
-  const hash = anchor ? `#${encodeURIComponent(anchor)}` : "";
-  return `${CHRONICLE_KNOWLEDGE_ROUTE_REGISTRY.knowledgeBase}?${query.toString()}${hash}`;
 }
