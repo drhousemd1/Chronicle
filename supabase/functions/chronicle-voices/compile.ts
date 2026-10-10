@@ -143,7 +143,8 @@ export async function compileDraft(draftIn: unknown): Promise<Compiled> {
     if (value) parts.push(`## ${label || "Additional characteristic"}\n${value}`);
   }
   const langRaw = str(src.language, "Language", 40).trim();
-  if (!Object.hasOwn(LANGUAGES, langRaw)) throw new HttpError(400, "Choose a language from the list.");
+  if (!Object.prototype.hasOwnProperty.call(LANGUAGES, langRaw))
+    throw new HttpError(400, "Choose a language from the list.");
   if (langRaw) parts.push(`## Language\n${LANGUAGES[langRaw]}`);
   const additional = str(src.additional, "Additional", LIMITS.description).trim();
   if (additional) parts.push(additional);
@@ -209,12 +210,12 @@ export function providerVoiceToDraft(id: string, info: Record<string, any>): Rec
   for (const key of ["gender", "pitch", "accent"])
     if (info[key] && !draft[key]) draft[key] = str(String(info[key]), key, LIMITS.field);
   if (lang && !draft.language) {
-    if (Object.hasOwn(LANGUAGES, lang)) draft.language = lang;
+    if (Object.prototype.hasOwnProperty.call(LANGUAGES, lang)) draft.language = lang;
     else extra.push("Language: " + String(lang));
   }
   for (const key of ["description", "persona", "context", "region_code"])
     if (info[key] && !prompt.includes(String(info[key]))) {
-      const label = key.replaceAll("_", " ");
+      const label = key.replace(/_/g, " ");
       extra.push(label[0].toUpperCase() + label.slice(1) + ": " + String(info[key]));
     }
   if (extra.length) draft.additional = str(extra.join("\n\n"), "Additional voice details", LIMITS.description);
