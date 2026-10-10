@@ -5,6 +5,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import {
+  assembleGeneratedWav,
   compileDraft,
   EXPRESSIONS,
   HttpError,
@@ -330,16 +331,6 @@ async function createVoiceStage(svc: SupabaseClient, job: Json) {
   if (advanced.error) throw rpcError(advanced.error);
 }
 
-function findAudio(res: any): string | null {
-  if (typeof res?.output_audio?.data === "string") return res.output_audio.data;
-  let last: string | null = null;
-  for (const step of res?.steps ?? []) {
-    const content = step?.model_output?.content ?? (step?.type === "model_output" ? step?.content : null) ?? [];
-    for (const part of content) if (part?.type === "audio" && typeof part.data === "string") last = part.data;
-  }
-  return last;
-}
-
 async function speechStage(svc: SupabaseClient, job: Json) {
   const c = job.compiled;
   const content: Json = { type: "text", text: job.draft?.text ?? "" };
@@ -374,21 +365,16 @@ async function speechStage(svc: SupabaseClient, job: Json) {
     console.error("[chronicle-voices] speech failed", res.status, (await res.text()).slice(0, 500));
     return failStage(svc, job.id, "speech_running", res.status >= 500, `Sample generation failed (${res.status}).`);
   }
-  const b64 = findAudio(await res.json().catch(() => null));
-  if (!b64) return failStage(svc, job.id, "speech_running", false, "Provider response contained no audio.");
-  if (b64.length > 36 * 1024 * 1024)
-    return failStage(svc, job.id, "speech_running", false, "Generated recording exceeded the audition storage limit.");
-  const bytes = Uint8Array.from(atob(b64), (ch) => ch.charCodeAt(0));
-  if (
-    new TextDecoder().decode(bytes.subarray(0, 4)) !== "RIFF" ||
-    new TextDecoder().decode(bytes.subarray(8, 12)) !== "WAVE"
-  ) {
+  let bytes: Uint8Array;
+  try {
+    bytes = assembleGeneratedWav(await res.json());
+  } catch (error) {
     return failStage(
       svc,
       job.id,
       "speech_running",
       false,
-      "Google did not return the requested WAV recording. No automatic retry was made.",
+      `${error instanceof Error ? error.message : "The recording could not be read."} No automatic retry was made.`,
     );
   }
   const path = `${job.owner_id}/${job.id}.wav`;

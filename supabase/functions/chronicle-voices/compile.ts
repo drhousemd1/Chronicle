@@ -220,3 +220,72 @@ export function providerVoiceToDraft(id: string, info: Record<string, any>): Rec
   if (extra.length) draft.additional = str(extra.join("\n\n"), "Additional voice details", LIMITS.description);
   return draft;
 }
+
+/** Keep every completed audio part; never silently save only the last segment. */
+export function assembleGeneratedWav(response: any): Uint8Array {
+  if (!response || (response.status && response.status !== "completed"))
+    throw new Error("Google did not complete the recording.");
+  const parts: any[] = response.output_audio
+    ? [response.output_audio]
+    : (response.steps ?? []).flatMap((step: any) =>
+        (step.model_output?.content ?? (step.type === "model_output" ? step.content : []) ?? []).filter(
+          (part: any) => part.type === "audio",
+        ),
+      );
+  if (!parts.length) throw new Error("Provider response contained no audio.");
+  let totalBase64 = 0;
+  let format: Uint8Array | undefined;
+  const segments: Uint8Array[] = [];
+  const text = new TextDecoder();
+  for (const part of parts) {
+    if (typeof part.data !== "string" || !part.data) throw new Error("Provider audio was incomplete.");
+    totalBase64 += part.data.length;
+    if (totalBase64 > 36 * 1024 * 1024) throw new Error("Generated recording exceeded the audition storage limit.");
+    const bytes = Uint8Array.from(atob(part.data), (c) => c.charCodeAt(0));
+    if (
+      bytes.length < 12 ||
+      text.decode(bytes.subarray(0, 4)) !== "RIFF" ||
+      text.decode(bytes.subarray(8, 12)) !== "WAVE"
+    )
+      throw new Error("Google did not return the requested WAV recording.");
+    const view = new DataView(bytes.buffer);
+    let partFormat: Uint8Array | undefined;
+    const data: Uint8Array[] = [];
+    for (let offset = 12; offset + 8 <= bytes.length;) {
+      const kind = text.decode(bytes.subarray(offset, offset + 4));
+      const size = view.getUint32(offset + 4, true);
+      const end = offset + 8 + size;
+      if (end > bytes.length) throw new Error("Provider WAV data was truncated.");
+      if (kind === "fmt ") partFormat = bytes.slice(offset + 8, end);
+      if (kind === "data" && size) data.push(bytes.slice(offset + 8, end));
+      offset = end + (size % 2);
+    }
+    if (!partFormat || partFormat.length < 16 || !data.length)
+      throw new Error("Provider WAV recording was incomplete.");
+    if (format && (format.length !== partFormat.length || format.some((v, i) => v !== partFormat![i])))
+      throw new Error("Provider audio parts used different formats.");
+    format = partFormat;
+    segments.push(...data);
+  }
+  const dataSize = segments.reduce((n, part) => n + part.length, 0);
+  const fmtSize = format!.length;
+  const fmtPadded = fmtSize + (fmtSize % 2);
+  const output = new Uint8Array(28 + fmtPadded + dataSize + (dataSize % 2));
+  const view = new DataView(output.buffer);
+  const write = (offset: number, value: string) => output.set(new TextEncoder().encode(value), offset);
+  write(0, "RIFF");
+  view.setUint32(4, output.length - 8, true);
+  write(8, "WAVE");
+  write(12, "fmt ");
+  view.setUint32(16, fmtSize, true);
+  output.set(format!, 20);
+  const header = 20 + fmtPadded;
+  write(header, "data");
+  view.setUint32(header + 4, dataSize, true);
+  let offset = header + 8;
+  for (const part of segments) {
+    output.set(part, offset);
+    offset += part.length;
+  }
+  return output;
+}
