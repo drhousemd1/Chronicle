@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -2239,6 +2239,301 @@ export type Database = {
         }
         Relationships: []
       }
+      voice_admin_drafts: {
+        Row: {
+          draft: Json
+          mode: string
+          owner_id: string
+          revision: number
+          updated_at: string
+        }
+        Insert: {
+          draft?: Json
+          mode: string
+          owner_id: string
+          revision?: number
+          updated_at?: string
+        }
+        Update: {
+          draft?: Json
+          mode?: string
+          owner_id?: string
+          revision?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      voice_catalog_categories: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          owner_id: string | null
+          position: number
+          revision: number
+          scope: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          label: string
+          owner_id?: string | null
+          position?: number
+          revision?: number
+          scope: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          owner_id?: string | null
+          position?: number
+          revision?: number
+          scope?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      voice_catalog_entries: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          description: string
+          id: string
+          name: string
+          owner_id: string | null
+          position: number
+          presentation: Json
+          removed_at: string | null
+          revision: number
+          scope: string
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          description?: string
+          id: string
+          name: string
+          owner_id?: string | null
+          position?: number
+          presentation?: Json
+          removed_at?: string | null
+          revision?: number
+          scope: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          name?: string
+          owner_id?: string | null
+          position?: number
+          presentation?: Json
+          removed_at?: string | null
+          revision?: number
+          scope?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_catalog_entries_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "voice_catalog_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_generation_jobs: {
+        Row: {
+          audio_path: string | null
+          committed_entry_id: string | null
+          compiled: Json
+          created_at: string
+          deadline_at: string | null
+          destination: string
+          discarded_at: string | null
+          draft: Json
+          fingerprint: string
+          id: string
+          idempotency_key: string
+          identity: Json | null
+          message: string
+          mode: string
+          new_voice: boolean
+          owner_id: string
+          provider_voice_id: string | null
+          request_hash: string
+          stage: string
+          stage_started_at: string | null
+          uncertain: boolean
+          updated_at: string
+        }
+        Insert: {
+          audio_path?: string | null
+          committed_entry_id?: string | null
+          compiled: Json
+          created_at?: string
+          deadline_at?: string | null
+          destination: string
+          discarded_at?: string | null
+          draft: Json
+          fingerprint: string
+          id?: string
+          idempotency_key: string
+          identity?: Json | null
+          message?: string
+          mode: string
+          new_voice?: boolean
+          owner_id: string
+          provider_voice_id?: string | null
+          request_hash: string
+          stage: string
+          stage_started_at?: string | null
+          uncertain?: boolean
+          updated_at?: string
+        }
+        Update: {
+          audio_path?: string | null
+          committed_entry_id?: string | null
+          compiled?: Json
+          created_at?: string
+          deadline_at?: string | null
+          destination?: string
+          discarded_at?: string | null
+          draft?: Json
+          fingerprint?: string
+          id?: string
+          idempotency_key?: string
+          identity?: Json | null
+          message?: string
+          mode?: string
+          new_voice?: boolean
+          owner_id?: string
+          provider_voice_id?: string | null
+          request_hash?: string
+          stage?: string
+          stage_started_at?: string | null
+          uncertain?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      voice_migration_ledger: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          item_id: string
+          item_kind: string
+          migration_id: string
+          outcome: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          item_id: string
+          item_kind: string
+          migration_id: string
+          outcome: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          item_id?: string
+          item_kind?: string
+          migration_id?: string
+          outcome?: string
+        }
+        Relationships: []
+      }
+      voice_provider_settings: {
+        Row: {
+          compiled: Json
+          created_at: string
+          draft: Json
+          entry_id: string
+          identity: Json | null
+          job_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          compiled?: Json
+          created_at?: string
+          draft?: Json
+          entry_id: string
+          identity?: Json | null
+          job_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          compiled?: Json
+          created_at?: string
+          draft?: Json
+          entry_id?: string
+          identity?: Json | null
+          job_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_provider_settings_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: true
+            referencedRelation: "voice_catalog_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_provider_voices: {
+        Row: {
+          fetched_at: string
+          id: string
+          info: Json
+          name: string
+        }
+        Insert: {
+          fetched_at?: string
+          id: string
+          info: Json
+          name?: string
+        }
+        Update: {
+          fetched_at?: string
+          id?: string
+          info?: Json
+          name?: string
+        }
+        Relationships: []
+      }
+      voice_sample_sets: {
+        Row: {
+          default_sample_id: string | null
+          revision: number
+          samples: Json
+          updated_at: string
+          voice_id: string
+        }
+        Insert: {
+          default_sample_id?: string | null
+          revision?: number
+          samples?: Json
+          updated_at?: string
+          voice_id: string
+        }
+        Update: {
+          default_sample_id?: string | null
+          revision?: number
+          samples?: Json
+          updated_at?: string
+          voice_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -2442,6 +2737,119 @@ export type Database = {
         Args: { _enabled: boolean; _target_user_id: string }
         Returns: undefined
       }
+      valid_voice_sample_set: {
+        Args: { default_id: string; samples: Json; voice_id: string }
+        Returns: boolean
+      }
+      voice_assert_admin: { Args: never; Returns: undefined }
+      voice_commit: {
+        Args: {
+          p_default_sample_id: string
+          p_description: string
+          p_entry_id: string
+          p_expected_revision: number
+          p_job_id: string
+          p_mode: string
+          p_name: string
+          p_presentation: Json
+          p_sample_revision: number
+          p_samples: Json
+        }
+        Returns: Json
+      }
+      voice_draft_save: {
+        Args: { p_draft: Json; p_expected_revision: number; p_mode: string }
+        Returns: Json
+      }
+      voice_entry_move: {
+        Args: {
+          p_before_id: string
+          p_expected_revision: number
+          p_id: string
+          p_mode: string
+          p_section_id: string
+        }
+        Returns: undefined
+      }
+      voice_entry_remove: {
+        Args: { p_expected_revision: number; p_id: string; p_mode: string }
+        Returns: undefined
+      }
+      voice_import: {
+        Args: {
+          p_categories: Json
+          p_drafts: Json
+          p_entries: Json
+          p_migration_id: string
+          p_provider_voices: Json
+        }
+        Returns: Json
+      }
+      voice_job_claim: {
+        Args: {
+          p_deadline_seconds: number
+          p_from: string
+          p_id: string
+          p_to: string
+        }
+        Returns: Json
+      }
+      voice_job_discard: { Args: { p_id: string }; Returns: Json }
+      voice_job_expire: { Args: never; Returns: number }
+      voice_job_submit: {
+        Args: {
+          p_compiled: Json
+          p_destination: string
+          p_draft: Json
+          p_fingerprint: string
+          p_hash: string
+          p_identity: Json
+          p_key: string
+          p_mode: string
+          p_new_voice: boolean
+        }
+        Returns: Json
+      }
+      voice_reorder_entries: {
+        Args: { p_category: string; p_ids: string[] }
+        Returns: undefined
+      }
+      voice_reorder_sections: {
+        Args: { p_ids: string[]; p_owner: string; p_scope: string }
+        Returns: undefined
+      }
+      voice_scope_owner: { Args: { p_mode: string }; Returns: string }
+      voice_section_add: {
+        Args: { p_id: string; p_label: string; p_mode: string }
+        Returns: Json
+      }
+      voice_section_move: {
+        Args: {
+          p_before_id: string
+          p_expected_revision: number
+          p_id: string
+          p_mode: string
+        }
+        Returns: undefined
+      }
+      voice_section_remove: {
+        Args: { p_expected_revision: number; p_id: string; p_mode: string }
+        Returns: undefined
+      }
+      voice_section_update: {
+        Args: {
+          p_expected_revision: number
+          p_id: string
+          p_label: string
+          p_mode: string
+        }
+        Returns: Json
+      }
+      voice_storage_exists: {
+        Args: { p_bucket: string; p_path: string }
+        Returns: boolean
+      }
+      voice_valid_presentation: { Args: { p: Json }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
@@ -2460,12 +2868,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2489,11 +2897,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2514,11 +2922,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2539,11 +2947,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2556,11 +2964,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
